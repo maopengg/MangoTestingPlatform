@@ -20,6 +20,11 @@ export const tableColumns = useTableColumn([
     dataIndex: 'is_open',
   },
   {
+    title: 'DEBUG状态',
+    key: 'debug',
+    dataIndex: 'debug',
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',

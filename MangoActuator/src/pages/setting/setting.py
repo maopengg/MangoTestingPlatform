@@ -77,6 +77,13 @@ class SettingPage(QWidget):
     def debug(self, value):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
         log.set_debug(settings.IS_DEBUG)
+        socket_conn.sync_send(
+            '设置DEBUG状态',
+            func_name=ToolsSocketEnum.SET_USERINFO.value,
+            func_args=SetUserOpenSatusModel(
+                username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                debug=bool(settings.IS_DEBUG), )
+        )
 
     def test_but(self):
         print(type(SetConfig.get_is_minio()), SetConfig.get_is_minio())
@@ -92,9 +99,9 @@ class SettingPage(QWidget):
     def is_open(self, status):
         settings.IS_OPEN = status
         socket_conn.sync_send(
-            '设置执行器状态',
-            func_name=ToolsSocketEnum.SET_USER_OPEN_STATUS_OPTIONS.value,
+            '设置OPEN状态',
+            func_name=ToolsSocketEnum.SET_USERINFO.value,
             func_args=SetUserOpenSatusModel(
                 username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-                status=bool(settings.IS_OPEN)),
+                is_open=bool(settings.IS_OPEN), )
         )

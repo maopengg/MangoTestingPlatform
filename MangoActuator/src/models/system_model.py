@@ -41,7 +41,8 @@ class ConsumerCaseModel(BaseModel):
 
 class SetUserOpenSatusModel(BaseModel):
     username: str
-    status: bool
+    is_open: bool | None = None
+    debug: bool | None = None
 
 
 class GetTaskModel(BaseModel):

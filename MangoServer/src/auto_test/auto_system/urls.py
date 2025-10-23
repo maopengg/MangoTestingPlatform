@@ -57,6 +57,7 @@ urlpatterns = [
     path("socket/all/user/sum", SocketApiViews.as_view({'get': 'get_all_user_sum'})),
     path("socket/all/user/list", SocketApiViews.as_view({'get': 'get_all_user_list'})),
     path("socket/put/user/open/status", SocketApiViews.as_view({'put': 'set_user_open_status'})),
+    path("socket/put/user/debug", SocketApiViews.as_view({'put': 'set_user_debug'})),
     path("socket/new/browser", SocketApiViews.as_view({'get': 'get_new_browser_obj'})),
     #
     path('test/suite', TestSuiteCRUD.as_view()),

@@ -38,6 +38,12 @@
                 :default-checked="record.is_open === true"
               />
             </template>
+            <template v-else-if="item.key === 'debug'" #cell="{ record }">
+              <a-switch
+                :beforeChange="(newValue) => onModifyDebug(newValue, record.username)"
+                :default-checked="record.debug === true"
+              />
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button
@@ -66,7 +72,11 @@
   import { Message } from '@arco-design/web-vue'
   import { onMounted, nextTick } from 'vue'
   import { tableColumns } from './config'
-  import { getSystemSocketUserList, getSystemSocketPutOpenStatus } from '@/api/system/socket_api'
+  import {
+    getSystemSocketUserList,
+    getSystemSocketPutOpenStatus,
+    getSystemSocketPutDebug,
+  } from '@/api/system/socket_api'
 
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
@@ -88,12 +98,32 @@
   function onReceive() {
     Message.warning('开发中.....')
   }
+
   const onModifyStatus = async (newValue: any, id: string) => {
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
         try {
           let value: any = false
           await getSystemSocketPutOpenStatus(id, newValue ? 1 : 0)
+            .then((res) => {
+              Message.success(res.msg)
+              value = res.code === 200
+            })
+            .catch(reject)
+          resolve(value)
+        } catch (error) {
+          reject(error)
+        }
+      }, 300)
+    })
+  }
+
+  const onModifyDebug = async (newValue: any, id: string) => {
+    return new Promise<any>((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          let value: any = false
+          await getSystemSocketPutDebug(id, newValue ? 1 : 0)
             .then((res) => {
               Message.success(res.msg)
               value = res.code === 200

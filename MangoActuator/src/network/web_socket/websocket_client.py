@@ -57,11 +57,12 @@ class WebSocketClient:
 
                 )
                 await cls.async_send(
-                    '设置执行器状态',
-                    func_name=ToolsSocketEnum.SET_USER_OPEN_STATUS_OPTIONS.value,
+                    '设置执行器用户信息',
+                    func_name=ToolsSocketEnum.SET_USERINFO.value,
                     func_args=SetUserOpenSatusModel(
                         username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-                        status=bool(settings.IS_OPEN)),
+                        is_open=bool(settings.IS_OPEN),
+                        debug=bool(settings.IS_DEBUG))
                 )
                 return True
             else:

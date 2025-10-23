@@ -17,6 +17,7 @@ class SocketUserModel(BaseModel):
     web_obj: Any | None = None
     client_obj: Any | None = None
     is_open: bool = False
+    debug: bool = False
 
 
 class SocketUser:
@@ -96,9 +97,13 @@ class SocketUser:
         return cls.user
 
     @classmethod
-    def set_user_open_status(cls, username, is_open: bool):
+    def set_userinfo(cls, username, is_open: bool | None = None, debug: bool | None = None):
+        log.system.debug(f'设置执行器用户信息：{username}, {is_open}, {debug}')
         for i in cls.user:
             if i.username == username:
-                i.is_open = is_open
+                if is_open is not None:
+                    i.is_open = is_open
+                elif debug is not None:
+                    i.debug = debug
                 return
         raise SystemEError(*ERROR_MSG_0027, )

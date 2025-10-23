@@ -34,7 +34,8 @@ class SocketApiViews(ViewSet):
             if i.client_obj:
                 res = User.objects.get(id=i.user_id)
                 data.append(
-                    {'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open})
+                    {'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open,
+                     'debug': i.debug})
         return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 
     @action(methods=['get'], detail=False)
@@ -72,11 +73,34 @@ class SocketApiViews(ViewSet):
                 func_name=UiSocketEnum.SET_OPEN_STATUS.value,
                 func_args={'is_open': bool(status)}),
         ))
-        SocketUser.set_user_open_status(username, bool(status))
+        SocketUser.set_userinfo(username, is_open=bool(status))
         return ResponseData.success(RESPONSE_MSG_0113, {
             'user_id': user_obj.user_id,
             'username': user_obj.username,
             'is_open': user_obj.is_open
+        })
+
+    @action(methods=['put'], detail=False)
+    @error_response('system')
+    def set_user_debug(self, request: Request):
+        status = request.data.get('status')
+        username = request.data.get('username')
+        user_obj = SocketUser.get_user_obj(username)
+        from src.auto_test.auto_system.consumers import ChatConsumer
+        ChatConsumer.active_send(SocketDataModel(
+            code=200,
+            msg=f'执行器连接成功，当前debug状态：{SocketUser.get_user_obj(username).is_open}',
+            user=username,
+            is_notice=ClientTypeEnum.ACTUATOR,
+            data=QueueModel(
+                func_name=UiSocketEnum.SET_DEBUG.value,
+                func_args={'debug': bool(status)}),
+        ))
+        SocketUser.set_userinfo(username, debug=bool(status))
+        return ResponseData.success(RESPONSE_MSG_0139, {
+            'user_id': user_obj.user_id,
+            'username': user_obj.username,
+            'debug': user_obj.debug
         })
 
     @action(methods=['get'], detail=False)
