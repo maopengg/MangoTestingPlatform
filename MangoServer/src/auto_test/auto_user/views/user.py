@@ -157,11 +157,6 @@ class LoginViews(ViewSet):
         ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
         user_info.ip = ip
         user_info.save()
-        from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
-        UserLogsCRUD().inside_post({
-            "source_type": source_type,
-            "ip": ip
-        })
         return ResponseData.success(RESPONSE_MSG_0043, {
             "name": user_info.name,
             "userName": user_info.username,

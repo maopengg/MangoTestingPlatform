@@ -26,7 +26,7 @@ class ModelCRUD(GenericAPIView):
     not_matching_str = [
         'pageSize', 'page',
         'type', 'status',
-        'module', 'project_product', 'case_people', 'test_object', 'project', 'user',
+        'module', 'project_product', 'case_people', 'test_object', 'project', 'user', 'status_code__in[]'
     ]
     pytest_model = ['PytestAct', 'PytestCase', 'PytestTools', 'PytestTestFile']
 
