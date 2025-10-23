@@ -40,7 +40,7 @@ class TestCase:
         return self
 
     async def test_case(self) -> list[dict]:
-        log.debug(f'开始执行pytest用例：{self.case_model.name}，仓库目录：{project_dir.root_path()}')
+        log.debug(f'开始执行pytest用例：{self.case_model.model_dump_json()}')
         git = GitRepoOperator(
             self.case_model.git_url,
             project_dir.root_path(),
@@ -61,6 +61,7 @@ class TestCase:
         )
         await self.result_data(report_data)
         await self.send_case_result()
+        log.debug(f'pytest测试结果：{self.case_result.model_dump_json()}')
         return report_data
 
     async def result_data(self, result_data: list[dict]):
