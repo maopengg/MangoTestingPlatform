@@ -47,6 +47,7 @@ class HttpClientApi(HttpBase):
     @classmethod
     def upload_file(cls, file_path: str, file_name: str):
         data = {
+            'type': ClientTypeEnum.ACTUATOR.value,
             'name': file_name
         }
         files = [
