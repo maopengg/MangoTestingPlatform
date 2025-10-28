@@ -196,7 +196,7 @@ class TestSuiteDetailsViews(ViewSet):
             )
             data['fail'] = [result.total_count for result in fail]
             data['success'] = [result.total_count for result in success]
-            return ResponseData.success(RESPONSE_MSG_0096, data)
+            return ResponseData.success(RESPONSE_MSG_0110, data)
         except django.db.utils.OperationalError:
             data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

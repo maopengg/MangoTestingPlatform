@@ -97,13 +97,4 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
-  {
-    key: 'status_code',
-    label: 'status_code',
-    type: 'select',
-    placeholder: '请选择status_code码',
-    value: ref(''),
-    optionItems: [],
-    reset: function () {},
-  },
 ])
