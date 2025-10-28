@@ -101,7 +101,10 @@ class APIBaseTestSetup(PublicBase):
         if response.json is None:
             raise ApiError(*ERROR_MSG_0023)
         for i in posterior_json_path:
-            self.test_data.set_cache(i.get('key'), self.test_data.get_json_path_value(response.json, i.get('value')))
+            key: str = i.get('key')
+            if key and key.startswith('$.'):
+                key = self.test_data.get_json_path_value(response.json, i.get('key'))
+            self.test_data.set_cache(key, self.test_data.get_json_path_value(response.json, i.get('value')))
 
     def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):
         log.api.debug(f'执行API接口-3->后置正则:{posterior_re}')
