@@ -496,12 +496,20 @@
     }
     if (caseRunning.value) return
     caseRunning.value = true
+
+    const timeoutId = setTimeout(() => {
+      Message.info('测试用例异步执行中，请稍后刷新页面查看该用例的测试结果~')
+      caseRunning.value = false
+    }, 15000)
+
     try {
       const res = await getApiCaseRun(param.id, userStore.selected_environment, null)
+      clearTimeout(timeoutId)
       Message.success(res.msg)
       doRefresh()
+      caseRunning.value = false
     } catch (e) {
-    } finally {
+      clearTimeout(timeoutId)
       caseRunning.value = false
     }
   }
