@@ -12,8 +12,8 @@ from mangotools.mangos import get, post, put, delete, inside_post, inside_put, i
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
-from ....src.auto_test.auto_system.models import ProjectProduct
-from ....src.auto_test.auto_pytest.models import PytestProduct
+from ...auto_test.auto_system.models import ProjectProduct
+from ...auto_test.auto_pytest.models import PytestProduct
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
