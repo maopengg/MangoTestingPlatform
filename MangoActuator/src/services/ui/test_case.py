@@ -37,7 +37,8 @@ class TestCase:
         self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
         self.base_data = BaseData(self.test_data, log) \
-            .set_file_path(project_dir.download(), project_dir.screenshot())
+            .set_file_path(project_dir.download(), project_dir.screenshot()) \
+            .set_agent(True)
         self._is_page_init = True
         self.case_result = UiCaseResultModel(
             id=self.case_model.id,

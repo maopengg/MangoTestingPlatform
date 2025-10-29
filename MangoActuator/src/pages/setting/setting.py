@@ -53,6 +53,14 @@ class SettingPage(QWidget):
         self.minio.click.connect(SetConfig.set_minio_url)  # type: ignore
         card_layout1.addWidget(MangoLabel('请输入MinioUrl：'), 3, 0)
         card_layout1.addWidget(self.minio, 3, 1)
+
+        self.agent = MangoLineEdit('请输入siliconflow的key', SetConfig.get_agent())  # type: ignore
+        self.agent.setFixedWidth(250)
+        self.agent.click.connect(SetConfig.set_agent)  # type: ignore
+        card_layout1.addWidget(MangoLabel('AI的key：'), 4, 0)
+        card_layout1.addWidget(self.agent, 4, 1)
+        card_layout1.addWidget(MangoLabel('用于在正常元素定位失败后，使用AI来协助定位元素'), 4, 2)
+
         h_layout.addLayout(card_layout1)
         h_layout.addStretch()
 

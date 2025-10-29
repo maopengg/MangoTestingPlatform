@@ -169,21 +169,24 @@ class TestCase:
                     exp=steps_element.ele_name.exp,
                     loc=steps_element.ele_name.loc,
                     sub=steps_element.ele_name.sub,
-                    is_iframe=steps_element.ele_name.is_iframe
+                    is_iframe=steps_element.ele_name.is_iframe,
+                    prompt=steps_element.ele_name.prompt or f'查找元素：{steps_element.ele_name.name}'
                 ))
                 if steps_element.ele_name.loc2 is not None and steps_element.ele_name.exp2 is not None:
                     element_model.elements.append(ElementListModel(
                         exp=steps_element.ele_name.exp2,
                         loc=steps_element.ele_name.loc2,
                         sub=steps_element.ele_name.sub2,
-                        is_iframe=steps_element.ele_name.is_iframe
+                        is_iframe=steps_element.ele_name.is_iframe,
+                        prompt=steps_element.ele_name.prompt or f'查找元素：{steps_element.ele_name.name}'
                     ))
                 if steps_element.ele_name.loc3 is not None and steps_element.ele_name.exp3 is not None:
                     element_model.elements.append(ElementListModel(
                         exp=steps_element.ele_name.exp3,
                         loc=steps_element.ele_name.loc3,
                         sub=steps_element.ele_name.sub3,
-                        is_iframe=steps_element.ele_name.is_iframe
+                        is_iframe=steps_element.ele_name.is_iframe,
+                        prompt=steps_element.ele_name.prompt or f'查找元素：{steps_element.ele_name.name}'
                     ))
         else:
             element_model = ElementModel(
@@ -196,15 +199,18 @@ class TestCase:
             )
             element_model.elements.append(
                 ElementListModel(exp=steps_element.exp, loc=steps_element.loc, sub=steps_element.sub,
-                                 is_iframe=steps_element.is_iframe))
+                                 is_iframe=steps_element.is_iframe,
+                                 prompt=steps_element.prompt or f'查找元素：{steps_element.name}'))
             if steps_element.loc2 is not None and steps_element.exp2 is not None:
                 element_model.elements.append(
                     ElementListModel(exp=steps_element.exp2, loc=steps_element.loc2, sub=steps_element.sub2,
-                                     is_iframe=steps_element.is_iframe))
+                                     is_iframe=steps_element.is_iframe,
+                                     prompt=steps_element.prompt or f'查找元素：{steps_element.name}'))
             if steps_element.loc3 is not None and steps_element.exp3 is not None:
                 element_model.elements.append(
                     ElementListModel(exp=steps_element.exp3, loc=steps_element.loc3, sub=steps_element.sub3,
-                                     is_iframe=steps_element.is_iframe))
+                                     is_iframe=steps_element.is_iframe,
+                                     prompt=steps_element.prompt or f'查找元素：{steps_element.name}'))
         return element_model
 
     def __socket_send(self, data_model, func_name: str, is_open=False) -> None:

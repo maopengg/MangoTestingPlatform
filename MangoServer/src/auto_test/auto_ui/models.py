@@ -48,6 +48,7 @@ class PageElement(models.Model):
     sub2 = models.SmallIntegerField(verbose_name="下标2", null=True)
     sub3 = models.SmallIntegerField(verbose_name="下标3", null=True)
     is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)
+    prompt = models.TextField(verbose_name="AI元素定位提示词", null=True)
 
     class Meta:
         db_table = 'page_element'

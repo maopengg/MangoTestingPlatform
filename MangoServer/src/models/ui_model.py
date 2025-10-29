@@ -44,6 +44,7 @@ class ElementListModel(BaseModel):
     loc: str
     sub: int | None = None
     is_iframe: int | None
+    prompt: str | None = None
 
 
 class ElementModel(BaseModel):

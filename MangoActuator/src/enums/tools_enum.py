@@ -185,10 +185,14 @@ class CacheKeyEnum(BaseEnum):
     WIN_PATH = 'win_path'
     WIN_TITLE = 'win_title'
 
+    AGENT = 'agent'
+
     @classmethod
     def obj(cls):
         from mangotools.enums import CacheValueTypeEnum
-        return {'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
-                'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
-                'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,
-                'web_default': CacheValueTypeEnum.BOOL, }
+        return {
+            'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
+            'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
+            'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,
+            'web_default': CacheValueTypeEnum.BOOL,
+        }
