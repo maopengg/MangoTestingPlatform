@@ -185,6 +185,7 @@ class CacheKeyEnum(BaseEnum):
     WIN_PATH = 'win_path'
     WIN_TITLE = 'win_title'
 
+    IS_AGENT = 'is_agent'
     AGENT = 'agent'
 
     @classmethod
@@ -195,4 +196,5 @@ class CacheKeyEnum(BaseEnum):
             'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
             'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,
             'web_default': CacheValueTypeEnum.BOOL,
+            'is_agent': CacheValueTypeEnum.BOOL,
         }
