@@ -13,6 +13,7 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    fixed: 'left',
     width: 250,
   },
   {
@@ -28,6 +29,7 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+    width: 300,
   },
   {
     title: '下标-1',
@@ -76,12 +78,20 @@ export const tableColumns = useTableColumn([
     width: 80,
   },
   {
+    title: 'AI定位提示词',
+    key: 'prompt',
+    dataIndex: 'prompt',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '等待时间(秒)',
     key: 'sleep',
     dataIndex: 'sleep',
+    fixed: 'right',
     width: 120,
   },
-
   {
     title: '操作',
     key: 'actions',
@@ -228,6 +238,17 @@ export const formItems: FormItem[] = reactive([
         Message.error(`${this.label}请输入正整数！`)
         return false
       }
+      return true
+    },
+  },
+  {
+    label: 'AI提示词',
+    key: 'prompt',
+    value: ref(''),
+    type: 'input',
+    required: false,
+    placeholder: '请输入AI辅助定位，用于查找元素的提示词',
+    validator: function () {
       return true
     },
   },

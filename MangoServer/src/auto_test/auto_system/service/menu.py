@@ -235,7 +235,7 @@ def ad_routes():
                 {
                     "parentPath": "/system",
                     "menuUrl": "/system/user-logs/index",
-                    "menuName": "登录日志",
+                    "menuName": "操作日志",
                     "badge": "13",
                 }
             ],
@@ -249,7 +249,7 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/help",
-                    "menuUrl": "http://118.196.24.189:8002/",
+                    "menuUrl": "http://43.142.161.61:8002/",
                     "menuName": "帮助文档",
                 },
                 {

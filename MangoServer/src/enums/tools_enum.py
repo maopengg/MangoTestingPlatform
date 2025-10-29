@@ -82,27 +82,16 @@ class EnvironmentEnum(BaseEnum):
         return {0: "测试环境", 1: "预发环境", 2: "生产环境", 3: "开发环境", 4: "验收环境", 5: "仿真环境"}
 
 
-class AutoTestTypeEnum(BaseEnum):
-    """自动测试类型"""
-    UI = 0
-    API = 1
-    PERF = 2
-    OTHER = 3
-
-    @classmethod
-    def obj(cls):
-        return {0: "前端", 1: "接口", 2: "性能", 3: "其他"}
-
-
 class TestCaseTypeEnum(BaseEnum):
     """用例类型"""
     UI = 0
     API = 1
     PYTEST = 2
+    OTHER = 3
 
     @classmethod
     def obj(cls):
-        return {0: "界面自动化", 1: "接口自动化", 2: "单元自动化"}
+        return {0: "界面自动化", 1: "接口自动化", 2: "单元自动化", 3: "其他自动化"}
 
 
 class CaseLevelEnum(BaseEnum):

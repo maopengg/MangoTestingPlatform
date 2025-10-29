@@ -17,6 +17,7 @@ from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
 from src.tools.decorator.retry import ensure_db_connection
 from src.tools.log_collector import log
+from django.db.utils import Error, InterfaceError, OperationalError
 
 
 class ConsumerThread:
@@ -30,7 +31,7 @@ class ConsumerThread:
     def stop(self):
         self.running = False
 
-    @ensure_db_connection(True)
+    @ensure_db_connection(True, max_retries=100)
     def consumer(self):
         reset_tims = time.time()
         while self.running:
@@ -40,7 +41,6 @@ class ConsumerThread:
                 retry__lt=self.retry_frequency + 1,
                 type__in=[TestCaseTypeEnum.API.value, ]
             ).first()
-
             if test_suite_details:
                 test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
                 try:
@@ -83,7 +83,7 @@ class ConsumerThread:
             log.system.debug(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
             if retry > max_retry:
-                self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
+                self.consumer_error(test_suite, test_suite_details, error)
                 return
             else:
                 self.send_case(test_suite, test_suite_details, case_model, retry, max_retry)
@@ -145,9 +145,10 @@ class ConsumerThread:
         test_suite_details.save()
 
     @ensure_db_connection()
-    def consumer_error(self, test_suite, test_suite_details, error, trace):
+    def consumer_error(self, test_suite, test_suite_details, error):
         test_suite.status = TaskEnum.FAIL.value
         test_suite.save()
         test_suite_details.status = TaskEnum.FAIL.value
-        test_suite_details.error_message = f'测试{TestCaseTypeEnum.get_value(test_suite_details.type)}类型：，异常类型：{error}，报错内容：{trace}'
+        test_suite_details.error_message = f'测试{TestCaseTypeEnum.get_value(test_suite_details.type)}类型：，异常类型：{error}'
         test_suite.save()
+        log.system.debug(f'报错信息-321：{traceback.format_exc()}')

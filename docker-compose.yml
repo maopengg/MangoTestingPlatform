@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0.40-debian
@@ -36,7 +34,6 @@ services:
     volumes:
       - /mango_data/minio:/data
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     command: server /data --console-address ":${MINIO_CONSOLE_PORT}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${MINIO_API_PORT}/minio/health/live"]
@@ -58,7 +55,6 @@ services:
       - "8000:8000"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     depends_on:
       db:
         condition: service_healthy
@@ -82,7 +78,6 @@ services:
       - "8001:80"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     networks: [app_network]
 
   mango_actuator:
@@ -94,7 +89,6 @@ services:
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     depends_on:
       mango_server:
         condition: service_started

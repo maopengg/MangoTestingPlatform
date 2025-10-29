@@ -8,6 +8,7 @@ from urllib.parse import urljoin
 import requests
 from requests import Response
 
+from src.enums.system_enum import ClientTypeEnum
 from src.models.socket_model import ResponseModel
 from src.tools.decorator.request_log import request_log
 from src.tools.set_config import SetConfig
@@ -16,6 +17,8 @@ from src.tools.set_config import SetConfig
 class HttpBase:
     headers = {
         'Authorization': '',
+        'Source-Type': str(ClientTypeEnum.ACTUATOR.value),
+
     }
 
     @classmethod

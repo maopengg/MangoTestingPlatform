@@ -20,6 +20,7 @@ urlpatterns = [
     path("info/type", ApiInfoViews.as_view({'put': 'put_api_info_type'})),
     path("info/copy", ApiInfoViews.as_view({'post': 'copy_api_info'})),
     path("info/import/api", ApiInfoViews.as_view({'post': 'import_api'})),
+    path("upload/api", ApiInfoViews.as_view({'post': 'post_upload_api'})),
     #
     path("case", ApiCaseCRUD.as_view()),
     path("case/test", ApiCaseViews.as_view({'get': 'api_test_case'})),
@@ -33,7 +34,8 @@ urlpatterns = [
     path("case/detailed/refresh", ApiCaseDetailedViews.as_view({'put': 'put_refresh_api_info'})),
     #
     path("case/detailed/parameter", ApiCaseDetailedParameterCRUD.as_view()),
-    path("case/detailed/parameter/test/jsonpath", ApiCaseDetailedParameterViews.as_view({'post': 'post_test_jsonpath'})),
+    path("case/detailed/parameter/test/jsonpath",
+         ApiCaseDetailedParameterViews.as_view({'post': 'post_test_jsonpath'})),
     #
     path("public", ApiPublicCRUD.as_view()),
     path("public/status", ApiPublicViews.as_view({'put': 'put_status'})),

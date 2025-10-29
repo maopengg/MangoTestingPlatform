@@ -128,7 +128,7 @@
       </a-col>
     </a-row>
 
-    <a-card class="test-details" body-style="padding: 0 20px 20px 20px">
+    <a-card class="test-details" :body-style="{ padding: '0 20px 20px 20px' }">
       <template #title>
         <icon-unordered-list />
         <span>测试套用例列表</span>
@@ -137,20 +137,20 @@
         <template #extra>
           <a-space>
             <a-button type="primary" size="small" :loading="caseRunning" @click="doCaseStatus(null)"
-              >全部</a-button
-            >
+              >全部
+            </a-button>
             <a-button status="danger" size="small" :loading="caseRunning" @click="doCaseStatus(0)"
-              >只看失败</a-button
-            >
+              >只看失败
+            </a-button>
             <a-button status="success" size="small" :loading="caseRunning" @click="doCaseStatus(1)"
-              >只看成功</a-button
-            >
+              >只看成功
+            </a-button>
             <a-button status="warning" size="small" :loading="caseRunning" @click="doCaseStatus(3)"
-              >只看进行中</a-button
-            >
+              >只看进行中
+            </a-button>
             <a-button status="normal" size="small" :loading="caseRunning" @click="doCaseStatus(2)"
-              >只看待开始</a-button
-            >
+              >只看待开始
+            </a-button>
           </a-space>
         </template>
         <a-tab-pane
@@ -167,6 +167,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
+                  <span v-if="item?.error_message">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -237,6 +238,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
+                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -313,6 +315,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
+                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -349,6 +352,9 @@
                     </template>
                     <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
                       <span>{{ formatDateTime(record.stop) }}</span>
+                    </template>
+                    <template v-else-if="itemRow.key === 'error_message'" #cell="{ record }">
+                      <span>{{ record?.statusDetails?.message }}</span>
                     </template>
                     <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
                       <a-space>
@@ -400,7 +406,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { usePageData } from '@/store/page-data'
   import {
     getSystemTestSuiteDetails,
@@ -431,8 +437,12 @@
     summary: {},
     selectedCase: {},
     caseStatus: null,
+    caseType: null,
   })
   const caseRunning = ref(false)
+  // 添加轮询相关的响应式变量
+  const pollingTimer = ref(null)
+  const isPolling = ref(false)
 
   const summaryCards = computed(() => [
     {
@@ -466,6 +476,7 @@
       class: 'error',
     },
   ])
+
   function formatDateTime(timestamp) {
     if (!timestamp) return ''
     const date = new Date(timestamp)
@@ -478,6 +489,7 @@
 
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
+
   const showDetails = (record: any) => {
     data.selectedCase = record
     drawerVisible.value = true
@@ -533,9 +545,44 @@
     getSystemTestSuiteDetailsSummary(pageData.record.id)
       .then((res) => {
         data.summary = res.data
-        doRefresh(null)
+        doRefresh(data.caseType)
+
+        // 检查是否有正在进行的测试
+        const hasInProgress = res.data.stay_begin_count > 0 || res.data.proceed_count > 0
+
+        // 如果有正在进行的测试且未启动轮询，则启动轮询
+        if (hasInProgress && !isPolling.value) {
+          isPolling.value = true
+          startPolling()
+        }
+        // 如果没有正在进行的测试但已启动轮询，则停止轮询
+        else if (!hasInProgress && isPolling.value) {
+          stopPolling()
+        }
       })
       .catch(console.log)
+  }
+
+  // 启动轮询
+  function startPolling() {
+    // 先清除可能存在的定时器
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+    }
+
+    // 设置5秒轮询
+    pollingTimer.value = setInterval(() => {
+      doRefreshSummary()
+    }, 5000)
+  }
+
+  // 停止轮询
+  function stopPolling() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+      isPolling.value = false
+    }
   }
 
   function onRetry(_id: any) {
@@ -548,15 +595,21 @@
         getSystemTestSuiteDetailsRetry(_id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh(data.caseStatus)
+            doRefreshSummary()
           })
           .catch(console.log)
       },
     })
   }
 
+  // 在组件卸载时清理定时器
   onMounted(() => {
     doRefreshSummary()
+  })
+
+  // 添加 onUnmounted 钩子来清理定时器
+  onUnmounted(() => {
+    stopPolling()
   })
 </script>
 <style lang="less" scoped>
@@ -814,6 +867,7 @@
   .report-card {
     margin-bottom: 12px;
   }
+
   .custom-header {
     display: flex;
     align-items: center;

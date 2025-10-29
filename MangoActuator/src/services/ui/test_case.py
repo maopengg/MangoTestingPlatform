@@ -25,8 +25,8 @@ from src.tools import project_dir
 from src.tools.decorator import async_error_handle, async_memory
 from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
-from src.tools.set_config import SetConfig
 from src.tools.send_global_msg import send_global_msg
+from src.tools.set_config import SetConfig
 
 
 class TestCase:
@@ -38,6 +38,8 @@ class TestCase:
         self.test_data = ObtainTestData()
         self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot())
+        if SetConfig.get_is_agent():
+            self.base_data = self.base_data.set_agent(SetConfig.get_is_agent(), SetConfig.get_agent())
         self._is_page_init = True
         self.case_result = UiCaseResultModel(
             id=self.case_model.id,
@@ -82,7 +84,7 @@ class TestCase:
                 self._is_page_init = False
                 page_steps_result_model = await page_steps.steps_main()
                 self.set_page_steps(page_steps_result_model)
-                if page_steps_result_model.status == StatusEnum.FAIL.value and page_steps.is_condition:
+                if page_steps_result_model.status == StatusEnum.FAIL.value:
                     break
             except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
@@ -94,9 +96,9 @@ class TestCase:
             except Exception as error:
                 from mangotools.mangos import Mango
                 from src.settings.settings import SETTINGS
+                log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 Mango.s(self.case_main, error, traceback.format_exc(), SetConfig.get_username(),
                         version=SETTINGS.get('version'))
-                log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')
                 break

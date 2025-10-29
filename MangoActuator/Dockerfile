@@ -2,28 +2,28 @@ ARG EXECUTOR_TYPE
 
 FROM python:3.10-slim-bullseye AS pytest
 WORKDIR /app
-RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r pytest_requirements.txt -r dynamic_requirements.txt
 COPY . .
 
 FROM mcr.microsoft.com/playwright/python:v1.43.0 AS pytest_web
 WORKDIR /app
-RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt -r pytest_requirements.txt
 COPY . .
 
 FROM mcr.microsoft.com/playwright/python:v1.43.0 AS web_ui
 WORKDIR /app
-RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 COPY linux_requirements.txt dynamic_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt
 COPY . .
 
 FROM mcr.microsoft.com/playwright/python:v1.43.0 AS android_ui
 WORKDIR /app
-RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 COPY linux_requirements.txt dynamic_requirements.txt android_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt -r android_requirements.txt
 COPY . .

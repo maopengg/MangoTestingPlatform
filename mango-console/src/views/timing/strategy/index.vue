@@ -70,8 +70,8 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   size="mini"
                   status="danger"
@@ -165,19 +165,21 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此定时策略？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteSystemTime(data.id)
+        deleteSystemTime(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

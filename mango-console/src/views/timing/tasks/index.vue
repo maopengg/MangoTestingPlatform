@@ -110,11 +110,11 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onTrigger(record)"
-                  >触发</a-button
-                >
+                  >触发
+                </a-button>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
-                  >添加用例</a-button
-                >
+                  >添加用例
+                </a-button>
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
@@ -124,8 +124,8 @@
                         type="text"
                         class="custom-mini-btn"
                         @click="onUpdate(record)"
-                        >编辑</a-button
-                      >
+                        >编辑
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -302,19 +302,21 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此定时任务？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteSystemTasks(data.id)
+        deleteSystemTasks(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

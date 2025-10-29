@@ -5,8 +5,8 @@
         <template #extra>
           <a-space>
             <a-button size="small" status="success" :loading="caseRunning" @click="onCaseRun"
-              >执行</a-button
-            >
+              >执行
+            </a-button>
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -20,15 +20,7 @@
           <a-space direction="vertical" style="width: 25%">
             <span>用例ID：{{ pageData.record.id }}</span>
             <span>用例名称：{{ pageData.record.name }}</span>
-            <span
-              >测试结果：{{
-                pageData.record.status === 1
-                  ? '通过'
-                  : pageData.record.status === 0
-                  ? '失败'
-                  : '未测试'
-              }}</span
-            >
+            <span>测试结果：{{ enumStore.task_status[pageData.record.status].title }}</span>
           </a-space>
           <a-space direction="vertical" style="width: 50%">
             <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
@@ -45,8 +37,8 @@
                 <a-space>
                   <div>
                     <a-button size="small" type="primary" @click="addSynchronous"
-                      >全部同步</a-button
-                    >
+                      >全部同步
+                    </a-button>
                   </div>
                   <div>
                     <a-button size="small" type="primary" @click="addData">增加步骤</a-button>
@@ -180,8 +172,8 @@
                                 type="text"
                                 class="custom-mini-btn"
                                 @click="onUpdate1(record)"
-                                >编辑</a-button
-                              >
+                                >编辑
+                              </a-button>
                             </a-doption>
                             <a-doption>
                               <a-button
@@ -214,6 +206,7 @@
                       >
                         <span>sql语句</span>
                         <a-input
+                          :key="`posterior-sql-${index}`"
                           v-model="item.sql"
                           placeholder="请输入sql语句"
                           @blur="upDataCase"
@@ -234,67 +227,144 @@
           </div>
           <div class="right">
             <a-tabs default-active-key="1">
-              <a-tab-pane key="1" title="步骤数据">
-                <a-list :bordered="false">
-                  <template #header> {{ data.selectData?.page_step?.name }}</template>
+              <a-tab-pane key="1" title="预估步骤执行顺序">
+                <a-list :bordered="false" :split="false" class="step-execution-list">
+                  <template #header>
+                    <div class="step-header">{{ data.selectData?.page_step?.name }}</div>
+                  </template>
                   <a-list-item
                     v-for="item of data.selectData?.case_data"
                     :key="item.page_step_details_id"
-                    style="padding: 4px 20px"
+                    class="step-list-item"
                   >
-                    <div style="display: flex; flex-direction: column">
-                      <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
-                        <a-space style="width: 40%">
-                          <span v-if="item.page_step_details_name">元素名称：</span>
-                          <span v-if="item.page_step_details_name">{{
-                            item.page_step_details_name
+                    <div class="step-container">
+                      <!-- 步骤信息行 -->
+                      <div class="step-info-row">
+                        <div class="step-type">
+                          <span>步骤类型：{{ enumStore.element_ope[item.type]?.title }}</span>
+                        </div>
+                        <div v-if="item.ope_key">
+                          <span class="operation-label">执行方法：</span>
+                          <span class="operation-value">{{
+                            useSelectValue.findItemByValue(item.ope_key)?.label
                           }}</span>
-                        </a-space>
-                        <a-space style="width: 30%">
-                          <span v-if="item.type === 0">步骤：操作</span>
-                          <span v-if="item.type === 1">步骤：断言</span>
-                          <span v-if="item.type === 2">步骤：SQL</span>
-                          <span v-if="item.type === 3">步骤：条件判断</span>
-                          <span v-if="item.type === 4">步骤：自定义参数</span>
-                          <span v-if="item.type === 5">步骤：python代码</span>
-                        </a-space>
-                        <a-space style="width: 30%">
-                          <span v-if="item.type === 0"
-                            >操作：{{ getLabelByValue(data.ope, item.ope_key) }}</span
-                          >
-                          <span v-if="item.type === 1"
-                            >操作：{{ getLabelByValue(data.ass, item.ope_key) }}</span
-                          >
-                        </a-space>
+                        </div>
+                        <div class="step-element" v-if="item.page_step_details_name">
+                          <span class="element-label">元素名称：</span>
+                          <span class="element-value">{{ item.page_step_details_name }}</span>
+                        </div>
                       </div>
-                      <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
+
+                      <!-- 步骤详情数据 -->
+                      <div class="step-details">
+                        <!-- 条件判断值 -->
+                        <div v-if="item.condition_value" class="condition-input">
+                          <span class="input-label">条件判断值：</span>
+                          <a-textarea
+                            v-model="item.condition_value.expect"
+                            :auto-size="{ minRows: 1, maxRows: 5 }"
+                            class="custom-textarea"
+                            @blur="onUpdate"
+                          />
+                        </div>
                         <template
-                          v-for="key in Object.keys(item.page_step_details_data)"
-                          :key="key"
+                          v-for="(item1, idx) of item.page_step_details_data"
+                          :key="item1.id || `${item.page_step_details_id}-${idx}`"
                         >
-                          <template v-if="!['actual', 'locating'].includes(key)">
-                            <div style="display: flex; align-items: center; margin-bottom: 12px">
-                              <span
-                                style="
-                                  width: 120px;
-                                  flex-shrink: 0;
-                                  font-size: 14px;
-                                  color: #333;
-                                  font-weight: 500;
-                                "
-                              >
-                                {{ key + '：' }}
-                              </span>
+                          <!-- 操作类型 (type === 0) -->
+                          <template v-if="item.type === 0">
+                            <div v-if="item1.d" class="operation-input">
+                              <span class="input-label">{{ item1.n }}：</span>
                               <a-textarea
-                                v-model="item.page_step_details_data[key]"
+                                v-model="item1.v"
                                 :auto-size="{ minRows: 1, maxRows: 5 }"
-                                style="flex: 1; margin-left: 12px"
+                                class="custom-textarea"
                                 @blur="onUpdate"
                               />
                             </div>
                           </template>
+
+                          <!-- 断言类型 (type === 1) -->
+                          <template v-else-if="item.type === 1">
+                            <div v-if="item1.f !== 'actual'" class="assertion-input">
+                              <span class="input-label">{{ item1.n }}：</span>
+                              <a-textarea
+                                v-model="item1.v"
+                                :auto-size="{ minRows: 1, maxRows: 5 }"
+                                class="custom-textarea"
+                                @blur="onUpdate"
+                              />
+                            </div>
+                          </template>
+
+                          <!-- 自定义参数类型 (type === 3) -->
+                          <template v-else-if="item.type === 3">
+                            <div class="custom-param-input">
+                              <div class="param-row">
+                                <span class="input-label">key：</span>
+                                <a-textarea
+                                  v-model="item1.key"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                              <div class="param-row">
+                                <span class="input-label">value：</span>
+                                <a-textarea
+                                  v-model="item1.value"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                            </div>
+                          </template>
+
+                          <!-- SQL类型 (type === 2) -->
+                          <template v-else-if="item.type === 2">
+                            <div class="sql-input">
+                              <div class="sql-row">
+                                <span class="input-label">key_list：</span>
+                                <a-textarea
+                                  v-model="item1.key_list"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                              <div class="sql-row">
+                                <span class="input-label">sql：</span>
+                                <a-textarea
+                                  v-model="item1.sql"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea sql-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                            </div>
+                          </template>
+
+                          <!-- Python代码类型 (type === 5) -->
+                          <template v-else-if="item.type === 5">
+                            <div class="python-code">
+                              <CodeEditor
+                                v-model="item1.func"
+                                placeholder="请输入python代码"
+                                class="code-editor"
+                              />
+                              <a-button type="primary" class="save-btn" @click="onUpdate"
+                                >保存
+                              </a-button>
+                            </div>
+                          </template>
+
+                          <!-- 条件判断类型 (type === 4) -->
+                          <template v-else-if="item.type === 4">
+                            <!-- 条件判断暂无内容 -->
+                          </template>
                         </template>
-                      </a-space>
+                      </div>
                     </div>
                   </a-list-item>
                 </a-list>
@@ -388,7 +458,8 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
-  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+  import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import CodeEditor from '@/components/CodeEditor.vue'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -409,9 +480,8 @@
     actionTitle: '新增',
     uiType: '2',
     uiSonType: '11',
-    ass: [],
-    ope: [],
   })
+  const useSelectValue = useSelectValueStore()
 
   const caseRunning = ref(false)
 
@@ -485,9 +555,11 @@
         deleteUiCaseStepsDetailed(record.id, record.case.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }
@@ -573,6 +645,7 @@
       },
     })
   }
+
   function addSynchronous() {
     Modal.confirm({
       title: '提示',
@@ -634,6 +707,7 @@
   function select(record: any) {
     data.selectData = record
   }
+
   function onUpdate1(item: any) {
     data.actionTitle = '编辑'
     data.isAdd = false
@@ -656,6 +730,7 @@
       })
     })
   }
+
   function onUpdate() {
     putUiCaseStepsDetailed(
       {
@@ -686,35 +761,6 @@
     }
   }
 
-  function getLabelByValue(opeData: any, value: string): string {
-    const list = [...opeData]
-    for (const item of list) {
-      if (item.children) {
-        list.push(...item.children)
-      }
-    }
-    return list.find((item: any) => item.value === value)?.label
-  }
-
-  function getCacheDataKeyValue() {
-    getSystemCacheDataKeyValue('select_value')
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          if (item.value === 'web') {
-            data.ope.push(...item.children)
-          } else if (item.value === 'android') {
-            data.ope.push(...item.children)
-          } else if (item.value === 'ass_android') {
-            data.ass.push(...item.children)
-          } else if (item.value === 'ass_web') {
-            data.ass.push(...item.children)
-          } else if (item.value.includes('断言')) {
-            data.ass.push(item)
-          }
-        })
-      })
-      .catch(console.log)
-  }
   const onModifyStatus = async (newValue: any, id: number, key: string) => {
     let obj: any = {
       id: id,
@@ -743,7 +789,7 @@
     nextTick(async () => {
       doRefresh()
       onProductModuleName()
-      getCacheDataKeyValue()
+      useSelectValue.getSelectValue()
     })
   })
 </script>
@@ -764,13 +810,184 @@
     padding: 5px;
     box-sizing: border-box;
     display: flex;
+
     .left {
       padding: 5px;
       width: 50%;
     }
+
     .right {
       padding: 5px;
       width: 50%;
     }
+  }
+
+  /* 步骤执行列表样式 */
+  .step-execution-list {
+    .step-header {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1d2129;
+    }
+  }
+
+  /* 强制覆盖 Arco Design 组件的边框样式 */
+  .step-execution-list :deep(.arco-list-split .arco-list-header) {
+    border-bottom: none !important;
+  }
+
+  .step-execution-list :deep(.arco-list-split .arco-list-item) {
+    border-bottom: none !important;
+  }
+
+  /* 如果上面还不够，用更强的选择器 */
+  :deep(.arco-list.arco-list-split .arco-list-header) {
+    border-bottom: none !important;
+  }
+
+  :deep(.arco-list.arco-list-split .arco-list-item) {
+    border-bottom: none !important;
+  }
+
+  .step-list-item {
+    padding: 8px 8px !important;
+    border: 1px solid #e5e6eb !important;
+    border-radius: 8px !important;
+    margin-bottom: 5px !important;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #f7f8fa;
+      border-color: #c9cdd4;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .step-container {
+    width: 100%;
+  }
+
+  /* 步骤信息行 */
+  .step-info-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px;
+    background-color: #f2f3f5;
+    border-radius: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* 步骤类型标签 */
+  .step-type {
+    min-width: 120px;
+  }
+
+  .step-element {
+    display: flex;
+    align-items: center;
+    min-width: 120px;
+  }
+
+  .operation-label,
+  .element-label {
+    font-weight: 500;
+    color: #4e5969;
+    margin-right: 4px;
+  }
+
+  .operation-value,
+  .element-value {
+    color: #1d2129;
+    font-weight: 500;
+  }
+
+  /* 步骤详情区域 */
+  .step-details {
+    margin-top: 8px;
+  }
+
+  /* 输入框样式 */
+  .input-label {
+    display: inline-block;
+    min-width: 80px;
+    font-weight: 500;
+    color: #4e5969;
+    margin-right: 8px;
+  }
+
+  .custom-textarea {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  /* 条件判断输入 */
+  .condition-input {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: #fff7e6;
+    border-radius: 4px;
+  }
+
+  /* 操作输入 */
+  .operation-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  /* 断言输入 */
+  .assertion-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  /* 自定义参数输入 */
+  .custom-param-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .param-row {
+    display: flex;
+    align-items: center;
+  }
+
+  /* SQL输入 */
+  .sql-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sql-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .sql-textarea {
+    min-width: 300px;
+  }
+
+  /* Python代码编辑器 */
+  .python-code {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .code-editor {
+    height: 360px;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .save-btn {
+    align-self: flex-start;
   }
 </style>

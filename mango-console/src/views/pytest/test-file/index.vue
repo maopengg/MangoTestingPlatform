@@ -88,8 +88,8 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑</a-button
-              >
+                >编辑
+              </a-button>
               <a-button
                 size="mini"
                 status="danger"
@@ -180,25 +180,29 @@
     drawerVisible: false,
     codeText: '',
   })
+
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
     doRefresh()
   }
-  function onDelete(data: any) {
+
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deletePytestFile(data.id)
+        deletePytestFile(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }
@@ -277,6 +281,7 @@
       }
     })
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

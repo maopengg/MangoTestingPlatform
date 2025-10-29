@@ -40,10 +40,11 @@ class FlowData(BaseModel):
 
 
 class ElementListModel(BaseModel):
-    exp: int | None
-    loc: str | None
+    exp: int
+    loc: str
     sub: int | None = None
     is_iframe: int | None
+    prompt: str | None = None
 
 
 class ElementModel(BaseModel):
@@ -53,11 +54,9 @@ class ElementModel(BaseModel):
     elements: list[ElementListModel] = []
     sleep: int | None
     ope_key: str | None
-    ope_value: list[MethodModel] | None
-    key_list: list | None = None
-    sql: str | None = None
-    key: str | None = None
-    value: str | None = None
+    ope_value: list[MethodModel] | None = None
+    sql_execute: list[dict] | None = None
+    custom: list[dict] | None = None
     condition_value: dict | None = None
     func: str | None = None
 
@@ -84,8 +83,9 @@ class StepsDataModel(BaseModel):
     type: int
     ope_key: str | None = None
     page_step_details_id: int
-    page_step_details_data: dict
+    page_step_details_data: list = []
     page_step_details_name: str | None = None
+    condition_value: dict | None = None
 
 
 class PageStepsModel(BaseModel):

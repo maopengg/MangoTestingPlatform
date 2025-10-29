@@ -12,6 +12,6 @@ from src.tools.decorator.retry import ensure_db_connection
 class APIConsumer:
 
     @classmethod
-    @ensure_db_connection()
+    @ensure_db_connection(max_retries=1)
     def a_recording_api(cls, data: dict):
         Recording.write(RecordingApiModel(**data))

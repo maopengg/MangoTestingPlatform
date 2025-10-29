@@ -47,6 +47,8 @@ class TestCase:
         case.status = TaskEnum.PROCEED.value
         case.save()
         case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
+        if not case_steps_detailed:
+            raise UiError(*ERROR_MSG_0042)
         case_model = CaseModel(
             send_user=send_case_user if send_case_user else self.send_user,
             test_suite_details=test_suite_details,
@@ -113,6 +115,9 @@ class TestCase:
                     case_steps_detailed: UiCaseStepsDetailed | None = None,
                     switch_step_open_url=False) -> PageStepsModel:
         page_steps = PageSteps.objects.get(id=page_steps_id)
+        page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id)
+        if not page_steps_element:
+            raise UiError(*ERROR_MSG_0041)
         page_steps.status = TaskEnum.PROCEED.value
         page_steps.save()
         page_steps_model = PageStepsModel(
@@ -129,7 +134,7 @@ class TestCase:
             flow_data=build_decision_tree(page_steps.flow_data)
         )
         if case_steps_detailed:
-            page_steps_model.case_steps_details = case_steps_detailed.id
+            page_steps_model.case_steps_id = case_steps_detailed.id
             case_steps_detailed.status = TaskEnum.PROCEED.value
             case_steps_detailed.save()
             page_steps_model.switch_step_open_url = bool(case_steps_detailed.switch_step_open_url)
@@ -138,7 +143,6 @@ class TestCase:
                 page_steps_model.case_data = [StepsDataModel(**i) for i in case_steps_detailed.case_data]
             except ValidationError:
                 raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
-        page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id)
         page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model
 
@@ -155,10 +159,8 @@ class TestCase:
                 sleep=steps_element.ele_name.sleep if steps_element.ele_name else None,
                 ope_key=steps_element.ope_key,
                 ope_value=steps_element.ope_value,
-                key_list=steps_element.key_list,
-                sql=steps_element.sql,
-                key=steps_element.key,
-                value=steps_element.value,
+                sql_execute=steps_element.sql_execute,
+                custom=steps_element.custom,
                 condition_value=steps_element.condition_value,
                 func=steps_element.func
             )
@@ -167,21 +169,24 @@ class TestCase:
                     exp=steps_element.ele_name.exp,
                     loc=steps_element.ele_name.loc,
                     sub=steps_element.ele_name.sub,
-                    is_iframe=steps_element.ele_name.is_iframe
+                    is_iframe=steps_element.ele_name.is_iframe,
+                    prompt=steps_element.ele_name.prompt or f'查找元素：{steps_element.ele_name.name}'
                 ))
                 if steps_element.ele_name.loc2 is not None and steps_element.ele_name.exp2 is not None:
                     element_model.elements.append(ElementListModel(
                         exp=steps_element.ele_name.exp2,
                         loc=steps_element.ele_name.loc2,
                         sub=steps_element.ele_name.sub2,
-                        is_iframe=steps_element.ele_name.is_iframe
+                        is_iframe=steps_element.ele_name.is_iframe,
+                        prompt=steps_element.ele_name.prompt or f'查找元素：{steps_element.ele_name.name}'
                     ))
                 if steps_element.ele_name.loc3 is not None and steps_element.ele_name.exp3 is not None:
                     element_model.elements.append(ElementListModel(
                         exp=steps_element.ele_name.exp3,
                         loc=steps_element.ele_name.loc3,
                         sub=steps_element.ele_name.sub3,
-                        is_iframe=steps_element.ele_name.is_iframe
+                        is_iframe=steps_element.ele_name.is_iframe,
+                        prompt=steps_element.ele_name.prompt or f'查找元素：{steps_element.ele_name.name}'
                     ))
         else:
             element_model = ElementModel(
@@ -194,15 +199,18 @@ class TestCase:
             )
             element_model.elements.append(
                 ElementListModel(exp=steps_element.exp, loc=steps_element.loc, sub=steps_element.sub,
-                                 is_iframe=steps_element.is_iframe))
+                                 is_iframe=steps_element.is_iframe,
+                                 prompt=steps_element.prompt or f'查找元素：{steps_element.name}'))
             if steps_element.loc2 is not None and steps_element.exp2 is not None:
                 element_model.elements.append(
                     ElementListModel(exp=steps_element.exp2, loc=steps_element.loc2, sub=steps_element.sub2,
-                                     is_iframe=steps_element.is_iframe))
+                                     is_iframe=steps_element.is_iframe,
+                                     prompt=steps_element.prompt or f'查找元素：{steps_element.name}'))
             if steps_element.loc3 is not None and steps_element.exp3 is not None:
                 element_model.elements.append(
                     ElementListModel(exp=steps_element.exp3, loc=steps_element.loc3, sub=steps_element.sub3,
-                                     is_iframe=steps_element.is_iframe))
+                                     is_iframe=steps_element.is_iframe,
+                                     prompt=steps_element.prompt or f'查找元素：{steps_element.name}'))
         return element_model
 
     def __socket_send(self, data_model, func_name: str, is_open=False) -> None:

@@ -21,8 +21,8 @@
             >
               <template v-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   size="mini"
                   status="danger"
@@ -103,9 +103,9 @@
         deleteUserModule(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+        doRefresh()
       },
     })
   }

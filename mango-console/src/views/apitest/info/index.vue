@@ -11,7 +11,7 @@
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh()" />
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
@@ -75,20 +75,20 @@
         <template #extra>
           <a-space v-if="data.apiType === '0'">
             <a-button size="small" type="primary" @click="onBatchUpload">录制</a-button>
-            <!--            <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>-->
+            <a-button size="small" type="primary" @click="showBatchImportModal">批量导入</a-button>
             <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
-              >批量执行</a-button
-            >
+              >批量执行
+            </a-button>
             <a-button size="small" status="warning" @click="setCase('设为调试')">设为调试</a-button>
-            <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
           </a-space>
           <a-space v-else-if="data.apiType === '1'">
             <a-button size="small" type="primary" @click="onAdd(0)">新增</a-button>
             <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>
             <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
-              >批量执行</a-button
-            >
-            <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+              >批量执行
+            </a-button>
+            <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
           </a-space>
         </template>
         <a-tab-pane key="0" title="批量生成" />
@@ -181,11 +181,11 @@
                 class="custom-mini-btn"
                 :loading="caseRunning"
                 @click="onRunCase(record)"
-                >执行</a-button
-              >
+                >执行
+              </a-button>
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
-                >详情</a-button
-              >
+                >详情
+              </a-button>
               <a-dropdown trigger="hover">
                 <a-button size="mini" type="text">···</a-button>
                 <template #content>
@@ -204,8 +204,8 @@
                       type="text"
                       class="custom-mini-btn"
                       @click="apiInfoCopy(record)"
-                      >复制</a-button
-                    >
+                      >复制
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button
@@ -228,6 +228,39 @@
       <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
+
+  <a-modal
+    v-model:visible="batchImportVisible"
+    title="批量导入"
+    @ok="handleBatchImportOk"
+    @cancel="handleBatchImportCancel"
+  >
+    <a-space direction="vertical" style="width: 100%">
+      <a-button type="primary" @click="onDownload">下载模板</a-button>
+      <a-space>
+        <a-switch
+          v-model="debugInterface"
+          :checked-value="1"
+          :unchecked-value="0"
+          checked-text="调试接口"
+          unchecked-text="批量生成"
+        />
+        <span>tips:如果需要直接上传到调试接口Tab里面，请点击开关打开</span></a-space
+      >
+      <div style="margin-top: 10px">
+        <a-button type="primary" @click="fileInputRef?.click()">选择文件</a-button>
+        <span v-if="selectedFile" style="margin-left: 10px">已选择: {{ selectedFile.name }}</span>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".xlsx,.xls"
+          style="display: none"
+          @change="handleFileSelect"
+        />
+      </div>
+    </a-space>
+  </a-modal>
+
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
@@ -305,6 +338,7 @@
     postApiCopyInfo,
     postApiImportUrl,
     postApiInfo,
+    postApiUploadApi,
     putApiInfo,
     putApiPutApiInfoType,
   } from '@/api/apitest/info'
@@ -312,6 +346,7 @@
   import useUserStore from '@/store/modules/user'
   import { strJson } from '@/utils/tools'
   import { getSystemSocketNewBrowser } from '@/api/system/socket_api'
+  import { baseURL } from '@/api/axios.config'
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -340,6 +375,10 @@
   const caseRunning = ref(false)
 
   const visible = ref(false)
+  const batchImportVisible = ref(false)
+  const debugInterface = ref(0) // 调试接口开关，默认为0
+  const fileInputRef = ref<HTMLInputElement | null>(null)
+  const selectedFile = ref<File | null>(null) // 存储选中的文件
 
   const handleOk = () => {
     visible.value = false
@@ -426,11 +465,77 @@
     data.formItem = formItems
   }
 
-  function onBatchUpload() {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境并进行录制')
+  function onDownload() {
+    const file_name = '接口批量上传模版.xlsx'
+    const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
+    let aLink = document.createElement('a')
+    aLink.href = file_path
+    aLink.download = file_name
+    Message.loading('文件下载中~')
+    document.body.appendChild(aLink)
+    aLink.click()
+    document.body.removeChild(aLink)
+  }
+
+  // 新增的批量导入弹窗功能
+  function showBatchImportModal() {
+    batchImportVisible.value = true
+    // 重置文件和开关状态
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+    debugInterface.value = 0
+    selectedFile.value = null
+  }
+
+  function handleBatchImportOk() {
+    // 点击确定时才进行上传
+    if (!selectedFile.value) {
+      Message.warning('请先选择要上传的文件')
       return
     }
+
+    postApiUploadApi(debugInterface.value, selectedFile.value)
+      .then((res) => {
+        Message.success(res.msg)
+        batchImportVisible.value = false
+        doRefresh()
+        // 重置状态
+        if (fileInputRef.value) {
+          fileInputRef.value.value = ''
+        }
+        selectedFile.value = null
+        debugInterface.value = 0
+      })
+      .catch((error) => {
+        console.log(error)
+        Message.error('上传失败')
+      })
+  }
+
+  function handleBatchImportCancel() {
+    batchImportVisible.value = false
+    // 重置状态
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+    selectedFile.value = null
+    debugInterface.value = 0
+  }
+
+  function handleFileSelect(event: Event) {
+    const target = event.target as HTMLInputElement
+    const files = target.files
+    if (files && files.length > 0) {
+      selectedFile.value = files[0]
+      // 仅选择文件，不立即上传
+      Message.info(`已选择文件: ${selectedFile.value.name}`)
+    } else {
+      selectedFile.value = null
+    }
+  }
+
+  function onBatchUpload() {
     Modal.confirm({
       title: '注意事项',
       content:
@@ -447,41 +552,31 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
+    const batch = record === null
+    if (batch) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要删除的数据')
+        return
+      }
+    }
     Modal.confirm({
       title: '提示',
       content: '是否要删除此接口？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiInfo(data.id)
+        deleteApiInfo(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
-      },
-    })
-  }
-
-  function onDeleteItems() {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要删除的数据')
-      return
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '确定要删除此数据吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteApiInfo(selectedRowKeys.value)
-          .then((res) => {
-            Message.success(res.msg)
-            selectedRowKeys.value = []
+          .finally(() => {
             doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
-          .catch(console.log)
       },
     })
   }
@@ -559,7 +654,12 @@
     caseRunning.value = true
     try {
       const res = await getApiCaseInfoRun(param.id, userStore.selected_environment)
-      Message.success(res.msg)
+      if (res.data.error_msg) {
+        Message.error(res.data.error_msg)
+      } else {
+        Message.success(res.msg)
+      }
+
       doRefresh()
     } catch (e) {
     } finally {

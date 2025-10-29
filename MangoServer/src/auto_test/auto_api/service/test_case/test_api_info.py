@@ -3,12 +3,12 @@
 # @Description: api用例执行类
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
-import traceback
 
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.enums.tools_enum import StatusEnum, TaskEnum
 from src.models.api_model import ResponseModel
+from src.tools.log_collector import log
 
 
 class TestApiInfo:
@@ -23,21 +23,18 @@ class TestApiInfo:
         try:
             api_info.status = TaskEnum.PROCEED.value
             api_info.save()
-            response = self.test_setup.api_request(api_info.id, self.test_env, is_merge_headers=True, is_error=True)
+            response = self.test_setup.api_request(api_info.id, self.test_env, is_merge_headers=True)
             api_info.status = TaskEnum.SUCCESS.value
             api_info.save()
             return self.save_api_info(api_info, response)
         except Exception as error:
-            traceback.print_exc()
+            log.api.debug(f'API执行报错：{error}')
             api_info.status = TaskEnum.FAIL.value
             api_info.save()
             raise error
 
     def save_api_info(self, api_info: ApiInfo, response: ResponseModel):
-        if response.code == 300 or response.code == 200:
-            api_info.status = StatusEnum.SUCCESS.value
-        else:
-            api_info.status = StatusEnum.FAIL.value
+        api_info.status = api_info.status = StatusEnum.SUCCESS.value if response.code == 300 or response.code == 200 else StatusEnum.FAIL.value
         res = response.model_dump()
         res['name'] = api_info.name
         res['cache_all'] = self.test_setup.test_data.get_all()

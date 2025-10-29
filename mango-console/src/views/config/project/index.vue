@@ -173,21 +173,23 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此项目？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUserDepartmentList(data.id)
+        deleteUserDepartmentList(record.id)
           .then((res) => {
             Message.success(res.msg)
+          })
+          .catch(console.log)
+          .finally(() => {
             doRefresh()
             project.getProject()
             project.projectProductName()
           })
-          .catch(console.log)
       },
     })
   }

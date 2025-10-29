@@ -4,19 +4,21 @@
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 import asyncio
+import json
 import traceback
 from datetime import datetime
 from functools import partial
 from urllib import parse
 from urllib.parse import urljoin
-from mangoautomation.models import ElementModel
 
 from mangoautomation.enums import ElementOperationEnum
 from mangoautomation.exceptions import MangoAutomationError
+from mangoautomation.models import ElementModel
 from mangoautomation.models import ElementResultModel
 from mangoautomation.uidrive import AsyncElement
 from mangoautomation.uidrive import BaseData, DriverObject
 from mangotools.exceptions import MangoToolsError
+from mangotools.models import MethodModel
 from playwright._impl._errors import TargetClosedError
 from playwright.async_api import Request, Route, Error
 
@@ -92,81 +94,93 @@ class PageSteps:
 
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0
-        self.page_steps_model.error_retry = self.page_steps_model.error_retry + 1 if self.page_steps_model.error_retry else 1
+        self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
-            error_retry += 1
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
                 await self._steps_retry()
+            error_retry += 1
             try:
-                if self.page_steps_model.flow_data is None:
+                if not self.page_steps_model.flow_data:
                     for element_list in self.page_steps_model.element_list:
-                        element_result = await self._ope_steps(element_list[0])
+                        element_result = await self._ope_steps(element_list, [])
                         if element_result.status == StatusEnum.FAIL.value:
                             break
                 else:
                     element_result = await self.test_flow_data(self.page_steps_model.flow_data)
                     if element_result and element_result.status == StatusEnum.FAIL.value:
-                        break
+                        continue
             except (MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'步骤发生未知失败-1，类型：{error}，详情：{traceback.format_exc()}')
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = error.msg
-                break
             except Exception as error:
-                log.debug(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
+                log.error(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = str(error)
-                break
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
         self.page_step_result_model.test_object = self.test_object
         self.page_step_result_model.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return self.page_step_result_model
 
-    async def test_flow_data(self, flow_data: dict):
-        def search_element_model(_id) -> ElementModel:
+    async def test_flow_data(self, flow_data: dict) -> ElementResultModel:
+        async def search_element_model(_id) -> ElementModel:
             element_model = next((i for i in self.page_steps_model.element_list if i.id == _id), None)
             if not element_model:
-                traceback.print_exc()
                 raise UiError(*ERROR_MSG_0001)
+            element_model = await self._update_element_data(_id, element_model)
             return element_model
 
-        element_model = search_element_model(flow_data.get('id'))
+        element_model = await search_element_model(flow_data.get('id'))
         element_list_model = []
         if element_model.type == ElementOperationEnum.CONDITION:
             for i in flow_data.get('children', []):
-                element_list_model.append(search_element_model(i.get('id')))
+                element_list_model.append(await search_element_model(i.get('id')))
 
-        element_data = await self._get_element_data(flow_data.get('id'))
-        element_result = await self._ope_steps(element_model, element_data,
-                                               element_list_model if element_list_model else None)
+        element_result = await self._ope_steps(element_model, element_list_model)
         if element_result.status == StatusEnum.FAIL.value:
             return element_result
         if element_result.next_node_id:
             for f in flow_data.get('children', []):
                 if f['id'] == element_result.next_node_id:
-                    await self.test_flow_data(f)
+                    return await self.test_flow_data(f)
+            raise UiError(**ERROR_MSG_0005)
         elif len(flow_data.get('children')) == 1:
-            await self.test_flow_data(flow_data.get('children')[0])
+            return await self.test_flow_data(flow_data.get('children')[0])
         elif len(flow_data.get('children')) > 1:
             log.error(f'这里不应该有多个：{self.page_steps_model.model_dump_json()}--{flow_data}')
+            raise UiError(**ERROR_MSG_0005)
         else:
             return element_result
 
-    async def _get_element_data(self, _id):
-        element_data = None
-        if not self.is_step:
-            for _element_data in self.page_steps_model.case_data:
-                if _element_data.page_step_details_id == _id:
-                    element_data = _element_data.page_step_details_data
-                    break
-            if element_data is None:
-                raise UiError(*ERROR_MSG_0025)
-            return element_data
+    async def _update_element_data(self, _id, element_model) -> ElementModel:
+        if self.is_step:
+            return element_model
 
-    async def _ope_steps(self, element_model, element_data=None, element_list_model=None) -> ElementResultModel:
+        element_data = next(
+            (elem
+             for elem in self.page_steps_model.case_data
+             if elem.page_step_details_id == _id),
+            None
+        )
+        if element_data is None:
+            raise UiError(*ERROR_MSG_0025)
+        match element_model.type:
+            case ElementOperationEnum.OPE | ElementOperationEnum.ASS | ElementOperationEnum.CONDITION:
+                element_model.ope_value = [MethodModel(**i) for i in element_data.page_step_details_data]
+            case ElementOperationEnum.SQL:
+                element_model.sql_execute = element_data.page_step_details_data
+            case ElementOperationEnum.CUSTOM:
+                element_model.custom = element_data.page_step_details_data
+            case _:
+                element_model.func = element_data.page_step_details_data[0]['func']
+        if element_data.condition_value:
+            element_model.condition_value = element_data.condition_value
+        return element_model
+
+    async def _ope_steps(self, element_model, element_list_model) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
         if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
@@ -177,7 +191,7 @@ class PageSteps:
         else:
             await element_ope.open_device()
         self._device_opened = True
-        element_result = await element_ope.element_main(element_model, element_data, element_list_model)
+        element_result = await element_ope.element_main(element_model, element_list_model)
         send_global_msg(f'UI-结束执行元素或操作：{element_model.name or element_model.ope_key}')
         self.page_step_result_model.status = element_result.status
         self.page_step_result_model.error_message = element_result.error_message
@@ -259,7 +273,7 @@ class PageSteps:
         self.test_object = self.base_data.url
         send_global_msg(f'UI-开始初始化安卓设备：{self.base_data.package_name}')
         if self.driver_object.android is None:
-            self.driver_object.set_android(SetConfig.get_and_equipment())
+            self.driver_object.set_android(SetConfig.get_and_equipment())  # type: ignore
         if self.base_data.android is None:
             self.base_data.android = self.driver_object.android.new_android()
 
@@ -297,9 +311,9 @@ class PageSteps:
             client=ClientEnum.WEB.value,
             url=parsed_url.path,
             method=MethodEnum.get_key(request.method),
-            params=None if params == {} else params,
-            data=None if data == {} else data,
-            json=None if json_data == {} else json_data
+            params=None if params == {} else json.dumps(params, ensure_ascii=False),
+            data=None if data == {} else json.dumps(data, ensure_ascii=False),
+            json=None if json_data == {} else json.dumps(json_data, ensure_ascii=False)
         )
         await socket_conn.async_send(
             msg="发送录制接口",

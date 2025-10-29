@@ -39,7 +39,7 @@
               <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
             <div>
-              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+              <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
             </div>
           </a-space>
         </template>
@@ -86,8 +86,8 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   size="mini"
                   status="danger"
@@ -205,40 +205,31 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
+    const batch = record === null
+    if (batch) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要删除的数据')
+        return
+      }
+    }
     Modal.confirm({
       title: '提示',
       content: '是否要删除此参数？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiHeaders(data.id)
+        deleteApiHeaders(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
-      },
-    })
-  }
-
-  function onDeleteItems() {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要删除的数据')
-      return
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '确定要删除此数据吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteApiHeaders(selectedRowKeys.value)
-          .then((res) => {
-            Message.success(res.msg)
+          .finally(() => {
             doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
-          .catch(console.log)
       },
     })
   }

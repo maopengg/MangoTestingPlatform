@@ -124,10 +124,10 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '默认使用',
+    title: '接口管理默认使用',
     key: 'status',
     dataIndex: 'status',
-    width: 120,
+    width: 200,
   },
   {
     title: '操作',

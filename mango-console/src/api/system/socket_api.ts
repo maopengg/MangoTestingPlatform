@@ -39,6 +39,18 @@ export function getSystemSocketPutOpenStatus(username: string, status: number) {
   })
 }
 
+export function getSystemSocketPutDebug(username: string, status: number) {
+  return put({
+    url: '/system/socket/put/user/debug',
+    data: () => {
+      return {
+        username: username,
+        status: status,
+      }
+    },
+  })
+}
+
 export function getSystemSocketNewBrowser(id: number | null, is_recording: number) {
   return get({
     url: '/system/socket/new/browser',

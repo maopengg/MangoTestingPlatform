@@ -28,7 +28,7 @@ class PytestSocketEnum(Enum):
 class ToolsSocketEnum(Enum):
     """ 工具类接口 """
     SET_OPERATION_OPTIONS = 't_set_operation_options'
-    SET_USER_OPEN_STATUS_OPTIONS = 't_set_actuator_open_state'
+    SET_USERINFO = 't_set_userinfo'
     GET_TASK = 't_get_task'  #
 
 

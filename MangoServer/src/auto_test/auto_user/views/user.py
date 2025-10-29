@@ -141,7 +141,7 @@ class LoginViews(ViewSet):
     def login(self, request: Request):
         username = request.data.get('username')
         password = request.data.get('password')
-        source_type = int(request.data.get('type'))
+        source_type = int(request.headers.get('Source-Type', 1))
         try:
             user_info = User.objects.get(username=username, password=password)
         except User.DoesNotExist:
@@ -157,12 +157,6 @@ class LoginViews(ViewSet):
         ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
         user_info.ip = ip
         user_info.save()
-        from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
-        UserLogsCRUD().inside_post({
-            "user": user_info.id,
-            "source_type": source_type,
-            "ip": ip
-        })
         return ResponseData.success(RESPONSE_MSG_0043, {
             "name": user_info.name,
             "userName": user_info.username,

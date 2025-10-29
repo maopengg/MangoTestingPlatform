@@ -6,6 +6,7 @@
 import json
 from urllib.parse import urlparse, parse_qs
 
+import pandas as pd
 from curlparser import parse
 from django.forms import model_to_dict
 from rest_framework import serializers
@@ -15,6 +16,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.test_case.test_api_info import TestApiInfo
+from src.auto_test.auto_system.models import ProjectProduct, ProductModule
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.api_enum import MethodEnum
@@ -148,3 +150,46 @@ class ApiInfoViews(ViewSet):
             result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
         data = ApiInfoCRUD.inside_post(result)
         return ResponseData.success(RESPONSE_MSG_0069, data=data)
+
+    @action(methods=['POST'], detail=False)
+    @error_response('ui')
+    def post_upload_api(self, request):
+        uploaded_file = request.FILES['file']
+        df = pd.read_excel(uploaded_file, keep_default_na=False)
+        df = df.where(df.notna(), None)
+        df = df.replace('', None)
+        df['*请求方法'] = df['*请求方法'].map(MethodEnum.reversal_obj())
+
+        df = df.rename(columns={
+            '*产品名称': 'project_product',
+            '*模块名称': 'module',
+            '*接口名称': 'name',
+            '*请求方法': 'method',
+            '*url': 'url',
+            '请求头': 'headers',
+            '参数': 'params',
+            '表单': 'data',
+            'JSON': 'json',
+            '文件': 'file',
+        })
+        for index, row in df.iterrows():
+            record = row.to_dict()
+            record['type'] = request.data.get("type")
+            try:
+                record['project_product'] = ProjectProduct.objects.get(name=record['project_product']).id
+                record['module'] = ProductModule.objects.get(name=record['module'],
+                                                             project_product=record['project_product']).id
+            except (
+            ProductModule.MultipleObjectsReturned, ProjectProduct.MultipleObjectsReturned, ProductModule.DoesNotExist,
+            ProjectProduct.DoesNotExist):
+                return ResponseData.fail(RESPONSE_MSG_0138)
+            for i in ['headers', 'params', 'data', 'json', 'file']:
+                if record[i] == '' or record[i] is None:
+                    record[i] = None
+                elif i == 'file':
+                    try:
+                        record[i] = json.loads(record[i])
+                    except json.decoder.JSONDecodeError:
+                        return ResponseData.fail(RESPONSE_MSG_0137)
+            ApiInfoCRUD.inside_post(record)
+        return ResponseData.success(RESPONSE_MSG_0083)

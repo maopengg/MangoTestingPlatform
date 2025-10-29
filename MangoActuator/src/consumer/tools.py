@@ -4,6 +4,7 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 from src.models.system_model import CmdTestModel
+from src.settings import settings
 from src.tools.command.command import run_command
 from src.tools.decorator.convert_args import convert_args
 from src.tools.decorator.error_handle import async_error_handle
@@ -28,5 +29,12 @@ class Tools:
     @convert_args(dict)
     async def t_set_open_status(cls, data):
         log.debug(f'设置open状态：{data.get("is_open")}')
-        from src.settings import settings
         settings.IS_OPEN = data.get('is_open')
+
+    @classmethod
+    @async_error_handle()
+    @convert_args(dict)
+    async def t_set_debug(cls, data):
+        log.debug(f'设置debug状态：{data.get("debug")}')
+        settings.IS_DEBUG = data.get('debug')
+        log.set_debug(settings.IS_DEBUG)

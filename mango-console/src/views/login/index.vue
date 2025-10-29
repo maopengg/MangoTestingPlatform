@@ -39,10 +39,10 @@
       </div>
       <a-button @click="register1" class="btns">注册</a-button>
       <a-button class="btns signup" @click="Message.warning('请联系管理修改密码！')"
-        >忘记密码</a-button
-      >
+        >忘记密码
+      </a-button>
     </div>
-    <div class="bottom">芒果测试平台 Copyright © 芒果味 2022-至今 Version：{{ version }} </div>
+    <div class="bottom">芒果测试平台 Copyright © 芒果味 2022-至今 Version：{{ version }}</div>
     <!--    不支持修改平台名称和作者署名！-->
   </div>
 </template>
@@ -79,7 +79,6 @@
       data: {
         username: baseData.username,
         password: md5(baseData.password),
-        type: 1,
       },
     })
       .then(({ data }: Response) => {
@@ -156,6 +155,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+
     .bottom {
       position: fixed;
       left: 0;

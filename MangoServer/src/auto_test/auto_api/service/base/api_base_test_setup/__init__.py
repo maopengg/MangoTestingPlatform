@@ -24,7 +24,6 @@ class APIBaseTestSetup(PublicBase):
                     test_env: int,
                     request_model: RequestModel = None,
                     is_merge_headers=False,
-                    is_error=False,
                     ) -> ResponseModel:
         api_info = ApiInfo.objects.get(id=api_info_id)
         log.api.debug(f'执行API接口-1->ID:{api_info_id},name:{api_info.name}')
@@ -34,7 +33,7 @@ class APIBaseTestSetup(PublicBase):
         if request_model is None:
             if is_merge_headers and api_info.headers:
                 headers = self.init_headers(api_info.project_product_id)
-                self.update_dict_case_insensitive(headers, api_info.headers)
+                self.update_dict_case_insensitive(headers, api_info.headers if api_info.headers else {})
             elif api_info.headers is not None:
                 headers = api_info.headers
             else:
@@ -59,8 +58,7 @@ class APIBaseTestSetup(PublicBase):
                 self.analytic_func(api_info.posterior_func)(self, response)
             return response
         except (MangoServerError, MangoToolsError) as error:
-            if is_error:
-                raise error
+            response.error_msg = error.msg
             return response
 
     def request_data_clean(self, request_data_model: RequestModel) -> RequestModel:
@@ -103,7 +101,10 @@ class APIBaseTestSetup(PublicBase):
         if response.json is None:
             raise ApiError(*ERROR_MSG_0023)
         for i in posterior_json_path:
-            self.test_data.set_cache(i.get('key'), self.test_data.get_json_path_value(response.json, i.get('value')))
+            key: str = i.get('key')
+            if key and key.startswith('$.'):
+                key = self.test_data.get_json_path_value(response.json, i.get('key'))
+            self.test_data.set_cache(key, self.test_data.get_json_path_value(response.json, i.get('value')))
 
     def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):
         log.api.debug(f'执行API接口-3->后置正则:{posterior_re}')

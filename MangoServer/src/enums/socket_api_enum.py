@@ -18,6 +18,7 @@ class UiSocketEnum(Enum):
     MangoPytest = 't_mango_pytest'
     RECORDING = 'u_recording'
     SET_OPEN_STATUS = 't_set_open_status'
+    SET_DEBUG = 't_set_debug'
 
 
 class ToolsSocketEnum(Enum):

@@ -52,7 +52,7 @@
               <a-button type="primary" size="small" @click="onAdd">新增</a-button>
             </div>
             <div>
-              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+              <a-button status="danger" size="small" @click="onDelete(null)">批量删除</a-button>
             </div>
           </a-space>
         </template>
@@ -96,11 +96,11 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑</a-button
-              >
+                >编辑
+              </a-button>
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                >添加元素</a-button
-              >
+                >添加元素
+              </a-button>
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
@@ -110,8 +110,8 @@
                       size="mini"
                       class="custom-mini-btn"
                       @click="onPageCopy(record.id)"
-                      >复制</a-button
-                    >
+                      >复制
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button
@@ -232,40 +232,31 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
+    const batch = record === null
+    if (batch) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要删除的数据')
+        return
+      }
+    }
     Modal.confirm({
       title: '提示',
       content: '是否要删除此页面？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUiPage(data.id)
+        deleteUiPage(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
-      },
-    })
-  }
-
-  function onDeleteItems() {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要删除的数据')
-      return
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '确定要删除此数据吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteUiPage(selectedRowKeys.value)
-          .then((res) => {
-            Message.success(res.msg)
+          .finally(() => {
             doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
-          .catch(console.log)
       },
     })
   }

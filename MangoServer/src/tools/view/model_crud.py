@@ -12,7 +12,8 @@ from mangotools.mangos import get, post, put, delete, inside_post, inside_put, i
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
-
+from ...auto_test.auto_system.models import ProjectProduct
+from ...auto_test.auto_pytest.models import PytestProduct
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
@@ -26,14 +27,12 @@ class ModelCRUD(GenericAPIView):
     not_matching_str = [
         'pageSize', 'page',
         'type', 'status',
-        'module', 'project_product', 'case_people', 'test_object', 'project', 'user',
+        'module', 'project_product', 'case_people', 'test_object', 'project', 'user'
     ]
     pytest_model = ['PytestAct', 'PytestCase', 'PytestTools', 'PytestTestFile']
 
     @error_response('system')
     def get(self, request: Request):
-        from src.auto_test.auto_system.models import ProjectProduct
-        from src.auto_test.auto_pytest.models import PytestProduct
         return get(self,
                    request=request,
                    project_product=ProjectProduct,
@@ -95,7 +94,7 @@ class ModelCRUD(GenericAPIView):
                           data=data,
                           log=log,
                           tools_error=ToolsError,
-                          m_0116=RESPONSE_MSG_0116
+                          m_0116=RESPONSE_MSG_0117
                           )
 
     @classmethod

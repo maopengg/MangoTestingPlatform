@@ -43,7 +43,8 @@
                 allow-clear
                 placeholder="请输入请求头，字符串形式"
                 @blur="upDate('headers', data.headers)"
-            /></a-space>
+              />
+            </a-space>
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
             <a-space direction="vertical" fill>
@@ -238,7 +239,7 @@
             </a-space>
           </a-tab-pane>
           <a-tab-pane key="8" title="响应结果">
-            <a-tabs default-active-key="1">
+            <a-tabs default-active-key="3">
               <a-tab-pane key="1" title="基础信息">
                 <a-space direction="vertical">
                   <a-space>
@@ -248,6 +249,10 @@
                   <a-space>
                     <a-tag color="orange">响应时间</a-tag>
                     <span>{{ data.api_info.result_data?.time }}</span>
+                  </a-space>
+                  <a-space v-if="data.api_info?.result_data?.error_msg">
+                    <a-tag color="orange">失败提示</a-tag>
+                    <span>{{ data.api_info.result_data?.error_msg }}</span>
                   </a-space>
                   <a-space>
                     <a-tag color="orange">缓存数据</a-tag>
@@ -420,8 +425,11 @@
     getApiCaseInfoRun(pageData.record.id, userStore.selected_environment)
       .then((res) => {
         data.caseResult = res.data
-        Message.success(res.msg)
-
+        if (res.data.error_msg) {
+          Message.error(res.data.error_msg)
+        } else {
+          Message.success(res.msg)
+        }
         doRefresh()
       })
       .catch(console.log)
@@ -454,6 +462,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   .form-tip {
     color: #ff7d00;
     font-size: 12px;

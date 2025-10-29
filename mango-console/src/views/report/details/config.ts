@@ -118,7 +118,7 @@ export const pytestColumns: any = reactive([
     dataIndex: 'name',
     key: 'name',
     align: 'left',
-    width: 250,
+    width: 500,
   },
   {
     title: '开始时间',
@@ -136,7 +136,15 @@ export const pytestColumns: any = reactive([
     title: '测试结果',
     key: 'status',
     dataIndex: 'status',
-    width: 70,
+    width: 120,
+  },
+  {
+    title: '失败提示',
+    dataIndex: 'error_message',
+    key: 'error_message',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',

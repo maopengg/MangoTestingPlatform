@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
 
-VERSION = '5.7.74'
+VERSION = '5.8.3'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'src.middleware.log_collector.LogMiddleWare',
+    'src.middleware.user_logs.UserLogsMiddleWare',
     # 'src.middleware.operation_log.OperationLogMiddleware',
     'src.middleware.is_delete.IsDeleteMiddleWare',
 ]

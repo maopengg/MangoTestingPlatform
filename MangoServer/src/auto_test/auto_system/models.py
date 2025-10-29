@@ -31,7 +31,7 @@ class ProjectProduct(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.PROTECT)
-    name = models.CharField(verbose_name="产品名称", max_length=64)
+    name = models.CharField(verbose_name="产品名称", max_length=64, unique=True)
     ui_client_type = models.SmallIntegerField(verbose_name="UI客户端类型", default=0)
     api_client_type = models.SmallIntegerField(verbose_name="API客户端类型", default=0)
 
@@ -280,6 +280,10 @@ class TestSuiteDetails(models.Model):
     result_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     retry = models.SmallIntegerField(verbose_name="重试次数")
     push_time = models.DateTimeField(verbose_name="修改时间", null=True)
+    case_sum = models.SmallIntegerField(verbose_name="用例数", default=0)
+    success = models.SmallIntegerField(verbose_name="成功数", default=0)
+    fail = models.SmallIntegerField(verbose_name="失败数", default=0)
+    warning = models.SmallIntegerField(verbose_name="警告数", default=0)
 
     class Meta:
         db_table = 'test_suite_details'

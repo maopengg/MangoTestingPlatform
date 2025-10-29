@@ -86,16 +86,16 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   status="danger"
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
                   @click="onDelete(record)"
-                  >删除</a-button
-                >
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -211,19 +211,21 @@
   //   })
   // }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此用户？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUserInfo(data.id)
+        deleteUserInfo(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

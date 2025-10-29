@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="登录日志"
+        title="操作日志"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
@@ -31,6 +31,22 @@
                   v-model="item.value"
                   :field-names="fieldNames"
                   :options="enumStore.cline_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'status_code'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="[
+                    { key: '等于200', title: '等于200' },
+                    { key: '不等于200', title: '不等于200' },
+                  ]"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -73,8 +89,10 @@
             :key="item.key"
             :align="item.align"
             :data-index="item.key"
+            :ellipsis="item.ellipsis"
             :fixed="item.fixed"
             :title="item.title"
+            :tooltip="item.tooltip"
             :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
@@ -121,6 +139,12 @@
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (value?.status_code && value?.status_code === '不等于200') {
+      value['status_code__in'] = ['200']
+      delete value['status_code']
+    } else if (value?.status_code) {
+      value['status_code'] = '200'
+    }
     getUserLogs(value)
       .then((res) => {
         table.handleSuccess(res)

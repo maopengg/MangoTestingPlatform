@@ -19,9 +19,8 @@
             :header="
               item.name
                 ? item.name
-                : item.type
-                ? useSelectValue.getSelectLabel(item.ope_key)
-                : useSelectValue.getSelectLabel(item.ope_key)
+                : useSelectValue.getSelectLabel(item.ope_key) ||
+                  enumStore.element_ope[item.type]?.title
             "
             :style="customStyle"
             :key="item.id"

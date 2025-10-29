@@ -48,6 +48,7 @@ class PageElement(models.Model):
     sub2 = models.SmallIntegerField(verbose_name="下标2", null=True)
     sub3 = models.SmallIntegerField(verbose_name="下标3", null=True)
     is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)
+    prompt = models.TextField(verbose_name="AI元素定位提示词", null=True)
 
     class Meta:
         db_table = 'page_element'
@@ -97,9 +98,11 @@ class PageStepsDetailed(models.Model):
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ope_value = models.JSONField(verbose_name="对该元素的操作类型", null=True)
     # sql
+    sql_execute = models.JSONField(verbose_name="sql步骤", null=True)
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
     sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
     # 自定义
+    custom = models.JSONField(verbose_name="自定义缓存步骤", null=True)
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
     value = models.CharField(verbose_name="value", max_length=1048, null=True)
     # 条件

@@ -45,8 +45,8 @@
                   type="text"
                   class="custom-mini-btn"
                   @click="onDownload(record)"
-                  >下载</a-button
-                >
+                  >下载
+                </a-button>
                 <a-button
                   size="mini"
                   status="danger"
@@ -96,9 +96,11 @@
         deleteUserFile(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

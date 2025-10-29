@@ -157,7 +157,7 @@ export const tableColumns = useTableColumn([
     width: 300,
   },
   {
-    title: '步骤顺序',
+    title: '预估步骤顺序',
     key: 'run_flow',
     dataIndex: 'run_flow',
     align: 'left',
