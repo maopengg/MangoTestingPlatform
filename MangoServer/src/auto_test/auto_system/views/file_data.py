@@ -14,6 +14,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import FileData
+from src.auto_test.auto_system.service.save_minio import SaveMinio
+from src.settings import IS_MINIO
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
 from src.tools.view.model_crud import ModelCRUD
@@ -51,19 +53,27 @@ class FileDataCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
-        try:
-            if self.model.objects.filter(name=request.data.get('name')):
-                return ResponseData.fail(RESPONSE_MSG_0022)
-            serializer = self.serializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
-            else:
-                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
-                return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
-        except (
-        urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError, minio.error.S3Error):
-            return ResponseData.fail(RESPONSE_MSG_0026)
+        if request.data.get('screenshot', False) and IS_MINIO:
+            uploaded_file = request.FILES.get('failed_screenshot')
+            if not uploaded_file:
+                return ResponseData.fail(RESPONSE_MSG_0030, )
+            return ResponseData.success(RESPONSE_MSG_0002, SaveMinio().main(uploaded_file))
+        else:
+            try:
+                if self.model.objects.filter(name=request.data.get('name')):
+                    return ResponseData.fail(RESPONSE_MSG_0022)
+                serializer = self.serializer(data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+                else:
+                    log.system.error(
+                        f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
+                    return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
+            except (
+                    urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError,
+                    minio.error.S3Error):
+                return ResponseData.fail(RESPONSE_MSG_0026)
 
 
 class FileDataViews(ViewSet):

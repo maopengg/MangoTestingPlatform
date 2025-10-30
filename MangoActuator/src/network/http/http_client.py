@@ -12,7 +12,6 @@ from urllib.parse import urljoin
 import requests
 from mangotools.data_processor import EncryptionTool
 from requests.exceptions import MissingSchema
-
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError, ERROR_MSG_0002, ERROR_MSG_0003, ERROR_MSG_0004
 from src.network.http.http_base import HttpBase
@@ -48,7 +47,8 @@ class HttpClientApi(HttpBase):
     def upload_file(cls, file_path: str, file_name: str):
         data = {
             'type': ClientTypeEnum.ACTUATOR.value,
-            'name': file_name
+            'name': file_name,
+            'screenshot': True
         }
         files = [
             ('failed_screenshot', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
@@ -57,11 +57,10 @@ class HttpClientApi(HttpBase):
             headers = copy.copy(cls.headers)
             response = cls.post('/system/file', headers=headers, data=data, files=files)
             if response.code == 200:
-                return True
+                return response.data
             else:
                 log.error(f'上传文件报错，请管理员检查，响应结果：{response.model_dump()}')
                 cls.login(SetConfig.get_username(), SetConfig.get_password())  # type: ignore
-        return False
 
     @classmethod
     def login(cls, username: str = None, password=None):
