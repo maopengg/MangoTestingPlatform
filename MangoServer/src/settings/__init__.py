@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
 
-VERSION = '5.8.3'
+VERSION = '5.8.4'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
