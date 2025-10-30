@@ -3,22 +3,33 @@
 # @Description: 
 # @Time   : 2023-12-12 18:20
 # @Author : 毛鹏
+# import json
 
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.views.api_info import ApiInfoCRUD
 from src.auto_test.auto_system.models import ProductModule
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import TaskEnum
+# from src.enums.api_enum import MethodEnum
 from src.models.api_model import RecordingApiModel
 from src.models.socket_model import SocketDataModel
 
 
 class Recording:
+    # with open(r"D:\code\MangoTestingPlatform\MangoServer\tests\test.json", 'r', encoding='utf-8') as f:
+    #     data = json.load(f)
 
     @classmethod
     def write(cls, data: RecordingApiModel):
         from src.auto_test.auto_system.consumers import ChatConsumer
         username = data.username
+        # try:
+        #     for i in cls.data:
+        #         if (data.url in i.get('url') or i.get('url') in data.url) and MethodEnum.get_value(
+        #                 data.method).lower() == i.get('method'):
+        #             data.name = i.get('name')
+        # except Exception as e:
+        #     print(e)
         try:
             module = ProductModule.objects.filter(project_product_id=data.project_product).first()
             if ApiInfo.objects.filter(url=data.url,

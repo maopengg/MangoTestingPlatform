@@ -667,7 +667,7 @@
     }
   }
 
-  function onConcurrency() {
+  const onConcurrency = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择测试环境')
       return
@@ -677,13 +677,16 @@
       return
     }
     Message.loading('开始批量执行中~')
-    getApiCaseInfoRun(selectedRowKeys.value, userStore.selected_environment)
-      .then((res) => {
-        data.caseResult = res.data
-        Message.success('批量执行全部完成啦~')
-        doRefresh()
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getApiCaseInfoRun(selectedRowKeys.value, userStore.selected_environment)
+      Message.success(res.msg)
+      doRefresh()
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function apiInfoCopy(record: any) {
