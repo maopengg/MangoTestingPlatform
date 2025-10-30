@@ -60,7 +60,7 @@
                   <p
                     ><span class="label">失败截图</span>：
                     <a-image
-                      :src="getImageUrl(minioURL +'/'+ item.picture_path"
+                      :src="minioURL + '/' + item.picture_path"
                       width="100"
                       style="margin-right: 67px; vertical-align: top"
                     />
@@ -156,12 +156,6 @@
     border: 'none',
     overflow: 'hidden',
   })
-
-  function getImageUrl(picturePath: any) {
-    if (!picturePath) return ''
-
-    return new URL(picturePath, this.minioURL + '/').toString()
-  }
 
   onMounted(() => {})
 </script>
