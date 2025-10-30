@@ -63,6 +63,7 @@ pyinstaller `
 --hidden-import email.mime.text `
 --hidden-import email.mime.base `
 --hidden-import email.mime.multipart `
+--hidden-import openai `
 --clean `
 --noconfirm `
 main.py
