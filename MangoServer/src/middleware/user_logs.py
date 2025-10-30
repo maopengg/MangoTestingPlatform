@@ -71,12 +71,15 @@ class UserLogsMiddleWare(MiddlewareMixin):
             if 'password' in data:
                 data['password'] = None
         else:
-            data = dict(response.renderer_context['request'].query_params)
-            for key, value in data.items():
-                if isinstance(value, list) and len(value) == 1:
-                    data[key] = value[0]
-                else:
-                    data[key] = value
+            if hasattr(response, 'renderer_context'):
+                data = dict(response.renderer_context['request'].query_params)
+                for key, value in data.items():
+                    if isinstance(value, list) and len(value) == 1:
+                        data[key] = value[0]
+                    else:
+                        data[key] = value
+            else:
+                data = {}
         return data
 
     def _capture_response_data(self, response: Response) -> str:

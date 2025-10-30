@@ -49,7 +49,7 @@ class HttpClientApi(HttpBase):
             'type': ClientTypeEnum.ACTUATOR.value,
             'name': file_name,
             'screenshot': True,
-            'file_path': file_path,
+            'file_path': os.path.join('mango-file', 'failed_screenshot', file_name),
         }
         files = [
             ('failed_screenshot', (file_name, open(file_path, 'rb'), 'application/octet-stream'))

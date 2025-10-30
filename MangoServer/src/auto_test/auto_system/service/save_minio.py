@@ -12,9 +12,11 @@ from minio.commonconfig import Filter
 from minio.lifecycleconfig import LifecycleConfig, Rule, Expiration
 
 from src.exceptions import MangoServerError, ERROR_MSG_0004
-from src.settings import MINIO_STORAGE_ENDPOINT, MINIO_STORAGE_ACCESS_KEY, \
-    MINIO_STORAGE_SECRET_KEY
-from src.settings import MINIO_STORAGE_MEDIA_BUCKET_NAME
+from src.settings import IS_MINIO
+
+if IS_MINIO:
+    from src.settings import MINIO_STORAGE_ENDPOINT, MINIO_STORAGE_ACCESS_KEY, \
+        MINIO_STORAGE_SECRET_KEY, MINIO_STORAGE_MEDIA_BUCKET_NAME
 
 
 class SaveMinio:
