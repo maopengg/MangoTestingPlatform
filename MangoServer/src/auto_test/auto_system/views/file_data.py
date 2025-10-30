@@ -65,7 +65,8 @@ class FileDataCRUD(ModelCRUD):
                 serializer = self.serializer(data=request.data)
                 if serializer.is_valid():
                     serializer.save()
-                    return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+                    return ResponseData.success(RESPONSE_MSG_0002,
+                                                request.data.get('file_path', None) or serializer.data)
                 else:
                     log.system.error(
                         f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')

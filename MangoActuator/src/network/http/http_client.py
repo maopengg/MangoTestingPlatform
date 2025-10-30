@@ -48,7 +48,8 @@ class HttpClientApi(HttpBase):
         data = {
             'type': ClientTypeEnum.ACTUATOR.value,
             'name': file_name,
-            'screenshot': True
+            'screenshot': True,
+            'file_path': file_path,
         }
         files = [
             ('failed_screenshot', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
