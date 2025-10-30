@@ -529,10 +529,10 @@
     try {
       const res = await postApiCaseBatchRun(selectedRowKeys.value, userStore.selected_environment)
       Message.success(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 

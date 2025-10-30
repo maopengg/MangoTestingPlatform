@@ -659,11 +659,10 @@
       } else {
         Message.success(res.msg)
       }
-
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
@@ -682,10 +681,10 @@
     try {
       const res = await getApiCaseInfoRun(selectedRowKeys.value, userStore.selected_environment)
       Message.success(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
