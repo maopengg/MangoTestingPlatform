@@ -47,6 +47,10 @@ class UserLogsMiddleWare(MiddlewareMixin):
                     user_id = User._default_manager.get(username=user_name).id
                 except User.DoesNotExist:
                     pass
+            try:
+                request_data = json.dumps(request_data, ensure_ascii=False)
+            except TypeError:
+                request_data = str(request_data)
             log_entry = {
                 "user": user_id,
                 "source_type": source_type,
@@ -54,7 +58,7 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 "url": request.path,
                 "method": request.method,
                 "status_code": response.status_code,
-                "request_data": json.dumps(request_data, ensure_ascii=False),
+                "request_data": request_data,
                 "response_data": response_content
             }
             self._save_user_logs_async(log_entry)
