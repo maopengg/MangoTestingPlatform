@@ -200,7 +200,7 @@ class PageSteps:
             if element_result.picture_name and element_result.picture_path:
                 log.debug(f'上传截图文件名称：{element_result.picture_name}，绝对路径：{element_result.picture_path}')
                 upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-                if upload is not None and self.page_step_result_model.error_message:
+                if upload is None and self.page_step_result_model.error_message:
                     self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
                 else:
                     element_result.picture_path = upload
