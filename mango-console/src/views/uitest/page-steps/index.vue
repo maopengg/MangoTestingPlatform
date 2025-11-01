@@ -402,10 +402,10 @@
     try {
       const res = await getUiStepsTest(param.id, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 

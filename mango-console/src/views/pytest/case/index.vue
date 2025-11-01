@@ -530,10 +530,10 @@
     try {
       const res = await getPytestCaseTest(param.id, userStore.selected_environment)
       Message.success(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
