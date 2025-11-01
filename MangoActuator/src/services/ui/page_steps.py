@@ -200,8 +200,10 @@ class PageSteps:
             if element_result.picture_name and element_result.picture_path:
                 log.debug(f'上传截图文件名称：{element_result.picture_name}，绝对路径：{element_result.picture_path}')
                 upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-                if not upload and self.page_step_result_model.error_message:
+                if upload is None and self.page_step_result_model.error_message:
                     self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
+                else:
+                    element_result.picture_path = upload
         return element_result
 
     async def _steps_retry(self):
@@ -311,9 +313,9 @@ class PageSteps:
             client=ClientEnum.WEB.value,
             url=parsed_url.path,
             method=MethodEnum.get_key(request.method),
-            params=None if params == {} else json.dumps(params, ensure_ascii=False),
-            data=None if data == {} else json.dumps(data, ensure_ascii=False),
-            json=None if json_data == {} else json.dumps(json_data, ensure_ascii=False)
+            params=None if params == {} or params is None else json.dumps(params, ensure_ascii=False),
+            data=None if data == {} or data is None else json.dumps(data, ensure_ascii=False),
+            json=None if json_data == {} or json_data is None else json.dumps(json_data, ensure_ascii=False)
         )
         await socket_conn.async_send(
             msg="发送录制接口",

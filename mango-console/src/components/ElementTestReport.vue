@@ -56,11 +56,11 @@
                 <p v-if="item.status === 0 && item?.video_path"
                   ><span class="label">视频路径</span>：{{ item.video_path }}</p
                 >
-                <div v-if="item.status === 0 && item?.picture_name">
+                <div v-if="item.status === 0 && item?.picture_path">
                   <p
                     ><span class="label">失败截图</span>：
                     <a-image
-                      :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
+                      :src="minioURL + '/' + item.picture_path"
                       width="100"
                       style="margin-right: 67px; vertical-align: top"
                     />
