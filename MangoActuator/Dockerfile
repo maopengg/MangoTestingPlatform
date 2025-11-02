@@ -1,5 +1,10 @@
 ARG EXECUTOR_TYPE
 
+RUN if [ -z "$EXECUTOR_TYPE" ]; then \
+        echo "错误: EXECUTOR_TYPE 未设置，请在 .env 文件中配置 EXECUTOR_TYPE" && \
+        exit 1; \
+    fi
+
 FROM python:3.10-slim-bullseye AS pytest
 WORKDIR /app
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
