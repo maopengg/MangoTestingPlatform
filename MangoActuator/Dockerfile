@@ -36,10 +36,9 @@ ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
 
 # 验证 EXECUTOR_TYPE 是否为有效值之一
 RUN case "$EXECUTOR_TYPE" in \
-        pytest|pytest_web|web_ui|android_ui) \
-            echo "使用执行器: $EXECUTOR_TYPE" ;; \
+        pytest|pytest_web|web_ui|android_ui) ;; \
         *) \
-            echo "错误: EXECUTOR_TYPE 必须是 pytest、pytest_web、web_ui 或 android_ui 之一，当前值为: $EXECUTOR_TYPE" && \
+            echo "EXECUTOR_TYPE的值在env文件中必填" && \
             exit 1 ;; \
     esac
 
