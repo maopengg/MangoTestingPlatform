@@ -1,4 +1,4 @@
-FROM node:18.20.5-alpine3.21 as build-stage
+FROM node:18.20.5-alpine3.21 AS build-stage
 WORKDIR /app
 COPY package*.json ./
 RUN npm config set registry https://mirrors.huaweicloud.com/repository/npm/
