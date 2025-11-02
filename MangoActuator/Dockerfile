@@ -35,12 +35,7 @@ ARG EXECUTOR_TYPE
 ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
 
 # 验证 EXECUTOR_TYPE 是否为有效值之一
-RUN case "$EXECUTOR_TYPE" in \
-        pytest|pytest_web|web_ui|android_ui) ;; \
-        *) \
-            echo "EXECUTOR_TYPE的值在env文件中必填" && \
-            exit 1 ;; \
-    esac
+RUN case "$EXECUTOR_TYPE" in pytest|pytest_web|web_ui|android_ui) ;; *) echo "EXECUTOR_TYPE的值在env文件中必填" && exit 1 ;; esac
 
 RUN echo "构建执行器：$EXECUTOR_TYPE"
 CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
