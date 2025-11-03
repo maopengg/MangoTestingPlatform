@@ -110,6 +110,9 @@ class TestSuiteDetailsViews(ViewSet):
         test_suite_details = self.model.objects.get(id=request.query_params.get('id'))
         test_suite_details.retry = 0
         test_suite_details.status = TaskEnum.STAY_BEGIN.value
+        test_suite_details.success = 0
+        test_suite_details.warning = 0
+        test_suite_details.fail = 0
         test_suite_details.save()
         return ResponseData.success(RESPONSE_MSG_0133)
 
