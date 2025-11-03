@@ -1198,10 +1198,10 @@
     try {
       const res = await getApiCaseRun(route.query.case_id, userStore.selected_environment, param)
       Message.success(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 

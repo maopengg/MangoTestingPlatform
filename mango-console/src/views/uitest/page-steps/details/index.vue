@@ -405,10 +405,10 @@
     try {
       const res = await getUiStepsTest(route.query.id, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefreshSteps(pageData.record.id)
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefreshSteps(pageData.record.id)
     }
   }
 

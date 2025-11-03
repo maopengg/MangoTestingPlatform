@@ -452,10 +452,10 @@
     try {
       const res = await getUiCaseRun(param, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
