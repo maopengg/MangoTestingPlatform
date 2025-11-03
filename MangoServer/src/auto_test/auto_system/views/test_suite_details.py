@@ -95,6 +95,9 @@ class TestSuiteDetailsViews(ViewSet):
         for i in test_suite_details:
             i.retry = 0
             i.status = TaskEnum.STAY_BEGIN.value
+            i.success = 0
+            i.warning = 0
+            i.fail = 0
             i.save()
         model = TestSuite.objects.get(id=request.query_params.get('test_suite_id'))
         model.status = TaskEnum.STAY_BEGIN.value
