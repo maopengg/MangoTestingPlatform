@@ -12,7 +12,7 @@ import sys
 class ProjectDir:
 
     def __init__(self):
-        self.folder_list = ['logs', 'cache', 'screenshot', 'upload', 'videos', 'download', 'allure', 'browser_cache']
+        self.folder_list = ['logs', 'cache', 'screenshot', 'upload', 'videos', 'download', 'allure', ]
         self._root_path = self.init_project_path()
         self.init_folder()
 
@@ -70,9 +70,6 @@ class ProjectDir:
         return os.path.join(self.root_path(), folder_name)
 
     def videos(self, folder_name='videos'):
-        return os.path.join(self.root_path(), folder_name)
-
-    def browser_cache(self, folder_name='browser_cache'):
         return os.path.join(self.root_path(), folder_name)
 
 

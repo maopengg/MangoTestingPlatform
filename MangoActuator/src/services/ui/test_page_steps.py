@@ -34,8 +34,9 @@ class TestPageSteps:
         self.project_product_id = project_product
         self.test_data = ObtainTestData()
         self.base_data = BaseData(self.test_data, log) \
-            .set_file_path(project_dir.download(), project_dir.screenshot()) \
-            .set_agent(True, SetConfig.get_agent())
+            .set_file_path(project_dir.download(), project_dir.screenshot())
+        if SetConfig.get_is_agent():
+            self.base_data = self.base_data.set_agent(SetConfig.get_is_agent(), SetConfig.get_agent())
 
         self.lock = asyncio.Lock()
 

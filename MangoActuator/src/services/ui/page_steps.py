@@ -250,7 +250,6 @@ class PageSteps:
                 web_h5=web_h5 if web_h5 and web_h5 != 'None' else None,
                 web_is_default=SetConfig.get_web_default(),  # type: ignore
                 videos_path=project_dir.videos(),
-                user_cache_path=project_dir.browser_cache()
             )
         if is_recording and host_list:
             self.driver_object.web.is_header_intercept = True
