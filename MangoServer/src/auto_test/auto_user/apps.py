@@ -71,4 +71,5 @@ class AutoUserConfig(AppConfig):
         text = requests.get('https://gitee.com/mao-peng/MangoTestingPlatform').text
         match = re.search(r'VERSION\s*=\s*([\d.]+)', text)
         if not (match and match.group(1) == VERSION):
-            raise Exception('当前版本与最新不一致，请执行git pull 升级到最新版本！')
+            raise Exception(
+                f'当前版本与最新不一致，请执行git pull 升级到最新版本！最新版本：{match.group(1)}，当前版本：{VERSION}')
