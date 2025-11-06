@@ -72,7 +72,7 @@
                   </a-tab-pane>
                   <a-tab-pane key="12" title="sql变量">
                     <a-space direction="vertical">
-                      <a-space v-for="(item, index) of pageData.record.front_sql" :key="item.sql">
+                      <a-space v-for="(item, index) of pageData.record.front_sql" :key="index">
                         <span>key：</span>
                         <a-input
                           v-model="item.key_list"
