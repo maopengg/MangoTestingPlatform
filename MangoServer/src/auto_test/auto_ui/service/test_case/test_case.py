@@ -64,7 +64,7 @@ class TestCase:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             parametrize=case.parametrize,
-            steps=[self.steps_model(i.page_step.id, i) for i in case_steps_detailed],
+            steps=[self.steps_model(i.page_step.id, i, bool(i.switch_step_open_url)) for i in case_steps_detailed],
         )
         if case.parametrize and test_suite is None:
             for i in case.parametrize:
@@ -83,7 +83,7 @@ class TestCase:
         return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
-        page_steps_model = self.steps_model(steps_id, switch_step_open_url=True)
+        page_steps_model = self.steps_model(steps_id)
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
         return page_steps_model
 
@@ -137,7 +137,6 @@ class TestCase:
             page_steps_model.case_steps_id = case_steps_detailed.id
             case_steps_detailed.status = TaskEnum.PROCEED.value
             case_steps_detailed.save()
-            page_steps_model.switch_step_open_url = bool(case_steps_detailed.switch_step_open_url)
             page_steps_model.error_retry = case_steps_detailed.error_retry
             try:
                 page_steps_model.case_data = [StepsDataModel(**i) for i in case_steps_detailed.case_data]

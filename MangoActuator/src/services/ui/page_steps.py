@@ -183,13 +183,11 @@ class PageSteps:
     async def _ope_steps(self, element_model, element_list_model) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
-        if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
-            if self.page_steps_model.switch_step_open_url:
-                await asyncio.sleep(1)
-            send_global_msg(f'UI-开始操作浏览器打开URL')
-            await element_ope.open_device(is_open=self.page_steps_model.switch_step_open_url)
-        else:
-            await element_ope.open_device()
+        # if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
+        #     if self.page_steps_model.switch_step_open_url:
+        #         await asyncio.sleep(1)
+        #     send_global_msg(f'UI-开始操作浏览器打开URL')
+        await element_ope.open_device(self.page_steps_model.switch_step_open_url)
         self._device_opened = True
         element_result = await element_ope.element_main(element_model, element_list_model)
         send_global_msg(f'UI-结束执行元素或操作：{element_model.name or element_model.ope_key}')
@@ -207,11 +205,12 @@ class PageSteps:
         return element_result
 
     async def _steps_retry(self):
+        if not self.is_step:
+            return
         match self.page_steps_model.type:
             case DriveTypeEnum.WEB.value:
                 send_global_msg(f'UI-开始重试，正在刷新浏览器')
                 if self.base_data.page:
-
                     try:
                         await self.base_data.page.reload(wait_until="domcontentloaded", timeout=20000)
                     except TimeoutError:
