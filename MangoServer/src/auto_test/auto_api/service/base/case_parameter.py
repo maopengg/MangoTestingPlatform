@@ -220,10 +220,15 @@ class CaseParameter:
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:
-            for sql in front_sql:
-                sql = self.test_setup.test_data.replace(sql)
-                res = self.test_setup.mysql_connect.condition_execute(sql)
-                log.api.debug(f'用例详情前置-1->sql：{sql}，查询结果：{res}')
+            for i in front_sql:
+                key = self.test_setup.test_data.replace(i.get('key'))
+                value = self.test_setup.test_data.replace(i.get('value'))
+                res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
+                log.api.debug(f'用例详情前置sql->key:{key}，value:{value}')
+                if isinstance(res, list) and len(res) > 0 and key is not None and key != '':
+                    self.test_setup.test_data.set_sql_cache(i.get('key'), res[0])
+                if not res:
+                    raise ApiError(*ERROR_MSG_0034, value=(value,))
 
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
         try:

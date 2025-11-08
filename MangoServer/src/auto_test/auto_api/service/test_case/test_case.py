@@ -82,20 +82,19 @@ class TestCase:
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
-        finally:
-            self.case_base.case_posterior_main()
-            self.update_test_case(self.case_id, self.api_case_result.status)
-            if self.test_suite and self.test_suite_details:
-                UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
-                    id=self.test_suite_details,
-                    type=TestCaseTypeEnum.API,
-                    test_suite=self.test_suite,
-                    status=self.api_case_result.status,
-                    error_message=self.api_case_result.error_message,
-                    result_data=self.api_case_result
-                ))
-            log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
-            return self.api_case_result
+        self.case_base.case_posterior_main()
+        self.update_test_case(self.case_id, self.api_case_result.status)
+        if self.test_suite and self.test_suite_details:
+            UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
+                id=self.test_suite_details,
+                type=TestCaseTypeEnum.API,
+                test_suite=self.test_suite,
+                status=self.api_case_result.status,
+                error_message=self.api_case_result.error_message,
+                result_data=self.api_case_result
+            ))
+        log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
+        return self.api_case_result
 
     def case_detailed(self,
                       case_id: int,

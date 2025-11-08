@@ -433,7 +433,7 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
 
   import { ModalDialogType } from '@/types/components'
@@ -484,6 +484,14 @@
   const useSelectValue = useSelectValueStore()
 
   const caseRunning = ref(false)
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   function switchType(key: any) {
     if (key === '1') {
@@ -619,11 +627,22 @@
   }
 
   function doRefresh() {
+    clearPollingTimer()
+
     getUiCaseStepsDetailed(route.query.id)
       .then((res) => {
         data.data = res.data
         if (res.data) {
           data.selectData = res.data[0]
+        }
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh()
+          }, 5000)
         }
       })
       .catch(console.log)
@@ -792,6 +811,9 @@
       onProductModuleName()
       useSelectValue.getSelectValue()
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>
 

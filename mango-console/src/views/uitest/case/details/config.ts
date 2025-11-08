@@ -29,7 +29,7 @@ export const columns: any = reactive([
     width: 70,
   },
   {
-    title: '提示',
+    title: '失败提示',
     dataIndex: 'error_message',
     align: 'left',
     ellipsis: true,

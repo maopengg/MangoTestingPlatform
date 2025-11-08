@@ -97,7 +97,7 @@ class PageSteps:
         self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
-            if error_retry != 0:
+            if error_retry != 0 and not self.is_step:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
                 await self._steps_retry()
@@ -183,13 +183,7 @@ class PageSteps:
     async def _ope_steps(self, element_model, element_list_model) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
-        if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
-            if self.page_steps_model.switch_step_open_url:
-                await asyncio.sleep(1)
-            send_global_msg(f'UI-开始操作浏览器打开URL')
-            await element_ope.open_device(is_open=self.page_steps_model.switch_step_open_url)
-        else:
-            await element_ope.open_device()
+        await element_ope.open_device(self.page_steps_model.switch_step_open_url)
         self._device_opened = True
         element_result = await element_ope.element_main(element_model, element_list_model)
         send_global_msg(f'UI-结束执行元素或操作：{element_model.name or element_model.ope_key}')
