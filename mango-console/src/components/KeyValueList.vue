@@ -5,20 +5,34 @@
         <!-- 支持多个字段的展示 -->
         <div v-for="(field, fieldIndex) in fieldConfig" :key="fieldIndex" class="key-value-field">
           <span class="field-label">{{ field.label }}:</span>
-          <!-- 支持空字段名的情况 -->
-          <a-input
-            v-if="field.field"
+          <!-- 支持级联选择器 -->
+          <a-cascader
+            v-if="field.type === 'cascader'"
+            v-model="item[field.field]"
+            :options="field.options || []"
+            :placeholder="field.placeholder || `请选择${field.label}`"
+            :expand-trigger="field.expandTrigger || 'hover'"
+            :value-key="field.valueKey || 'key'"
+            @change="(value) => field.onChange && field.onChange(value, item, index)"
+            :class="field.className || 'key-cascader'"
+          />
+          <!-- 支持文本域 -->
+          <a-textarea
+            v-else-if="field.field"
             v-model="item[field.field]"
             :placeholder="field.placeholder || `请输入${field.label}`"
+            :auto-size="field.autoSize || { minRows: 1, maxRows: 3 }"
             @blur="onBlur"
             :class="field.className || 'key-input'"
           />
           <!-- 支持数组直接绑定的情况 -->
-          <a-input
+          <a-textarea
             v-else
-            v-model="item[field.field]"
+            :model-value="item"
             :placeholder="field.placeholder || `请输入${field.label}`"
-            @blur="onBlur"
+            :auto-size="field.autoSize || { minRows: 1, maxRows: 3 }"
+            @blur="(event) => onItemBlur(event, index)"
+            @update:model-value="(value) => onItemUpdate(value, index, item)"
             :class="field.className || 'key-input'"
           />
         </div>
@@ -42,13 +56,19 @@
 </template>
 
 <script lang="ts" setup>
-  import { Message } from '@arco-design/web-vue'
-
   // 定义字段配置接口
   interface FieldConfig {
     field?: string // 字段名（可选，为空时表示直接绑定数组元素）
     label: string // 显示标签
     className?: string // 自定义类名
+    placeholder?: string // 占位符文本
+    type?: 'input' | 'textarea' | 'cascader' // 字段类型
+    // 级联选择器特有属性
+    options?: any[] // 选项数据
+    expandTrigger?: 'click' | 'hover' // 次级菜单展开方式
+    valueKey?: string // 选项值的键名
+    onChange?: (value: any, item: any, index: number) => void // 值改变时的回调
+    autoSize?: { minRows: number; maxRows: number } // 文本域自动调整大小
   }
 
   // 定义组件属性
@@ -59,6 +79,11 @@
     onDeleteItem: (index: number) => void // 删除回调
     onSave?: () => void // 保存回调（可选）
   }
+
+  // 定义事件
+  const emit = defineEmits<{
+    (e: 'update:item', index: number, value: any, item: any): void
+  }>()
 
   // 定义默认属性
   const props = withDefaults(defineProps<Props>(), {
@@ -72,6 +97,19 @@
 
   // 失去焦点时触发保存
   const onBlur = () => {
+    if (props.onSave) {
+      props.onSave()
+    }
+  }
+
+  // 数组元素更新时的处理
+  const onItemUpdate = (value: any, index: number, item: any) => {
+    // 通过事件通知父组件更新数组元素
+    emit('update:item', index, value, item)
+  }
+
+  // 数组元素失去焦点时的处理
+  const onItemBlur = (event: any, index: number) => {
     if (props.onSave) {
       props.onSave()
     }
@@ -94,8 +132,9 @@
 
   .key-value-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
+    flex-wrap: wrap;
   }
 
   .key-value-field {
@@ -103,6 +142,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 150px;
   }
 
   .field-label {
@@ -113,7 +153,8 @@
 
   .key-input,
   .value-input,
-  .sql-input {
+  .sql-input,
+  .key-cascader {
     width: 100%;
   }
 

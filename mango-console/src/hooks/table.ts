@@ -111,6 +111,7 @@ export const useTableIndexColumn = function () {
     key: 'index',
     width: 100,
     dataIndex: 'index',
+    align: 'center',
   }
 }
 
