@@ -1,9 +1,9 @@
 <template>
-  <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
+  <div ref="pieChart" style="width: 100%; height: 100%;"></div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, watch } from 'vue'
+  import { ref, onMounted, watch, onUpdated, onUnmounted } from 'vue'
   import * as echarts from 'echarts'
 
   // 定义 props
@@ -16,6 +16,7 @@
 
   const pieChart = ref<HTMLElement | null>(null)
   let myChart: echarts.ECharts | null = null
+  let resizeObserver: ResizeObserver | null = null;
 
   // 初始化饼状图
   const initPieChart = () => {
@@ -23,6 +24,26 @@
 
     myChart = echarts.init(pieChart.value)
     updateChart()
+    
+    // 监听窗口大小变化，重新调整图表大小
+    window.addEventListener('resize', resizeChart)
+    
+    // 使用ResizeObserver监听容器大小变化
+    if (window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(resizeChart)
+      resizeObserver.observe(pieChart.value)
+    }
+  }
+
+  // 调整图表大小
+  const resizeChart = () => {
+    if (myChart) {
+      myChart.resize({
+        animation: {
+          duration: 300
+        }
+      })
+    }
   }
 
   // 动态生成饼状图数据
@@ -80,10 +101,11 @@
       legend: {
         top: '5%',
         left: 'center',
+        type: 'scroll'
       },
       series: [
         {
-          name: 'Access From',
+          name: '测试结果分布',
           type: 'pie',
           radius: ['40%', '70%'],
           avoidLabelOverlap: false,
@@ -99,7 +121,7 @@
           emphasis: {
             label: {
               show: true,
-              fontSize: 40,
+              fontSize: 24,
               fontWeight: 'bold',
             },
           },
@@ -117,11 +139,37 @@
     () => [props.success, props.fail, props.pending, props.todo],
     () => {
       updateChart()
+      // 数据更新后也调整图表大小
+      setTimeout(resizeChart, 100)
     },
     { deep: true }
   )
 
+  // 组件更新时也重新渲染图表
+  onUpdated(() => {
+    if (myChart) {
+      myChart.resize({
+        animation: {
+          duration: 300
+        }
+      })
+    }
+  })
+
   onMounted(() => {
     initPieChart()
+    // 组件挂载后延迟调整大小
+    setTimeout(resizeChart, 100)
+  })
+  
+  // 组件卸载时移除事件监听器
+  onUnmounted(() => {
+    window.removeEventListener('resize', resizeChart)
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+    }
+    if (myChart) {
+      myChart.dispose()
+    }
   })
 </script>

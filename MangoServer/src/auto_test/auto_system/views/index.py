@@ -9,10 +9,10 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_api.models import ApiCaseDetailedParameter
-from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter, ApiCase, ApiInfo, ApiHeaders
+from src.auto_test.auto_pytest.models import PytestCase, PytestAct, PytestTools, PytestTestFile
 from src.auto_test.auto_system.models import TestSuiteDetails
-from src.auto_test.auto_ui.models import UiCase
+from src.auto_test.auto_ui.models import UiCase, PageElement, Page, PageSteps
 from src.auto_test.auto_user.models import UserLogs, User
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
@@ -229,3 +229,29 @@ class IndexViews(ViewSet):
             'name': name_list[::-1],
             'total_logins': total_logins_list[::-1],
         })
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def statistics(self, request: Request):
+        """
+        测试统计
+        @param request:
+        @return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0092, {'uiStats': {
+            'elementCount': PageElement.objects.count(),
+            'pageCount': Page.objects.count(),
+            'stepCount': PageSteps.objects.count(),
+            'caseCount': UiCase.objects.count(),
+        },
+            'apiStats': {
+                'interfaceCount': ApiInfo.objects.count(),
+                'caseCount': ApiCase.objects.count(),
+                'headersCount': ApiHeaders.objects.count(),
+            },
+            'pytestStats': {
+                'processObjects': PytestAct.objects.count(),
+                'caseCount': PytestCase.objects.count(),
+                'toolFiles': PytestTools.objects.count(),
+                'testFiles': PytestTestFile.objects.count(),
+            }})

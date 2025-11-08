@@ -74,9 +74,8 @@
   import { getSystemTasks } from '@/api/system/tasks'
   import { useEnum } from '@/store/modules/get-enum'
   import PieChart from '@/components/chart/PieChart.vue'
-  import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system'
+  import { getSystemCaseRunSum, getSystemCaseSum, getSystemIndexStatistics } from '@/api/system'
   import { Message } from '@arco-design/web-vue'
-
   // 导入新创建的组件
   import ContactAuthor from './components/ContactAuthor.vue'
   import AutomationStats from './components/AutomationStats.vue'
@@ -113,7 +112,6 @@
     onlineUsers: 0,
     // UI自动化统计
     uiStats: {
-      elementCount: 0,
       pageCount: 0,
       stepCount: 0,
       caseCount: 0,
@@ -195,9 +193,7 @@
     })
       .then((res) => {
         table.handleSuccess(res)
-        caseSum()
-        getAllReportSum()
-        getSystemStatistics()
+
       })
       .catch(console.log)
   }
@@ -220,30 +216,21 @@
 
   // 获取系统统计数据
   function getSystemStatistics() {
-    // 这里可以添加实际的API调用来获取统计数据
-    // 暂时使用模拟数据
-
-    // UI自动化统计
-    data.uiStats.elementCount = 128
-    data.uiStats.pageCount = 24
-    data.uiStats.stepCount = 86
-    data.uiStats.caseCount = 86
-
-    // API自动化统计
-    data.apiStats.interfaceCount = 42
-    data.apiStats.caseCount = 38
-    data.apiStats.headersCount = 15
-
-    // Pytest自动化统计
-    data.pytestStats.processObjects = 12
-    data.pytestStats.caseCount = 56
-    data.pytestStats.toolFiles = 8
-    data.pytestStats.testFiles = 22
+    getSystemIndexStatistics()
+      .then((res) => {
+        data.uiStats = res.data.uiStats
+        data.apiStats = res.data.apiStats
+        data.pytestStats = res.data.pytestStats
+      })
+      .catch(console.log)
   }
 
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+              caseSum()
+        getAllReportSum()
+        getSystemStatistics()
     })
   })
 
