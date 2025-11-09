@@ -57,33 +57,49 @@
 </template>
 
 <script lang="ts" setup>
-  defineProps({
-    uiStats: {
-      type: Object,
-      default: () => ({
-        elementCount: 0,
-        pageCount: 0,
-        stepCount: 0,
-        caseCount: 0
-      })
-    },
-    apiStats: {
-      type: Object,
-      default: () => ({
-        interfaceCount: 0,
-        caseCount: 0,
-        headersCount: 0
-      })
-    },
-    pytestStats: {
-      type: Object,
-      default: () => ({
-        processObjects: 0,
-        caseCount: 0,
-        toolFiles: 0,
-        testFiles: 0
-      })
+  import { ref, onMounted } from 'vue'
+  import { getSystemIndexStatistics } from '@/api/system'
+
+  // 定义响应式数据
+  const uiStats = ref({
+    elementCount: 0,
+    pageCount: 0,
+    stepCount: 0,
+    caseCount: 0,
+  })
+
+  const apiStats = ref({
+    interfaceCount: 0,
+    caseCount: 0,
+    headersCount: 0,
+  })
+
+  const pytestStats = ref({
+    processObjects: 0,
+    caseCount: 0,
+    toolFiles: 0,
+    testFiles: 0,
+  })
+
+  // 获取统计数据
+  const fetchStatistics = async () => {
+    try {
+      const res = await getSystemIndexStatistics()
+      uiStats.value = res.data.uiStats
+      apiStats.value = res.data.apiStats
+      pytestStats.value = res.data.pytestStats
+    } catch (error) {
+      console.log(error)
     }
+  }
+
+  onMounted(() => {
+    fetchStatistics()
+  })
+
+  // 暴露刷新方法
+  defineExpose({
+    refresh: fetchStatistics,
   })
 </script>
 

@@ -45,13 +45,13 @@
                   </div>
                 </a-space>
               </template>
-              <a-tab-pane key="1" title="前置数据">
+              <a-tab-pane key="1" title="用例前置">
                 <a-tabs
                   :default-active-key="data.uiSonType"
                   position="left"
                   @tab-click="(key) => switchSonType(key)"
                 >
-                  <a-tab-pane key="11" title="自定义变量">
+                  <a-tab-pane key="11" title="自定义参数">
                     <a-space direction="vertical">
                       <a-space
                         v-for="(item, index) of pageData.record.front_custom"
@@ -79,7 +79,7 @@
                       </a-space>
                     </a-space>
                   </a-tab-pane>
-                  <a-tab-pane key="12" title="sql变量">
+                  <a-tab-pane key="12" title="sql参数">
                     <a-space direction="vertical">
                       <a-space v-for="(item, index) of pageData.record.front_sql" :key="item.sql">
                         <span>sql语句</span>
@@ -192,13 +192,13 @@
                   </template>
                 </a-table>
               </a-tab-pane>
-              <a-tab-pane key="3" title="后置清除">
+              <a-tab-pane key="3" title="用例后置">
                 <a-tabs
                   :default-active-key="data.uiSonType"
                   position="left"
                   @tab-click="(key) => switchSonType(key)"
                 >
-                  <a-tab-pane key="31" title="sql清除">
+                  <a-tab-pane key="31" title="sql参数">
                     <a-space direction="vertical">
                       <a-space
                         v-for="(item, index) of pageData.record.posterior_sql"

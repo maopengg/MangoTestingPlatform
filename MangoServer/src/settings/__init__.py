@@ -126,10 +126,10 @@ if not IS_SQLITE:
             'OPTIONS': {
                 'charset': 'utf8mb4',
                 'connect_timeout': 5,  # 连接超时时间
-                'init_command': 'SET SESSION sort_buffer_size=8 * 1024 * 1024',  # 会话级设置
-                'isolation_level': 'READ COMMITTED',  # 可选：事务隔离级别
+                'init_command': "SET SESSION wait_timeout=60, interactive_timeout=60, sort_buffer_size=2 * 1024 * 1024",
+                'isolation_level': 'READ COMMITTED',
             },
-            'CONN_MAX_AGE': 60,  # 连接最大存活时间（秒）
+            'CONN_MAX_AGE': 60,  # 这个设置是正确的
         }
     }
 else:
