@@ -31,13 +31,9 @@
             <div style="flex: 0 0 auto">
               <Title title="正在准备执行的自动化任务" />
             </div>
-            <PendingTasks
-              :data-list="table.dataList"
-              :loading="table.tableLoading.value"
-              :table-columns="tableColumns"
-              @selection-change="onSelectionChange"
-              @view-result="handleViewResult"
-            />
+            <div>
+              <PendingTasks />
+            </div>
           </a-card>
         </a-space>
       </div>
