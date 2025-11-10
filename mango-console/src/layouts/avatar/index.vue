@@ -38,7 +38,6 @@
 
   // 导入联系作者组件
   import ContactAuthor from '@/views/index/components/ContactAuthor.vue'
-  import { md5 } from 'js-md5'
 
   const userStore = useUserStore()
   const options = [
@@ -109,7 +108,7 @@
     }
     if (!socket.value) {
       socket.value = new WebSocket(
-        `${webSocketURL}username=${userStore.userName}&password=${md5(userStore.password)}`
+        `${webSocketURL}username=${userStore.userName}&password=${userStore.password}`
       )
     }
     socket.value.binaryType = 'arraybuffer'
