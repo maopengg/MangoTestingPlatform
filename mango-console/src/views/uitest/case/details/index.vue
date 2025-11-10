@@ -975,4 +975,56 @@
   .save-btn {
     align-self: flex-start;
   }
+
+  /* 确保KeyValueList中的所有元素都在一行 */
+  :deep(.key-value-row) {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    width: 100%;
+    min-width: 0; /* 允许子元素收缩 */
+    overflow-x: hidden; /* 防止水平滚动 */
+  }
+
+  :deep(.key-value-field) {
+    flex: 1;
+    min-width: 100px; /* 减小最小宽度 */
+    overflow: hidden; /* 防止内容溢出 */
+  }
+
+  :deep(.button-container) {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-shrink: 0;
+    white-space: nowrap; /* 防止按钮内文字换行 */
+    min-width: fit-content; /* 确保按钮容器不会收缩 */
+  }
+
+  :deep(.remove-btn) {
+    flex-shrink: 0;
+    margin-top: 18px;
+    min-width: fit-content; /* 确保按钮不会收缩 */
+  }
+
+  /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
+  @media (max-width: 768px) {
+    :deep(.key-value-row) {
+      flex-wrap: wrap;
+    }
+    
+    :deep(.key-value-field) {
+      min-width: 120px;
+    }
+    
+    :deep(.button-container) {
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    
+    :deep(.remove-btn) {
+      margin-top: 0;
+      align-self: center;
+    }
+  }
 </style>

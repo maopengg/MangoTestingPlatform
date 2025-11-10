@@ -36,17 +36,20 @@
             :class="field.className || 'key-input'"
           />
         </div>
-        <!-- 插槽支持额外操作按钮 -->
-        <slot name="extra" :index="index" :item="item"></slot>
-        <a-button
-          size="small"
-          status="danger"
-          type="text"
-          @click="onDelete(index)"
-          class="remove-btn"
-        >
-          移除
-        </a-button>
+        <!-- 按钮容器，确保按钮在同一行 -->
+        <div class="button-container">
+          <!-- 插槽支持额外操作按钮 -->
+          <slot name="extra" :index="index" :item="item"></slot>
+          <a-button
+            size="small"
+            status="danger"
+            type="text"
+            @click="onDelete(index)"
+            class="remove-btn"
+          >
+            移除
+          </a-button>
+        </div>
       </div>
     </div>
     <div v-if="!dataList || dataList.length === 0" class="empty-placeholder">
@@ -134,7 +137,10 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* 防止换行 */
+    width: 100%;
+    min-width: 0; /* 允许子元素收缩 */
+    overflow-x: hidden; /* 防止水平滚动 */
   }
 
   .key-value-field {
@@ -142,13 +148,24 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 150px;
+    min-width: 100px; /* 减小最小宽度 */
+    overflow: hidden; /* 防止内容溢出 */
+  }
+
+  .button-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-shrink: 0; /* 防止按钮容器被压缩 */
+    white-space: nowrap; /* 防止按钮内文字换行 */
+    min-width: fit-content; /* 确保按钮容器不会收缩 */
   }
 
   .field-label {
     font-size: 12px;
     color: #666;
     font-weight: 500;
+    flex-shrink: 0; /* 防止标签被压缩 */
   }
 
   .key-input,
@@ -156,11 +173,21 @@
   .sql-input,
   .key-cascader {
     width: 100%;
+    min-width: 0; /* 允许输入框收缩 */
   }
 
   .remove-btn {
     align-self: flex-start;
     margin-top: 18px;
+    flex-shrink: 0; /* 防止按钮被压缩 */
+  }
+
+  /* 确保插槽中的按钮也正确对齐 */
+  :deep(.button-container .arco-btn) {
+    align-self: flex-start;
+    margin-top: 18px;
+    flex-shrink: 0; /* 防止按钮被压缩 */
+    min-width: fit-content; /* 确保按钮不会收缩 */
   }
 
   .empty-placeholder {
@@ -171,5 +198,33 @@
     border: 1px dashed #e5e5e5;
     border-radius: 4px;
     margin-top: 10px;
+  }
+
+  /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
+  @media (max-width: 768px) {
+    .key-value-row {
+      flex-wrap: wrap;
+    }
+    
+    .key-value-field {
+      min-width: 120px;
+    }
+    
+    .button-container {
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    
+    .remove-btn {
+      margin-top: 0;
+      align-self: center;
+    }
+    
+    /* 确保插槽中的按钮在小屏幕上也正确对齐 */
+    :deep(.button-container .arco-btn) {
+      margin-top: 0;
+      align-self: center;
+    }
   }
 </style>

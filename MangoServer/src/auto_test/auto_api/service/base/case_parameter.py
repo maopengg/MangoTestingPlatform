@@ -163,6 +163,8 @@ class CaseParameter:
             }
             for p in i.get('value', {}).get('parameter', []):
                 ass_dict[p.get('f')] = p.get('v')
+            if not ass_dict.get('method') or not ass_dict.get('actual'):
+                raise ApiError(*ERROR_MSG_0055)
             mango_assertion = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
             self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
@@ -182,7 +184,7 @@ class CaseParameter:
         ass_result = AssResultModel(
             method='JSON一致性断言',
             actual=None,
-            expect=json.dumps(expect, ensure_ascii=False)
+            expect=json.dumps(expect, ensure_ascii=False),
         )
         try:
             assert actual is not None, f'实际={actual}, 预期={ass_result.expect}'
@@ -190,7 +192,9 @@ class CaseParameter:
             ass_result.ass_msg = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data).p_in_dict(
                 actual, expect)
             self.ass_result.append(ass_result)
+            ass_result.status = StatusEnum.SUCCESS.value
         except AssertionError as error:
+            ass_result.status = StatusEnum.FAIL.value
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
             raise ApiError(300, ass_result.ass_msg)
@@ -206,7 +210,9 @@ class CaseParameter:
         self.ass_result.append(ass_result)
         try:
             assert actual.strip() == expect.strip(), f'实际={actual}, 预期={expect}'
+            ass_result.status = StatusEnum.SUCCESS.value
         except AssertionError as error:
+            ass_result.status = StatusEnum.FAIL.value
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
             raise ApiError(300, ass_result.ass_msg)
@@ -229,6 +235,9 @@ class CaseParameter:
             ass_result.status = StatusEnum.FAIL.value
             self.ass_result.append(ass_result)
             raise ApiError(300, ass_result.ass_msg)
+        except TypeError as error:
+            log.api.error(f'用例详情断言-2：{error}')
+            raise ApiError(*ERROR_MSG_0050)
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:

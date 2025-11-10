@@ -665,7 +665,7 @@
                                       size="small"
                                       status="success"
                                       @click="jsonpathTest(item, index)"
-                                      style="margin-top: 18px"
+                                      class="test-btn"
                                     >
                                       测试
                                     </a-button>
@@ -894,22 +894,6 @@
   })
 
   const caseRunning = ref(false)
-
-  function changeGeneralAss(value, index, item) {
-    const inputItem = findItemByValue(data.ass, value.method)
-    if (inputItem && Array.isArray(inputItem.parameter)) {
-      inputItem.parameter.forEach((param) => {
-        if (typeof param.v === 'object' && param.v !== null) {
-          try {
-            param.v = JSON.stringify(param.v)
-          } catch {
-            param.v = ''
-          }
-        }
-      })
-    }
-    item.ass_general[index].value = inputItem
-  }
 
   function findItemByValue(data: any, value: string) {
     for (let i = 0; i < data.length; i++) {
@@ -1487,16 +1471,16 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     padding: 5px;
     box-sizing: border-box;
     display: flex;
+  }
 
-    .left {
-      padding: 5px;
-      width: 45%;
-    }
+  .left {
+    padding: 5px;
+    width: 45%;
+  }
 
-    .right {
-      padding: 5px;
-      width: 55%;
-    }
+  .right {
+    padding: 5px;
+    width: 55%;
   }
 
   .custom-header {
@@ -1559,13 +1543,37 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   /* 确保KeyValueList中的所有元素都在一行 */
   :deep(.key-value-row) {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: flex-start;
+    width: 100%;
+    min-width: 0; /* 允许子元素收缩 */
+    overflow-x: hidden; /* 防止水平滚动 */
   }
 
   :deep(.key-value-field) {
     flex: 1;
-    min-width: 200px;
+    min-width: 100px; /* 减小最小宽度 */
+    overflow: hidden; /* 防止内容溢出 */
+  }
+
+  :deep(.button-container) {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-shrink: 0;
+    white-space: nowrap; /* 防止按钮内文字换行 */
+    min-width: fit-content; /* 确保按钮容器不会收缩 */
+  }
+
+  :deep(.remove-btn) {
+    flex-shrink: 0;
+    margin-top: 18px;
+  }
+
+  :deep(.test-btn) {
+    flex-shrink: 0;
+    margin-top: 18px;
+    min-width: fit-content; /* 确保按钮不会收缩 */
   }
 
   :deep(.assertion-parameters-inline) {
@@ -1575,5 +1583,41 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     flex: 2;
     min-width: 300px;
     margin-top: 0;
+  }
+
+  /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
+  @media (max-width: 768px) {
+    :deep(.key-value-row) {
+      flex-wrap: wrap;
+    }
+
+    :deep(.key-value-field) {
+      min-width: 120px;
+    }
+
+    :deep(.button-container) {
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    :deep(.remove-btn) {
+      margin-top: 0;
+      align-self: center;
+    }
+
+    :deep(.test-btn) {
+      margin-top: 0;
+      align-self: center;
+    }
+
+    .main_box {
+      flex-direction: column;
+    }
+
+    .left,
+    .right {
+      width: 100%;
+    }
   }
 </style>
