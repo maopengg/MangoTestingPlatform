@@ -45,64 +45,39 @@
                   </div>
                 </a-space>
               </template>
-              <a-tab-pane key="1" title="前置数据">
+              <a-tab-pane key="1" title="用例前置">
                 <a-tabs
                   :default-active-key="data.uiSonType"
                   position="left"
                   @tab-click="(key) => switchSonType(key)"
                 >
-                  <a-tab-pane key="11" title="自定义变量">
-                    <a-space direction="vertical">
-                      <a-space
-                        v-for="(item, index) of pageData.record.front_custom"
-                        :key="item.key"
-                      >
-                        <span>key</span>
-                        <a-input
-                          v-model="item.key"
-                          placeholder="请输入key的名称"
-                          @blur="upDataCase"
-                        />
-                        <span>value</span>
-                        <a-input
-                          v-model="item.value"
-                          placeholder="请输入value的名称"
-                          @blur="upDataCase"
-                        />
-                        <a-button
-                          size="small"
-                          status="danger"
-                          type="text"
-                          @click="removeFrontSql(pageData.record.front_custom, index)"
-                          >移除
-                        </a-button>
-                      </a-space>
-                    </a-space>
+                  <a-tab-pane key="11" title="自定义参数">
+                    <KeyValueList
+                      :data-list="pageData.record.front_custom"
+                      :field-config="[
+                        { field: 'key', label: 'Key', placeholder: '请输入key的名称' },
+                        { field: 'value', label: 'Value', placeholder: '请输入value的名称' },
+                      ]"
+                      :on-delete-item="
+                        (index) => removeFrontSql(pageData.record.front_custom, index)
+                      "
+                      :on-save="upDataCase"
+                    />
                   </a-tab-pane>
-                  <a-tab-pane key="12" title="sql变量">
-                    <a-space direction="vertical">
-                      <a-space v-for="(item, index) of pageData.record.front_sql" :key="item.sql">
-                        <span>sql语句</span>
-                        <a-input
-                          v-model="item.sql"
-                          placeholder="请输入sql语句"
-                          @blur="upDataCase"
-                        />
-                        <span>key列表</span>
-                        <a-input
-                          v-model="item.key_list"
-                          placeholder="请输入查询结果缓存key"
-                          @blur="upDataCase"
-                        />
-                        <a-button
-                          size="small"
-                          status="danger"
-                          type="text"
-                          @click="removeFrontSql(pageData.record.front_sql, index)"
-                          >移除
-                        </a-button>
-                      </a-space>
-                    </a-space>
+                  <a-tab-pane key="12" title="sql参数">
+                    <KeyValueList
+                      :data-list="pageData.record.front_sql"
+                      :field-config="[
+                        { field: 'sql', label: 'Sql语句', placeholder: '请输入sql语句' },
+                        {
+                          field: 'key_list',
+                          label: 'Key列表',
+                          placeholder: '请输入查询结果缓存key',
+                        },
+                      ]"
+                      :on-delete-item="(index) => removeFrontSql(pageData.record.front_sql, index)"
+                      :on-save="upDataCase"
+                    />
                   </a-tab-pane>
                 </a-tabs>
               </a-tab-pane>
@@ -192,34 +167,23 @@
                   </template>
                 </a-table>
               </a-tab-pane>
-              <a-tab-pane key="3" title="后置清除">
+              <a-tab-pane key="3" title="用例后置">
                 <a-tabs
                   :default-active-key="data.uiSonType"
                   position="left"
                   @tab-click="(key) => switchSonType(key)"
                 >
-                  <a-tab-pane key="31" title="sql清除">
-                    <a-space direction="vertical">
-                      <a-space
-                        v-for="(item, index) of pageData.record.posterior_sql"
-                        :key="item.sql"
-                      >
-                        <span>sql语句</span>
-                        <a-input
-                          :key="`posterior-sql-${index}`"
-                          v-model="item.sql"
-                          placeholder="请输入sql语句"
-                          @blur="upDataCase"
-                        />
-                        <a-button
-                          size="small"
-                          status="danger"
-                          type="text"
-                          @click="removeFrontSql(pageData.record.posterior_sql, index)"
-                          >移除
-                        </a-button>
-                      </a-space>
-                    </a-space>
+                  <a-tab-pane key="31" title="sql参数">
+                    <KeyValueList
+                      :data-list="pageData.record.posterior_sql"
+                      :field-config="[
+                        { field: 'sql', label: 'Sql语句', placeholder: '请输入sql语句' },
+                      ]"
+                      :on-delete-item="
+                        (index) => removeFrontSql(pageData.record.posterior_sql, index)
+                      "
+                      :on-save="upDataCase"
+                    />
                   </a-tab-pane>
                 </a-tabs>
               </a-tab-pane>
@@ -460,6 +424,7 @@
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import CodeEditor from '@/components/CodeEditor.vue'
+  import KeyValueList from '@/components/KeyValueList.vue'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -781,7 +746,7 @@
     }
   }
 
-  const onModifyStatus = async (newValue: any, id: number, key: string) => {
+  function onModifyStatus(newValue: any, id: number, key: string) {
     let obj: any = {
       id: id,
     }
@@ -805,6 +770,7 @@
       }, 300)
     })
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

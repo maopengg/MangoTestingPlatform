@@ -11,11 +11,7 @@
       </div>
       <div class="item">
         <Title title="自动化测试统计" />
-        <AutomationStats
-          :ui-stats="data.uiStats"
-          :api-stats="data.apiStats"
-          :pytest-stats="data.pytestStats"
-        />
+        <AutomationStats />
       </div>
     </div>
     <div class="center">
@@ -31,13 +27,9 @@
             <div style="flex: 0 0 auto">
               <Title title="正在准备执行的自动化任务" />
             </div>
-            <PendingTasks
-              :data-list="table.dataList"
-              :loading="table.tableLoading.value"
-              :table-columns="tableColumns"
-              @selection-change="onSelectionChange"
-              @view-result="handleViewResult"
-            />
+            <div>
+              <PendingTasks />
+            </div>
           </a-card>
         </a-space>
       </div>
@@ -64,65 +56,34 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref, unref, watch } from 'vue'
-  import useAppConfigStore from '@/store/modules/app-config'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
   import HotProductChart from './components/chart/HotProductChart.vue'
   import Title from '@/views/index/components/Title.vue'
-  import { useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
-  import { useRouter } from 'vue-router'
-  import { getSystemTasks } from '@/api/system/tasks'
-  import { useEnum } from '@/store/modules/get-enum'
   import PieChart from '@/components/chart/PieChart.vue'
   import { getSystemCaseRunSum, getSystemCaseSum, getSystemIndexStatistics } from '@/api/system'
-  import { Message } from '@arco-design/web-vue'
-  // 导入新创建的组件
   import ContactAuthor from './components/ContactAuthor.vue'
   import AutomationStats from './components/AutomationStats.vue'
   import PendingTasks from './components/PendingTasks.vue'
   import ResourceCenter from './components/ResourceCenter.vue'
 
-  const appStore = useAppConfigStore()
-
-  // 联系作者弹窗相关状态
   const contactVisible = ref(false)
 
-  const enumStore = useEnum()
-  const hotProductChart = ref()
-  const fullYearSalesChart = ref()
-  const onResize = () => {
-    setTimeout(() => {
-      unref(hotProductChart).updateChart()
-      unref(fullYearSalesChart).updateChart()
-    }, 500)
-  }
-  const collapse = computed(() => {
-    return appStore.isCollapse
-  })
-  watch(collapse, () => {
-    onResize()
-  })
-
-  const { onSelectionChange } = useRowSelection()
-  const table = useTable()
-  const rowKey = useRowKey('id')
   const data: any = reactive({
     caseSum: [],
     reportSum: [],
     onlineUsers: 0,
-    // UI自动化统计
     uiStats: {
+      elementCount: 0,
       pageCount: 0,
       stepCount: 0,
       caseCount: 0,
     },
-    // API自动化统计
     apiStats: {
       interfaceCount: 0,
       caseCount: 0,
       headersCount: 0,
     },
-    // Pytest自动化统计
     pytestStats: {
       processObjects: 0,
       caseCount: 0,
@@ -130,73 +91,6 @@
       testFiles: 0,
     },
   })
-  const tableColumns = useTableColumn([
-    table.indexColumn,
-    {
-      title: '任务名称',
-      key: 'name',
-      dataIndex: 'name',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '定时策略',
-      key: 'timing_strategy',
-      dataIndex: 'timing_strategy',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '测试对象',
-      key: 'test_env',
-      dataIndex: 'test_env',
-      width: 100,
-    },
-    {
-      title: '负责人',
-      key: 'case_people',
-      dataIndex: 'case_people',
-      width: 120,
-    },
-  ])
-  const router = useRouter()
-
-  function handleViewResult(record: any) {
-    router.push({
-      path: '/index/report-details',
-      query: {
-        id: record.id,
-        name: record.name,
-        type: record.type,
-      },
-    })
-  }
-
-  function goToCreateCase() {
-    router.push('/apitest/case/create')
-  }
-
-  function goToTaskManagement() {
-    router.push('/system/tasks')
-  }
-
-  function goToReportCenter() {
-    router.push('/index/report')
-  }
-
-  function doRefresh() {
-    getSystemTasks({
-      pageSize: 100,
-      page: 1,
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-
-      })
-      .catch(console.log)
-  }
 
   function caseSum() {
     getSystemCaseSum()
@@ -214,7 +108,6 @@
       .catch(console.log)
   }
 
-  // 获取系统统计数据
   function getSystemStatistics() {
     getSystemIndexStatistics()
       .then((res) => {
@@ -227,10 +120,9 @@
 
   onMounted(() => {
     nextTick(async () => {
-      doRefresh()
-              caseSum()
-        getAllReportSum()
-        getSystemStatistics()
+      caseSum()
+      getAllReportSum()
+      getSystemStatistics()
     })
   })
 

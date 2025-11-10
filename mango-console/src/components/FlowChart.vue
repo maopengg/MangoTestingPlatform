@@ -277,10 +277,7 @@
   const getCanvasPosition = (clientX: number, clientY: number): Position => {
     const el = canvasRef.value!
     const rect = el.getBoundingClientRect()
-    // 获取画布的滚动位置
-    const scrollLeft = el.scrollLeft
-    const scrollTop = el.scrollTop
-    return { x: clientX - rect.left + scrollLeft, y: clientY - rect.top + scrollTop }
+    return { x: clientX - rect.left, y: clientY - rect.top }
   }
 
   // 放置到画布：创建节点
@@ -794,7 +791,7 @@
   }
 
   .edges {
-    position: relative;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;

@@ -48,22 +48,10 @@
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
             <a-space direction="vertical" fill>
-              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
-                <a-form-item label="是否开启JSON输入：">
-                  <a-switch
-                    :default-checked="true"
-                    disabled
-                    checked-children="开启"
-                    un-checked-children="关闭"
-                  />
-                </a-form-item>
-                <a-form-item>
-                  <span class="form-tip">
-                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
-                  </span>
-                </a-form-item>
-              </a-form>
+              <div class="form-tip">
+                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                提示：当前必须输入json格式的请求参数，否则后续会提示错误
+              </div>
               <a-textarea
                 v-model="data.api_info.params"
                 :auto-size="data.textareaAutoSize"
@@ -75,22 +63,10 @@
           </a-tab-pane>
           <a-tab-pane key="2" title="表单">
             <a-space direction="vertical" fill>
-              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
-                <a-form-item label="是否开启JSON输入：">
-                  <a-switch
-                    :default-checked="true"
-                    disabled
-                    checked-children="开启"
-                    un-checked-children="关闭"
-                  />
-                </a-form-item>
-                <a-form-item>
-                  <span class="form-tip">
-                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
-                  </span>
-                </a-form-item>
-              </a-form>
+              <div class="form-tip">
+                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                提示：当前必须输入json格式的请求参数，否则后续会提示错误
+              </div>
               <a-textarea
                 v-model="data.api_info.data"
                 :auto-size="data.textareaAutoSize"
@@ -102,22 +78,10 @@
           </a-tab-pane>
           <a-tab-pane key="3" title="JSON">
             <a-space direction="vertical" fill>
-              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
-                <a-form-item label="是否开启JSON输入：">
-                  <a-switch
-                    :default-checked="true"
-                    disabled
-                    checked-children="开启"
-                    un-checked-children="关闭"
-                  />
-                </a-form-item>
-                <a-form-item>
-                  <span class="form-tip">
-                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
-                  </span>
-                </a-form-item>
-              </a-form>
+              <div class="form-tip">
+                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                提示：当前必须输入json格式的请求参数，否则后续会提示错误
+              </div>
               <a-textarea
                 v-model="data.api_info.json"
                 :auto-size="data.textareaAutoSize"
@@ -129,22 +93,10 @@
           </a-tab-pane>
           <a-tab-pane key="4" title="文件">
             <a-space direction="vertical" fill>
-              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
-                <a-form-item label="是否开启JSON输入：">
-                  <a-switch
-                    :default-checked="true"
-                    disabled
-                    checked-children="开启"
-                    un-checked-children="关闭"
-                  />
-                </a-form-item>
-                <a-form-item>
-                  <span class="form-tip">
-                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
-                  </span>
-                </a-form-item>
-              </a-form>
+              <div class="form-tip">
+                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                提示：当前必须输入json格式的请求参数，否则后续会提示错误
+              </div>
               <a-row :gutter="16">
                 <a-col :span="12">
                   <a-textarea
@@ -170,54 +122,31 @@
             </a-space>
           </a-tab-pane>
           <a-tab-pane key="5" title="后置jsonpath提取">
-            <a-space direction="vertical">
-              <a-space v-for="(value, index) of data.api_info.posterior_json_path" :key="index">
-                <a-input
-                  v-model="data.api_info.posterior_json_path[index].key"
-                  placeholder="请输入缓存key"
-                  @blur="upDate('posterior_json_path', data.api_info.posterior_json_path)"
-                />
-                <a-input
-                  v-model="data.api_info.posterior_json_path[index].value"
-                  placeholder="请输入jsonpath语法"
-                  @blur="upDate('posterior_json_path', data.api_info.posterior_json_path)"
-                />
-
-                <a-button
-                  size="small"
-                  status="danger"
-                  type="text"
-                  @click="
-                    removeFrontSql(data.api_info.posterior_json_path, index, 'posterior_json_path')
-                  "
-                  >移除
-                </a-button>
-              </a-space>
-            </a-space>
+            <KeyValueList
+              :data-list="data.api_info.posterior_json_path"
+              :field-config="[
+                { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
+                { field: 'value', label: 'jsonpath语法', placeholder: '请输入jsonpath语法' },
+              ]"
+              :on-delete-item="
+                (index) =>
+                  removeFrontSql(data.api_info.posterior_json_path, index, 'posterior_json_path')
+              "
+              :on-save="() => upDate('posterior_json_path', data.api_info.posterior_json_path)"
+            />
           </a-tab-pane>
           <a-tab-pane key="6" title="后置正则提取">
-            <a-space direction="vertical">
-              <a-space v-for="(value, index) of data.api_info.posterior_re" :key="index">
-                <a-input
-                  v-model="data.api_info.posterior_re[index].key"
-                  placeholder="请输入缓存key"
-                  @blur="upDate('posterior_re', data.api_info.posterior_re)"
-                />
-                <a-input
-                  v-model="data.api_info.posterior_re[index].value"
-                  placeholder="请输入jsonpath语法"
-                  @blur="upDate('posterior_re', data.api_info.posterior_re)"
-                />
-
-                <a-button
-                  size="small"
-                  status="danger"
-                  type="text"
-                  @click="removeFrontSql(data.api_info.posterior_re, index, 'posterior_re')"
-                  >移除
-                </a-button>
-              </a-space>
-            </a-space>
+            <KeyValueList
+              :data-list="data.api_info.posterior_re"
+              :field-config="[
+                { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
+                { field: 'value', label: '正则表达式', placeholder: '请输入正则表达式' },
+              ]"
+              :on-delete-item="
+                (index) => removeFrontSql(data.api_info.posterior_re, index, 'posterior_re')
+              "
+              :on-save="() => upDate('posterior_re', data.api_info.posterior_re)"
+            />
           </a-tab-pane>
           <a-tab-pane key="7" title="后置函数">
             <a-textarea
@@ -240,63 +169,108 @@
           </a-tab-pane>
           <a-tab-pane key="8" title="响应结果">
             <a-tabs default-active-key="3">
-              <a-tab-pane key="1" title="基础信息">
-                <a-space direction="vertical">
-                  <a-space>
-                    <a-tag color="orange">响 应 码</a-tag>
-                    <span>{{ data.api_info.result_data?.code }}</span>
-                  </a-space>
-                  <a-space>
-                    <a-tag color="orange">响应时间</a-tag>
-                    <span>{{ data.api_info.result_data?.time }}</span>
-                  </a-space>
-                  <a-space v-if="data.api_info?.result_data?.error_msg">
-                    <a-tag color="orange">失败提示</a-tag>
-                    <span>{{ data.api_info.result_data?.error_msg }}</span>
-                  </a-space>
-                  <a-space>
-                    <a-tag color="orange">缓存数据</a-tag>
-                    <JsonDisplay :data="data.api_info.result_data?.cache_all" />
-                  </a-space>
-                </a-space>
-              </a-tab-pane>
+              1
               <a-tab-pane key="2" title="请求信息">
-                <a-space direction="vertical">
-                  <a-space v-if="data.api_info.result_data?.request_headers">
-                    <a-tag color="orange">请求头</a-tag>
-                    <JsonDisplay :data="data.api_info.result_data?.request_headers" />
-                  </a-space>
-                  <a-space v-if="data.api_info.result_data?.request_params">
-                    <a-tag color="orange">参数</a-tag>
-                    <JsonDisplay :data="data.api_info.result_data?.request_params" />
-                  </a-space>
-                  <a-space v-if="data.api_info.result_data?.request_data">
-                    <a-tag color="orange">表单</a-tag>
-                    <JsonDisplay :data="data.api_info.result_data?.request_data" />
-                  </a-space>
-                  <a-space v-if="data.api_info.result_data?.request_json">
-                    <a-tag color="orange">json</a-tag>
-                    <JsonDisplay :data="data.api_info.result_data?.request_json" />
-                  </a-space>
-                  <a-space v-if="data.api_info.result_data?.request_file">
-                    <a-tag color="orange">file</a-tag>
-                    <JsonDisplay :data="data.api_info.result_data?.request_file" />
-                  </a-space>
-                </a-space>
+                <div class="response-section">
+                  <div
+                    v-if="
+                      data.api_info.result_data?.request_headers &&
+                      Object.keys(data.api_info.result_data.request_headers).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">请求头：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_headers" />
+                    </div>
+                  </div>
+                  <div
+                    v-if="
+                      data.api_info.result_data?.request_params &&
+                      Object.keys(data.api_info.result_data.request_params).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">查询参数：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_params" />
+                    </div>
+                  </div>
+                  <div
+                    v-if="
+                      data.api_info.result_data?.request_data &&
+                      Object.keys(data.api_info.result_data.request_data).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">表单数据：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_data" />
+                    </div>
+                  </div>
+                  <div v-if="data.api_info.result_data?.request_json" class="response-item">
+                    <span class="response-label">JSON数据：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_json" />
+                    </div>
+                  </div>
+                  <div v-if="data.api_info.result_data?.request_file" class="response-item">
+                    <span class="response-label">文件数据：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_file" />
+                    </div>
+                  </div>
+                  <div v-if="data.api_info.result_data?.url" class="response-item">
+                    <span class="response-label">请求URL：</span>
+                    <span class="response-value">{{ data.api_info.result_data.url }}</span>
+                  </div>
+                </div>
               </a-tab-pane>
               <a-tab-pane key="3" title="响应信息">
-                <a-space direction="vertical">
-                  <a-space>
-                    <a-tag color="orange">响 应 体</a-tag>
-                    <JsonDisplay
-                      :data="
-                        data.api_info.result_data?.json
-                          ? data.api_info.result_data?.json
-                          : data.api_info.result_data?.text
-                      "
-                    />
-                  </a-space>
-                </a-space>
+                <div class="response-section">
+                  <div class="response-item">
+                    <span class="response-label">响应状态：</span>
+                    <span class="response-value">{{ data.api_info.result_data?.code }}</span>
+                  </div>
+                  <div class="response-item">
+                    <span class="response-label">响应时间：</span>
+                    <span class="response-value">{{ data.api_info.result_data?.time }} 秒</span>
+                  </div>
+                  <div v-if="data.api_info.result_data?.error_msg" class="response-item error-item">
+                    <span class="response-label">失败提示：</span>
+                    <span class="response-value">{{ data.api_info.result_data.error_msg }}</span>
+                  </div>
+                  <div
+                    v-if="
+                      data.api_info.result_data?.headers &&
+                      Object.keys(data.api_info.result_data.headers).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">响应头：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.headers" />
+                    </div>
+                  </div>
+                  <div class="response-item">
+                    <span class="response-label">响应体：</span>
+                    <div class="response-value">
+                      <JsonDisplay
+                        :data="data.api_info.result_data?.json || data.api_info.result_data?.text"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </a-tab-pane>
+              <a-tab-pane key="4" title="缓存数据">
+                <div class="response-section">
+                  <div class="response-item">
+                    <span class="response-label">缓存内容：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data?.cache_all" />
+                    </div>
+                  </div>
+                </div>
               </a-tab-pane>
             </a-tabs>
           </a-tab-pane>
@@ -312,6 +286,7 @@
   import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+  import KeyValueList from '@/components/KeyValueList.vue'
 
   const enumStore = useEnum()
   const userStore = useUserStore()
@@ -468,6 +443,62 @@
     font-size: 12px;
     display: flex;
     align-items: center;
+  }
+
+  /* 响应信息样式 */
+  .response-section {
+    padding: 16px;
+    background-color: var(--color-bg-2);
+    border-radius: 4px;
+  }
+
+  .response-item {
+    display: flex;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    background-color: var(--color-fill-1);
+    border-radius: 4px;
+    border: 1px solid var(--color-neutral-3);
+    transition: all 0.2s ease;
+  }
+
+  .response-item:hover {
+    background-color: var(--color-fill-2);
+    border-color: var(--color-neutral-4);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .response-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .response-label {
+    font-weight: 500;
+    color: var(--color-text-1);
+    min-width: 100px;
+    margin-right: 16px;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  .response-value {
+    flex: 1;
+    word-break: break-word;
+    font-size: 14px;
+    color: var(--color-text-2);
+  }
+
+  .error-item {
+    background-color: #fff7e6;
+    border-color: #ffdfb8;
+  }
+
+  .error-item .response-label {
+    color: #ff7d00;
+  }
+
+  .error-item:hover {
+    background-color: #fff2e8;
   }
 
   /* 如果需要调整表单间距 */
