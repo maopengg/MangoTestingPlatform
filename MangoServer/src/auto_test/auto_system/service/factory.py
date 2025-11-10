@@ -9,6 +9,7 @@ from mangotools.models import MysqlConingModel
 from src.auto_test.auto_system.models import Database, TestObject
 from src.enums.tools_enum import AutoTypeEnum
 from src.exceptions import *
+from src.settings import MYSQL_IP
 
 
 def func_mysql_config(test_object_id: int) -> MysqlConingModel:
@@ -24,8 +25,12 @@ def func_mysql_config(test_object_id: int) -> MysqlConingModel:
     except Database.MultipleObjectsReturned:
         raise SystemEError(*ERROR_MSG_0056)
     try:
+        if mysql.host == 'db':
+            host = MYSQL_IP
+        else:
+            host = mysql.host
         return MysqlConingModel(
-            host=mysql.host,
+            host=host,
             port=mysql.port,
             user=mysql.user,
             password=mysql.password,

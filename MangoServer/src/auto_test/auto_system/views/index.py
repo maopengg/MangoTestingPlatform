@@ -9,10 +9,10 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_api.models import ApiCaseDetailedParameter
-from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter, ApiCase, ApiInfo, ApiHeaders
+from src.auto_test.auto_pytest.models import PytestCase, PytestAct, PytestTools, PytestTestFile
 from src.auto_test.auto_system.models import TestSuiteDetails
-from src.auto_test.auto_ui.models import UiCase
+from src.auto_test.auto_ui.models import UiCase, PageElement, Page, PageSteps
 from src.auto_test.auto_user.models import UserLogs, User
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
@@ -34,112 +34,121 @@ class IndexViews(ViewSet):
         try:
             api_result = TestSuiteDetails.objects.raw(
                 """
-                    SELECT
-                        weeks.id,
-                        weeks.yearweek,
-                        COALESCE(api_counts.total_count, 0) AS total_count
-                    FROM (
-                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
-                        FROM (
-                            SELECT 0 AS n UNION ALL
-                            SELECT 1 UNION ALL
-                            SELECT 2 UNION ALL
-                            SELECT 3 UNION ALL
-                            SELECT 4 UNION ALL
-                            SELECT 5 UNION ALL
-                            SELECT 6 UNION ALL
-                            SELECT 7 UNION ALL
-                            SELECT 8 UNION ALL
-                            SELECT 9 UNION ALL
-                            SELECT 10 UNION ALL
-                            SELECT 11
-                        ) weeks
-                    ) weeks
-                    LEFT JOIN (
-                        SELECT 
-                            MAX(test_suite_details.id) as id,
-                            YEARWEEK(create_time) AS yearweek, 
-                            COUNT(YEARWEEK(create_time)) AS total_count
-                        FROM test_suite_details
-                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                        AND type = 1
-                        GROUP BY YEARWEEK(create_time)
-                    ) api_counts ON weeks.yearweek = api_counts.yearweek
-                    ORDER BY weeks.yearweek;
+                SELECT weeks.id,
+                       weeks.yearweek,
+                       COALESCE(api_counts.total_count, 0) AS total_count
+                FROM (SELECT 'id' as id, YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                      FROM (SELECT 0 AS n
+                            UNION ALL
+                            SELECT 1
+                            UNION ALL
+                            SELECT 2
+                            UNION ALL
+                            SELECT 3
+                            UNION ALL
+                            SELECT 4
+                            UNION ALL
+                            SELECT 5
+                            UNION ALL
+                            SELECT 6
+                            UNION ALL
+                            SELECT 7
+                            UNION ALL
+                            SELECT 8
+                            UNION ALL
+                            SELECT 9
+                            UNION ALL
+                            SELECT 10
+                            UNION ALL
+                            SELECT 11) weeks) weeks
+                         LEFT JOIN (SELECT MAX(test_suite_details.id)   as id,
+                                           YEARWEEK(create_time)        AS yearweek,
+                                           COUNT(YEARWEEK(create_time)) AS total_count
+                                    FROM test_suite_details
+                                    WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                                      AND type = 1
+                                    GROUP BY YEARWEEK(create_time)) api_counts ON weeks.yearweek = api_counts.yearweek
+                ORDER BY weeks.yearweek;
                 """
             )
             ui_result = TestSuiteDetails.objects.raw(
                 """
-                    SELECT
-                        weeks.id,
-                        weeks.yearweek,
-                        COALESCE(api_counts.total_count, 0) AS total_count
-                    FROM (
-                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
-                        FROM (
-                            SELECT 0 AS n UNION ALL
-                            SELECT 1 UNION ALL
-                            SELECT 2 UNION ALL
-                            SELECT 3 UNION ALL
-                            SELECT 4 UNION ALL
-                            SELECT 5 UNION ALL
-                            SELECT 6 UNION ALL
-                            SELECT 7 UNION ALL
-                            SELECT 8 UNION ALL
-                            SELECT 9 UNION ALL
-                            SELECT 10 UNION ALL
-                            SELECT 11
-                        ) weeks
-                    ) weeks
-                    LEFT JOIN (
-                        SELECT 
-                            MAX(test_suite_details.id) as id,
-                            YEARWEEK(create_time) AS yearweek, 
-                            COUNT(YEARWEEK(create_time)) AS total_count
-                        FROM test_suite_details
-                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                        AND type = 0
-                        GROUP BY YEARWEEK(create_time)
-                    ) api_counts ON weeks.yearweek = api_counts.yearweek
-                    ORDER BY weeks.yearweek;
-    
+                SELECT weeks.id,
+                       weeks.yearweek,
+                       COALESCE(api_counts.total_count, 0) AS total_count
+                FROM (SELECT 'id' as id, YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                      FROM (SELECT 0 AS n
+                            UNION ALL
+                            SELECT 1
+                            UNION ALL
+                            SELECT 2
+                            UNION ALL
+                            SELECT 3
+                            UNION ALL
+                            SELECT 4
+                            UNION ALL
+                            SELECT 5
+                            UNION ALL
+                            SELECT 6
+                            UNION ALL
+                            SELECT 7
+                            UNION ALL
+                            SELECT 8
+                            UNION ALL
+                            SELECT 9
+                            UNION ALL
+                            SELECT 10
+                            UNION ALL
+                            SELECT 11) weeks) weeks
+                         LEFT JOIN (SELECT MAX(test_suite_details.id)   as id,
+                                           YEARWEEK(create_time)        AS yearweek,
+                                           COUNT(YEARWEEK(create_time)) AS total_count
+                                    FROM test_suite_details
+                                    WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                                      AND type = 0
+                                    GROUP BY YEARWEEK(create_time)) api_counts ON weeks.yearweek = api_counts.yearweek
+                ORDER BY weeks.yearweek;
+
                 """
             )
             pytest_result = TestSuiteDetails.objects.raw(
                 """
-                    SELECT
-                        weeks.id,
-                        weeks.yearweek,
-                        COALESCE(api_counts.total_count, 0) AS total_count
-                    FROM (
-                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
-                        FROM (
-                            SELECT 0 AS n UNION ALL
-                            SELECT 1 UNION ALL
-                            SELECT 2 UNION ALL
-                            SELECT 3 UNION ALL
-                            SELECT 4 UNION ALL
-                            SELECT 5 UNION ALL
-                            SELECT 6 UNION ALL
-                            SELECT 7 UNION ALL
-                            SELECT 8 UNION ALL
-                            SELECT 9 UNION ALL
-                            SELECT 10 UNION ALL
-                            SELECT 11
-                        ) weeks
-                    ) weeks
-                    LEFT JOIN (
-                        SELECT 
-                            MAX(test_suite_details.id) as id,
-                            YEARWEEK(create_time) AS yearweek, 
-                            COUNT(YEARWEEK(create_time)) AS total_count
-                        FROM test_suite_details
-                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                        AND type = 2
-                        GROUP BY YEARWEEK(create_time)
-                    ) api_counts ON weeks.yearweek = api_counts.yearweek
-                    ORDER BY weeks.yearweek;
-    
+                SELECT weeks.id,
+                       weeks.yearweek,
+                       COALESCE(api_counts.total_count, 0) AS total_count
+                FROM (SELECT 'id' as id, YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                      FROM (SELECT 0 AS n
+                            UNION ALL
+                            SELECT 1
+                            UNION ALL
+                            SELECT 2
+                            UNION ALL
+                            SELECT 3
+                            UNION ALL
+                            SELECT 4
+                            UNION ALL
+                            SELECT 5
+                            UNION ALL
+                            SELECT 6
+                            UNION ALL
+                            SELECT 7
+                            UNION ALL
+                            SELECT 8
+                            UNION ALL
+                            SELECT 9
+                            UNION ALL
+                            SELECT 10
+                            UNION ALL
+                            SELECT 11) weeks) weeks
+                         LEFT JOIN (SELECT MAX(test_suite_details.id)   as id,
+                                           YEARWEEK(create_time)        AS yearweek,
+                                           COUNT(YEARWEEK(create_time)) AS total_count
+                                    FROM test_suite_details
+                                    WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                                      AND type = 2
+                                    GROUP BY YEARWEEK(create_time)) api_counts ON weeks.yearweek = api_counts.yearweek
+                ORDER BY weeks.yearweek;
+
                 """
             )
             result_dict = {
@@ -209,7 +218,7 @@ class IndexViews(ViewSet):
         """
         active_user_counts = UserLogs.objects.values('user') \
                                  .annotate(total_logins=Count('id')) \
-                                 .order_by('-total_logins')[:10]
+                                 .order_by('-total_logins')[:30]
         name_list = []
         total_logins_list = []
         for user_count in active_user_counts:
@@ -220,3 +229,29 @@ class IndexViews(ViewSet):
             'name': name_list[::-1],
             'total_logins': total_logins_list[::-1],
         })
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def statistics(self, request: Request):
+        """
+        测试统计
+        @param request:
+        @return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0092, {'uiStats': {
+            'elementCount': PageElement.objects.count(),
+            'pageCount': Page.objects.count(),
+            'stepCount': PageSteps.objects.count(),
+            'caseCount': UiCase.objects.count(),
+        },
+            'apiStats': {
+                'interfaceCount': ApiInfo.objects.count(),
+                'caseCount': ApiCase.objects.count(),
+                'headersCount': ApiHeaders.objects.count(),
+            },
+            'pytestStats': {
+                'processObjects': PytestAct.objects.count(),
+                'caseCount': PytestCase.objects.count(),
+                'toolFiles': PytestTools.objects.count(),
+                'testFiles': PytestTestFile.objects.count(),
+            }})

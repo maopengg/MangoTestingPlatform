@@ -22,16 +22,7 @@
       </template>
     </a-dropdown>
   </div>
-  <template>
-    <a-modal v-model:visible="visible" @cancel="handleCancel" @ok="handleOk">
-      <template #title> 扫描二维码加群</template>
-      <span>进群需要git点Starred（点星）</span>
-      <a-space>
-        <img alt="作者微信" src="/static/images/author.jpg" />
-        <img alt="交流群" src="/static/images/group.jpg" />
-      </a-space>
-    </a-modal>
-  </template>
+  <ContactAuthor v-model:visible="visible" />
 </template>
 
 <script lang="ts" setup>
@@ -44,6 +35,9 @@
   import { webSocketURL } from '@/api/axios.config'
   import { SERVER } from '@/setting'
   import { useNotificationMessage } from '@/store/modules/notification-message'
+  
+  // 导入联系作者组件
+  import ContactAuthor from '@/views/index/components/ContactAuthor.vue'
 
   const userStore = useUserStore()
   const options = [
@@ -190,14 +184,7 @@
       connectWebSocket()
     }
   })
-  const visible = ref(import.meta.env.VITE_IS_INDEX_WINDOW == 'true')
-
-  const handleOk = () => {
-    visible.value = false
-  }
-  const handleCancel = () => {
-    visible.value = false
-  }
+  const visible = ref(false)
 
   onMounted(() => {})
 </script>

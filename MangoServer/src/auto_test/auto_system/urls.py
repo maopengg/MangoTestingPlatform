@@ -72,6 +72,7 @@ urlpatterns = [
     path('index/result/week/sum', IndexViews.as_view({'get': 'case_result_week_sum'})),
     path('index/run/sum', IndexViews.as_view({'get': 'case_run_sum'})),
     path('index/activity/level', IndexViews.as_view({'get': 'activity_level'})),
+    path('index/statistics', IndexViews.as_view({'get': 'statistics'})),
     #
     path('cache/data', CacheDataCRUD.as_view()),
     path('cache/data/key/value', CacheDataViews.as_view({'get': 'get_key_value'})),

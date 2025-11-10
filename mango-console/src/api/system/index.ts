@@ -9,6 +9,15 @@ export function getSystemActivityLevel() {
   })
 }
 
+export function getSystemIndexStatistics() {
+  return get({
+    url: 'system/index/statistics',
+    data: () => {
+      return {}
+    },
+  })
+}
+
 export function getSystemCaseResultWeekSum() {
   return get({
     url: 'system/index/result/week/sum',

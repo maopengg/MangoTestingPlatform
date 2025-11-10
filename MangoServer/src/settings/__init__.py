@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
 
-VERSION = '5.8.4'
+VERSION = '5.8.5'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -129,7 +129,7 @@ if not IS_SQLITE:
                 'init_command': 'SET SESSION sort_buffer_size=8 * 1024 * 1024',  # 会话级设置
                 'isolation_level': 'READ COMMITTED',  # 可选：事务隔离级别
             },
-            'CONN_MAX_AGE': 60 * 30,  # 连接最大存活时间（秒）
+            'CONN_MAX_AGE': 60,  # 连接最大存活时间（秒）
         }
     }
 else:
