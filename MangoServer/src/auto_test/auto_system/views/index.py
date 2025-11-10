@@ -246,7 +246,7 @@ class IndexViews(ViewSet):
         },
             'apiStats': {
                 'interfaceCount': ApiInfo.objects.count(),
-                'caseCount': ApiCase.objects.count(),
+                'caseCount': ApiCaseDetailedParameter.objects.count(),
                 'headersCount': ApiHeaders.objects.count(),
             },
             'pytestStats': {
