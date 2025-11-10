@@ -168,11 +168,7 @@
                 </a-table>
               </a-tab-pane>
               <a-tab-pane key="3" title="用例后置">
-                <a-tabs
-                  :default-active-key="data.uiSonType"
-                  position="left"
-                  @tab-click="(key) => switchSonType(key)"
-                >
+                <a-tabs position="left" @tab-click="(key) => switchSonType(key)">
                   <a-tab-pane key="31" title="sql参数">
                     <KeyValueList
                       :data-list="pageData.record.posterior_sql"

@@ -83,6 +83,7 @@ class AssResultModel(BaseModel):
     expect: str | None = None
     actual: Any | None
     ass_msg: str | None = None
+    status: int | None = None
 
 
 class ApiCaseStepsResultModel(BaseModel):

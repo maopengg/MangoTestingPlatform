@@ -664,7 +664,7 @@
                                       size="small"
                                       status="success"
                                       @click="jsonpathTest(item, index)"
-                                      style="margin-top: 18px;"
+                                      style="margin-top: 18px"
                                     >
                                       测试
                                     </a-button>
@@ -678,12 +678,12 @@
                                   :data-list="item.posterior_sql"
                                   :field-config="[
                                     {
-                                      field: 'value',
+                                      field: 'key',
                                       label: 'Key',
                                       placeholder: '请输入key，示例：key1,key2',
                                     },
                                     {
-                                      field: 'key',
+                                      field: 'value',
                                       label: 'Sql语句',
                                       placeholder: '请输入sql语句',
                                     },

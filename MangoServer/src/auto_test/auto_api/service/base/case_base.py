@@ -33,7 +33,7 @@ class CaseBase:
             for i in parametrize.get('parametrize'):
                 key = i.get('key', None)
                 value = i.get('value', None)
-                if key is None or value is None:
+                if not key or not value:
                     raise ApiError(*ERROR_MSG_0032)
                 value = self.test_setup.test_data.replace(i.get('value'))
                 log.api.debug(f'用例参数化->key:{i.get("key")}，value：{value}')
@@ -41,18 +41,24 @@ class CaseBase:
 
     def __front_custom(self, front_custom):
         for custom in front_custom:
-            log.api.debug(f'前置自定义->key:{custom.get("key")}，value:{custom.get("value")}')
-            self.test_setup.test_data.set_cache(custom.get('key'), custom.get('value'))
+            key = custom.get('key', None)
+            value = custom.get('value', None)
+            if not key or not value:
+                raise ApiError(*ERROR_MSG_0029)
+            log.api.debug(f'前置自定义->key:{key}，value:{value}')
+            self.test_setup.test_data.set_cache(key, value)
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect:
             for i in front_sql:
                 key = self.test_setup.test_data.replace(i.get('key'))
                 value = self.test_setup.test_data.replace(i.get('value'))
+                if not value:
+                    raise ApiError(*ERROR_MSG_0036)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
                 log.api.debug(f'用例前置sql->key:{key}，value:{value}，查询结果：{res}')
-                if isinstance(res, list) and len(res) > 0 and key is not None and key != '':
-                    self.test_setup.test_data.set_sql_cache(i.get('key'), res[0])
+                if isinstance(res, list) and len(res) > 0 and key:
+                    self.test_setup.test_data.set_sql_cache(key, res[0])
                 if not res:
                     raise ApiError(*ERROR_MSG_0034, value=(value,))
 
@@ -67,6 +73,8 @@ class CaseBase:
             for sql in posterior_sql:
                 key = self.test_setup.test_data.replace(self.test_setup.test_data.replace(sql.get('key')))
                 sql = self.test_setup.test_data.replace(self.test_setup.test_data.replace(sql.get('value')))
+                if not sql:
+                    raise ApiError(*ERROR_MSG_0026)
                 res = self.test_setup.mysql_connect.condition_execute(sql)
                 log.api.debug(f'用例后置sql->key:{key},sql:{sql},查询结果：{res}')
                 if key is not None or key != '' and len(res) > 0:

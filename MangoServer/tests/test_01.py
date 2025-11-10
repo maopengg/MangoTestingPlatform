@@ -1,3 +1,7 @@
-from urllib.parse import urlparse, urljoin
-
-print(urljoin('http://10.0.0.163:5173/cmpt/', 'dataView/subscriptions'))
+key = ''
+if key:
+    # key 不是 None、空字符串、空列表等"假值"
+    print("有效的key")
+else:
+    # key 是 None、空字符串、0、空列表等"假值"
+    print("无效的key")
