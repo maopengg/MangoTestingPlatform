@@ -115,7 +115,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useTable } from '@/hooks/table'
-  import { nextTick, onMounted, reactive } from 'vue'
+  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
@@ -142,8 +142,17 @@
     weekSuccessData: [],
     weekFailData: [],
   })
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   function doRefresh() {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -151,6 +160,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh()
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -208,5 +226,8 @@
         })
         .catch(console.log)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>

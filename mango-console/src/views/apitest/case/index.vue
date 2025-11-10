@@ -297,7 +297,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
   import { useProject } from '@/store/modules/get-project'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
@@ -346,8 +346,17 @@
     row: {},
   })
   const caseRunning = ref(false)
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -359,6 +368,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh()
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -601,5 +619,8 @@
       await doRefresh()
       productModule.getProjectModule(null)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>
