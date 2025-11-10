@@ -482,7 +482,8 @@
                                         handleJsonpathMethodChange(
                                           value,
                                           currentItem,
-                                          currentIndex
+                                          currentIndex,
+                                          item
                                         ),
                                     },
                                     {
@@ -1106,7 +1107,6 @@
   }
 
   function blurSave(key: string, item: string | null, id: number) {
-    console.log(key, item, id)
     const not_serialize = [
       'url',
       'headers',
@@ -1443,9 +1443,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  function handleJsonpathMethodChange(value: any, item: any, index: number) {
-    // 保存更改
-    blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
+  function handleJsonpathMethodChange(value: any, item: any, index: number, item1) {
+    blurSave('ass_jsonpath', item, item1.id)
   }
 
   function handleGeneralMethodChange(
