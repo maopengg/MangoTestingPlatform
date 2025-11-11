@@ -112,7 +112,7 @@ CHANNEL_LAYERS = {
 if not IS_SQLITE:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': 'dj_db_conn_pool.backends.mysql',
             'NAME': MYSQL_DB_NAME,
             'USER': MYSQL_USER,
             'PASSWORD': MYSQL_PASSWORD,
@@ -126,10 +126,20 @@ if not IS_SQLITE:
             'OPTIONS': {
                 'charset': 'utf8mb4',
                 'connect_timeout': 5,  # 连接超时时间
-                'init_command': "SET SESSION wait_timeout=60, interactive_timeout=60, sort_buffer_size=2 * 1024 * 1024",
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'isolation_level': 'READ COMMITTED',
+                # MySQL连接池配置
+                'autocommit': True,
             },
-            'CONN_MAX_AGE': 60,  # 这个设置是正确的
+            'POOL_OPTIONS': {
+                'pool_size': 30,
+                'max_overflow': 50,
+                'pool_recycle': 3600,
+                'pool_timeout': 30,
+                'pool_pre_ping': True,
+            },
+            'CONN_MAX_AGE': 60,  # 连接复用时间
+            'CONN_HEALTH_CHECKS': True  # 启用连接健康检查
         }
     }
 else:
