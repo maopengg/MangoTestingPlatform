@@ -125,21 +125,19 @@ if not IS_SQLITE:
             },
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'connect_timeout': 5,  # 连接超时时间
+                'connect_timeout': 5,
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'isolation_level': 'READ COMMITTED',
-                # MySQL连接池配置
                 'autocommit': True,
             },
             'POOL_OPTIONS': {
-                'pool_size': 30,
-                'max_overflow': 50,
-                'pool_recycle': 3600,
-                'pool_timeout': 30,
-                'pool_pre_ping': True,
+                'POOL_SIZE': 20,
+                'MAX_OVERFLOW': 50,
+                'RECYCLE': 3600,
+                'TIMEOUT': 30,
+                'PRE_PING': True,
             },
-            'CONN_MAX_AGE': 60,  # 连接复用时间
-            'CONN_HEALTH_CHECKS': True  # 启用连接健康检查
+            'CONN_MAX_AGE': 0,
         }
     }
 else:
