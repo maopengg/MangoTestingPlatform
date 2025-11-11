@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import copy
 import random
+import traceback
 
 from mangotools.mangos import build_decision_tree
 from pydantic import ValidationError
@@ -47,8 +48,27 @@ class TestCase:
         case.status = TaskEnum.PROCEED.value
         case.save()
         case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
-        if not case_steps_detailed:
-            raise UiError(*ERROR_MSG_0042)
+        try:
+            if not case_steps_detailed:
+                raise UiError(*ERROR_MSG_0042)
+            for i in case.front_custom:
+                if not i.get('key') or not i.get('value'):
+                    raise UiError(*ERROR_MSG_0029)
+            for i in case.front_sql:
+                if not i.get('sql_list') or not i.get('sql'):
+                    raise UiError(*ERROR_MSG_0036)
+            for i in case.posterior_sql:
+                if not i.get('sql'):
+                    raise UiError(*ERROR_MSG_0026)
+            for i in case.parametrize:
+                for e in i.get('parametrize'):
+                    if not e.get('key') or not e.get('value'):
+                        raise UiError(*ERROR_MSG_0032)
+            print(23121)
+        except MangoServerError as error:
+            case.status = TaskEnum.FAIL.value
+            case.save()
+            raise error
         case_model = CaseModel(
             send_user=send_case_user if send_case_user else self.send_user,
             test_suite_details=test_suite_details,
@@ -141,6 +161,7 @@ class TestCase:
             try:
                 page_steps_model.case_data = [StepsDataModel(**i) for i in case_steps_detailed.case_data]
             except ValidationError:
+                log.ui.debug(f'{traceback.print_exc()}')
                 raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
         page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model

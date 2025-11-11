@@ -8,15 +8,15 @@
         v-for="(item, index) in assertionData"
         :key="index"
         class="assertion-item"
-        :class="{ 'assertion-pass': isPass(item), 'assertion-fail': !isPass(item) }"
+        :class="{ 'assertion-pass': item.status === 1, 'assertion-fail': item.status !== 1 }"
       >
         <div class="assertion-header">
           <span class="assertion-method">{{ item.method }}</span>
           <span
             class="assertion-status"
-            :class="{ 'status-pass': isPass(item), 'status-fail': !isPass(item) }"
+            :class="{ 'status-pass': item.status === 1, 'status-fail': item.status !== 1 }"
           >
-            {{ isPass(item) ? '通过' : '失败' }}
+            {{ item.status === 1 ? '通过' : '失败' }}
           </span>
         </div>
         <div class="assertion-details">
@@ -54,26 +54,6 @@
   const props = defineProps<Props>()
 
   const assertionData = computed(() => props.data || [])
-
-  // 判断断言是否通过
-  const isPass = (item: AssertionItem) => {
-    // 如果有明确的实际值和预期值，直接比较
-    if (item.actual !== undefined && item.expect !== undefined) {
-      // 检查ass_msg中是否包含失败或错误关键字
-      if (item.ass_msg && (item.ass_msg.includes('失败') || item.ass_msg.includes('错误'))) {
-        return false
-      }
-      return item.actual === item.expect
-    }
-
-    // 如果没有明确的值比较，检查ass_msg
-    if (item.ass_msg) {
-      return !(item.ass_msg.includes('失败') || item.ass_msg.includes('错误'))
-    }
-
-    // 默认返回true
-    return true
-  }
 </script>
 
 <style scoped>
