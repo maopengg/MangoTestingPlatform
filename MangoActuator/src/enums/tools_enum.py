@@ -187,6 +187,7 @@ class CacheKeyEnum(BaseEnum):
 
     IS_AGENT = 'is_agent'
     AGENT = 'agent'
+    FAILED_RETRY_TIME = 'failed_retry_time'
 
     @classmethod
     def obj(cls):
