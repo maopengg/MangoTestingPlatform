@@ -178,7 +178,7 @@ class TestCase:
                 name=steps_element.ele_name.name if steps_element.ele_name else None,
                 sleep=steps_element.ele_name.sleep if steps_element.ele_name else None,
                 ope_key=steps_element.ope_key,
-                ope_value=steps_element.ope_value,
+                ope_value=steps_element.ope_value if steps_element.ope_value is not None else [],
                 sql_execute=steps_element.sql_execute,
                 custom=steps_element.custom,
                 condition_value=steps_element.condition_value,
@@ -215,7 +215,7 @@ class TestCase:
                 name=steps_element.name,
                 sleep=steps_element.sleep,
                 ope_key=data.get('ope_key'),
-                ope_value=data.get('ope_value'),
+                ope_value=data.get('ope_value') if data.get('ope_value') is not None else [],
             )
             element_model.elements.append(
                 ElementListModel(exp=steps_element.exp, loc=steps_element.loc, sub=steps_element.sub,

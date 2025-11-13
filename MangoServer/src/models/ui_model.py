@@ -54,7 +54,7 @@ class ElementModel(BaseModel):
     elements: list[ElementListModel] = []
     sleep: int | None
     ope_key: str | None
-    ope_value: list[MethodModel] | None = None
+    ope_value: list[MethodModel] | list = []
     sql_execute: list[dict] | None = None
     custom: list[dict] | None = None
     condition_value: dict | None = None
