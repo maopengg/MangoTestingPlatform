@@ -4,7 +4,9 @@
       <a-card :bordered="false" title="接口详情">
         <template #extra>
           <a-space>
-            <a-button size="small" status="success" @click="onRunCase">执行</a-button>
+            <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
+              >执行</a-button
+            >
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -280,7 +282,7 @@
   </TableBody>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
   import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
@@ -290,6 +292,7 @@
 
   const enumStore = useEnum()
   const userStore = useUserStore()
+  const caseRunning = ref(false)
 
   const pageData: any = usePageData()
   const data: any = reactive({
@@ -391,23 +394,28 @@
       .catch(console.log)
   }
 
-  function onRunCase() {
+  const onRunCase = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
+    if (caseRunning.value) return
+    caseRunning.value = true
     Message.loading('接口开始执行中~')
-    getApiCaseInfoRun(pageData.record.id, userStore.selected_environment)
-      .then((res) => {
-        data.caseResult = res.data
-        if (res.data.error_msg) {
-          Message.error(res.data.error_msg)
-        } else {
-          Message.success(res.msg)
-        }
-        doRefresh()
-      })
-      .catch(console.log)
+    try {
+      const res = await getApiCaseInfoRun(pageData.record.id, userStore.selected_environment)
+      data.caseResult = res.data
+      if (res.data.error_msg) {
+        Message.error(res.data.error_msg)
+      } else {
+        Message.success(res.msg)
+      }
+    } catch (e) {
+      doRefresh()
+    } finally {
+      caseRunning.value = false
+      doRefresh()
+    }
   }
 
   function doRefresh() {
@@ -542,17 +550,17 @@
     :deep(.key-value-row) {
       flex-wrap: wrap;
     }
-    
+
     :deep(.key-value-field) {
       min-width: 120px;
     }
-    
+
     :deep(.button-container) {
       width: 100%;
       justify-content: flex-end;
       margin-top: 8px;
     }
-    
+
     :deep(.remove-btn) {
       margin-top: 0;
       align-self: center;

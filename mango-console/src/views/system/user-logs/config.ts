@@ -97,4 +97,22 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
+  {
+    key: 'request_data',
+    label: '请求数据',
+    type: 'input',
+    placeholder: '请输入请求数据',
+    value: ref(''),
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'response_data',
+    label: '响应数据',
+    type: 'input',
+    placeholder: '请输入响应数据',
+    value: ref(''),
+    optionItems: [],
+    reset: function () {},
+  },
 ])
