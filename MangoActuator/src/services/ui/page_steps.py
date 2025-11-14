@@ -169,7 +169,7 @@ class PageSteps:
             raise UiError(*ERROR_MSG_0025)
         match element_model.type:
             case ElementOperationEnum.OPE | ElementOperationEnum.ASS | ElementOperationEnum.CONDITION:
-                element_model.ope_value = [MethodModel(**i) for i in element_data.page_step_details_data]
+                element_model.ope_value = [MethodModel(**i) for i in (element_data.page_step_details_data or [])]
             case ElementOperationEnum.SQL:
                 element_model.sql_execute = element_data.page_step_details_data
             case ElementOperationEnum.CUSTOM:
