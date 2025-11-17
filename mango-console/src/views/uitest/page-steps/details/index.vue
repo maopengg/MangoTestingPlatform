@@ -140,7 +140,11 @@
                               <a-cascader
                                 v-model="item.value"
                                 :default-value="item.value"
-                                :options="useSelectValue.ass"
+                                :options="
+                                  route.query.pageType === '0'
+                                    ? useSelectValue.assWeb
+                                    : useSelectValue.assAndroid
+                                "
                                 :placeholder="item.placeholder"
                                 allow-clear
                                 allow-search

@@ -63,12 +63,12 @@ export const useSelectValueStore = defineStore('get-select-value', {
               this.androidOpe.push(...item.children)
             } else if (item.value === 'ass_android') {
               this.assAndroid.push(...item.children)
-              this.ass.push(...item.children)
             } else if (item.value === 'ass_web') {
               this.assWeb.push(...item.children)
-              this.ass.push(...item.children)
             } else if (item.value.includes('断言')) {
               this.ass.push(item)
+              this.assAndroid.push(item)
+              this.assWeb.push(item)
             }
           })
         })
