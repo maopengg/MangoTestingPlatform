@@ -5,8 +5,8 @@
         <template #extra>
           <a-space>
             <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
-              >执行</a-button
-            >
+              >执行
+            </a-button>
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -171,7 +171,6 @@
           </a-tab-pane>
           <a-tab-pane key="8" title="响应结果">
             <a-tabs default-active-key="3">
-              1
               <a-tab-pane key="2" title="请求信息">
                 <div class="response-section">
                   <div
