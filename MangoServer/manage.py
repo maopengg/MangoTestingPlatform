@@ -4,6 +4,7 @@ import os
 import sys
 
 if __name__ == '__main__':
+    print(1231231, os.getenv('DJANGO_ENV'))
     for i, arg in enumerate(sys.argv):
         if '--env=' in arg:
             os.environ['DJANGO_ENV'] = arg.split('=')[1]
