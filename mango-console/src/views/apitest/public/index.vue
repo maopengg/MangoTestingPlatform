@@ -232,19 +232,29 @@
   }
 
   function onDelete(record: any) {
+    const batch = record === null
+    if (batch) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要删除的数据')
+        return
+      }
+    }
     Modal.confirm({
       title: '提示',
       content: '是否要删除此参数？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiPublic(record.id)
+        deleteApiPublic(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
           .finally(() => {
             doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
       },
     })
