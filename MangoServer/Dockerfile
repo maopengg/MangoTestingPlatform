@@ -12,4 +12,4 @@ ENV DJANGO_SETTINGS_MODULE=src.settings
 ENV DJANGO_ENV=${DJANGO_ENV}
 RUN echo "构建后端服务：$DJANGO_ENV"
 
-CMD ["sh", "-c", "python manage.py runserver 0.0.0.0:8000 --env=${DJANGO_ENV}"]
+CMD ["sh", "-c", "uvicorn src.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --env=dev"]
