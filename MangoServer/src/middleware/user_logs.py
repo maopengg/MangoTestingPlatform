@@ -6,7 +6,6 @@
 
 import json
 import threading
-import traceback
 
 from django.utils.deprecation import MiddlewareMixin
 from django.core.handlers.asgi import ASGIRequest
@@ -63,7 +62,7 @@ class UserLogsMiddleWare(MiddlewareMixin):
             }
             self._save_user_logs_async(log_entry)
         except Exception:
-            traceback.print_exc()
+            pass
 
     def _capture_request_data(self, request: ASGIRequest, response: Response) -> dict:
         if request.method == 'POST' or request.method == 'PUT':
