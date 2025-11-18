@@ -5,7 +5,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 COPY . .
 
-RUN python manage.py migrate --noinput
 EXPOSE 8000
 ARG DJANGO_ENV
 
