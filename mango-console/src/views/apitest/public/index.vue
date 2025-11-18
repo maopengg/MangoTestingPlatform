@@ -238,13 +238,16 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiPublic(record.id)
+        deleteApiPublic(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
           .finally(() => {
             doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
       },
     })
