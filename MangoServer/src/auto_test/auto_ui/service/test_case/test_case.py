@@ -64,8 +64,7 @@ class TestCase:
                 for e in i.get('parametrize'):
                     if not e.get('key') or not e.get('value'):
                         raise UiError(*ERROR_MSG_0032)
-            print(23121)
-        except MangoServerError as error:
+        except Exception as error:
             case.status = TaskEnum.FAIL.value
             case.save()
             raise error
@@ -103,9 +102,15 @@ class TestCase:
         return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
-        page_steps_model = self.steps_model(steps_id)
-        self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
-        return page_steps_model
+        try:
+            page_steps_model = self.steps_model(steps_id)
+            self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
+            return page_steps_model
+        except Exception as error:
+            page_steps = PageSteps.objects.get(id=steps_id)
+            page_steps.status = TaskEnum.FAIL.value
+            page_steps.save()
+            raise error
 
     def test_element(self, data: dict) -> None:
         try:
@@ -131,7 +136,7 @@ class TestCase:
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
 
     def steps_model(self,
-                    page_steps_id: id,
+                    page_steps_id: int,
                     case_steps_detailed: UiCaseStepsDetailed | None = None,
                     switch_step_open_url=False) -> PageStepsModel:
         page_steps = PageSteps.objects.get(id=page_steps_id)
