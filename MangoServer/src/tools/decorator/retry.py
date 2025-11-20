@@ -61,7 +61,7 @@ def ensure_db_connection(is_while=False, max_retries=3):
                     try_count += 1
                     if try_count > max_retries:
                         log.system.error(
-                            f'重试失败: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
+                            f'重试失败-1: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
                         if IS_SEND_MAIL:
                             from src.settings import VERSION
                             kwargs['version'] = VERSION
@@ -71,9 +71,13 @@ def ensure_db_connection(is_while=False, max_retries=3):
                     close_old_connections()
                     connection.ensure_connection()
                 except (MangoServerError, MangoToolsError) as e:
-                    log.system.error(f'异常提示-1:{e}')
+                    try_count += 1
+                    log.system.error(
+                        f'重试失败-2: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
                 except Exception as e:
-                    log.system.error(f'异常提示:{e}, 如果是首次启动项目，请启动完成之后再重启一次！')
+                    try_count += 1
+                    log.system.error(
+                        f'重试失败-3, 如果是首次启动项目，请启动完成之后再重启一次！: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
             else:
                 if is_while:
                     return func(*args, **kwargs)
