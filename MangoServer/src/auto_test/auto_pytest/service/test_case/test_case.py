@@ -12,7 +12,7 @@ from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.enums.socket_api_enum import PytestSocketEnum
 from src.enums.system_enum import ClientNameEnum, ClientTypeEnum
 from src.enums.tools_enum import TaskEnum
-from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0020
+from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0020, ERROR_MSG_0057
 from src.models.pytest_model import PytestCaseModel
 from src.models.socket_model import SocketDataModel, QueueModel
 
@@ -25,7 +25,10 @@ class TestCase:
         self.test_suite_details = test_suite_details
 
     def test_case(self, case_id, test_env: int) -> dict:
-        obj: PytestCase = PytestCase.objects.get(id=case_id)
+        try:
+            obj: PytestCase = PytestCase.objects.get(id=case_id)
+        except PytestCase.DoesNotExist:
+            raise PytestError(*ERROR_MSG_0057)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
         repo = git_obj()

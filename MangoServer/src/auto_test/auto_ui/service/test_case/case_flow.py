@@ -64,12 +64,13 @@ class UiCaseFlow:
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                         parametrize=test_suite_details.parametrize,
                     )
-                    log.system.debug(f'发送用例：{case_model.model_dump_json()}')
+                    log.system.debug(f'UI发送用例：{case_model.model_dump_json()}')
                     cls.send_case(model.id, model.username, case_model, test_suite.user.username)
                     cls.update_status_proceed(test_suite, test_suite_details)
-            except MangoServerError as error:
+            except Exception as error:
                 log.system.error(f'执行器主动拉取任务失败：{error}')
                 test_suite_details.status = TaskEnum.FAIL.value
+                test_suite_details.retry += 1
                 test_suite_details.save()
 
     @classmethod

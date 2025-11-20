@@ -44,7 +44,10 @@ class TestCase:
                   test_suite_details: int | None = None,
                   parametrize: list[dict] | list = None,
                   send_case_user: str = None) -> CaseModel:
-        case = UiCase.objects.get(id=case_id)
+        try:
+            case = UiCase.objects.get(id=case_id)
+        except UiCase.DoesNotExist:
+            raise UiError(*ERROR_MSG_0057)
         case.status = TaskEnum.PROCEED.value
         case.save()
         case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')

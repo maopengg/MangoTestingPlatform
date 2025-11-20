@@ -36,7 +36,10 @@ class TestCase:
         self.test_suite_details = test_suite_details
 
         self.test_setup = APIBaseTestSetup()
-        self.api_case: ApiCase = ApiCase.objects.get(id=case_id)
+        try:
+            self.api_case: ApiCase = ApiCase.objects.get(id=case_id)
+        except ApiCase.DoesNotExist:
+            raise ApiError(*ERROR_MSG_0057)
         self.case_base = CaseBase(self.test_setup, self.api_case)
 
         self.api_case.status = TaskEnum.PROCEED.value
