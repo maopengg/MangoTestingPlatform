@@ -13,7 +13,7 @@
             :placeholder="field.placeholder || `请选择${field.label}`"
             :expand-trigger="field.expandTrigger || 'hover'"
             :value-key="field.valueKey || 'key'"
-            @change="(value) => field.onChange && field.onChange(value, item, index)"
+            @change="(value) => field.onChange && field.onChange(value, dataList, index)"
             :class="field.className || 'key-cascader'"
           />
           <!-- 支持文本域 -->
@@ -205,22 +205,22 @@
     .key-value-row {
       flex-wrap: wrap;
     }
-    
+
     .key-value-field {
       min-width: 120px;
     }
-    
+
     .button-container {
       width: 100%;
       justify-content: flex-end;
       margin-top: 8px;
     }
-    
+
     .remove-btn {
       margin-top: 0;
       align-self: center;
     }
-    
+
     /* 确保插槽中的按钮在小屏幕上也正确对齐 */
     :deep(.button-container .arco-btn) {
       margin-top: 0;
