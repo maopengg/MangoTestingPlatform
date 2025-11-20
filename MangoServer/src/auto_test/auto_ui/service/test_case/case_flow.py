@@ -64,6 +64,7 @@ class UiCaseFlow:
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                         parametrize=test_suite_details.parametrize,
                     )
+                    log.system.debug(f'发送用例：{case_model.model_dump_json()}')
                     cls.send_case(model.id, model.username, case_model, test_suite.user.username)
                     cls.update_status_proceed(test_suite, test_suite_details)
             except MangoServerError as error:
