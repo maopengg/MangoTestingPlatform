@@ -82,9 +82,8 @@ class APIBaseTestSetup(PublicBase):
                                 file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
                                 mime_type, _ = mimetypes.guess_type(file_path)
                                 if mime_type is None:
-                                    file.append((k, (file_name, open(file_path, 'rb'),)))
-                                else:
-                                    file.append((k, (file_name, open(file_path, 'rb'), mime_type)))
+                                    mime_type = 'application/octet-stream'
+                                file.append((k, (file_name, open(file_path, 'rb'), mime_type)))
                         request_data_model.file = file
                 else:
                     value = self.test_data.replace(value)
