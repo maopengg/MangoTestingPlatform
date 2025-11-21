@@ -145,6 +145,7 @@
   function contactAuthor() {
     // 打开联系作者弹窗
     contactVisible.value = true
+    console.log(contactVisible.value)
   }
 </script>
 
