@@ -1,10 +1,7 @@
-<template>
-  <div ref="barChart" :style="{ width: '100%', height: '250px' }"></div>
-</template>
-
 <script lang="ts" setup>
   import { ref, onMounted, watch } from 'vue'
   import * as echarts from 'echarts'
+  import { graphic } from 'echarts/core'
 
   // 定义 props
   const props = defineProps<{
@@ -18,31 +15,72 @@
   // ECharts 配置
   const chartOptions: echarts.EChartsOption = {
     tooltip: {
-      trigger: 'item',
+      trigger: 'axis',
     },
     xAxis: {
       type: 'category',
       data: ['1周', '2周', '3周', '4周', '5周', '6周', '7周', '8周', '9周', '10周', '11周', '12周'],
+      axisLine: {
+        show: true,
+        lineStyle: {
+          color: '#98A3B2',
+          width: 0,
+          type: 'solid',
+        },
+      },
+      axisTick: {
+        show: false,
+      },
     },
     legend: {
       data: ['成功', '失败'],
+      textStyle: {
+        color: 'var(--color-text-2)', // 与主页面一致的文本颜色
+      },
     },
     yAxis: {
       type: 'value',
+      splitLine: { show: false },
+      axisLine: {
+        show: true,
+        lineStyle: {
+          color: '#98A3B2',
+          width: 0,
+          type: 'solid',
+        },
+      },
     },
     series: [
       {
         name: '成功',
         type: 'line',
+        data: [], // 将在 updateChart 中动态设置
+        symbolSize: 0,
+        smooth: true,
+        lineStyle: {
+          width: 5,
+          shadowColor: '#999', // 设置折线阴影
+          shadowBlur: 10,
+          shadowOffsetY: 5,
+        },
         itemStyle: {
-          color: 'green', // 绿色
+          color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#91cc75' }]), // 与主页面一致的绿色
         },
       },
       {
         name: '失败',
         type: 'line',
+        data: [], // 将在 updateChart 中动态设置
+        symbolSize: 0,
+        smooth: true,
+        lineStyle: {
+          width: 5,
+          shadowColor: '#999', // 设置折线阴影
+          shadowBlur: 10,
+          shadowOffsetY: 5,
+        },
         itemStyle: {
-          color: 'red', // 红色
+          color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#d34141' }]), // 红色
         },
       },
     ],
@@ -90,3 +128,7 @@
     initBarChart()
   })
 </script>
+
+<template>
+  <div ref="barChart" :style="{ width: '100%', height: '250px' }"></div>
+</template>
