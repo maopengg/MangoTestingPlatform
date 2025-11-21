@@ -279,13 +279,13 @@
 
   function onDataForm() {
     if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
       if (data.isAdd) {
         value['test_object'] = route.query.id
         value['status'] = 0
         postSystemNotice(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
@@ -294,6 +294,7 @@
         value['id'] = data.updateId
         putSystemNotice(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })

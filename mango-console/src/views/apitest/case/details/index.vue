@@ -1298,13 +1298,12 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['case'] = route.query.case_id
       value['case_sort'] = data.data.length
-
       postApiCaseDetailed(value, route.query.case_id)
         .then((res) => {
+          modalDialogRef.value?.toggle()
           Message.success(res.msg)
           doRefresh()
         })

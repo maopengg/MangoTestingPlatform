@@ -526,7 +526,6 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['front_custom'] = []
@@ -534,6 +533,7 @@
         value['posterior_sql'] = []
         postUiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
@@ -542,6 +542,7 @@
         value['id'] = data.updateId
         putUiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })

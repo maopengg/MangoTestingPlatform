@@ -255,11 +255,11 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (userData.isAdd) {
         postUserInfo(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
@@ -268,6 +268,7 @@
         value['id'] = userData.updateId
         putUserInfo(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })

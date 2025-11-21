@@ -213,12 +213,12 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['status'] = 1
         postUserDepartmentList(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
             project.getProject()
@@ -229,6 +229,7 @@
         value['id'] = data.updateId
         putUserDepartmentList(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
             project.getProject()

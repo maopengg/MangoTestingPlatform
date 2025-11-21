@@ -194,7 +194,6 @@
 
   function onDataForm() {
     if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
       let typeList = ['ui_case', 'api_case', 'pytest_case']
       value[typeList[value.type]] = value.case_id
@@ -204,6 +203,7 @@
         value['task'] = route.query.id
         postSystemTasksRunCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
@@ -212,6 +212,7 @@
         value['id'] = data.updateId
         putSystemTasksRunCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })

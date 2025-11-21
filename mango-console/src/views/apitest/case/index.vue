@@ -450,7 +450,6 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['front_custom'] = []
@@ -459,6 +458,7 @@
         value['front_headers'] = []
         postApiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
@@ -467,6 +467,7 @@
         value['id'] = data.updateId
         putApiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })

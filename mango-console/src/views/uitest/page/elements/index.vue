@@ -125,7 +125,13 @@
       <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+  <ModalDialog
+    ref="modalDialogRef"
+    :title="data.actionTitle"
+    :show-continuous-submit="true"
+    @confirm="onDataForm"
+    @continuous-submit="onContinuousSubmit"
+  >
     <template #content>
       <a-form :model="formModel">
         <a-form-item
@@ -361,7 +367,6 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['page'] = route.query.id
       if (data.isAdd) {
@@ -370,17 +375,36 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            modalDialogRef.value?.toggle()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+            Message.error('操作失败，请重试')
+          })
+          .finally(() => {
+            // 重置 loading 状态
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUiElement(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            modalDialogRef.value?.toggle()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+            Message.error('操作失败，请重试')
+          })
+          .finally(() => {
+            // 重置 loading 状态
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      // 表单验证失败时也需要重置 loading 状态
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -620,6 +644,38 @@
     document.body.appendChild(aLink)
     aLink.click()
     document.body.removeChild(aLink)
+  }
+
+  function onContinuousSubmit() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      let value = getFormItems(formItems)
+      value['page'] = route.query.id
+      if (data.isAdd) {
+        value['is_iframe'] = 0
+        postUiElement(value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+            // 成功后不清空表单，保持模态框打开以便连续提交
+          })
+          .catch((error) => {
+            console.log(error)
+            Message.error('操作失败，请重试')
+          })
+          .finally(() => {
+            // 重置连续提交按钮的 loading 状态
+            modalDialogRef.value?.setContinuousLoading(false)
+          })
+      } else {
+        // 编辑模式下不支持连续提交
+        Message.warning('编辑模式下不支持连续提交')
+        // 重置连续提交按钮的 loading 状态
+        modalDialogRef.value?.setContinuousLoading(false)
+      }
+    } else {
+      // 表单验证失败时也需要重置 loading 状态
+      modalDialogRef.value?.setContinuousLoading(false)
+    }
   }
 
   onMounted(() => {

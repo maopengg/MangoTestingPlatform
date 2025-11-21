@@ -552,7 +552,6 @@
 
   function onDataForm() {
     if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['case'] = route.query.id
@@ -561,6 +560,7 @@
         value['case_sort'] = data.data.length
         postUiCaseStepsDetailed(value, route.query.id)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             getUiCaseStepsRefreshCacheData(res.data.id)
               .then((res) => {
@@ -574,6 +574,7 @@
         value['id'] = data.updateId
         putUiCaseStepsDetailed(value, route.query.id)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
