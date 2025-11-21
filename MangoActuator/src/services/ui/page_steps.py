@@ -67,6 +67,8 @@ class PageSteps:
 
     async def page_init(self, is_page_init: bool = True):
         if self.page_steps_model.environment_config.mysql_config:
+            if self.page_steps_model.environment_config.mysql_config.host == 'db':
+                self.page_steps_model.environment_config.mysql_config.host = '43.142.161.61'
             self.base_data.set_mysql(
                 self.page_steps_model.environment_config.db_c_status,
                 self.page_steps_model.environment_config.db_rud_status,
@@ -183,8 +185,9 @@ class PageSteps:
     async def _ope_steps(self, element_model, element_list_model) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
-        await element_ope.open_device(self.page_steps_model.switch_step_open_url)
-        self._device_opened = True
+        if not self._device_opened:
+            await element_ope.open_device(self.page_steps_model.switch_step_open_url)
+            self._device_opened = True
         element_result = await element_ope.element_main(element_model, element_list_model)
         send_global_msg(f'UI-结束执行元素或操作：{element_model.name or element_model.ope_key}')
         self.page_step_result_model.status = element_result.status

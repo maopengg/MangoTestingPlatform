@@ -76,8 +76,10 @@ class SettingPage(QWidget):
         card_layout2.addWidget(MangoLabel('AI的key：'), 1, 0)
         card_layout2.addWidget(self.agent, 1, 1)
         card_layout2.addWidget(MangoLabel('用于在正常元素定位失败后，使用AI来协助定位元素'), 1, 2)
-
-        self.failed_retry_time = MangoLineEdit('请输入重试时间', SetConfig.get_failed_retry_time())  # type: ignore
+        if SetConfig.get_failed_retry_time() == 'None':
+            self.failed_retry_time = MangoLineEdit('请输入重试时间', )  # type: ignore
+        else:
+            self.failed_retry_time = MangoLineEdit('请输入重试时间', SetConfig.get_failed_retry_time())  # type: ignore
         self.failed_retry_time.setFixedWidth(250)
         self.failed_retry_time.click.connect(self.set_failed_retry_time)
         card_layout2.addWidget(MangoLabel('失败重试时间：'), 2, 0)
@@ -132,7 +134,7 @@ class SettingPage(QWidget):
         )
 
     def set_failed_retry_time(self, value):
-        print(value)
-        value = int(value)
+        if value == '':
+            value = None
         os.environ['FAILED_RETRY_TIME'] = str(value)
         SetConfig.set_failed_retry_time(str(value))
