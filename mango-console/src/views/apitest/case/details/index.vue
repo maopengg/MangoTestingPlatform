@@ -1194,7 +1194,13 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     getApiCaseDetailed(route.query.case_id)
       .then((res) => {
         data.data = res.data
-        if (res.data.length !== 0) {
+        if (data.selectData && res.data) {
+          res.data.forEach((item: any) => {
+            if (item.id === data.selectData.id) {
+              select(item)
+            }
+          })
+        } else if (res.data) {
           select(res.data[0])
         }
       })

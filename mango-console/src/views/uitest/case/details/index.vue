@@ -593,9 +593,16 @@
     getUiCaseStepsDetailed(route.query.id)
       .then((res) => {
         data.data = res.data
-        if (res.data) {
+        if (data.selectData && res.data) {
+          res.data.forEach((item: any) => {
+            if (item.id === data.selectData.id) {
+              data.selectData = item
+            }
+          })
+        } else if (res.data) {
           data.selectData = res.data[0]
         }
+
         const hasRunningItem =
           res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
 
@@ -1011,17 +1018,17 @@
     :deep(.key-value-row) {
       flex-wrap: wrap;
     }
-    
+
     :deep(.key-value-field) {
       min-width: 120px;
     }
-    
+
     :deep(.button-container) {
       width: 100%;
       justify-content: flex-end;
       margin-top: 8px;
     }
-    
+
     :deep(.remove-btn) {
       margin-top: 0;
       align-self: center;
