@@ -8,6 +8,7 @@ import re
 import traceback
 from urllib.parse import urlparse, urljoin
 
+import magic
 from mangotools.exceptions import MangoToolsError
 
 from src.auto_test.auto_api.models import ApiInfo
@@ -80,7 +81,8 @@ class APIBaseTestSetup(PublicBase):
                             for k, v in i.items():
                                 file_path = self.test_data.replace(v)
                                 file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                                mime_type, _ = mimetypes.guess_type(file_path)
+                                mime = magic.Magic(mime=True)
+                                mime_type = mime.from_file(file_path)
                                 if mime_type is None:
                                     file.append((k, (file_name, open(file_path, 'rb'),)))
                                 else:
