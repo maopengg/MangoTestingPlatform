@@ -52,10 +52,10 @@ class CacheDataKeyEnum(BaseEnum):
     PYTEST_GIT_URL = 'git的请求url示例>https://gitee.com/mao-peng/MangoPytest'
     PYTEST_GIT_USERNAME = 'git账号'
     PYTEST_GIT_PASSWORD = 'git密码'
-    PYTEST_ACT = '中间对象（PO模式的pageobject）目录名称'
+    PYTEST_ACT = '过程对象目录名称'
     PYTEST_TESTCASE = '测试用例目录名称'
-    PYTEST_TOOLS = '脚本目录名称'
-    PYTEST_UPLOAD = '上传文件目录名称'
+    PYTEST_TOOLS = '工具文件目录名称'
+    PYTEST_UPLOAD = '测试文件目录名称'
 
     @classmethod
     def obj(cls):
@@ -78,6 +78,7 @@ class CacheDataKeyEnum(BaseEnum):
     def get_cache_value(cls, key):
         from src.auto_test.auto_system.models import CacheData
         return CacheData.objects.get(key=key.name).value
+
 
 class CacheDataKey2Enum(BaseEnum):
     """缓存KEY的名称，不在系统设置页面展示"""
