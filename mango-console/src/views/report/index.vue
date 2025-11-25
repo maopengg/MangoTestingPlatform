@@ -161,7 +161,9 @@
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
         const hasRunningItem =
-          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+          res.data &&
+          Array.isArray(res.data) &&
+          res.data.some((item: any) => item.status === 3 || item.status === 2)
 
         if (hasRunningItem) {
           // 5秒后再次刷新
