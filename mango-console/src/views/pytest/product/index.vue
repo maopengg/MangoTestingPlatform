@@ -237,7 +237,12 @@
             doRefresh()
             project.projectPytestName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putPytestProduct(value)
@@ -247,8 +252,15 @@
             doRefresh()
             project.projectPytestName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

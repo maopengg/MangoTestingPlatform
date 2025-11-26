@@ -1,18 +1,3 @@
-<template>
-  <a-modal v-model:visible="showModal" :title="title" class="modal-dialog-wrapper">
-    <Scrollbar wrap-class="modal-dialog__wrap">
-      <slot name="content"></slot>
-    </Scrollbar>
-    <template #footer>
-      <a-space>
-        <a-button @click="onCancel">取消</a-button>
-        <a-button v-if="showContinuousSubmit" type="primary" :loading="continuousLoading" @click="onContinuousSubmit">连续提交</a-button>
-        <a-button type="primary" :loading="confirmLoading" @click="onConfirm">提交</a-button>
-      </a-space>
-    </template>
-  </a-modal>
-</template>
-
 <script lang="ts">
   import { defineComponent, ref } from 'vue'
 
@@ -40,6 +25,10 @@
 
       function toggle() {
         showModal.value = !showModal.value
+        // 当模态框关闭时，重置loading状态
+        if (!showModal.value) {
+          resetLoading()
+        }
         return Promise.resolve(showModal.value)
       }
 
@@ -50,6 +39,8 @@
 
       function close() {
         showModal.value = false
+        // 关闭时重置loading状态
+        resetLoading()
         return Promise.resolve(false)
       }
 
@@ -61,6 +52,8 @@
 
       function onCancel() {
         showModal.value = false
+        // 取消时重置loading状态
+        resetLoading()
         emit('cancel')
       }
 
@@ -101,6 +94,26 @@
     },
   })
 </script>
+<template>
+  <a-modal v-model:visible="showModal" :title="title" class="modal-dialog-wrapper">
+    <Scrollbar wrap-class="modal-dialog__wrap">
+      <slot name="content"></slot>
+    </Scrollbar>
+    <template #footer>
+      <a-space>
+        <a-button @click="onCancel">取消</a-button>
+        <a-button
+          v-if="showContinuousSubmit"
+          type="primary"
+          :loading="continuousLoading"
+          @click="onContinuousSubmit"
+          >连续提交</a-button
+        >
+        <a-button type="primary" :loading="confirmLoading" @click="onConfirm">提交</a-button>
+      </a-space>
+    </template>
+  </a-modal>
+</template>
 
 <style scoped>
   .modal-dialog__wrap {

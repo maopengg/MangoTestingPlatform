@@ -189,7 +189,14 @@
             websocket(13213, '231', false)
           })
         })
-        .catch(console.log)
+        .catch((error) => {
+          console.log(error)
+        })
+        .finally(() => {
+          modalDialogRef.value?.setConfirmLoading(false)
+        })
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

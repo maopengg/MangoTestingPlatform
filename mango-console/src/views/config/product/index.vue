@@ -280,7 +280,12 @@
             doRefresh()
             project.projectProductName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUserProduct(value)
@@ -290,8 +295,15 @@
             doRefresh()
             project.projectProductName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

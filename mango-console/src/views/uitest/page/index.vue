@@ -277,7 +277,9 @@
           })
           .catch((error) => {
             console.log(error)
-            Message.error('操作失败，请重试')
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
           })
       } else {
         value['id'] = data.updateId
@@ -289,9 +291,13 @@
           })
           .catch((error) => {
             console.log(error)
-            Message.error('操作失败，请重试')
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
           })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

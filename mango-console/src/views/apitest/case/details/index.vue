@@ -1307,7 +1307,14 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
           Message.success(res.msg)
           doRefresh()
         })
-        .catch(console.log)
+        .catch((error) => {
+          console.log(error)
+        })
+        .finally(() => {
+          modalDialogRef.value?.setConfirmLoading(false)
+        })
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

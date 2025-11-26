@@ -227,7 +227,12 @@
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putPytestFile(value)
@@ -236,8 +241,15 @@
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

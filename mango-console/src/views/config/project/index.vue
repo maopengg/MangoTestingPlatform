@@ -224,7 +224,12 @@
             project.getProject()
             project.projectProductName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUserDepartmentList(value)
@@ -235,8 +240,15 @@
             project.getProject()
             project.projectProductName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
