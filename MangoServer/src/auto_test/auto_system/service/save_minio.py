@@ -20,6 +20,8 @@ if IS_MINIO:
 
 
 class SaveMinio:
+    _lifecycle_set = False  # 类变量，跟踪是否已设置生命周期规则
+
     def __init__(self, directory_name="screenshot"):
         self.client = Minio(
             MINIO_STORAGE_ENDPOINT,
@@ -51,7 +53,10 @@ class SaveMinio:
                 tmp_file.write(chunk)
             temp_file_path = tmp_file.name
         try:
-            self.client.set_bucket_lifecycle(MINIO_STORAGE_MEDIA_BUCKET_NAME, self.lifecycle_config)
+            # 只在第一次调用时设置生命周期规则
+            if not SaveMinio._lifecycle_set:
+                self.client.set_bucket_lifecycle(MINIO_STORAGE_MEDIA_BUCKET_NAME, self.lifecycle_config)
+                SaveMinio._lifecycle_set = True
             # 上传文件到MinIO
             self.client.fput_object(
                 MINIO_STORAGE_MEDIA_BUCKET_NAME,
