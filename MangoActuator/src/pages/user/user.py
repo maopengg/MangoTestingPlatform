@@ -1,6 +1,9 @@
 from typing import Optional
 
-from mangoui import *
+from PySide6.QtWidgets import QWidget
+from mangoui.widgets.container import MangoCard
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.layout import MangoHBoxLayout, MangoVBoxLayout, MangoFormLayout
 
 from src.models.user_model import UserModel
 from src.network import HTTP

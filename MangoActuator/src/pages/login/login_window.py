@@ -1,6 +1,10 @@
+from PySide6.QtCore import Slot
+from PySide6.QtGui import QIcon
 from mangotools.data_processor import EncryptionTool
 from mangotools.mangos import Mango
-from mangoui import *
+from mangoui.components import DialogWidget
+from mangoui.models import FormDataModel
+from mangoui.widgets.window import show_failed_message
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.network import HTTP

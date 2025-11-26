@@ -5,8 +5,14 @@
 # @Author : 毛鹏
 import os
 
+from PySide6.QtWidgets import QWidget
 from mangotools.data_processor import SqlCache
-from mangoui import *
+
+from mangoui.widgets.container import MangoCard
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.input import MangoToggle, MangoLineEdit
+from mangoui.widgets.layout import MangoHBoxLayout, MangoVBoxLayout, MangoGridLayout
+from mangoui.widgets.window import MangoScrollArea
 
 from src import project_dir, CacheKeyEnum
 from src.models.system_model import SetUserOpenSatusModel

@@ -7,7 +7,7 @@ import platform
 from enum import Enum
 
 if platform.system() != "Linux":
-    from mangoui import ComboBoxDataModel
+    from mangoui.models import ComboBoxDataModel
 
 
 class BaseEnum(Enum):

@@ -7,8 +7,15 @@ import platform
 from collections import deque
 
 import psutil
+from PySide6.QtCore import Signal, QTimer, QDateTime
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QSizePolicy
 from mangoautomation.enums import BrowserTypeEnum
-from mangoui import *
+from mangoui.widgets.container import MangoCard
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.input import MangoTextEdit
+from mangoui.widgets.layout import MangoHBoxLayout, MangoVBoxLayout, MangoFormLayout
+from mangoui.widgets.window import MangoWidget, MangoDialog
 
 from src.settings.settings import IS_WINDOW
 from src.tools import project_dir
@@ -105,21 +112,13 @@ class HomePage(MangoWidget):
         self.file_card = MangoCard(self.file_layout, '文件路径（右键路径可复制）')
 
         # 创建固定宽度的标签
-        label_width = 250
         cache_label = MangoLabel(f'{project_dir.cache()}', self)
-        cache_label.setFixedWidth(label_width)  # 设置固定宽度
         log_label = MangoLabel(f'{project_dir.logs()}', self)
-        log_label.setFixedWidth(label_width)
         screenshot_label = MangoLabel(f'{project_dir.screenshot()}', self)
-        screenshot_label.setFixedWidth(label_width)
         video_label = MangoLabel(f'{project_dir.videos()}', self)
-        video_label.setFixedWidth(label_width)
         download_label = MangoLabel(f'{project_dir.download()}', self)
-        download_label.setFixedWidth(label_width)
         upload_label = MangoLabel(f'{project_dir.upload()}', self)
-        upload_label.setFixedWidth(label_width)
         allure_label = MangoLabel(f'{project_dir.allure()}', self)
-        allure_label.setFixedWidth(label_width)
         self.file_layout.addRow('缓存目录', cache_label)
         self.file_layout.addRow('日志目录', log_label)
         self.file_layout.addRow('截图目录', screenshot_label)

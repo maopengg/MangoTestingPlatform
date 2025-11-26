@@ -5,7 +5,10 @@
 # @Author : 毛鹏
 import subprocess
 
-from mangoui import *
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.input import MangoPushButton, MangoLineEdit
+from mangoui.widgets.layout import MangoHBoxLayout, MangoGridLayout
+from mangoui.widgets.window import MangoWidget
 
 from src.tools.set_config import SetConfig
 
@@ -22,7 +25,6 @@ class AndroidPage(MangoWidget):
         card_layout = MangoGridLayout()
         h_layout.addLayout(card_layout)
         h_layout.addStretch()
-
 
         line_edit = MangoLineEdit('请输入设备ID', SetConfig.get_and_equipment())  # type: ignore
         line_edit.click.connect(SetConfig.set_and_equipment)  # type: ignore

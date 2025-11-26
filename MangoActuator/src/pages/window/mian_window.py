@@ -5,7 +5,7 @@
 
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
-from mangoui import show_info_message
+from mangoui.widgets.window import show_info_message
 
 from src.pages.window.window_logic import WindowLogic
 

@@ -3,7 +3,13 @@
 # @Description:
 # @Time   : 2023-09-28 16:03
 # @Author : 毛鹏
-from mangoui import *
+from PySide6.QtCore import QMetaObject
+from PySide6.QtWidgets import QWidget, QFrame, QSpacerItem
+from mangoui.settings.settings import THEME
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.input import MangoLineEdit, MangoCheckBox, MangoPushButton
+from mangoui.widgets.layout import MangoVBoxLayout, MangoHBoxLayout
+from PySide6.QtWidgets import QSizePolicy
 
 
 class LoginWindow(QWidget):

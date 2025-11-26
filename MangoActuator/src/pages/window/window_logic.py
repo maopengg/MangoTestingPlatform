@@ -7,8 +7,9 @@ import asyncio
 import threading
 
 from PySide6.QtCore import QThread, Signal, QTimer
-from mangoui import warning_notification, error_notification, success_notification, info_notification, \
-    MangoMain1Window, AppConfig, MenusModel
+from mangoui.components import warning_notification, error_notification, success_notification, info_notification
+from mangoui.models import AppConfig, MenusModel
+from mangoui.widgets.window import MangoMain1Window
 
 from src import process, log
 from src.enums.tools_enum import MessageEnum
@@ -56,8 +57,8 @@ class WindowLogic(MangoMain1Window):
             page_dict,
             loop,
             page='home',
-            width_coefficient=0.45,
-            height_coefficient=0.53
+            width_coefficient=0.50,
+            height_coefficient=0.60
         )
         self.loop = loop
 
