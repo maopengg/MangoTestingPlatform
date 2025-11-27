@@ -235,7 +235,7 @@
             modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
-            project.projectPytestName()
+            projectInfo.projectPytestName()
           })
           .catch((error) => {
             console.log(error)
@@ -250,7 +250,7 @@
             modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
-            project.projectPytestName()
+            projectInfo.projectPytestName()
           })
           .catch((error) => {
             console.log(error)

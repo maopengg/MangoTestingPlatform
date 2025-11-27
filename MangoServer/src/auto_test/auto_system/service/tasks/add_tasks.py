@@ -76,4 +76,5 @@ class AddTasks:
                 set_task(case.id, case.name, case.project_product.id, TestCounter.case_api(case_id))
         else:
             case = PytestCase.objects.get(id=case_id)
+            print(case_id)
             set_task(case.id, case.name, case.project_product.project_product.id, TestCounter.case_pytest(case_id))
