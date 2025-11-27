@@ -239,7 +239,7 @@
         userStore.saveUser(data, md5(baseData.password)).then(() => {
           router
             .replace({
-              path: route.query.redirect ? (route.query.redirect as string) : '/index/home',
+              path: '/index/home',
             })
             .then(() => {
               Message.success('登录成功，欢迎：' + data.name)

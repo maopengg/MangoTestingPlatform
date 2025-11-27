@@ -3,6 +3,10 @@ import type { App } from 'vue'
 import request from './axios.config'
 import { Message } from '@arco-design/web-vue'
 
+// 用于节流登录过期提示，记录上次提示时间
+let lastExpiredMessageTime = 0
+const EXPIRED_MESSAGE_INTERVAL = 5000 // 5秒间隔
+
 // 定义请求选项
 export interface HttpOption {
   url: string
@@ -36,7 +40,16 @@ export function http<T = any>({
     } else if (!res.data.msg) {
       return res.data
     }
-    Message.error(res.data.msg)
+    if (res.data.msg === '当前用户登录已过期，请重新登录') {
+      // 节流处理，确保登录过期提示每5秒最多显示一次
+      const now = Date.now()
+      if (now - lastExpiredMessageTime > EXPIRED_MESSAGE_INTERVAL) {
+        Message.error(res.data.msg)
+        lastExpiredMessageTime = now
+      }
+    } else {
+      Message.error(res.data.msg)
+    }
     throw new Error(res.data.msg || '请求失败，未知异常')
   }
   const failHandler = (error: Response<Error>) => {

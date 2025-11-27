@@ -29,9 +29,7 @@
               <a-space direction="vertical" style="width: 50%">
                 <p>
                   <span class="label">操作类型</span>：{{
-                    item.type
-                      ? useSelectValue.getSelectLabel(item.ope_key)
-                      : useSelectValue.getSelectLabel(item.ope_key)
+                    useSelectValue.getSelectLabel(item.ope_key)
                   }}
                 </p>
                 <p v-if="item.sub"

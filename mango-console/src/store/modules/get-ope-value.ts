@@ -29,6 +29,7 @@ type StateValueType = SelectValueItem[]
 
 interface SlsectValueState {
   data: StateValueType
+  dataList: ChildrenItem[]
   webOpe: ChildrenItem[]
   androidOpe: ChildrenItem[]
   assAndroid: (ChildrenItem | SelectValueItem)[]
@@ -39,6 +40,7 @@ interface SlsectValueState {
 export const useSelectValueStore = defineStore('get-select-value', {
   state: (): SlsectValueState => ({
     data: [],
+    dataList: [],
     webOpe: [],
     androidOpe: [],
     assAndroid: [],
@@ -51,6 +53,12 @@ export const useSelectValueStore = defineStore('get-select-value', {
       getSystemCacheDataKeyValue('select_value')
         .then((res) => {
           this.data = res.data
+          this.dataList = [...this.data]
+          for (const item of this.dataList) {
+            if (item.children) {
+              this.dataList.push(...item.children)
+            }
+          }
           this.webOpe = []
           this.androidOpe = []
           this.assAndroid = []
@@ -75,13 +83,11 @@ export const useSelectValueStore = defineStore('get-select-value', {
         .catch(console.log)
     },
     getSelectLabel(value: string): ChildrenItem[] {
-      const list = [...this.data]
-      for (const item of list) {
-        if (item.children) {
-          list.push(...item.children)
-        }
+      // 如果数据为空，则调用初始化函数
+      if (!this.dataList || this.dataList.length === 0) {
+        this.getSelectValue()
       }
-      return list.find((item: any) => item.value === value)?.label
+      return this.dataList.find((item: any) => item.value === value)?.label
     },
     findItemByValue(value: string): ChildrenItem | undefined {
       // 检查数据是否存在
