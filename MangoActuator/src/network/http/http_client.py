@@ -76,6 +76,7 @@ class HttpClientApi(HttpBase):
                 cls.headers['Authorization'] = response.data.get('token')
             return response
         except Exception as error:
+            print(settings.IS_OPEN and retry < 100)
             if settings.IS_OPEN and retry < 100:
                 time.sleep(3)
                 log.info(f'开始登录重试：{retry}，{error}')
