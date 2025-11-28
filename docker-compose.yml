@@ -93,7 +93,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       mango_server:
-        condition: service_healthy
+        condition: service_started
     networks:
       app_network:
         aliases: [actuator]
