@@ -97,10 +97,7 @@ services:
     networks:
       app_network:
         aliases: [actuator]
-    deploy:
-      restart_policy:
-        condition: any
-        delay: 15s
+
 networks:
   app_network:
     driver: bridge
