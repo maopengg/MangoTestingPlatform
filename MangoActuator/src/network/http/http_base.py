@@ -29,7 +29,6 @@ class HttpBase:
                             **kwargs)
 
     @classmethod
-    @request_log()
     def post(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
         return requests.post(urljoin(SetConfig.get_host(), url),  # type: ignore
                              headers=headers if headers else cls.headers, proxies={'http': None, 'https': None},
