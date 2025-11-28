@@ -12,4 +12,4 @@ ENV DJANGO_SETTINGS_MODULE=src.settings
 ENV DJANGO_ENV=${DJANGO_ENV}
 RUN echo "构建后端服务：$DJANGO_ENV"
 
-CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 src.asgi:application --workers 2"]
+CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 src.asgi:application"]
