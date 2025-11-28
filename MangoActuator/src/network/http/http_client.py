@@ -71,7 +71,7 @@ class HttpClientApi(HttpBase):
                 'password': EncryptionTool.md5_32_small(password),
                 'version': settings.SETTINGS.get('version')
             })
-            print('登录', retry, response.text)
+            print('登录', retry, response)
             if response.data and response.code == 200:
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
