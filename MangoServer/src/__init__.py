@@ -1,7 +1,7 @@
 import pymysql
 
-from tools import ProjectDir
+from src.tools import ProjectDir
 
-project_dir = ProjectDir()
+ProjectDir()
 
 pymysql.install_as_MySQLdb()
