@@ -4,6 +4,6 @@ docker rmi $(docker images -f "dangling=true" -q) 2>/dev/null || true
 git pull
 docker compose build
 docker compose up -d
-sleep 8
+sleep 10
 docker logs mangotestingplatform-mango_server-1
 docker logs mangotestingplatform-mango_actuator-1
