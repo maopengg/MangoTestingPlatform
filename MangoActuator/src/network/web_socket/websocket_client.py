@@ -95,7 +95,7 @@ class WebSocketClient:
                     cls.running = False
                     os._exit(1)
                 else:
-                    log.error(f'错误类型：{error}')
+                    log.error(f'错误类型-1：{error}')
                     send_global_msg(0, MessageEnum.WS_LINK)
                     send_global_msg(f"链接已断开，正在尝试重新连接！当前重试次数：{retry}", MessageEnum.BOTTOM)
                     await asyncio.sleep(5)
