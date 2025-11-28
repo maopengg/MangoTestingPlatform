@@ -74,6 +74,7 @@ class HttpClientApi(HttpBase):
             if response.data and response.code == 200:
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
+                return response
             if is_retry and retry < 100:
                 time.sleep(3)
                 return cls.login(username, password, retry + 1, is_retry)
