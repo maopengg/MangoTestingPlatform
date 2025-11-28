@@ -75,10 +75,10 @@ class HttpClientApi(HttpBase):
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
             if is_retry and retry < 100:
+                time.sleep(3)
                 return cls.login(username, password, retry + 1, is_retry)
             return response
         except Exception as error:
-            print(settings.IS_OPEN and retry < 100)
             if settings.IS_OPEN and retry < 100:
                 time.sleep(3)
                 log.info(f'开始登录重试：{retry}，{error}')
