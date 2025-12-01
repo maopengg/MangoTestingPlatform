@@ -105,6 +105,9 @@ ASGI_APPLICATION = 'src.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'CONFIG': {
+            'capacity': 1000,  # 增加通道容量
+        }
     }
 }
 # **********************************************************************************************************************
@@ -118,26 +121,26 @@ if not IS_SQLITE:
             'PASSWORD': MYSQL_PASSWORD,
             'HOST': MYSQL_IP,
             'PORT': MYSQL_PORT,
-            'TEST': {
-                'NAME': f'test_{MYSQL_DB_NAME}',
-                'CHARSET': 'utf8mb4',
-                'COLLATION': 'utf8mb4_general_ci'
-            },
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'connect_timeout': 5,
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'connect_timeout': 20,  # 增加到20秒
+                'read_timeout': 60,  # 增加读取超时到60秒
+                'write_timeout': 60,  # 增加写入超时到60秒
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', wait_timeout=28800",
                 'isolation_level': 'READ COMMITTED',
                 'autocommit': True,
             },
             'POOL_OPTIONS': {
-                'POOL_SIZE': 20,
-                'MAX_OVERFLOW': 50,
-                'RECYCLE': 3600,
-                'TIMEOUT': 30,
-                'PRE_PING': True,
+                'POOL_SIZE': 20,  # 增加连接池大小
+                'MAX_OVERFLOW': 30,  # 增加最大溢出
+                'RECYCLE': 3600,  # 延长回收时间到1小时
+                'TIMEOUT': 30,  # 增加获取连接超时到30秒
+                'PRE_PING': True,  # 保持开启
+                'ECHO': False,  # 关闭SQL日志
+                'MAX_POOL_SIZE': 50,  # 增加最大池大小限制
+                'POOL_RECYCLE': 3600,  # 明确指定池回收
             },
-            'CONN_MAX_AGE': 0,
+            'CONN_MAX_AGE': 3600,  # 改为3600秒，与RECYCLE一致
         }
     }
 else:
