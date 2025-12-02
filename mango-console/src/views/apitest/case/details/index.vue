@@ -435,7 +435,8 @@
                             </a-tab-pane>
                             <a-tab-pane key="24" title="响应文本">
                               <div class="m-2">
-                                <JsonDisplay :data="item.result_data?.response?.text" />
+                                <pre v-if="item.result_data?.response?.text">{{ formatResponseText(item.result_data?.response?.text) }}</pre>
+                                <span v-else>{{ item.result_data?.response?.text }}</span>
                               </div>
                             </a-tab-pane>
                           </a-tabs>
@@ -1464,6 +1465,20 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     item.ass_general[currentIndex].value = inputItem
     // 保存更改
     blurSave('ass_general', item.ass_general, item.id)
+  }
+
+  // 添加 formatResponseText 方法到 setup 函数内部的正确位置
+  function formatResponseText(text) {
+    // 如果text是一个对象（可能是JSON），将其转换为格式化的字符串
+    if (typeof text === 'object' && text !== null) {
+      try {
+        return JSON.stringify(text, null, 2);
+      } catch (e) {
+        return String(text);
+      }
+    }
+    // 如果text是字符串，直接返回
+    return String(text);
   }
 </script>
 
