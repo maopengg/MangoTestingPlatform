@@ -48,7 +48,6 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
 
 def ensure_db_connection(is_while=False, max_retries=3):
     def decorator(func):
-
         @wraps(func)
         def wrapper(*args, **kwargs):
             try_count = 0
@@ -56,7 +55,10 @@ def ensure_db_connection(is_while=False, max_retries=3):
                 from src.exceptions import MangoServerError
                 try:
                     close_old_connections()
-                    return func(*args, **kwargs)
+                    result = func(*args, **kwargs)
+                    # 确保在函数执行完成后关闭连接
+                    close_old_connections()
+                    return result
                 except (InterfaceError, OperationalError, Error) as e:
                     try_count += 1
                     if try_count > max_retries:
@@ -74,13 +76,21 @@ def ensure_db_connection(is_while=False, max_retries=3):
                     try_count += 1
                     log.system.error(
                         f'重试失败-2: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
+                    # 确保在异常情况下也关闭连接
+                    close_old_connections()
                 except Exception as e:
                     try_count += 1
                     log.system.error(
                         f'重试失败-3, 如果是首次启动项目，请启动完成之后再重启一次！: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
+                    # 确保在异常情况下也关闭连接
+                    close_old_connections()
             else:
                 if is_while:
+                    # 确保在返回前关闭连接
+                    close_old_connections()
                     return func(*args, **kwargs)
+                # 确保在返回前关闭连接
+                close_old_connections()
 
         return wrapper
 

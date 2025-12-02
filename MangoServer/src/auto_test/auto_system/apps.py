@@ -17,7 +17,7 @@ from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import TaskEnum
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import ensure_db_connection, db_connection_context
 from src.tools.log_collector import log
 
 
@@ -136,24 +136,25 @@ class AutoSystemConfig(AppConfig):
 
     @ensure_db_connection(max_retries=1)
     def set_case_status(self):
-        from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
-        from src.auto_test.auto_pytest.models import PytestCase
-        from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
-        
-        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
-        
-        models_to_update = [
-            UiCase,
-            UiCaseStepsDetailed,
-            PageSteps,
-            PytestCase,
-            ApiInfo,
-            ApiCase,
-            ApiCaseDetailed
-        ]
-        
-        for model in models_to_update:
-            model.objects.filter(
-                status=TaskEnum.PROCEED.value,
-                update_time__lt=ten_minutes_ago
-            ).update(status=TaskEnum.FAIL.value)
+        with db_connection_context():
+            from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+            from src.auto_test.auto_pytest.models import PytestCase
+            from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+            
+            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+            
+            models_to_update = [
+                UiCase,
+                UiCaseStepsDetailed,
+                PageSteps,
+                PytestCase,
+                ApiInfo,
+                ApiCase,
+                ApiCaseDetailed
+            ]
+            
+            for model in models_to_update:
+                model.objects.filter(
+                    status=TaskEnum.PROCEED.value,
+                    update_time__lt=ten_minutes_ago
+                ).update(status=TaskEnum.FAIL.value)

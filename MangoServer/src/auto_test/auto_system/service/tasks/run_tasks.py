@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from src.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
-from src.tools.decorator.retry import orm_retry
+from src.tools.decorator.retry import orm_retry, db_connection_context
 
 
 class RunTasks:
@@ -18,45 +18,53 @@ class RunTasks:
 
     @classmethod
     def create_jobs(cls):
-        queryset = TimeTasks.objects.all()
-        for timer in queryset:
-            if timer.cron:
-                cls.scheduler.add_job(
-                    cls.timing,
-                    trigger=CronTrigger.from_crontab(timer.cron),
-                    args=[timer.id]
-                )
-        cls.scheduler.start()
-        atexit.register(cls.scheduler.shutdown)
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            queryset = TimeTasks.objects.all()
+            for timer in queryset:
+                if timer.cron:
+                    cls.scheduler.add_job(
+                        cls.timing,
+                        trigger=CronTrigger.from_crontab(timer.cron),
+                        args=[timer.id]
+                    )
+            cls.scheduler.start()
+            atexit.register(cls.scheduler.shutdown)
 
     @classmethod
     @orm_retry('timing')
     def timing(cls, timing_strategy_id):
-        scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
-                                                   status=StatusEnum.SUCCESS.value)
-        for scheduled_tasks in scheduled_tasks_obj:
-            cls.distribute(scheduled_tasks)
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
+                                                       status=StatusEnum.SUCCESS.value)
+            for scheduled_tasks in scheduled_tasks_obj:
+                cls.distribute(scheduled_tasks)
 
     @classmethod
     @orm_retry('trigger')
     def trigger(cls, scheduled_tasks_id):
-        scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
-        cls.distribute(scheduled_tasks)
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
+            cls.distribute(scheduled_tasks)
 
     @classmethod
     def distribute(cls, tasks: Tasks):
-        tasks_details = TasksDetails.objects.filter(task=tasks.id)
-        add_tasks = AddTasks(
-            project_product=tasks.project_product.id,
-            test_env=tasks.test_env,
-            is_notice=tasks.is_notice,
-            user_id=tasks.case_people.id,
-            tasks_id=tasks.id,
-        )
-        for task in tasks_details:
-            if task.type == TestCaseTypeEnum.API.value:
-                add_tasks.add_test_suite_details(task.api_case.id, TestCaseTypeEnum.API)
-            elif task.type == TestCaseTypeEnum.UI.value:
-                add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.UI)
-            else:
-                add_tasks.add_test_suite_details(task.pytest_case.id, TestCaseTypeEnum.PYTEST)
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            tasks_details = TasksDetails.objects.filter(task=tasks.id)
+            add_tasks = AddTasks(
+                project_product=tasks.project_product.id,
+                test_env=tasks.test_env,
+                is_notice=tasks.is_notice,
+                user_id=tasks.case_people.id,
+                tasks_id=tasks.id,
+            )
+            for task in tasks_details:
+                if task.type == TestCaseTypeEnum.API.value:
+                    add_tasks.add_test_suite_details(task.api_case.id, TestCaseTypeEnum.API)
+                elif task.type == TestCaseTypeEnum.UI.value:
+                    add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.UI)
+                else:
+                    add_tasks.add_test_suite_details(task.pytest_case.id, TestCaseTypeEnum.PYTEST)
