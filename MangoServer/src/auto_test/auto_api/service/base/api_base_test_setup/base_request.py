@@ -77,7 +77,7 @@ class BaseRequest:
             request_file=str(request_data.file) if request_data.file else None,
             headers=response.headers,
             json=response_json,
-            text=file_path if request_data.posterior_file else response.text
+            text=response.text
         )
 
         log.api.debug(f'API响应数据：{response.model_dump_json()}')
