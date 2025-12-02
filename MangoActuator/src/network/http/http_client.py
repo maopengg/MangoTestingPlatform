@@ -64,7 +64,7 @@ class HttpClientApi(HttpBase):
                 cls.login(SetConfig.get_username(), SetConfig.get_password())  # type: ignore
 
     @classmethod
-    def login(cls, username: str = None, password=None):
+    def login(cls, username: str = None, password=None, retry=0, is_retry=False):
         try:
             response = cls.post('/login', data={
                 'username': username,
@@ -74,12 +74,16 @@ class HttpClientApi(HttpBase):
             if response.data and response.code == 200:
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
+                return response
+            if is_retry and retry < 100:
+                time.sleep(3)
+                return cls.login(username, password, retry + 1, is_retry)
             return response
         except Exception as error:
-            traceback.print_exc()
-            if settings.IS_OPEN:
+            if settings.IS_OPEN and retry < 100:
                 time.sleep(3)
-                cls.login(username, password)
+                log.info(f'开始登录重试：{retry}，{error}')
+                return cls.login(username, password, retry + 1, is_retry)
             else:
                 raise error
 
