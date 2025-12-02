@@ -54,6 +54,7 @@ class BaseRequest:
         except RequestException as error:
             log.api.error(f'接口请求时发生未知错误，错误数据：{request_data.model_dump_json()}，报错内容：{error}')
             raise ApiError(*ERROR_MSG_0002)
+        file_path = None
         if request_data.posterior_file:
             parsed_url = urlparse(request_data.url)
             file_name = os.path.basename(parsed_url.path)
@@ -61,8 +62,6 @@ class BaseRequest:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
             self.test_data.set_cache(request_data.posterior_file, file_path)
-        else:
-            file_path = ''
         try:
             response_json = response.json()
         except Exception:
@@ -77,7 +76,7 @@ class BaseRequest:
             request_file=str(request_data.file) if request_data.file else None,
             headers=response.headers,
             json=response_json,
-            text=response.text
+            text=file_path if file_path else response.text
         )
 
         log.api.debug(f'API响应数据：{response.model_dump_json()}')
