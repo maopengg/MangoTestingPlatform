@@ -4,6 +4,7 @@
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
 import atexit
+import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -19,6 +20,11 @@ class RunTasks:
 
     @classmethod
     def create_jobs(cls):
+        # 多进程保护机制，防止在多进程环境下重复执行
+        if cls._is_duplicate_process():
+            log.system.debug("不在主进程中，跳过定时任务初始化")
+            return
+            
         queryset = TimeTasks.objects.all()
         for timer in queryset:
             if timer.cron:
@@ -30,6 +36,23 @@ class RunTasks:
                 log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()
         atexit.register(cls.scheduler.shutdown)
+
+    @classmethod
+    def _is_duplicate_process(cls):
+        """
+        检查是否为重复进程，防止在多进程环境下重复执行
+        """
+        # 检查是否为重载进程
+        run_main = os.environ.get('RUN_MAIN', None)
+        if run_main != 'true':
+            return True
+            
+        # 检查DJANGO环境变量
+        django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
+        if not django_settings:
+            return True
+            
+        return False
 
     @classmethod
     @orm_retry('timing')

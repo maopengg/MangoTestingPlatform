@@ -18,6 +18,10 @@ class AutoUserConfig(AppConfig):
     name = 'src.auto_test.auto_user'
 
     def ready(self):
+        # 多进程保护机制，防止在多进程环境下重复执行
+        if self._is_duplicate_process():
+            return
+            
         if os.getenv('DJANGO_ENV', 'master') == 'master':
             self.check_version()
 
@@ -26,9 +30,24 @@ class AutoUserConfig(AppConfig):
             self.new_role()
             self.new_user()
 
-        if os.environ.get('RUN_MAIN', None) == 'true':
-            task1 = threading.Thread(target=run)
-            task1.start()
+        task1 = threading.Thread(target=run)
+        task1.start()
+
+    def _is_duplicate_process(self):
+        """
+        检查是否为重复进程，防止在多进程环境下重复执行
+        """
+        # 检查是否为重载进程
+        run_main = os.environ.get('RUN_MAIN', None)
+        if run_main != 'true':
+            return True
+            
+        # 检查DJANGO环境变量
+        django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
+        if not django_settings:
+            return True
+            
+        return False
 
     def new_role(self):
         try:
@@ -45,8 +64,8 @@ class AutoUserConfig(AppConfig):
                 Role.objects.create(name="测试开发工程师", description="测试开发工程师")
                 Role.objects.create(name="自动化工程师", description="自动化工程师")
                 Role.objects.create(name="测试工程师", description="测试工程师")
-        except Exception as e:
-            log.user.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
+        except Exception as error:
+            log.system.error(f'角色创建失败: {error}')
 
     def new_user(self):
         try:
@@ -61,8 +80,8 @@ class AutoUserConfig(AppConfig):
                     'config': {}
                 }
             )
-        except Exception as e:
-            log.user.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
+        except Exception as error:
+            log.system.error(f'用户创建失败: {error}')
 
     def check_version(self):
         import re
