@@ -11,6 +11,7 @@ from src.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.tools.decorator.retry import orm_retry
+from src.tools.log_collector import log
 
 
 class RunTasks:
@@ -26,6 +27,7 @@ class RunTasks:
                     trigger=CronTrigger.from_crontab(timer.cron),
                     args=[timer.id]
                 )
+                log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()
         atexit.register(cls.scheduler.shutdown)
 
@@ -35,6 +37,7 @@ class RunTasks:
         scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
                                                    status=StatusEnum.SUCCESS.value)
         for scheduled_tasks in scheduled_tasks_obj:
+            log.system.debug(f'触发任务：{scheduled_tasks}')
             cls.distribute(scheduled_tasks)
 
     @classmethod
@@ -54,6 +57,7 @@ class RunTasks:
             tasks_id=tasks.id,
         )
         for task in tasks_details:
+            log.system.debug(f'触发任务开始执行：{task.id}')
             if task.type == TestCaseTypeEnum.API.value:
                 add_tasks.add_test_suite_details(task.api_case.id, TestCaseTypeEnum.API)
             elif task.type == TestCaseTypeEnum.UI.value:
