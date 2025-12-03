@@ -14,5 +14,5 @@ ENV DJANGO_ENV=${DJANGO_ENV}
 ENV RUN_MAIN=true
 RUN echo "构建后端服务：$DJANGO_ENV"
 
-# CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 src.asgi:application"]
-CMD ["uvicorn", "src.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# 使用自定义启动脚本
+CMD ["python", "start_server.py"]
