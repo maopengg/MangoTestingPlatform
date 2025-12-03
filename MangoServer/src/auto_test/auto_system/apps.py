@@ -64,7 +64,12 @@ class AutoSystemConfig(AppConfig):
             return True
             
         # 在Docker环境下，使用文件锁机制防止重复执行
-        lock_file = f"/tmp/mango_system_init_{os.getppid()}.lock"
+        # 兼容Windows和Linux系统
+        if os.name == 'nt':  # Windows系统
+            temp_dir = os.environ.get('TEMP', os.environ.get('TMP', 'C:\\temp'))
+            lock_file = f"{temp_dir}\\mango_system_init_{os.getppid()}.lock"
+        else:  # Linux/Unix系统
+            lock_file = f"/tmp/mango_system_init_{os.getppid()}.lock"
         try:
             # 尝试创建锁文件
             fd = os.open(lock_file, os.O_CREAT | os.O_EXCL)
