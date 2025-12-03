@@ -67,7 +67,7 @@ class TestCounter:
     @staticmethod
     def case_api(case_id):
         case_sum = ApiCaseDetailedParameter.objects.filter(
-            case_detailed=ApiCaseDetailed.objects.filter(case_id=case_id).first())
+            case_detailed__in=ApiCaseDetailed.objects.filter(case_id=case_id))
         return case_sum.count()
 
     @staticmethod
