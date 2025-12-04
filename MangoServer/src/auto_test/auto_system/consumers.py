@@ -88,7 +88,7 @@ class ChatConsumer(WebsocketConsumer):
             raise StopConsumer()
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.delete_user_web_obj(self.username)
-            self.close()
+            # 移除手动调用的 close()，因为 Channels 会自动处理连接关闭
             raise StopConsumer()
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.delete_user_client_obj(self.username)
@@ -98,7 +98,7 @@ class ChatConsumer(WebsocketConsumer):
                 log.system.error(f'socker关闭发送错误：{error}')
                 traceback.print_exc()
                 pass
-            self.close()
+            # 移除手动调用的 close()，因为 Channels 会自动处理连接关闭
             raise StopConsumer()
 
     @classmethod

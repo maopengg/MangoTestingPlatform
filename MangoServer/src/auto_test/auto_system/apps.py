@@ -26,6 +26,10 @@ class AutoSystemConfig(AppConfig):
     name = 'src.auto_test.auto_system'
 
     def ready(self):
+        # 多进程保护机制，防止在多进程环境下重复执行
+        if self._is_duplicate_process():
+            return
+
         def run():
             time.sleep(10)
             self.delayed_task()
@@ -35,10 +39,57 @@ class AutoSystemConfig(AppConfig):
             self.init_ass()
             self.start_consumer()
 
-        if os.environ.get('RUN_MAIN', None) == 'true':
-            task1 = threading.Thread(target=run)
-            task1.start()
+        # 启动后台任务
+        task1 = threading.Thread(target=run)
+        task1.start()
         atexit.register(self.shutdown)
+
+    def _is_duplicate_process(self):
+        """
+        检查是否为重复进程，防止在多进程环境下重复执行
+        """
+        # 获取当前进程ID
+        pid = os.getpid()
+
+        # 检查是否为重载进程
+        run_main = os.environ.get('RUN_MAIN', None)
+        if run_main != 'true':
+            log.system.debug(f"跳过重复进程初始化 - PID: {pid}, RUN_MAIN: {run_main}")
+            return True
+
+        # 检查DJANGO环境变量
+        django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
+        if not django_settings:
+            log.system.debug(f"跳过重复进程初始化 - PID: {pid}, DJANGO_SETTINGS_MODULE未设置")
+            return True
+
+        # 在Docker环境下，使用文件锁机制防止重复执行
+        # 兼容Windows和Linux系统
+        if os.name == 'nt':  # Windows系统
+            temp_dir = os.environ.get('TEMP', os.environ.get('TMP', 'C:\\temp'))
+            lock_file = f"{temp_dir}\\mango_system_init_{os.getppid()}.lock"
+        else:  # Linux/Unix系统
+            lock_file = f"/tmp/mango_system_init_{os.getppid()}.lock"
+        try:
+            # 尝试创建锁文件
+            fd = os.open(lock_file, os.O_CREAT | os.O_EXCL)
+            os.close(fd)
+            # 注册退出时清理锁文件
+            atexit.register(lambda: os.path.exists(lock_file) and os.remove(lock_file))
+            log.system.debug(f"主进程初始化 - PID: {pid}")
+            return False
+        except FileExistsError:
+            log.system.debug(f"跳过重复进程初始化 - PID: {pid}, 锁文件已存在")
+            return True
+        except Exception as e:
+            # 如果无法创建锁文件（如权限问题），使用备用方法
+            log.system.debug(f"锁文件检查异常 - PID: {pid}, 错误: {e}")
+            # 检查父进程ID，避免在子进程中重复执行
+            ppid = os.getppid()
+            if hasattr(self, '_initialized_ppid') and self._initialized_ppid == ppid:
+                return True
+            self._initialized_ppid = ppid
+            return False
 
     @staticmethod
     def delayed_task():
@@ -140,9 +191,9 @@ class AutoSystemConfig(AppConfig):
             from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
             from src.auto_test.auto_pytest.models import PytestCase
             from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
-            
+
             ten_minutes_ago = timezone.now() - timedelta(minutes=10)
-            
+
             models_to_update = [
                 UiCase,
                 UiCaseStepsDetailed,
@@ -152,7 +203,7 @@ class AutoSystemConfig(AppConfig):
                 ApiCase,
                 ApiCaseDetailed
             ]
-            
+
             for model in models_to_update:
                 model.objects.filter(
                     status=TaskEnum.PROCEED.value,

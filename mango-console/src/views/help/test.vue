@@ -1,17 +1,17 @@
 <template>
   <div>
     <a-card :title="value">
-      <a-input :v-model="content" placeholder="请输入信息" />
-      <a-button @click="sendMessage">发送</a-button>
+      <JsonDisplay :data="jsonString" />
     </a-card>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
+  import { ref, reactive } from 'vue'
 
   const value = ref('测试页面')
-  const content = ref('')
+const jsonString = ref('{"data":1995772484258893823,"success":{"data":1995772484258893812,"success":true,"errorCode":"NO-ERROR","errorMessage":"NO-MESSAGE"},"errorCode":"NO-ERROR","errorMessage":"NO-MESSAGE"}');
+  
 </script>
 
 <style scoped></style>

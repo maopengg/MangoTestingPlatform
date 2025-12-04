@@ -10,7 +10,9 @@ ARG DJANGO_ENV
 
 ENV DJANGO_SETTINGS_MODULE=src.settings
 ENV DJANGO_ENV=${DJANGO_ENV}
+# 添加RUN_MAIN环境变量，确保在Docker环境下也能正确启动定时任务
+ENV RUN_MAIN=true
 RUN echo "构建后端服务：$DJANGO_ENV"
 
-# CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 src.asgi:application"]
-CMD ["uvicorn", "src.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# 使用自定义启动脚本
+CMD ["python", "start_server.py"]
