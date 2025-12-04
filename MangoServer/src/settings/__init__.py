@@ -115,7 +115,7 @@ CHANNEL_LAYERS = {
 if not IS_SQLITE:
     DATABASES = {
         'default': {
-            'ENGINE': 'dj_db_conn_pool.backends.mysql',
+            'ENGINE': 'django.db.backends.mysql',
             'NAME': MYSQL_DB_NAME,
             'USER': MYSQL_USER,
             'PASSWORD': MYSQL_PASSWORD,
@@ -130,17 +130,6 @@ if not IS_SQLITE:
                 'isolation_level': 'READ COMMITTED',
                 'autocommit': True,
             },
-            'POOL_OPTIONS': {
-                'POOL_SIZE': 20,  # 增加连接池大小
-                'MAX_OVERFLOW': 30,  # 增加最大溢出
-                'RECYCLE': 3600,  # 延长回收时间到1小时
-                'TIMEOUT': 30,  # 增加获取连接超时到30秒
-                'PRE_PING': True,  # 保持开启
-                'ECHO': False,  # 关闭SQL日志
-                'MAX_POOL_SIZE': 50,  # 增加最大池大小限制
-                'POOL_RECYCLE': 3600,  # 明确指定池回收
-            },
-            'CONN_MAX_AGE': 3600,  # 改为3600秒，与RECYCLE一致
         }
     }
 else:

@@ -32,6 +32,7 @@ class JwtQueryParamsAuthentication(BaseAuthentication):
         except jwt.InvalidTokenError:
             raise AuthenticationFailed({'code': 303, 'msg': 'token 非法，请使用有效的 token', 'data': None})
         except Exception as e:
+            
             raise AuthenticationFailed({'code': 304, 'msg': f'token 验证失败: {str(e)}', 'data': None})
         return payload, token
 
