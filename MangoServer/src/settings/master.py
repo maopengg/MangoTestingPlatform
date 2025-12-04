@@ -16,11 +16,9 @@ MYSQL_IP = 'db'
 MYSQL_PORT = 3306
 
 # ************************ DEBUG配置 ************************ #
-# 这里也控制了是否使用minio
-# True开启debug就不会使用minio
-# 生产环境=True，生产环境=False，使用minio
-
+# 控制django是否debug
 DEBUG = False
+# 控制日志是否输出debug
 IS_DEBUG_LOG = False
 
 # ************************ REDIS配置 ************************ #

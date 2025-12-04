@@ -18,10 +18,9 @@ MYSQL_PASSWORD = 'mP123456&'
 MYSQL_IP = '172.30.32.217'
 
 # ************************ DEBUG配置 ************************ #
-# 这里也控制了是否使用minio
-# True开启debug就不会使用minio
-# 生产环境=True，生产环境=False，使用minio
+# 控制django是否debug
 DEBUG = True
+# 控制日志是否输出debug
 IS_DEBUG_LOG = True
 # ************************ REDIS配置 ************************ #
 
