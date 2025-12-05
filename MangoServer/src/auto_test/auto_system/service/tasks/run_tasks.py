@@ -11,7 +11,7 @@ from apscheduler.triggers.cron import CronTrigger
 from src.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
-from src.tools.decorator.retry import orm_retry
+from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
@@ -55,7 +55,7 @@ class RunTasks:
         return False
 
     @classmethod
-    @orm_retry('timing')
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def timing(cls, timing_strategy_id):
         scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
                                                    status=StatusEnum.SUCCESS.value)
@@ -64,7 +64,7 @@ class RunTasks:
             cls.distribute(scheduled_tasks)
 
     @classmethod
-    @orm_retry('trigger')
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def trigger(cls, scheduled_tasks_id):
         scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
         cls.distribute(scheduled_tasks)

@@ -9,9 +9,11 @@ from jwt import exceptions
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from src.auto_test.auto_user.models import User
+from src.tools.decorator.retry import async_task_db_connection
 
 class JwtQueryParamsAuthentication(BaseAuthentication):
 
+    @async_task_db_connection(max_retries=1, retry_delay=1)
     def authenticate(self, request):
         token = request.META.get('HTTP_AUTHORIZATION')
         if not token:
@@ -32,8 +34,7 @@ class JwtQueryParamsAuthentication(BaseAuthentication):
         except jwt.InvalidTokenError:
             raise AuthenticationFailed({'code': 303, 'msg': 'token 非法，请使用有效的 token', 'data': None})
         except Exception as e:
-            
-            raise AuthenticationFailed({'code': 304, 'msg': f'token 验证失败: {str(e)}', 'data': None})
+            raise AuthenticationFailed({'code': 304, 'msg': f'请求频繁，请稍后重试: {str(e)}', 'data': None})
         return payload, token
 
     def authenticate_header(self, request):

@@ -15,7 +15,7 @@ from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite, Tasks
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
-from src.tools.decorator.retry import ensure_db_connection, db_connection_context
+from src.tools.decorator.retry import db_connection_context, async_task_db_connection
 from src.tools.log_collector import log
 from django.db.utils import Error, InterfaceError, OperationalError
 
@@ -31,7 +31,7 @@ class ConsumerThread:
     def stop(self):
         self.running = False
 
-    @ensure_db_connection(True, max_retries=100)
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def consumer(self):
         reset_tims = time.time()
         while self.running:
@@ -92,7 +92,7 @@ class ConsumerThread:
             else:
                 self.send_case(test_suite, test_suite_details, case_model, retry, max_retry)
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def clean_test_suite_status(self):
         # 使用数据库连接上下文管理器确保连接被正确释放
         with db_connection_context():
@@ -108,7 +108,7 @@ class ConsumerThread:
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def clean_proceed(self):
         """
         把进行中的，修改为待开始,或者失败
@@ -126,7 +126,7 @@ class ConsumerThread:
                     log.system.info(
                         f'推送时间超过{self.reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def clean_proceed_set_fail(self):
         """
         把重试次数满的，修改为0，只有未知错误才会设置为失败
@@ -144,7 +144,7 @@ class ConsumerThread:
                     log.system.info(
                         f'重试次数超过{self.retry_frequency + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_status_proceed(self, test_suite, test_suite_details):
         # 使用数据库连接上下文管理器确保连接被正确释放
         with db_connection_context():
@@ -156,7 +156,7 @@ class ConsumerThread:
             test_suite_details.push_time = timezone.now()
             test_suite_details.save()
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def consumer_error(self, test_suite, test_suite_details, error):
         # 使用数据库连接上下文管理器确保连接被正确释放
         with db_connection_context():

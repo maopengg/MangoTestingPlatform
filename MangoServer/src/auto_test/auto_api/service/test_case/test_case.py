@@ -17,6 +17,7 @@ from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel, ResponseModel
 from src.models.system_model import TestSuiteDetailsResultModel
+from src.tools.decorator.retry import async_task_db_connection
 from ..base.case_base import CaseBase
 from ..base.case_parameter import CaseParameter
 
@@ -207,12 +208,14 @@ class TestCase:
         model.save()
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_test_case(cls, case_id: int, status: int):
         model = ApiCase.objects.get(id=case_id)
         model.status = status
         model.save()
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_test_case_detailed_parameter(cls, parameter_id, result_data: ApiCaseStepsResultModel):
         model = ApiCaseDetailedParameter.objects.get(id=parameter_id)
         model.status = result_data.status

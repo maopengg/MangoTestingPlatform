@@ -39,15 +39,6 @@ class AutoPytestConfig(AppConfig):
             
         return False
 
-    # def test_case_consumption(self):
-    #     self.case_flow = PytestCaseFlow()
-    #     self.pytest_task = Thread(target=self.case_flow.process_tasks)
-    #     self.pytest_task.daemon = True
-    #     self.pytest_task.start()
-    # def shutdown(self):
-    #     self.case_flow.stop()
-    #     self.pytest_task.join()
-
     def pull_code(self):
         from src.auto_test.auto_pytest.service.base import git_obj
         try:

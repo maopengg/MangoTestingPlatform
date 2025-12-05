@@ -14,13 +14,13 @@ from src.enums.system_enum import CacheDataKey2Enum, ClientTypeEnum
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.socket_model import SocketDataModel
 from src.models.system_model import GetTaskModel
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class SystemConsumer:
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def t_set_operation_options(cls, data: dict):
         data = {
             'describe': data.get('version'),
@@ -41,7 +41,7 @@ class SystemConsumer:
             CacheDataCRUD.inside_post(data)
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def t_set_userinfo(cls, data):
         from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
         from src.auto_test.auto_system.consumers import ChatConsumer
@@ -54,7 +54,7 @@ class SystemConsumer:
         ))
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def t_get_task(cls, data: dict):
         data = GetTaskModel(**data)
         if data.type == TestCaseTypeEnum.UI:

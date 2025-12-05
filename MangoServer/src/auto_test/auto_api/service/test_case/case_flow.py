@@ -9,7 +9,7 @@ from queue import Queue
 import time
 
 from src.models.system_model import ConsumerCaseModel
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class ApiCaseFlow:
@@ -24,7 +24,7 @@ class ApiCaseFlow:
         cls.running = False
 
     @classmethod
-    @ensure_db_connection(True)
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def process_tasks(cls):
         while cls.running:
             if not cls.queue.empty():
@@ -33,7 +33,7 @@ class ApiCaseFlow:
             time.sleep(0.1)
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def execute_task(cls, case_model: ConsumerCaseModel):
         from src.auto_test.auto_api.service.test_case.test_case import TestCase
         test_case = TestCase(

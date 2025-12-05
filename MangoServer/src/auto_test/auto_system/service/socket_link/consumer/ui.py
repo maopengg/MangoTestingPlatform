@@ -9,22 +9,22 @@ from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import PageStepsResultModel, UiCaseResultModel
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class UIConsumer:
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def u_page_steps(cls, data: dict):
         TestReportWriting.update_page_step_status(PageStepsResultModel(**data))
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def u_test_suite_details(cls, data: dict):
         UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(**data))
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def u_test_case(cls, data: dict):
         TestReportWriting.update_test_case(UiCaseResultModel(**data))

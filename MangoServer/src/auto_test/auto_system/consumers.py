@@ -18,6 +18,7 @@ from src.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.settings import IS_DEBUG_LOG
+from src.tools.decorator.retry import async_task_db_connection
 
 T = TypeVar('T')
 
@@ -161,6 +162,7 @@ class ChatConsumer(WebsocketConsumer):
                 log.system.debug(f"发送的数据：{data_json}")
             return data_json
 
+    @async_task_db_connection(max_retries=1, retry_delay=1)
     def verify_user(self) -> tuple[bool, int]:
         if 'username' not in self.scope.get("query_string").decode():
             log.system.debug('您的执行器代码是旧的，请使用新的执行器再来进行连接！')

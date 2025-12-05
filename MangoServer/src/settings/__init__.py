@@ -123,15 +123,15 @@ if not IS_SQLITE:
             'PORT': MYSQL_PORT,
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'connect_timeout': 20,  # 增加到20秒
-                'read_timeout': 60,  # 增加读取超时到60秒
-                'write_timeout': 60,  # 增加写入超时到60秒
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', wait_timeout=300",
+                'connect_timeout': 20,
+                'read_timeout': 60,
+                'write_timeout': 60,
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'isolation_level': 'READ COMMITTED',
                 'autocommit': True,
             },
-            'CONN_MAX_AGE': 300,  # 5分钟连接最大存活时间
-            'CONN_HEALTH_CHECKS': True,  # Django 4.1+ 健康检查
+            'CONN_MAX_AGE': 300,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 else:
