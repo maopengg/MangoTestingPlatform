@@ -126,7 +126,7 @@ if not IS_SQLITE:
                 'connect_timeout': 20,
                 'read_timeout': 60,
                 'write_timeout': 60,
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', wait_timeout=300",
                 'isolation_level': 'READ COMMITTED',
                 'autocommit': True,
             },
