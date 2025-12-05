@@ -37,7 +37,7 @@ class AutoSystemConfig(AppConfig):
             self.populate_time_tasks()
             self.run_tests()
             self.init_ass()
-            
+
             # 设置定时任务调度器
             self.setup_scheduler()
 
@@ -153,8 +153,6 @@ class AutoSystemConfig(AppConfig):
             self.system_task.join()
         except AttributeError:
             pass
-        # 停止全局调度器
-        self.stop_scheduler()
 
     def init_ass(self):
         try:
@@ -189,7 +187,7 @@ class AutoSystemConfig(AppConfig):
         try:
             # 创建调度器实例
             self.scheduler = BackgroundScheduler()
-            
+
             # 添加定时任务
             self.scheduler.add_job(
                 self.set_case_status,
@@ -197,10 +195,10 @@ class AutoSystemConfig(AppConfig):
                 minutes=5,
                 id='set_case_status'
             )
-            
+
             # 启动调度器
             self.scheduler.start()
-            
+
             # 注册退出时停止调度器
             atexit.register(self.stop_scheduler)
         except Exception as e:
@@ -217,14 +215,13 @@ class AutoSystemConfig(AppConfig):
         except Exception as e:
             log.system.error(f'停止调度器异常: {e}')
 
-
     def set_case_status(self):
         from django.db import transaction
 
         try:
             # 确保开始时连接是干净的
             close_old_connections()
-            
+
             from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
             from src.auto_test.auto_pytest.models import PytestCase
             from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
@@ -246,7 +243,7 @@ class AutoSystemConfig(AppConfig):
                     status=TaskEnum.PROCEED.value,
                     update_time__lt=ten_minutes_ago
                 ).update(status=TaskEnum.FAIL.value)
-                
+
             # 确保事务提交
             transaction.commit()
         finally:
