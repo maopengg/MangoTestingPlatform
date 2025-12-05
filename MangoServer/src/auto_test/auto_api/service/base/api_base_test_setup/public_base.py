@@ -59,11 +59,11 @@ class PublicBase(BaseRequest):
         log.api.debug(
             f'初始化测试对象，是否开启数据库的增删改权限：{self.test_object.db_c_status, self.test_object.db_c_status}')
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
-            # 延迟初始化数据库连接，直到真正需要时才创建
-            self.db_config = func_mysql_config(self.test_object.id)
-            self.db_c_status = bool(self.test_object.db_c_status)
-            self.db_rud_status = bool(self.test_object.db_rud_status)
-            self.mysql_connect = None
+            self.mysql_connect = MysqlConnect(
+                func_mysql_config(self.test_object.id),
+                bool(self.test_object.db_c_status),
+                bool(self.test_object.db_rud_status)
+            )
 
     def init_public(self, project_product_id, test_env):
         if self.is_public == project_product_id:
