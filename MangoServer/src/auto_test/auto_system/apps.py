@@ -209,7 +209,7 @@ class AutoSystemConfig(AppConfig):
     def stop_scheduler(self):
         """停止调度器"""
         try:
-            if hasattr(self, 'scheduler') and self.scheduler:
+            if hasattr(self, 'scheduler') and self.scheduler and self.scheduler.running:
                 self.scheduler.shutdown()
         except Exception as e:
             log.system.error(f'停止调度器异常: {e}')
