@@ -55,6 +55,7 @@ class PyCaseFlow:
         cls.queue.put(case_model)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_case(cls, data):
         with cls._get_case_lock:
             test_suite_details = TestSuiteDetails.objects.filter(

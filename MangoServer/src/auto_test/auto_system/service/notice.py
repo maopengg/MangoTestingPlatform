@@ -17,11 +17,13 @@ from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import StatusEnum, EnvironmentEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.tools.log_collector import log
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class NoticeMain:
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def notice_main(cls, test_env: int, project_product: int, test_suite_id: int):
         test_object = TestObject.objects.get(environment=test_env, project_product=project_product)
         notice_obj = NoticeConfig.objects.filter(test_object=test_object.id, status=StatusEnum.SUCCESS.value)
@@ -38,6 +40,7 @@ class NoticeMain:
                 raise ToolsError(error.code, error.msg)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def test_notice_send(cls, _id):
         notice_obj = NoticeConfig.objects.get(id=_id)
         test_report = TestReportModel(**{
@@ -71,6 +74,7 @@ class NoticeMain:
             log.system.error('暂不支持钉钉打卡')
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def __we_chat_send(cls, i, test_report: TestReportModel | None = None):
         try:
             wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report, cls.get_domain_name())
@@ -79,6 +83,7 @@ class NoticeMain:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
         try:
             user_info = User.objects.filter(name__in=json.loads(i.config))
@@ -103,6 +108,7 @@ class NoticeMain:
         email.send_main()
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
         execution_duration = test_suite.update_time - test_suite.create_time
@@ -170,6 +176,7 @@ class NoticeMain:
         )
 
     @staticmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def mail_config():
         try:
             send_user = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_SEND_USER.name).value
@@ -183,6 +190,7 @@ class NoticeMain:
         return send_user, email_host, stamp_key
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_domain_name(cls):
         domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.value}，此处才会显示跳转连接'
         try:
