@@ -18,8 +18,8 @@ from mangotools.enums import CacheValueTypeEnum
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import TaskEnum
 from src.tools.decorator.retry import db_connection_context
-from src.tools.decorator.scheduler import scheduled_task, stop_scheduler
-from src.tools.decorator.retry import async_task_db_connection
+# from src.tools.decorator.scheduler import scheduled_task, stop_scheduler
+# from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
@@ -39,6 +39,9 @@ class AutoSystemConfig(AppConfig):
             self.populate_time_tasks()
             self.run_tests()
             self.init_ass()
+            
+            # 设置定时任务调度器
+            self.setup_scheduler()
 
         # 启动后台任务
         task1 = threading.Thread(target=run)
@@ -153,7 +156,7 @@ class AutoSystemConfig(AppConfig):
         except AttributeError:
             pass
         # 停止全局调度器
-        stop_scheduler()
+        self.stop_scheduler()
 
     def init_ass(self):
         try:
@@ -183,9 +186,38 @@ class AutoSystemConfig(AppConfig):
         except Exception as e:
             log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
 
+    def setup_scheduler(self):
+        """设置定时任务调度器"""
+        try:
+            # 创建调度器实例
+            self.scheduler = BackgroundScheduler()
+            
+            # 添加定时任务
+            self.scheduler.add_job(
+                self.set_case_status,
+                'interval',
+                minutes=5,
+                id='set_case_status'
+            )
+            
+            # 启动调度器
+            self.scheduler.start()
+            
+            # 注册退出时停止调度器
+            atexit.register(self.stop_scheduler)
+        except Exception as e:
+            log.system.error(f'定时任务调度器设置异常: {e}')
 
-    @scheduled_task('interval', minutes=5)
-    @async_task_db_connection(max_retries=1, retry_delay=3)
+    def stop_scheduler(self):
+        """停止调度器"""
+        try:
+            if hasattr(self, 'scheduler') and self.scheduler:
+                self.scheduler.shutdown()
+        except Exception as e:
+            log.system.error(f'停止调度器异常: {e}')
+
+
+    @db_connection_context()
     def set_case_status(self):
         from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
         from src.auto_test.auto_pytest.models import PytestCase
