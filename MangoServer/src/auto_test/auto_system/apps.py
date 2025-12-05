@@ -11,15 +11,13 @@ import atexit
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
+from django.db import close_old_connections
 from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import TaskEnum
-from src.tools.decorator.retry import db_connection_context
-# from src.tools.decorator.scheduler import scheduled_task, stop_scheduler
-# from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
@@ -217,26 +215,37 @@ class AutoSystemConfig(AppConfig):
             log.system.error(f'停止调度器异常: {e}')
 
 
-    @db_connection_context()
     def set_case_status(self):
-        from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
-        from src.auto_test.auto_pytest.models import PytestCase
-        from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+        from django.db import transaction
 
-        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        try:
+            # 确保开始时连接是干净的
+            close_old_connections()
+            
+            from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+            from src.auto_test.auto_pytest.models import PytestCase
+            from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
 
-        models_to_update = [
-            UiCase,
-            UiCaseStepsDetailed,
-            PageSteps,
-            PytestCase,
-            ApiInfo,
-            ApiCase,
-            ApiCaseDetailed
-        ]
+            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
 
-        for model in models_to_update:
-            model.objects.filter(
-                status=TaskEnum.PROCEED.value,
-                update_time__lt=ten_minutes_ago
-            ).update(status=TaskEnum.FAIL.value)
+            models_to_update = [
+                UiCase,
+                UiCaseStepsDetailed,
+                PageSteps,
+                PytestCase,
+                ApiInfo,
+                ApiCase,
+                ApiCaseDetailed
+            ]
+
+            for model in models_to_update:
+                model.objects.filter(
+                    status=TaskEnum.PROCEED.value,
+                    update_time__lt=ten_minutes_ago
+                ).update(status=TaskEnum.FAIL.value)
+                
+            # 确保事务提交
+            transaction.commit()
+        finally:
+            # 确保结束时连接被关闭
+            close_old_connections()
