@@ -209,8 +209,11 @@ class AutoSystemConfig(AppConfig):
     def stop_scheduler(self):
         """停止调度器"""
         try:
-            if hasattr(self, 'scheduler') and self.scheduler and self.scheduler.running:
-                self.scheduler.shutdown()
+            # 只有在主进程中才尝试停止调度器
+            if not self._is_duplicate_process():
+                if hasattr(self, 'scheduler') and self.scheduler and getattr(self.scheduler, 'running', False):
+                    self.scheduler.shutdown()
+                    log.system.info("调度器已停止")
         except Exception as e:
             log.system.error(f'停止调度器异常: {e}')
 
