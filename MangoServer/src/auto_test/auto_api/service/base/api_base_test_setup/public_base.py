@@ -59,11 +59,11 @@ class PublicBase(BaseRequest):
         log.api.debug(
             f'初始化测试对象，是否开启数据库的增删改权限：{self.test_object.db_c_status, self.test_object.db_c_status}')
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
-            self.mysql_connect = MysqlConnect(
-                func_mysql_config(self.test_object.id),
-                bool(self.test_object.db_c_status),
-                bool(self.test_object.db_rud_status)
-            )
+            # 延迟初始化数据库连接，直到真正需要时才创建
+            self.db_config = func_mysql_config(self.test_object.id)
+            self.db_c_status = bool(self.test_object.db_c_status)
+            self.db_rud_status = bool(self.test_object.db_rud_status)
+            self.mysql_connect = None
 
     def init_public(self, project_product_id, test_env):
         if self.is_public == project_product_id:
@@ -87,14 +87,26 @@ class PublicBase(BaseRequest):
         self.test_data.set_cache(api_public_obj.key, api_public_obj.value)
 
     def __sql(self, api_public_obj: ApiPublic):
-        if self.mysql_connect:
-            sql = self.test_data.replace(api_public_obj.value)
-            result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-            log.api.debug(f'全局变量-2->key：{api_public_obj.key}，value:{sql}，查询结果：{result_list}')
-            if isinstance(result_list, list) and len(result_list) > 0:
-                self.test_data.set_sql_cache(api_public_obj.key, result_list[0])
-                if not result_list:
-                    raise ApiError(*ERROR_MSG_0033, value=(sql,))
+        if self.db_config:
+            # 按需创建数据库连接
+            from mangotools.database import MysqlConnect
+            mysql_connect = MysqlConnect(
+                self.db_config,
+                self.db_c_status,
+                self.db_rud_status
+            )
+            try:
+                sql = self.test_data.replace(api_public_obj.value)
+                result_list: list[dict] = mysql_connect.condition_execute(sql)
+                log.api.debug(f'全局变量-2->key：{api_public_obj.key}，value:{sql}，查询结果：{result_list}')
+                if isinstance(result_list, list) and len(result_list) > 0:
+                    self.test_data.set_sql_cache(api_public_obj.key, result_list[0])
+                    if not result_list:
+                        raise ApiError(*ERROR_MSG_0033, value=(sql,))
+            finally:
+                # 确保连接被正确关闭
+                if mysql_connect.connection:
+                    mysql_connect.connection.close()
 
     @staticmethod
     def update_dict_case_insensitive(original_dict: dict[str], new_dict: dict[str]):
