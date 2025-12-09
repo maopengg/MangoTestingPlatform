@@ -1,27 +1,29 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: Uvicorn启动脚本
+# @Description: Daphne启动脚本
 # @Time   : 2025/12/3
 # @Author : 
 
-import uvicorn
 import os
+import sys
 
 if __name__ == "__main__":
     # 获取环境变量
     # os.environ["DJANGO_ENV"] = "dev"
-    host = os.environ.get("UVICORN_HOST", "0.0.0.0")
-    port = int(os.environ.get("UVICORN_PORT", 8000))
-    workers = int(os.environ.get("UVICORN_WORKERS", 1))
-    log_level = os.environ.get("UVICORN_LOG_LEVEL", "info")
-    access_log = os.environ.get("UVICORN_ACCESS_LOG", "true").lower() == "true"
-
-    # 启动Uvicorn服务器
-    uvicorn.run(
-        "src.asgi:application",
-        host=host,
-        port=port,
-        workers=workers,
-        log_level=log_level,
-        access_log=access_log
-    )
+    host = os.environ.get("DAPHNE_HOST", "0.0.0.0")
+    port = int(os.environ.get("DAPHNE_PORT", 8000))
+    log_level = os.environ.get("DAPHNE_LOG_LEVEL", "info")
+    
+    # 构建Daphne命令行参数
+    cmd = [
+        sys.executable, "-m", "daphne",
+        "--bind", host,
+        "--port", str(port),
+        "--verbosity", "1" if log_level == "info" else "2" if log_level == "debug" else "0"
+    ]
+    
+    # 添加应用路径
+    cmd.append("src.asgi:application")
+    
+    # 执行Daphne服务器
+    os.execv(sys.executable, cmd)
