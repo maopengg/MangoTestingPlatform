@@ -12,7 +12,7 @@ if __name__ == "__main__":
     # os.environ["DJANGO_ENV"] = "dev"
     host = os.environ.get("UVICORN_HOST", "0.0.0.0")
     port = int(os.environ.get("UVICORN_PORT", 8000))
-    workers = int(os.environ.get("UVICORN_WORKERS", 2))
+    workers = int(os.environ.get("UVICORN_WORKERS", 1))
     log_level = os.environ.get("UVICORN_LOG_LEVEL", "info")
     access_log = os.environ.get("UVICORN_ACCESS_LOG", "true").lower() == "true"
 

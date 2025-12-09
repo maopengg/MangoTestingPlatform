@@ -1,11 +1,13 @@
-import filetype
+for i in range(100):
+    import requests
 
-file_path = r"D:\code\MangoTestingPlatform\MangoServer\upload_template\元素批量上传模版.xlsx"
+    url = "http://172.16.100.47:8000/system/socket/all/user/list"
 
-# 使用 filetype 替换 magic
-kind = filetype.guess(file_path)
-if kind is not None:
-    mime_type = kind.mime
-    print(mime_type)  # 输出: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-else:
-    print("无法识别文件类型")
+    payload = {}
+    headers = {
+        'authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsInR5cGUiOiJqd3QifQ.eyJpZCI6MSwidXNlcm5hbWUiOiJtYW9wZW5nIiwibmFtZSI6Ilx1NmJkYlx1OWU0ZiIsImV4cCI6MTc2NTI1MTg1N30.1MlS-UWyBQHaRMUjPhT20eTGnjIJFuhzB_pEbUHePl0'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    print(response.text)
