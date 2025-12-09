@@ -253,12 +253,14 @@ class TestCase:
             try:
                 ChatConsumer.active_send(send_data)
             except MangoServerError as error:
-                user_list = [i.username for i in SocketUser.user if i.is_open]
-                if error.code == 1028 and is_open and user_list:
-                    send_data.user = user_list[random.randint(0, len(user_list) - 1)]
-                    ChatConsumer.active_send(send_data)
-                else:
+                log.ui.debug(f'发送ui测试数据报错:{error}')
+                if not is_open:
                     raise error
+                user_list = [i.username for i in SocketUser.user if i.is_open]
+                if not error.code == 1028 or not user_list:
+                    raise error
+                send_data.user = user_list[random.randint(0, len(user_list) - 1)]
+                ChatConsumer.active_send(send_data)
 
     def __environment_config(self, project_product_id: int, ) -> EnvironmentConfigModel:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)
