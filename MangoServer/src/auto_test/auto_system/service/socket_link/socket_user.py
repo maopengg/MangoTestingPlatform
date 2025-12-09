@@ -4,6 +4,7 @@
 # @Time   : 2023-11-20 16:52
 # @Author : 毛鹏
 from typing import Any
+import threading
 
 from pydantic import BaseModel
 
@@ -22,88 +23,100 @@ class SocketUserModel(BaseModel):
 
 class SocketUser:
     user: list[SocketUserModel] = []
+    _lock = threading.Lock()  # 添加线程锁确保并发安全
 
     @classmethod
     def set_user_web_obj(cls, username, web_obj, user_id):
-        for i in cls.user:
-            if i.username == username:
-                i.web_obj = web_obj
-                return
-        cls.user.append(
-            SocketUserModel(user_id=user_id, username=username, web_obj=web_obj))
+        with cls._lock:  # 使用锁保护写操作
+            for i in cls.user:
+                if i.username == username:
+                    i.web_obj = web_obj
+                    return
+            cls.user.append(
+                SocketUserModel(user_id=user_id, username=username, web_obj=web_obj))
 
     @classmethod
     def set_user_client_obj(cls, username, client_obj, user_id):
-        for i in cls.user:
-            if i.username == username:
-                i.client_obj = client_obj
-                return
-        cls.user.append(
-            SocketUserModel(user_id=user_id, username=username, client_obj=client_obj))
+        with cls._lock:  # 使用锁保护写操作
+            for i in cls.user:
+                if i.username == username:
+                    i.client_obj = client_obj
+                    return
+            cls.user.append(
+                SocketUserModel(user_id=user_id, username=username, client_obj=client_obj))
 
     @classmethod
     def delete_user_web_obj(cls, username):
-        for i in cls.user:
-            if i.username == username:
-                i.web_obj = None
-            if i.client_obj is None and i.web_obj is None:
-                cls.user.remove(i)
+        with cls._lock:  # 使用锁保护写操作
+            for i in cls.user:
+                if i.username == username:
+                    i.web_obj = None
+                if i.client_obj is None and i.web_obj is None:
+                    cls.user.remove(i)
 
     @classmethod
     def delete_user_client_obj(cls, username):
-        for i in cls.user:
-            if i.username == username:
-                i.client_obj = None
-            if i.client_obj is None and i.web_obj is None:
-                cls.user.remove(i)
+        with cls._lock:  # 使用锁保护写操作
+            for i in cls.user:
+                if i.username == username:
+                    i.client_obj = None
+                if i.client_obj is None and i.web_obj is None:
+                    cls.user.remove(i)
 
     @classmethod
     def get_user_web_obj(cls, username):
-        for i in cls.user:
-            if i.username == username:
-                if i.web_obj:
-                    return i.web_obj
-                else:
-                    return False
+        with cls._lock:  # 使用锁保护读操作，防止在遍历时列表被修改
+            for i in cls.user:
+                if i.username == username:
+                    if i.web_obj:
+                        return i.web_obj
+                    else:
+                        return False
 
     @classmethod
     def get_user_client_obj(cls, username):
-        for i in cls.user:
-            if i.username == username:
-                if i.client_obj:
-                    return i.client_obj
-                else:
-                    raise SystemEError(*ERROR_MSG_0028,
-                                       value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
-        raise SystemEError(*ERROR_MSG_0028,
-                           value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
+        with cls._lock:  # 使用锁保护读操作，防止在遍历时列表被修改
+            for i in cls.user:
+                if i.username == username:
+                    if i.client_obj:
+                        return i.client_obj
+                    else:
+                        raise SystemEError(*ERROR_MSG_0028,
+                                           value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
+            raise SystemEError(*ERROR_MSG_0028,
+                               value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
 
     @classmethod
     def get_all_user(cls):
-        return [i.username for i in cls.user if i.client_obj]
+        with cls._lock:  # 使用锁保护读操作，防止在遍历时列表被修改
+            return [i.username for i in cls.user if i.client_obj]
 
     @classmethod
     def get_user_obj(cls, username):
-        for i in cls.user:
-            if i.username == username:
-                return i
+        with cls._lock:  # 使用锁保护读操作，防止在遍历时列表被修改
+            for i in cls.user:
+                if i.username == username:
+                    return i
 
     @classmethod
     def all_keys(cls):
-        return len(cls.user)
+        with cls._lock:  # 使用锁保护读操作，防止在遍历时列表被修改
+            return len(cls.user)
 
     @classmethod
     def get_all_user_list(cls):
-        return cls.user
+        with cls._lock:  # 使用锁保护读操作，防止在遍历时列表被修改
+            return cls.user.copy()  # 返回副本以避免外部修改影响内部状态
 
     @classmethod
     def set_userinfo(cls, username, is_open: bool | None = None, debug: bool | None = None):
-        log.system.debug(f'设置执行器用户信息：{username}, {is_open}, {debug}')
-        for i in cls.user:
-            if i.username == username:
-                if is_open is not None:
-                    i.is_open = is_open
-                elif debug is not None:
-                    i.debug = debug
-                return
-        raise SystemEError(*ERROR_MSG_0027, )
+        with cls._lock:  # 使用锁保护写操作
+            log.system.debug(f'设置执行器用户信息：{username}, {is_open}, {debug}')
+            for i in cls.user:
+                if i.username == username:
+                    if is_open is not None:
+                        i.is_open = is_open
+                    elif debug is not None:
+                        i.debug = debug
+                    return
+            raise SystemEError(*ERROR_MSG_0027, )
