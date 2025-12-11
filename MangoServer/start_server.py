@@ -6,8 +6,22 @@
 
 import uvicorn
 import os
+import subprocess
+import sys
 
 if __name__ == "__main__":
+    # 执行Django初始化任务
+    try:
+        # 创建缓存表
+        subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"], 
+                      check=False, capture_output=True)
+        # 执行数据库迁移
+        subprocess.run([sys.executable, "manage.py", "migrate", "--noinput"], 
+                      check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        print(f"初始化任务失败: {e}")
+        sys.exit(1)
+    
     # 获取环境变量
     # os.environ["DJANGO_ENV"] = "dev"
     host = os.environ.get("UVICORN_HOST", "0.0.0.0")
