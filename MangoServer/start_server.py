@@ -13,14 +13,21 @@ if __name__ == "__main__":
     # 执行Django初始化任务
     try:
         # 创建缓存表
-        subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"], 
-                      check=False, capture_output=True)
+        result = subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"], 
+                               capture_output=True, text=True)
+        if result.returncode != 0 and "already exists" not in result.stderr:
+            print(f"创建缓存表失败: {result.stderr}")
+            
         # 执行数据库迁移
-        subprocess.run([sys.executable, "manage.py", "migrate", "--noinput"], 
-                      check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        print(f"初始化任务失败: {e}")
-        sys.exit(1)
+        result = subprocess.run([sys.executable, "manage.py", "migrate", "--noinput"], 
+                               capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"数据库迁移失败: {result.stderr}")
+            print(f"数据库迁移输出: {result.stdout}")
+            # 不退出，继续尝试启动应用
+    except Exception as e:
+        print(f"初始化任务出现异常: {e}")
+        # 不退出，继续尝试启动应用
     
     # 获取环境变量
     # os.environ["DJANGO_ENV"] = "dev"
