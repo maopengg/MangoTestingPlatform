@@ -161,32 +161,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 # **********************************************************************************************************************
 
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{redis}0",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "CONNECTION_POOL_KWARGS": {
-#                 "max_connections": 1000,
-#                 "decode_responses": True,
-#                 "encoding": 'utf-8'
-#             }
-#         }
-#     },
-#     "socket": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{redis}1",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "CONNECTION_POOL_KWARGS": {
-#                 "max_connections": 1000,
-#                 "decode_responses": True,
-#                 "encoding": 'utf-8'
-#             }
-#         }
-#     }
-# }
+# 根据是否启用Redis来决定缓存配置
+if REDIS:
+    # 使用Redis缓存
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/0',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
+    }
+else:
+    # 使用数据库缓存
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'django_cache',  # 数据库表名
+        }
+    }
+
 # **********************************************************************************************************************
 
 LOGGING = {
