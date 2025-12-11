@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
 
-VERSION = '5.8.5'
+VERSION = '5.8.8'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -105,6 +105,9 @@ ASGI_APPLICATION = 'src.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'CONFIG': {
+            'capacity': 1000,
+        }
     }
 }
 # **********************************************************************************************************************
@@ -112,32 +115,23 @@ CHANNEL_LAYERS = {
 if not IS_SQLITE:
     DATABASES = {
         'default': {
-            'ENGINE': 'dj_db_conn_pool.backends.mysql',
+            'ENGINE': 'django.db.backends.mysql',
             'NAME': MYSQL_DB_NAME,
             'USER': MYSQL_USER,
             'PASSWORD': MYSQL_PASSWORD,
             'HOST': MYSQL_IP,
             'PORT': MYSQL_PORT,
-            'TEST': {
-                'NAME': f'test_{MYSQL_DB_NAME}',
-                'CHARSET': 'utf8mb4',
-                'COLLATION': 'utf8mb4_general_ci'
-            },
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'connect_timeout': 5,
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'connect_timeout': 20,
+                'read_timeout': 60,
+                'write_timeout': 60,
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', wait_timeout=300",
                 'isolation_level': 'READ COMMITTED',
                 'autocommit': True,
             },
-            'POOL_OPTIONS': {
-                'POOL_SIZE': 20,
-                'MAX_OVERFLOW': 50,
-                'RECYCLE': 3600,
-                'TIMEOUT': 30,
-                'PRE_PING': True,
-            },
-            'CONN_MAX_AGE': 0,
+            'CONN_MAX_AGE': 300,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 else:
@@ -167,32 +161,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 # **********************************************************************************************************************
 
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{redis}0",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "CONNECTION_POOL_KWARGS": {
-#                 "max_connections": 1000,
-#                 "decode_responses": True,
-#                 "encoding": 'utf-8'
-#             }
-#         }
-#     },
-#     "socket": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{redis}1",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "CONNECTION_POOL_KWARGS": {
-#                 "max_connections": 1000,
-#                 "decode_responses": True,
-#                 "encoding": 'utf-8'
-#             }
-#         }
-#     }
-# }
+# 根据是否启用Redis来决定缓存配置
+if REDIS:
+    # 使用Redis缓存
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/0',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
+    }
+else:
+    # 使用数据库缓存
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'django_cache',  # 数据库表名
+        }
+    }
+
 # **********************************************************************************************************************
 
 LOGGING = {
