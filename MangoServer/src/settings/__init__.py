@@ -106,7 +106,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
         'CONFIG': {
-            'capacity': 1000,  # 增加通道容量
+            'capacity': 1000,
         }
     }
 }
