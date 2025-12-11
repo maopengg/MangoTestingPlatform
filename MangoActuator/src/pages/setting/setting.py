@@ -27,7 +27,6 @@ class SettingPage(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.data = []
         self.layout = MangoVBoxLayout()
         self.layout.setContentsMargins(5, 5, 5, 5)
 
@@ -104,8 +103,7 @@ class SettingPage(QWidget):
         self.setLayout(self.layout)
 
     def show_data(self):
-        response_data = HTTP.system.cache_data.get_cache_data()
-        self.data = response_data.data
+        pass
 
     def debug(self, value):
         settings.IS_DEBUG = bool(self.toggle1.get_value())

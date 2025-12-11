@@ -295,6 +295,7 @@ const saveFlow = () => {
   if (!checkNodeConnections()) return
   const value = {}
   value['id'] = pageData.record?.id || route.query.id
+  value['parent_id'] = pageData.record?.id || route.query.id
   value['flow_data'] = flowData.value
   putUiSteps(value)
       .then((res) => {
@@ -347,10 +348,11 @@ function upDataOpeValue(value: any) {
       data.formItems.splice(i, 1)
     }
   }
+  const label = useSelectValue.getTopLevelLabelByValue(value)
   if (inputItem && inputItem.parameter) {
     inputItem.parameter.forEach((select: any) => {
       if (
-          select.n !== '函数代码' &&
+          !['函数断言','文件断言','sql断言'].includes(label.label) &&
           (select.f === 'actual' || select.f === 'locating') &&
           !data.formItems.some((item) => item.key === select.f)
       ) {
@@ -371,8 +373,7 @@ function upDataOpeValue(value: any) {
         })
       } else if (
           select.d === true &&
-          data.type !== 4 &&
-          !data.formItems.some((item) => item.key === select.f)
+          data.type === 4 ? (['函数断言','文件断言','sql断言'].includes(label.label) && select.f !== 'expect'&& select.n !=='函数代码' ) : !data.formItems.some((item) => item.key === select.f)
       ) {
         let d = {
           label: select.n ? select.n : select.f,
