@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import os
 import threading
+import traceback
 from datetime import timedelta
 
 import atexit
@@ -197,11 +198,7 @@ class AutoSystemConfig(AppConfig):
                 minutes=5,
                 id='set_case_status'
             )
-            
-            # 启动调度器
             self.scheduler.start()
-            
-            # 注册退出时停止调度器
             atexit.register(self.stop_scheduler)
         except Exception as e:
             log.system.error(f'定时任务调度器设置异常: {e}')
@@ -209,9 +206,10 @@ class AutoSystemConfig(AppConfig):
     def stop_scheduler(self):
         """停止调度器"""
         try:
-            if hasattr(self, 'scheduler') and self.scheduler:
+            if hasattr(self, 'scheduler') and self.scheduler and getattr(self.scheduler, 'running', False):
                 self.scheduler.shutdown()
         except Exception as e:
+            traceback.print_exc()
             log.system.error(f'停止调度器异常: {e}')
 
 

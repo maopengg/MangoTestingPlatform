@@ -405,6 +405,7 @@
           })
       } else {
         value['id'] = data.updateId
+        value['parent_id'] = data.updateId
         putUiSteps(value)
           .then((res) => {
             modalDialogRef.value?.toggle()

@@ -4,6 +4,7 @@
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
 from django.forms.models import model_to_dict
+from mangotools.mangos import get_execution_order_with_config_ids
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -57,6 +58,25 @@ class PageStepsCRUD(ModelCRUD):
     queryset = PageSteps.objects.all()
     serializer_class = PageStepsSerializersC
     serializer = PageStepsSerializers
+
+    @error_response('ui')
+    def callback(self, _id):
+        """
+        排序
+        @param _id: 步骤id
+        @return:
+        """
+        if _id is None:
+            return
+        page_steps = PageSteps.objects.get(id=_id)
+        try:
+            flow_data = get_execution_order_with_config_ids(page_steps.flow_data)
+            for i in PageStepsDetailed.objects.filter(page_step=_id):
+                if i.id not in flow_data:
+                    i.delete()
+        except KeyError:
+            pass
+
 
 
 class PageStepsViews(ViewSet):

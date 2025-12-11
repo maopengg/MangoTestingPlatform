@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import json
 
+from django.core.cache import cache
 from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -72,12 +73,15 @@ class CacheDataCRUD(ModelCRUD):
     @error_response('system')
     def put(self, request: Request):
         for i in request.data:
+            cache_data = self.model.objects.get(pk=i.get('id'))
             serializer = self.serializer(
-                instance=self.model.objects.get(pk=i.get('id')),
+                instance=cache_data,
                 data=i
             )
             if serializer.is_valid():
                 serializer.save()
+                cache_key = f"cache_data_{cache_data.key}"
+                cache.delete(cache_key)
             else:
                 return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
         return ResponseData.success(RESPONSE_MSG_0082, )
@@ -95,8 +99,19 @@ class CacheDataViews(ViewSet):
         @param request:
         @return:
         """
+        # 尝试从缓存中获取数据
+        cache_key = f"cache_data_{request.query_params.get('key')}"
+        cached_value = cache.get(cache_key)
+        
+        if cached_value is not None:
+            return ResponseData.success(RESPONSE_MSG_0031, cached_value)
+        
+        # 缓存中没有数据，从数据库获取
         try:
             model = self.model.objects.get(key=request.query_params.get('key'))
+            value = json.loads(model.value)
+            # 将数据存入缓存，设置5分钟过期时间
+            cache.set(cache_key, value, 300)
         except CacheData.DoesNotExist:
             raise SystemEError(*ERROR_MSG_0038)
-        return ResponseData.success(RESPONSE_MSG_0031, json.loads(model.value))
+        return ResponseData.success(RESPONSE_MSG_0031, value)

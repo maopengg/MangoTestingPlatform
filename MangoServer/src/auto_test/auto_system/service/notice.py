@@ -8,8 +8,8 @@ import json
 from django.utils.timezone import localtime
 from mangotools.enums import NoticeEnum
 from mangotools.exceptions import MangoToolsError
-from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel
-from mangotools.notice import EmailSend, WeChatSend
+from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel
+from mangotools.notice import EmailSend, WeChatSend, FeiShuSend
 
 from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuite, TestObject, TestSuiteDetails
 from src.auto_test.auto_user.models import User
@@ -34,8 +34,10 @@ class NoticeMain:
                     cls.__wend_mail_send(i, test_report)
                 elif i.type == NoticeEnum.WECOM.value:
                     cls.__we_chat_send(i, test_report)
+                elif i.type == NoticeEnum.FEISHU.value:
+                    cls.__fs_chat_send(i, test_report)
                 else:
-                    log.system.error('暂不支持钉钉打卡')
+                    log.system.error('暂不支持其他类型')
             except MangoToolsError as error:
                 raise ToolsError(error.code, error.msg)
 
@@ -70,8 +72,10 @@ class NoticeMain:
             cls.__wend_mail_send(notice_obj, test_report)
         elif notice_obj.type == NoticeEnum.WECOM.value:
             cls.__we_chat_send(notice_obj, test_report)
+        elif notice_obj.type == NoticeEnum.FEISHU.value:
+            cls.__fs_chat_send(notice_obj, test_report)
         else:
-            log.system.error('暂不支持钉钉打卡')
+            log.system.error('暂不支持其他类型')
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
@@ -79,6 +83,15 @@ class NoticeMain:
         try:
             wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report, cls.get_domain_name())
             wechat.send_wechat_notification()
+        except ToolsError as error:
+            raise MangoServerError(error.code, error.msg)
+
+    @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
+    def __fs_chat_send(cls, i, test_report: TestReportModel | None = None):
+        try:
+            wechat = FeiShuSend(FeiShuNoticeModel(webhook=i.config), test_report, cls.get_domain_name())
+            wechat.send_feishu_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
