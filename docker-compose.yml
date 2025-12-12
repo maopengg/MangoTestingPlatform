@@ -66,9 +66,7 @@ services:
       app_network:
         aliases: [server]
     hostname: server
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             uvicorn src.asgi:application --host 0.0.0.0 --port 8000 --workers 1"
+
   mango-console:
     build:
       context: ./mango-console
