@@ -657,7 +657,8 @@
               modalDialogRef.value?.setConfirmLoading(false)
             })
         }
-      } else if (data.addType === 1) {
+      }
+    } else if (data.addType === 1) {
         if (formItemsImport.every((it) => (it.validator ? it.validator() : true))) {
           let value = getFormItems(formItemsImport)
           value['type'] = data.apiType
@@ -677,7 +678,6 @@
       } else {
         modalDialogRef.value?.setConfirmLoading(false)
       }
-    }
   }
 
   const onRunCase = async (param) => {
