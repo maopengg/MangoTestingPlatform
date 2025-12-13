@@ -57,6 +57,7 @@ class RunTasks:
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def timing(cls, timing_strategy_id):
+        log.system.debug(f'触发定时器：{timing_strategy_id}')
         scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
                                                    status=StatusEnum.SUCCESS.value)
         for scheduled_tasks in scheduled_tasks_obj:
