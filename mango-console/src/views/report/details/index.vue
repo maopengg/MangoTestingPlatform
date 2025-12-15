@@ -136,7 +136,7 @@
       </a-col>
     </a-row>
 
-    <a-card class="test-details" :body-style="{ padding: '0 15px 15px 15px' }">
+    <a-card class="test-details" :body-style="{ padding: '0 15px 30px 15px' }">
       <template #title>
         <icon-unordered-list />
         <span>测试套用例列表</span>
@@ -170,12 +170,21 @@
             <a-collapse-item v-for="item of data.dataList" :key="item.id">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_id }}-{{ item.case_name }}</span>
+                  <span 
+                    :title="`${item.case_id}-${item.case_name}`"
+                    class="case-name"
+                  >{{ item.case_id }}-{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item?.error_message">失败提示：{{ item.error_message }}</span>
+                  <span 
+                    v-if="item.error_message" 
+                    class="error-message"
+                    :title="item.error_message"
+                  >
+                    失败提示：{{ item.error_message }}
+                  </span>
                 </div>
               </template>
               <template #extra>
@@ -241,12 +250,21 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_id }}-{{ item.case_name }}</span>
+                  <span 
+                    :title="`${item.case_id}-${item.case_name}`"
+                    class="case-name"
+                  >{{ item.case_id }}-{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
+                  <span 
+                    v-if="item.error_message" 
+                    class="error-message"
+                    :title="item.error_message"
+                  >
+                    失败提示：{{ item.error_message }}
+                  </span>
                 </div>
               </template>
               <template #extra>
@@ -318,12 +336,21 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_name }}</span>
+                  <span 
+                    :title="item.case_name"
+                    class="case-name"
+                  >{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
+                  <span 
+                    v-if="item.error_message" 
+                    class="error-message"
+                    :title="item.error_message"
+                  >
+                    失败提示：{{ item.error_message }}
+                  </span>
                 </div>
               </template>
               <template #extra>
@@ -987,7 +1014,36 @@
     align-items: center;
     gap: 12px; /* 控制标签间距 */
     font-size: 14px;
+    width: 100%;
   }
+
+  .custom-header > .case-name {
+    flex: 0 0 400px; /* 固定400px宽度 */
+    min-width: 400px;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .custom-header > span:nth-child(2) {
+    flex: 0 0 20px; /* 固定20px宽度 */
+  }
+
+  .custom-header > .arco-tag {
+    flex: 0 0 auto; /* 不伸缩，保持标签自然宽度 */
+  }
+
+  .custom-header > .error-message {
+    flex: 1; /* 占据剩余所有空间 */
+    min-width: 0; /* 允许收缩到0，配合省略号显示 */
+    max-width: 1000px; /* 限制最大宽度为700px，确保重试按钮有足够的空间 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+
 
   // 测试详情卡片 - 与首页保持一致
   .test-details {

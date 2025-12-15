@@ -47,23 +47,13 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { useRowKey, useRowSelection, useTableColumn } from '@/hooks/table'
+  import { useRowKey, useTableColumn } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
-  import { useRouter } from 'vue-router'
-  import { TableColumnData } from '@arco-design/web-vue/es/table/interface'
   import { getSystemTasks } from '@/api/system/tasks'
   import { ref, onMounted } from 'vue'
 
-  type CustomTableColumn = TableColumnData & {
-    key: string | number
-  }
-
-  // 使用hooks
-  const { onSelectionChange } = useRowSelection()
   const rowKey = useRowKey('id')
   const enumStore = useEnum()
-  const router = useRouter()
-
   // 组件内部数据
   const dataList = ref([])
   const loading = ref(true)
