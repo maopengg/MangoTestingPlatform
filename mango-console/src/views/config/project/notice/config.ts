@@ -84,7 +84,6 @@ export const tableColumns = useTableColumn([
         align: 'left',
         ellipsis: true,
         tooltip: true,
-        width: 120,
     },
     {
         title: '企微webhook',
@@ -93,7 +92,6 @@ export const tableColumns = useTableColumn([
         align: 'left',
         ellipsis: true,
         tooltip: true,
-        width: 120,
     },
     {
         title: '飞书webhook',
@@ -102,7 +100,6 @@ export const tableColumns = useTableColumn([
         align: 'left',
         ellipsis: true,
         tooltip: true,
-        width: 120,
     },
     {
         title: '钉钉webhook（不可用）',
@@ -111,7 +108,6 @@ export const tableColumns = useTableColumn([
         align: 'left',
         ellipsis: true,
         tooltip: true,
-        width: 120,
     },
     {
         title: '操作',
