@@ -27,7 +27,6 @@
           :loading="table.tableLoading.value"
           :pagination="false"
           :rowKey="rowKey"
-          :scroll="{ x: 'max-content' }"
           @selection-change="onSelectionChange"
       >
         <template #columns>
