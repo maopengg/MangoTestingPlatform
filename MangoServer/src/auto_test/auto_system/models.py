@@ -134,12 +134,7 @@ class NoticeGroup(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="通知组名称", max_length=64)
-    users = models.ManyToManyField(
-        to=User,
-        verbose_name="邮件通知用户",
-        blank=True,
-        related_name="notice_groups"
-    )
+    mail = models.JSONField(verbose_name="邮箱", default=list)
     feishu = models.CharField(verbose_name="飞书通知", max_length=255, null=True)
     dingding = models.CharField(verbose_name="钉钉通知", max_length=255, null=True)
     work_weixin = models.CharField(verbose_name="企业微信通知", max_length=255, null=True)

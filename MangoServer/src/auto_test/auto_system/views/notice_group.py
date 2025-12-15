@@ -33,7 +33,6 @@ class NoticeGroupSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
-    users = UserSerializers(read_only=True, many=True)
 
     class Meta:
         model = NoticeGroup
@@ -43,8 +42,6 @@ class NoticeGroupSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project'
-        ).prefetch_related(
-            'users'
         )
         return queryset
 

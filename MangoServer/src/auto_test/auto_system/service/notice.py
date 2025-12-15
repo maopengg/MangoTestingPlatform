@@ -11,7 +11,7 @@ from mangotools.notice import EmailSend, WeChatSend, FeiShuSend
 
 from src.auto_test.auto_system.models import NoticeGroup, CacheData, TestSuite, TestSuiteDetails
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import  EnvironmentEnum, TestCaseTypeEnum
+from src.enums.tools_enum import EnvironmentEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.tools.decorator.retry import async_task_db_connection
 
@@ -23,8 +23,8 @@ class NoticeMain:
     def notice_main(cls, notice_group_id: int, test_suite_id: int):
         notice_obj = NoticeGroup.objects.get(id=notice_group_id)
         test_report = cls.test_report(test_suite_id)
-        if notice_obj.users.exists():
-            cls.__wend_mail_send(notice_obj.users, test_report)
+        if notice_obj.mail:
+            cls.__wend_mail_send(notice_obj.mail, test_report)
         if notice_obj.work_weixin:
             cls.__we_chat_send(notice_obj.work_weixin, test_report)
         if notice_obj.feishu:
@@ -59,8 +59,8 @@ class NoticeMain:
             "execution_duration": "03:40:36",
             "test_time": "2025-07-05 06:26:47"
         })
-        if notice_obj.users.exists():
-            cls.__wend_mail_send(notice_obj.users, test_report)
+        if notice_obj.mail:
+            cls.__wend_mail_send(notice_obj.mail, test_report)
         if notice_obj.work_weixin:
             cls.__we_chat_send(notice_obj.work_weixin, test_report)
         if notice_obj.feishu:
@@ -97,15 +97,7 @@ class NoticeMain:
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
-    def __wend_mail_send(cls, users: str | list, test_report: TestReportModel | None = None):
-        send_list = []
-        for i in users.all():
-            try:
-                send_list += i.mailbox
-            except TypeError:
-                pass
-        if not send_list:
-            raise SystemEError(*ERROR_MSG_0048)
+    def __wend_mail_send(cls, send_list, test_report: TestReportModel | None = None):
         send_user, email_host, stamp_key = cls.mail_config()
         email = EmailSend(EmailNoticeModel(
             send_user=send_user,

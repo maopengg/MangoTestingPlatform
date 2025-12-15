@@ -96,8 +96,11 @@
         const ignoreClasses = ['CodeMirror-code', 'ace_editor']
         const hasIgnoreClass = target.classList && ignoreClasses.some(className => target.classList.contains(className))
         
+        // 检查是否在 arco-design 的 input-tag 组件中
+        const isInputTag = target.closest && target.closest('.arco-input-tag') !== null;
+        
         // 如果在需要忽略的元素中按回车，则不处理
-        if (ignoreElements.includes(tagName) || hasIgnoreClass) {
+        if (ignoreElements.includes(tagName) || hasIgnoreClass || isInputTag) {
           return
         }
         
