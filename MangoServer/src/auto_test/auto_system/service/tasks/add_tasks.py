@@ -3,11 +3,11 @@
 # @Description: 
 # @Time   : 2024-11-24 20:26
 # @Author : 毛鹏
-from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter
+from src.auto_test.auto_api.models import ApiCase
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.service.testcounter import TestCounter
 from src.auto_test.auto_ui.models import UiCase
-from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
+from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum, StatusEnum
 from src.tools.view import Snowflake
 
 
@@ -29,7 +29,7 @@ class AddTasks:
             'test_env': self.test_env,
             'user': self.user_id,
             'status': TaskEnum.STAY_BEGIN.value,
-            'is_notice': self.is_notice,
+            'is_notice': StatusEnum.FAIL.value,
             'tasks': self.tasks_id,
         })
 

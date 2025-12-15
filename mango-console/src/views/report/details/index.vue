@@ -45,9 +45,9 @@
                   <span class="info-value">{{ pageData.record.user?.name }}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">是否通知：</span>
+                  <span class="info-label">通知状态：</span>
                   <span class="info-value">{{
-                    enumStore.status[pageData.record.is_notice].title
+                pageData.record.is_notice === 1? '已发送' : '未发送'
                   }}</span>
                 </div>
               </a-space>

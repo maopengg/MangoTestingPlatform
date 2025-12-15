@@ -6,17 +6,13 @@
 import json
 
 from django.utils.timezone import localtime
-from mangotools.enums import NoticeEnum
-from mangotools.exceptions import MangoToolsError
 from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel
 from mangotools.notice import EmailSend, WeChatSend, FeiShuSend
 
-from src.auto_test.auto_system.models import NoticeGroup, CacheData, TestSuite, TestObject, TestSuiteDetails
-from src.auto_test.auto_user.models import User
+from src.auto_test.auto_system.models import NoticeGroup, CacheData, TestSuite, TestSuiteDetails
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import StatusEnum, EnvironmentEnum, TestCaseTypeEnum
+from src.enums.tools_enum import  EnvironmentEnum, TestCaseTypeEnum
 from src.exceptions import *
-from src.tools.log_collector import log
 from src.tools.decorator.retry import async_task_db_connection
 
 
@@ -24,31 +20,26 @@ class NoticeMain:
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
-    def notice_main(cls, test_env: int, project_product: int, test_suite_id: int):
-        test_object = TestObject.objects.get(environment=test_env, project_product=project_product)
-        notice_obj = NoticeConfig.objects.filter(test_object=test_object.id, status=StatusEnum.SUCCESS.value)
+    def notice_main(cls, notice_group_id: int, test_suite_id: int):
+        notice_obj = NoticeGroup.objects.get(id=notice_group_id)
         test_report = cls.test_report(test_suite_id)
-        for i in notice_obj:
-            try:
-                if i.type == NoticeEnum.MAIL.value:
-                    cls.__wend_mail_send(i, test_report)
-                elif i.type == NoticeEnum.WECOM.value:
-                    cls.__we_chat_send(i, test_report)
-                elif i.type == NoticeEnum.FEISHU.value:
-                    cls.__fs_chat_send(i, test_report)
-                else:
-                    log.system.error('暂不支持其他类型')
-            except MangoToolsError as error:
-                raise ToolsError(error.code, error.msg)
+        if notice_obj.users.exists():
+            cls.__wend_mail_send(notice_obj.users, test_report)
+        if notice_obj.work_weixin:
+            cls.__we_chat_send(notice_obj.work_weixin, test_report)
+        if notice_obj.feishu:
+            cls.__fs_chat_send(notice_obj.feishu, test_report)
+        if notice_obj.dingding:
+            cls.__ding_ding_send(notice_obj.dingding, test_report)
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def test_notice_send(cls, _id):
-        notice_obj = NoticeConfig.objects.get(id=_id)
+        notice_obj = NoticeGroup.objects.get(id=_id)
         test_report = TestReportModel(**{
             "test_suite_id": 197899881973,
             'task_name': None,
-            'product_name': '百度',
+            'product_name': '模拟API',
             "project_name": "演示DEMO",
             "test_environment": "生产环境",
             "case_sum": 6,
@@ -68,49 +59,53 @@ class NoticeMain:
             "execution_duration": "03:40:36",
             "test_time": "2025-07-05 06:26:47"
         })
-        if notice_obj.type == NoticeEnum.MAIL.value:
-            cls.__wend_mail_send(notice_obj, test_report)
-        elif notice_obj.type == NoticeEnum.WECOM.value:
-            cls.__we_chat_send(notice_obj, test_report)
-        elif notice_obj.type == NoticeEnum.FEISHU.value:
-            cls.__fs_chat_send(notice_obj, test_report)
-        else:
-            log.system.error('暂不支持其他类型')
+        if notice_obj.users.exists():
+            cls.__wend_mail_send(notice_obj.users, test_report)
+        if notice_obj.work_weixin:
+            cls.__we_chat_send(notice_obj.work_weixin, test_report)
+        if notice_obj.feishu:
+            cls.__fs_chat_send(notice_obj.feishu, test_report)
+        if notice_obj.dingding:
+            cls.__ding_ding_send(notice_obj.dingding, test_report)
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
-    def __we_chat_send(cls, i, test_report: TestReportModel | None = None):
+    def __we_chat_send(cls, webhook, test_report: TestReportModel | None = None):
         try:
-            wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report, cls.get_domain_name())
+            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
             wechat.send_wechat_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
-    def __fs_chat_send(cls, i, test_report: TestReportModel | None = None):
+    def __fs_chat_send(cls, webhook: str, test_report: TestReportModel | None = None):
         try:
-            wechat = FeiShuSend(FeiShuNoticeModel(webhook=i.config), test_report, cls.get_domain_name())
+            wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
             wechat.send_feishu_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
-    def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
+    def __ding_ding_send(cls, webhook, test_report: TestReportModel | None = None):
         try:
-            user_info = User.objects.filter(name__in=json.loads(i.config))
-        except json.decoder.JSONDecodeError:
-            raise SystemEError(*ERROR_MSG_0012)
-        else:
-            send_list = []
-            for i in user_info:
-                try:
-                    send_list += i.mailbox
-                except TypeError:
-                    pass
-            if not send_list:
-                raise SystemEError(*ERROR_MSG_0048)
+            wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
+            wechat.send_feishu_notification()
+        except ToolsError as error:
+            raise MangoServerError(error.code, error.msg)
+
+    @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
+    def __wend_mail_send(cls, users: str | list, test_report: TestReportModel | None = None):
+        send_list = []
+        for i in users.all():
+            try:
+                send_list += i.mailbox
+            except TypeError:
+                pass
+        if not send_list:
+            raise SystemEError(*ERROR_MSG_0048)
         send_user, email_host, stamp_key = cls.mail_config()
         email = EmailSend(EmailNoticeModel(
             send_user=send_user,

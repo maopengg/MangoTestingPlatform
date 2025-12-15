@@ -10,12 +10,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangotools.enums import NoticeEnum
 from src.auto_test.auto_system.models import NoticeGroup
 from src.auto_test.auto_system.views.project import ProjectSerializers
-from src.auto_test.auto_user.models import User
 from src.auto_test.auto_user.views.user import UserSerializers
-from src.enums.tools_enum import StatusEnum
 from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -35,7 +32,7 @@ class NoticeGroupSerializers(serializers.ModelSerializer):
 class NoticeGroupSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = ProjectProductSerializersC(read_only=True)
+    project = ProjectSerializers(read_only=True)
     users = UserSerializers(read_only=True, many=True)
 
     class Meta:
@@ -45,7 +42,7 @@ class NoticeGroupSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project_product'
+            'project'
         ).prefetch_related(
             'users'
         )
@@ -77,3 +74,11 @@ class NoticeGroupViews(ViewSet):
             return ResponseData.fail((error.code, error.msg))
         else:
             return ResponseData.success(RESPONSE_MSG_0046)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_name(self, request: Request):
+        from src.auto_test.auto_system.models import ProjectProduct
+        project_id = ProjectProduct.objects.get(id=request.query_params.get('project_product_id')).project_id
+        model = self.model.objects.filter(project_id=project_id)
+        return ResponseData.success(RESPONSE_MSG_0046, data=[{'value': i.id, 'label': i.name} for i in model])

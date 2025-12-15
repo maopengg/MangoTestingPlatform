@@ -90,6 +90,9 @@
                   >{{ enumStore.task_status[record.status].title }}
                 </a-tag>
               </template>
+              <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
+                {{ record.is_notice === 1? '已发送' : '未发送' }}
+              </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>
                   <a-button type="text" size="mini" class="custom-mini-btn" @click="onRetry(record)"

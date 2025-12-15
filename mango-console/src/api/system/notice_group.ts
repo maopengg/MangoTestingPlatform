@@ -60,3 +60,14 @@ export function getSystemNoticeTest(id: number) {
     },
   })
 }
+
+export function getSystemNoticeName(project_product_id: number) {
+  return get({
+    url: 'system/notice/name',
+    data: () => {
+      return {
+        project_product_id: project_product_id,
+      }
+    },
+  })
+}

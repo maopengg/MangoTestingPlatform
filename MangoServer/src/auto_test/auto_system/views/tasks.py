@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import Tasks
 from src.auto_test.auto_system.service.tasks.run_tasks import RunTasks
+from src.auto_test.auto_system.views.notice_group import NoticeGroupSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from src.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
@@ -36,6 +37,7 @@ class TasksSerializersC(serializers.ModelSerializer):
     test_obj = TestObjectSerializersC(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
+    notice_group = NoticeGroupSerializers(read_only=True)
 
     class Meta:
         model = Tasks
@@ -47,6 +49,7 @@ class TasksSerializersC(serializers.ModelSerializer):
             'project_product',
             'test_obj',
             'timing_strategy',
+            'notice_group',
             'case_people')
         return queryset
 

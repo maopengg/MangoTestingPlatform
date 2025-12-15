@@ -26,6 +26,7 @@ urlpatterns = [
     #
     path('notice', NoticeGroupCRUD.as_view()),
     path('notice/test', NoticeGroupViews.as_view({'get': 'test'})),
+    path('notice/name', NoticeGroupViews.as_view({'get': 'get_name'})),
     #
     path('database', DatabaseCRUD.as_view()),
     path('database/test', DatabaseViews.as_view({'get': 'test'})),

@@ -62,7 +62,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          v-for="item of data.formItems"
+          v-for="item of formItems"
           :key="item.key"
           :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
           :label="item.label"
@@ -70,12 +70,23 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
-              :disabled="data.isModule"
-              :options="data.moduleList"
+              @change="onModuleSelect(item.value)"
               :placeholder="item.placeholder"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
+            />
+              </template>
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
+                        <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="productModule.data"
+              :field-names="fieldNames"
+              value-key="key"
               allow-clear
               allow-search
               @change="tasksTypeCaseName(item.value)"
@@ -96,12 +107,18 @@
           <template v-else-if="item.type === 'select' && item.key === 'case_id'">
             <a-select
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="data.caseList"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-            />
+              :scrollbar="true"
+              multiple
+            >
+              <a-option
+                v-for="user of data.caseList"
+                :key="user.key"
+                :value="user.key"
+              >
+                {{ user.title }}
+              </a-option>
+            </a-select>
           </template>
         </a-form-item>
       </a-form>
@@ -111,12 +128,12 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { ModalDialogType } from '@/types/components'
+  import {FormItem, ModalDialogType} from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { formItems, formItemsCmd, tableColumns } from './config'
+  import { formItems, tableColumns } from './config'
   import {
     deleteSystemTasksRunCase,
     getSystemTasksRunCase,
@@ -127,10 +144,13 @@
   import { getUserModuleName } from '@/api/system/module'
   import { useEnum } from '@/store/modules/get-enum'
   import { getPytestProductName } from '@/api/pytest/product'
+  import {useProductModule} from "@/store/modules/project_module";
+  import {useProject} from "@/store/modules/get-project";
 
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
-
+  const productModule = useProductModule()
+  const projectInfo = useProject()
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
@@ -147,14 +167,20 @@
     caseList: [],
     data: [],
     moduleList: [],
-    formItems: [],
   })
-
+  function onModuleSelect(projectProductId: number) {
+    productModule.getProjectModule(projectProductId)
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
+  }
   function doAppend() {
     data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
-    data.formItems.forEach((it: any) => {
+    formItems.forEach((it: any) => {
       if (it.reset) {
         it.reset()
       } else {
@@ -193,8 +219,8 @@
   }
 
   function onDataForm() {
-    if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(data.formItems)
+    if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
+      let value = getFormItems(formItems)
       let typeList = ['ui_case', 'api_case', 'pytest_case']
       value[typeList[value.type]] = value.case_id
       delete value['case_id']
@@ -238,7 +264,6 @@
   }
 
   function doRefresh() {
-    data.formItems = Number(route.query.type) === 3 ? formItemsCmd : formItems
     getSystemTasksRunCase({
       task_id: route.query.id,
       type: route.query.type,

@@ -95,7 +95,6 @@
               :placeholder="item.placeholder"
             />
           </template>
-
           <template v-else-if="item.type === 'select'">
             <a-select
               v-model="item.value"
@@ -229,6 +228,9 @@
   function onDataForm() {
     if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
+      if (value.users === null){
+        value.users = []
+      }
       if (data.isAdd) {
         value['project'] = route.query.id
         postSystemNotice(value)

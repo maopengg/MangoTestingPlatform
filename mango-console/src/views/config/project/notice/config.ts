@@ -25,7 +25,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '邮箱联系人',
     key: 'users',
-    value: ref(''),
+    value: ref([]),
     type: 'select',
     required: false,
     placeholder: '请选择邮箱联系人',

@@ -58,9 +58,15 @@ export const tableColumns = useTableColumn([
     width: 139,
   },
   {
-    title: '结果',
+    title: '测试结果',
     key: 'status',
     dataIndex: 'status',
+    width: 70,
+  },
+  {
+    title: '通知结果',
+    key: 'is_notice',
+    dataIndex: 'is_notice',
     width: 70,
   },
   {

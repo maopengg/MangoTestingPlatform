@@ -64,26 +64,39 @@ class TasksDetailsCRUD(ModelCRUD):
     @error_response('system')
     def post(self, request: Request):
         _type = int(request.data.get('type'))
-        task = int(request.data.get('task'))
-        try:
-            if _type == TestCaseTypeEnum.UI.value:
-                tasks_details = TasksDetails.objects.filter(task_id=task, ui_case_id=request.data.get('ui_case'))
-            elif _type == TestCaseTypeEnum.API.value:
-                tasks_details = TasksDetails.objects.filter(task_id=task, api_case_id=request.data.get('api_case'))
-            else:
-                model = PytestCase.objects.get(id=request.data.get('pytest_case'))
-                if not model.project_product or not model.project_product.project_product:
-                    return ResponseData.fail(RESPONSE_MSG_0120)
-                tasks_details = TasksDetails.objects.filter(task_id=task,
-                                                            pytest_case_id=request.data.get('pytest_case'))
-            if tasks_details.exists():
-                return ResponseData.fail(RESPONSE_MSG_0112)
-            else:
-                data = self.inside_post(request.data)
-                return ResponseData.success(RESPONSE_MSG_0002, data)
-        except TasksDetails.DoesNotExist:
-            data = self.inside_post(request.data)
-            return ResponseData.success(RESPONSE_MSG_0002, data)
+        task_id = int(request.data.get('task'))
+
+        if _type == TestCaseTypeEnum.UI.value:
+            ui_case_ids = request.data.get('ui_case')
+            for ui_case_id in ui_case_ids:
+                TasksDetails.objects.get_or_create(
+                    task_id=task_id,
+                    ui_case_id=ui_case_id,
+                    defaults={'type': _type}
+                )
+        elif _type == TestCaseTypeEnum.API.value:
+            api_case_ids = request.data.get('api_case')
+            for api_case_id in api_case_ids:
+                TasksDetails.objects.get_or_create(
+                    task_id=task_id,
+                    api_case_id=api_case_id,
+                    defaults={'type': _type}
+                )
+        else:
+            model = PytestCase.objects.get(id=request.data.get('pytest_case'))
+            if not model.project_product or not model.project_product.project_product:
+                return ResponseData.fail(RESPONSE_MSG_0120)
+            pytest_case_ids = request.data.get('pytest_case')
+            for pytest_case_id in pytest_case_ids:
+                model = PytestCase.objects.get(id=pytest_case_id)
+                if model.project_product and model.project_product.project_product:
+                    TasksDetails.objects.get_or_create(
+                        task_id=task_id,
+                        pytest_case_id=pytest_case_id,
+                        defaults={'type': _type}
+                    )
+
+        return ResponseData.success(RESPONSE_MSG_0002)
 
 
 class TasksDetailsViews(ViewSet):
