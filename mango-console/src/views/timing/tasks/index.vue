@@ -346,7 +346,7 @@
     data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
-    onProjectChange(item.notice_group.id)
+    onProjectChange(item.project_product.id)
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
