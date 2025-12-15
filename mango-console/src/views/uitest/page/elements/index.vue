@@ -4,7 +4,7 @@
       <a-card title="页面元素详情" :bordered="false">
         <template #extra>
           <a-space>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button  size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">

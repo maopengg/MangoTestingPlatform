@@ -7,7 +7,7 @@
             <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
               >执行
             </a-button>
-            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">

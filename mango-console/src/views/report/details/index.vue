@@ -767,7 +767,7 @@
   .wait {
     :deep(.arco-card-header) {
       color: #1890ff;
-      background: rgba(24, 144, 255, 0.05);
+      background: #E5E5E5;
     }
 
     .number {

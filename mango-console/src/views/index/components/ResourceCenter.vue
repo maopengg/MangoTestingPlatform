@@ -5,7 +5,7 @@
         <icon-download class="resource-icon" />
         <div class="resource-info">
           <div class="resource-title">执行器下载</div>
-          <div class="resource-desc">下载最新版本的测试执行器</div>
+          <div class="resource-desc">下载最新版本的执行器</div>
         </div>
       </div>
     </a-card>
@@ -15,7 +15,7 @@
         <icon-download class="resource-icon" />
         <div class="resource-info">
           <div class="resource-title">插件下载</div>
-          <div class="resource-desc">获取各种功能扩展插件</div>
+          <div class="resource-desc">获取元素定位插件</div>
         </div>
       </div>
     </a-card>

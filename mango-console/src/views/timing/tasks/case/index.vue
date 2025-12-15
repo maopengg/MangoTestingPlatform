@@ -6,7 +6,7 @@
           <a-space>
             <a-button size="small" type="primary" @click="doAppend">增加用例</a-button>
             <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
-            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <a-table

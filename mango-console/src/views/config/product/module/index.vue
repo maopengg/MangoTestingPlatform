@@ -5,7 +5,7 @@
         <template #extra>
           <a-space>
             <a-button size="small" type="primary" @click="doAppend">增加</a-button>
-            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <a-table :bordered="false" :columns="columns" :data="data.data" :pagination="false">
