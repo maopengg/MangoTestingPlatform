@@ -112,13 +112,6 @@
                 <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
                   >编辑
                 </a-button>
-                <a-button
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  @click="clickNotice(record)"
-                  >通知配置
-                </a-button>
 
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
@@ -393,16 +386,6 @@
     })
   }
 
-  function clickNotice(record: any) {
-    const pageData = usePageData()
-    pageData.setRecord(record)
-    router.push({
-      path: '/config/test/object/notice',
-      query: {
-        id: record.id,
-      },
-    })
-  }
 
   function clickDataBase(record: any) {
     const pageData = usePageData()

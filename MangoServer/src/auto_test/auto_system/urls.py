@@ -15,7 +15,7 @@ from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsView
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
 from ..auto_system.views.file_data import FileDataCRUD, FileDataViews
 from ..auto_system.views.index import IndexViews
-from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
+from ..auto_system.views.notice_group import NoticeGroupCRUD, NoticeGroupViews
 from ..auto_system.views.product_module import ProductModuleViews, ProductModuleCRUD
 from ..auto_system.views.project import ProjectCRUD, ProjectViews
 from ..auto_system.views.project_product import ProjectProductCRUD, ProjectProductViews
@@ -24,9 +24,8 @@ from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
     #
-    path('notice', NoticeConfigCRUD.as_view()),
-    path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),
-    path('notice/status', NoticeConfigViews.as_view({'put': 'put_status'})),
+    path('notice', NoticeGroupCRUD.as_view()),
+    path('notice/test', NoticeGroupViews.as_view({'get': 'test'})),
     #
     path('database', DatabaseCRUD.as_view()),
     path('database/test', DatabaseViews.as_view({'get': 'test'})),

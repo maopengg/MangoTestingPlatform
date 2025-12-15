@@ -11,7 +11,7 @@ from mangotools.exceptions import MangoToolsError
 from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel
 from mangotools.notice import EmailSend, WeChatSend, FeiShuSend
 
-from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuite, TestObject, TestSuiteDetails
+from src.auto_test.auto_system.models import NoticeGroup, CacheData, TestSuite, TestObject, TestSuiteDetails
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import StatusEnum, EnvironmentEnum, TestCaseTypeEnum

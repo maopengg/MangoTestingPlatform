@@ -76,7 +76,12 @@ export function getFormItems1(formItems: FormItem[]): KeyValueObject {
 export function getFormItems(formItems: FormItem[]): KeyValueObject {
   const obj: any = {}
   formItems.forEach((item: any) => {
-    if (item.value === '') {
+    // 特殊处理多选框，过滤掉空字符串
+    if (item.type === 'select' && Array.isArray(item.value)) {
+      // 过滤掉空字符串和无效值
+      const filteredValues = item.value.filter((val: any) => val !== '' && val != null)
+      obj[item.key] = filteredValues.length > 0 ? filteredValues : null
+    } else if (item.value === '') {
       obj[item.key] = null
     } else {
       obj[item.key] = item.value

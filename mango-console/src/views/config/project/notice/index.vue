@@ -1,35 +1,13 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="自动化通知配置"
-        @search="doRefresh"
-        @reset-search="onResetSearch"
-      >
-        <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-              <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-if="item.type === 'date'">
-                <a-date-picker v-model="item.value" />
-              </template>
-              <template v-if="item.type === 'time'">
-                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-              </template>
-              <template v-if="item.type === 'check-group'">
-                <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
-                    {{ item.label }}
-                  </a-checkbox>
-                </a-checkbox-group>
-              </template>
-            </a-form-item>
-          </a-form>
+      <a-card title="通知组配置" :bordered="false">
+        <template #extra>
+          <a-space>
+            <a-button  size="small" status="warning" @click="doResetSearch">返回</a-button>
+          </a-space>
         </template>
-      </TableHeader>
+      </a-card>
     </template>
 
     <template #default>
@@ -49,6 +27,7 @@
         :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
+        :scroll="{ x: false }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -57,31 +36,24 @@
             :key="item.key"
             :align="item.align"
             :data-index="item.key"
+            :ellipsis="item.ellipsis"
             :fixed="item.fixed"
             :title="item.title"
+            :tooltip="item.tooltip"
             :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.type]" size="small"
-                >{{ enumStore.notice[record.type].title }}
-              </a-tag>
+
+            <template v-else-if="item.key === 'users'" #cell="{ record }">
+              {{ Array.isArray(record.users) && record.users.length > 0 ? (typeof record.users[0] === 'object' && record.users[0] !== null ? record.users.map(u => u.username).join('，') : record.users.join('，')) : '' }}
             </template>
-            <template v-else-if="item.key === 'config'" #cell="{ record }">
-              {{ record.config }}
-            </template>
-            <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
-                :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
-                :default-checked="record.status === 1"
-              />
-            </template>
+
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onTest(record)"
-                  >测试一下
+                  >测试
                 </a-button>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
                   >编辑
@@ -108,7 +80,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          v-for="item of data.formItems"
+          v-for="item of formItems"
           :key="item.key"
           :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
           :label="item.label"
@@ -116,33 +88,28 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'config'">
+          <template v-else-if="item.type === 'textarea'">
             <a-textarea
               v-model="item.value"
-              :auto-size="{ minRows: 5, maxRows: 9 }"
+              :auto-size="{ minRows: 2, maxRows: 3 }"
               :placeholder="item.placeholder"
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'type'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.notice"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-              @change="onChange(item.value)"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'config'">
+
+          <template v-else-if="item.type === 'select'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
               :scrollbar="true"
               multiple
             >
-              <a-option v-for="user of data.userList" :key="user.key">{{ user.title }}</a-option>
+              <a-option 
+                v-for="user of data.userList" 
+                :key="user.key" 
+                :value="user.key"
+              >
+                {{ user.title }}
+              </a-option>
             </a-select>
           </template>
         </a-form-item>
@@ -156,23 +123,19 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { conditionItems, formItems, tableColumns, mailboxForm, configForm } from './config'
+  import { formItems, tableColumns } from './config'
   import {
     deleteSystemNotice,
     getSystemNotice,
     getSystemNoticeTest,
     postSystemNotice,
     putSystemNotice,
-    putSystemNoticePutStatus,
-  } from '@/api/system/notice_config'
+  } from '@/api/system/notice_group'
   import { getUserName } from '@/api/user/user'
   import { useRoute } from 'vue-router'
-  import { useEnum } from '@/store/modules/get-enum'
 
   const route = useRoute()
-  const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -186,12 +149,13 @@
     updateId: 0,
     actionTitle: '新增',
     userList: [],
-    formItems: [],
   })
-
+  function doResetSearch() {
+    window.history.back()
+  }
   function doRefresh() {
-    let value = getFormItems(conditionItems)
-    value['test_object_id'] = route.query.id
+    let value = {}
+    value['project'] = route.query.id
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemNotice(value)
@@ -202,32 +166,11 @@
       .catch(console.log)
   }
 
-  function onChange(value: number) {
-    data.formItems = []
-    data.formItems.push(...formItems)
-    if (value === 0) {
-      mailboxForm[0].value = []
-      data.formItems.push(...mailboxForm)
-    } else if (value === 1) {
-      mailboxForm[0].value = ''
-      data.formItems.push(...configForm)
-    }
-  }
-
-  function onResetSearch() {
-    conditionItems.forEach((it) => {
-      it.value = ''
-    })
-    doRefresh()
-  }
-
   function onAdd() {
-    data.formItems = []
-    data.formItems.push(...formItems)
     data.actionTitle = '添加'
     modalDialogRef.value?.toggle()
     data.isAdd = true
-    data.formItems.forEach((it: any) => {
+    formItems.forEach((it: any) => {
       if (it.reset) {
         it.reset()
       } else {
@@ -256,17 +199,23 @@
   }
 
   function onUpdate(item: any) {
-    data.formItems = []
-    data.formItems.push(...formItems)
     data.actionTitle = '编辑'
     modalDialogRef.value?.toggle()
     data.isAdd = false
     data.updateId = item.id
-    onChange(item.type)
     nextTick(() => {
-      data.formItems.forEach((it: any) => {
+      formItems.forEach((it: any) => {
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        // 特殊处理 users 字段，提取用户 ID 数组
+        if (it.key === 'users' && Array.isArray(propName)) {
+          if (propName.length > 0 && typeof propName[0] === 'object' && propName[0] !== null) {
+            // 如果是用户对象数组，提取 id
+            it.value = propName.map(user => user.id)
+          } else {
+            // 如果是 ID 数组或其他情况，直接赋值
+            it.value = propName
+          }
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else if (item.type === 0) {
           it.value = JSON.parse(propName)
@@ -278,11 +227,10 @@
   }
 
   function onDataForm() {
-    if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(data.formItems)
+    if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
+      let value = getFormItems(formItems)
       if (data.isAdd) {
-        value['test_object'] = route.query.id
-        value['status'] = 0
+        value['project'] = route.query.id
         postSystemNotice(value)
           .then((res) => {
             modalDialogRef.value?.toggle()
@@ -315,25 +263,6 @@
     }
   }
 
-  const onModifyStatus = async (newValue: boolean, id: number) => {
-    return new Promise<any>((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          let value: any = false
-          await putSystemNoticePutStatus(id, newValue ? 1 : 0)
-            .then((res) => {
-              Message.success(res.msg)
-              value = res.code === 200
-            })
-            .catch(reject)
-          resolve(value)
-        } catch (error) {
-          reject(error)
-        }
-      }, 300)
-    })
-  }
-
   function getNickName() {
     getUserName()
       .then((res) => {
@@ -358,3 +287,6 @@
   })
   onMounted(doRefresh)
 </script>
+
+<style lang="less" scoped>
+</style>

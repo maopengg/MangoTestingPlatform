@@ -121,17 +121,17 @@ export const extraRoutes = [
         },
       },
       {
-        path: 'test/object/notice',
-        component: () => import('@/views/config/test-object/notice/index.vue'),
+        path: 'project/notice',
+        component: () => import('@/views/config/project/notice/index.vue'),
         meta: {
-          title: '通知配置',
+          title: '通知组',
         },
       },
       {
         path: 'test/object/database',
         component: () => import('@/views/config/test-object/database/index.vue'),
         meta: {
-          title: '数据库配置',
+          title: '数据库',
         },
       },
     ],
