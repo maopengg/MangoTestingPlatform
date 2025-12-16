@@ -104,7 +104,10 @@
                       :tooltip="item.tooltip"
                       :width="item.width"
                     >
-                      <template v-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
+                      <template v-if="item.dataIndex === 'sort'" #cell>
+                        <IconDragArrow />
+                      </template>
+                      <template v-else-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
                         {{ record.page_step?.name }}
                       </template>
                       <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
@@ -394,7 +397,7 @@
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { Message, Modal, IconDragArrow } from '@arco-design/web-vue'
 
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
@@ -1045,5 +1048,14 @@
       margin-top: 0;
       align-self: center;
     }
+  }
+
+  .drag-handle {
+    cursor: move;
+    color: #999;
+  }
+
+  .drag-handle:hover {
+    color: #165DFF;
   }
 </style>

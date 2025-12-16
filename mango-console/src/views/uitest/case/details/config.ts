@@ -5,6 +5,11 @@ import { isValidInteger } from '@/utils/form'
 
 export const columns: any = reactive([
   {
+    title: '',
+    dataIndex: 'sort',
+    width: 40,
+  },
+  {
     title: '步骤名称',
     dataIndex: 'page_step_name',
     ellipsis: true,
@@ -35,7 +40,6 @@ export const columns: any = reactive([
     ellipsis: true,
     tooltip: true,
   },
-
   {
     title: '操作',
     dataIndex: 'actions',

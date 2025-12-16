@@ -1,6 +1,6 @@
 mangotools==1.1.66
-mangoautomation==1.1.36
-mangoui==4.0.0
+mangoautomation==1.1.38
+mangoui==4.0.1
 
 websockets==10.4
 websocket-client==1.5.1
