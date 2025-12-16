@@ -397,7 +397,7 @@
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
-  import { Message, Modal, IconDragArrow } from '@arco-design/web-vue'
+  import { Message, Modal } from '@arco-design/web-vue'
 
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
@@ -1056,6 +1056,6 @@
   }
 
   .drag-handle:hover {
-    color: #165DFF;
+    color: #165dff;
   }
 </style>
