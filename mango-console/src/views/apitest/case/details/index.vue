@@ -13,9 +13,7 @@
             >
               执行
             </a-button>
-            <a-button size="small" status="warning" type="primary" @click="doResetSearch"
-              >返回
-            </a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回 </a-button>
           </a-space>
         </template>
         <div class="container">

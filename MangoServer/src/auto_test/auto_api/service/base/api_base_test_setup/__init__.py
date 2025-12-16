@@ -127,7 +127,7 @@ class APIBaseTestSetup(PublicBase):
 
     def analytic_func(self, func_str, func_name='func'):
         func_str = self.test_data.replace(func_str)
-        log.api.debug(f'执行API接口-4->后置函数:{func_str}')
+        log.api.debug(f'执行API接口-5->后置函数:{func_str}')
         try:
             global_namespace = {}
             exec(func_str, global_namespace)

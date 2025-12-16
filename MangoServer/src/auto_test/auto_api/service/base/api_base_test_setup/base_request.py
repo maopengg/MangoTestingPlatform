@@ -12,7 +12,7 @@ import time
 from requests import Response
 from requests.exceptions import *
 
-from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
+# from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel, ResponseModel
@@ -62,6 +62,7 @@ class BaseRequest:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
             self.test_data.set_cache(request_data.posterior_file, file_path)
+        print(response.text)
         try:
             response_json = response.json()
         except Exception:
@@ -85,9 +86,7 @@ class BaseRequest:
     @classmethod
     def test_http(cls, request_data: RequestModel) -> Response:
         s = time.time()
-        for key, value in request_data.headers.items():
-            if value:
-                request_data.headers[key] = value.strip()
+        request_data.serialize()
         response = requests.request(
             method=request_data.method,
             url=request_data.url,
@@ -104,19 +103,11 @@ class BaseRequest:
 
 
 if __name__ == '__main__':
-    data = {"method": "POST", "url": "",
-            "headers": {"Accept": " application/json, text/plain, */*",
-                        "Referer": "",
-                        "sec-ch-ua": " \"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
-                        "tenant_id": " 14",
-                        "User-Agent": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-                        "Authorization": " Bearer 9db73bc6-da7b-4c01-a84e-c0bcecfeb184", "sec-ch-ua-mobile": " ?0",
-                        "sec-ch-ua-platform": " \"Windows\""},
-            "params": None,
-            "data": None,
-            "json": None,
-            "file": [
-                ('file', ('达人导入模板.xlsx', open(r'C:/Users/Administrator/Downloads/达人导入模板.xlsx', 'rb'),
-                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))
-            ], "posterior_file": None}
+    data = {"method": "POST", "url": "https://zdtoolpre.zalldigital.cn/api/z-tool-app/commodity/subscription/list",
+            "headers": {"accept": "application/json, text/plain, */*",
+                        "authorization": "Bearer 757b38d0-99d9-4df4-b715-232f4af20b34",
+                        "tenant_id": '14',
+                        "content-type": "application/json"}, "params": None, "data": None, "json": '{}', "file": None,
+            "posterior_file": None}
+
     print(BaseRequest.test_http(RequestModel(**data)).text)
