@@ -112,31 +112,21 @@
                 <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
                   >编辑
                 </a-button>
-
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        type="text"
-                        size="mini"
-                        class="custom-mini-btn"
-                        @click="clickDataBase(record)"
-                        >数据库配置
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        status="danger"
-                        type="text"
-                        class="custom-mini-btn"
-                        size="mini"
-                        @click="onDelete(record)"
-                        >删除
-                      </a-button>
-                    </a-doption>
-                  </template>
-                </a-dropdown>
+                <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="clickDataBase(record)"
+                  >数据库
+                </a-button>
+                <a-button
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  size="mini"
+                  @click="onDelete(record)"
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
