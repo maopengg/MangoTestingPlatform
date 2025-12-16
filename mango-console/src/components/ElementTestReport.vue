@@ -67,7 +67,7 @@
                   </div>
                 </a-space>
               </div>
-              
+
               <div class="elements-section">
                 <div class="elements-scroll-container">
                   <template v-if="item.elements && item.elements.length">
@@ -115,10 +115,8 @@
                       >
                     </div>
                   </template>
-                  
-                  <div v-if="!item.elements && !item.loc" class="no-elements">
-                    暂无元素信息
-                  </div>
+
+                  <div v-if="!item.elements && !item.loc" class="no-elements"> 暂无元素信息 </div>
                 </div>
               </div>
             </div>
@@ -170,122 +168,122 @@
 </script>
 
 <style scoped>
-.label {
-  display: inline-block;
-  width: 80px;
-  text-align: right;
-  font-weight: 500;
-  color: #333;
-}
+  .label {
+    display: inline-block;
+    width: 80px;
+    text-align: right;
+    font-weight: 500;
+    color: #333;
+  }
 
-.collapse-content {
-  display: flex;
-  gap: 20px;
-}
-
-.info-section {
-  flex: 1;
-  min-width: 0;
-}
-
-.elements-section {
-  flex: 1;
-  min-width: 0;
-}
-
-.elements-scroll-container {
-  max-height: 220px;
-  overflow-y: auto;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
-  padding: 12px;
-  background-color: #fafafa;
-}
-
-.elements-scroll-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.elements-scroll-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.elements-scroll-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.elements-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-.element-item {
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.element-item:last-child {
-  border-bottom: none;
-}
-
-.element-text {
-  word-break: break-all;
-}
-
-.no-elements {
-  text-align: center;
-  color: #999;
-  padding: 20px;
-}
-
-.error-container {
-  display: inline-block;
-  max-width: 150px;
-  vertical-align: middle;
-}
-
-.error-message {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.error-message:hover {
-  background-color: #fff2f0;
-  white-space: normal;
-  word-wrap: break-word;
-  position: absolute;
-  z-index: 1000;
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  max-width: 300px;
-}
-
-.cache-data {
-  background-color: #f5f5f5;
-  padding: 10px;
-  border-radius: 4px;
-  max-height: 200px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  margin: 0;
-}
-
-@media (max-width: 768px) {
   .collapse-content {
-    flex-direction: column;
+    display: flex;
+    gap: 20px;
   }
-  
+
+  .info-section {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .elements-section {
+    flex: 1;
+    min-width: 0;
+  }
+
   .elements-scroll-container {
-    max-height: 200px;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 12px;
+    background-color: #fafafa;
   }
-}
+
+  .elements-scroll-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .elements-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+
+  .elements-scroll-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+  }
+
+  .elements-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .element-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  .element-item:last-child {
+    border-bottom: none;
+  }
+
+  .element-text {
+    word-break: break-all;
+  }
+
+  .no-elements {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+  }
+
+  .error-container {
+    display: inline-block;
+    max-width: 150px;
+    vertical-align: middle;
+  }
+
+  .error-message {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  .error-message:hover {
+    background-color: #fff2f0;
+    white-space: normal;
+    word-wrap: break-word;
+    position: absolute;
+    z-index: 1000;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    max-width: 300px;
+  }
+
+  .cache-data {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .collapse-content {
+      flex-direction: column;
+    }
+
+    .elements-scroll-container {
+      max-height: 200px;
+    }
+  }
 </style>

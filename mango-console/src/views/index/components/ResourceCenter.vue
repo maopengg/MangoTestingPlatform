@@ -9,7 +9,7 @@
         </div>
       </div>
     </a-card>
-    
+
     <a-card class="resource-card" hoverable>
       <div class="resource-item" @click="handleDownloadPlugin">
         <icon-download class="resource-icon" />
@@ -19,7 +19,7 @@
         </div>
       </div>
     </a-card>
-    
+
     <a-card class="resource-card" hoverable>
       <div class="resource-item" @click="handleViewHelp">
         <icon-book class="resource-icon" />
@@ -29,7 +29,7 @@
         </div>
       </div>
     </a-card>
-    
+
     <a-card class="resource-card" hoverable>
       <div class="resource-item" @click="handleContactAuthor">
         <icon-user class="resource-icon" />
@@ -50,15 +50,15 @@
   function handleDownloadExecutor() {
     emit('download-executor')
   }
-  
+
   function handleDownloadPlugin() {
     emit('download-plugin')
   }
-  
+
   function handleViewHelp() {
     emit('view-help')
   }
-  
+
   function handleContactAuthor() {
     emit('contact-author')
   }
@@ -72,40 +72,40 @@
     transition: all 0.3s ease;
     cursor: pointer;
     height: 50px;
-    
+
     // 移除悬浮效果
     &:hover {
       border-color: rgb(var(--primary-6));
       // 移除阴影和位移效果
     }
-    
+
     :deep(.arco-card-body) {
       padding: 8px;
     }
   }
-  
+
   .resource-item {
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  
+
   .resource-icon {
     font-size: 16px;
     color: rgb(var(--primary-6));
   }
-  
+
   .resource-info {
     flex: 1;
   }
-  
+
   .resource-title {
     font-size: 12px;
     font-weight: 500;
     color: var(--color-text-1);
     margin-bottom: 0px;
   }
-  
+
   .resource-desc {
     font-size: 10px;
     color: var(--color-text-3);

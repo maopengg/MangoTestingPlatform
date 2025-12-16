@@ -81,7 +81,7 @@ export function getFormItems(formItems: FormItem[]): KeyValueObject {
       // 过滤掉空字符串和无效值
       const filteredValues = item.value.filter((val: any) => val !== '' && val != null)
       obj[item.key] = filteredValues.length > 0 ? filteredValues : null
-    } 
+    }
     // 特殊处理input-tag类型，确保它作为数组发送
     else if (item.type === 'input-tag') {
       // 确保input-tag的值是数组格式

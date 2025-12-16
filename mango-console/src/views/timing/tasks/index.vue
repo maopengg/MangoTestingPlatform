@@ -262,7 +262,7 @@
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
-  import {getSystemNoticeName} from "@/api/system/notice_group";
+  import { getSystemNoticeName } from '@/api/system/notice_group'
 
   const projectInfo = useProject()
   const enumStore = useEnum()

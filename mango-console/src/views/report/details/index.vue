@@ -47,7 +47,7 @@
                 <div class="info-item">
                   <span class="info-label">通知状态：</span>
                   <span class="info-value">{{
-                pageData.record.is_notice === 1? '已发送' : '未发送'
+                    pageData.record.is_notice === 1 ? '已发送' : '未发送'
                   }}</span>
                 </div>
               </a-space>
@@ -84,7 +84,9 @@
                   <a-progress
                     :percent="
                       data.summary.ui_count > 0
-                        ? Number((data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2))
+                        ? Number(
+                            (data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2)
+                          )
                         : 0
                     "
                     :style="{ width: '80%' }"
@@ -101,9 +103,9 @@
                     :percent="
                       data.summary.pytest_count > 0
                         ? Number(
-                            (data.summary.pytest_in_progress_count / data.summary.pytest_count).toFixed(
-                              2
-                            )
+                            (
+                              data.summary.pytest_in_progress_count / data.summary.pytest_count
+                            ).toFixed(2)
                           )
                         : 0
                     "
@@ -170,19 +172,14 @@
             <a-collapse-item v-for="item of data.dataList" :key="item.id">
               <template #header>
                 <div class="custom-header">
-                  <span 
-                    :title="`${item.case_id}-${item.case_name}`"
-                    class="case-name"
-                  >{{ item.case_id }}-{{ item.case_name }}</span>
+                  <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
+                    >{{ item.case_id }}-{{ item.case_name }}</span
+                  >
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span 
-                    v-if="item.error_message" 
-                    class="error-message"
-                    :title="item.error_message"
-                  >
+                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
                     失败提示：{{ item.error_message }}
                   </span>
                 </div>
@@ -250,19 +247,14 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span 
-                    :title="`${item.case_id}-${item.case_name}`"
-                    class="case-name"
-                  >{{ item.case_id }}-{{ item.case_name }}</span>
+                  <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
+                    >{{ item.case_id }}-{{ item.case_name }}</span
+                  >
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span 
-                    v-if="item.error_message" 
-                    class="error-message"
-                    :title="item.error_message"
-                  >
+                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
                     失败提示：{{ item.error_message }}
                   </span>
                 </div>
@@ -336,19 +328,12 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span 
-                    :title="item.case_name"
-                    class="case-name"
-                  >{{ item.case_name }}</span>
+                  <span :title="item.case_name" class="case-name">{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span 
-                    v-if="item.error_message" 
-                    class="error-message"
-                    :title="item.error_message"
-                  >
+                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
                     失败提示：{{ item.error_message }}
                   </span>
                 </div>
@@ -767,7 +752,7 @@
   .wait {
     :deep(.arco-card-header) {
       color: #1890ff;
-      background: #E5E5E5;
+      background: #e5e5e5;
     }
 
     .number {
@@ -779,19 +764,19 @@
 
   .chart-section {
     margin-bottom: 15px;
-    
+
     :deep(.arco-row) {
       display: flex;
       align-items: stretch;
     }
-    
+
     :deep(.arco-col) {
       display: flex;
       flex-direction: column;
       height: 100%;
     }
   }
-  
+
   // 添加包装器确保卡片高度一致
   .chart-card-wrapper {
     height: 100%;
@@ -799,19 +784,21 @@
     flex-direction: column;
     flex: 1;
   }
-  
+
   // 确保卡片高度一致 - 使用固定高度
-  .info-card, .progress-card, .result-card {
+  .info-card,
+  .progress-card,
+  .result-card {
     height: 360px; // 固定高度
     display: flex;
     flex-direction: column;
-    
+
     :deep(.arco-card) {
       height: 360px;
       display: flex;
       flex-direction: column;
     }
-    
+
     :deep(.arco-card-body) {
       flex: 1;
       display: flex;
@@ -819,7 +806,7 @@
       padding: 15px;
     }
   }
-  
+
   // 图表容器样式
   .chart-container {
     flex: 1;
@@ -831,20 +818,20 @@
     padding: 10px;
     width: 100%;
   }
-  
+
   // 确保三个卡片高度一致的额外样式
   .chart-col {
     display: flex;
     flex-direction: column;
     height: 360px;
   }
-  
+
   // 进度条卡片
   .progress-card {
     :deep(.arco-card-body) {
       display: flex;
       flex-direction: column;
-      
+
       .chart-container {
         flex: 1;
         display: flex;
@@ -852,7 +839,7 @@
         justify-content: center;
         width: 100%;
         height: 280px;
-        
+
         .progress-items-wrapper {
           width: 100%;
           display: flex;
@@ -863,7 +850,7 @@
       }
     }
   }
-  
+
   .progress-item {
     margin-bottom: 24px;
     width: 100%;
@@ -892,7 +879,7 @@
       font-weight: 600;
     }
   }
-  
+
   // 信息卡片
   .info-card {
     .chart-container {
@@ -900,11 +887,11 @@
       justify-content: center;
       height: 280px;
     }
-    
+
     :deep(.arco-card-body) {
       display: flex;
       flex-direction: column;
-      
+
       .chart-container {
         flex: 1;
         display: flex;
@@ -933,13 +920,13 @@
   .info-value {
     color: #4e5969;
   }
-  
+
   // 结果卡片
   .result-card {
     :deep(.arco-card-body) {
       display: flex;
       flex-direction: column;
-      
+
       .chart-container {
         flex: 1;
         width: 100%;
@@ -1043,15 +1030,13 @@
     white-space: nowrap;
   }
 
-
-
   // 测试详情卡片 - 与首页保持一致
   .test-details {
     :deep(.arco-card-header) {
       border-radius: 8px 8px 0 0; /* 与首页保持一致 */
       padding: 12px 15px; /* 与首页保持一致 */
     }
-    
+
     :deep(.arco-card-body) {
       padding: 15px; /* 与首页保持一致 */
     }
@@ -1088,7 +1073,7 @@
     .chart-section {
       margin-bottom: 10px; /* 与首页保持一致 */
     }
-    
+
     // 在中等屏幕下调整列布局
     .chart-section {
       :deep(.arco-col) {
@@ -1109,7 +1094,7 @@
     .summary-cards {
       flex-direction: column;
     }
-    
+
     // 在小屏幕下调整为单列布局
     .chart-section {
       :deep(.arco-col) {

@@ -6,19 +6,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+  import { defineComponent } from 'vue'
 
-export default defineComponent({
-  name: 'Title',
-  props: {
-    title: {
-      type: String,
-      default: '',
+  export default defineComponent({
+    name: 'Title',
+    props: {
+      title: {
+        type: String,
+        default: '',
+      },
     },
-  },
-})
+  })
 </script>
 
 <style lang="less" scoped>
-@import './css/title.module.less';
+  @import './css/title.module.less';
 </style>

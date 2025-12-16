@@ -79,9 +79,9 @@
               allow-search
               allow-clear
             />
-              </template>
+          </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
-                        <a-select
+            <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
               :options="productModule.data"
@@ -111,11 +111,7 @@
               :scrollbar="true"
               multiple
             >
-              <a-option
-                v-for="user of data.caseList"
-                :key="user.key"
-                :value="user.key"
-              >
+              <a-option v-for="user of data.caseList" :key="user.key" :value="user.key">
                 {{ user.title }}
               </a-option>
             </a-select>
@@ -128,7 +124,7 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import {FormItem, ModalDialogType} from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
@@ -144,8 +140,8 @@
   import { getUserModuleName } from '@/api/system/module'
   import { useEnum } from '@/store/modules/get-enum'
   import { getPytestProductName } from '@/api/pytest/product'
-  import {useProductModule} from "@/store/modules/project_module";
-  import {useProject} from "@/store/modules/get-project";
+  import { useProductModule } from '@/store/modules/project_module'
+  import { useProject } from '@/store/modules/get-project'
 
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()

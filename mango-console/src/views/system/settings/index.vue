@@ -9,22 +9,39 @@
           {{ settingsData.editing ? '保存配置' : '修改配置' }}
         </a-button>
       </div>
-      
+
       <a-space direction="vertical" size="mini" style="width: 100%">
         <!-- Debug日志设置 -->
         <a-card :bordered="false" style="border-radius: 4px; background-color: var(--color-fill-1)">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; padding: 8px"
+          >
             <span style="color: var(--color-text-1)">设置系统debug级别日志</span>
-            <a-switch v-model="settingsData.isDebug" @change="doPostSystemSetDebugLog" size="small" />
+            <a-switch
+              v-model="settingsData.isDebug"
+              @change="doPostSystemSetDebugLog"
+              size="small"
+            />
           </div>
         </a-card>
-        
+
         <!-- 域名配置 -->
-        <a-card v-if="hasConfig('host')" title="域名配置" :bordered="false" style="border-radius: 4px; background-color: var(--color-fill-1)">
+        <a-card
+          v-if="hasConfig('host')"
+          title="域名配置"
+          :bordered="false"
+          style="border-radius: 4px; background-color: var(--color-fill-1)"
+        >
           <div style="padding: 8px">
             <a-space direction="vertical" size="mini" style="width: 100%">
-              <div v-for="item in filteredConfig('host')" :key="item.key" style="display: flex; align-items: center; gap: 12px; padding: 4px 0">
-                <span style="color: var(--color-text-1); min-width: 110px">{{ item.describe }}:</span>
+              <div
+                v-for="item in filteredConfig('host')"
+                :key="item.key"
+                style="display: flex; align-items: center; gap: 12px; padding: 4px 0"
+              >
+                <span style="color: var(--color-text-1); min-width: 110px"
+                  >{{ item.describe }}:</span
+                >
                 <a-input
                   v-if="settingsData.editing"
                   v-model="item.value"
@@ -33,18 +50,31 @@
                   size="small"
                   style="flex: 1"
                 />
-                <span v-else style="color: var(--color-text-2); flex: 1">{{ item.value || '未配置' }}</span>
+                <span v-else style="color: var(--color-text-2); flex: 1">{{
+                  item.value || '未配置'
+                }}</span>
               </div>
             </a-space>
           </div>
         </a-card>
 
         <!-- 邮箱配置 -->
-        <a-card v-if="hasConfig('email')" title="邮箱配置" :bordered="false" style="border-radius: 4px; background-color: var(--color-fill-1)">
+        <a-card
+          v-if="hasConfig('email')"
+          title="邮箱配置"
+          :bordered="false"
+          style="border-radius: 4px; background-color: var(--color-fill-1)"
+        >
           <div style="padding: 8px">
             <a-space direction="vertical" size="mini" style="width: 100%">
-              <div v-for="item in filteredConfig('email')" :key="item.key" style="display: flex; align-items: center; gap: 12px; padding: 4px 0">
-                <span style="color: var(--color-text-1); min-width: 110px">{{ item.describe }}:</span>
+              <div
+                v-for="item in filteredConfig('email')"
+                :key="item.key"
+                style="display: flex; align-items: center; gap: 12px; padding: 4px 0"
+              >
+                <span style="color: var(--color-text-1); min-width: 110px"
+                  >{{ item.describe }}:</span
+                >
                 <a-input
                   v-if="settingsData.editing"
                   v-model="item.value"
@@ -53,18 +83,31 @@
                   size="small"
                   style="flex: 1"
                 />
-                <span v-else style="color: var(--color-text-2); flex: 1">{{ item.value || '未配置' }}</span>
+                <span v-else style="color: var(--color-text-2); flex: 1">{{
+                  item.value || '未配置'
+                }}</span>
               </div>
             </a-space>
           </div>
         </a-card>
 
         <!-- 接口自动化配置 -->
-        <a-card v-if="hasConfig('api')" title="接口自动化配置" :bordered="false" style="border-radius: 4px; background-color: var(--color-fill-1)">
+        <a-card
+          v-if="hasConfig('api')"
+          title="接口自动化配置"
+          :bordered="false"
+          style="border-radius: 4px; background-color: var(--color-fill-1)"
+        >
           <div style="padding: 8px">
             <a-space direction="vertical" size="mini" style="width: 100%">
-              <div v-for="item in filteredConfig('api')" :key="item.key" style="display: flex; align-items: center; gap: 12px; padding: 4px 0">
-                <span style="color: var(--color-text-1); min-width: 110px">{{ item.describe }}:</span>
+              <div
+                v-for="item in filteredConfig('api')"
+                :key="item.key"
+                style="display: flex; align-items: center; gap: 12px; padding: 4px 0"
+              >
+                <span style="color: var(--color-text-1); min-width: 110px"
+                  >{{ item.describe }}:</span
+                >
                 <a-input
                   v-if="settingsData.editing"
                   v-model="item.value"
@@ -73,18 +116,31 @@
                   size="small"
                   style="flex: 1"
                 />
-                <span v-else style="color: var(--color-text-2); flex: 1">{{ item.value || '未配置' }}</span>
+                <span v-else style="color: var(--color-text-2); flex: 1">{{
+                  item.value || '未配置'
+                }}</span>
               </div>
             </a-space>
           </div>
         </a-card>
 
         <!-- 单元自动化配置 -->
-        <a-card v-if="hasConfig('pytest')" title="单元自动化配置" :bordered="false" style="border-radius: 4px; background-color: var(--color-fill-1)">
+        <a-card
+          v-if="hasConfig('pytest')"
+          title="单元自动化配置"
+          :bordered="false"
+          style="border-radius: 4px; background-color: var(--color-fill-1)"
+        >
           <div style="padding: 8px">
             <a-space direction="vertical" size="mini" style="width: 100%">
-              <div v-for="item in filteredConfig('pytest')" :key="item.key" style="display: flex; align-items: center; gap: 12px; padding: 4px 0">
-                <span style="color: var(--color-text-1); min-width: 110px">{{ item.describe }}:</span>
+              <div
+                v-for="item in filteredConfig('pytest')"
+                :key="item.key"
+                style="display: flex; align-items: center; gap: 12px; padding: 4px 0"
+              >
+                <span style="color: var(--color-text-1); min-width: 110px"
+                  >{{ item.describe }}:</span
+                >
                 <a-input
                   v-if="settingsData.editing"
                   v-model="item.value"
@@ -93,7 +149,9 @@
                   size="small"
                   style="flex: 1; max-width: 450px"
                 />
-                <span v-else style="color: var(--color-text-2); flex: 1">{{ item.value || '未配置' }}</span>
+                <span v-else style="color: var(--color-text-2); flex: 1">{{
+                  item.value || '未配置'
+                }}</span>
               </div>
             </a-space>
           </div>

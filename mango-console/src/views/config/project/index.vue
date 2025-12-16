@@ -133,8 +133,8 @@
     postUserDepartmentList,
     putUserDepartmentList,
   } from '@/api/system/project'
-  import {usePageData} from "@/store/page-data";
-  import {useRouter} from "vue-router";
+  import { usePageData } from '@/store/page-data'
+  import { useRouter } from 'vue-router'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)

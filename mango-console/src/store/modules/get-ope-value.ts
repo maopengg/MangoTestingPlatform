@@ -143,15 +143,15 @@ export const useSelectValueStore = defineStore('get-select-value', {
         if (topLevelItem.value === value) {
           return topLevelItem
         }
-        
+
         // 检查当前顶级对象的子项是否包含目标值
         if (topLevelItem.children && Array.isArray(topLevelItem.children)) {
           // 在子项中查找
-          const foundChild = topLevelItem.children.find(child => child.value === value)
+          const foundChild = topLevelItem.children.find((child) => child.value === value)
           if (foundChild) {
             return topLevelItem
           }
-          
+
           // 递归检查嵌套的子项
           const findInNestedChildren = (children: ChildrenItem[]): boolean => {
             for (const child of children) {
@@ -159,22 +159,25 @@ export const useSelectValueStore = defineStore('get-select-value', {
                 return true
               }
               // 如果子项还有自己的子项，继续递归查找
-              if (child.children && Array.isArray(child.children) && findInNestedChildren(child.children)) {
+              if (
+                child.children &&
+                Array.isArray(child.children) &&
+                findInNestedChildren(child.children)
+              ) {
                 return true
               }
             }
             return false
           }
-          
+
           if (findInNestedChildren(topLevelItem.children)) {
             return topLevelItem
           }
         }
       }
-      
+
       return undefined
     },
-
   },
   presist: {
     enable: true,

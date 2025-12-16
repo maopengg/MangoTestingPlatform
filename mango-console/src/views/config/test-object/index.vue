@@ -376,7 +376,6 @@
     })
   }
 
-
   function clickDataBase(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)

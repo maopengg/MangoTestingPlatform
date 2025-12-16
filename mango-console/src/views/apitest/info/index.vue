@@ -659,25 +659,25 @@
         }
       }
     } else if (data.addType === 1) {
-        if (formItemsImport.every((it) => (it.validator ? it.validator() : true))) {
-          let value = getFormItems(formItemsImport)
-          value['type'] = data.apiType
-          postApiImportUrl(value)
-            .then((res) => {
-              Message.success(res.msg)
-              modalDialogRef.value?.toggle()
-              doRefresh()
-            })
-            .catch((error) => {
-              console.log(error)
-            })
-            .finally(() => {
-              modalDialogRef.value?.setConfirmLoading(false)
-            })
-        }
-      } else {
-        modalDialogRef.value?.setConfirmLoading(false)
+      if (formItemsImport.every((it) => (it.validator ? it.validator() : true))) {
+        let value = getFormItems(formItemsImport)
+        value['type'] = data.apiType
+        postApiImportUrl(value)
+          .then((res) => {
+            Message.success(res.msg)
+            modalDialogRef.value?.toggle()
+            doRefresh()
+          })
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
+    }
   }
 
   const onRunCase = async (param) => {

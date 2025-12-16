@@ -99,12 +99,12 @@ export function postApiUploadApi(type: number, file?: File) {
   if (file) {
     formData.append('file', file)
   }
-  
+
   return post({
     url: '/api/upload/api',
     data: () => formData,
     headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+      'Content-Type': 'multipart/form-data',
+    },
   })
 }
