@@ -35,7 +35,8 @@ class HttpClientApi(HttpBase):
         response = requests.get(url, proxies={'http': None, 'https': None}, )
         try:
             if response.status_code != 200:
-                raise ToolsError(*ERROR_MSG_0004, value=(file_name,))
+                log.error(f'url:{url}, status_code:{response.status_code}')
+                raise ToolsError(*ERROR_MSG_0004, value=(url,))
             with open(os.path.join(project_dir.upload(), file_name), 'wb') as f:
                 f.write(response.content)
         except FileNotFoundError:
