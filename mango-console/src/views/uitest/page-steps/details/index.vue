@@ -210,7 +210,7 @@
               </a-tab-pane>
               <a-tab-pane key="2" title="步骤测试结果">
                 <div v-if="data.result_data">
-                  <ElementTestReport :result-data="data.result_data" />
+                  <ElementTestReport :result-data="data.result_data || {}" />
                 </div>
               </a-tab-pane>
             </a-tabs>
