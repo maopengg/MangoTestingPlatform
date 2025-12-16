@@ -194,7 +194,7 @@
 }
 
 .elements-scroll-container {
-  max-height: 300px;
+  max-height: 220px;
   overflow-y: auto;
   border: 1px solid #e5e5e5;
   border-radius: 4px;
