@@ -250,12 +250,12 @@ def ad_routes():
                 {
                     "parentPath": "/help",
                     "menuUrl": "/help/variable/index",
-                    "menuName": "公共变量",
+                    "menuName": "随机数据",
                 },
                 {
                     "parentPath": "/help",
                     "menuUrl": "/help/assertion/index",
-                    "menuName": "断言策略",
+                    "menuName": "断言方法",
                 },
                 {
                     "parentPath": "/help",
