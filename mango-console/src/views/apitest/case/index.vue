@@ -554,7 +554,6 @@
       Message.error('请选择要执行的用例')
       return
     }
-    Message.loading('正在执行用例请稍后~')
     if (caseRunning.value) return
     caseRunning.value = true
     try {

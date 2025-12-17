@@ -495,7 +495,7 @@
       onOk: () => {
         postUiRunCaseBatch(selectedRowKeys.value, userStore.selected_environment)
           .then((res) => {
-            Message.loading(res.msg)
+            Message.success(res.msg)
             selectedRowKeys.value = []
             doRefresh()
           })
