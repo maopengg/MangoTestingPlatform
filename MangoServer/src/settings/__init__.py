@@ -71,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.gzip.GZipMiddleware',  # 添加Gzip压缩支持
     # 'src.middleware.log_collector.LogMiddleWare',
     'src.middleware.user_logs.UserLogsMiddleWare',
     # 'src.middleware.operation_log.OperationLogMiddleware',
