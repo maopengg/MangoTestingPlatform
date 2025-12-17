@@ -69,11 +69,11 @@ urlpatterns = [
     path('test/suite/details/retry', TestSuiteDetailsViews.as_view({'get': 'get_retry'})),
     path('test/suite/details/summary', TestSuiteDetailsViews.as_view({'get': 'get_summary'})),
     #
-    path('index/sum', cache_page(60 * 5)(IndexViews.as_view({'get': 'case_sum'}))),
-    path('index/result/week/sum', cache_page(60 * 5)(IndexViews.as_view({'get': 'case_result_week_sum'}))),
-    path('index/run/sum', cache_page(60 * 5)(IndexViews.as_view({'get': 'case_run_sum'}))),
-    path('index/activity/level', cache_page(60 * 5)(IndexViews.as_view({'get': 'activity_level'}))),
-    path('index/statistics', cache_page(60 * 5)(IndexViews.as_view({'get': 'statistics'}))),
+    path('index/sum', cache_page(60 * 3)(IndexViews.as_view({'get': 'case_sum'}))),
+    path('index/result/week/sum', cache_page(60 * 3)(IndexViews.as_view({'get': 'case_result_week_sum'}))),
+    path('index/run/sum', cache_page(60 * 3)(IndexViews.as_view({'get': 'case_run_sum'}))),
+    path('index/activity/level', cache_page(60 * 3)(IndexViews.as_view({'get': 'activity_level'}))),
+    path('index/statistics', cache_page(60 * 3)(IndexViews.as_view({'get': 'statistics'}))),
     #
     path('cache/data', CacheDataCRUD.as_view()),
     path('cache/data/key/value', CacheDataViews.as_view({'get': 'get_key_value'})),

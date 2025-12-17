@@ -11,6 +11,7 @@
       </div>
       <div class="item">
         <Title title="自动化测试统计" />
+        <!-- 组件自己获取所需数据 -->
         <AutomationStats />
       </div>
     </div>
@@ -61,7 +62,7 @@
   import HotProductChart from './components/chart/HotProductChart.vue'
   import Title from '@/views/index/components/Title.vue'
   import PieChart from '@/components/chart/PieChart.vue'
-  import { getSystemCaseRunSum, getSystemCaseSum, getSystemIndexStatistics } from '@/api/system'
+  import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system' // 移除了getSystemIndexStatistics导入
   import ContactAuthor from './components/ContactAuthor.vue'
   import AutomationStats from './components/AutomationStats.vue'
   import PendingTasks from './components/PendingTasks.vue'
@@ -73,23 +74,6 @@
     caseSum: [],
     reportSum: [],
     onlineUsers: 0,
-    uiStats: {
-      elementCount: 0,
-      pageCount: 0,
-      stepCount: 0,
-      caseCount: 0,
-    },
-    apiStats: {
-      interfaceCount: 0,
-      caseCount: 0,
-      headersCount: 0,
-    },
-    pytestStats: {
-      processObjects: 0,
-      caseCount: 0,
-      toolFiles: 0,
-      testFiles: 0,
-    },
   })
 
   function caseSum() {
@@ -108,21 +92,11 @@
       .catch(console.log)
   }
 
-  function getSystemStatistics() {
-    getSystemIndexStatistics()
-      .then((res) => {
-        data.uiStats = res.data.uiStats
-        data.apiStats = res.data.apiStats
-        data.pytestStats = res.data.pytestStats
-      })
-      .catch(console.log)
-  }
 
   onMounted(() => {
     nextTick(async () => {
       caseSum()
       getAllReportSum()
-      getSystemStatistics()
     })
   })
 
