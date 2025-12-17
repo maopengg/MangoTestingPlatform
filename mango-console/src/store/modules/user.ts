@@ -23,7 +23,6 @@ const useUserStore = defineStore('user-info', {
   },
   actions: {
     saveUser(userInfo: UserState, password: string) {
-      console.log(userInfo)
       return new Promise<UserState>((resolve) => {
         this.userId = userInfo.userId
         this.roleId = userInfo.roleId
