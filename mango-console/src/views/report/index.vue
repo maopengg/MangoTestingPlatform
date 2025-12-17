@@ -36,7 +36,7 @@
       <a-space direction="vertical" fill>
         <div style="margin-bottom: 10px">
           <a-card style="float: left; width: 30%" :bordered="false">
-            <Title title="接口数&用例数" />
+            <Title title="测试用例占比" />
             <StatusChart :success="data.successSum" :fail="data.failSum" />
           </a-card>
 

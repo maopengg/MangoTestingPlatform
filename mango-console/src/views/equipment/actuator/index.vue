@@ -4,22 +4,12 @@
 
     <template #default>
       <!-- 卡片列表替代表格 -->
-      <div class="cards-container"> <!-- 添加容器 -->
-        <a-spin :loading="tableLoading" style="width: 100%;">
+      <div class="cards-container">
+        <!-- 添加容器 -->
+        <a-spin :loading="tableLoading" style="width: 100%">
           <a-row :gutter="[16, 16]">
-            <a-col 
-              v-for="record in dataList" 
-              :key="record.id" 
-              :span="24" 
-              :md="12" 
-              :lg="8" 
-              :xl="6"
-            >
-              <a-card 
-                class="executor-card"
-                :bordered="true"
-                hoverable
-              >
+            <a-col v-for="record in dataList" :key="record.id" :span="24" :md="12" :lg="8" :xl="6">
+              <a-card class="executor-card" :bordered="true" hoverable>
                 <template #title>
                   <div class="card-header">
                     <a-avatar :size="24" class="avatar">
@@ -31,37 +21,39 @@
                     <div class="online-status" title="在线"></div>
                   </div>
                 </template>
-                
+
                 <div class="card-content">
                   <!-- IP地址 -->
                   <div class="info-item">
                     <icon-desktop class="info-icon" />
-                    <span class="info-label">IP地址:</span>
+                    <span class="info-label">IP地址：</span>
                     <span class="info-value">{{ record.ip }}</span>
                   </div>
-                  
+
                   <!-- 类型 -->
                   <div class="info-item">
                     <icon-tag class="info-icon" />
-                    <span class="info-label">类型:</span>
-                    <span class="info-value type-badge" :class="getTypeClass(record.type)">{{ getTypeLabel(record.type) }}</span>
+                    <span class="info-label">类型：</span>
+                    <span class="info-value type-badge" :class="getTypeClass(record.type)">{{
+                      getTypeLabel(record.type)
+                    }}</span>
                   </div>
-                  
+
                   <!-- OPEN状态 -->
                   <div class="status-item">
                     <icon-link class="status-icon" />
-                    <span class="status-label">OPEN状态:</span>
+                    <span class="status-label">OPEN状态：</span>
                     <a-switch
                       :beforeChange="(newValue) => onModifyStatus(newValue, record.username)"
                       :default-checked="record.is_open === true"
                       size="small"
                     />
                   </div>
-                  
+
                   <!-- DEBUG状态 -->
                   <div class="status-item">
                     <icon-bug class="status-icon" />
-                    <span class="status-label">DEBUG状态:</span>
+                    <span class="status-label">DEBUG状态：</span>
                     <a-switch
                       :beforeChange="(newValue) => onModifyDebug(newValue, record.username)"
                       :default-checked="record.debug === true"
@@ -69,7 +61,7 @@
                     />
                   </div>
                 </div>
-                
+
                 <template #actions>
                   <a-button
                     disabled
@@ -83,7 +75,7 @@
                 </template>
               </a-card>
             </a-col>
-            
+
             <!-- 空状态 -->
             <a-col v-if="dataList.length === 0" :span="24">
               <a-empty description="暂无在线执行器" />
@@ -111,10 +103,10 @@
   // 获取类型标签文本
   const getTypeLabel = (type: string) => {
     const typeMap: Record<string, string> = {
-      'pytest': 'Pytest',
-      'pytest_web': 'Pytest Web',
-      'web_ui': 'Web UI',
-      'android_ui': 'Android UI'
+      pytest: 'Pytest',
+      pytest_web: 'Pytest Web',
+      web_ui: 'Web UI',
+      android_ui: 'Android UI',
     }
     return typeMap[type] || 'Pytest Web' // 默认值
   }
@@ -122,10 +114,10 @@
   // 获取类型标签样式类
   const getTypeClass = (type: string) => {
     const typeClassMap: Record<string, string> = {
-      'pytest': 'type-pytest',
-      'pytest_web': 'type-pytest-web',
-      'web_ui': 'type-web-ui',
-      'android_ui': 'type-android-ui'
+      pytest: 'type-pytest',
+      pytest_web: 'type-pytest-web',
+      web_ui: 'type-web-ui',
+      android_ui: 'type-android-ui',
     }
     return typeClassMap[type] || 'type-pytest-web' // 默认值
   }
@@ -196,7 +188,7 @@
       }, 300)
     })
   }
-  
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
@@ -205,207 +197,212 @@
 </script>
 
 <style lang="less" scoped>
-.cards-container {
-  margin-top: 20px; // 添加与标题的距离
-}
+  .cards-container {
+    margin-top: 20px; // 添加与标题的距离
+  }
 
-.executor-card {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-  }
-  
-  :deep(.arco-card-header) {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-neutral-3);
-    border-radius: 12px 12px 0 0;
-  }
-  
-  :deep(.arco-card-body) {
-    padding: 12px 16px;
-  }
-  
-  :deep(.arco-card-footer) {
-    border-top: 1px solid var(--color-neutral-3);
-    padding: 4px 16px;
-    border-radius: 0 0 12px 12px;
-  }
-  
-  .card-header {
-    display: flex;
-    align-items: center;
-    
-    .avatar {
-      background-color: var(--color-primary-light-1);
-      margin-right: 12px;
+  .executor-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
     }
-    
-    .header-info {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      
-      .owner-name {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--color-text-1);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+
+    :deep(.arco-card-header) {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-neutral-3);
+      border-radius: 12px 12px 0 0;
     }
-    
-    .online-status {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: var(--color-success-light-4);
-      border: 2px solid var(--color-success-light-2);
-      margin-left: 12px;
-      flex-shrink: 0;
+
+    :deep(.arco-card-body) {
+      padding: 12px 16px;
     }
-  }
-  
-  .card-content {
-    .info-item, .status-item {
+
+    :deep(.arco-card-footer) {
+      border-top: 1px solid var(--color-neutral-3);
+      padding: 4px 16px;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .card-header {
       display: flex;
       align-items: center;
-      margin-bottom: 10px;
-      
-      &:last-child {
-        margin-bottom: 4px;
-      }
-      
-      .info-icon, .status-icon {
-        font-size: 16px;
-        margin-right: 8px;
-        color: var(--color-text-3);
-      }
-      
-      .info-label, .status-label {
-        font-size: 14px;
-        color: var(--color-text-2);
-        margin-right: 8px;
-        flex-shrink: 0;
-      }
-      
-      .info-value {
-        font-size: 14px;
-        color: var(--color-text-1);
-        flex: 1;
-        text-align: right;
-        
-        &.type-badge {
-          display: inline-block;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 500;
-          
-          &.type-pytest {
-            background-color: var(--color-purple-1);
-            color: var(--color-purple-6);
-          }
-          
-          &.type-pytest-web {
-            background-color: var(--color-blue-1);
-            color: var(--color-blue-6);
-          }
-          
-          &.type-web-ui {
-            background-color: var(--color-green-1);
-            color: var(--color-green-6);
-          }
-          
-          &.type-android-ui {
-            background-color: var(--color-red-1);
-            color: var(--color-red-6);
-          }
-        }
-      }
-      
-      :deep(.arco-switch) {
-        flex-shrink: 0;
-        margin-left: auto;
-      }
-    }
-    
-    .status-item {
-      .status-icon {
-        color: var(--color-primary-light-4);
-      }
-    }
-  }
-  
-  :deep(.arco-card-actions) {
-    display: flex;
-    justify-content: flex-end;
-    padding: 2px 0 0;
-  }
-}
 
-// 响应式调整
-@media (max-width: 768px) {
-  .cards-container {
-    margin-top: 16px; // 在小屏幕上稍微减少距离
-  }
-  
-  :deep(.arco-col) {
-    .executor-card {
-      :deep(.arco-card-body) {
-        padding: 10px 12px;
+      .avatar {
+        background-color: var(--color-primary-light-1);
+        margin-right: 12px;
       }
-      
-      :deep(.arco-card-footer) {
-        padding: 3px 12px;
-      }
-      
-      .card-header {
-        .header-info {
-          .owner-name {
-            font-size: 14px;
-          }
-        }
-        
-        .online-status {
-          width: 8px;
-          height: 8px;
-          margin-left: 10px;
+
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .owner-name {
+          font-size: 16px;
+          font-weight: 500;
+          color: var(--color-text-1);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
-      
-      .card-content {
-        .info-item, .status-item {
-          margin-bottom: 8px;
-          
-          &:last-child {
-            margin-bottom: 3px;
-          }
-          
-          .info-label, .status-label {
-            font-size: 13px;
-          }
-          
-          .info-value {
-            font-size: 13px;
-            
-            &.type-badge {
-              font-size: 11px;
-              padding: 1px 6px;
+
+      .online-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: var(--color-success-light-4);
+        border: 2px solid var(--color-success-light-2);
+        margin-left: 12px;
+        flex-shrink: 0;
+      }
+    }
+
+    .card-content {
+      .info-item,
+      .status-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+
+        &:last-child {
+          margin-bottom: 4px;
+        }
+
+        .info-icon,
+        .status-icon {
+          font-size: 16px;
+          margin-right: 8px;
+          color: var(--color-text-3);
+        }
+
+        .info-label,
+        .status-label {
+          font-size: 14px;
+          color: var(--color-text-2);
+          margin-right: 8px;
+          flex-shrink: 0;
+        }
+
+        .info-value {
+          font-size: 14px;
+          color: var(--color-text-1);
+          flex: 1;
+          text-align: right;
+
+          &.type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+
+            &.type-pytest {
+              background-color: var(--color-purple-1);
+              color: var(--color-purple-6);
+            }
+
+            &.type-pytest-web {
+              background-color: var(--color-blue-1);
+              color: var(--color-blue-6);
+            }
+
+            &.type-web-ui {
+              background-color: var(--color-green-1);
+              color: var(--color-green-6);
+            }
+
+            &.type-android-ui {
+              background-color: var(--color-red-1);
+              color: var(--color-red-6);
             }
           }
         }
+
+        :deep(.arco-switch) {
+          flex-shrink: 0;
+          margin-left: auto;
+        }
       }
-      
-      :deep(.arco-card-actions) {
-        padding: 1px 0 0;
+
+      .status-item {
+        .status-icon {
+          color: var(--color-primary-light-4);
+        }
+      }
+    }
+
+    :deep(.arco-card-actions) {
+      display: flex;
+      justify-content: flex-end;
+      padding: 2px 0 0;
+    }
+  }
+
+  // 响应式调整
+  @media (max-width: 768px) {
+    .cards-container {
+      margin-top: 16px; // 在小屏幕上稍微减少距离
+    }
+
+    :deep(.arco-col) {
+      .executor-card {
+        :deep(.arco-card-body) {
+          padding: 10px 12px;
+        }
+
+        :deep(.arco-card-footer) {
+          padding: 3px 12px;
+        }
+
+        .card-header {
+          .header-info {
+            .owner-name {
+              font-size: 14px;
+            }
+          }
+
+          .online-status {
+            width: 8px;
+            height: 8px;
+            margin-left: 10px;
+          }
+        }
+
+        .card-content {
+          .info-item,
+          .status-item {
+            margin-bottom: 8px;
+
+            &:last-child {
+              margin-bottom: 3px;
+            }
+
+            .info-label,
+            .status-label {
+              font-size: 13px;
+            }
+
+            .info-value {
+              font-size: 13px;
+
+              &.type-badge {
+                font-size: 11px;
+                padding: 1px 6px;
+              }
+            }
+          }
+        }
+
+        :deep(.arco-card-actions) {
+          padding: 1px 0 0;
+        }
       }
     }
   }
-}
 </style>
