@@ -62,7 +62,6 @@ class BaseRequest:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
             self.test_data.set_cache(request_data.posterior_file, file_path)
-        print(response.text)
         try:
             response_json = response.json()
         except Exception:

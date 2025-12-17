@@ -248,7 +248,7 @@ class CaseParameter:
                 if not value:
                     raise ApiError(*ERROR_MSG_0035)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
-                if not res:
+                if not res and key:
                     raise ApiError(*ERROR_MSG_0034, value=(value,))
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
