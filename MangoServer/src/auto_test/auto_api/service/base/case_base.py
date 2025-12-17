@@ -59,7 +59,7 @@ class CaseBase:
                 log.api.debug(f'用例前置sql->key:{key}，value:{value}，查询结果：{res}')
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
-                if key is not None or key != '' and len(res) > 0:
+                if not res and key:
                     raise ApiError(*ERROR_MSG_0034, value=(value,))
 
     def __front_headers(self):
