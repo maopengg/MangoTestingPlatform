@@ -12,7 +12,7 @@ import time
 from requests import Response
 from requests.exceptions import *
 
-# from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
+from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel, ResponseModel
