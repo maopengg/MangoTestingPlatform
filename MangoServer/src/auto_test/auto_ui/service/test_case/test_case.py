@@ -253,7 +253,7 @@ class TestCase:
             try:
                 ChatConsumer.active_send(send_data)
             except MangoServerError as error:
-                log.ui.debug(f'发送ui测试数据报错:{error}')
+                log.ui.debug(f'发送ui测试数据报错-1:{error}')
                 if not is_open:
                     raise error
                 user_list = [i.username for i in SocketUser.user if i.is_open]
@@ -261,6 +261,7 @@ class TestCase:
                     raise error
                 send_data.user = user_list[random.randint(0, len(user_list) - 1)]
                 ChatConsumer.active_send(send_data)
+                log.pytest.debug(f'发送ui测试数据重试成功-2:{send_data.user}')
 
     def __environment_config(self, project_product_id: int, ) -> EnvironmentConfigModel:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)

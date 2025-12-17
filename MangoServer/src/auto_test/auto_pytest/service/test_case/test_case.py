@@ -15,6 +15,7 @@ from src.enums.tools_enum import TaskEnum
 from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0020, ERROR_MSG_0057
 from src.models.pytest_model import PytestCaseModel
 from src.models.socket_model import SocketDataModel, QueueModel
+from src.tools.log_collector import log
 
 
 class TestCase:
@@ -66,9 +67,12 @@ class TestCase:
         try:
             ChatConsumer.active_send(send_data)
         except MangoServerError as error:
-            user_list = [i.username for i in SocketUser.user if i.is_open]
-            if error.code == 1028 and is_open and user_list:
-                send_data.user = user_list[random.randint(0, len(user_list) - 1)]
-                ChatConsumer.active_send(send_data)
-            else:
+            log.pytest.debug(f'发送pytest测试数据报错-1:{error}')
+            if not is_open:
                 raise error
+            user_list = [i.username for i in SocketUser.user if i.is_open]
+            if not error.code == 1028 or not user_list:
+                raise error
+            send_data.user = user_list[random.randint(0, len(user_list) - 1)]
+            ChatConsumer.active_send(send_data)
+            log.pytest.debug(f'发送pytest测试数据重试成功-2:{send_data.user}')
