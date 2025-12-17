@@ -249,11 +249,6 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/help",
-                    "menuUrl": "http://43.142.161.61:8002/",
-                    "menuName": "帮助文档",
-                },
-                {
-                    "parentPath": "/help",
                     "menuUrl": "/help/variable/index",
                     "menuName": "公共变量",
                 },
@@ -261,6 +256,11 @@ def ad_routes():
                     "parentPath": "/help",
                     "menuUrl": "/help/assertion/index",
                     "menuName": "断言策略",
+                },
+                {
+                    "parentPath": "/help",
+                    "menuUrl": "http://43.142.161.61:8002/",
+                    "menuName": "帮助文档",
                 },
             ],
         },
