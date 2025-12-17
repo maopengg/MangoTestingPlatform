@@ -62,7 +62,7 @@
   import HotProductChart from './components/chart/HotProductChart.vue'
   import Title from '@/views/index/components/Title.vue'
   import PieChart from '@/components/chart/PieChart.vue'
-  import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system' // 移除了getSystemIndexStatistics导入
+  import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system'
   import ContactAuthor from './components/ContactAuthor.vue'
   import AutomationStats from './components/AutomationStats.vue'
   import PendingTasks from './components/PendingTasks.vue'
