@@ -1,12 +1,10 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function getUserFile(type = 0) {
+export function getUserFile(value) {
   return get({
     url: '/system/file',
     data: () => {
-      return {
-        type: type,
-      }
+      return value
     },
   })
 }

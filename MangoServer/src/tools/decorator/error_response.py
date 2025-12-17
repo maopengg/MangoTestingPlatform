@@ -44,6 +44,7 @@ def error_response(app: str):
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{traceback.format_exc()}')
                 return ResponseData.fail(RESPONSE_MSG_0107)
             except utils.OperationalError as error:
+                traceback.print_exc()
                 close_old_connections()
                 return ResponseData.fail(ERROR_MSG_0058, data=str(error))
             except Exception as error:

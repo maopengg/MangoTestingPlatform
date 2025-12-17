@@ -15,6 +15,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import FileData
 from src.auto_test.auto_system.service.save_minio import SaveMinio
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.settings import IS_MINIO
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
@@ -35,6 +36,7 @@ class FileDataSerializers(serializers.ModelSerializer):
 class FileDataSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
         model = FileData

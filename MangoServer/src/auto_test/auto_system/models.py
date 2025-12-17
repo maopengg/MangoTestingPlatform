@@ -73,6 +73,8 @@ class ProjectProduct(models.Model):
             TestSuiteDetails.objects.filter(project_product=self).delete()
         if TestSuite.objects.filter(project_product=self).exists():
             TestSuite.objects.filter(project_product=self).delete()
+        if FileData.objects.filter(project_product=self).exists():
+            FileData.objects.filter(project_product=self).delete()
         super().delete(*args, **kwargs)
 
 
@@ -165,6 +167,14 @@ class FileData(models.Model):
     """ 文件表 """
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(
+        to=ProjectProduct,
+        to_field="id",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        default=None
+    )
     type = models.SmallIntegerField(verbose_name="类型")
     name = models.CharField(verbose_name="文件名称", max_length=255, unique=True)
     test_file = models.FileField(verbose_name='文件', upload_to='test_file/', null=True)
