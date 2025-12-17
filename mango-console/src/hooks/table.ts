@@ -124,11 +124,11 @@ export const usePagination = function (callback: () => void) {
     page: 1,
     pageSize: 20,
     showSizePicker: true,
-    pageCount: 1,
+    pageCount: 0,
     pageSizes: ['10', '20', '50', '100'],
     onChange,
     setTotalSize(totalSize: number) {
-      paginationInfo.pageCount = totalSize
+      paginationInfo.pageCount = totalSize || 0
     },
   })
   return paginationInfo

@@ -41,7 +41,7 @@
           </a-card>
 
           <a-card style="float: right; width: 70%" :bordered="false">
-            <Title title="近三个季度执行用例趋势图" />
+            <Title title="近三个月执行用例趋势图" />
             <BarChart :success="data.weekSuccessData" :fail="data.weekFailData" />
           </a-card>
         </div>
@@ -131,6 +131,9 @@
   } from '@/api/system/test_sute_details'
   import { useEnum } from '@/store/modules/get-enum'
   import { Message, Modal } from '@arco-design/web-vue'
+  import Title from '@/views/index/components/Title.vue'
+  import StatusChart from '@/components/chart/StatusChart.vue'
+  import BarChart from '@/components/chart/barChart.vue'
 
   const enumStore = useEnum()
 
@@ -140,8 +143,8 @@
   const rowKey = useRowKey('id')
   const router = useRouter()
   const data: any = reactive({
-    successSum: [],
-    failSum: [],
+    successSum: 0,
+    failSum: 0,
     weekSuccessData: [],
     weekFailData: [],
   })
@@ -226,8 +229,8 @@
         .then((res) => {
           data.weekFailData = res.data.fail
           data.weekSuccessData = res.data.success
-          data.failSum = res.data.failSun
-          data.successSum = res.data.successSun
+          data.failSum = res.data.failSun || 0
+          data.successSum = res.data.successSun || 0
         })
         .catch(console.log)
     })

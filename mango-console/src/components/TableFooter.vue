@@ -9,7 +9,7 @@
         v-model:current="pagination.page"
         v-model:pageSize="pagination.pageSize"
         :show-page-size="pagination.showSizePicker"
-        :total="pagination?.pageCount"
+        :total="pagination?.pageCount || 0"
         show-total
         size="small"
         @change="onChange"

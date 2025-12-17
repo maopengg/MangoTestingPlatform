@@ -160,6 +160,7 @@
   const table = useTable()
   const projectInfo = useProject()
   const rowKey = useRowKey('id')
+  const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const data = reactive({
     updateId: 0,
