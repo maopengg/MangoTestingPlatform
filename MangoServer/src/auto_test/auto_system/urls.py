@@ -4,6 +4,7 @@
 # @Time   : 2023-01-19 18:56
 # @Author : 毛鹏
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from src.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
 from .views.cache_data import CacheDataCRUD, CacheDataViews
@@ -68,11 +69,11 @@ urlpatterns = [
     path('test/suite/details/retry', TestSuiteDetailsViews.as_view({'get': 'get_retry'})),
     path('test/suite/details/summary', TestSuiteDetailsViews.as_view({'get': 'get_summary'})),
     #
-    path('index/sum', IndexViews.as_view({'get': 'case_sum'})),
-    path('index/result/week/sum', IndexViews.as_view({'get': 'case_result_week_sum'})),
-    path('index/run/sum', IndexViews.as_view({'get': 'case_run_sum'})),
-    path('index/activity/level', IndexViews.as_view({'get': 'activity_level'})),
-    path('index/statistics', IndexViews.as_view({'get': 'statistics'})),
+    path('index/sum', cache_page(60 * 5)(IndexViews.as_view({'get': 'case_sum'}))),
+    path('index/result/week/sum', cache_page(60 * 5)(IndexViews.as_view({'get': 'case_result_week_sum'}))),
+    path('index/run/sum', cache_page(60 * 5)(IndexViews.as_view({'get': 'case_run_sum'}))),
+    path('index/activity/level', cache_page(60 * 5)(IndexViews.as_view({'get': 'activity_level'}))),
+    path('index/statistics', cache_page(60 * 5)(IndexViews.as_view({'get': 'statistics'}))),
     #
     path('cache/data', CacheDataCRUD.as_view()),
     path('cache/data/key/value', CacheDataViews.as_view({'get': 'get_key_value'})),
