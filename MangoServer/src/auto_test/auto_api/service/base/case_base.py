@@ -56,10 +56,11 @@ class CaseBase:
                 if not value:
                     raise ApiError(*ERROR_MSG_0036)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
-                log.api.debug(f'用例前置sql->key:{key}，value:{value}，查询结果：{res}')
+                log.api.debug(f'用例前置sql-1->key:{key}，value:{value}，查询结果：{res}')
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
                 if not res and key:
+                    log.api.debug(f'用例前置sql-2->key:{key}，res:{res}')
                     raise ApiError(*ERROR_MSG_0034, value=(value,))
 
     def __front_headers(self):

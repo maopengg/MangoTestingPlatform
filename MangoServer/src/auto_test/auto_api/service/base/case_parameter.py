@@ -244,11 +244,12 @@ class CaseParameter:
             for i in front_sql:
                 key = self.test_setup.test_data.replace(i.get('key'))
                 value = self.test_setup.test_data.replace(i.get('value'))
-                log.api.debug(f'用例场景前置sql->key:{key}，value:{value}')
+                log.api.debug(f'用例场景前置sql-1->key:{key}，value:{value}')
                 if not value:
                     raise ApiError(*ERROR_MSG_0035)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
                 if not res and key:
+                    log.api.debug(f'用例场景前置sql-2->key:{key}，res:{res}')
                     raise ApiError(*ERROR_MSG_0034, value=(value,))
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
