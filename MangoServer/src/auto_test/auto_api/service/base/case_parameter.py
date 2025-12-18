@@ -104,10 +104,10 @@ class CaseParameter:
                     raise ApiError(*ERROR_MSG_0009)
                 res = self.test_setup.mysql_connect.condition_execute(value)
                 log.api.debug(f'用例详情后置sql-2->key：{key}，sql：{value}，结果：{res}')
-                if key is not None and key != '' and len(res) > 0:
-                    raise ApiError(*ERROR_MSG_0047, value=(value,))
                 if key and isinstance(res, list) and len(res) > 0:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
+                if key is not None and key != '' and len(res) > 0:
+                    raise ApiError(*ERROR_MSG_0047, value=(value,))
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         for i in posterior_response:
@@ -250,10 +250,10 @@ class CaseParameter:
                     raise ApiError(*ERROR_MSG_0035)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
                 log.api.debug(f'用例场景前置sql-2->key:{key}，res:{res}')
-                if key is not None and key != '' and len(res) > 0:
-                    raise ApiError(*ERROR_MSG_0034, value=(value,))
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
+                if key is not None and key != '' and len(res) > 0:
+                    raise ApiError(*ERROR_MSG_0034, value=(value,))
 
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
         try:
