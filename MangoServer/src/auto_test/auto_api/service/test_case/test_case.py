@@ -129,6 +129,7 @@ class TestCase:
                 return res
             else:
                 case_detailed.status = StatusEnum.SUCCESS.value
+                case_detailed.error_message = None
                 case_detailed.save()
 
     def detailed_parameter(self, case_detailed: ApiCaseDetailed) -> tuple[int, str] | None:
