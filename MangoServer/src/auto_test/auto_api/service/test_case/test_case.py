@@ -179,6 +179,7 @@ class TestCase:
                 except (MangoServerError, MangoToolsError) as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
                     res_model.status = StatusEnum.FAIL.value
+                    res_model.error_message = error.msg
                     if res_model.response:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,
                                              res_model.status)
@@ -192,7 +193,9 @@ class TestCase:
                                              res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     log.api.error(f'API请求发生未知错误：{traceback.print_exc()}')
-                    return StatusEnum.FAIL.value, f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                    msg = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                    res_model.error_message = msg
+                    return StatusEnum.FAIL.value, msg
             res_list.append({'status': status, 'error_message': error_message})
         for i in res_list:
             if i.get('status') == StatusEnum.FAIL.value:
