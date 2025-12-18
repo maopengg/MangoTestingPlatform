@@ -127,8 +127,10 @@
                       :key="item.key"
                       :align="item.align"
                       :data-index="item.dataIndex"
+                      :ellipsis="item.ellipsis"
                       :fixed="item.fixed"
                       :title="item.title"
+                      :tooltip="item.tooltip"
                       :width="item.width"
                     >
                       <template v-if="item.dataIndex === 'api_name'" #cell="{ record }">

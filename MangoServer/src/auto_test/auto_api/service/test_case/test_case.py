@@ -124,6 +124,7 @@ class TestCase:
             res: tuple[int, str] | None = self.detailed_parameter(case_detailed)
             if res:
                 case_detailed.status = res[0]
+                case_detailed.error_message = res[1] if len(res) > 1 else None
                 case_detailed.save()
                 return res
             else:

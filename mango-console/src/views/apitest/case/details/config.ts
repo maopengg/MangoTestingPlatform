@@ -7,16 +7,28 @@ export const columns: any = reactive([
   {
     title: '接口名称',
     dataIndex: 'api_name',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '测试结果',
     dataIndex: 'status',
+    width: 90,
+  },
+  {
+    title: '失败提示',
+    dataIndex: 'error_message',
+    align: 'left',
+    width: 90,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 180,
+    width: 170,
   },
 ])
 export const formItems: FormItem[] = reactive([
