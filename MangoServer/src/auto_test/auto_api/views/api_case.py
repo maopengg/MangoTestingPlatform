@@ -79,7 +79,7 @@ class ApiCaseViews(ViewSet):
         )
         if StatusEnum.SUCCESS.value != test_result.status:
             return ResponseData.fail((300, test_result.error_message), test_result.model_dump())
-        return ResponseData.success(RESPONSE_MSG_0111, test_result.model_dump())
+        return ResponseData.success(RESPONSE_MSG_0112, test_result.model_dump())
 
     @action(methods=['post'], detail=False)
     @error_response('api')
