@@ -27,7 +27,7 @@ export const tableColumns = useTableColumn([
     width: 90,
   },
   {
-    title: '登录时间',
+    title: '访问时间',
     key: 'create_time',
     dataIndex: 'create_time',
     width: 190,
