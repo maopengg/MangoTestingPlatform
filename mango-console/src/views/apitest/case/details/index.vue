@@ -47,7 +47,7 @@
                     <KeyValueList
                       :data-list="pageData.record.front_custom"
                       :field-config="[
-                        { field: 'key', label: 'Key', placeholder: '请输入key' },
+                        { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
                         { field: 'value', label: 'Value', placeholder: '请输入value' },
                       ]"
                       :on-delete-item="
@@ -74,7 +74,7 @@
                         {
                           field: 'key',
                           label: 'Key',
-                          placeholder: '请输入key,示例：key1,key2',
+                          placeholder: '请输入缓存key,示例：key1,key2',
                         },
                         { field: 'value', label: 'Sql语句', placeholder: '请输入sql语句' },
                       ]"
@@ -339,7 +339,7 @@
                                     {
                                       field: 'key',
                                       label: 'Key',
-                                      placeholder: '请输入key',
+                                      placeholder: '请输入缓存key',
                                     },
                                     {
                                       field: 'value',
@@ -459,7 +459,7 @@
                                       label: 'jsonpath语法',
                                       placeholder: '请输入jsonpath语法',
                                     },
-                                    { field: 'key', label: 'Key', placeholder: '请输入key' },
+                                    { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
                                   ]"
                                   :on-delete-item="
                                     (index) =>
@@ -517,7 +517,7 @@
                                     {
                                       field: 'key',
                                       label: 'Key',
-                                      placeholder: '请输入key，示例：key1,key2',
+                                      placeholder: '请输入缓存key，示例：key1,key2',
                                     },
                                     {
                                       field: 'value',
