@@ -104,7 +104,7 @@ class CaseParameter:
                     raise ApiError(*ERROR_MSG_0009)
                 res = self.test_setup.mysql_connect.condition_execute(value)
                 log.api.debug(f'用例详情后置sql-2->key：{key}，sql：{value}，结果：{res}')
-                if not res:
+                if key is not None and key != '' and len(res) > 0:
                     raise ApiError(*ERROR_MSG_0047, value=(value,))
                 if key and isinstance(res, list) and len(res) > 0:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
@@ -249,8 +249,8 @@ class CaseParameter:
                 if not value:
                     raise ApiError(*ERROR_MSG_0035)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
-                if not res and key:
-                    log.api.debug(f'用例场景前置sql-2->key:{key}，res:{res}')
+                log.api.debug(f'用例场景前置sql-2->key:{key}，res:{res}')
+                if key is not None and key != '' and len(res) > 0:
                     raise ApiError(*ERROR_MSG_0034, value=(value,))
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
