@@ -99,10 +99,11 @@ class CaseParameter:
             for sql_obj in sql_list:
                 key = self.test_setup.test_data.replace(sql_obj.get('key'))
                 value = self.test_setup.test_data.replace(sql_obj.get('value'))
+                log.api.debug(f'用例详情后置sql-1->key:{key}，value:{value}')
                 if not value:
                     raise ApiError(*ERROR_MSG_0009)
                 res = self.test_setup.mysql_connect.condition_execute(value)
-                log.api.debug(f'用例详情后置-2->key：{key}，sql：{value}，结果：{res}')
+                log.api.debug(f'用例详情后置sql-2->key：{key}，sql：{value}，结果：{res}')
                 if not res:
                     raise ApiError(*ERROR_MSG_0047, value=(value,))
                 if key and isinstance(res, list) and len(res) > 0:

@@ -139,7 +139,7 @@ class TestCase:
             self.test_setup.init_test_object(case_detailed.api_info.project_product_id, self.test_env)
             self.test_setup.init_public(case_detailed.api_info.project_product_id, self.test_env)
             error_retry = 0
-            retry = parameter.error_retry + 1 if parameter.error_retry else 1
+            retry = parameter.error_retry if parameter.error_retry else 1
             status = StatusEnum.FAIL.value
             error_message = None
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')

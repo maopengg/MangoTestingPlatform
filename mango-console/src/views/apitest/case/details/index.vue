@@ -440,6 +440,147 @@
                             </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
+                        <a-tab-pane key="4" title="后置处理">
+                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
+                            <template #extra>
+                              <a-space v-if="data.assClickAdd">
+                                <a-button size="small" type="primary" @click="clickAdd(item)"
+                                  >增加
+                                </a-button>
+                              </a-space>
+                            </template>
+                            <a-tab-pane key="40" title="响应结果提取">
+                              <div class="m-2">
+                                <KeyValueList
+                                  :data-list="item.posterior_response"
+                                  :field-config="[
+                                    {
+                                      field: 'value',
+                                      label: 'jsonpath语法',
+                                      placeholder: '请输入jsonpath语法',
+                                    },
+                                    { field: 'key', label: 'Key', placeholder: '请输入key' },
+                                  ]"
+                                  :on-delete-item="
+                                    (index) =>
+                                      removeFrontSql(
+                                        item.posterior_response,
+                                        index,
+                                        'posterior_response',
+                                        item.id
+                                      )
+                                  "
+                                  :on-save="
+                                    () =>
+                                      blurSave(
+                                        'posterior_response',
+                                        item.posterior_response,
+                                        item.id
+                                      )
+                                  "
+                                  @update:item="
+                                    (index, value) =>
+                                      updateArrayItem(
+                                        item.posterior_response,
+                                        index,
+                                        value,
+                                        item,
+                                        'posterior_response',
+                                        () =>
+                                          blurSave(
+                                            'posterior_response',
+                                            item.posterior_response,
+                                            item.id
+                                          )
+                                      )
+                                  "
+                                  empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
+                                >
+                                  <template #extra="{ index }">
+                                    <a-button
+                                      size="small"
+                                      status="success"
+                                      @click="jsonpathTest(item, index)"
+                                      class="test-btn"
+                                    >
+                                      测试
+                                    </a-button>
+                                  </template>
+                                </KeyValueList>
+                              </div>
+                            </a-tab-pane>
+                            <a-tab-pane key="41" title="后置sql处理">
+                              <div class="m-2">
+                                <KeyValueList
+                                  :data-list="item.posterior_sql"
+                                  :field-config="[
+                                    {
+                                      field: 'key',
+                                      label: 'Key',
+                                      placeholder: '请输入key，示例：key1,key2',
+                                    },
+                                    {
+                                      field: 'value',
+                                      label: 'Sql语句',
+                                      placeholder: '请输入sql语句',
+                                    },
+                                  ]"
+                                  :on-delete-item="
+                                    (index) =>
+                                      removeFrontSql(
+                                        item.posterior_sql,
+                                        index,
+                                        'posterior_sql',
+                                        item.id
+                                      )
+                                  "
+                                  :on-save="
+                                    () => blurSave('posterior_sql', item.posterior_sql, item.id)
+                                  "
+                                  @update:item="
+                                    (index, value) =>
+                                      updateArrayItem(
+                                        item.posterior_sql,
+                                        index,
+                                        value,
+                                        item,
+                                        'posterior_sql',
+                                        () => blurSave('posterior_sql', item.posterior_sql, item.id)
+                                      )
+                                  "
+                                  empty-text='暂无后置sql处理语句，点击上方"增加"按钮添加'
+                                />
+                              </div>
+                            </a-tab-pane>
+                            <a-tab-pane key="42" title="强制等待">
+                              <div class="m-2">
+                                <a-space direction="vertical">
+                                  <a-space direction="vertical">
+                                    <a-input
+                                      v-model="item.posterior_sleep"
+                                      placeholder="请输入强制等待时间，单位是秒"
+                                      style="width: 300px"
+                                      @blur="
+                                        blurSave('posterior_sleep', item.posterior_sleep, item.id)
+                                      "
+                                    />
+                                  </a-space>
+                                </a-space>
+                              </div>
+                            </a-tab-pane>
+                            <a-tab-pane key="43" title="后置函数">
+                              <div class="m-2">
+                                <a-textarea
+                                  v-model="item.posterior_func"
+                                  :auto-size="{ minRows: 10, maxRows: 10 }"
+                                  allow-clear
+                                  placeholder="根据帮助文档，输入自定义后置函数"
+                                  @blur="blurSave('posterior_func', item.posterior_func, item.id)"
+                                />
+                              </div>
+                            </a-tab-pane>
+                          </a-tabs>
+                        </a-tab-pane>
                         <a-tab-pane key="3" title="接口断言">
                           <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
                             <template #extra>
@@ -600,147 +741,6 @@
                                     </div>
                                   </template>
                                 </KeyValueList>
-                              </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-tab-pane>
-                        <a-tab-pane key="4" title="后置处理">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
-                            <template #extra>
-                              <a-space v-if="data.assClickAdd">
-                                <a-button size="small" type="primary" @click="clickAdd(item)"
-                                  >增加
-                                </a-button>
-                              </a-space>
-                            </template>
-                            <a-tab-pane key="40" title="响应结果提取">
-                              <div class="m-2">
-                                <KeyValueList
-                                  :data-list="item.posterior_response"
-                                  :field-config="[
-                                    {
-                                      field: 'value',
-                                      label: 'jsonpath语法',
-                                      placeholder: '请输入jsonpath语法',
-                                    },
-                                    { field: 'key', label: 'Key', placeholder: '请输入key' },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.posterior_response,
-                                        index,
-                                        'posterior_response',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () =>
-                                      blurSave(
-                                        'posterior_response',
-                                        item.posterior_response,
-                                        item.id
-                                      )
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.posterior_response,
-                                        index,
-                                        value,
-                                        item,
-                                        'posterior_response',
-                                        () =>
-                                          blurSave(
-                                            'posterior_response',
-                                            item.posterior_response,
-                                            item.id
-                                          )
-                                      )
-                                  "
-                                  empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
-                                >
-                                  <template #extra="{ index }">
-                                    <a-button
-                                      size="small"
-                                      status="success"
-                                      @click="jsonpathTest(item, index)"
-                                      class="test-btn"
-                                    >
-                                      测试
-                                    </a-button>
-                                  </template>
-                                </KeyValueList>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="41" title="后置sql处理">
-                              <div class="m-2">
-                                <KeyValueList
-                                  :data-list="item.posterior_sql"
-                                  :field-config="[
-                                    {
-                                      field: 'key',
-                                      label: 'Key',
-                                      placeholder: '请输入key，示例：key1,key2',
-                                    },
-                                    {
-                                      field: 'value',
-                                      label: 'Sql语句',
-                                      placeholder: '请输入sql语句',
-                                    },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.posterior_sql,
-                                        index,
-                                        'posterior_sql',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () => blurSave('posterior_sql', item.posterior_sql, item.id)
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.posterior_sql,
-                                        index,
-                                        value,
-                                        item,
-                                        'posterior_sql',
-                                        () => blurSave('posterior_sql', item.posterior_sql, item.id)
-                                      )
-                                  "
-                                  empty-text='暂无后置sql处理语句，点击上方"增加"按钮添加'
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="42" title="强制等待">
-                              <div class="m-2">
-                                <a-space direction="vertical">
-                                  <a-space direction="vertical">
-                                    <a-input
-                                      v-model="item.posterior_sleep"
-                                      placeholder="请输入强制等待时间，单位是秒"
-                                      style="width: 300px"
-                                      @blur="
-                                        blurSave('posterior_sleep', item.posterior_sleep, item.id)
-                                      "
-                                    />
-                                  </a-space>
-                                </a-space>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="43" title="后置函数">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.posterior_func"
-                                  :auto-size="{ minRows: 10, maxRows: 10 }"
-                                  allow-clear
-                                  placeholder="根据帮助文档，输入自定义后置函数"
-                                  @blur="blurSave('posterior_func', item.posterior_func, item.id)"
-                                />
                               </div>
                             </a-tab-pane>
                           </a-tabs>
@@ -942,14 +942,17 @@
     } else if (key === '3') {
       if (item.ass_general && item.ass_general.length > 0) {
         data.tabsKey = '32'
+        data.assClickAdd = true
       } else if (item.ass_jsonpath && item.ass_jsonpath.length > 0) {
         data.tabsKey = '31'
+        data.assClickAdd = false
       } else if (item.ass_text_all) {
         data.tabsKey = '33'
+        data.assClickAdd = false
       } else {
         data.tabsKey = '30'
+        data.assClickAdd = false
       }
-      data.assClickAdd = false
     } else if (key === '4') {
       if (item.posterior_sql && item.posterior_sql.length > 0) {
         data.tabsKey = '41'
@@ -1464,20 +1467,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     item.ass_general[currentIndex].value = inputItem
     // 保存更改
     blurSave('ass_general', item.ass_general, item.id)
-  }
-
-  // 添加 formatResponseText 方法到 setup 函数内部的正确位置
-  function formatResponseText(text) {
-    // 如果text是一个对象（可能是JSON），将其转换为格式化的字符串
-    if (typeof text === 'object' && text !== null) {
-      try {
-        return JSON.stringify(text, null, 2)
-      } catch (e) {
-        return String(text)
-      }
-    }
-    // 如果text是字符串，直接返回
-    return String(text)
   }
 </script>
 
