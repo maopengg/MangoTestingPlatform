@@ -53,7 +53,7 @@ class TestCase:
             git_username=repo.username,
             git_password=repo.password,
         )
-        self.__socket_send(send_data)
+        self.__socket_send(send_data, True)
         return send_data.model_dump()
 
     def __socket_send(self, data_model: PytestCaseModel, is_open=False) -> None:
