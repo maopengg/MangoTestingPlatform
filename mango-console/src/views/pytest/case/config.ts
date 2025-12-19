@@ -26,7 +26,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
-    key: 'file_name',
+    key: 'file_path',
     label: '文件路径',
     type: 'input',
     placeholder: '请输入页面地址',
@@ -199,8 +199,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '文件路径',
-    key: 'file_name',
-    dataIndex: 'file_name',
+    key: 'file_path',
+    dataIndex: 'file_path',
     align: 'left',
     ellipsis: true,
     tooltip: true,
