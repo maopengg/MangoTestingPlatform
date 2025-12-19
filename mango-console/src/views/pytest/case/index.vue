@@ -590,7 +590,8 @@
     data.updateId = record.id
     getPytestCaseRead(record.id)
       .then((res) => {
-        data.codeText = res.data
+        // 确保传递给CodeMirror的值是字符串类型
+        data.codeText = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2)
       })
       .catch(console.log)
   }

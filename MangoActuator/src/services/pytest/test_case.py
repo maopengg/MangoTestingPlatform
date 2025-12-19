@@ -18,7 +18,7 @@ from src.network.web_socket.socket_api_enum import PytestSocketEnum
 from src.tools import project_dir
 from src.tools.log_collector import log
 from src.tools.send_global_msg import send_global_msg
-
+from src.settings import settings
 
 class TestCase:
 
@@ -57,8 +57,9 @@ class TestCase:
             test_env_name=PytestSystemEnum.TEST_ENV.value,
             test_env=self.case_model.test_env,
             file_path=os.path.normpath(self.case_model.file_path),
-            quiet=False,
+            quiet=settings.IS_DEBUG,
         )
+        print(self.case_model.test_env, PytestSystemEnum.TEST_ENV.value,23213123)
         await self.result_data(report_data)
         await self.send_case_result()
         log.debug(f'pytest测试结果：{self.case_result.model_dump_json()}')
