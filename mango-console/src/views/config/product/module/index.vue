@@ -68,7 +68,8 @@
     postUserModule,
     putUserModule,
   } from '@/api/system/module'
-
+  import { useProject } from '@/store/modules/get-project'
+  const projectInfo = useProject()
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -136,6 +137,7 @@
           .then((res) => {
             modalDialogRef.value?.toggle()
             Message.success(res.msg)
+            projectInfo.projectPytestName()
             doRefresh()
           })
           .catch((error) => {
@@ -150,6 +152,7 @@
           .then((res) => {
             modalDialogRef.value?.toggle()
             Message.success(res.msg)
+            projectInfo.projectPytestName()
             doRefresh()
           })
           .catch((error) => {

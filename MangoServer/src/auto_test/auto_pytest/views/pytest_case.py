@@ -77,6 +77,8 @@ class PytestCaseViews(ViewSet):
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
         for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TESTCASE)).find_test_files():
+            if project.project_name == 'sql_ztool':
+                pass
             for file in project.auto_test:
                 _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(
