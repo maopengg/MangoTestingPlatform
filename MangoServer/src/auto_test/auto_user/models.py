@@ -56,8 +56,6 @@ class User(models.Model):
             raise ToolsError(300, "测试对象-有关联数据，请先删除绑定的数据后再删除！")
         if Tasks.objects.filter(case_people=self).exists():
             raise ToolsError(300, "定时任务-有关联数据，请先删除绑定的数据后再删除！")
-        if NoticeGroup.objects.filter(user=self).exists():
-            raise ToolsError(300, "定时任务-有关联数据，请先删除绑定的数据后再删除！")
         if TestSuite.objects.filter(user=self).exists():
             TestSuite.objects.filter(user=self).delete()
         if UserLogs.objects.filter(user=self).exists():
