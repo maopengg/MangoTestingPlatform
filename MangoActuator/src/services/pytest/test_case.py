@@ -59,7 +59,6 @@ class TestCase:
             file_path=os.path.normpath(self.case_model.file_path),
             quiet=settings.IS_DEBUG,
         )
-        print(self.case_model.test_env, PytestSystemEnum.TEST_ENV.value,23213123)
         await self.result_data(report_data)
         await self.send_case_result()
         log.debug(f'pytest测试结果：{self.case_result.model_dump_json()}')
