@@ -124,22 +124,55 @@ class AutoSystemConfig(AppConfig):
     def populate_time_tasks():
         try:
             from src.auto_test.auto_system.models import TimeTasks
-            if not TimeTasks.objects.exists():
-                TimeTasks.objects.create(name="每5分钟触发", cron="*/5 * * * *")
-                TimeTasks.objects.create(name="每30分钟触发", cron="*/30 * * * *")
-                TimeTasks.objects.create(name="每1小时触发", cron="0 * * * *")
-                TimeTasks.objects.create(name="每2小时触发", cron="0 */2 * * *")
-                TimeTasks.objects.create(name="每5小时触发", cron="0 */5 * * *")
-                TimeTasks.objects.create(name="每天1点触发", cron="0 1 * * *")
-                TimeTasks.objects.create(name="每天5点触发", cron="0 5 * * *")
-                TimeTasks.objects.create(name="每天9点触发", cron="0 9 * * *")
-                TimeTasks.objects.create(name="每天12点触发", cron="0 12 * * *")
-                TimeTasks.objects.create(name="每天18点触发", cron="0 18 * * *")
-                TimeTasks.objects.create(name="每天22点触发", cron="0 22 * * *")
-                TimeTasks.objects.create(name="每天9点，14点，17点触发", cron="0 9,14,17 * * *")
-                TimeTasks.objects.create(name="每周一8点触发", cron="0 8 * * 1")
+            required_tasks = [
+                {"name": "每1分钟触发", "cron": "*/1 * * * *"},
+                {"name": "每3分钟触发", "cron": "*/3 * * * *"},
+                {"name": "每5分钟触发", "cron": "*/5 * * * *"},
+                {"name": "每10分钟触发", "cron": "*/10 * * * *"},
+                {"name": "每20分钟触发", "cron": "*/20 * * * *"},
+                {"name": "每30分钟触发", "cron": "*/30 * * * *"},
+                {"name": "每1小时触发", "cron": "0 * * * *"},
+                {"name": "每2小时触发", "cron": "0 */2 * * *"},
+                {"name": "每3小时触发", "cron": "0 */3 * * *"},
+                {"name": "每4小时触发", "cron": "0 */4 * * *"},
+                {"name": "每5小时触发", "cron": "0 */5 * * *"},
+                {"name": "每6小时触发", "cron": "0 */6 * * *"},
+                {"name": "每天1点触发", "cron": "0 1 * * *"},
+                {"name": "每天5点触发", "cron": "0 5 * * *"},
+                {"name": "每天8点触发", "cron": "0 8 * * *"},
+                {"name": "每天9点触发", "cron": "0 9 * * *"},
+                {"name": "每天10点触发", "cron": "0 10 * * *"},
+                {"name": "每天12点触发", "cron": "0 12 * * *"},
+                {"name": "每天14点触发", "cron": "0 14 * * *"},
+                {"name": "每天16点触发", "cron": "0 16 * * *"},
+                {"name": "每天17点触发", "cron": "0 17 * * *"},
+                {"name": "每天18点触发", "cron": "0 18 * * *"},
+                {"name": "每天19点触发", "cron": "0 19 * * *"},
+                {"name": "每天22点触发", "cron": "0 22 * * *"},
+                {"name": "每天9点，14点，17点触发", "cron": "0 9,14,17 * * *"},
+                {"name": "每天早上9点-晚上7点每小时触发", "cron": "0 9-19 * * *"},
+                {"name": "每周一8点触发", "cron": "0 8 * * 1"},
+            ]
+            
+            existing_crons = set(TimeTasks.objects.values_list('cron', flat=True))
+            missing_tasks = [task for task in required_tasks if task['cron'] not in existing_crons]
+            
+            if missing_tasks:
+                # 创建不存在的定时任务配置
+                time_tasks_to_create = [
+                    TimeTasks(name=task['name'], cron=task['cron']) 
+                    for task in missing_tasks
+                ]
+                
+                created_count = len(time_tasks_to_create)
+                TimeTasks.objects.bulk_create(time_tasks_to_create, ignore_conflicts=True)
+                log.system.info(f'成功创建 {created_count} 个缺失的定时任务配置')
+            else:
+                log.system.info('所有定时任务配置已存在，跳过初始化')
         except Exception as e:
-            log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
+            log.system.error(f'初始化定时任务配置失败: {e}')
+            # 重新抛出异常，让调用者知道初始化失败
+            raise
 
     def run_tests(self):
         from src.auto_test.auto_system.service.consumer import ConsumerThread
