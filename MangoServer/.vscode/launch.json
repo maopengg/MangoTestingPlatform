@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "▶️ Django: Run Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": ["runserver", "8000"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "DJANGO_ENV": "dev"
+            }
+        },
+        {
+            "name": "🐛 Django: Debug Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": ["runserver", "8000", "--noreload"],
+            "django": true,
+            "justMyCode": true,
+            "env": {
+                "DJANGO_ENV": "dev"
+            }
+        }
+    ]
+}
