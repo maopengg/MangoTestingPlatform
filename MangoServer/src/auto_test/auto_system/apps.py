@@ -17,9 +17,12 @@ from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
+from src.auto_test.auto_system.models import TestSuiteDetails
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import TaskEnum
+from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
+from django.db import transaction
 
 
 class AutoSystemConfig(AppConfig):
@@ -36,7 +39,6 @@ class AutoSystemConfig(AppConfig):
             self.delayed_task()
             self.save_cache()
             self.populate_time_tasks()
-            self.run_tests()
             self.init_ass()
             
             # 设置定时任务调度器
@@ -174,19 +176,9 @@ class AutoSystemConfig(AppConfig):
             # 重新抛出异常，让调用者知道初始化失败
             raise
 
-    def run_tests(self):
-        from src.auto_test.auto_system.service.consumer import ConsumerThread
-        self.consumer_thread = ConsumerThread()
-        self.system_task = threading.Thread(target=self.consumer_thread.consumer)
-        self.system_task.daemon = True
-        self.system_task.start()
 
     def shutdown(self):
-        try:
-            self.consumer_thread.stop()
-            self.system_task.join()
-        except AttributeError:
-            pass
+        # 不再需要停止消费者线程，因为不再启动它
         # 停止全局调度器
         self.stop_scheduler()
 
@@ -231,10 +223,57 @@ class AutoSystemConfig(AppConfig):
                 minutes=5,
                 id='set_case_status'
             )
+            
+            # 添加任务状态检查任务，每3分钟执行一次
+            self.scheduler.add_job(
+                self.check_task_status,
+                'interval',
+                minutes=3,
+                id='check_task_status'
+            )
+            
             self.scheduler.start()
             atexit.register(self.stop_scheduler)
         except Exception as e:
             log.system.error(f'定时任务调度器设置异常: {e}')
+
+
+    @async_task_db_connection(max_retries=2, retry_delay=2)
+    def check_task_status(self):
+        """检查所有任务状态，每3分钟执行一次"""
+        try:
+
+            # 检查超过30分钟仍处于进行中状态的任务，将其重置为待开始
+            thirty_minutes_ago = timezone.now() - timedelta(minutes=30)
+            
+            # 更新超时的任务状态
+            timeout_tasks = TestSuiteDetails.objects.filter(
+                status=TaskEnum.PROCEED.value,
+                push_time__lt=thirty_minutes_ago
+            )
+            
+            timeout_count = timeout_tasks.count()
+            if timeout_count > 0:
+                timeout_tasks.update(status=TaskEnum.STAY_BEGIN.value)
+                log.system.info(f'重置了 {timeout_count} 个超时任务状态为待开始')
+            
+            # 检查长时间未更新的任务
+            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+            long_running_tasks = TestSuiteDetails.objects.filter(
+                status=TaskEnum.PROCEED.value,
+                push_time__lt=ten_minutes_ago
+            ).exclude(id__in=timeout_tasks.values_list('id', flat=True))
+            
+            long_running_count = long_running_tasks.count()
+            if long_running_count > 0:
+                log.system.debug(f'发现 {long_running_count} 个长时间运行的任务')
+                
+            # 确保事务提交
+            transaction.commit()
+        except Exception as e:
+            log.system.error(f'检查任务状态时发生异常: {e}')
+            import traceback
+            traceback.print_exc()
 
     def stop_scheduler(self):
         """停止调度器"""
@@ -245,38 +284,27 @@ class AutoSystemConfig(AppConfig):
             traceback.print_exc()
             log.system.error(f'停止调度器异常: {e}')
 
-
+    @async_task_db_connection(max_retries=2, retry_delay=2)
     def set_case_status(self):
-        from django.db import transaction
+        from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+        from src.auto_test.auto_pytest.models import PytestCase
+        from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        models_to_update = [
+            UiCase,
+            UiCaseStepsDetailed,
+            PageSteps,
+            PytestCase,
+            ApiInfo,
+            ApiCase,
+            ApiCaseDetailed
+        ]
 
-        try:
-            # 确保开始时连接是干净的
-            close_old_connections()
-            
-            from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
-            from src.auto_test.auto_pytest.models import PytestCase
-            from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+        for model in models_to_update:
+            model.objects.filter(
+                status=TaskEnum.PROCEED.value,
+                update_time__lt=ten_minutes_ago
+            ).update(status=TaskEnum.FAIL.value)
 
-            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
-
-            models_to_update = [
-                UiCase,
-                UiCaseStepsDetailed,
-                PageSteps,
-                PytestCase,
-                ApiInfo,
-                ApiCase,
-                ApiCaseDetailed
-            ]
-
-            for model in models_to_update:
-                model.objects.filter(
-                    status=TaskEnum.PROCEED.value,
-                    update_time__lt=ten_minutes_ago
-                ).update(status=TaskEnum.FAIL.value)
-                
-            # 确保事务提交
-            transaction.commit()
-        finally:
-            # 确保结束时连接被关闭
-            close_old_connections()
+        # 确保事务提交
+        transaction.commit()

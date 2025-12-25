@@ -9,15 +9,12 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
-# from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
-from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite, Tasks
+from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
 from src.tools.decorator.retry import db_connection_context, async_task_db_connection
 from src.tools.log_collector import log
-from django.db.utils import Error, InterfaceError, OperationalError
 
 
 class ConsumerThread:
@@ -36,33 +33,6 @@ class ConsumerThread:
         reset_tims = time.time()
         while self.running:
             time.sleep(self.consumer_sleep)
-            # 使用数据库连接上下文管理器确保连接被正确释放
-            with db_connection_context():
-                test_suite_details = TestSuiteDetails.objects.filter(
-                    status=TaskEnum.STAY_BEGIN.value,
-                    retry__lt=self.retry_frequency + 1,
-                    type__in=[TestCaseTypeEnum.API.value, ]
-                ).first()
-            if test_suite_details:
-                # 使用数据库连接上下文管理器确保连接被正确释放
-                with db_connection_context():
-                    test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-                    try:
-                        tasks_id = test_suite.tasks.id if test_suite.tasks else None
-                    except Tasks.DoesNotExist:
-                        tasks_id = None
-                    case_model = ConsumerCaseModel(
-                        test_suite_details=test_suite_details.id,
-                        test_suite=test_suite_details.test_suite.id,
-                        case_id=test_suite_details.case_id,
-                        case_name=test_suite_details.case_name,
-                        test_env=test_suite_details.test_env,
-                        user_id=test_suite.user.id,
-                        tasks_id=tasks_id,
-                        parametrize=test_suite_details.parametrize
-                    )
-                    self.send_case(test_suite, test_suite_details, case_model)
-                    self.update_status_proceed(test_suite, test_suite_details)
 
             if time.time() - reset_tims > self.clean_time * 60:
                 reset_tims = time.time()
@@ -77,7 +47,10 @@ class ConsumerThread:
                 # UiCaseFlow.add_task(case_model)
                 pass
             elif test_suite_details.type == TestCaseTypeEnum.API.value:
-                ApiCaseFlow.add_task(case_model)
+                # API任务现在完全由后台任务获取器处理，不需要在这里做任何处理
+                # 任务已经在add_test_suite_details中创建并设置为STAY_BEGIN状态
+                # 后台任务获取器会自动获取和处理这些任务
+                pass
             else:
                 pass
                 # PytestCaseFlow.add_task(case_model)
