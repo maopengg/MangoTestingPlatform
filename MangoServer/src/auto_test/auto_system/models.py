@@ -23,6 +23,8 @@ class Project(models.Model):
     def delete(self, *args, **kwargs):
         if ProjectProduct.objects.filter(project=self).exists():
             raise ToolsError(300, "项目产品-有关联数据，请先删除绑定的数据后再删除！")
+        if NoticeGroup.objects.filter(project=self).exists():
+            raise ToolsError(300, "通知组-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -44,13 +46,15 @@ class ProjectProduct(models.Model):
             raise ToolsError(300, "产品模块-有关联数据，请先删除绑定的数据后再删除！")
         if TestObject.objects.filter(project_product=self).exists():
             raise ToolsError(300, "测试对象-有关联数据，请先删除绑定的数据后再删除！")
-        from src.auto_test.auto_api.models import ApiPublic, ApiCase, ApiInfo
+        from src.auto_test.auto_api.models import ApiPublic, ApiCase, ApiInfo, ApiHeaders
         if ApiInfo.objects.filter(project_product=self).exists():
             raise ToolsError(300, "接口信息-有关联数据，请先删除绑定的数据后再删除！")
         if ApiCase.objects.filter(project_product=self).exists():
             raise ToolsError(300, "API用例-有关联数据，请先删除绑定的数据后再删除！")
         if ApiPublic.objects.filter(project_product=self).exists():
             raise ToolsError(300, "API全局参数-有关联数据，请先删除绑定的数据后再删除！")
+        if ApiHeaders.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "API请求头-有关联数据，请先删除绑定的数据后再删除！")
         from src.auto_test.auto_ui.models import UiPublic, UiCase, PageSteps, Page
         if Page.objects.filter(project_product=self).exists():
             raise ToolsError(300, "UI页面-有关联数据，请先删除绑定的数据后再删除！")
@@ -69,6 +73,8 @@ class ProjectProduct(models.Model):
             TestSuiteDetails.objects.filter(project_product=self).delete()
         if TestSuite.objects.filter(project_product=self).exists():
             TestSuite.objects.filter(project_product=self).delete()
+        if FileData.objects.filter(project_product=self).exists():
+            FileData.objects.filter(project_product=self).delete()
         super().delete(*args, **kwargs)
 
 
@@ -119,24 +125,24 @@ class TestObject(models.Model):
         ordering = ['-id']
 
     def delete(self, *args, **kwargs):
-        if NoticeConfig.objects.filter(test_object=self).exists():
-            raise ToolsError(300, "通知配置-有关联数据，请先删除绑定的数据后再删除！")
         if Database.objects.filter(test_object=self).exists():
             raise ToolsError(300, "数据库配置-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
-class NoticeConfig(models.Model):
-    """通知配置表"""
+class NoticeGroup(models.Model):
+    """通知组表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.PROTECT)
-    type = models.SmallIntegerField(verbose_name="类型")
-    config = models.CharField(verbose_name="通知配置", max_length=1028)
-    status = models.SmallIntegerField(verbose_name="是否选中发送", default=0)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.PROTECT)
+    name = models.CharField(verbose_name="通知组名称", max_length=64)
+    mail = models.JSONField(verbose_name="邮箱", default=list)
+    feishu = models.CharField(verbose_name="飞书通知", max_length=255, null=True)
+    dingding = models.CharField(verbose_name="钉钉通知", max_length=255, null=True)
+    work_weixin = models.CharField(verbose_name="企业微信通知", max_length=255, null=True)
 
     class Meta:
-        db_table = 'notice_config'
+        db_table = 'notice_group'
         ordering = ['-id']
 
 
@@ -161,6 +167,14 @@ class FileData(models.Model):
     """ 文件表 """
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(
+        to=ProjectProduct,
+        to_field="id",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        default=None
+    )
     type = models.SmallIntegerField(verbose_name="类型")
     name = models.CharField(verbose_name="文件名称", max_length=255, unique=True)
     test_file = models.FileField(verbose_name='文件', upload_to='test_file/', null=True)
@@ -203,6 +217,8 @@ class Tasks(models.Model):
     status = models.SmallIntegerField(verbose_name="任务状态", default=0)
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.PROTECT)
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知", default=0)
+    notice_group = models.ForeignKey(to=NoticeGroup, to_field="id", verbose_name='通知组', on_delete=models.SET_NULL,
+                                     null=True)
 
     class Meta:
         db_table = 'tasks'

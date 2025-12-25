@@ -3,10 +3,11 @@
 # @Description: 
 # @Time   : 2025-07-04 17:18
 # @Author : 毛鹏
-import mimetypes
+import re
 import traceback
 from urllib.parse import urlparse, urljoin
 
+import filetype
 from mangotools.exceptions import MangoToolsError
 
 from src.auto_test.auto_api.models import ApiInfo
@@ -79,10 +80,11 @@ class APIBaseTestSetup(PublicBase):
                             for k, v in i.items():
                                 file_path = self.test_data.replace(v)
                                 file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                                mime_type, _ = mimetypes.guess_type(file_path)
-                                if mime_type is None:
-                                    mime_type = 'application/octet-stream'
-                                file.append((k, (file_name, open(file_path, 'rb'), mime_type)))
+                                kind = filetype.guess(file_path)
+                                if kind is not None:
+                                    file.append((k, (file_name, open(file_path, 'rb'), kind.mime)))
+                                else:
+                                    file.append((k, (file_name, open(file_path, 'rb'),)))
                         request_data_model.file = file
                 else:
                     value = self.test_data.replace(value)
@@ -101,17 +103,31 @@ class APIBaseTestSetup(PublicBase):
         if response.json is None:
             raise ApiError(*ERROR_MSG_0023)
         for i in posterior_json_path:
-            key: str = i.get('key')
+            key: str = self.test_data.replace(i.get('key'))
+            value: str = self.test_data.replace(i.get('value'))
+            if not key or not value:
+                raise ApiError(*ERROR_MSG_0006)
             if key and key.startswith('$.'):
                 key = self.test_data.get_json_path_value(response.json, i.get('key'))
-            self.test_data.set_cache(key, self.test_data.get_json_path_value(response.json, i.get('value')))
+            self.test_data.set_cache(key, self.test_data.get_json_path_value(response.json, value))
 
-    def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):
+    def api_info_posterior_json_re(self, posterior_re, response: ResponseModel):
         log.api.debug(f'执行API接口-3->后置正则:{posterior_re}')
+        if response.text is None:
+            raise ApiError(*ERROR_MSG_0015)
+        for i in posterior_re:
+            key: str = self.test_data.replace(i.get('key'))
+            value: str = self.test_data.replace(i.get('value'))
+            if not key or not value:
+                raise ApiError(*ERROR_MSG_0018)
+            res = re.findall(response.text, value)
+            if len(res) <= 0:
+                raise ApiError(*ERROR_MSG_0017)
+            self.test_data.set_cache(key, res[0])
 
     def analytic_func(self, func_str, func_name='func'):
         func_str = self.test_data.replace(func_str)
-        log.api.debug(f'执行API接口-4->后置函数:{func_str}')
+        log.api.debug(f'执行API接口-5->后置函数:{func_str}')
         try:
             global_namespace = {}
             exec(func_str, global_namespace)

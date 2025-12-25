@@ -54,6 +54,7 @@ class BaseRequest:
         except RequestException as error:
             log.api.error(f'接口请求时发生未知错误，错误数据：{request_data.model_dump_json()}，报错内容：{error}')
             raise ApiError(*ERROR_MSG_0002)
+        file_path = None
         if request_data.posterior_file:
             parsed_url = urlparse(request_data.url)
             file_name = os.path.basename(parsed_url.path)
@@ -61,8 +62,6 @@ class BaseRequest:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
             self.test_data.set_cache(request_data.posterior_file, file_path)
-        else:
-            file_path = ''
         try:
             response_json = response.json()
         except Exception:
@@ -77,7 +76,7 @@ class BaseRequest:
             request_file=str(request_data.file) if request_data.file else None,
             headers=response.headers,
             json=response_json,
-            text=file_path if request_data.posterior_file else response.text
+            text=file_path if file_path else response.text
         )
 
         log.api.debug(f'API响应数据：{response.model_dump_json()}')
@@ -86,9 +85,7 @@ class BaseRequest:
     @classmethod
     def test_http(cls, request_data: RequestModel) -> Response:
         s = time.time()
-        for key, value in request_data.headers.items():
-            if value:
-                request_data.headers[key] = value.strip()
+        request_data.serialize()
         response = requests.request(
             method=request_data.method,
             url=request_data.url,
@@ -105,19 +102,11 @@ class BaseRequest:
 
 
 if __name__ == '__main__':
-    data = {"method": "POST", "url": "",
-            "headers": {"Accept": " application/json, text/plain, */*",
-                        "Referer": "",
-                        "sec-ch-ua": " \"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
-                        "tenant_id": " 14",
-                        "User-Agent": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-                        "Authorization": " Bearer 9db73bc6-da7b-4c01-a84e-c0bcecfeb184", "sec-ch-ua-mobile": " ?0",
-                        "sec-ch-ua-platform": " \"Windows\""},
-            "params": None,
-            "data": None,
-            "json": None,
-            "file": [
-                ('file', ('达人导入模板.xlsx', open(r'C:/Users/Administrator/Downloads/达人导入模板.xlsx', 'rb'),
-                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))
-            ], "posterior_file": None}
+    data = {"method": "POST", "url": "https://zdtoolpre.zalldigital.cn/api/z-tool-app/commodity/subscription/list",
+            "headers": {"accept": "application/json, text/plain, */*",
+                        "authorization": "Bearer 757b38d0-99d9-4df4-b715-232f4af20b34",
+                        "tenant_id": '14',
+                        "content-type": "application/json"}, "params": None, "data": None, "json": '{}', "file": None,
+            "posterior_file": None}
+
     print(BaseRequest.test_http(RequestModel(**data)).text)

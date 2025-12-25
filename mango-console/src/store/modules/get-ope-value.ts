@@ -29,6 +29,7 @@ type StateValueType = SelectValueItem[]
 
 interface SlsectValueState {
   data: StateValueType
+  dataList: ChildrenItem[]
   webOpe: ChildrenItem[]
   androidOpe: ChildrenItem[]
   assAndroid: (ChildrenItem | SelectValueItem)[]
@@ -39,6 +40,7 @@ interface SlsectValueState {
 export const useSelectValueStore = defineStore('get-select-value', {
   state: (): SlsectValueState => ({
     data: [],
+    dataList: [],
     webOpe: [],
     androidOpe: [],
     assAndroid: [],
@@ -51,6 +53,12 @@ export const useSelectValueStore = defineStore('get-select-value', {
       getSystemCacheDataKeyValue('select_value')
         .then((res) => {
           this.data = res.data
+          this.dataList = [...this.data]
+          for (const item of this.dataList) {
+            if (item.children) {
+              this.dataList.push(...item.children)
+            }
+          }
           this.webOpe = []
           this.androidOpe = []
           this.assAndroid = []
@@ -63,25 +71,23 @@ export const useSelectValueStore = defineStore('get-select-value', {
               this.androidOpe.push(...item.children)
             } else if (item.value === 'ass_android') {
               this.assAndroid.push(...item.children)
-              this.ass.push(...item.children)
             } else if (item.value === 'ass_web') {
               this.assWeb.push(...item.children)
-              this.ass.push(...item.children)
             } else if (item.value.includes('断言')) {
               this.ass.push(item)
+              this.assAndroid.push(item)
+              this.assWeb.push(item)
             }
           })
         })
         .catch(console.log)
     },
     getSelectLabel(value: string): ChildrenItem[] {
-      const list = [...this.data]
-      for (const item of list) {
-        if (item.children) {
-          list.push(...item.children)
-        }
+      // 如果数据为空，则调用初始化函数
+      if (!this.dataList || this.dataList.length === 0) {
+        this.getSelectValue()
       }
-      return list.find((item: any) => item.value === value)?.label
+      return this.dataList.find((item: any) => item.value === value)?.label
     },
     findItemByValue(value: string): ChildrenItem | undefined {
       // 检查数据是否存在
@@ -118,6 +124,59 @@ export const useSelectValueStore = defineStore('get-select-value', {
       }
 
       return findItem(this.data, value)
+    },
+
+    /**
+     * 根据子项的值查找所属的顶级对象的label
+     * @param value 子项的值
+     * @returns 顶级对象的label，如果未找到则返回undefined
+     */
+    getTopLevelLabelByValue(value: string): object {
+      // 检查数据是否存在
+      if (!this.data || !Array.isArray(this.data)) {
+        return undefined
+      }
+
+      // 遍历所有顶级对象
+      for (const topLevelItem of this.data) {
+        // 检查当前顶级对象是否匹配
+        if (topLevelItem.value === value) {
+          return topLevelItem
+        }
+
+        // 检查当前顶级对象的子项是否包含目标值
+        if (topLevelItem.children && Array.isArray(topLevelItem.children)) {
+          // 在子项中查找
+          const foundChild = topLevelItem.children.find((child) => child.value === value)
+          if (foundChild) {
+            return topLevelItem
+          }
+
+          // 递归检查嵌套的子项
+          const findInNestedChildren = (children: ChildrenItem[]): boolean => {
+            for (const child of children) {
+              if (child.value === value) {
+                return true
+              }
+              // 如果子项还有自己的子项，继续递归查找
+              if (
+                child.children &&
+                Array.isArray(child.children) &&
+                findInNestedChildren(child.children)
+              ) {
+                return true
+              }
+            }
+            return false
+          }
+
+          if (findInNestedChildren(topLevelItem.children)) {
+            return topLevelItem
+          }
+        }
+      }
+
+      return undefined
     },
   },
   presist: {

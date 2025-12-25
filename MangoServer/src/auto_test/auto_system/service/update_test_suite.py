@@ -14,17 +14,20 @@ from src.enums.tools_enum import TaskEnum, StatusEnum, TestCaseTypeEnum
 from src.models.socket_model import SocketDataModel
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.tools.log_collector import log
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class UpdateTestSuite:
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_test_suite(cls, test_suite_id: int, status: int):
         test_suite = TestSuite.objects.get(id=test_suite_id)
         test_suite.status = status
         test_suite.save()
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_test_suite_details(cls, data: TestSuiteDetailsResultModel):
         log.system.debug(f'开始更新测试套数据：{data.model_dump_json()}')
         test_suite_detail = TestSuiteDetails.objects.get(id=data.id)
@@ -55,10 +58,13 @@ class UpdateTestSuite:
             cls.send_test_result(data.test_suite, data.error_message)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def send_test_result(cls, test_suite_id: int, msg: str):
         test_suite = TestSuite.objects.get(id=test_suite_id)
-        if test_suite.is_notice == StatusEnum.SUCCESS.value:
-            NoticeMain.notice_main(test_suite.test_env, test_suite.project_product.id, test_suite_id)
+        if test_suite.is_notice != StatusEnum.SUCCESS.value and test_suite.tasks is not None and test_suite.tasks.notice_group and test_suite.tasks.is_notice == StatusEnum.SUCCESS.value:
+            NoticeMain.notice_main(test_suite.tasks.notice_group_id, test_suite_id)
+        test_suite.is_notice = StatusEnum.SUCCESS.value
+        test_suite.save()
         from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200 if test_suite.status else 300,

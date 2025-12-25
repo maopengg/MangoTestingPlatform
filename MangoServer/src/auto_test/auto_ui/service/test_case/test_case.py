@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import copy
 import random
+import traceback
 
 from mangotools.mangos import build_decision_tree
 from pydantic import ValidationError
@@ -43,12 +44,33 @@ class TestCase:
                   test_suite_details: int | None = None,
                   parametrize: list[dict] | list = None,
                   send_case_user: str = None) -> CaseModel:
-        case = UiCase.objects.get(id=case_id)
+        try:
+            case = UiCase.objects.get(id=case_id)
+        except UiCase.DoesNotExist:
+            raise UiError(*ERROR_MSG_0057)
         case.status = TaskEnum.PROCEED.value
         case.save()
         case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
-        if not case_steps_detailed:
-            raise UiError(*ERROR_MSG_0042)
+        try:
+            if not case_steps_detailed:
+                raise UiError(*ERROR_MSG_0042)
+            for i in case.front_custom:
+                if not i.get('key') or not i.get('value'):
+                    raise UiError(*ERROR_MSG_0029)
+            for i in case.front_sql:
+                if not i.get('sql_list') or not i.get('sql'):
+                    raise UiError(*ERROR_MSG_0036)
+            for i in case.posterior_sql:
+                if not i.get('sql'):
+                    raise UiError(*ERROR_MSG_0026)
+            for i in case.parametrize:
+                for e in i.get('parametrize'):
+                    if not e.get('key') or not e.get('value'):
+                        raise UiError(*ERROR_MSG_0032)
+        except Exception as error:
+            case.status = TaskEnum.FAIL.value
+            case.save()
+            raise error
         case_model = CaseModel(
             send_user=send_case_user if send_case_user else self.send_user,
             test_suite_details=test_suite_details,
@@ -64,7 +86,7 @@ class TestCase:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             parametrize=case.parametrize,
-            steps=[self.steps_model(i.page_step.id, i) for i in case_steps_detailed],
+            steps=[self.steps_model(i.page_step.id, i, bool(i.switch_step_open_url)) for i in case_steps_detailed],
         )
         if case.parametrize and test_suite is None:
             for i in case.parametrize:
@@ -83,9 +105,15 @@ class TestCase:
         return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
-        page_steps_model = self.steps_model(steps_id, switch_step_open_url=True)
-        self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
-        return page_steps_model
+        try:
+            page_steps_model = self.steps_model(steps_id)
+            self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
+            return page_steps_model
+        except Exception as error:
+            page_steps = PageSteps.objects.get(id=steps_id)
+            page_steps.status = TaskEnum.FAIL.value
+            page_steps.save()
+            raise error
 
     def test_element(self, data: dict) -> None:
         try:
@@ -111,7 +139,7 @@ class TestCase:
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
 
     def steps_model(self,
-                    page_steps_id: id,
+                    page_steps_id: int,
                     case_steps_detailed: UiCaseStepsDetailed | None = None,
                     switch_step_open_url=False) -> PageStepsModel:
         page_steps = PageSteps.objects.get(id=page_steps_id)
@@ -137,11 +165,11 @@ class TestCase:
             page_steps_model.case_steps_id = case_steps_detailed.id
             case_steps_detailed.status = TaskEnum.PROCEED.value
             case_steps_detailed.save()
-            page_steps_model.switch_step_open_url = bool(case_steps_detailed.switch_step_open_url)
             page_steps_model.error_retry = case_steps_detailed.error_retry
             try:
                 page_steps_model.case_data = [StepsDataModel(**i) for i in case_steps_detailed.case_data]
             except ValidationError:
+                log.ui.debug(f'{traceback.print_exc()}')
                 raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
         page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model
@@ -158,7 +186,7 @@ class TestCase:
                 name=steps_element.ele_name.name if steps_element.ele_name else None,
                 sleep=steps_element.ele_name.sleep if steps_element.ele_name else None,
                 ope_key=steps_element.ope_key,
-                ope_value=steps_element.ope_value,
+                ope_value=steps_element.ope_value if steps_element.ope_value is not None else [],
                 sql_execute=steps_element.sql_execute,
                 custom=steps_element.custom,
                 condition_value=steps_element.condition_value,
@@ -195,7 +223,7 @@ class TestCase:
                 name=steps_element.name,
                 sleep=steps_element.sleep,
                 ope_key=data.get('ope_key'),
-                ope_value=data.get('ope_value'),
+                ope_value=data.get('ope_value') if data.get('ope_value') is not None else [],
             )
             element_model.elements.append(
                 ElementListModel(exp=steps_element.exp, loc=steps_element.loc, sub=steps_element.sub,
@@ -225,12 +253,15 @@ class TestCase:
             try:
                 ChatConsumer.active_send(send_data)
             except MangoServerError as error:
-                user_list = [i.username for i in SocketUser.user if i.is_open]
-                if error.code == 1028 and is_open and user_list:
-                    send_data.user = user_list[random.randint(0, len(user_list) - 1)]
-                    ChatConsumer.active_send(send_data)
-                else:
+                log.ui.debug(f'发送ui测试数据报错-1:{error}')
+                if not is_open:
                     raise error
+                user_list = [i.username for i in SocketUser.user if i.is_open]
+                if not error.code == 1028 or not user_list:
+                    raise error
+                send_data.user = user_list[random.randint(0, len(user_list) - 1)]
+                ChatConsumer.active_send(send_data)
+                log.pytest.debug(f'发送ui测试数据重试成功-2:{send_data.user}')
 
     def __environment_config(self, project_product_id: int, ) -> EnvironmentConfigModel:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)

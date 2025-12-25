@@ -14,7 +14,7 @@ from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
@@ -31,7 +31,7 @@ class PyCaseFlow:
         cls.running = False
 
     @classmethod
-    @ensure_db_connection(True)
+    @async_task_db_connection(infinite_retry=True)
     def process_tasks(cls):
         while cls.running:
             if not cls.queue.empty():
@@ -40,7 +40,7 @@ class PyCaseFlow:
             time.sleep(0.1)
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def execute_task(cls, case_model: ConsumerCaseModel):
         from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
         test_case = TestCase(
@@ -55,6 +55,7 @@ class PyCaseFlow:
         cls.queue.put(case_model)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_case(cls, data):
         with cls._get_case_lock:
             test_suite_details = TestSuiteDetails.objects.filter(

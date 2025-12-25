@@ -67,6 +67,8 @@ class PageSteps:
 
     async def page_init(self, is_page_init: bool = True):
         if self.page_steps_model.environment_config.mysql_config:
+            if self.page_steps_model.environment_config.mysql_config.host == 'db':
+                self.page_steps_model.environment_config.mysql_config.host = '43.142.161.61'
             self.base_data.set_mysql(
                 self.page_steps_model.environment_config.db_c_status,
                 self.page_steps_model.environment_config.db_rud_status,
@@ -97,7 +99,7 @@ class PageSteps:
         self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
-            if error_retry != 0:
+            if error_retry != 0 and not self.is_step:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
                 await self._steps_retry()
@@ -169,7 +171,7 @@ class PageSteps:
             raise UiError(*ERROR_MSG_0025)
         match element_model.type:
             case ElementOperationEnum.OPE | ElementOperationEnum.ASS | ElementOperationEnum.CONDITION:
-                element_model.ope_value = [MethodModel(**i) for i in element_data.page_step_details_data]
+                element_model.ope_value = [MethodModel(**i) for i in (element_data.page_step_details_data or [])]
             case ElementOperationEnum.SQL:
                 element_model.sql_execute = element_data.page_step_details_data
             case ElementOperationEnum.CUSTOM:
@@ -183,14 +185,9 @@ class PageSteps:
     async def _ope_steps(self, element_model, element_list_model) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
-        if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
-            if self.page_steps_model.switch_step_open_url:
-                await asyncio.sleep(1)
-            send_global_msg(f'UI-开始操作浏览器打开URL')
-            await element_ope.open_device(is_open=self.page_steps_model.switch_step_open_url)
-        else:
-            await element_ope.open_device()
-        self._device_opened = True
+        if not self._device_opened:
+            await element_ope.open_device(self.page_steps_model.switch_step_open_url)
+            self._device_opened = True
         element_result = await element_ope.element_main(element_model, element_list_model)
         send_global_msg(f'UI-结束执行元素或操作：{element_model.name or element_model.ope_key}')
         self.page_step_result_model.status = element_result.status
@@ -200,8 +197,10 @@ class PageSteps:
             if element_result.picture_name and element_result.picture_path:
                 log.debug(f'上传截图文件名称：{element_result.picture_name}，绝对路径：{element_result.picture_path}')
                 upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-                if not upload and self.page_step_result_model.error_message:
+                if upload is None and self.page_step_result_model.error_message:
                     self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
+                else:
+                    element_result.picture_path = upload
         return element_result
 
     async def _steps_retry(self):
@@ -209,7 +208,6 @@ class PageSteps:
             case DriveTypeEnum.WEB.value:
                 send_global_msg(f'UI-开始重试，正在刷新浏览器')
                 if self.base_data.page:
-
                     try:
                         await self.base_data.page.reload(wait_until="domcontentloaded", timeout=20000)
                     except TimeoutError:
@@ -240,14 +238,14 @@ class PageSteps:
             web_recording = SetConfig.get_web_recording()  # type: ignore
             web_h5 = SetConfig.get_web_h5()  # type: ignore
             self.driver_object.set_web(
-                SetConfig.get_web_type(),  # type: ignore
-                SetConfig.get_web_path(),  # type: ignore
-                web_max if web_max else False,
-                web_headers if web_headers else False,
-                web_recording if web_recording else False,
-                web_h5 if web_h5 and web_h5 != 'None' else None,
+                web_type=SetConfig.get_web_type(),  # type: ignore
+                web_path=SetConfig.get_web_path(),  # type: ignore
+                web_max=web_max if web_max else False,
+                web_headers=web_headers if web_headers else False,
+                web_recording=web_recording if web_recording else False,
+                web_h5=web_h5 if web_h5 and web_h5 != 'None' else None,
                 web_is_default=SetConfig.get_web_default(),  # type: ignore
-                videos_path=project_dir.videos()
+                videos_path=project_dir.videos(),
             )
         if is_recording and host_list:
             self.driver_object.web.is_header_intercept = True
@@ -311,9 +309,9 @@ class PageSteps:
             client=ClientEnum.WEB.value,
             url=parsed_url.path,
             method=MethodEnum.get_key(request.method),
-            params=None if params == {} else json.dumps(params, ensure_ascii=False),
-            data=None if data == {} else json.dumps(data, ensure_ascii=False),
-            json=None if json_data == {} else json.dumps(json_data, ensure_ascii=False)
+            params=None if params == {} or params is None else json.dumps(params, ensure_ascii=False),
+            data=None if data == {} or data is None else json.dumps(data, ensure_ascii=False),
+            json=None if json_data == {} or json_data is None else json.dumps(json_data, ensure_ascii=False)
         )
         await socket_conn.async_send(
             msg="发送录制接口",

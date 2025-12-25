@@ -43,12 +43,27 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '模块',
+    label: '项目/产品',
+    key: 'project_product',
+    value: ref(''),
+    placeholder: '请选择项目名称',
+    required: true,
+    type: 'cascader',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '模块名称',
     key: 'module',
     value: ref(''),
     placeholder: '请选择测试模块',
     required: true,
-    type: 'cascader',
+    type: 'select',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
@@ -66,23 +81,6 @@ export const formItems: FormItem[] = reactive([
     type: 'select',
     validator: function () {
       if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
-export const formItemsCmd: FormItem[] = reactive([
-  {
-    label: 'cmd命令',
-    key: 'command',
-    value: ref(''),
-    placeholder: '请输入cmd命令',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }

@@ -76,6 +76,13 @@
                   >编辑
                 </a-button>
                 <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="clickNotice(record)"
+                  >通知组
+                </a-button>
+                <a-button
                   size="mini"
                   status="danger"
                   type="text"
@@ -126,6 +133,8 @@
     postUserDepartmentList,
     putUserDepartmentList,
   } from '@/api/system/project'
+  import { usePageData } from '@/store/page-data'
+  import { useRouter } from 'vue-router'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -134,6 +143,7 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const project = useProject()
+  const router = useRouter()
 
   const data = reactive({
     isAdd: false,
@@ -213,29 +223,42 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['status'] = 1
         postUserDepartmentList(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
             project.getProject()
             project.projectProductName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUserDepartmentList(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
             project.getProject()
             project.projectProductName()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -263,6 +286,16 @@
     })
   }
 
+  function clickNotice(record: any) {
+    const pageData = usePageData()
+    pageData.setRecord(record)
+    router.push({
+      path: '/config/project/notice',
+      query: {
+        id: record.id,
+      },
+    })
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

@@ -36,12 +36,12 @@
       <a-space direction="vertical" fill>
         <div style="margin-bottom: 10px">
           <a-card style="float: left; width: 30%" :bordered="false">
-            <Title title="接口数&用例数" />
+            <Title title="测试用例占比" />
             <StatusChart :success="data.successSum" :fail="data.failSum" />
           </a-card>
 
           <a-card style="float: right; width: 70%" :bordered="false">
-            <Title title="近三个季度执行用例趋势图" />
+            <Title title="近三个月执行用例趋势图" />
             <BarChart :success="data.weekSuccessData" :fail="data.weekFailData" />
           </a-card>
         </div>
@@ -90,6 +90,9 @@
                   >{{ enumStore.task_status[record.status].title }}
                 </a-tag>
               </template>
+              <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
+                {{ record.is_notice === 1 ? '已发送' : '未发送' }}
+              </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>
                   <a-button type="text" size="mini" class="custom-mini-btn" @click="onRetry(record)"
@@ -115,7 +118,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useTable } from '@/hooks/table'
-  import { nextTick, onMounted, reactive } from 'vue'
+  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
@@ -128,6 +131,9 @@
   } from '@/api/system/test_sute_details'
   import { useEnum } from '@/store/modules/get-enum'
   import { Message, Modal } from '@arco-design/web-vue'
+  import Title from '@/views/index/components/Title.vue'
+  import StatusChart from '@/components/chart/StatusChart.vue'
+  import BarChart from '@/components/chart/barChart.vue'
 
   const enumStore = useEnum()
 
@@ -137,13 +143,22 @@
   const rowKey = useRowKey('id')
   const router = useRouter()
   const data: any = reactive({
-    successSum: [],
-    failSum: [],
+    successSum: 0,
+    failSum: 0,
     weekSuccessData: [],
     weekFailData: [],
   })
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   function doRefresh() {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -151,6 +166,17 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data &&
+          Array.isArray(res.data) &&
+          res.data.some((item: any) => item.status === 3 || item.status === 2)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh()
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -203,10 +229,13 @@
         .then((res) => {
           data.weekFailData = res.data.fail
           data.weekSuccessData = res.data.success
-          data.failSum = res.data.failSun
-          data.successSum = res.data.successSun
+          data.failSum = res.data.failSun || 0
+          data.successSum = res.data.successSun || 0
         })
         .catch(console.log)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>

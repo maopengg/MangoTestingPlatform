@@ -208,6 +208,8 @@ class LoginViews(ViewSet):
             data_cleanup(v)
             return ResponseData.success(RESPONSE_MSG_0045, )
         else:
+            from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
+            UpdateTestSuite.send_test_result(268315135315,'')
             return ResponseData.success(RESPONSE_MSG_0044, {'title': ''})
 
     @error_response('user')

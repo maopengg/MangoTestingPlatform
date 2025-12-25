@@ -1,7 +1,3 @@
-<template>
-  <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
-</template>
-
 <script lang="ts" setup>
   import { ref, onMounted, watch } from 'vue'
   import * as echarts from 'echarts'
@@ -32,7 +28,7 @@
         value: props.success,
         name: '通过',
         itemStyle: {
-          color: '#11a834', // 绿色
+          color: '#91cc75', // 与主页面一致的绿色
         },
       },
       {
@@ -50,7 +46,7 @@
         value: props.pending,
         name: '进行中',
         itemStyle: {
-          color: '#ffb400', // 橙色
+          color: '#FF7D00', // 与主页面一致的蓝色
         },
       })
     }
@@ -61,7 +57,7 @@
         value: props.todo,
         name: '待开始',
         itemStyle: {
-          color: '#86909c', // 灰色
+          color: '#566070', // 灰色
         },
       })
     }
@@ -80,6 +76,9 @@
       legend: {
         top: '5%',
         left: 'center',
+        textStyle: {
+          color: 'var(--color-text-2)', // 与主页面一致的文本颜色
+        },
       },
       series: [
         {
@@ -125,3 +124,7 @@
     initPieChart()
   })
 </script>
+
+<template>
+  <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
+</template>

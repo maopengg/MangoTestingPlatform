@@ -23,7 +23,7 @@ from .ui import UIConsumer
 class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfConsumer, PytestConsumer):
 
     def __init__(self):
-        self.executor = concurrent.futures.ThreadPoolExecutor(10)
+        self.executor = concurrent.futures.ThreadPoolExecutor(5)
         self.server_data_received = Signal()
         self.server_data_received.connect(self.data_received_handler)
 
@@ -39,8 +39,7 @@ class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfCon
 
     def handle_task_result(self, future):
         try:
-            result = future.result()  # 获取任务执行结果
-            # 处理任务执行结果
+            result = future.result()
         except Exception as e:
-            traceback.print_exc()  # 打印异常追踪信息
+            traceback.print_exc()
             log.system.error(f"任务执行出现异常：{e}")

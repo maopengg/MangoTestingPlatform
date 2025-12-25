@@ -24,95 +24,95 @@
     <!-- 中间流程图画布 -->
     <div class="center-panel">
       <div ref="canvasRef" class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
-    <!-- SVG 边渲染 -->
-    <svg class="edges" xmlns="http://www.w3.org/2000/svg">
-      <g>
-        <!-- 使用path绘制直角连接线 -->
-        <path
-          v-for="edge in edges"
-          :key="edge.id"
-          :d="getRightAnglePath(edge)"
-          fill="none"
-          stroke="#999"
-          stroke-width="2"
-          stroke-dasharray="5,3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <!-- 拖拽连线时的临时线条 -->
-        <path
-          v-if="isDraggingConnection && linkStartConnector"
-          :d="getTempRightAnglePath()"
-          fill="none"
-          stroke="#999"
-          stroke-width="2"
-          stroke-dasharray="5,3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </g>
-    </svg>
+        <!-- SVG 边渲染 -->
+        <svg class="edges" xmlns="http://www.w3.org/2000/svg">
+          <g>
+            <!-- 使用path绘制直角连接线 -->
+            <path
+              v-for="edge in edges"
+              :key="edge.id"
+              :d="getRightAnglePath(edge)"
+              fill="none"
+              stroke="#999"
+              stroke-width="2"
+              stroke-dasharray="5,3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <!-- 拖拽连线时的临时线条 -->
+            <path
+              v-if="isDraggingConnection && linkStartConnector"
+              :d="getTempRightAnglePath()"
+              fill="none"
+              stroke="#999"
+              stroke-width="2"
+              stroke-dasharray="5,3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </g>
+        </svg>
 
-    <!-- 连接线删除按钮 - 优化渲染 -->
-    <template v-if="!readonly">
-      <div
-        v-for="edge in validEdges"
-        :key="`delete-${edge.id}`"
-        class="edge-delete-button"
-        :style="{
-          left: getEdgeMidpoint(edge).x - 8 + 'px',
-          top: getEdgeMidpoint(edge).y - 8 + 'px',
-        }"
-        @click.stop="deleteEdge(edge)"
-        @mouseenter="hoveredEdge = edge.id"
-        @mouseleave="hoveredEdge = null"
-      >
-        ×
-      </div>
-    </template>
+        <!-- 连接线删除按钮 - 优化渲染 -->
+        <template v-if="!readonly">
+          <div
+            v-for="edge in validEdges"
+            :key="`delete-${edge.id}`"
+            class="edge-delete-button"
+            :style="{
+              left: getEdgeMidpoint(edge).x - 8 + 'px',
+              top: getEdgeMidpoint(edge).y - 8 + 'px',
+            }"
+            @click.stop="deleteEdge(edge)"
+            @mouseenter="hoveredEdge = edge.id"
+            @mouseleave="hoveredEdge = null"
+          >
+            ×
+          </div>
+        </template>
 
-    <!-- 节点渲染 -->
-    <div
-      v-for="node in nodes"
-      :key="node.id"
-      class="node"
-      :class="{
-        active: selectedNode && selectedNode.id === node.id,
-        linking: linkStartConnector && linkStartConnector.node_id === node.id,
-      }"
-      :style="{
-        left: node.position.x + 'px',
-        top: node.position.y + 'px',
-        borderColor: getColor(node.type),
-      }"
-      @mousedown.stop="onNodeMouseDown($event, node)"
-      @dragstart.prevent
-      @click.stop="onNodeClick(node)"
-    >
-      <!-- 删除按钮 -->
-      <div v-if="!readonly" class="delete-button" @click.stop="deleteNode(node)">×</div>
-
-      <!-- 上方连接点 -->
-      <div v-if="!readonly" class="connector-top">
+        <!-- 节点渲染 -->
         <div
-          class="connector-point"
-          @mousedown.stop="onConnectorMouseDown($event, node, 'top')"
-          @mouseup.stop="onConnectorMouseUp($event, node, 'top')"
-        ></div>
-      </div>
+          v-for="node in nodes"
+          :key="node.id"
+          class="node"
+          :class="{
+            active: selectedNode && selectedNode.id === node.id,
+            linking: linkStartConnector && linkStartConnector.node_id === node.id,
+          }"
+          :style="{
+            left: node.position.x + 'px',
+            top: node.position.y + 'px',
+            borderColor: getColor(node.type),
+          }"
+          @mousedown.stop="onNodeMouseDown($event, node)"
+          @dragstart.prevent
+          @click.stop="onNodeClick(node)"
+        >
+          <!-- 删除按钮 -->
+          <div v-if="!readonly" class="delete-button" @click.stop="deleteNode(node)">×</div>
 
-      <div class="node-title">{{ node ? getNodeType(node) : '' }}</div>
-      <div class="node-content">{{ node.label }}</div>
+          <!-- 上方连接点 -->
+          <div v-if="!readonly" class="connector-top">
+            <div
+              class="connector-point"
+              @mousedown.stop="onConnectorMouseDown($event, node, 'top')"
+              @mouseup.stop="onConnectorMouseUp($event, node, 'top')"
+            ></div>
+          </div>
 
-      <!-- 下方连接点 -->
-      <div v-if="!readonly" class="connector-bottom">
-        <div
-          class="connector-point"
-          @mousedown.stop="onConnectorMouseDown($event, node, 'bottom')"
-          @mouseup.stop="onConnectorMouseUp($event, node, 'bottom')"
-        ></div>
-      </div>
-    </div>
+          <div class="node-title">{{ node ? getNodeType(node) : '' }}</div>
+          <div class="node-content">{{ node.label }}</div>
+
+          <!-- 下方连接点 -->
+          <div v-if="!readonly" class="connector-bottom">
+            <div
+              class="connector-point"
+              @mousedown.stop="onConnectorMouseDown($event, node, 'bottom')"
+              @mouseup.stop="onConnectorMouseUp($event, node, 'bottom')"
+            ></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

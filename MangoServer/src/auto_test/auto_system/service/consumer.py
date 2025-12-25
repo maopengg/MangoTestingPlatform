@@ -15,7 +15,7 @@ from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite, Tasks
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import db_connection_context, async_task_db_connection
 from src.tools.log_collector import log
 from django.db.utils import Error, InterfaceError, OperationalError
 
@@ -31,34 +31,38 @@ class ConsumerThread:
     def stop(self):
         self.running = False
 
-    @ensure_db_connection(True, max_retries=100)
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def consumer(self):
         reset_tims = time.time()
         while self.running:
             time.sleep(self.consumer_sleep)
-            test_suite_details = TestSuiteDetails.objects.filter(
-                status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=self.retry_frequency + 1,
-                type__in=[TestCaseTypeEnum.API.value, ]
-            ).first()
+            # 使用数据库连接上下文管理器确保连接被正确释放
+            with db_connection_context():
+                test_suite_details = TestSuiteDetails.objects.filter(
+                    status=TaskEnum.STAY_BEGIN.value,
+                    retry__lt=self.retry_frequency + 1,
+                    type__in=[TestCaseTypeEnum.API.value, ]
+                ).first()
             if test_suite_details:
-                test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-                try:
-                    tasks_id = test_suite.tasks.id if test_suite.tasks else None
-                except Tasks.DoesNotExist:
-                    tasks_id = None
-                case_model = ConsumerCaseModel(
-                    test_suite_details=test_suite_details.id,
-                    test_suite=test_suite_details.test_suite.id,
-                    case_id=test_suite_details.case_id,
-                    case_name=test_suite_details.case_name,
-                    test_env=test_suite_details.test_env,
-                    user_id=test_suite.user.id,
-                    tasks_id=tasks_id,
-                    parametrize=test_suite_details.parametrize
-                )
-                self.send_case(test_suite, test_suite_details, case_model)
-                self.update_status_proceed(test_suite, test_suite_details)
+                # 使用数据库连接上下文管理器确保连接被正确释放
+                with db_connection_context():
+                    test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
+                    try:
+                        tasks_id = test_suite.tasks.id if test_suite.tasks else None
+                    except Tasks.DoesNotExist:
+                        tasks_id = None
+                    case_model = ConsumerCaseModel(
+                        test_suite_details=test_suite_details.id,
+                        test_suite=test_suite_details.test_suite.id,
+                        case_id=test_suite_details.case_id,
+                        case_name=test_suite_details.case_name,
+                        test_env=test_suite_details.test_env,
+                        user_id=test_suite.user.id,
+                        tasks_id=tasks_id,
+                        parametrize=test_suite_details.parametrize
+                    )
+                    self.send_case(test_suite, test_suite_details, case_model)
+                    self.update_status_proceed(test_suite, test_suite_details)
 
             if time.time() - reset_tims > self.clean_time * 60:
                 reset_tims = time.time()
@@ -88,67 +92,77 @@ class ConsumerThread:
             else:
                 self.send_case(test_suite, test_suite_details, case_model, retry, max_retry)
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def clean_test_suite_status(self):
-        test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
-        for i in test_suite:
-            status_list = TestSuiteDetails \
-                .objects \
-                .filter(test_suite=i).values_list('status', flat=True)
-            if TaskEnum.STAY_BEGIN.value not in status_list and TaskEnum.PROCEED.value not in status_list:
-                if TaskEnum.FAIL.value in status_list:
-                    i.status = TaskEnum.FAIL.value
-                else:
-                    i.status = TaskEnum.SUCCESS.value
-                i.save()
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
+            for i in test_suite:
+                status_list = TestSuiteDetails \
+                    .objects \
+                    .filter(test_suite=i).values_list('status', flat=True)
+                if TaskEnum.STAY_BEGIN.value not in status_list and TaskEnum.PROCEED.value not in status_list:
+                    if TaskEnum.FAIL.value in status_list:
+                        i.status = TaskEnum.FAIL.value
+                    else:
+                        i.status = TaskEnum.SUCCESS.value
+                    i.save()
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def clean_proceed(self):
         """
         把进行中的，修改为待开始,或者失败
         """
-        test_suite_details_list = TestSuiteDetails \
-            .objects \
-            .filter(status=TaskEnum.PROCEED.value, retry__lt=self.retry_frequency + 1)
-        for test_suite_detail in test_suite_details_list:
-            if test_suite_detail.push_time and (
-                    timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
-                test_suite_detail.status = TaskEnum.STAY_BEGIN.value
-                test_suite_detail.save()
-                log.system.info(
-                    f'推送时间超过{self.reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            test_suite_details_list = TestSuiteDetails \
+                .objects \
+                .filter(status=TaskEnum.PROCEED.value, retry__lt=self.retry_frequency + 1)
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
+                    test_suite_detail.status = TaskEnum.STAY_BEGIN.value
+                    test_suite_detail.save()
+                    log.system.info(
+                        f'推送时间超过{self.reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def clean_proceed_set_fail(self):
         """
         把重试次数满的，修改为0，只有未知错误才会设置为失败
         """
-        test_suite_details_list = TestSuiteDetails \
-            .objects \
-            .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value], retry__gte=self.retry_frequency + 1)
-        for test_suite_detail in test_suite_details_list:
-            if test_suite_detail.push_time and (
-                    timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
-                test_suite_detail.status = TaskEnum.FAIL.value
-                test_suite_detail.save()
-                log.system.info(
-                    f'重试次数超过{self.retry_frequency + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            test_suite_details_list = TestSuiteDetails \
+                .objects \
+                .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value], retry__gte=self.retry_frequency + 1)
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
+                    test_suite_detail.status = TaskEnum.FAIL.value
+                    test_suite_detail.save()
+                    log.system.info(
+                        f'重试次数超过{self.retry_frequency + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_status_proceed(self, test_suite, test_suite_details):
-        test_suite.status = TaskEnum.PROCEED.value
-        test_suite.save()
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            test_suite.status = TaskEnum.PROCEED.value
+            test_suite.save()
 
-        test_suite_details.status = TaskEnum.PROCEED.value
-        test_suite_details.retry += 1
-        test_suite_details.push_time = timezone.now()
-        test_suite_details.save()
+            test_suite_details.status = TaskEnum.PROCEED.value
+            test_suite_details.retry += 1
+            test_suite_details.push_time = timezone.now()
+            test_suite_details.save()
 
-    @ensure_db_connection()
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def consumer_error(self, test_suite, test_suite_details, error):
-        test_suite.status = TaskEnum.FAIL.value
-        test_suite.save()
-        test_suite_details.status = TaskEnum.FAIL.value
-        test_suite_details.error_message = f'测试{TestCaseTypeEnum.get_value(test_suite_details.type)}类型：，异常类型：{error}'
-        test_suite.save()
-        log.system.debug(f'报错信息-321：{traceback.format_exc()}')
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            test_suite.status = TaskEnum.FAIL.value
+            test_suite.save()
+            test_suite_details.status = TaskEnum.FAIL.value
+            test_suite_details.error_message = f'测试{TestCaseTypeEnum.get_value(test_suite_details.type)}类型：，异常类型：{error}'
+            test_suite.save()
+            log.system.debug(f'报错信息-321：{traceback.format_exc()}')

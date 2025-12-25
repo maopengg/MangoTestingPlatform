@@ -18,6 +18,7 @@ from src.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.settings import IS_DEBUG_LOG
+from src.tools.decorator.retry import async_task_db_connection
 
 T = TypeVar('T')
 
@@ -88,7 +89,7 @@ class ChatConsumer(WebsocketConsumer):
             raise StopConsumer()
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.delete_user_web_obj(self.username)
-            self.close()
+            # 移除手动调用的 close()，因为 Channels 会自动处理连接关闭
             raise StopConsumer()
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.delete_user_client_obj(self.username)
@@ -98,7 +99,7 @@ class ChatConsumer(WebsocketConsumer):
                 log.system.error(f'socker关闭发送错误：{error}')
                 traceback.print_exc()
                 pass
-            self.close()
+            # 移除手动调用的 close()，因为 Channels 会自动处理连接关闭
             raise StopConsumer()
 
     @classmethod
@@ -161,6 +162,7 @@ class ChatConsumer(WebsocketConsumer):
                 log.system.debug(f"发送的数据：{data_json}")
             return data_json
 
+    @async_task_db_connection(max_retries=1, retry_delay=1)
     def verify_user(self) -> tuple[bool, int]:
         if 'username' not in self.scope.get("query_string").decode():
             log.system.debug('您的执行器代码是旧的，请使用新的执行器再来进行连接！')

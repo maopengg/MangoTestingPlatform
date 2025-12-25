@@ -33,27 +33,35 @@ class CaseBase:
             for i in parametrize.get('parametrize'):
                 key = i.get('key', None)
                 value = i.get('value', None)
-                if key is None or value is None:
+                if not key or not value:
                     raise ApiError(*ERROR_MSG_0032)
                 value = self.test_setup.test_data.replace(i.get('value'))
                 log.api.debug(f'用例参数化->key:{i.get("key")}，value：{value}')
                 self.test_setup.test_data.set_cache(i.get('key'), value)
 
-    def __front_custom(self, front_custom: list):
+    def __front_custom(self, front_custom):
         for custom in front_custom:
-            log.api.debug(f'前置自定义->key:{custom.get("key")}，value:{custom.get("value")}')
-            self.test_setup.test_data.set_cache(custom.get('key'), custom.get('value'))
+            key = custom.get('key', None)
+            value = custom.get('value', None)
+            if not key or not value:
+                raise ApiError(*ERROR_MSG_0029)
+            log.api.debug(f'前置自定义->key:{key}，value:{value}')
+            self.test_setup.test_data.set_cache(key, value)
 
-    def __front_sql(self, front_sql: list[dict]):
+    def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect:
             for i in front_sql:
-                sql = self.test_setup.test_data.replace(i.get('sql'))
-                result_list: list[dict] = self.test_setup.mysql_connect.condition_execute(sql)
-                log.api.debug(f'前置自定义->key:{sql}，value:{result_list}')
-                if isinstance(result_list, list) and len(result_list) > 0:
-                    self.test_setup.test_data.set_sql_cache(i.get('key_list'), result_list[0])
-                if not result_list:
-                    raise ApiError(*ERROR_MSG_0034, value=(sql,))
+                key = self.test_setup.test_data.replace(i.get('key'))
+                value = self.test_setup.test_data.replace(i.get('value'))
+                if not value:
+                    raise ApiError(*ERROR_MSG_0036)
+                res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
+                log.api.debug(f'用例前置sql-1->key:{key}，value:{value}，查询结果：{res}')
+                if isinstance(res, list) and len(res) > 0 and key:
+                    self.test_setup.test_data.set_sql_cache(key, res[0])
+                if key is not None and key != '' and len(res) > 0:
+                    log.api.debug(f'用例前置sql-2->key:{key}，res:{res}')
+                    raise ApiError(*ERROR_MSG_0034, value=(value,))
 
     def __front_headers(self):
         if self.api_case.front_headers:
@@ -61,8 +69,14 @@ class CaseBase:
                 self.case_headers[i.key] = i.value
         log.api.debug(f'前置自定义->用例headers:{self.case_headers}')
 
-    def __posterior_sql(self, posterior_sql: list[dict]):
-        for sql in posterior_sql:
-            sql = self.test_setup.test_data.replace(self.test_setup.test_data.replace(sql.get('sql')))
-            log.api.debug(f'后置sql->sql:{sql}')
-            self.test_setup.mysql_connect.condition_execute(sql)
+    def __posterior_sql(self, posterior_sql):
+        if self.test_setup.mysql_connect:
+            for sql in posterior_sql:
+                key = self.test_setup.test_data.replace(self.test_setup.test_data.replace(sql.get('key')))
+                sql = self.test_setup.test_data.replace(self.test_setup.test_data.replace(sql.get('value')))
+                if not sql:
+                    raise ApiError(*ERROR_MSG_0026)
+                res = self.test_setup.mysql_connect.condition_execute(sql)
+                log.api.debug(f'用例后置sql->key:{key},sql:{sql},查询结果：{res}')
+                if key is not None and key != '' and len(res) > 0:
+                    self.test_setup.test_data.set_sql_cache(key, res[0])

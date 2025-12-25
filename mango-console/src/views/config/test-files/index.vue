@@ -1,7 +1,48 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <TableHeader :show-filter="true" title="测试文件" />
+      <TableHeader
+        :show-filter="true"
+        title="配置测试对象"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search-content>
+          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+              <template v-if="item.type === 'input'">
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+              </template>
+              <template v-else-if="item.type === 'select'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-if="item.type === 'date'">
+                <a-date-picker v-model="item.value" />
+              </template>
+              <template v-if="item.type === 'time'">
+                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+              </template>
+              <template v-if="item.type === 'check-group'">
+                <a-checkbox-group v-model="item.value">
+                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                    {{ item.label }}
+                  </a-checkbox>
+                </a-checkbox-group>
+              </template>
+            </a-form-item>
+          </a-form>
+        </template>
+      </TableHeader>
     </template>
     <template #default>
       <a-tabs>
@@ -39,6 +80,13 @@
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
               </template>
+              <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                {{
+                  (record?.project_product?.project?.name || '无') +
+                  '/' +
+                  (record?.project_product?.name || '无')
+                }}
+              </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-button
                   size="mini"
@@ -46,6 +94,9 @@
                   class="custom-mini-btn"
                   @click="onDownload(record)"
                   >下载
+                </a-button>
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑
                 </a-button>
                 <a-button
                   size="mini"
@@ -61,29 +112,95 @@
         </a-table>
       </a-tabs>
     </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
+    </template>
   </TableBody>
+  <ModalDialog ref="modalDialogRef" title="编辑" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+          <template v-else-if="item.type === 'cascader'">
+            <a-cascader
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
+            />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted } from 'vue'
-  import { tableColumns } from './config'
-  import { deleteUserFile, getUserFile, postUserFile } from '@/api/system/file_data'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { tableColumns, conditionItems, formItems } from './config'
+  import { deleteUserFile, getUserFile, postUserFile, putUserFile } from '@/api/system/file_data'
   import { minioURL } from '@/api/axios.config'
+  import { fieldNames } from '@/setting'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { ModalDialogType } from '@/types/components'
+  import { useProject } from '@/store/modules/get-project'
 
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
+  const projectInfo = useProject()
   const rowKey = useRowKey('id')
-
+  const formModel = ref({})
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const data = reactive({
+    updateId: 0,
+  })
   function doRefresh() {
-    getUserFile()
+    let value = getFormItems(conditionItems)
+    value['page'] = pagination.page
+    value['pageSize'] = pagination.pageSize
+    value['type'] = 0
+    getUserFile(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+  }
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
+    doRefresh()
+  }
+
+  function onUpdate(item: any) {
+    data.updateId = item.id
+    modalDialogRef.value?.toggle()
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const propName = item[it.key]
+        if (typeof propName === 'object' && propName !== null) {
+          if (propName.name) {
+            it.value = propName.id
+          } else {
+            it.value = propName.id
+          }
+        } else {
+          it.value = propName
+        }
+      })
+    })
   }
 
   function onDelete(record: any) {
@@ -103,6 +220,25 @@
           })
       },
     })
+  }
+
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      let value = getFormItems(formItems)
+      value['id'] = data.updateId
+      putUserFile(value)
+        .then((res) => {
+          modalDialogRef.value?.toggle()
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch((error) => {
+          console.log(error)
+        })
+        .finally(() => {
+          modalDialogRef.value?.setConfirmLoading(false)
+        })
+    }
   }
 
   const beforeUpload = (file: any) => {

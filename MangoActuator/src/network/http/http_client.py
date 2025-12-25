@@ -12,7 +12,6 @@ from urllib.parse import urljoin
 import requests
 from mangotools.data_processor import EncryptionTool
 from requests.exceptions import MissingSchema
-
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError, ERROR_MSG_0002, ERROR_MSG_0003, ERROR_MSG_0004
 from src.network.http.http_base import HttpBase
@@ -36,7 +35,8 @@ class HttpClientApi(HttpBase):
         response = requests.get(url, proxies={'http': None, 'https': None}, )
         try:
             if response.status_code != 200:
-                raise ToolsError(*ERROR_MSG_0004, value=(file_name,))
+                log.error(f'url:{url}, status_code:{response.status_code}')
+                raise ToolsError(*ERROR_MSG_0004, value=(url,))
             with open(os.path.join(project_dir.upload(), file_name), 'wb') as f:
                 f.write(response.content)
         except FileNotFoundError:
@@ -48,7 +48,9 @@ class HttpClientApi(HttpBase):
     def upload_file(cls, file_path: str, file_name: str):
         data = {
             'type': ClientTypeEnum.ACTUATOR.value,
-            'name': file_name
+            'name': file_name,
+            'screenshot': True,
+            'file_path': os.path.join('mango-file', 'failed_screenshot', file_name),
         }
         files = [
             ('failed_screenshot', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
@@ -57,14 +59,13 @@ class HttpClientApi(HttpBase):
             headers = copy.copy(cls.headers)
             response = cls.post('/system/file', headers=headers, data=data, files=files)
             if response.code == 200:
-                return True
+                return response.data
             else:
                 log.error(f'上传文件报错，请管理员检查，响应结果：{response.model_dump()}')
                 cls.login(SetConfig.get_username(), SetConfig.get_password())  # type: ignore
-        return False
 
     @classmethod
-    def login(cls, username: str = None, password=None):
+    def login(cls, username: str = None, password=None, retry=0, is_retry=False):
         try:
             response = cls.post('/login', data={
                 'username': username,
@@ -74,12 +75,16 @@ class HttpClientApi(HttpBase):
             if response.data and response.code == 200:
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
+                return response
+            if is_retry and retry < 100:
+                time.sleep(3)
+                return cls.login(username, password, retry + 1, is_retry)
             return response
         except Exception as error:
-            traceback.print_exc()
-            if settings.IS_OPEN:
+            if settings.IS_OPEN and retry < 100:
                 time.sleep(3)
-                cls.login(username, password)
+                log.info(f'开始登录重试：{retry}，{error}')
+                return cls.login(username, password, retry + 1, is_retry)
             else:
                 raise error
 

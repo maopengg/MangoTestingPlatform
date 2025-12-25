@@ -8,7 +8,7 @@
             <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
               >调试
             </a-button>
-            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container"></div>
@@ -84,9 +84,9 @@
                   <div class="config-editor">
                     <div v-if="data.formItems.length > 0" style="padding: 0px 100px 0px 0px">
                       <h3>节点详情</h3>
-                      <span v-if="data.type === 4"
-                        >提示：判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！</span
-                      >
+                      <span v-if="data.type === 4" style="color: red">
+                        提示：判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！
+                      </span>
                       <a-form :model="formModel" ref="formRef">
                         <a-form-item
                           v-for="item of data.formItems"
@@ -140,7 +140,11 @@
                               <a-cascader
                                 v-model="item.value"
                                 :default-value="item.value"
-                                :options="useSelectValue.ass"
+                                :options="
+                                  route.query.pageType === '0'
+                                    ? useSelectValue.assWeb
+                                    : useSelectValue.assAndroid
+                                "
                                 :placeholder="item.placeholder"
                                 allow-clear
                                 allow-search
@@ -206,7 +210,7 @@
               </a-tab-pane>
               <a-tab-pane key="2" title="步骤测试结果">
                 <div v-if="data.result_data">
-                  <ElementTestReport :result-data="data.result_data" />
+                  <ElementTestReport :result-data="data.result_data || {}" />
                 </div>
               </a-tab-pane>
             </a-tabs>
@@ -291,6 +295,7 @@
     if (!checkNodeConnections()) return
     const value = {}
     value['id'] = pageData.record?.id || route.query.id
+    value['parent_id'] = pageData.record?.id || route.query.id
     value['flow_data'] = flowData.value
     putUiSteps(value)
       .then((res) => {
@@ -343,10 +348,11 @@
         data.formItems.splice(i, 1)
       }
     }
+    const label = useSelectValue.getTopLevelLabelByValue(value)
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
         if (
-          select.n !== '函数代码' &&
+          !['函数断言', '文件断言', 'sql断言'].includes(label.label) &&
           (select.f === 'actual' || select.f === 'locating') &&
           !data.formItems.some((item) => item.key === select.f)
         ) {
@@ -366,9 +372,11 @@
             },
           })
         } else if (
-          select.d === true &&
-          data.type !== 4 &&
-          !data.formItems.some((item) => item.key === select.f)
+          select.d === true && data.type === 4
+            ? ['函数断言', '文件断言', 'sql断言'].includes(label.label) &&
+              select.f !== 'expect' &&
+              select.n !== '函数代码'
+            : !data.formItems.some((item) => item.key === select.f)
         ) {
           let d = {
             label: select.n ? select.n : select.f,
@@ -405,10 +413,10 @@
     try {
       const res = await getUiStepsTest(route.query.id, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefreshSteps(pageData.record.id)
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefreshSteps(pageData.record.id)
     }
   }
 

@@ -8,17 +8,17 @@ from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.models.pytest_model import PytestCaseResultModel
 
 from src.models.system_model import TestSuiteDetailsResultModel
-from src.tools.decorator.retry import ensure_db_connection
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class PytestConsumer:
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def p_test_suite_details(cls, data: dict):
         UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(**data))
 
     @classmethod
-    @ensure_db_connection()
+    @async_task_db_connection()
     def p_test_case(cls, data: dict):
         PtestTestReportWriting.update_pytest_test_case(PytestCaseResultModel(**data))

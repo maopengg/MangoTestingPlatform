@@ -95,6 +95,9 @@
             <template v-else-if="item.key === 'case_executor'" #cell="{ record }">
               {{ record.case_executor }}
             </template>
+            <template v-else-if="item.key === 'notice_group'" #cell="{ record }">
+              {{ record.notice_group?.name }}
+            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
@@ -171,6 +174,7 @@
               :placeholder="item.placeholder"
               allow-clear
               allow-search
+              @change="onProjectChange(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'timing_strategy'">
@@ -184,7 +188,16 @@
               value-key="key"
             />
           </template>
-
+          <template v-else-if="item.type === 'select' && item.key === 'notice_group'">
+            <a-select
+              v-model="item.value"
+              :options="data.noticeList"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
           <template v-else-if="item.type === 'select' && item.key === 'test_env'">
             <a-select
               v-model="item.value"
@@ -249,6 +262,7 @@
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
+  import { getSystemNoticeName } from '@/api/system/notice_group'
 
   const projectInfo = useProject()
   const enumStore = useEnum()
@@ -266,6 +280,7 @@
     actionTitle: '新增',
     userList: [],
     timingList: [],
+    noticeList: [],
   })
 
   const formModel = ref({})
@@ -331,6 +346,7 @@
     data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
+    onProjectChange(item.project_product.id)
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
@@ -352,26 +368,39 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['status'] = 0
         value['is_notice'] = 0
         postSystemTasks(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putSystemTasks(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -439,7 +468,13 @@
       },
     })
   }
-
+  function onProjectChange(id) {
+    getSystemNoticeName(id)
+      .then((res) => {
+        data.noticeList = res.data
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       getTiming()

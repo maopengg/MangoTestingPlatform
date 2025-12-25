@@ -1,6 +1,6 @@
 <template>
   <div class="test-report-container">
-    <a-row :gutter="16" class="summary-cards">
+    <a-row :gutter="15" class="summary-cards">
       <a-col v-for="(item, index) in summaryCards" :key="index" class="summary-col">
         <a-card :class="['summary-card', item.class]">
           <template #title>
@@ -16,119 +16,129 @@
         </a-card>
       </a-col>
     </a-row>
-    <a-row :gutter="16" class="chart-section">
-      <a-col :span="8">
-        <a-card title="测试套基础信息" class="info-card">
-          <div class="chart-container">
-            <a-space direction="vertical" style="width: 100%">
-              <div class="info-item">
-                <span class="info-label">测试套ID：</span>
-                <span class="info-value">{{ pageData.record.id }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">任务名称：</span>
-                <span class="info-value">{{ pageData.record.tasks?.name }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">执行时间：</span>
-                <span class="info-value">{{ pageData.record.create_time }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">测试环境：</span>
-                <span class="info-value">{{
-                  enumStore.environment_type[pageData.record.test_env].title
-                }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">执行人：</span>
-                <span class="info-value">{{ pageData.record.user?.name }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">是否通知：</span>
-                <span class="info-value">{{
-                  enumStore.status[pageData.record.is_notice].title
-                }}</span>
-              </div>
-            </a-space>
-          </div>
-        </a-card>
+    <a-row :gutter="15" class="chart-section">
+      <a-col :span="8" class="chart-col">
+        <div class="chart-card-wrapper">
+          <a-card title="测试套基础信息" class="info-card">
+            <div class="chart-container">
+              <a-space direction="vertical" style="width: 100%">
+                <div class="info-item">
+                  <span class="info-label">测试套ID：</span>
+                  <span class="info-value">{{ pageData.record.id }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">任务名称：</span>
+                  <span class="info-value">{{ pageData.record.tasks?.name }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">执行时间：</span>
+                  <span class="info-value">{{ pageData.record.create_time }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">测试环境：</span>
+                  <span class="info-value">{{
+                    enumStore.environment_type[pageData.record.test_env].title
+                  }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">执行人：</span>
+                  <span class="info-value">{{ pageData.record.user?.name }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">通知状态：</span>
+                  <span class="info-value">{{
+                    pageData.record.is_notice === 1 ? '已发送' : '未发送'
+                  }}</span>
+                </div>
+              </a-space>
+            </div>
+          </a-card>
+        </div>
       </a-col>
 
-      <a-col :span="8">
-        <a-card title="用例执行进度" class="progress-card">
-          <div class="chart-container">
-            <div class="progress-item">
-              <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
-              <a-progress
-                :percent="
-                  data.summary.api_count > 0
-                    ? Number(
-                        (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
-                      )
-                    : 0
-                "
-                :style="{ width: '80%' }"
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :stroke-width="8"
-              />
+      <a-col :span="8" class="chart-col">
+        <div class="chart-card-wrapper">
+          <a-card title="用例执行进度" class="progress-card">
+            <div class="chart-container">
+              <div class="progress-items-wrapper">
+                <div class="progress-item">
+                  <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
+                  <a-progress
+                    :percent="
+                      data.summary.api_count > 0
+                        ? Number(
+                            (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
+                          )
+                        : 0
+                    "
+                    :style="{ width: '80%' }"
+                    :color="{
+                      '0%': 'rgb(var(--primary-6))',
+                      '100%': 'rgb(var(--success-6))',
+                    }"
+                    :stroke-width="8"
+                  />
+                </div>
+                <div class="progress-item">
+                  <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
+                  <a-progress
+                    :percent="
+                      data.summary.ui_count > 0
+                        ? Number(
+                            (data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2)
+                          )
+                        : 0
+                    "
+                    :style="{ width: '80%' }"
+                    :color="{
+                      '0%': 'rgb(var(--primary-6))',
+                      '100%': 'rgb(var(--success-6))',
+                    }"
+                    :stroke-width="8"
+                  />
+                </div>
+                <div class="progress-item">
+                  <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
+                  <a-progress
+                    :percent="
+                      data.summary.pytest_count > 0
+                        ? Number(
+                            (
+                              data.summary.pytest_in_progress_count / data.summary.pytest_count
+                            ).toFixed(2)
+                          )
+                        : 0
+                    "
+                    :style="{ width: '80%' }"
+                    :color="{
+                      '0%': 'rgb(var(--primary-6))',
+                      '100%': 'rgb(var(--success-6))',
+                    }"
+                    :stroke-width="8"
+                  />
+                </div>
+              </div>
             </div>
-            <div class="progress-item">
-              <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
-              <a-progress
-                :percent="
-                  data.summary.ui_count > 0
-                    ? Number((data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2))
-                    : 0
-                "
-                :style="{ width: '80%' }"
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :stroke-width="8"
-              />
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
-              <a-progress
-                :percent="
-                  data.summary.pytest_count > 0
-                    ? Number(
-                        (data.summary.pytest_in_progress_count / data.summary.pytest_count).toFixed(
-                          2
-                        )
-                      )
-                    : 0
-                "
-                :style="{ width: '80%' }"
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :stroke-width="8"
-              />
-            </div>
-          </div>
-        </a-card>
+          </a-card>
+        </div>
       </a-col>
-      <a-col :span="8">
-        <a-card title="测试结果分布图" class="result-card">
-          <div class="chart-container">
-            <StatusChart
-              :success="data.summary.success_count"
-              :fail="data.summary.fail_count"
-              :pending="data.summary.proceed_count"
-              :todo="data.summary.stay_begin_count"
-            />
-          </div>
-        </a-card>
+      <a-col :span="8" class="chart-col">
+        <div class="chart-card-wrapper">
+          <a-card title="测试结果分布图" class="result-card">
+            <div class="chart-container">
+              <StatusChart
+                :success="data.summary.success_count"
+                :fail="data.summary.fail_count"
+                :pending="data.summary.proceed_count"
+                :todo="data.summary.stay_begin_count"
+              />
+            </div>
+          </a-card>
+        </div>
       </a-col>
     </a-row>
 
-    <a-card class="test-details" :body-style="{ padding: '0 20px 20px 20px' }">
+    <a-card class="test-details" :body-style="{ padding: '0 15px 30px 15px' }">
       <template #title>
         <icon-unordered-list />
         <span>测试套用例列表</span>
@@ -162,12 +172,16 @@
             <a-collapse-item v-for="item of data.dataList" :key="item.id">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_id }}-{{ item.case_name }}</span>
+                  <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
+                    >{{ item.case_id }}-{{ item.case_name }}</span
+                  >
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item?.error_message">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
+                    失败提示：{{ item.error_message }}
+                  </span>
                 </div>
               </template>
               <template #extra>
@@ -233,12 +247,16 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_id }}-{{ item.case_name }}</span>
+                  <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
+                    >{{ item.case_id }}-{{ item.case_name }}</span
+                  >
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
+                    失败提示：{{ item.error_message }}
+                  </span>
                 </div>
               </template>
               <template #extra>
@@ -310,12 +328,14 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_name }}</span>
+                  <span :title="item.case_name" class="case-name">{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
+                    失败提示：{{ item.error_message }}
+                  </span>
                 </div>
               </template>
               <template #extra>
@@ -602,7 +622,7 @@
     })
   }
 
-  // 在组件卸载时清理定时器
+  // 组件挂载时刷新数据
   onMounted(() => {
     doRefreshSummary()
   })
@@ -632,59 +652,61 @@
   }
 
   .test-report-container {
-    padding: 5px;
-    min-height: 102vh;
+    padding: 15px;
+    min-height: 100vh;
   }
 
-  // 卡片通用样式
+  // 卡片通用样式 - 与首页保持一致
   :deep(.arco-card) {
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    overflow: hidden;
+    border-radius: 8px; /* 与首页保持一致 */
+    box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15); /* 与首页保持一致 */
+    transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1); /* 与首页保持一致 */
     border: none;
+    overflow: hidden;
+    background: var(--color-bg-2); /* 与首页保持一致 */
 
     .arco-card-header {
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      padding: 16px 20px;
+      padding: 12px 15px; /* 与首页保持一致 */
       font-weight: 600;
       font-size: 16px;
     }
 
     .arco-card-body {
-      padding: 20px;
+      padding: 15px; /* 与首页保持一致 */
     }
   }
 
   // 摘要卡片
   .summary-cards {
-    margin-bottom: 8px;
+    margin-bottom: 15px; /* 与首页间距保持一致 */
   }
 
   .summary-card {
     height: 100%;
 
-    .arco-card-header {
-      background: rgba(0, 0, 0, 0.02);
+    :deep(.arco-card-header) {
+      background: var(--color-fill-1); /* 与首页保持一致 */
+      border-radius: 8px 8px 0 0;
     }
   }
 
   .card-content {
     text-align: center;
-    padding: 6px 0;
+    padding: 8px 0; /* 调整内边距 */
   }
 
   .number {
-    font-size: 42px;
+    font-size: 32px; /* 稍微减小字体大小 */
     font-weight: bold;
-    margin-right: 8px;
+    margin-right: 6px; /* 调整右边距 */
     background: linear-gradient(45deg, #1890ff, #52c41a);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
   .label {
-    font-size: 16px;
+    font-size: 14px; /* 稍稍微小字体大小 */
     color: #86909c;
   }
 
@@ -730,7 +752,7 @@
   .wait {
     :deep(.arco-card-header) {
       color: #1890ff;
-      background: rgba(24, 144, 255, 0.05);
+      background: #e5e5e5;
     }
 
     .number {
@@ -741,26 +763,147 @@
   }
 
   .chart-section {
-    margin-bottom: 8px;
+    margin-bottom: 15px;
+
+    :deep(.arco-row) {
+      display: flex;
+      align-items: stretch;
+    }
+
+    :deep(.arco-col) {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
   }
 
+  // 添加包装器确保卡片高度一致
+  .chart-card-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  // 确保卡片高度一致 - 使用固定高度
+  .info-card,
+  .progress-card,
+  .result-card {
+    height: 360px; // 固定高度
+    display: flex;
+    flex-direction: column;
+
+    :deep(.arco-card) {
+      height: 360px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    :deep(.arco-card-body) {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+    }
+  }
+
+  // 图表容器样式
   .chart-container {
-    min-height: 200px;
+    flex: 1;
+    height: 280px; // 固定高度
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1px;
+    padding: 10px;
+    width: 100%;
   }
 
+  // 确保三个卡片高度一致的额外样式
+  .chart-col {
+    display: flex;
+    flex-direction: column;
+    height: 360px;
+  }
+
+  // 进度条卡片
+  .progress-card {
+    :deep(.arco-card-body) {
+      display: flex;
+      flex-direction: column;
+
+      .chart-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        height: 280px;
+
+        .progress-items-wrapper {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          flex: 1;
+        }
+      }
+    }
+  }
+
+  .progress-item {
+    margin-bottom: 24px;
+    width: 100%;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .progress-label {
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2129;
+  }
+
+  :deep(.arco-progress) {
+    border-radius: 8px;
+    overflow: hidden;
+
+    .arco-progress-line-path {
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .arco-progress-line-text {
+      font-weight: 600;
+    }
+  }
+
+  // 信息卡片
   .info-card {
     .chart-container {
       align-items: flex-start;
+      justify-content: center;
+      height: 280px;
+    }
+
+    :deep(.arco-card-body) {
+      display: flex;
+      flex-direction: column;
+
+      .chart-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+      }
     }
   }
 
   .info-item {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     padding: 4px 8px;
@@ -778,38 +921,23 @@
     color: #4e5969;
   }
 
-  // 进度条卡片
-  .progress-card {
-    .progress-item {
-      margin-bottom: 36px;
-      width: 100%;
+  // 结果卡片
+  .result-card {
+    :deep(.arco-card-body) {
+      display: flex;
+      flex-direction: column;
 
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-
-    .progress-label {
-      margin-bottom: 16px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #1d2129;
-    }
-
-    :deep(.arco-progress) {
-      border-radius: 8px;
-      overflow: hidden;
-
-      .arco-progress-line-path {
-        transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-
-      .arco-progress-line-text {
-        font-weight: 600;
+      .chart-container {
+        flex: 1;
+        width: 100%;
+        height: 280px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     }
   }
-
   .result-card {
     :deep(.arco-progress-circle) {
       .arco-progress-circle-path {
@@ -873,5 +1001,106 @@
     align-items: center;
     gap: 12px; /* 控制标签间距 */
     font-size: 14px;
+    width: 100%;
+  }
+
+  .custom-header > .case-name {
+    flex: 0 0 400px; /* 固定400px宽度 */
+    min-width: 400px;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .custom-header > span:nth-child(2) {
+    flex: 0 0 20px; /* 固定20px宽度 */
+  }
+
+  .custom-header > .arco-tag {
+    flex: 0 0 auto; /* 不伸缩，保持标签自然宽度 */
+  }
+
+  .custom-header > .error-message {
+    flex: 1; /* 占据剩余所有空间 */
+    min-width: 0; /* 允许收缩到0，配合省略号显示 */
+    max-width: 1000px; /* 限制最大宽度为700px，确保重试按钮有足够的空间 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // 测试详情卡片 - 与首页保持一致
+  .test-details {
+    :deep(.arco-card-header) {
+      border-radius: 8px 8px 0 0; /* 与首页保持一致 */
+      padding: 12px 15px; /* 与首页保持一致 */
+    }
+
+    :deep(.arco-card-body) {
+      padding: 15px; /* 与首页保持一致 */
+    }
+  }
+
+  // 按钮样式优化 - 与首页保持一致
+  :deep(.arco-btn) {
+    border-radius: 6px; /* 与首页保持一致 */
+    transition: all 0.2s ease; /* 与首页保持一致 */
+  }
+
+  :deep(.arco-btn:hover) {
+    transform: translateY(-1px); /* 与首页保持一致 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 与首页保持一致 */
+  }
+
+  // 标签样式优化
+  :deep(.arco-tag) {
+    border-radius: 4px; /* 与首页保持一致 */
+    font-size: 12px; /* 稍稍微小字体大小 */
+  }
+
+  // 响应式设计 - 与首页保持一致
+  @media (max-width: 1200px) {
+    .test-report-container {
+      padding: 10px; /* 与首页保持一致 */
+    }
+
+    .summary-col {
+      margin: 0 5px; /* 与首页保持一致 */
+    }
+
+    .summary-cards,
+    .chart-section {
+      margin-bottom: 10px; /* 与首页保持一致 */
+    }
+
+    // 在中等屏幕下调整列布局
+    .chart-section {
+      :deep(.arco-col) {
+        margin-bottom: 10px;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .test-report-container {
+      padding: 10px; /* 与首页保持一致 */
+    }
+
+    .summary-col {
+      margin-bottom: 10px; /* 与首页保持一致 */
+    }
+
+    .summary-cards {
+      flex-direction: column;
+    }
+
+    // 在小屏幕下调整为单列布局
+    .chart-section {
+      :deep(.arco-col) {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
   }
 </style>

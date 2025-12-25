@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
 
-VERSION = '5.8.3'
+VERSION = '5.9.0'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -71,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.gzip.GZipMiddleware',  # 添加Gzip压缩支持
     # 'src.middleware.log_collector.LogMiddleWare',
     'src.middleware.user_logs.UserLogsMiddleWare',
     # 'src.middleware.operation_log.OperationLogMiddleware',
@@ -105,6 +106,9 @@ ASGI_APPLICATION = 'src.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'CONFIG': {
+            'capacity': 1000,
+        }
     }
 }
 # **********************************************************************************************************************
@@ -118,18 +122,17 @@ if not IS_SQLITE:
             'PASSWORD': MYSQL_PASSWORD,
             'HOST': MYSQL_IP,
             'PORT': MYSQL_PORT,
-            'TEST': {
-                'NAME': f'test_{MYSQL_DB_NAME}',
-                'CHARSET': 'utf8mb4',
-                'COLLATION': 'utf8mb4_general_ci'
-            },
             'OPTIONS': {
                 'charset': 'utf8mb4',
-                'connect_timeout': 5,  # 连接超时时间
-                'init_command': 'SET SESSION sort_buffer_size=8 * 1024 * 1024',  # 会话级设置
-                'isolation_level': 'READ COMMITTED',  # 可选：事务隔离级别
+                'connect_timeout': 20,
+                'read_timeout': 60,
+                'write_timeout': 60,
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', wait_timeout=300",
+                'isolation_level': 'READ COMMITTED',
+                'autocommit': True,
             },
-            'CONN_MAX_AGE': 60 * 30,  # 连接最大存活时间（秒）
+            'CONN_MAX_AGE': 300,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 else:
@@ -159,40 +162,35 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 # **********************************************************************************************************************
 
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{redis}0",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "CONNECTION_POOL_KWARGS": {
-#                 "max_connections": 1000,
-#                 "decode_responses": True,
-#                 "encoding": 'utf-8'
-#             }
-#         }
-#     },
-#     "socket": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"{redis}1",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "CONNECTION_POOL_KWARGS": {
-#                 "max_connections": 1000,
-#                 "decode_responses": True,
-#                 "encoding": 'utf-8'
-#             }
-#         }
-#     }
-# }
+# 根据是否启用Redis来决定缓存配置
+if REDIS:
+    # 使用Redis缓存
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/0',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
+    }
+else:
+    # 使用数据库缓存
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'django_cache',  # 数据库表名
+        }
+    }
+
 # **********************************************************************************************************************
 
 LOGGING = {
-    'version': 1,  # 指明dictConnfig的版本
-    'disable_existing_loggers': False,  # 表示是否禁用所有的已经存在的日志配置
-    'formatters': {  # 格式器
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
         'colored': {
-            '()': 'colorlog.ColoredFormatter',  # 使用 colorlog 的彩色格式化器
+            '()': 'colorlog.ColoredFormatter',
             'format': '%(log_color)s[%(asctime)s] [%(levelname)s] %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
             'log_colors': {
@@ -203,26 +201,26 @@ LOGGING = {
                 'CRITICAL': 'purple',
             },
         },
-        'verbose': {  # 详细
-            'format': '[%(asctime)s] [%(levelname)s] %(module)s %(process)s %(thread)s %(message)s',
+        'verbose': {
+            'format': '[%(asctime)s] [%(levelname)s] %(module)s %(process)d %(thread)d %(message)s',
         },
-
+        'standard': {  # 添加标准格式化器
+            'format': '[%(asctime)s] [%(levelname)s] %(name)s: %(message)s'
+        }
     },
-    # 'filters':{}, 过滤器
     'handlers': {
-        # 处理器，在这里定义了两个个处理器. 用来定义具体处理日志的方式，可以定义多种，"default"就是默认方式，"console"就是打印到控制台方式。files是写入到文件的方式，注意使用的class不同
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'colored',  # 使用彩色格式化器
+            'formatter': 'colored',
         },
-        'api': {  # 文件
+        'api': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_api/log.log',  # 日志输出文件
-            'formatter': 'verbose',  # 指定formatters日志格式
-            'maxBytes': 1024 * 1024 * 10,  # 文件大小.50MB
-            'backupCount': 30,
+            'filename': BASE_DIR / 'logs/auto_api/log.log',
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 50,  # 增加到50MB
+            'backupCount': 10,  # 减少备份数量
             'encoding': 'utf-8',
         },
         'ui': {
@@ -230,18 +228,17 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_ui/log.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 10,
-            'backupCount': 30,
+            'maxBytes': 1024 * 1024 * 50,
+            'backupCount': 10,
             'encoding': 'utf-8',
         },
-
-        'system': {  # 文件
+        'system': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_system/log.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 10,
-            'backupCount': 30,
+            'maxBytes': 1024 * 1024 * 50,
+            'backupCount': 10,
             'encoding': 'utf-8',
         },
         'data_producer': {
@@ -249,8 +246,8 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_perf/log.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 10,
-            'backupCount': 30,
+            'maxBytes': 1024 * 1024 * 50,
+            'backupCount': 10,
             'encoding': 'utf-8',
         },
         'pytest': {
@@ -258,36 +255,55 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_pytest/log.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 10,
-            'backupCount': 30,
+            'maxBytes': 1024 * 1024 * 50,
+            'backupCount': 10,
             'encoding': 'utf-8',
         },
+        'django': {  # 添加Django核心日志处理器
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs/django.log',
+            'formatter': 'standard',
+            'maxBytes': 1024 * 1024 * 50,
+            'backupCount': 5,
+            'encoding': 'utf-8',
+        }
     },
-    'loggers': {  # log记录器，配置之后就会对应的输出日志
-        'console': {  # django记录器，它将所有 INFO 或更高等级的消息传递给3个处理程序——files、console 和 default
-            'handlers': ['console'],  # 同时输出到console和文件
+    'loggers': {
+        'console': {
+            'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True,  # 向上接受更高级别日志
+            'propagate': False,  # 防止重复日志
         },
         'api': {
             'handlers': ['api', 'console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'ui': {
             'handlers': ['ui', 'console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'system': {
             'handlers': ['system', 'console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'data_producer': {
             'handlers': ['data_producer', 'console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
+        },
+        'django': {  # Django核心日志记录器
+            'handlers': ['django'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.request': {  # Django请求错误
+            'handlers': ['django'],
+            'level': 'ERROR',
+            'propagate': False,
         }
     }
 }

@@ -102,7 +102,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '邮箱',
     key: 'mailbox',
-    value: ref(''),
+    value: ref([]),
     type: 'input-tag',
     required: true,
     placeholder: '请输入邮箱，然后按回车',

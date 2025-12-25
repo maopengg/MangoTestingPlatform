@@ -3,8 +3,11 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
-
-from mangoui import *
+from mangoui.models import ComboBoxDataModel
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.input import MangoToggle, MangoPushButton, MangoComboBox, MangoLineEdit
+from mangoui.widgets.layout import MangoHBoxLayout, MangoGridLayout
+from mangoui.widgets.window import MangoWidget
 
 from src.enums.ui_enum import BrowserTypeEnum, DeviceEnum
 from src.tools.set_config import SetConfig

@@ -12,9 +12,10 @@ from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.enums.socket_api_enum import PytestSocketEnum
 from src.enums.system_enum import ClientNameEnum, ClientTypeEnum
 from src.enums.tools_enum import TaskEnum
-from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0020
+from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0020, ERROR_MSG_0057
 from src.models.pytest_model import PytestCaseModel
 from src.models.socket_model import SocketDataModel, QueueModel
+from src.tools.log_collector import log
 
 
 class TestCase:
@@ -25,7 +26,10 @@ class TestCase:
         self.test_suite_details = test_suite_details
 
     def test_case(self, case_id, test_env: int) -> dict:
-        obj: PytestCase = PytestCase.objects.get(id=case_id)
+        try:
+            obj: PytestCase = PytestCase.objects.get(id=case_id)
+        except PytestCase.DoesNotExist:
+            raise PytestError(*ERROR_MSG_0057)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
         repo = git_obj()
@@ -49,7 +53,7 @@ class TestCase:
             git_username=repo.username,
             git_password=repo.password,
         )
-        self.__socket_send(send_data)
+        self.__socket_send(send_data, True)
         return send_data.model_dump()
 
     def __socket_send(self, data_model: PytestCaseModel, is_open=False) -> None:
@@ -63,9 +67,12 @@ class TestCase:
         try:
             ChatConsumer.active_send(send_data)
         except MangoServerError as error:
-            user_list = [i.username for i in SocketUser.user if i.is_open]
-            if error.code == 1028 and is_open and user_list:
-                send_data.user = user_list[random.randint(0, len(user_list) - 1)]
-                ChatConsumer.active_send(send_data)
-            else:
+            log.pytest.debug(f'发送pytest测试数据报错-1:{error}')
+            if not is_open:
                 raise error
+            user_list = [i.username for i in SocketUser.user if i.is_open]
+            if not error.code == 1028 or not user_list:
+                raise error
+            send_data.user = user_list[random.randint(0, len(user_list) - 1)]
+            ChatConsumer.active_send(send_data)
+            log.pytest.debug(f'发送pytest测试数据重试成功-2:{send_data.user}')

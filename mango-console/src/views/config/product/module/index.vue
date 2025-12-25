@@ -5,7 +5,7 @@
         <template #extra>
           <a-space>
             <a-button size="small" type="primary" @click="doAppend">增加</a-button>
-            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <a-table :bordered="false" :columns="columns" :data="data.data" :pagination="false">
@@ -68,7 +68,8 @@
     postUserModule,
     putUserModule,
   } from '@/api/system/module'
-
+  import { useProject } from '@/store/modules/get-project'
+  const projectInfo = useProject()
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -103,9 +104,9 @@
         deleteUserModule(record.id)
           .then((res) => {
             Message.success(res.msg)
+            doRefresh()
           })
           .catch(console.log)
-        doRefresh()
       },
     })
   }
@@ -129,25 +130,40 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['project_product'] = route.query.id
       if (data.isAdd) {
         postUserModule(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
+            projectInfo.projectPytestName()
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUserModule(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
+            projectInfo.projectPytestName()
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

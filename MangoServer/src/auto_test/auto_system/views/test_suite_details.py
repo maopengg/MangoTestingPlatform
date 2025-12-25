@@ -16,6 +16,7 @@ from src.auto_test.auto_system.views.project_product import ProjectProductSerial
 from src.auto_test.auto_system.views.test_suite import TestSuiteSerializers
 from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
+from src.tools.decorator.retry import db_connection_context
 from src.tools.view import *
 from src.tools.view.model_crud import ModelCRUD
 
@@ -95,6 +96,9 @@ class TestSuiteDetailsViews(ViewSet):
         for i in test_suite_details:
             i.retry = 0
             i.status = TaskEnum.STAY_BEGIN.value
+            i.success = 0
+            i.warning = 0
+            i.fail = 0
             i.save()
         model = TestSuite.objects.get(id=request.query_params.get('test_suite_id'))
         model.status = TaskEnum.STAY_BEGIN.value
@@ -107,163 +111,176 @@ class TestSuiteDetailsViews(ViewSet):
         test_suite_details = self.model.objects.get(id=request.query_params.get('id'))
         test_suite_details.retry = 0
         test_suite_details.status = TaskEnum.STAY_BEGIN.value
+        test_suite_details.success = 0
+        test_suite_details.warning = 0
+        test_suite_details.fail = 0
         test_suite_details.save()
         return ResponseData.success(RESPONSE_MSG_0133)
 
     @action(methods=['get'], detail=False)
     @error_response('user')
     def test_suite_details_report(self, request):
-        data = {
-            'success': [],
-            'fail': [],
-            'failSun': self.model.objects.filter(status=StatusEnum.FAIL.value).count(),
-            'successSun': self.model.objects.filter(status=StatusEnum.SUCCESS.value).count(),
-        }
-        try:
-            fail = TestSuiteDetails.objects.raw(
-                """
-                    SELECT
-                        weeks.id,
-                        weeks.yearweek,
-                        COALESCE(api_counts.total_count, 0) AS total_count
-                    FROM (
-                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            data = {
+                'success': [],
+                'fail': [],
+                'failSun': self.model.objects.filter(status=StatusEnum.FAIL.value).count(),
+                'successSun': self.model.objects.filter(status=StatusEnum.SUCCESS.value).count(),
+            }
+            try:
+                fail = TestSuiteDetails.objects.raw(
+                    """
+                        SELECT
+                            weeks.id,
+                            weeks.yearweek,
+                            COALESCE(api_counts.total_count, 0) AS total_count
                         FROM (
-                            SELECT 0 AS n UNION ALL
-                            SELECT 1 UNION ALL
-                            SELECT 2 UNION ALL
-                            SELECT 3 UNION ALL
-                            SELECT 4 UNION ALL
-                            SELECT 5 UNION ALL
-                            SELECT 6 UNION ALL
-                            SELECT 7 UNION ALL
-                            SELECT 8 UNION ALL
-                            SELECT 9 UNION ALL
-                            SELECT 10 UNION ALL
-                            SELECT 11
+                            SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                            FROM (
+                                SELECT 0 AS n UNION ALL
+                                SELECT 1 UNION ALL
+                                SELECT 2 UNION ALL
+                                SELECT 3 UNION ALL
+                                SELECT 4 UNION ALL
+                                SELECT 5 UNION ALL
+                                SELECT 6 UNION ALL
+                                SELECT 7 UNION ALL
+                                SELECT 8 UNION ALL
+                                SELECT 9 UNION ALL
+                                SELECT 10 UNION ALL
+                                SELECT 11
+                            ) weeks
                         ) weeks
-                    ) weeks
-                    LEFT JOIN (
-                        SELECT 
-                            MAX(test_suite_details.id) as id,
-                            YEARWEEK(create_time) AS yearweek, 
-                            COUNT(YEARWEEK(create_time)) AS total_count
-                        FROM test_suite_details
-                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                        AND status = 0
-                        GROUP BY YEARWEEK(create_time)
-                    ) api_counts ON weeks.yearweek = api_counts.yearweek
-                    ORDER BY weeks.yearweek;
-    
-                """
-            )
-            success = TestSuiteDetails.objects.raw(
-                """
-                     SELECT
-                        weeks.id,
-                        weeks.yearweek,
-                        COALESCE(api_counts.total_count, 0) AS total_count
-                    FROM (
-                        SELECT 'id' AS id, YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                        LEFT JOIN (
+                            SELECT 
+                                MAX(test_suite_details.id) as id,
+                                YEARWEEK(create_time) AS yearweek, 
+                                COUNT(YEARWEEK(create_time)) AS total_count
+                            FROM test_suite_details
+                            WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                            AND status = 0
+                            GROUP BY YEARWEEK(create_time)
+                        ) api_counts ON weeks.yearweek = api_counts.yearweek
+                        ORDER BY weeks.yearweek;
+        
+                    """
+                )
+                success = TestSuiteDetails.objects.raw(
+                    """
+                         SELECT
+                            weeks.id,
+                            weeks.yearweek,
+                            COALESCE(api_counts.total_count, 0) AS total_count
                         FROM (
-                            SELECT 0 AS n UNION ALL
-                            SELECT 1 UNION ALL
-                            SELECT 2 UNION ALL
-                            SELECT 3 UNION ALL
-                            SELECT 4 UNION ALL
-                            SELECT 5 UNION ALL
-                            SELECT 6 UNION ALL
-                            SELECT 7 UNION ALL
-                            SELECT 8 UNION ALL
-                            SELECT 9 UNION ALL
-                            SELECT 10 UNION ALL
-                            SELECT 11
+                            SELECT 'id' AS id, YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                            FROM (
+                                SELECT 0 AS n UNION ALL
+                                SELECT 1 UNION ALL
+                                SELECT 2 UNION ALL
+                                SELECT 3 UNION ALL
+                                SELECT 4 UNION ALL
+                                SELECT 5 UNION ALL
+                                SELECT 6 UNION ALL
+                                SELECT 7 UNION ALL
+                                SELECT 8 UNION ALL
+                                SELECT 9 UNION ALL
+                                SELECT 10 UNION ALL
+                                SELECT 11
+                            ) weeks
                         ) weeks
-                    ) weeks
-                    LEFT JOIN (
-                        SELECT 
-                            MAX(test_suite_details.id) AS id,
-                            YEARWEEK(create_time) AS yearweek, 
-                            COUNT(*) AS total_count
-                        FROM test_suite_details
-                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                        AND status = 1
-                        GROUP BY YEARWEEK(create_time)
-                    ) api_counts ON weeks.yearweek = api_counts.yearweek
-                    ORDER BY weeks.yearweek;
-    
-                """
-            )
-            data['fail'] = [result.total_count for result in fail]
-            data['success'] = [result.total_count for result in success]
-            return ResponseData.success(RESPONSE_MSG_0110, data)
-        except django.db.utils.OperationalError:
-            data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            return ResponseData.success(RESPONSE_MSG_0129, data)
+                        LEFT JOIN (
+                            SELECT 
+                                MAX(test_suite_details.id) AS id,
+                                YEARWEEK(create_time) AS yearweek, 
+                                COUNT(*) AS total_count
+                            FROM test_suite_details
+                            WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                            AND status = 1
+                            GROUP BY YEARWEEK(create_time)
+                        ) api_counts ON weeks.yearweek = api_counts.yearweek
+                        ORDER BY weeks.yearweek;
+        
+                    """
+                )
+                data['fail'] = [result.total_count for result in fail]
+                data['success'] = [result.total_count for result in success]
+                return ResponseData.success(RESPONSE_MSG_0110, data)
+            except django.db.utils.OperationalError:
+                data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                return ResponseData.success(RESPONSE_MSG_0129, data)
+            except Exception as e:
+                # 处理其他可能的异常
+                log.system.error(f"生成测试套件详情报告时出错: {str(e)}")
+                data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                return ResponseData.success(RESPONSE_MSG_0129, data)
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_summary(self, request: Request):
-        test_suite_id = request.query_params.get('test_suite_id')
-        model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
+        # 使用数据库连接上下文管理器确保连接被正确释放
+        with db_connection_context():
+            test_suite_id = request.query_params.get('test_suite_id')
+            model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
 
-        # 使用聚合函数计算总和
-        from django.db.models import Sum
-        aggregates = model.aggregate(
-            total_case_sum=Sum('case_sum'),
-            total_fail=Sum('fail'),
-            total_success=Sum('success')
-        )
+            # 使用聚合函数计算总和
+            from django.db.models import Sum
+            aggregates = model.aggregate(
+                total_case_sum=Sum('case_sum'),
+                total_fail=Sum('fail'),
+                total_success=Sum('success')
+            )
 
-        # 计算各种类型的case_sum总和
-        api_case_sum = model.filter(type=TestCaseTypeEnum.API.value).aggregate(
-            total=Sum('case_sum')
-        )['total'] or 0
-
-        ui_case_sum = model.filter(type=TestCaseTypeEnum.UI.value).aggregate(
-            total=Sum('case_sum')
-        )['total'] or 0
-
-        pytest_case_sum = model.filter(type=TestCaseTypeEnum.PYTEST.value).aggregate(
-            total=Sum('case_sum')
-        )['total'] or 0
-
-        api_in_progress_case_sum = model.filter(
-            type=TestCaseTypeEnum.API.value,
-            status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
-        ).aggregate(
-            total=Sum('case_sum')
-        )['total'] or 0
-
-        ui_in_progress_case_sum = model.filter(
-            type=TestCaseTypeEnum.UI.value,
-            status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
-        ).aggregate(
-            total=Sum('case_sum')
-        )['total'] or 0
-
-        pytest_in_progress_case_sum = model.filter(
-            type=TestCaseTypeEnum.PYTEST.value,
-            status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
-        ).aggregate(
-            total=Sum('case_sum')
-        )['total'] or 0
-
-        return ResponseData.success(RESPONSE_MSG_0065, {
-            'count': aggregates['total_case_sum'] or 0,
-            'fail_count': aggregates['total_fail'] or 0,
-            'success_count': aggregates['total_success'] or 0,
-            'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).aggregate(
+            # 计算各种类型的case_sum总和
+            api_case_sum = model.filter(type=TestCaseTypeEnum.API.value).aggregate(
                 total=Sum('case_sum')
-            )['total'] or 0,
-            'proceed_count': model.filter(status=TaskEnum.PROCEED.value).aggregate(
+            )['total'] or 0
+
+            ui_case_sum = model.filter(type=TestCaseTypeEnum.UI.value).aggregate(
                 total=Sum('case_sum')
-            )['total'] or 0,
-            'api_count': api_case_sum,
-            'ui_count': ui_case_sum,
-            'pytest_count': pytest_case_sum,
-            'api_in_progress_count': api_in_progress_case_sum,
-            'ui_in_progress_count': ui_in_progress_case_sum,
-            'pytest_in_progress_count': pytest_in_progress_case_sum,
-        })
+            )['total'] or 0
+
+            pytest_case_sum = model.filter(type=TestCaseTypeEnum.PYTEST.value).aggregate(
+                total=Sum('case_sum')
+            )['total'] or 0
+
+            api_in_progress_case_sum = model.filter(
+                type=TestCaseTypeEnum.API.value,
+                status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+            ).aggregate(
+                total=Sum('case_sum')
+            )['total'] or 0
+
+            ui_in_progress_case_sum = model.filter(
+                type=TestCaseTypeEnum.UI.value,
+                status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+            ).aggregate(
+                total=Sum('case_sum')
+            )['total'] or 0
+
+            pytest_in_progress_case_sum = model.filter(
+                type=TestCaseTypeEnum.PYTEST.value,
+                status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+            ).aggregate(
+                total=Sum('case_sum')
+            )['total'] or 0
+
+            return ResponseData.success(RESPONSE_MSG_0065, {
+                'count': aggregates['total_case_sum'] or 0,
+                'fail_count': aggregates['total_fail'] or 0,
+                'success_count': aggregates['total_success'] or 0,
+                'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).aggregate(
+                    total=Sum('case_sum')
+                )['total'] or 0,
+                'proceed_count': model.filter(status=TaskEnum.PROCEED.value).aggregate(
+                    total=Sum('case_sum')
+                )['total'] or 0,
+                'api_count': api_case_sum,
+                'ui_count': ui_case_sum,
+                'pytest_count': pytest_case_sum,
+                'api_in_progress_count': api_in_progress_case_sum,
+                'ui_in_progress_count': ui_in_progress_case_sum,
+                'pytest_in_progress_count': pytest_in_progress_case_sum,
+            })

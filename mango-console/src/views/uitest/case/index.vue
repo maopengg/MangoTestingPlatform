@@ -307,7 +307,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
@@ -359,7 +359,17 @@
   })
   const caseRunning = ref(false)
 
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
+
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -371,6 +381,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh(projectProductId, bool_)
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -452,10 +471,10 @@
     try {
       const res = await getUiCaseRun(param, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
@@ -476,7 +495,7 @@
       onOk: () => {
         postUiRunCaseBatch(selectedRowKeys.value, userStore.selected_environment)
           .then((res) => {
-            Message.loading(res.msg)
+            Message.success(res.msg)
             selectedRowKeys.value = []
             doRefresh()
           })
@@ -507,7 +526,6 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['front_custom'] = []
@@ -515,19 +533,33 @@
         value['posterior_sql'] = []
         postUiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -622,5 +654,8 @@
       doRefresh()
       productModule.getProjectModule(null)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>

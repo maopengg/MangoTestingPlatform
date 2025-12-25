@@ -78,11 +78,27 @@
   })
 
   /**
+   * 检查字符串是否可能包含大数字
+   */
+  const mightContainLargeNumbers = (str) => {
+    // 检查是否可能包含超出安全整数范围的数字
+    const largeNumberPattern = /:\s*(\d{16,})/g
+    return largeNumberPattern.test(str)
+  }
+
+  /**
    * 尝试解析字符串是否为 JSON
    */
   const isValidJson = computed(() => {
     if (!isString.value) return false
     try {
+      // 对于可能包含大数字的 JSON 字符串，我们需要特殊处理
+      if (isString.value && props.data.includes(':') && props.data.includes('{')) {
+        // 检查是否可能包含大数字
+        if (mightContainLargeNumbers(props.data)) {
+          return true
+        }
+      }
       JSON.parse(props.data)
       return true
     } catch {
@@ -91,10 +107,31 @@
   })
 
   /**
-   * 如果是 JSON 字符串，解析成对象
+   * 如果是 JSON 字符串，解析成对象，并处理大数字问题
    */
   const jsonFromString = computed(() => {
-    return isValidJson.value ? JSON.parse(props.data) : {}
+    if (!isValidJson.value) return {}
+
+    try {
+      // 对于可能包含大数字的 JSON，使用特殊处理
+      if (mightContainLargeNumbers(props.data)) {
+        // 使用正则表达式查找可能的大数字并将其转换为字符串
+        let processedData = props.data.replace(/(:\s*)(\d{16,})(\s*[,\}])/g, '$1"$2"$3')
+        return JSON.parse(processedData)
+      }
+
+      // 使用 reviver 函数处理大数字，将其转换为字符串
+      return JSON.parse(props.data, (key, value) => {
+        // 检查是否为可能超出安全范围的数字
+        if (typeof value === 'number' && !Number.isSafeInteger(value)) {
+          return value.toString()
+        }
+        return value
+      })
+    } catch (e) {
+      console.error('JSON解析错误:', e)
+      return {}
+    }
   })
 
   /**
@@ -103,6 +140,10 @@
   const parsedData = computed(() => {
     if (props.data instanceof Date) {
       return props.data.toISOString()
+    }
+    // 如果是数字且超出安全范围，转换为字符串
+    if (typeof props.data === 'number' && !Number.isSafeInteger(props.data)) {
+      return props.data.toString()
     }
     return props.data
   })

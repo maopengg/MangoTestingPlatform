@@ -87,6 +87,7 @@ class ApiCaseDetailed(models.Model):
     api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.PROTECT)
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
+    error_message = models.TextField(verbose_name="失败提示", null=True)
 
     class Meta:
         db_table = 'api_case_detailed'

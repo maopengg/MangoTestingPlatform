@@ -54,7 +54,7 @@ class ElementModel(BaseModel):
     elements: list[ElementListModel] = []
     sleep: int | None
     ope_key: str | None
-    ope_value: list[MethodModel] | None = None
+    ope_value: list[MethodModel] | list = []
     sql_execute: list[dict] | None = None
     custom: list[dict] | None = None
     condition_value: dict | None = None
@@ -83,7 +83,7 @@ class StepsDataModel(BaseModel):
     type: int
     ope_key: str | None = None
     page_step_details_id: int
-    page_step_details_data: list = []
+    page_step_details_data: list | None = None
     page_step_details_name: str | None = None
     condition_value: dict | None = None
 

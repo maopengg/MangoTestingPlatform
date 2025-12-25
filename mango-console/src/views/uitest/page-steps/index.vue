@@ -246,7 +246,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
@@ -284,8 +284,17 @@
     pageName: [],
   })
   const caseRunning = ref(false)
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -297,6 +306,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh(projectProductId, bool_)
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -371,24 +389,38 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         postUiSteps(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
+        value['parent_id'] = data.updateId
         putUiSteps(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -402,10 +434,10 @@
     try {
       const res = await getUiStepsTest(param.id, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
@@ -465,5 +497,8 @@
       doRefresh()
       onModulePage(null, false)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>

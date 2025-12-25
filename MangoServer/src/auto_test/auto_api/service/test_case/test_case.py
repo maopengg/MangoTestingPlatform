@@ -17,6 +17,7 @@ from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel, ResponseModel
 from src.models.system_model import TestSuiteDetailsResultModel
+from src.tools.decorator.retry import async_task_db_connection
 from ..base.case_base import CaseBase
 from ..base.case_parameter import CaseParameter
 
@@ -36,7 +37,10 @@ class TestCase:
         self.test_suite_details = test_suite_details
 
         self.test_setup = APIBaseTestSetup()
-        self.api_case: ApiCase = ApiCase.objects.get(id=case_id)
+        try:
+            self.api_case: ApiCase = ApiCase.objects.get(id=case_id)
+        except ApiCase.DoesNotExist:
+            raise ApiError(*ERROR_MSG_0057)
         self.case_base = CaseBase(self.test_setup, self.api_case)
 
         self.api_case.status = TaskEnum.PROCEED.value
@@ -82,20 +86,19 @@ class TestCase:
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
-        finally:
-            self.case_base.case_posterior_main()
-            self.update_test_case(self.case_id, self.api_case_result.status)
-            if self.test_suite and self.test_suite_details:
-                UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
-                    id=self.test_suite_details,
-                    type=TestCaseTypeEnum.API,
-                    test_suite=self.test_suite,
-                    status=self.api_case_result.status,
-                    error_message=self.api_case_result.error_message,
-                    result_data=self.api_case_result
-                ))
-            log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
-            return self.api_case_result
+        self.case_base.case_posterior_main()
+        self.update_test_case(self.case_id, self.api_case_result.status)
+        if self.test_suite and self.test_suite_details:
+            UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
+                id=self.test_suite_details,
+                type=TestCaseTypeEnum.API,
+                test_suite=self.test_suite,
+                status=self.api_case_result.status,
+                error_message=self.api_case_result.error_message,
+                result_data=self.api_case_result
+            ))
+        log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
+        return self.api_case_result
 
     def case_detailed(self,
                       case_id: int,
@@ -121,10 +124,12 @@ class TestCase:
             res: tuple[int, str] | None = self.detailed_parameter(case_detailed)
             if res:
                 case_detailed.status = res[0]
+                case_detailed.error_message = res[1] if len(res) > 1 else None
                 case_detailed.save()
                 return res
             else:
                 case_detailed.status = StatusEnum.SUCCESS.value
+                case_detailed.error_message = None
                 case_detailed.save()
 
     def detailed_parameter(self, case_detailed: ApiCaseDetailed) -> tuple[int, str] | None:
@@ -134,7 +139,7 @@ class TestCase:
             self.test_setup.init_test_object(case_detailed.api_info.project_product_id, self.test_env)
             self.test_setup.init_public(case_detailed.api_info.project_product_id, self.test_env)
             error_retry = 0
-            retry = parameter.error_retry + 1 if parameter.error_retry else 1
+            retry = parameter.error_retry if parameter.error_retry else 1
             status = StatusEnum.FAIL.value
             error_message = None
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
@@ -176,6 +181,7 @@ class TestCase:
                 except (MangoServerError, MangoToolsError) as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
                     res_model.status = StatusEnum.FAIL.value
+                    res_model.error_message = error.msg
                     if res_model.response:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,
                                              res_model.status)
@@ -189,7 +195,9 @@ class TestCase:
                                              res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     log.api.error(f'API请求发生未知错误：{traceback.print_exc()}')
-                    return StatusEnum.FAIL.value, f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                    msg = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                    res_model.error_message = msg
+                    return StatusEnum.FAIL.value, msg
             res_list.append({'status': status, 'error_message': error_message})
         for i in res_list:
             if i.get('status') == StatusEnum.FAIL.value:
@@ -205,12 +213,14 @@ class TestCase:
         model.save()
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_test_case(cls, case_id: int, status: int):
         model = ApiCase.objects.get(id=case_id)
         model.status = status
         model.save()
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=3)
     def update_test_case_detailed_parameter(cls, parameter_id, result_data: ApiCaseStepsResultModel):
         model = ApiCaseDetailedParameter.objects.get(id=parameter_id)
         model.status = result_data.status

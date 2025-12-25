@@ -58,7 +58,7 @@ class AutoTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "前端&接口通用", 1: "前端自动化", 2: "接口自动化"}
+        return {0: "界面&接口通用", 1: "界面自动化", 2: "接口自动化"}
 
 
 class SystemEnvEnum(BaseEnum):

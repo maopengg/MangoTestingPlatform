@@ -16,3 +16,4 @@ mango_pytest/
 allure/
 *.spec
 __pycache__/
+browser_cache/

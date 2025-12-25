@@ -24,7 +24,7 @@ def ad_routes():
         },
         {
             "menuUrl": "/uitest",
-            "menuName": "前端自动化",
+            "menuName": "界面自动化",
             "icon": "IconFindReplace",
             "parentPath": "",
             "children": [
@@ -249,18 +249,18 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/help",
-                    "menuUrl": "http://43.142.161.61:8002/",
-                    "menuName": "帮助文档",
-                },
-                {
-                    "parentPath": "/help",
                     "menuUrl": "/help/variable/index",
-                    "menuName": "公共变量",
+                    "menuName": "随机数据",
                 },
                 {
                     "parentPath": "/help",
                     "menuUrl": "/help/assertion/index",
-                    "menuName": "断言策略",
+                    "menuName": "断言方法",
+                },
+                {
+                    "parentPath": "/help",
+                    "menuUrl": "http://43.142.161.61:8002/",
+                    "menuName": "帮助文档",
                 },
             ],
         },

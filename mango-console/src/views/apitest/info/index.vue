@@ -323,7 +323,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, reactive, nextTick } from 'vue'
+  import { onMounted, ref, reactive, nextTick, onUnmounted } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProject } from '@/store/modules/get-project'
@@ -373,6 +373,14 @@
     formItem: [],
   })
   const caseRunning = ref(false)
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   const visible = ref(false)
   const batchImportVisible = ref(false)
@@ -393,6 +401,7 @@
   }
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['type'] = data.apiType
@@ -405,6 +414,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh()
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -618,7 +636,12 @@
               modalDialogRef.value?.toggle()
               doRefresh()
             })
-            .catch(console.log)
+            .catch((error) => {
+              console.log(error)
+            })
+            .finally(() => {
+              modalDialogRef.value?.setConfirmLoading(false)
+            })
         } else {
           value['id'] = data.updateId
           putApiInfo(value)
@@ -627,7 +650,12 @@
               modalDialogRef.value?.toggle()
               doRefresh()
             })
-            .catch(console.log)
+            .catch((error) => {
+              console.log(error)
+            })
+            .finally(() => {
+              modalDialogRef.value?.setConfirmLoading(false)
+            })
         }
       }
     } else if (data.addType === 1) {
@@ -640,8 +668,15 @@
             modalDialogRef.value?.toggle()
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -659,15 +694,14 @@
       } else {
         Message.success(res.msg)
       }
-
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
-  function onConcurrency() {
+  const onConcurrency = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择测试环境')
       return
@@ -677,13 +711,16 @@
       return
     }
     Message.loading('开始批量执行中~')
-    getApiCaseInfoRun(selectedRowKeys.value, userStore.selected_environment)
-      .then((res) => {
-        data.caseResult = res.data
-        Message.success('批量执行全部完成啦~')
-        doRefresh()
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getApiCaseInfoRun(selectedRowKeys.value, userStore.selected_environment)
+      Message.success(res.msg)
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+      doRefresh()
+    }
   }
 
   function apiInfoCopy(record: any) {
@@ -721,6 +758,9 @@
       doRefresh()
       productModule.getProjectModule(null)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>
 

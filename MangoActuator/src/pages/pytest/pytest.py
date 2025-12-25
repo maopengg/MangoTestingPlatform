@@ -4,7 +4,10 @@
 # @Time   : 2025-08-25 15:22
 # @Author : 毛鹏
 
-from mangoui import *
+
+from mangoui.widgets.display import MangoLabel
+from mangoui.widgets.layout import MangoHBoxLayout, MangoGridLayout
+from mangoui.widgets.window import MangoWidget
 
 
 class PytestPage(MangoWidget):

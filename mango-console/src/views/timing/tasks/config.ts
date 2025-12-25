@@ -111,6 +111,17 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '通知组',
+    key: 'notice_group',
+    value: ref(''),
+    placeholder: '请选择通知组',
+    required: false,
+    type: 'select',
+    validator: function () {
+      return true
+    },
+  },
 ])
 
 export const tableColumns = useTableColumn([
@@ -149,7 +160,14 @@ export const tableColumns = useTableColumn([
     width: 120,
   },
   {
-    title: '任务状态',
+    title: '通知组',
+    key: 'notice_group',
+    dataIndex: 'notice_group',
+    align: 'left',
+    width: 200,
+  },
+  {
+    title: '状态',
     key: 'status',
     dataIndex: 'status',
     width: 100,

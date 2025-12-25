@@ -297,7 +297,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
   import { useProject } from '@/store/modules/get-project'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
@@ -346,8 +346,17 @@
     row: {},
   })
   const caseRunning = ref(false)
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -359,6 +368,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh()
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -432,7 +450,6 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['front_custom'] = []
@@ -441,19 +458,33 @@
         value['front_headers'] = []
         postApiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putApiCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -500,7 +531,7 @@
     const timeoutId = setTimeout(() => {
       Message.info('测试用例异步执行中，请稍后刷新页面查看该用例的测试结果~')
       caseRunning.value = false
-    }, 15000)
+    }, 30000)
 
     try {
       const res = await getApiCaseRun(param.id, userStore.selected_environment, null)
@@ -523,16 +554,15 @@
       Message.error('请选择要执行的用例')
       return
     }
-    Message.loading('正在执行用例请稍后~')
     if (caseRunning.value) return
     caseRunning.value = true
     try {
       const res = await postApiCaseBatchRun(selectedRowKeys.value, userStore.selected_environment)
       Message.success(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
@@ -601,5 +631,8 @@
       await doRefresh()
       productModule.getProjectModule(null)
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>

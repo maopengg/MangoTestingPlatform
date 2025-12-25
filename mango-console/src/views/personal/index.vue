@@ -41,7 +41,7 @@
                 <div class="value">{{ personalCenterData.data?.last_login_time }}</div>
               </div>
               <div class="text-wrapper">
-                <div class="label">socketIP断言：</div>
+                <div class="label">socketIP：</div>
                 <div class="value">{{ personalCenterData.data.ip }}</div>
               </div>
               <div class="text-wrapper">
@@ -176,11 +176,11 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['id'] = userStore.userId
       postUserPassword(value)
         .then((res) => {
+          modalDialogRef.value?.toggle()
           Message.success(res.msg)
           userStore.logout().then(() => {
             window.localStorage.removeItem('visited-routes')
@@ -189,7 +189,14 @@
             websocket(13213, '231', false)
           })
         })
-        .catch(console.log)
+        .catch((error) => {
+          console.log(error)
+        })
+        .finally(() => {
+          modalDialogRef.value?.setConfirmLoading(false)
+        })
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

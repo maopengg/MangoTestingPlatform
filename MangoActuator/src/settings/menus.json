@@ -11,8 +11,8 @@
     {
       "btn_icon": ":/icons/robot.svg",
       "btn_id": "ui",
-      "btn_text": "前端自动化",
-      "btn_tooltip": "前端自动化",
+      "btn_text": "界面自动化",
+      "btn_tooltip": "界面自动化",
       "show_top": true,
       "is_active": false,
       "submenus": [

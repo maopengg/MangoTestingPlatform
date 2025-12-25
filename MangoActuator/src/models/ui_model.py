@@ -3,7 +3,6 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
-from typing import Any
 
 from mangoautomation.models import ElementModel, ElementResultModel
 from mangotools.models import MysqlConingModel
@@ -32,7 +31,7 @@ class StepsDataModel(BaseModel):
     type: int
     ope_key: str | None = None
     page_step_details_id: int
-    page_step_details_data: list = []
+    page_step_details_data: list | None = None
     page_step_details_name: str | None = None
     condition_value: dict | None = None
 

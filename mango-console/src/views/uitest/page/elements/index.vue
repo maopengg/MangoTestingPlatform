@@ -4,7 +4,7 @@
       <a-card title="页面元素详情" :bordered="false">
         <template #extra>
           <a-space>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">
@@ -125,7 +125,13 @@
       <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+  <ModalDialog
+    ref="modalDialogRef"
+    :title="data.actionTitle"
+    :show-continuous-submit="true"
+    @confirm="onDataForm"
+    @continuous-submit="onContinuousSubmit"
+  >
     <template #content>
       <a-form :model="formModel">
         <a-form-item
@@ -168,11 +174,22 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="data.ope"
+                :options="
+                  String(pageData.record.project_product.ui_client_type === '0')
+                    ? useSelectValue.webOpe
+                    : useSelectValue.androidOpe
+                "
                 :default-value="item.value"
                 expand-trigger="hover"
                 :placeholder="item.placeholder"
-                @change="upDataOpeValue(data.ope, item.value)"
+                @change="
+                  upDataOpeValue(
+                    String(pageData.record.project_product.ui_client_type === '0')
+                      ? useSelectValue.webOpe
+                      : useSelectValue.androidOpe,
+                    item.value
+                  )
+                "
                 value-key="key"
                 style="width: 380px"
                 allow-search
@@ -193,11 +210,22 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="data.ass"
+                :options="
+                  String(pageData.record.project_product.ui_client_type === '0')
+                    ? useSelectValue.assWeb
+                    : useSelectValue.assAndroid
+                "
                 :default-value="item.value"
                 expand-trigger="hover"
                 :placeholder="item.placeholder"
-                @change="upDataOpeValue(data.ass, item.value)"
+                @change="
+                  upDataOpeValue(
+                    String(pageData.record.project_product.ui_client_type === '0')
+                      ? useSelectValue.assWeb
+                      : useSelectValue.assAndroid,
+                    item.value
+                  )
+                "
                 value-key="key"
                 style="width: 380px"
                 allow-search
@@ -242,6 +270,7 @@
   import { baseURL } from '@/api/axios.config'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { useSelectValueStore } from '@/store/modules/get-ope-value'
 
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const pagination = usePagination(doRefresh)
@@ -250,6 +279,7 @@
 
   const userStore = useUserStore()
   const enumStore = useEnum()
+  const useSelectValue = useSelectValueStore()
 
   const pageData: any = usePageData()
 
@@ -361,7 +391,6 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['page'] = route.query.id
       if (data.isAdd) {
@@ -370,17 +399,31 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            modalDialogRef.value?.toggle()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putUiElement(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            modalDialogRef.value?.toggle()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -420,34 +463,6 @@
     })
   }
 
-  function getCacheDataKeyValue() {
-    getSystemCacheDataKeyValue('select_value')
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          if (item.value === 'web') {
-            if (String(pageData.record.project_product.ui_client_type) === '0') {
-              data.ope.push(...item.children)
-            }
-          } else if (item.value === 'android') {
-            if (String(pageData.record.project_product.ui_client_type) === '1') {
-              data.ope.push(...item.children)
-            }
-          } else if (item.value === 'ass_android') {
-            if (String(pageData.record.project_product.ui_client_type) === '1') {
-              data.ass.unshift(...item.children)
-            }
-          } else if (item.value === 'ass_web') {
-            if (String(pageData.record.project_product.ui_client_type) === '0') {
-              data.ass.unshift(...item.children)
-            }
-          } else if (item.value.includes('断言')) {
-            data.ass.push(item)
-          }
-        })
-      })
-      .catch(console.log)
-  }
-
   function changeStatus(event: number) {
     data.type = event
     for (let i = formItems1.length - 1; i >= 0; i--) {
@@ -482,7 +497,7 @@
       inputItem.parameter.forEach((select: any) => {
         if (select.d === true && !formItems1.some((item) => item.key === select.f)) {
           formItems1.push({
-            label: select.f,
+            label: select.n ? select.n : select.f,
             key: `${select.f}-ope_value`,
             value: select.v,
             type: 'textarea',
@@ -507,16 +522,19 @@
 
   function onDataForm1() {
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef1.value?.toggle()
       let value = getFormItems(formItems1)
       const extractedValues = []
 
       for (const key in value) {
         if (key.includes('-ope_value')) {
           const newKey = key.replace('-ope_value', '')
-          console.log(findItemByValue(data.ope, value.ope_key))
           if (newKey && data.type === 0) {
-            findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
+            findItemByValue(
+              String(pageData.record.project_product.ui_client_type === '0')
+                ? useSelectValue.webOpe
+                : useSelectValue.androidOpe,
+              value.ope_key
+            ).parameter.forEach((item: any) => {
               if (newKey === 'locating') {
                 value['ele_name'] = value[key]
               }
@@ -529,7 +547,12 @@
               }
             })
           } else {
-            findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
+            findItemByValue(
+              String(pageData.record.project_product.ui_client_type === '0')
+                ? useSelectValue.assWeb
+                : useSelectValue.assAndroid,
+              value.ope_key
+            ).parameter.forEach((item: any) => {
               if (newKey === 'actual') {
                 value['ele_name'] = value[key]
               }
@@ -559,8 +582,19 @@
       putUiUiElementTest(value)
         .then((res) => {
           Message.success(res.msg)
+          // 只有在成功的情况下才关闭模态框
+          modalDialogRef1.value?.toggle()
         })
-        .catch(console.log)
+        .catch((error) => {
+          console.log(error)
+        })
+        .finally(() => {
+          // 重置 loading 状态
+          modalDialogRef1.value?.setConfirmLoading(false)
+        })
+    } else {
+      // 表单验证失败时也需要重置 loading 状态
+      modalDialogRef1.value?.setConfirmLoading(false)
     }
   }
 
@@ -622,10 +656,39 @@
     document.body.removeChild(aLink)
   }
 
+  function onContinuousSubmit() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      let value = getFormItems(formItems)
+      value['page'] = route.query.id
+      if (data.isAdd) {
+        value['is_iframe'] = 0
+        postUiElement(value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+            // 成功后不清空表单，保持模态框打开以便连续提交
+          })
+          .catch((error) => {
+            console.log(error)
+            Message.error('操作失败，请重试')
+          })
+          .finally(() => {
+            modalDialogRef.value?.setContinuousLoading(false)
+          })
+      } else {
+        Message.warning('编辑模式下不支持连续提交')
+        modalDialogRef.value?.setContinuousLoading(false)
+      }
+    } else {
+      // 表单验证失败时也需要重置 loading 状态
+      modalDialogRef.value?.setContinuousLoading(false)
+    }
+  }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getCacheDataKeyValue()
+      useSelectValue.getSelectValue()
     })
   })
 </script>

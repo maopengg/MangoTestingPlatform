@@ -10,11 +10,12 @@ from rest_framework.request import Request
 from mangotools.exceptions import MangoToolsError
 from mangotools.mangos import Mango
 from src.exceptions import MangoServerError
-from src.exceptions.error_msg import ERROR_MSG_0000
+from src.exceptions.error_msg import ERROR_MSG_0000, ERROR_MSG_0058
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
 from src.tools.view import RESPONSE_MSG_0107
 from src.tools.view.response_data import ResponseData
+from django.db import close_old_connections, utils
 
 log_dict = {
     'ui': log.ui,
@@ -42,7 +43,12 @@ def error_response(app: str):
             except FileNotFoundError as error:
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{traceback.format_exc()}')
                 return ResponseData.fail(RESPONSE_MSG_0107)
+            except utils.OperationalError as error:
+                traceback.print_exc()
+                close_old_connections()
+                return ResponseData.fail(ERROR_MSG_0058, data=str(error))
             except Exception as error:
+                close_old_connections()
                 try:
                     username = request.user.get('username')
                 except AttributeError:

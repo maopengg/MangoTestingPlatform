@@ -51,7 +51,7 @@ class User(models.Model):
         from src.auto_test.auto_ui.models import UiCase
         if UiCase.objects.filter(case_people=self).exists():
             raise ToolsError(300, "UI测试用例-有关联数据，请先删除绑定的数据后再删除！")
-        from src.auto_test.auto_system.models import TestObject, Tasks, TestSuite
+        from src.auto_test.auto_system.models import TestObject, Tasks, TestSuite, NoticeGroup
         if TestObject.objects.filter(executor_name=self).exists():
             raise ToolsError(300, "测试对象-有关联数据，请先删除绑定的数据后再删除！")
         if Tasks.objects.filter(case_people=self).exists():

@@ -339,7 +339,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { formItems, tableColumns } from './config'
@@ -385,6 +385,14 @@
     visible: false,
   })
   const caseRunning = ref(false)
+  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function clearPollingTimer() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+    }
+  }
 
   const customStyle = reactive({
     borderRadius: '6px',
@@ -454,24 +462,37 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
         postPytestCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putPytestCase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 
@@ -496,6 +517,7 @@
   }
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    clearPollingTimer()
     const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -507,6 +529,15 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        const hasRunningItem =
+          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+
+        if (hasRunningItem) {
+          // 5秒后再次刷新
+          pollingTimer.value = setInterval(() => {
+            doRefresh(projectProductId, bool_)
+          }, 5000)
+        }
       })
       .catch(console.log)
   }
@@ -530,10 +561,10 @@
     try {
       const res = await getPytestCaseTest(param.id, userStore.selected_environment)
       Message.success(res.msg)
-      doRefresh()
     } catch (e) {
     } finally {
       caseRunning.value = false
+      doRefresh()
     }
   }
 
@@ -559,7 +590,8 @@
     data.updateId = record.id
     getPytestCaseRead(record.id)
       .then((res) => {
-        data.codeText = res.data
+        // 确保传递给CodeMirror的值是字符串类型
+        data.codeText = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2)
       })
       .catch(console.log)
   }
@@ -596,6 +628,9 @@
       onPytestProjectName(null)
       scheduledName()
     })
+  })
+  onUnmounted(() => {
+    clearPollingTimer()
   })
 </script>
 <style lang="less" scoped>

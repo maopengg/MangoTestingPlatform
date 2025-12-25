@@ -15,6 +15,7 @@ from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel, GetTaskModel
 from src.tools.log_collector import log
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class UiCaseFlow:
@@ -43,6 +44,7 @@ class UiCaseFlow:
         cls.execute_task(case_model)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_case(cls, data: GetTaskModel):
         model = User.objects.get(username=data.username)
         with cls._get_case_lock:
@@ -64,11 +66,13 @@ class UiCaseFlow:
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                         parametrize=test_suite_details.parametrize,
                     )
+                    log.system.debug(f'UI发送用例：{case_model.model_dump_json()}')
                     cls.send_case(model.id, model.username, case_model, test_suite.user.username)
                     cls.update_status_proceed(test_suite, test_suite_details)
-            except MangoServerError as error:
+            except Exception as error:
                 log.system.error(f'执行器主动拉取任务失败：{error}')
                 test_suite_details.status = TaskEnum.FAIL.value
+                test_suite_details.retry += 1
                 test_suite_details.save()
 
     @classmethod

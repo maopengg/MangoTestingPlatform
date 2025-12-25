@@ -8,7 +8,6 @@ from django.conf import settings
 from jwt import exceptions
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from src.auto_test.auto_user.models import User
 
 class JwtQueryParamsAuthentication(BaseAuthentication):
 
@@ -22,9 +21,6 @@ class JwtQueryParamsAuthentication(BaseAuthentication):
         # 3.验证第三段合法性
         try:
             payload = jwt.decode(token, salt, algorithms='HS256')
-            User.objects.get(id=payload['id'])
-        except User.DoesNotExist:
-            raise AuthenticationFailed({'code': 300, 'msg': '没有该用户信息，请重新登录', 'data': None})
         except exceptions.ExpiredSignatureError:
             raise AuthenticationFailed({'code': 301, 'msg': '当前用户登录已过期，请重新登录', 'data': None})
         except jwt.DecodeError:
@@ -32,7 +28,7 @@ class JwtQueryParamsAuthentication(BaseAuthentication):
         except jwt.InvalidTokenError:
             raise AuthenticationFailed({'code': 303, 'msg': 'token 非法，请使用有效的 token', 'data': None})
         except Exception as e:
-            raise AuthenticationFailed({'code': 304, 'msg': f'token 验证失败: {str(e)}', 'data': None})
+            raise AuthenticationFailed({'code': 304, 'msg': f'请求频繁，请稍后重试: {str(e)}', 'data': None})
         return payload, token
 
     def authenticate_header(self, request):

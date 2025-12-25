@@ -149,7 +149,7 @@ class ApiInfoViews(ViewSet):
         elif parsed.json and parsed.data is None:
             result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
         data = ApiInfoCRUD.inside_post(result)
-        return ResponseData.success(RESPONSE_MSG_0069, data=data)
+        return ResponseData.success(RESPONSE_MSG_0140, data=data)
 
     @action(methods=['POST'], detail=False)
     @error_response('ui')

@@ -243,7 +243,8 @@
         }
         const propName = item[it.key]
         if (it.key === 'mailbox') {
-          it.value = propName
+          // 特殊处理 mailbox 字段，确保它是数组格式
+          it.value = Array.isArray(propName) ? propName : []
         } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
@@ -255,24 +256,37 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (userData.isAdd) {
         postUserInfo(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = userData.updateId
         putUserInfo(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

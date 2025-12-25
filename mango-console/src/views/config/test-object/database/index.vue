@@ -1,35 +1,13 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="数据库配置"
-        @search="doRefresh"
-        @reset-search="onResetSearch"
-      >
-        <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-              <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-if="item.type === 'date'">
-                <a-date-picker v-model="item.value" />
-              </template>
-              <template v-if="item.type === 'time'">
-                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-              </template>
-              <template v-if="item.type === 'check-group'">
-                <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
-                    {{ item.label }}
-                  </a-checkbox>
-                </a-checkbox-group>
-              </template>
-            </a-form-item>
-          </a-form>
+      <a-card title="数据库配置" :bordered="false">
+        <template #extra>
+          <a-space>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
+          </a-space>
         </template>
-      </TableHeader>
+      </a-card>
     </template>
 
     <template #default>
@@ -173,11 +151,8 @@
       .catch(console.log)
   }
 
-  function onResetSearch() {
-    conditionItems.forEach((it) => {
-      it.value = ''
-    })
-    doRefresh()
+  function doResetSearch() {
+    window.history.back()
   }
 
   function onAdd() {
@@ -231,25 +206,38 @@
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
       const value = getFormItems(formItems)
       if (data.isAdd) {
         value['test_object'] = route.query.id
         postSystemDatabase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       } else {
         value['id'] = data.updateId
         putSystemDatabase(value)
           .then((res) => {
+            modalDialogRef.value?.toggle()
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .catch((error) => {
+            console.log(error)
+          })
+          .finally(() => {
+            modalDialogRef.value?.setConfirmLoading(false)
+          })
       }
+    } else {
+      modalDialogRef.value?.setConfirmLoading(false)
     }
   }
 

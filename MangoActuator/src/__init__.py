@@ -33,7 +33,7 @@ async def process(parent, is_login=False, retry=0):
             from src.network import HTTP
             from src.settings import settings
             from mangotools.data_processor import EncryptionTool
-            HTTP.not_auth.login(SetConfig.get_username(), SetConfig.get_password())  # type:
+            HTTP.not_auth.login(SetConfig.get_username(), SetConfig.get_password(), is_retry=True)  # type:
         retry = 0
     except Exception as error:
         if websocket_task:

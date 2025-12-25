@@ -22,7 +22,6 @@ from src.enums.ui_enum import *
 from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
 from src.tools.obtain_test_data import ObtainTestData
-from src.tools.redis.redis import Cache
 from src.tools.view import *
 
 
@@ -89,11 +88,7 @@ class SystemViews(ViewSet):
                 return ResponseData.success(RESPONSE_MSG_0062, str(ObtainTestData().regular(name)))
             except MangoServerError as error:
                 return ResponseData.fail((error.code, error.msg), )
-        else:
-            if Cache().read_data_from_cache(name):
-                return ResponseData.success(RESPONSE_MSG_0062, Cache().read_data_from_cache(name))
-            else:
-                return ResponseData.fail(RESPONSE_MSG_0060)
+        return ResponseData.fail(RESPONSE_MSG_0060)
 
     @action(methods=['post'], detail=False)
     @error_response('system')
