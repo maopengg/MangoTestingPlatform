@@ -7,6 +7,7 @@ import json
 
 from django.core.cache import cache
 from django.core.exceptions import FieldError
+from django.db import ProgrammingError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -101,8 +102,11 @@ class CacheDataViews(ViewSet):
         """
         # 尝试从缓存中获取数据
         cache_key = f"cache_data_{request.query_params.get('key')}"
-        cached_value = cache.get(cache_key)
-        
+        try:
+            cached_value = cache.get(cache_key)
+        except ProgrammingError:
+            return ResponseData.fail(RESPONSE_MSG_0141)
+
         if cached_value is not None:
             return ResponseData.success(RESPONSE_MSG_0031, cached_value)
         

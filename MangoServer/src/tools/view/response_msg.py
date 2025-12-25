@@ -143,3 +143,4 @@ RESPONSE_MSG_0137 = (300, 'file必须上传json格式，请参照webAPI新增模
 RESPONSE_MSG_0138 = (300, '请确保上传的产品和模块没有重名，并且存在')
 RESPONSE_MSG_0139 = (200, '设置debug状态成功')
 RESPONSE_MSG_0140 = (200, '导入API成功')
+RESPONSE_MSG_0141 = (300, '请在后端执行：python manage.py createcachetable django_cache命令创建表，或参照windows部署流程进行部署')
