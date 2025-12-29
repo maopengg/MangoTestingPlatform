@@ -8,7 +8,7 @@ from threading import Thread
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from mangotools.mangos import get, post, put, delete, inside_post, inside_put, inside_delete
+from mangotools.mangos import get, post, delete, inside_post, inside_put, inside_delete
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
@@ -18,6 +18,31 @@ from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
 from src.tools.view import *
+
+
+def put(self, **kwargs):
+    print(kwargs)
+    if isinstance(kwargs.get("request"), dict):
+        data = kwargs.get("request")
+        serializer = self.serializer(
+            instance=self.model.objects.get(pk=kwargs.get("request").get('id')),
+            data=data,
+            partial=True
+        )
+    else:
+        data = kwargs.get("request").data
+        serializer = self.serializer(
+            instance=self.model.objects.get(pk=kwargs.get("request").data.get('id')),
+            data=data,
+            partial=True
+        )
+    if serializer.is_valid():
+        serializer.save()
+        self.asynchronous_callback(kwargs.get("request").data.get('parent_id'))
+        return kwargs.get('response_data').success(kwargs.get('m_0082'), serializer.data)
+    else:
+        kwargs.get('log').system.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+        return kwargs.get('response_data').fail(kwargs.get('m_0004'), serializer.errors)
 
 
 class ModelCRUD(GenericAPIView):

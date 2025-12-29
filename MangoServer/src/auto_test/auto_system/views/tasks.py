@@ -67,32 +67,6 @@ class TasksViews(ViewSet):
 
     @action(methods=['put'], detail=False)
     @error_response('system')
-    def put_status(self, request: Request):
-        """
-        修改启停用
-        :param request:
-        :return:
-        """
-        obj = self.model.objects.get(id=request.data.get('id'))
-        obj.status = request.data.get('status')
-        obj.save()
-        return ResponseData.success(RESPONSE_MSG_0097, )
-
-    @action(methods=['put'], detail=False)
-    @error_response('system')
-    def put_notice(self, request: Request):
-        """
-        修改启停用
-        :param request:
-        :return:
-        """
-        obj = self.model.objects.get(id=request.data.get('id'))
-        obj.is_notice = request.data.get('is_notice')
-        obj.save()
-        return ResponseData.success(RESPONSE_MSG_0098, )
-
-    @action(methods=['put'], detail=False)
-    @error_response('system')
     def get_id_name(self, request: Request):
         """
         获取定时任务列表

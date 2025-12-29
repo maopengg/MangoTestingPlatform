@@ -179,6 +179,12 @@ export const tableColumns = useTableColumn([
     width: 70,
   },
   {
+    title: '失败通知',
+    key: 'fail_notice',
+    dataIndex: 'fail_notice',
+    width: 90,
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',

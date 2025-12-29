@@ -100,14 +100,20 @@
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
-                :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'status')"
                 :default-checked="record.status === 1"
               />
             </template>
             <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
               <a-switch
-                :beforeChange="(newValue) => onModifyIsNotice(newValue, record.id)"
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'is_notice')"
                 :default-checked="record.is_notice === 1"
+              />
+            </template>
+            <template v-else-if="item.key === 'fail_notice'" #cell="{ record }">
+              <a-switch
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'fail_notice')"
+                :default-checked="record.fail_notice === 1"
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -254,8 +260,6 @@
     getSystemTasks,
     postSystemTasks,
     getSystemTriggerTiming,
-    putSystemScheduledPutNotice,
-    putSystemScheduledPutStatus,
     putSystemTasks,
   } from '@/api/system/tasks'
   import { getSystemTimingList } from '@/api/system/time'
@@ -420,30 +424,12 @@
       .catch(console.log)
   }
 
-  const onModifyStatus = async (newValue: any, id: number) => {
+  const onModifyStatus = async (newValue: any, id: number, field: string) => {
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
         try {
           let value: any = false
-          await putSystemScheduledPutStatus(id, newValue ? 1 : 0)
-            .then((res) => {
-              Message.success(res.msg)
-              value = res.code === 200
-            })
-            .catch(reject)
-          resolve(value)
-        } catch (error) {
-          reject(error)
-        }
-      }, 300)
-    })
-  }
-  const onModifyIsNotice = async (newValue: any, id: number) => {
-    return new Promise<any>((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          let value: any = false
-          await putSystemScheduledPutNotice(id, newValue ? 1 : 0)
+          await putSystemTasks({ id: id, [field]: newValue ? 1 : 0 })
             .then((res) => {
               Message.success(res.msg)
               value = res.code === 200

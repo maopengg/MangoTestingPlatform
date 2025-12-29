@@ -39,7 +39,7 @@ class AutoSystemConfig(AppConfig):
             self.save_cache()
             self.populate_time_tasks()
             self.init_ass()
-            
+
             # 设置定时任务调度器
             self.setup_scheduler()
 
@@ -154,17 +154,17 @@ class AutoSystemConfig(AppConfig):
                 {"name": "每天早上9点-晚上7点每小时触发", "cron": "0 9-19 * * *"},
                 {"name": "每周一8点触发", "cron": "0 8 * * 1"},
             ]
-            
+
             existing_crons = set(TimeTasks.objects.values_list('cron', flat=True))
             missing_tasks = [task for task in required_tasks if task['cron'] not in existing_crons]
-            
+
             if missing_tasks:
                 # 创建不存在的定时任务配置
                 time_tasks_to_create = [
-                    TimeTasks(name=task['name'], cron=task['cron']) 
+                    TimeTasks(name=task['name'], cron=task['cron'])
                     for task in missing_tasks
                 ]
-                
+
                 created_count = len(time_tasks_to_create)
                 TimeTasks.objects.bulk_create(time_tasks_to_create, ignore_conflicts=True)
                 log.system.info(f'成功创建 {created_count} 个缺失的定时任务配置')
@@ -174,7 +174,6 @@ class AutoSystemConfig(AppConfig):
             log.system.error(f'初始化定时任务配置失败: {e}')
             # 重新抛出异常，让调用者知道初始化失败
             raise
-
 
     def shutdown(self):
         # 不再需要停止消费者线程，因为不再启动它
@@ -214,7 +213,7 @@ class AutoSystemConfig(AppConfig):
         try:
             # 创建调度器实例
             self.scheduler = BackgroundScheduler()
-            
+
             # 添加定时任务
             self.scheduler.add_job(
                 self.set_case_status,
@@ -222,7 +221,7 @@ class AutoSystemConfig(AppConfig):
                 minutes=5,
                 id='set_case_status'
             )
-            
+
             # 添加任务状态检查任务，每3分钟执行一次
             self.scheduler.add_job(
                 self.check_task_status,
@@ -230,12 +229,11 @@ class AutoSystemConfig(AppConfig):
                 minutes=3,
                 id='check_task_status'
             )
-            
+
             self.scheduler.start()
             atexit.register(self.stop_scheduler)
         except Exception as e:
             log.system.error(f'定时任务调度器设置异常: {e}')
-
 
     @async_task_db_connection()
     def check_task_status(self):
@@ -258,10 +256,11 @@ class AutoSystemConfig(AppConfig):
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
                 if i.is_notice != StatusEnum.SUCCESS.value and i.tasks is not None and i.tasks.notice_group and i.tasks.is_notice == StatusEnum.SUCCESS.value:
-                    log.system.info(f'通过定时任务发送通知：{i.pk}')
-                    NoticeMain.notice_main(i.tasks.notice_group_id, i.pk)
-                    i.is_notice = StatusEnum.SUCCESS.value
-                    i.save()
+                    if (i.tasks.fail_notice == StatusEnum.SUCCESS.value and i.status != StatusEnum.SUCCESS.value) or i.tasks.fail_notice != StatusEnum.SUCCESS.value:
+                        log.system.info(f'通过定时任务发送通知：{i.pk}')
+                        NoticeMain.notice_main(i.tasks.notice_group_id, i.pk)
+                        i.is_notice = StatusEnum.SUCCESS.value
+                        i.save()
 
             # 把进行中的，修改为待开始,或者失败
             test_suite_details_list = TestSuiteDetails \

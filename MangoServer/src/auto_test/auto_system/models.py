@@ -219,6 +219,7 @@ class Tasks(models.Model):
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知", default=0)
     notice_group = models.ForeignKey(to=NoticeGroup, to_field="id", verbose_name='通知组', on_delete=models.SET_NULL,
                                      null=True)
+    fail_notice = models.SmallIntegerField(verbose_name="只有失败发送", default=0)
 
     class Meta:
         db_table = 'tasks'

@@ -57,27 +57,3 @@ export function getSystemTasksName() {
     },
   })
 }
-
-export function putSystemScheduledPutStatus(id: number, status: number) {
-  return put({
-    url: 'system/tasks/status',
-    data: () => {
-      return {
-        id: id,
-        status: status,
-      }
-    },
-  })
-}
-
-export function putSystemScheduledPutNotice(id: number, status: number) {
-  return put({
-    url: 'system/tasks/notice',
-    data: () => {
-      return {
-        id: id,
-        is_notice: status,
-      }
-    },
-  })
-}
