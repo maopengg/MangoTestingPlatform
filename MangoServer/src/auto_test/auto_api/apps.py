@@ -5,8 +5,6 @@ import time
 import os
 from django.apps import AppConfig
 
-from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
-from src.tools.log_collector import log
 
 
 class AutoApiConfig(AppConfig):
@@ -43,8 +41,9 @@ class AutoApiConfig(AppConfig):
         return False
 
     def test_case_consumption(self):
-        # 使用新的后台任务获取器，不再使用旧的process_tasks方法
+        from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
         ApiCaseFlow.start()
 
     def shutdown(self):
+        from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
         ApiCaseFlow.stop()

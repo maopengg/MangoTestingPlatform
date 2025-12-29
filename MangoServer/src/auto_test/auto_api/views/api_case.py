@@ -11,7 +11,6 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCase
-from src.auto_test.auto_api.service.api_import.automatic_parsing_interface import ApiParameter
 from src.auto_test.auto_api.service.test_case.test_case import TestCase
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
@@ -104,30 +103,6 @@ class ApiCaseViews(ViewSet):
             add_tasks.add_test_suite_details(case_id, TestCaseTypeEnum.API)
         return ResponseData.success(RESPONSE_MSG_0111)
 
-    @action(methods=['get'], detail=False)
-    @error_response('api')
-    def api_synchronous_interface(self, request: Request):
-        """
-        同步接口
-        @param request:
-        @return:
-        """
-        host = request.GET.get('host')
-        project_id = request.GET.get('project_id')
-        case_list = ApiParameter(host, project_id).get_stage_api()
-        res = []
-        for i in case_list:
-            serializer = self.serializer_class(data=i)
-            if serializer.is_valid():
-                serializer.save()
-                res.append(True)
-            else:
-                log.api.error(f"错误信息：{str(serializer.errors)}"
-                              f"错误数据：{i}")
-                res.append(False)
-        if False in res:
-            return ResponseData.fail(RESPONSE_MSG_0006)
-        return ResponseData.success(RESPONSE_MSG_0007, )
 
     @action(methods=['POST'], detail=False)
     @error_response('api')

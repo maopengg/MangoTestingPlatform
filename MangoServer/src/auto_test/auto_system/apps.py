@@ -12,12 +12,10 @@ import atexit
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
-from django.db import close_old_connections
 from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
-from src.auto_test.auto_system.models import TestSuiteDetails
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import TaskEnum
 from src.tools.decorator.retry import async_task_db_connection
@@ -241,6 +239,8 @@ class AutoSystemConfig(AppConfig):
     @async_task_db_connection(max_retries=2, retry_delay=2)
     def check_task_status(self):
         """检查所有任务状态，每3分钟执行一次"""
+        from src.auto_test.auto_system.models import TestSuiteDetails
+
         try:
 
             # 检查超过30分钟仍处于进行中状态的任务，将其重置为待开始

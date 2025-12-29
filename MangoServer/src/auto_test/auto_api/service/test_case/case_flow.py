@@ -9,20 +9,18 @@ import time
 from django.utils import timezone
 
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
-from src.auto_test.auto_user.models import User
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
-from src.models.system_model import ConsumerCaseModel, GetTaskModel
+from src.models.system_model import ConsumerCaseModel
 from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
 class ApiCaseFlow:
-    max_tasks = 10  # 根据项目配置，使用10个线程
+    max_tasks = 10
     executor = ThreadPoolExecutor(max_workers=max_tasks)
     _get_case_lock = threading.Lock()
     retry_frequency = 3
     running = True
-    # 用于跟踪当前活跃的任务数
     _active_tasks = 0
 
     @classmethod
@@ -74,17 +72,14 @@ class ApiCaseFlow:
                         parametrize=test_suite_details.parametrize,
                     )
                     log.system.debug(f'API发送用例：{case_model.model_dump_json()}')
-                    # 提交任务到线程池执行
                     future = cls.executor.submit(cls.execute_task, case_model)
-                    # 增加活跃任务计数
                     cls._active_tasks += 1
                     cls.update_status_proceed(test_suite, test_suite_details)
-                    
-                    # 添加回调，在任务完成后减少计数
+
                     def task_done(fut):
-                        # 在回调函数中也需要使用锁来保证线程安全
                         with cls._get_case_lock:
                             cls._active_tasks = max(0, cls._active_tasks - 1)
+
                     future.add_done_callback(task_done)
             except Exception as error:
                 log.system.error(f'执行器主动拉取任务失败：{error}')
@@ -116,7 +111,4 @@ class ApiCaseFlow:
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):
-        # API任务现在完全通过数据库队列管理
-        # 不需要做任何特殊处理，后台任务获取器会自动获取待执行的任务
-        # 任务状态已经在add_test_suite_details中设置为STAY_BEGIN
         pass
