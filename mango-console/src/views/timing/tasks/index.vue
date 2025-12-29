@@ -72,6 +72,8 @@
             :fixed="item.fixed"
             :title="item.title"
             :width="item.width"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
