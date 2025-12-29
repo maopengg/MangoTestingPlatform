@@ -10,7 +10,7 @@ import traceback
 from PySide6.QtWidgets import QApplication
 from mangotools.mangos import Mango
 
-from src import SetConfig
+from src.tools.set_config import SetConfig
 from src.pages.login.login_window import LoginLogic
 from src.tools import project_dir
 from src.tools.log_collector import log
