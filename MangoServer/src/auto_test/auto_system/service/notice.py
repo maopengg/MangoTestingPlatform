@@ -33,7 +33,6 @@ class NoticeMain:
             cls.__ding_ding_send(notice_obj.dingding, test_report)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def test_notice_send(cls, _id):
         notice_obj = NoticeGroup.objects.get(id=_id)
         test_report = TestReportModel(**{
@@ -69,7 +68,6 @@ class NoticeMain:
             cls.__ding_ding_send(notice_obj.dingding, test_report)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def __we_chat_send(cls, webhook, test_report: TestReportModel | None = None):
         try:
             wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
@@ -78,7 +76,6 @@ class NoticeMain:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def __fs_chat_send(cls, webhook: str, test_report: TestReportModel | None = None):
         try:
             wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
@@ -87,7 +84,6 @@ class NoticeMain:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def __ding_ding_send(cls, webhook, test_report: TestReportModel | None = None):
         try:
             wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
@@ -96,7 +92,6 @@ class NoticeMain:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def __wend_mail_send(cls, send_list, test_report: TestReportModel | None = None):
         send_user, email_host, stamp_key = cls.mail_config()
         email = EmailSend(EmailNoticeModel(
@@ -108,7 +103,6 @@ class NoticeMain:
         email.send_main()
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
         execution_duration = test_suite.update_time - test_suite.create_time
@@ -176,7 +170,6 @@ class NoticeMain:
         )
 
     @staticmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def mail_config():
         try:
             send_user = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_SEND_USER.name).value
@@ -190,7 +183,6 @@ class NoticeMain:
         return send_user, email_host, stamp_key
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_domain_name(cls):
         domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.value}，此处才会显示跳转连接'
         try:

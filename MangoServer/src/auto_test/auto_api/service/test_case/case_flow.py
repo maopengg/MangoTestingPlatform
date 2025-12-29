@@ -11,15 +11,14 @@ from django.utils import timezone
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.models.system_model import ConsumerCaseModel
+from src.settings import API_MAX_TASKS, RETRY_FREQUENCY
 from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
 class ApiCaseFlow:
-    max_tasks = 10
-    executor = ThreadPoolExecutor(max_workers=max_tasks)
+    executor = ThreadPoolExecutor(max_workers=API_MAX_TASKS)
     _get_case_lock = threading.Lock()
-    retry_frequency = 3
     running = True
     _active_tasks = 0
 
@@ -34,7 +33,7 @@ class ApiCaseFlow:
     def stop(cls):
         """停止后台任务获取"""
         cls.running = False
-        cls.executor.shutdown(wait=True)  # 关闭线程池
+        cls.executor.shutdown(wait=True)
 
     @classmethod
     def _background_task_fetcher(cls):
@@ -42,24 +41,24 @@ class ApiCaseFlow:
         while cls.running:
             try:
                 cls.get_case()
-                time.sleep(0.5)  # 短暂休眠避免过度轮询
+                time.sleep(0.5)
             except Exception as e:
                 log.system.error(f'API任务获取器出错: {e}')
-                time.sleep(2)  # 出错时增加休眠时间
+                time.sleep(2)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
+    @async_task_db_connection()
     def get_case(cls, ):
         with cls._get_case_lock:
-            if cls._active_tasks > cls.max_tasks:
+            if cls._active_tasks > API_MAX_TASKS:
                 return
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=cls.retry_frequency + 1,
+                retry__lt=RETRY_FREQUENCY + 1,
                 type=TestCaseTypeEnum.API.value
             ).first()
-            try:
-                if test_suite_details:
+            if test_suite_details:
+                try:
                     test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
                     case_model = ConsumerCaseModel(
                         test_suite_details=test_suite_details.id,
@@ -81,11 +80,11 @@ class ApiCaseFlow:
                             cls._active_tasks = max(0, cls._active_tasks - 1)
 
                     future.add_done_callback(task_done)
-            except Exception as error:
-                log.system.error(f'执行器主动拉取任务失败：{error}')
-                test_suite_details.status = TaskEnum.FAIL.value
-                test_suite_details.retry += 1
-                test_suite_details.save()
+                except Exception as error:
+                    log.system.error(f'执行器主动拉取任务失败：{error}')
+                    test_suite_details.status = TaskEnum.FAIL.value
+                    test_suite_details.retry += 1
+                    test_suite_details.save()
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):

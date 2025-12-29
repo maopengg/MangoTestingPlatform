@@ -9,13 +9,11 @@ from src.auto_test.auto_system.models import TestSuiteDetails
 from src.enums.tools_enum import StatusEnum
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.system_model import CaseCounterModel
-from src.tools.decorator.retry import async_task_db_connection
 
 
 class TestCounter:
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=3)
     def res_main(cls, _id):
         model = TestSuiteDetails.objects.get(id=_id)
         if model.type == TestCaseTypeEnum.API.value:

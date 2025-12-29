@@ -17,7 +17,8 @@ from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import TaskEnum
+from src.enums.tools_enum import TaskEnum, StatusEnum
+from src.settings import RETRY_FREQUENCY
 from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 from django.db import transaction
@@ -236,40 +237,57 @@ class AutoSystemConfig(AppConfig):
             log.system.error(f'定时任务调度器设置异常: {e}')
 
 
-    @async_task_db_connection(max_retries=2, retry_delay=2)
+    @async_task_db_connection()
     def check_task_status(self):
         """检查所有任务状态，每3分钟执行一次"""
-        from src.auto_test.auto_system.models import TestSuiteDetails
+        from src.auto_test.auto_system.service.notice import NoticeMain
 
+        reset_time = 30
         try:
+            # 检查全部执行完，没有修改测试套结果的，和没有发送测试报告的
+            from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
+            test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
+            for i in test_suite:
+                status_list = TestSuiteDetails \
+                    .objects \
+                    .filter(test_suite=i).values_list('status', flat=True)
+                if TaskEnum.STAY_BEGIN.value not in status_list and TaskEnum.PROCEED.value not in status_list:
+                    if TaskEnum.FAIL.value in status_list:
+                        i.status = TaskEnum.FAIL.value
+                    else:
+                        i.status = TaskEnum.SUCCESS.value
+                    i.save()
+                if i.is_notice != StatusEnum.SUCCESS.value and i.tasks is not None and i.tasks.notice_group and i.tasks.is_notice == StatusEnum.SUCCESS.value:
+                    log.system.info(f'通过定时任务发送通知：{i.pk}')
+                    NoticeMain.notice_main(i.tasks.notice_group_id, i.pk)
+                    i.is_notice = StatusEnum.SUCCESS.value
+                    i.save()
 
-            # 检查超过30分钟仍处于进行中状态的任务，将其重置为待开始
-            thirty_minutes_ago = timezone.now() - timedelta(minutes=30)
-            
-            # 更新超时的任务状态
-            timeout_tasks = TestSuiteDetails.objects.filter(
-                status=TaskEnum.PROCEED.value,
-                push_time__lt=thirty_minutes_ago
-            )
-            
-            timeout_count = timeout_tasks.count()
-            if timeout_count > 0:
-                timeout_tasks.update(status=TaskEnum.STAY_BEGIN.value)
-                log.system.info(f'重置了 {timeout_count} 个超时任务状态为待开始')
-            
-            # 检查长时间未更新的任务
-            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
-            long_running_tasks = TestSuiteDetails.objects.filter(
-                status=TaskEnum.PROCEED.value,
-                push_time__lt=ten_minutes_ago
-            ).exclude(id__in=timeout_tasks.values_list('id', flat=True))
-            
-            long_running_count = long_running_tasks.count()
-            if long_running_count > 0:
-                log.system.debug(f'发现 {long_running_count} 个长时间运行的任务')
-                
-            # 确保事务提交
-            transaction.commit()
+            # 把进行中的，修改为待开始,或者失败
+            test_suite_details_list = TestSuiteDetails \
+                .objects \
+                .filter(status=TaskEnum.PROCEED.value, retry__lt=RETRY_FREQUENCY + 1)
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
+                    test_suite_detail.status = TaskEnum.STAY_BEGIN.value
+                    test_suite_detail.save()
+                    log.system.info(
+                        f'推送时间超过{reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
+
+            # 把重试次数满的，修改为0，只有未知错误才会设置为失败
+            test_suite_details_list = TestSuiteDetails \
+                .objects \
+                .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value],
+                        retry__gte=RETRY_FREQUENCY + 1)
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
+                    test_suite_detail.status = TaskEnum.FAIL.value
+                    test_suite_detail.save()
+                    log.system.info(
+                        f'重试次数超过{RETRY_FREQUENCY + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
+
         except Exception as e:
             log.system.error(f'检查任务状态时发生异常: {e}')
             import traceback
@@ -284,7 +302,7 @@ class AutoSystemConfig(AppConfig):
             traceback.print_exc()
             log.system.error(f'停止调度器异常: {e}')
 
-    @async_task_db_connection(max_retries=2, retry_delay=2)
+    @async_task_db_connection()
     def set_case_status(self):
         from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
         from src.auto_test.auto_pytest.models import PytestCase

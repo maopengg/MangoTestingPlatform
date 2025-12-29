@@ -55,7 +55,7 @@ class RunTasks:
         return False
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
+    @async_task_db_connection()
     def timing(cls, timing_strategy_id):
         log.system.debug(f'触发定时器：{timing_strategy_id}')
         scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
@@ -65,7 +65,6 @@ class RunTasks:
             cls.distribute(scheduled_tasks)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def trigger(cls, scheduled_tasks_id):
         scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
         cls.distribute(scheduled_tasks)

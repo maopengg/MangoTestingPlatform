@@ -14,17 +14,13 @@ from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
+from src.settings import RETRY_FREQUENCY
 from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
 
 class PyCaseFlow:
-    queue = Queue()
-    max_tasks = 2
-    executor = ThreadPoolExecutor(max_workers=max_tasks)
-    running = True
     _get_case_lock = threading.Lock()
-    retry_frequency = 3
 
     @classmethod
     def stop(cls):
@@ -33,38 +29,41 @@ class PyCaseFlow:
     @classmethod
     @async_task_db_connection(infinite_retry=True)
     def process_tasks(cls):
-        while cls.running:
-            if not cls.queue.empty():
-                case_model = cls.queue.get()
-                cls.executor.submit(cls.execute_task, case_model)
-            time.sleep(0.1)
+        # while cls.running:
+        #     if not cls.queue.empty():
+        #         case_model = cls.queue.get()
+        #         cls.executor.submit(cls.execute_task, case_model)
+        #     time.sleep(0.1)
+        pass
 
     @classmethod
     @async_task_db_connection()
     def execute_task(cls, case_model: ConsumerCaseModel):
-        from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
-        test_case = TestCase(
-            user_id=case_model.user_id,
-            test_suite=case_model.test_suite,
-            test_suite_details=case_model.test_suite_details,
-        )
-        return test_case.test_case(case_model.case_id, case_model.test_env)
+        # from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
+        # test_case = TestCase(
+        #     user_id=case_model.user_id,
+        #     test_suite=case_model.test_suite,
+        #     test_suite_details=case_model.test_suite_details,
+        # )
+        # return test_case.test_case(case_model.case_id, case_model.test_env)
+        pass
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):
-        cls.queue.put(case_model)
+        # cls.queue.put(case_model)
+        pass
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
+    @async_task_db_connection()
     def get_case(cls, data):
         with cls._get_case_lock:
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=cls.retry_frequency + 1,
+                retry__lt=RETRY_FREQUENCY + 1,
                 type=TestCaseTypeEnum.PYTEST.value
             ).first()
-            try:
-                if test_suite_details:
+            if test_suite_details:
+                try:
                     test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
                     case_model = ConsumerCaseModel(
                         test_suite_details=test_suite_details.id,
@@ -78,10 +77,10 @@ class PyCaseFlow:
                     )
                     cls.send_case(case_model, data.username)
                     cls.update_status_proceed(test_suite, test_suite_details)
-            except MangoServerError as error:
-                log.system.debug(f'执行器主动拉取任务失败：{error}')
-                test_suite_details.status = TaskEnum.FAIL.value
-                test_suite_details.save()
+                except MangoServerError as error:
+                    log.system.debug(f'执行器主动拉取任务失败：{error}')
+                    test_suite_details.status = TaskEnum.FAIL.value
+                    test_suite_details.save()
 
     @classmethod
     def send_case(cls, case_model, send_case_user):
