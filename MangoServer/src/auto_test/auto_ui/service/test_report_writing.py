@@ -3,19 +3,14 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-
-from django.db import connection
-
 from src.auto_test.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
 from src.exceptions import *
 from src.models.ui_model import UiCaseResultModel, PageStepsResultModel
-from src.tools.decorator.retry import async_task_db_connection
 
 
 class TestReportWriting:
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
         try:
             log.ui.debug(f'开始写入步骤测试结果，步骤数据是：{data.model_dump_json()}')
@@ -28,7 +23,6 @@ class TestReportWriting:
                 '忽略这个报错，如果是在步骤详情中没有查到，可以忽略这个错误，步骤详情中的调试不会修改整个步骤状态')
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def update_test_case(cls, data: UiCaseResultModel):
         log.ui.debug(f'开始写入用例测试结果，用例的测试状态是：{data.status}')
         case = UiCase.objects.get(id=data.id)
@@ -38,7 +32,6 @@ class TestReportWriting:
             cls.update_step(i)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def update_step(cls, step_data: PageStepsResultModel):
         log.ui.debug(f'开始写入用例中步骤测试结果，步骤数据是：{step_data.model_dump_json()}')
 

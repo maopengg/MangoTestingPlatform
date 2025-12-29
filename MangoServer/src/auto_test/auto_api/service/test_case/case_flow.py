@@ -3,37 +3,90 @@
 # @Description: 
 # @Time   : 2024-11-23 20:38
 # @Author : 毛鹏
+import threading
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
-
 import time
+from django.utils import timezone
 
+from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
+from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.models.system_model import ConsumerCaseModel
+from src.settings import API_MAX_TASKS, RETRY_FREQUENCY
 from src.tools.decorator.retry import async_task_db_connection
+from src.tools.log_collector import log
 
 
 class ApiCaseFlow:
-    queue = Queue()
-    max_tasks = 5
-
-    executor = ThreadPoolExecutor(max_workers=max_tasks)
+    executor = ThreadPoolExecutor(max_workers=API_MAX_TASKS)
+    _get_case_lock = threading.Lock()
     running = True
+    _active_tasks = 0
+
+    @classmethod
+    def start(cls):
+        """启动后台任务获取线程"""
+        thread = threading.Thread(target=cls._background_task_fetcher)
+        thread.daemon = True
+        thread.start()
 
     @classmethod
     def stop(cls):
+        """停止后台任务获取"""
         cls.running = False
+        cls.executor.shutdown(wait=True)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=3)
-    def process_tasks(cls):
+    def _background_task_fetcher(cls):
+        """后台任务获取循环"""
         while cls.running:
-            if not cls.queue.empty():
-                case_model = cls.queue.get()
-                cls.executor.submit(cls.execute_task, case_model)
-            time.sleep(0.1)
+            try:
+                cls.get_case()
+                time.sleep(0.5)
+            except Exception as e:
+                log.system.error(f'API任务获取器出错: {e}')
+                time.sleep(2)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=3)
+    @async_task_db_connection()
+    def get_case(cls, ):
+        with cls._get_case_lock:
+            if cls._active_tasks > API_MAX_TASKS:
+                return
+            test_suite_details = TestSuiteDetails.objects.filter(
+                status=TaskEnum.STAY_BEGIN.value,
+                retry__lt=RETRY_FREQUENCY + 1,
+                type=TestCaseTypeEnum.API.value
+            ).first()
+            if test_suite_details:
+                try:
+                    test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
+                    case_model = ConsumerCaseModel(
+                        test_suite_details=test_suite_details.id,
+                        test_suite=test_suite_details.test_suite.id,
+                        case_id=test_suite_details.case_id,
+                        case_name=test_suite_details.case_name,
+                        test_env=test_suite_details.test_env,
+                        user_id=test_suite.user.id,
+                        tasks_id=test_suite.tasks.id if test_suite.tasks else None,
+                        parametrize=test_suite_details.parametrize,
+                    )
+                    log.system.debug(f'API发送用例：{case_model.model_dump_json()}')
+                    future = cls.executor.submit(cls.execute_task, case_model)
+                    cls._active_tasks += 1
+                    cls.update_status_proceed(test_suite, test_suite_details)
+
+                    def task_done(fut):
+                        with cls._get_case_lock:
+                            cls._active_tasks = max(0, cls._active_tasks - 1)
+
+                    future.add_done_callback(task_done)
+                except Exception as error:
+                    log.system.error(f'执行器主动拉取任务失败：{error}')
+                    test_suite_details.status = TaskEnum.FAIL.value
+                    test_suite_details.retry += 1
+                    test_suite_details.save()
+
+    @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
         from src.auto_test.auto_api.service.test_case.test_case import TestCase
         test_case = TestCase(
@@ -46,5 +99,15 @@ class ApiCaseFlow:
         return test_case.test_case()
 
     @classmethod
+    def update_status_proceed(cls, test_suite, test_suite_details):
+        test_suite.status = TaskEnum.PROCEED.value
+        test_suite.save()
+
+        test_suite_details.status = TaskEnum.PROCEED.value
+        test_suite_details.retry += 1
+        test_suite_details.push_time = timezone.now()
+        test_suite_details.save()
+
+    @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):
-        cls.queue.put(case_model)
+        pass

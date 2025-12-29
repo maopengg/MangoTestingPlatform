@@ -104,8 +104,8 @@
                       :tooltip="item.tooltip"
                       :width="item.width"
                     >
-                      <template v-if="item.dataIndex === 'sort'" #cell>
-                        <IconDragArrow />
+                      <template v-if="item.key === 'index'" #cell="{ record }">
+                        {{ record.id }}
                       </template>
                       <template v-else-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
                         {{ record.page_step?.name }}

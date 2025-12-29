@@ -14,47 +14,48 @@ from src.auto_test.auto_user.models import User
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel, GetTaskModel
+from src.settings import RETRY_FREQUENCY
 from src.tools.log_collector import log
 from src.tools.decorator.retry import async_task_db_connection
 
 
 class UiCaseFlow:
     current_index = 0
-    retry_frequency = 3
     _get_case_lock = threading.Lock()
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel, retry=0, max_retry=3):
-        retry += 1
-        user_list = [i for i in SocketUser.user if i.client_obj]
-        if not user_list:
-            log.system.debug('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
-            time.sleep(5)
-            return
-        try:
-            cls.current_index = (cls.current_index + 1) % len(user_list)
-            user = user_list[cls.current_index]
-        except IndexError:
-            time.sleep(3)
-            return cls.execute_task(case_model, retry, max_retry)
-        cls.send_case(user.user_id, user.username, case_model, user.username)
+        # retry += 1
+        # user_list = [i for i in SocketUser.user if i.client_obj]
+        # if not user_list:
+        #     log.system.debug('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
+        #     time.sleep(5)
+        #     return
+        # try:
+        #     cls.current_index = (cls.current_index + 1) % len(user_list)
+        #     user = user_list[cls.current_index]
+        # except IndexError:
+        #     time.sleep(3)
+        #     return cls.execute_task(case_model, retry, max_retry)
+        # cls.send_case(user.user_id, user.username, case_model, user.username)
+        pass
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):
-        cls.execute_task(case_model)
+        # cls.execute_task(case_model)
+        pass
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_case(cls, data: GetTaskModel):
         model = User.objects.get(username=data.username)
         with cls._get_case_lock:
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=cls.retry_frequency + 1,
+                retry__lt=RETRY_FREQUENCY + 1,
                 type=TestCaseTypeEnum.UI.value
             ).first()
-            try:
-                if test_suite_details:
+            if test_suite_details:
+                try:
                     test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
                     case_model = ConsumerCaseModel(
                         test_suite_details=test_suite_details.id,
@@ -67,13 +68,13 @@ class UiCaseFlow:
                         parametrize=test_suite_details.parametrize,
                     )
                     log.system.debug(f'UI发送用例：{case_model.model_dump_json()}')
-                    cls.send_case(model.id, model.username, case_model, test_suite.user.username)
+                    cls.send_case(model.pk, model.username, case_model, test_suite.user.username)
                     cls.update_status_proceed(test_suite, test_suite_details)
-            except Exception as error:
-                log.system.error(f'执行器主动拉取任务失败：{error}')
-                test_suite_details.status = TaskEnum.FAIL.value
-                test_suite_details.retry += 1
-                test_suite_details.save()
+                except Exception as error:
+                    log.system.error(f'执行器主动拉取任务失败：{error}')
+                    test_suite_details.status = TaskEnum.FAIL.value
+                    test_suite_details.retry += 1
+                    test_suite_details.save()
 
     @classmethod
     def update_status_proceed(cls, test_suite, test_suite_details):

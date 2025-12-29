@@ -12,6 +12,6 @@ from src.tools.decorator.retry import async_task_db_connection
 class APIConsumer:
 
     @classmethod
-    @async_task_db_connection(max_retries=1)
+    @async_task_db_connection(max_retries=1, retry_delay=1)
     def a_recording_api(cls, data: dict):
         Recording.write(RecordingApiModel(**data))

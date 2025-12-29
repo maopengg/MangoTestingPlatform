@@ -12,14 +12,16 @@ import atexit
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
-from django.db import close_old_connections
 from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import TaskEnum
+from src.enums.tools_enum import TaskEnum, StatusEnum
+from src.settings import RETRY_FREQUENCY
+from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
+from django.db import transaction
 
 
 class AutoSystemConfig(AppConfig):
@@ -36,9 +38,8 @@ class AutoSystemConfig(AppConfig):
             self.delayed_task()
             self.save_cache()
             self.populate_time_tasks()
-            self.run_tests()
             self.init_ass()
-            
+
             # 设置定时任务调度器
             self.setup_scheduler()
 
@@ -124,36 +125,58 @@ class AutoSystemConfig(AppConfig):
     def populate_time_tasks():
         try:
             from src.auto_test.auto_system.models import TimeTasks
-            if not TimeTasks.objects.exists():
-                TimeTasks.objects.create(name="每5分钟触发", cron="*/5 * * * *")
-                TimeTasks.objects.create(name="每30分钟触发", cron="*/30 * * * *")
-                TimeTasks.objects.create(name="每1小时触发", cron="0 * * * *")
-                TimeTasks.objects.create(name="每2小时触发", cron="0 */2 * * *")
-                TimeTasks.objects.create(name="每5小时触发", cron="0 */5 * * *")
-                TimeTasks.objects.create(name="每天1点触发", cron="0 1 * * *")
-                TimeTasks.objects.create(name="每天5点触发", cron="0 5 * * *")
-                TimeTasks.objects.create(name="每天9点触发", cron="0 9 * * *")
-                TimeTasks.objects.create(name="每天12点触发", cron="0 12 * * *")
-                TimeTasks.objects.create(name="每天18点触发", cron="0 18 * * *")
-                TimeTasks.objects.create(name="每天22点触发", cron="0 22 * * *")
-                TimeTasks.objects.create(name="每天9点，14点，17点触发", cron="0 9,14,17 * * *")
-                TimeTasks.objects.create(name="每周一8点触发", cron="0 8 * * 1")
-        except Exception as e:
-            log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
+            required_tasks = [
+                {"name": "每1分钟触发", "cron": "*/1 * * * *"},
+                {"name": "每3分钟触发", "cron": "*/3 * * * *"},
+                {"name": "每5分钟触发", "cron": "*/5 * * * *"},
+                {"name": "每10分钟触发", "cron": "*/10 * * * *"},
+                {"name": "每20分钟触发", "cron": "*/20 * * * *"},
+                {"name": "每30分钟触发", "cron": "*/30 * * * *"},
+                {"name": "每1小时触发", "cron": "0 * * * *"},
+                {"name": "每2小时触发", "cron": "0 */2 * * *"},
+                {"name": "每3小时触发", "cron": "0 */3 * * *"},
+                {"name": "每4小时触发", "cron": "0 */4 * * *"},
+                {"name": "每5小时触发", "cron": "0 */5 * * *"},
+                {"name": "每6小时触发", "cron": "0 */6 * * *"},
+                {"name": "每天1点触发", "cron": "0 1 * * *"},
+                {"name": "每天5点触发", "cron": "0 5 * * *"},
+                {"name": "每天8点触发", "cron": "0 8 * * *"},
+                {"name": "每天9点触发", "cron": "0 9 * * *"},
+                {"name": "每天10点触发", "cron": "0 10 * * *"},
+                {"name": "每天12点触发", "cron": "0 12 * * *"},
+                {"name": "每天14点触发", "cron": "0 14 * * *"},
+                {"name": "每天16点触发", "cron": "0 16 * * *"},
+                {"name": "每天17点触发", "cron": "0 17 * * *"},
+                {"name": "每天18点触发", "cron": "0 18 * * *"},
+                {"name": "每天19点触发", "cron": "0 19 * * *"},
+                {"name": "每天22点触发", "cron": "0 22 * * *"},
+                {"name": "每天9点，14点，17点触发", "cron": "0 9,14,17 * * *"},
+                {"name": "每天早上9点-晚上7点每小时触发", "cron": "0 9-19 * * *"},
+                {"name": "每周一8点触发", "cron": "0 8 * * 1"},
+            ]
 
-    def run_tests(self):
-        from src.auto_test.auto_system.service.consumer import ConsumerThread
-        self.consumer_thread = ConsumerThread()
-        self.system_task = threading.Thread(target=self.consumer_thread.consumer)
-        self.system_task.daemon = True
-        self.system_task.start()
+            existing_crons = set(TimeTasks.objects.values_list('cron', flat=True))
+            missing_tasks = [task for task in required_tasks if task['cron'] not in existing_crons]
+
+            if missing_tasks:
+                # 创建不存在的定时任务配置
+                time_tasks_to_create = [
+                    TimeTasks(name=task['name'], cron=task['cron'])
+                    for task in missing_tasks
+                ]
+
+                created_count = len(time_tasks_to_create)
+                TimeTasks.objects.bulk_create(time_tasks_to_create, ignore_conflicts=True)
+                log.system.info(f'成功创建 {created_count} 个缺失的定时任务配置')
+            else:
+                log.system.info('所有定时任务配置已存在，跳过初始化')
+        except Exception as e:
+            log.system.error(f'初始化定时任务配置失败: {e}')
+            # 重新抛出异常，让调用者知道初始化失败
+            raise
 
     def shutdown(self):
-        try:
-            self.consumer_thread.stop()
-            self.system_task.join()
-        except AttributeError:
-            pass
+        # 不再需要停止消费者线程，因为不再启动它
         # 停止全局调度器
         self.stop_scheduler()
 
@@ -190,7 +213,7 @@ class AutoSystemConfig(AppConfig):
         try:
             # 创建调度器实例
             self.scheduler = BackgroundScheduler()
-            
+
             # 添加定时任务
             self.scheduler.add_job(
                 self.set_case_status,
@@ -198,10 +221,76 @@ class AutoSystemConfig(AppConfig):
                 minutes=5,
                 id='set_case_status'
             )
+
+            # 添加任务状态检查任务，每3分钟执行一次
+            self.scheduler.add_job(
+                self.check_task_status,
+                'interval',
+                minutes=3,
+                id='check_task_status'
+            )
+
             self.scheduler.start()
             atexit.register(self.stop_scheduler)
         except Exception as e:
             log.system.error(f'定时任务调度器设置异常: {e}')
+
+    @async_task_db_connection()
+    def check_task_status(self):
+        """检查所有任务状态，每3分钟执行一次"""
+        from src.auto_test.auto_system.service.notice import NoticeMain
+
+        reset_time = 30
+        try:
+            # 检查全部执行完，没有修改测试套结果的，和没有发送测试报告的
+            from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
+            test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
+            for i in test_suite:
+                status_list = TestSuiteDetails \
+                    .objects \
+                    .filter(test_suite=i).values_list('status', flat=True)
+                if TaskEnum.STAY_BEGIN.value not in status_list and TaskEnum.PROCEED.value not in status_list:
+                    if TaskEnum.FAIL.value in status_list:
+                        i.status = TaskEnum.FAIL.value
+                    else:
+                        i.status = TaskEnum.SUCCESS.value
+                    i.save()
+                if i.is_notice != StatusEnum.SUCCESS.value and i.tasks is not None and i.tasks.notice_group and i.tasks.is_notice == StatusEnum.SUCCESS.value:
+                    if (i.tasks.fail_notice == StatusEnum.SUCCESS.value and i.status != StatusEnum.SUCCESS.value) or i.tasks.fail_notice != StatusEnum.SUCCESS.value:
+                        log.system.info(f'通过定时任务发送通知：{i.pk}')
+                        NoticeMain.notice_main(i.tasks.notice_group_id, i.pk)
+                        i.is_notice = StatusEnum.SUCCESS.value
+                        i.save()
+
+            # 把进行中的，修改为待开始,或者失败
+            test_suite_details_list = TestSuiteDetails \
+                .objects \
+                .filter(status=TaskEnum.PROCEED.value, retry__lt=RETRY_FREQUENCY + 1)
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
+                    test_suite_detail.status = TaskEnum.STAY_BEGIN.value
+                    test_suite_detail.save()
+                    log.system.info(
+                        f'推送时间超过{reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
+
+            # 把重试次数满的，修改为0，只有未知错误才会设置为失败
+            test_suite_details_list = TestSuiteDetails \
+                .objects \
+                .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value],
+                        retry__gte=RETRY_FREQUENCY + 1)
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
+                    test_suite_detail.status = TaskEnum.FAIL.value
+                    test_suite_detail.save()
+                    log.system.info(
+                        f'重试次数超过{RETRY_FREQUENCY + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
+
+        except Exception as e:
+            log.system.error(f'检查任务状态时发生异常: {e}')
+            import traceback
+            traceback.print_exc()
 
     def stop_scheduler(self):
         """停止调度器"""
@@ -212,38 +301,27 @@ class AutoSystemConfig(AppConfig):
             traceback.print_exc()
             log.system.error(f'停止调度器异常: {e}')
 
-
+    @async_task_db_connection()
     def set_case_status(self):
-        from django.db import transaction
+        from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+        from src.auto_test.auto_pytest.models import PytestCase
+        from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        models_to_update = [
+            UiCase,
+            UiCaseStepsDetailed,
+            PageSteps,
+            PytestCase,
+            ApiInfo,
+            ApiCase,
+            ApiCaseDetailed
+        ]
 
-        try:
-            # 确保开始时连接是干净的
-            close_old_connections()
-            
-            from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
-            from src.auto_test.auto_pytest.models import PytestCase
-            from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+        for model in models_to_update:
+            model.objects.filter(
+                status=TaskEnum.PROCEED.value,
+                update_time__lt=ten_minutes_ago
+            ).update(status=TaskEnum.FAIL.value)
 
-            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
-
-            models_to_update = [
-                UiCase,
-                UiCaseStepsDetailed,
-                PageSteps,
-                PytestCase,
-                ApiInfo,
-                ApiCase,
-                ApiCaseDetailed
-            ]
-
-            for model in models_to_update:
-                model.objects.filter(
-                    status=TaskEnum.PROCEED.value,
-                    update_time__lt=ten_minutes_ago
-                ).update(status=TaskEnum.FAIL.value)
-                
-            # 确保事务提交
-            transaction.commit()
-        finally:
-            # 确保结束时连接被关闭
-            close_old_connections()
+        # 确保事务提交
+        transaction.commit()

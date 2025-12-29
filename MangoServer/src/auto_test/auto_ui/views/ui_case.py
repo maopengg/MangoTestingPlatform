@@ -78,7 +78,7 @@ class UiCaseViews(ViewSet):
             request.query_params.get("test_env"),
             is_send=True
         ).test_case(int(request.query_params.get("case_id")))
-        return ResponseData.success(RESPONSE_MSG_0074, data=case_model.model_dump(),
+        return ResponseData.success(RESPONSE_MSG_0064, data=case_model.model_dump(),
                                     value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['post'], detail=False)
