@@ -858,7 +858,6 @@
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import KeyValueList from '@/components/KeyValueList.vue' // 引入新组件
   import AssertionResult from '@/components/AssertionResult.vue' // 引入断言结果组件
-  // import CacheDataDisplay from '@/components/CacheDataDisplay.vue' // 引入缓存数据展示组件
 
   const userStore = useUserStore()
 

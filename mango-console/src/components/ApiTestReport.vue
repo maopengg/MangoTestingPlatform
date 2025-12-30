@@ -55,12 +55,14 @@
       <JsonDisplay :data="resultData?.cache_data" />
     </a-tab-pane>
     <a-tab-pane key="12" title="断言数据">
-      <JsonDisplay :data="resultData?.ass" />
+      <AssertionResult :data="resultData?.ass" />
     </a-tab-pane>
   </a-tabs>
 </template>
 
 <script lang="ts" setup>
+  import AssertionResult from '@/components/AssertionResult.vue' // 引入断言结果组件
+
   defineProps({
     resultData: {
       type: Object as () => any,
