@@ -17,3 +17,6 @@ allure/
 *.spec
 __pycache__/
 browser_cache/
+main.build/
+main.dist/
+nuitka-crash-report.xml
