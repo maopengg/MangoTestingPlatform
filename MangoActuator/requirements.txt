@@ -1,4 +1,4 @@
-mangotools==1.1.67
+mangotools==1.1.68
 mangoautomation==1.1.38
 mangoui==4.0.1
 
@@ -6,7 +6,6 @@ websockets==10.4
 websocket-client==1.5.1
 
 gevent==24.2.1
-pyinstaller==6.16.0
 Pympler==1.0.1
 psutil==5.9.5
 
@@ -15,3 +14,4 @@ PySide6==6.8.1
 requests==2.32.3
 pydantic==2.9.2
 
+nuitka==2.8.8
