@@ -38,6 +38,7 @@ class ApiCaseFlow:
     @classmethod
     def _background_task_fetcher(cls):
         """后台任务获取循环"""
+        log.api.info(f'API用例执行启动成功！')
         while cls.running:
             try:
                 cls.get_case()
