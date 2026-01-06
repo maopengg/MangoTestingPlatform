@@ -36,7 +36,16 @@ class RunTasks:
                 )
                 log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()
-        atexit.register(cls.scheduler.shutdown)
+
+        def _shutdown_scheduler():
+            # 解释器退出阶段避免再提交线程任务，降低 RuntimeError 风险
+            try:
+                if getattr(cls.scheduler, "running", False):
+                    cls.scheduler.shutdown(wait=False)
+            except Exception:
+                pass
+
+        atexit.register(_shutdown_scheduler)
 
     @classmethod
     def _is_duplicate_process(cls):
