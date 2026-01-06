@@ -16,4 +16,4 @@ RUN echo "构建后端服务：$DJANGO_ENV"
 
 
 # 使用入口脚本启动
-CMD ["/app/entrypoint.sh"]
+CMD ["sh /app/entrypoint.sh"]
