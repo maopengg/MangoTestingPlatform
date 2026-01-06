@@ -7,13 +7,12 @@ import os
 from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
-from ..tools.log_collector import log
 
 VERSION = '5.9.0'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
-log.system.info('设置启动环境DJANGO_ENV={}'.format(DJANGO_ENV))
+print('设置启动环境DJANGO_ENV={}'.format(DJANGO_ENV))
 if DJANGO_ENV == SystemEnvEnum.DEV.value:
     from .dev import *
 elif DJANGO_ENV == SystemEnvEnum.PROD.value:
