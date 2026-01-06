@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 if __name__ == "__main__":
-    os.environ["DJANGO_ENV"] = "dev"
+    # os.environ["DJANGO_ENV"] = "dev"
     # os.environ["RUN_MAIN"] = "true"
 
     try:
