@@ -15,6 +15,8 @@ ENV RUN_MAIN=true
 RUN echo "构建后端服务：$DJANGO_ENV"
 
 # 使用自定义启动脚本
-CMD python manage.py migrate --noinput && \
-    python manage.py createcachetable django_cache && \
-    python start_server.py
+#CMD python manage.py migrate --noinput && \
+#    python manage.py createcachetable django_cache && \
+#    python start_server.py
+
+CMD ["python", "start_server.py"]
