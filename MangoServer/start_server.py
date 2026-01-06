@@ -16,6 +16,7 @@ if __name__ == "__main__":
     project_dir.init_folder()
 
     try:
+        print(2)
         result = subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"],
                                 capture_output=True, text=True, encoding='utf-8', )
         print(f"数据库迁移失败1: {result.stderr}")
