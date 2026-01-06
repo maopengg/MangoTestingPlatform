@@ -28,6 +28,7 @@ class ApiCaseFlow:
         thread = threading.Thread(target=cls._background_task_fetcher)
         thread.daemon = True
         thread.start()
+        return thread
 
     @classmethod
     def stop(cls):
