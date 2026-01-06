@@ -5,8 +5,6 @@
 # @Author : 
 import uvicorn
 import os
-import subprocess
-import sys
 
 from src.tools import project_dir
 
@@ -14,24 +12,6 @@ if __name__ == "__main__":
     # os.environ["DJANGO_ENV"] = "dev"
     # os.environ["RUN_MAIN"] = "true"
     project_dir.init_folder()
-
-    try:
-        print(2)
-        # result = subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"],
-        #                         capture_output=True, text=True, encoding='utf-8', )
-        # print(f"数据库迁移失败1: {result.stderr}")
-        # print(f"数据库迁移输出2: {result.stdout}")
-        # if result.returncode != 0 and "already exists" not in result.stderr:
-        #     print(f"创建缓存表失败: {result.stderr}")
-        # result = subprocess.run([sys.executable, "manage.py", "migrate", "--noinput"],
-        #                         capture_output=True, text=True, encoding='utf-8', )
-        # print(f"数据库迁移失败3: {result.stderr}")
-        # print(f"数据库迁移输出4: {result.stdout}")
-        # if result.returncode != 0:
-        #     print(f"数据库迁移失败: {result.stderr}")
-        #     print(f"数据库迁移输出: {result.stdout}")
-    except Exception as e:
-        print(f"初始化任务出现异常: {e}")
 
     host = os.environ.get("UVICORN_HOST", "0.0.0.0")
     port = int(os.environ.get("UVICORN_PORT", 8000))
@@ -44,7 +24,7 @@ if __name__ == "__main__":
         host=host,
         port=port,
         workers=workers,
-        # log_level=log_level,
-        # access_log=access_log,
-        # log_config=None
+        log_level=log_level,
+        access_log=access_log,
+        log_config=None
     )
