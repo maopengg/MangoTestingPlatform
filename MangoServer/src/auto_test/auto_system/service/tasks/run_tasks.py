@@ -31,7 +31,8 @@ class RunTasks:
                 cls.scheduler.add_job(
                     cls.timing,
                     trigger=CronTrigger.from_crontab(timer.cron),
-                    args=[timer.id]
+                    args=[timer.id],
+                    id=f'timing_task_{timer.id}'  # 添加任务ID以支持后续管理
                 )
                 log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()

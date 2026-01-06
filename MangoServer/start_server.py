@@ -10,21 +10,15 @@ import sys
 
 if __name__ == "__main__":
     os.environ["DJANGO_ENV"] = "dev"
+    # os.environ["RUN_MAIN"] = "true"
 
     try:
-        # 设置环境变量以确保正确的字符编码
-        env = os.environ.copy()
-        env['PYTHONIOENCODING'] = 'utf-8'
-        
-        # 在Linux环境中，需要添加更多参数确保非交互式执行
         result = subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"],
-                               capture_output=True, text=True, encoding='utf-8', env=env,
-                               stdin=subprocess.DEVNULL)
+                                capture_output=True, text=True, encoding='utf-8', )
         if result.returncode != 0 and "already exists" not in result.stderr:
             print(f"创建缓存表失败: {result.stderr}")
-        result = subprocess.run([sys.executable, "manage.py", "migrate", "--noinput", "--run-syncdb"],
-                               capture_output=True, text=True, encoding='utf-8', env=env,
-                               stdin=subprocess.DEVNULL)
+        result = subprocess.run([sys.executable, "manage.py", "migrate", "--noinput"],
+                                capture_output=True, text=True, encoding='utf-8', )
         if result.returncode != 0:
             print(f"数据库迁移失败: {result.stderr}")
             print(f"数据库迁移输出: {result.stdout}")

@@ -58,13 +58,13 @@ class AutoSystemConfig(AppConfig):
         # 检查是否为重载进程
         run_main = os.environ.get('RUN_MAIN', None)
         if run_main != 'true':
-            log.system.debug(f"跳过重复进程初始化 - PID: {pid}, RUN_MAIN: {run_main}")
+            log.system.debug(f"【系统模块-2】跳过重复进程初始化 - PID: {pid}, RUN_MAIN: {run_main}")
             return True
 
         # 检查DJANGO环境变量
         django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
         if not django_settings:
-            log.system.debug(f"跳过重复进程初始化 - PID: {pid}, DJANGO_SETTINGS_MODULE未设置")
+            log.system.debug(f"【系统模块-3】跳过重复进程初始化 - PID: {pid}, DJANGO_SETTINGS_MODULE未设置")
             return True
 
         # 在Docker环境下，使用文件锁机制防止重复执行
@@ -83,7 +83,7 @@ class AutoSystemConfig(AppConfig):
             log.system.debug(f"主进程初始化 - PID: {pid}")
             return False
         except FileExistsError:
-            log.system.debug(f"跳过重复进程初始化 - PID: {pid}, 锁文件已存在")
+            log.system.debug(f"【系统模块-1】跳过重复进程初始化 - PID: {pid}, 锁文件已存在")
             return True
         except Exception as e:
             # 如果无法创建锁文件（如权限问题），使用备用方法
