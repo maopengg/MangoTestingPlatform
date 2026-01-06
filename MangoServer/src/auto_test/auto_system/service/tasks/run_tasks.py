@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import atexit
 import os
+import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -23,6 +24,11 @@ class RunTasks:
         # 多进程保护机制，防止在多进程环境下重复执行
         if cls._is_duplicate_process():
             log.system.debug("不在主进程中，跳过定时任务初始化")
+            return
+
+        # 跳过管理命令（migrate/createcachetable 等），避免命令结束时解释器关闭触发 APScheduler 报错
+        if cls._is_management_command():
+            log.system.debug("管理命令执行阶段，跳过定时任务初始化")
             return
 
         queryset = TimeTasks.objects.all()
@@ -63,6 +69,18 @@ class RunTasks:
             return True
 
         return False
+
+    @staticmethod
+    def _is_management_command():
+        """
+        在迁移、建缓存表等管理命令阶段跳过 scheduler，避免命令结束的解释器关闭期抛 RuntimeError
+        """
+        mgmt_cmds = {
+            'migrate', 'makemigrations', 'collectstatic', 'createsuperuser',
+            'createcachetable', 'shell', 'dbshell', 'inspectdb', 'showmigrations',
+            'check', 'test',
+        }
+        return any(arg in mgmt_cmds for arg in sys.argv)
 
     @classmethod
     @async_task_db_connection()
