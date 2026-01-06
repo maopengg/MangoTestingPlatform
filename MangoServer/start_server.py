@@ -8,9 +8,12 @@ import os
 import subprocess
 import sys
 
+from src.tools import project_dir
+
 if __name__ == "__main__":
     # os.environ["DJANGO_ENV"] = "dev"
     # os.environ["RUN_MAIN"] = "true"
+    project_dir.init_folder()
 
     # try:
         # result = subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"],
