@@ -42,8 +42,7 @@ class AutoApiConfig(AppConfig):
 
     def test_case_consumption(self):
         from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
-        # 增加
-        self.thread = ApiCaseFlow.start()
+        ApiCaseFlow.start()
 
     def shutdown(self):
         from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
