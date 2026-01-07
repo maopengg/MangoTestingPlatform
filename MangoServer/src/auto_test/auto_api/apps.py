@@ -41,8 +41,9 @@ class AutoApiConfig(AppConfig):
         return False
 
     def test_case_consumption(self):
-        from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
-        ApiCaseFlow.start()
+        # from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
+        # ApiCaseFlow.start()
+        pass
 
     def shutdown(self):
         from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow

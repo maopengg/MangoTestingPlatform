@@ -3,6 +3,7 @@
 # @Description: Uvicorn启动脚本
 # @Time   : 2025/12/3
 # @Author :
+
 import django
 import uvicorn
 import os
@@ -18,6 +19,8 @@ try:
     call_command('createcachetable', 'django_cache')
 except Exception as e:
     print(f"Django初始化失败: {e}")
+    import traceback
+    traceback.print_exc()
     sys.exit(1)
 
 os.environ.pop('DJANGO_NO_SCHEDULER', None)
