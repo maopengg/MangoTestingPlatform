@@ -8,7 +8,9 @@ import django
 import uvicorn
 import os
 import sys
+from src.tools import project_dir
 
+project_dir.init_folder()
 # os.environ["DJANGO_ENV"] = "dev"
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
 try:

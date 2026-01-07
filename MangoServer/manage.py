@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os
 import sys
-from django.core.management import call_command
 from src.tools import project_dir
 
 def set_env():
@@ -10,14 +9,6 @@ def set_env():
             os.environ['DJANGO_ENV'] = arg.split('=')[1]
             del sys.argv[i]
             break
-
-
-def migrate():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
-    import django
-    django.setup()
-    call_command('migrate', '--noinput')
-
 
 def main():
     """Run administrative tasks."""
