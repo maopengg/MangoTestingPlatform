@@ -296,8 +296,7 @@ class AutoSystemConfig(AppConfig):
         """停止调度器"""
         try:
             if hasattr(self, 'scheduler') and self.scheduler and getattr(self.scheduler, 'running', False):
-                # 避免解释器关闭阶段再提交线程任务
-                self.scheduler.shutdown(wait=False)
+                self.scheduler.shutdown()
         except Exception as e:
             traceback.print_exc()
             log.system.error(f'停止调度器异常: {e}')

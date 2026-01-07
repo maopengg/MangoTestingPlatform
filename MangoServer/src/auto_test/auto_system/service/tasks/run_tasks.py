@@ -35,7 +35,6 @@ class RunTasks:
                 )
                 log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()
-        atexit.register(cls.scheduler.shutdown)
 
     @classmethod
     def _is_duplicate_process(cls):
@@ -55,7 +54,7 @@ class RunTasks:
         return False
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
+    @async_task_db_connection()
     def timing(cls, timing_strategy_id):
         log.system.debug(f'触发定时器：{timing_strategy_id}')
         scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
@@ -65,7 +64,7 @@ class RunTasks:
             cls.distribute(scheduled_tasks)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
+    @async_task_db_connection()
     def trigger(cls, scheduled_tasks_id):
         scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
         cls.distribute(scheduled_tasks)
