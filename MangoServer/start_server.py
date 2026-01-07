@@ -9,20 +9,20 @@ import subprocess
 import sys
 
 if __name__ == "__main__":
+    # os.environ["DJANGO_ENV"] = "dev"
     try:
         result = subprocess.run([sys.executable, "manage.py", "createcachetable", "django_cache"],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding='utf-8')
         if result.returncode != 0 and "already exists" not in result.stderr:
             print(f"创建缓存表失败: {result.stderr}")
         result = subprocess.run([sys.executable, "manage.py", "migrate", "--noinput"],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding='utf-8')
         if result.returncode != 0:
             print(f"数据库迁移失败: {result.stderr}")
             print(f"数据库迁移输出: {result.stdout}")
     except Exception as e:
         print(f"初始化任务出现异常: {e}")
 
-    # os.environ["DJANGO_ENV"] = "dev"
     host = os.environ.get("UVICORN_HOST", "0.0.0.0")
     port = int(os.environ.get("UVICORN_PORT", 8000))
     workers = int(os.environ.get("UVICORN_WORKERS", 1))
