@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'src.auto_test.auto_perf',
     'src.auto_test.auto_user',
     'src.auto_test.auto_pytest',
+    'src.auto_test.monitoring',
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证

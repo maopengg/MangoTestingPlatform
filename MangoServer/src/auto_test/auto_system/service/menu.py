@@ -149,6 +149,19 @@ def ad_routes():
         #         },
         #     ],
         # },
+                {
+            "menuUrl": "/monitoring",
+            "menuName": "预警监控",
+            "icon": "IconMobile",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/monitoring",
+                    "menuUrl": "/monitoring/index",
+                    "menuName": "执行器",
+                }
+            ],
+        },
         {
             "menuUrl": "/equipment",
             "menuName": "设备中心",
