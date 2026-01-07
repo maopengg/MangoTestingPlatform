@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
-import atexit
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
