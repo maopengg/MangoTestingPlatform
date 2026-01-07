@@ -32,7 +32,6 @@ class RunTasks:
                     cls.timing,
                     trigger=CronTrigger.from_crontab(timer.cron),
                     args=[timer.id],
-                    id=f'timing_task_{timer.id}'
                 )
                 log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()
