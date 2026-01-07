@@ -3,7 +3,9 @@
 # @Description: 
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
+import atexit
 import os
+import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -24,6 +26,11 @@ class RunTasks:
             log.system.debug("不在主进程中，跳过定时任务初始化")
             return
 
+        # 跳过管理命令（migrate/createcachetable 等），避免命令结束时解释器关闭触发 APScheduler 报错
+        if cls._is_management_command():
+            log.system.debug("管理命令执行阶段，跳过定时任务初始化")
+            return
+
         queryset = TimeTasks.objects.all()
         for timer in queryset:
             if timer.cron:
@@ -31,9 +38,20 @@ class RunTasks:
                     cls.timing,
                     trigger=CronTrigger.from_crontab(timer.cron),
                     args=[timer.id],
+                    id=f'timing_task_{timer.id}'  # 添加任务ID以支持后续管理
                 )
                 log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
         cls.scheduler.start()
+
+        def _shutdown_scheduler():
+            # 解释器退出阶段避免再提交线程任务，降低 RuntimeError 风险
+            try:
+                if getattr(cls.scheduler, "running", False):
+                    cls.scheduler.shutdown(wait=False)
+            except Exception:
+                pass
+
+        atexit.register(_shutdown_scheduler)
 
     @classmethod
     def _is_duplicate_process(cls):
@@ -52,6 +70,18 @@ class RunTasks:
 
         return False
 
+    @staticmethod
+    def _is_management_command():
+        """
+        在迁移、建缓存表等管理命令阶段跳过 scheduler，避免命令结束的解释器关闭期抛 RuntimeError
+        """
+        mgmt_cmds = {
+            'migrate', 'makemigrations', 'collectstatic', 'createsuperuser',
+            'createcachetable', 'shell', 'dbshell', 'inspectdb', 'showmigrations',
+            'check', 'test',
+        }
+        return any(arg in mgmt_cmds for arg in sys.argv)
+
     @classmethod
     @async_task_db_connection()
     def timing(cls, timing_strategy_id):
@@ -63,7 +93,6 @@ class RunTasks:
             cls.distribute(scheduled_tasks)
 
     @classmethod
-    @async_task_db_connection()
     def trigger(cls, scheduled_tasks_id):
         scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
         cls.distribute(scheduled_tasks)

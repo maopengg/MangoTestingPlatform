@@ -27,6 +27,7 @@ class ApiCaseFlow:
         """启动后台任务获取线程"""
         thread = threading.Thread(target=cls._background_task_fetcher)
         thread.start()
+        return thread
 
     @classmethod
     def stop(cls):

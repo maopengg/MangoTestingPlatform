@@ -14,5 +14,9 @@ ENV DJANGO_ENV=${DJANGO_ENV}
 ENV RUN_MAIN=true
 RUN echo "构建后端服务：$DJANGO_ENV"
 
-# 使用自定义启动脚本
-CMD ["python", "start_server.py"]
+# 复制并赋权启动脚本
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# 使用入口脚本启动
+CMD ["/app/entrypoint.sh"]
