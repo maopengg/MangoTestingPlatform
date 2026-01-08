@@ -17,14 +17,12 @@ class MonitoringConfig(AppConfig):
         """
         服务启动时恢复任务状态
         """
-        log.system.info('监控模块：ready() 方法被调用')
-        
+
         # 多进程保护机制，防止在多进程环境下重复执行
         if self._is_duplicate_process():
             log.system.info('监控模块：检测到重复进程，跳过初始化')
             return
 
-        log.system.info('监控模块：准备启动恢复任务的后台线程')
 
         def run():
             try:
@@ -32,19 +30,7 @@ class MonitoringConfig(AppConfig):
                 # 开发模式下延迟更长时间，避免重载时的问题
                 import sys
                 delay = 10 if ('runserver' in sys.argv or 'runserver_plus' in sys.argv) else 5
-                log.system.info(f'监控模块：后台线程启动，将在 {delay} 秒后执行任务恢复')
                 time.sleep(delay)
-                
-                log.system.info('监控模块：延迟时间已到，开始检查进程状态')
-                
-                # 再次检查进程是否还在运行（开发模式下重载时可能已经关闭）
-                # 注意：延迟后不应该再检查重复进程，因为此时已经是主进程了
-                # 如果再次检查，可能会因为锁文件等原因误判
-                # 所以这里注释掉重复检查，直接执行恢复逻辑
-                # if self._is_duplicate_process():
-                #     log.system.info('监控模块：延迟后检测到重复进程，跳过任务恢复')
-                #     return
-                
                 log.system.info('监控模块：开始执行任务恢复')
                 self.restore_tasks()
             except (RuntimeError, SystemError) as e:
@@ -61,14 +47,9 @@ class MonitoringConfig(AppConfig):
                 import traceback
                 traceback.print_exc()
 
-        # 启动后台任务（daemon 线程，进程退出时自动终止）
         task = threading.Thread(target=run, daemon=True)
         task.start()
-        log.system.info('监控模块：后台线程已启动')
-        
-        # 注册退出时的清理函数（同步停止所有监控任务）
         atexit.register(self.shutdown)
-        log.system.info('监控模块：已注册退出清理函数')
 
     def _is_duplicate_process(self):
         """
@@ -89,8 +70,6 @@ class MonitoringConfig(AppConfig):
             log.system.debug(f"【监控模块】跳过重复进程初始化 - PID: {pid}, DJANGO_SETTINGS_MODULE未设置")
             return True
 
-        # 在Docker环境下，使用文件锁机制防止重复执行
-        # 兼容Windows和Linux系统
         if os.name == 'nt':  # Windows系统
             temp_dir = os.environ.get('TEMP', os.environ.get('TMP', 'C:\\temp'))
             lock_file = f"{temp_dir}\\mango_monitoring_init_{os.getppid()}.lock"

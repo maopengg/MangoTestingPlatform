@@ -90,7 +90,6 @@ class MonitoringTaskRunner:
                     if MonitoringTaskRunner._is_process_running(pid):
                         os.kill(pid, 9)
                 except (OSError, ProcessLookupError):
-                    # 进程可能已经不存在了
                     pass
                 except Exception:
                     pass

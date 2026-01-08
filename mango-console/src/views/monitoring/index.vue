@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="脚本运行器"
+        title="python脚本运行器（预警监控&Mock服务）"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
@@ -370,7 +370,12 @@
   }
 
   function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    // 编辑模式下跳过 script_content 的验证
+    const itemsToValidate = data.isAdd
+      ? formItems
+      : formItems.filter((it) => it.key !== 'script_content')
+
+    if (itemsToValidate.every((it) => (it.validator ? it.validator() : true))) {
       const value = getFormItems(formItems)
       if (data.isAdd) {
         postMonitoringTask(value)
@@ -385,6 +390,8 @@
           })
       } else {
         value['id'] = data.updateId
+        // 编辑时不包含 script_content 字段
+        delete value['script_content']
         putMonitoringTask(value)
           .then((res) => {
             modalDialogRef.value?.toggle()
