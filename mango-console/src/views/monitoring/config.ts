@@ -20,17 +20,41 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'status',
     label: '状态',
-    type: 'input',
-    placeholder: '请输入状态(running/queued/...)',
+    type: 'select',
+    placeholder: '请选择状态',
     value: ref(''),
     reset() {
       this.value = ''
     },
   },
+  {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择产品',
+    optionItems: [],
+    reset: function () {},
+  },
 ])
 
 // 表单项
 export const formItems: FormItem[] = reactive([
+  {
+    label: '项目/产品',
+    key: 'project_product',
+    value: ref(''),
+    placeholder: '请选择项目名称',
+    required: true,
+    type: 'cascader',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
   {
     label: '任务名称',
     key: 'name',
@@ -78,17 +102,33 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 200,
+  },
+  {
     title: '任务名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 300,
+  },
+  {
+    title: '任务描述',
+    key: 'description',
+    dataIndex: 'description',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '状态',
     key: 'status',
     dataIndex: 'status',
     align: 'center',
-    width: 120,
+    width: 90,
   },
   {
     title: 'PID',

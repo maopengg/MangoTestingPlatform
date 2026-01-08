@@ -9,17 +9,21 @@ import uuid
 from django.conf import settings
 from django.http import FileResponse
 from rest_framework import serializers
-from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.monitoring.models import MonitoringTask
 from src.auto_test.monitoring.service import runner
 from src.enums.monitoring_enum import MonitoringTaskStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
-from src.tools.view.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0002, RESPONSE_MSG_0082
+from src.tools.view.response_msg import (
+    RESPONSE_MSG_0142, RESPONSE_MSG_0143, RESPONSE_MSG_0144,
+    RESPONSE_MSG_0145, RESPONSE_MSG_0146, RESPONSE_MSG_0147,
+    RESPONSE_MSG_0148, RESPONSE_MSG_0149, RESPONSE_MSG_0150
+)
 
 
 def _ensure_dirs():
@@ -99,6 +103,7 @@ class MonitoringTaskSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     status_display = serializers.SerializerMethodField()
+    project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
         model = MonitoringTask
@@ -133,23 +138,26 @@ class MonitoringTaskViews(ViewSet):
         task_id = request.data.get('id') or request.query_params.get('id')
         task = MonitoringTask.objects.filter(id=task_id).first()
         if not task:
-            return ResponseData.fail(RESPONSE_MSG_0001, '任务不存在')
+            return ResponseData.fail(RESPONSE_MSG_0142)
         try:
             runner.start_task(task)
         except Exception as e:
-            return ResponseData.fail(RESPONSE_MSG_0001, f'启动失败: {str(e)}')
+            return ResponseData.fail(RESPONSE_MSG_0143, f'启动失败: {str(e)}')
         task.refresh_from_db()
-        return ResponseData.success(RESPONSE_MSG_0002, MonitoringTaskSerializers(task).data)
+        return ResponseData.success(RESPONSE_MSG_0148, MonitoringTaskSerializers(task).data)
 
     @error_response('system')
     def stop(self, request: Request):
         task_id = request.data.get('id') or request.query_params.get('id')
         task = MonitoringTask.objects.filter(id=task_id).first()
         if not task:
-            return ResponseData.fail(RESPONSE_MSG_0001, '任务不存在')
-        runner.stop_task(task)
+            return ResponseData.fail(RESPONSE_MSG_0142)
+        try:
+            runner.stop_task(task)
+        except Exception as e:
+            return ResponseData.fail(RESPONSE_MSG_0144, f'停止失败: {str(e)}')
         task.refresh_from_db()
-        return ResponseData.success(RESPONSE_MSG_0082, MonitoringTaskSerializers(task).data)
+        return ResponseData.success(RESPONSE_MSG_0149, MonitoringTaskSerializers(task).data)
 
     @error_response('system')
     def logs(self, request: Request):
@@ -157,9 +165,9 @@ class MonitoringTaskViews(ViewSet):
         limit = int(request.query_params.get('limit', 200))
         task = MonitoringTask.objects.filter(id=task_id).first()
         if not task:
-            return ResponseData.fail(RESPONSE_MSG_0001, '任务不存在')
+            return ResponseData.fail(RESPONSE_MSG_0142)
         lines = runner.tail_log(task, limit=limit)
-        return ResponseData.success(RESPONSE_MSG_0001, lines)
+        return ResponseData.success(RESPONSE_MSG_0150, lines)
 
     @error_response('system')
     def download_log(self, request: Request):
@@ -169,16 +177,16 @@ class MonitoringTaskViews(ViewSet):
         task_id = request.query_params.get('id') or request.data.get('id')
         task = MonitoringTask.objects.filter(id=task_id).first()
         if not task:
-            return ResponseData.fail(RESPONSE_MSG_0001, '任务不存在')
+            return ResponseData.fail(RESPONSE_MSG_0142)
         
         if not task.log_path:
-            return ResponseData.fail(RESPONSE_MSG_0001, '日志路径不存在')
+            return ResponseData.fail(RESPONSE_MSG_0145)
         
         # 将相对路径转换为绝对路径
         log_path = os.path.join(settings.BASE_DIR, task.log_path) if not os.path.isabs(task.log_path) else task.log_path
         
         if not os.path.exists(log_path):
-            return ResponseData.fail(RESPONSE_MSG_0001, '日志文件不存在')
+            return ResponseData.fail(RESPONSE_MSG_0146)
         
         try:
             file = open(log_path, 'rb')
@@ -186,4 +194,4 @@ class MonitoringTaskViews(ViewSet):
             response = FileResponse(file, as_attachment=True, filename=filename)
             return response
         except Exception as e:
-            return ResponseData.fail(RESPONSE_MSG_0001, f'下载失败: {str(e)}')
+            return ResponseData.fail(RESPONSE_MSG_0147, f'下载失败: {str(e)}')

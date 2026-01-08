@@ -17,6 +17,31 @@
                   @blur="() => doRefresh()"
                 />
               </template>
+              <template v-else-if="item.type === 'select'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.monitoring_task_status"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="projectInfo.projectProduct"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh(item.value, true)"
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -59,8 +84,13 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="getStatusColor(record.status)" size="small">{{ record.status }}</a-tag>
+              <a-tag :color="getStatusColor(record.status)" size="small">{{
+                enumStore.monitoring_task_status[record.status].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
@@ -68,7 +98,7 @@
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
-                  :disabled="record.status === 'running'"
+                  :disabled="record.status === 1"
                   @click="onStart(record)"
                   >启动</a-button
                 >
@@ -76,13 +106,22 @@
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
-                  :disabled="record.status !== 'running'"
+                  :disabled="record.status !== 1"
                   @click="onStop(record)"
                   >停止</a-button
                 >
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
+                    <a-doption>
+                      <a-button
+                        type="text"
+                        size="mini"
+                        class="custom-mini-btn"
+                        @click="onUpdate(record)"
+                        >编辑</a-button
+                      >
+                    </a-doption>
                     <a-doption>
                       <a-button
                         type="text"
@@ -130,7 +169,7 @@
         <a-form-item
           :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
           :label="item.label"
-          v-for="item of formItems"
+          v-for="item of filteredFormItems"
           :key="item.key"
         >
           <template v-if="item.type === 'input'">
@@ -141,6 +180,15 @@
               v-model="item.value"
               :placeholder="item.placeholder"
               :auto-size="{ minRows: 3, maxRows: 6 }"
+            />
+          </template>
+          <template v-else-if="item.type === 'cascader'">
+            <a-cascader
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
             />
           </template>
         </a-form-item>
@@ -207,12 +255,13 @@
 
 <script lang="ts" setup>
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { ModalDialogType } from '@/types/components'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
   import CodeEditor from '@/components/CodeEditor.vue'
+  import { useProject } from '@/store/modules/get-project'
   import {
     deleteMonitoringTask,
     downloadMonitoringTaskLog,
@@ -224,7 +273,10 @@
     postMonitoringTaskStop,
     putMonitoringTask,
   } from '@/api/monitoring/task'
+  import { useEnum } from '@/store/modules/get-enum'
+  import { fieldNames } from '@/setting'
 
+  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const logEditorRef = ref<any>(null)
   const fileEditorRef = ref<any>(null)
@@ -233,6 +285,10 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
+  const enumStore = useEnum()
+  const filteredFormItems = computed(() =>
+    data.isAdd ? formItems : formItems.filter((it) => it.key !== 'script_content')
+  )
 
   const data: any = reactive({
     isAdd: false,
@@ -253,13 +309,13 @@
     task: null as any,
   })
 
-  function getStatusColor(status: string) {
-    const map: Record<string, string> = {
-      running: 'green',
-      queued: 'arcoblue',
-      stopped: 'gray',
-      failed: 'red',
-      completed: 'orangered',
+  function getStatusColor(status: number) {
+    const map: Record<number, string> = {
+      0: 'arcoblue', // 待执行
+      1: 'green', // 运行中
+      2: 'gray', // 已停止
+      3: 'red', // 失败
+      4: 'orangered', // 已完成
     }
     return map[status] || 'arcoblue'
   }
@@ -353,7 +409,11 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
-        it.value = propName ?? ''
+        if (typeof propName === 'object' && propName !== null) {
+          it.value = propName.id
+        } else {
+          it.value = propName ?? ''
+        }
       })
       // 更新时默认不覆盖脚本内容，需用户手动粘贴
       const scriptItem = formItems.find((it) => it.key === 'script_content')
@@ -361,10 +421,13 @@
     })
   }
 
-  function doRefresh() {
+  function doRefresh(projectProductId: number | string | null = null, bool_ = false) {
     const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+    }
     getMonitoringTask(value)
       .then((res) => {
         table.handleSuccess(res)
