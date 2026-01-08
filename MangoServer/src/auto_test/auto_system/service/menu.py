@@ -121,7 +121,7 @@ def ad_routes():
         {
             "menuUrl": "/monitoring",
             "menuName": "脚本运行器",
-            "icon": "IconMobile",
+            "icon": "IconFile",
             "parentPath": "",
             "children": [
                 {
