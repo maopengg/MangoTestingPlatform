@@ -3,8 +3,11 @@
 import os
 import threading
 import subprocess
+import sys
+import uuid
 from typing import Dict, Optional
 
+from django.conf import settings
 from django.utils import timezone
 from django.db import close_old_connections
 
@@ -28,11 +31,27 @@ def start_task(task: MonitoringTask):
         else:
             RUNNING_PROCESSES.pop(task.id, None)
 
-    if not os.path.exists(task.script_path):
-        raise FileNotFoundError('脚本文件不存在')
+    # 从数据库读取代码内容
+    if not task.script_content:
+        raise ValueError('任务代码内容为空')
 
-    cmd = ['python', task.script_path]
+    # 确保目录存在
+    scripts_dir = os.path.join(settings.BASE_DIR, 'monitoring_scripts')
+    os.makedirs(scripts_dir, exist_ok=True)
     os.makedirs(os.path.dirname(task.log_path), exist_ok=True)
+
+    # 生成文件路径（如果还没有）
+    if not task.script_path:
+        file_id = uuid.uuid4().hex
+        task.script_path = os.path.join(scripts_dir, f'{file_id}.py')
+        task.save(update_fields=['script_path'])
+
+    # 将代码内容写入文件
+    with open(task.script_path, 'w', encoding='utf-8') as f:
+        f.write(task.script_content)
+
+    # 使用当前解释器，确保复用同一虚拟环境/容器的依赖
+    cmd = [sys.executable, task.script_path]
 
     proc = subprocess.Popen(
         cmd,
@@ -41,6 +60,8 @@ def start_task(task: MonitoringTask):
         text=True,
         bufsize=1,
         universal_newlines=True,
+        encoding='utf-8',
+        errors='ignore',  # 避免因控制台编码(如 gbk)不兼容导致 UnicodeDecodeError
     )
 
     task.status = MonitoringTask.Status.RUNNING
@@ -121,5 +142,4 @@ def tail_log(task: MonitoringTask, limit: int = 200):
     if limit <= 0:
         return lines
     return lines[-limit:]
-
 

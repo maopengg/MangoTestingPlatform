@@ -4,10 +4,17 @@
 # @Time   : 2024-07-12 14:15
 # @Author : 毛鹏
 import os
+import sys
 from pathlib import Path
 
 from ..enums.tools_enum import SystemEnvEnum
-
+def set_env():
+    for i, arg in enumerate(sys.argv):
+        if '--env=' in arg:
+            os.environ['DJANGO_ENV'] = arg.split('=')[1]
+            del sys.argv[i]
+            break
+set_env()
 VERSION = '5.9.0'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************

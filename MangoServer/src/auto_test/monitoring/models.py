@@ -14,7 +14,8 @@ class MonitoringTask(models.Model):
 
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default='')
-    script_path = models.CharField(max_length=512)
+    script_content = models.TextField()  # 存储代码内容，多服务器部署时共享
+    script_path = models.CharField(max_length=512, blank=True, default='')  # 执行时临时生成的文件路径
     log_path = models.CharField(max_length=512, blank=True, default='')
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
     pid = models.IntegerField(null=True, blank=True)
@@ -30,5 +31,4 @@ class MonitoringTask(models.Model):
 
     def __str__(self):
         return f'{self.name}({self.status})'
-
 

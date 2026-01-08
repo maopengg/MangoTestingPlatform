@@ -158,7 +158,7 @@ def ad_routes():
                 {
                     "parentPath": "/monitoring",
                     "menuUrl": "/monitoring/index",
-                    "menuName": "执行器",
+                    "menuName": "预警监控",
                 }
             ],
         },

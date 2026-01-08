@@ -3,12 +3,9 @@ import os
 import sys
 from src.tools import project_dir
 
-def set_env():
-    for i, arg in enumerate(sys.argv):
-        if '--env=' in arg:
-            os.environ['DJANGO_ENV'] = arg.split('=')[1]
-            del sys.argv[i]
-            break
+
+
+
 
 def main():
     """Run administrative tasks."""
@@ -26,5 +23,4 @@ def main():
 
 
 if __name__ == '__main__':
-    set_env()
     main()
