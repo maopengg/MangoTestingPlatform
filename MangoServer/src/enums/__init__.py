@@ -36,3 +36,8 @@ class BaseEnum(Enum):
     @classmethod
     def reversal_obj(cls):
         return {v: k for k, v in cls.obj().items()}
+
+    @classmethod
+    def choices(cls):
+        """返回 Django IntegerField choices 格式"""
+        return [(key, label) for key, label in cls.obj().items()]

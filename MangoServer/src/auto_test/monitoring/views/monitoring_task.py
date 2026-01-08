@@ -15,6 +15,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.monitoring.models import MonitoringTask
 from src.auto_test.monitoring.service import runner
+from src.enums.monitoring_enum import MonitoringTaskStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -32,9 +33,8 @@ def _ensure_dirs():
 class MonitoringTaskSerializers(serializers.ModelSerializer):
     started_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     stopped_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    updated_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    script_path = serializers.CharField(read_only=True)  # 由 create 方法自动生成，不需要用户输入
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     log_path = serializers.CharField(read_only=True)  # 由 create 方法自动生成，不需要用户输入
     script_content = serializers.CharField(required=False, allow_blank=True, write_only=True)
     script_file = serializers.FileField(required=False, allow_empty_file=False, write_only=True)
@@ -71,9 +71,8 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
 
         validated_data.update({
             'script_content': content,  # 保存代码内容到数据库
-            'script_path': '',  # 执行时再生成
             'log_path': log_path,  # 存储相对路径
-            'status': MonitoringTask.Status.QUEUED,
+            'status': MonitoringTaskStatusEnum.QUEUED.value,
         })
         return super().create(validated_data)
 
@@ -90,8 +89,6 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
         # 如果提供了新的代码内容，更新它
         if content is not None:
             validated_data['script_content'] = content
-            # 更新代码后，清空 script_path，下次执行时重新生成
-            validated_data['script_path'] = ''
 
         return super().update(instance, validated_data)
 
@@ -99,17 +96,21 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
 class MonitoringTaskSerializersC(serializers.ModelSerializer):
     started_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     stopped_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    updated_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = MonitoringTask
         fields = '__all__'
 
+    def get_status_display(self, obj):
+        """返回状态的中文标签"""
+        return MonitoringTaskStatusEnum.obj().get(obj.status, '未知')
+
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.select_related(
-        )
+        queryset = queryset.select_related('project_product')
         return queryset
 
 

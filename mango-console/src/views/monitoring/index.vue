@@ -1,12 +1,21 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <TableHeader :show-filter="true" title="预警监控" @search="doRefresh" @reset-search="onResetSearch">
+      <TableHeader
+        :show-filter="true"
+        title="脚本运行器"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
         <template #search-content>
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="() => doRefresh()" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @blur="() => doRefresh()"
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -17,10 +26,12 @@
     <template #default>
       <a-tabs>
         <template #extra>
-          <a-space>
-            <a-button type="primary" size="small" @click="onAdd">新增</a-button>
-            <a-button status="danger" size="small" @click="onDelete(null)">批量删除</a-button>
-          </a-space>
+          <div>
+            <a-space>
+              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+              <a-button status="danger" size="small" @click="onDelete(null)">批量删除</a-button>
+            </a-space>
+          </div>
         </template>
       </a-tabs>
       <a-table
@@ -52,26 +63,57 @@
               <a-tag :color="getStatusColor(record.status)" size="small">{{ record.status }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button
-                type="text"
-                size="mini"
-                class="custom-mini-btn"
-                :disabled="record.status === 'running'"
-                @click="onStart(record)"
-                >启动</a-button
-              >
-              <a-button
-                type="text"
-                size="mini"
-                class="custom-mini-btn"
-                :disabled="record.status !== 'running'"
-                @click="onStop(record)"
-                >停止</a-button
-              >
-              <a-button type="text" size="mini" class="custom-mini-btn" @click="onLogs(record)">日志</a-button>
-              <a-button status="danger" type="text" size="mini" class="custom-mini-btn" @click="onDelete(record)"
-                >删除</a-button
-              >
+              <a-space>
+                <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  :disabled="record.status === 'running'"
+                  @click="onStart(record)"
+                  >启动</a-button
+                >
+                <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  :disabled="record.status !== 'running'"
+                  @click="onStop(record)"
+                  >停止</a-button
+                >
+                <a-dropdown trigger="hover">
+                  <a-button size="mini" type="text">···</a-button>
+                  <template #content>
+                    <a-doption>
+                      <a-button
+                        type="text"
+                        size="mini"
+                        class="custom-mini-btn"
+                        @click="onLogs(record)"
+                        >日志</a-button
+                      >
+                    </a-doption>
+                    <a-doption>
+                      <a-button
+                        type="text"
+                        size="mini"
+                        class="custom-mini-btn"
+                        @click="onViewFile(record)"
+                        >文件</a-button
+                      >
+                    </a-doption>
+                    <a-doption>
+                      <a-button
+                        status="danger"
+                        type="text"
+                        size="mini"
+                        class="custom-mini-btn"
+                        @click="onDelete(record)"
+                        >删除</a-button
+                      >
+                    </a-doption>
+                  </template>
+                </a-dropdown>
+              </a-space>
             </template>
           </a-table-column>
         </template>
@@ -133,12 +175,40 @@
       />
     </div>
   </a-drawer>
+
+  <a-drawer
+    :width="1000"
+    :visible="fileDrawer.visible"
+    placement="right"
+    @cancel="onFileCancel"
+    unmountOnClose
+    :footer="false"
+  >
+    <template #title>
+      <div class="log-drawer-title">
+        <span>任务文件</span>
+        <a-space>
+          <a-button size="small" @click="onFileCancel">取消</a-button>
+          <a-button size="small" type="primary" @click="onFileSave">保存</a-button>
+        </a-space>
+      </div>
+    </template>
+    <div class="log-drawer-body">
+      <CodeEditor
+        ref="fileEditorRef"
+        v-model="fileDrawer.codeText"
+        placeholder="脚本内容"
+        :codeStyle="{ height: '100%' }"
+        :dark="true"
+      />
+    </div>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
   import { Message, Modal } from '@arco-design/web-vue'
   import { nextTick, onMounted, reactive, ref, watch } from 'vue'
-  import { FormItem, ModalDialogType } from '@/types/components'
+  import { ModalDialogType } from '@/types/components'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
@@ -147,6 +217,7 @@
     deleteMonitoringTask,
     downloadMonitoringTaskLog,
     getMonitoringTask,
+    getMonitoringTaskDetail,
     getMonitoringTaskLogs,
     postMonitoringTask,
     postMonitoringTaskStart,
@@ -156,6 +227,7 @@
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const logEditorRef = ref<any>(null)
+  const fileEditorRef = ref<any>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
@@ -172,6 +244,13 @@
     visible: false,
     codeText: '',
     taskId: 0,
+  })
+
+  const fileDrawer = reactive({
+    visible: false,
+    codeText: '',
+    taskId: 0,
+    task: null as any,
   })
 
   function getStatusColor(status: string) {
@@ -332,7 +411,9 @@
         // 方法3: 通过 DOM 查询直接访问滚动容器
         const scrollContainer = document.querySelector('.log-drawer-body .cm-scroller')
         if (scrollContainer) {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight
+          ;(scrollContainer as HTMLElement).scrollTop = (
+            scrollContainer as HTMLElement
+          ).scrollHeight
         }
       }, 300)
     })
@@ -406,6 +487,58 @@
       })
   }
 
+  function onViewFile(record: any) {
+    fileDrawer.taskId = record.id
+    fileDrawer.task = record
+    fileDrawer.visible = true
+    // 如果 record 中已经有 script_content，直接使用
+    if (record.script_content) {
+      fileDrawer.codeText = record.script_content
+    } else {
+      // 否则从后端获取任务详情
+      getMonitoringTaskDetail(record.id)
+        .then((res: any) => {
+          if (res.data && res.data.script_content) {
+            fileDrawer.codeText = res.data.script_content
+          } else {
+            fileDrawer.codeText = '暂无脚本内容'
+          }
+        })
+        .catch((error) => {
+          console.log(error)
+          Message.error('获取文件内容失败')
+          fileDrawer.codeText = '获取文件内容失败'
+        })
+    }
+  }
+
+  function onFileCancel() {
+    fileDrawer.visible = false
+  }
+
+  function onFileSave() {
+    if (!fileDrawer.taskId || !fileDrawer.task) {
+      Message.warning('未选择任务')
+      return
+    }
+    const payload: any = {
+      id: fileDrawer.taskId,
+      name: fileDrawer.task.name,
+      description: fileDrawer.task.description || '',
+      script_content: fileDrawer.codeText,
+    }
+    putMonitoringTask(payload)
+      .then((res: any) => {
+        Message.success(res.msg || '保存成功')
+        fileDrawer.visible = false
+        doRefresh()
+      })
+      .catch((error) => {
+        console.log(error)
+        Message.error('保存失败')
+      })
+  }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
@@ -414,29 +547,29 @@
 </script>
 
 <style scoped lang="less">
-.custom-mini-btn {
-  padding: 0 4px;
-}
+  .custom-mini-btn {
+    padding: 0 4px;
+  }
 
-.log-drawer-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 16px;
-}
+  .log-drawer-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 16px;
+  }
 
-.log-drawer-body {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  
-  :deep(.cm-editor) {
+  .log-drawer-body {
     height: 100%;
-    
-    .cm-scroller {
-      overflow: auto !important;
+    display: flex;
+    flex-direction: column;
+
+    :deep(.cm-editor) {
+      height: 100%;
+
+      .cm-scroller {
+        overflow: auto !important;
+      }
     }
   }
-}
 </style>

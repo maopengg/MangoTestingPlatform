@@ -1,33 +1,29 @@
 # -*- coding: utf-8 -*-
 # @Description: 预警监控任务模型
 from django.db import models
-from django.utils import timezone
+
+from src.auto_test.auto_system.models import ProjectProduct
+from src.enums.monitoring_enum import MonitoringTaskStatusEnum
 
 
 class MonitoringTask(models.Model):
-    class Status(models.TextChoices):
-        QUEUED = 'queued', 'Queued'
-        RUNNING = 'running', 'Running'
-        STOPPED = 'stopped', 'Stopped'
-        FAILED = 'failed', 'Failed'
-        COMPLETED = 'completed', 'Completed'
-
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True, default='')
-    script_content = models.TextField()  # 存储代码内容，多服务器部署时共享
-    script_path = models.CharField(max_length=512, blank=True, default='')  # 执行时临时生成的文件路径
+    script_content = models.TextField()
+    script_path = models.CharField(max_length=512, blank=True, default='')
     log_path = models.CharField(max_length=512, blank=True, default='')
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
+    status = models.SmallIntegerField(verbose_name="状态", choices=MonitoringTaskStatusEnum.choices(), default=MonitoringTaskStatusEnum.QUEUED.value)
     pid = models.IntegerField(null=True, blank=True)
     exit_code = models.IntegerField(null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
     stopped_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'monitoring_task'
-        ordering = ['-created_at']
+        ordering = ['-create_time']
 
     def __str__(self):
         return f'{self.name}({self.status})'

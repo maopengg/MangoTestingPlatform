@@ -119,6 +119,19 @@ def ad_routes():
             ]
         },
         {
+            "menuUrl": "/monitoring",
+            "menuName": "脚本运行器",
+            "icon": "IconMobile",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/monitoring",
+                    "menuUrl": "/monitoring/index",
+                    "menuName": "脚本运行器",
+                }
+            ],
+        },
+        {
             "menuUrl": "/report",
             "menuName": "测试报告",
             "icon": "icon-calendar-clock",
@@ -149,19 +162,7 @@ def ad_routes():
         #         },
         #     ],
         # },
-                {
-            "menuUrl": "/monitoring",
-            "menuName": "预警监控",
-            "icon": "IconMobile",
-            "parentPath": "",
-            "children": [
-                {
-                    "parentPath": "/monitoring",
-                    "menuUrl": "/monitoring/index",
-                    "menuName": "预警监控",
-                }
-            ],
-        },
+
         {
             "menuUrl": "/equipment",
             "menuName": "设备中心",

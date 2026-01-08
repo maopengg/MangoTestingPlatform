@@ -80,3 +80,24 @@ export function downloadMonitoringTaskLog(id: number) {
   })
 }
 
+export function getMonitoringTaskDetail(id: number) {
+  return get({
+    url: 'monitoring/task',
+    data: () => {
+      return {
+        id: id,
+      }
+    },
+  }).then((res: any) => {
+    // 从列表中找到对应 id 的任务
+    if (res.data && Array.isArray(res.data)) {
+      const task = res.data.find((item: any) => item.id === id)
+      return {
+        ...res,
+        data: task || null,
+      }
+    }
+    return res
+  })
+}
+

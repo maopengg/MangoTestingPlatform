@@ -82,7 +82,6 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    width: 200,
   },
   {
     title: '状态',
@@ -117,7 +116,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 220,
+    width: 190,
   },
 ])
-
