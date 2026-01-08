@@ -57,11 +57,10 @@ class CaseBase:
                     raise ApiError(*ERROR_MSG_0036)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
                 log.api.debug(f'用例前置sql-1->key:{key}，value:{value}，查询结果：{res}')
+                if  isinstance(res, list) and len(res) < 0:
+                    raise ApiError(*ERROR_MSG_0048, value=(value, res))
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
-                if key is not None and key != '' and len(res) > 0:
-                    log.api.debug(f'用例前置sql-2->key:{key}，res:{res}')
-                    raise ApiError(*ERROR_MSG_0034, value=(value,))
 
     def __front_headers(self):
         if self.api_case.front_headers:
@@ -78,5 +77,5 @@ class CaseBase:
                     raise ApiError(*ERROR_MSG_0026)
                 res = self.test_setup.mysql_connect.condition_execute(sql)
                 log.api.debug(f'用例后置sql->key:{key},sql:{sql},查询结果：{res}')
-                if key is not None and key != '' and len(res) > 0:
+                if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
