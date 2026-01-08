@@ -7,6 +7,7 @@ import os
 import uuid
 
 from django.conf import settings
+from django.http import FileResponse
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -53,6 +54,7 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
         """
         支持 script_content / script_file 任一输入，只保存代码内容到数据库，不写入文件。
         文件在执行时才生成，以支持多服务器部署。
+        路径存储为相对路径（相对于 BASE_DIR），以支持跨平台部署。
         """
         # 取内容
         content = validated_data.pop('script_content', None)
@@ -63,16 +65,14 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
         if not content:
             raise serializers.ValidationError('script_content 或 script_file 必须提供一个')
 
-        # 生成日志路径（文件路径在执行时生成）
-        logs_dir = os.path.join(settings.BASE_DIR, 'logs', 'monitoring')
-        os.makedirs(logs_dir, exist_ok=True)
+        # 生成日志路径（相对路径，文件路径在执行时生成）
         file_id = uuid.uuid4().hex
-        log_path = os.path.join(logs_dir, f'{file_id}.log')
+        log_path = os.path.join('logs', 'monitoring', f'{file_id}.log').replace('\\', '/')  # 统一使用 / 作为路径分隔符
 
         validated_data.update({
             'script_content': content,  # 保存代码内容到数据库
             'script_path': '',  # 执行时再生成
-            'log_path': log_path,
+            'log_path': log_path,  # 存储相对路径
             'status': MonitoringTask.Status.QUEUED,
         })
         return super().create(validated_data)
@@ -159,3 +159,30 @@ class MonitoringTaskViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0001, '任务不存在')
         lines = runner.tail_log(task, limit=limit)
         return ResponseData.success(RESPONSE_MSG_0001, lines)
+
+    @error_response('system')
+    def download_log(self, request: Request):
+        """
+        下载完整的日志文件
+        """
+        task_id = request.query_params.get('id') or request.data.get('id')
+        task = MonitoringTask.objects.filter(id=task_id).first()
+        if not task:
+            return ResponseData.fail(RESPONSE_MSG_0001, '任务不存在')
+        
+        if not task.log_path:
+            return ResponseData.fail(RESPONSE_MSG_0001, '日志路径不存在')
+        
+        # 将相对路径转换为绝对路径
+        log_path = os.path.join(settings.BASE_DIR, task.log_path) if not os.path.isabs(task.log_path) else task.log_path
+        
+        if not os.path.exists(log_path):
+            return ResponseData.fail(RESPONSE_MSG_0001, '日志文件不存在')
+        
+        try:
+            file = open(log_path, 'rb')
+            filename = f'任务日志_{task.name}_{task.id}.log'
+            response = FileResponse(file, as_attachment=True, filename=filename)
+            return response
+        except Exception as e:
+            return ResponseData.fail(RESPONSE_MSG_0001, f'下载失败: {str(e)}')

@@ -12,5 +12,6 @@ urlpatterns = [
     path("task/start", MonitoringTaskViews.as_view({'post': 'start'})),
     path("task/stop", MonitoringTaskViews.as_view({'post': 'stop'})),
     path("task/logs", MonitoringTaskViews.as_view({'get': 'logs'})),
+    path("task/download/log", MonitoringTaskViews.as_view({'get': 'download_log'})),
 ]
 

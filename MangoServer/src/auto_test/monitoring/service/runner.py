@@ -17,9 +17,25 @@ RUNNING_PROCESSES: Dict[int, subprocess.Popen] = {}
 LOG_THREADS: Dict[int, threading.Thread] = {}
 
 
+def _get_absolute_path(relative_path: str) -> str:
+    """
+    将相对路径转换为绝对路径（相对于 BASE_DIR）
+    """
+    if not relative_path:
+        return ''
+    if os.path.isabs(relative_path):
+        return relative_path
+    return os.path.join(settings.BASE_DIR, relative_path)
+
+
 def _append_log(log_path: str, text: str):
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    with open(log_path, 'a', encoding='utf-8') as f:
+    """
+    追加日志到文件
+    log_path 可以是相对路径或绝对路径
+    """
+    abs_log_path = _get_absolute_path(log_path)
+    os.makedirs(os.path.dirname(abs_log_path), exist_ok=True)
+    with open(abs_log_path, 'a', encoding='utf-8') as f:
         f.write(text)
 
 
@@ -35,23 +51,26 @@ def start_task(task: MonitoringTask):
     if not task.script_content:
         raise ValueError('任务代码内容为空')
 
-    # 确保目录存在
-    scripts_dir = os.path.join(settings.BASE_DIR, 'monitoring_scripts')
-    os.makedirs(scripts_dir, exist_ok=True)
-    os.makedirs(os.path.dirname(task.log_path), exist_ok=True)
-
-    # 生成文件路径（如果还没有）
+    # 生成文件路径（如果还没有，存储为相对路径）
     if not task.script_path:
         file_id = uuid.uuid4().hex
-        task.script_path = os.path.join(scripts_dir, f'{file_id}.py')
+        task.script_path = os.path.join('monitoring_scripts', f'{file_id}.py').replace('\\', '/')  # 统一使用 / 作为路径分隔符
         task.save(update_fields=['script_path'])
 
+    # 将相对路径转换为绝对路径
+    script_path = _get_absolute_path(task.script_path)
+    log_path = _get_absolute_path(task.log_path)
+
+    # 确保目录存在
+    os.makedirs(os.path.dirname(script_path), exist_ok=True)
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
     # 将代码内容写入文件
-    with open(task.script_path, 'w', encoding='utf-8') as f:
+    with open(script_path, 'w', encoding='utf-8') as f:
         f.write(task.script_content)
 
     # 使用当前解释器，确保复用同一虚拟环境/容器的依赖
-    cmd = [sys.executable, task.script_path]
+    cmd = [sys.executable, script_path]
 
     proc = subprocess.Popen(
         cmd,
@@ -79,7 +98,7 @@ def start_task(task: MonitoringTask):
             if not proc.stdout:
                 return
             for line in proc.stdout:
-                _append_log(task.log_path, line)
+                _append_log(log_path, line)
         finally:
             close_old_connections()
 
@@ -135,11 +154,24 @@ def stop_task(task: MonitoringTask, timeout: float = 5.0):
 
 
 def tail_log(task: MonitoringTask, limit: int = 200):
-    if not task.log_path or not os.path.exists(task.log_path):
+    """
+    读取日志文件内容
+    """
+    if not task.log_path:
         return []
-    with open(task.log_path, 'r', encoding='utf-8', errors='ignore') as f:
-        lines = f.readlines()
-    if limit <= 0:
-        return lines
-    return lines[-limit:]
+    
+    # 将相对路径转换为绝对路径
+    log_path = _get_absolute_path(task.log_path)
+    
+    if not os.path.exists(log_path):
+        return []
+    
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+        if limit <= 0:
+            return lines
+        return lines[-limit:]
+    except Exception:
+        return []
 

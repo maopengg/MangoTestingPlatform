@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+import request from '@/api/axios.config'
 
 export function getMonitoringTask(data: object) {
   return get({
@@ -69,6 +70,13 @@ export function getMonitoringTaskLogs(id: number, limit: number = 200) {
         limit: limit,
       }
     },
+  })
+}
+
+export function downloadMonitoringTaskLog(id: number) {
+  return request.get('monitoring/task/download/log', {
+    params: { id },
+    responseType: 'blob',
   })
 }
 

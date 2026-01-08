@@ -112,23 +112,32 @@
     placement="right"
     @cancel="logDrawer.visible = false"
     unmountOnClose
+    :footer="false"
   >
-  >
-    <template #title>任务日志</template>
+    <template #title>
+      <div class="log-drawer-title">
+        <span>任务日志</span>
+        <a-space>
+          <a-button size="small" @click="onDownloadLogs">下载</a-button>
+          <a-button size="small" type="primary" @click="onRefreshLogs">刷新</a-button>
+        </a-space>
+      </div>
+    </template>
     <div class="log-drawer-body">
-      <div class="log-drawer-actions">
-        <a-button size="small" type="primary" @click="onRefreshLogs">刷新</a-button>
-      </div>
-      <div class="log-drawer-editor">
-        <CodeEditor v-model="logDrawer.codeText" placeholder="日志内容" :lineHeight="600" />
-      </div>
+      <CodeEditor
+        ref="logEditorRef"
+        v-model="logDrawer.codeText"
+        placeholder="日志内容"
+        :codeStyle="{ height: '100%' }"
+        :dark="true"
+      />
     </div>
   </a-drawer>
 </template>
 
 <script lang="ts" setup>
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
@@ -136,6 +145,7 @@
   import CodeEditor from '@/components/CodeEditor.vue'
   import {
     deleteMonitoringTask,
+    downloadMonitoringTaskLog,
     getMonitoringTask,
     getMonitoringTaskLogs,
     postMonitoringTask,
@@ -145,6 +155,7 @@
   } from '@/api/monitoring/task'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const logEditorRef = ref<any>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
@@ -160,6 +171,7 @@
   const logDrawer = reactive({
     visible: false,
     codeText: '',
+    taskId: 0,
   })
 
   function getStatusColor(status: string) {
@@ -300,13 +312,98 @@
       .catch(console.log)
   }
 
-  function onLogs(record: any) {
-    getMonitoringTaskLogs(record.id, 300)
+  function scrollToBottom() {
+    // 使用多次 nextTick 和 setTimeout 确保 DOM 完全渲染后再滚动
+    nextTick(() => {
+      setTimeout(() => {
+        // 方法1: 使用 CodeEditor 暴露的 scrollToBottom 方法
+        if (logEditorRef.value && logEditorRef.value.scrollToBottom) {
+          logEditorRef.value.scrollToBottom()
+          return
+        }
+        // 方法2: 通过 ref 访问 CodeMirror 实例
+        if (logEditorRef.value) {
+          const codemirrorInstance = logEditorRef.value.codemirror
+          if (codemirrorInstance && codemirrorInstance.scrollDOM) {
+            codemirrorInstance.scrollDOM.scrollTop = codemirrorInstance.scrollDOM.scrollHeight
+            return
+          }
+        }
+        // 方法3: 通过 DOM 查询直接访问滚动容器
+        const scrollContainer = document.querySelector('.log-drawer-body .cm-scroller')
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight
+        }
+      }, 300)
+    })
+  }
+
+  function fetchLogs() {
+    if (!logDrawer.taskId) return
+    getMonitoringTaskLogs(logDrawer.taskId, 300)
       .then((res) => {
         logDrawer.codeText = (res.data || []).join('')
-        logDrawer.visible = true
+        scrollToBottom()
       })
       .catch(console.log)
+  }
+
+  // 监听日志内容变化，自动滚动到底部
+  watch(
+    () => logDrawer.codeText,
+    () => {
+      if (logDrawer.visible) {
+        scrollToBottom()
+      }
+    }
+  )
+
+  // 监听 drawer 打开状态，打开时滚动到底部
+  watch(
+    () => logDrawer.visible,
+    (visible) => {
+      if (visible && logDrawer.codeText) {
+        scrollToBottom()
+      }
+    }
+  )
+
+  function onLogs(record: any) {
+    logDrawer.taskId = record.id
+    logDrawer.visible = true
+    // drawer 打开后再加载日志，确保滚动功能正常
+    nextTick(() => {
+      fetchLogs()
+    })
+  }
+
+  function onRefreshLogs() {
+    fetchLogs()
+  }
+
+  function onDownloadLogs() {
+    if (!logDrawer.taskId) {
+      Message.warning('请先选择任务')
+      return
+    }
+    downloadMonitoringTaskLog(logDrawer.taskId)
+      .then((res: any) => {
+        // 后端返回的是文件流
+        const blob = new Blob([res.data], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `任务日志_${logDrawer.taskId}_${new Date().getTime()}.log`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        Message.success('日志下载成功')
+      })
+      .catch((error) => {
+        console.log(error)
+        Message.error('下载失败')
+      })
   }
 
   onMounted(() => {
@@ -319,5 +416,27 @@
 <style scoped lang="less">
 .custom-mini-btn {
   padding: 0 4px;
+}
+
+.log-drawer-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.log-drawer-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
+  :deep(.cm-editor) {
+    height: 100%;
+    
+    .cm-scroller {
+      overflow: auto !important;
+    }
+  }
 }
 </style>

@@ -8,3 +8,4 @@ class MonitoringConfig(AppConfig):
     name = 'src.auto_test.monitoring'
 
 
+
