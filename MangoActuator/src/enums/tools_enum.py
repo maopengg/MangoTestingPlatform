@@ -199,3 +199,17 @@ class CacheKeyEnum(BaseEnum):
             'web_default': CacheValueTypeEnum.BOOL,
             'is_agent': CacheValueTypeEnum.BOOL,
         }
+
+
+class ActuatorTypeEnum(BaseEnum):
+    """执行器类型"""
+    PYTEST = 0
+    WEBUI = 1
+    ANDROIDUI = 2
+    IOSUI = 3
+    PCUI = 4
+
+    @classmethod
+    def obj(cls):
+        return {0: "pytest", 1: "web_ui", 2: "android_ui", 3: "ios_ui", 4: "pc_ui"}
+

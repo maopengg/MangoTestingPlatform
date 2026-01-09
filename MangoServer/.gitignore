@@ -11,3 +11,4 @@ src/auto_test/auto_pytest/mango_pytest/
 mango_pytest/
 download/
 upload/
+monitoring_scripts/

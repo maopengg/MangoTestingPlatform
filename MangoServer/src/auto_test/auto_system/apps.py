@@ -179,6 +179,12 @@ class AutoSystemConfig(AppConfig):
         # 不再需要停止消费者线程，因为不再启动它
         # 停止全局调度器
         self.stop_scheduler()
+        # 停止 RunTasks 调度器
+        try:
+            from src.auto_test.auto_system.service.tasks.run_tasks import RunTasks
+            RunTasks.shutdown_scheduler()
+        except Exception as e:
+            log.system.error(f'关闭 RunTasks 调度器异常: {e}')
 
     def init_ass(self):
         try:

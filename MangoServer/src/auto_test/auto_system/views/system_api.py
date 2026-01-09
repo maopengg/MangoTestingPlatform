@@ -15,6 +15,7 @@ from rest_framework.viewsets import ViewSet
 
 from src import settings
 from src.enums.api_enum import *
+from src.enums.monitoring_enum import MonitoringTaskStatusEnum
 from src.enums.pytest_enum import *
 from src.enums.system_enum import *
 from src.enums.tools_enum import *
@@ -49,6 +50,7 @@ class SystemViews(ViewSet):
             'environment_type': EnvironmentEnum.get_option(),
             'test_case_type': TestCaseTypeEnum.get_option(),
             'file_status': FileStatusEnum.get_option(),
+            'monitoring_task_status': MonitoringTaskStatusEnum.get_option(),
         }
         return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 

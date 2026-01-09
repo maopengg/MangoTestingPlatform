@@ -36,7 +36,9 @@ urlpatterns = [
     path('perf/', include("src.auto_test.auto_perf.urls")),
     path('user/', include("src.auto_test.auto_user.urls")),
     path('pytest/', include("src.auto_test.auto_pytest.urls")),
+    path('monitoring/', include("src.auto_test.monitoring.urls")),
 ]
 
 if not IS_MINIO:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

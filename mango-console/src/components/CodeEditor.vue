@@ -1,5 +1,6 @@
 <template>
   <Codemirror
+    ref="cmRef"
     v-model="codeValue"
     :style="codeStyle"
     :extensions="extensions"
@@ -41,6 +42,28 @@
   const extensions = props.dark ? [python(), oneDark] : [python()]
 
   const codeValue = ref(props.modelValue)
+  const cmRef = ref<any>(null)
+
+  // 暴露方法给父组件
+  defineExpose({
+    codemirror: () => cmRef.value?.handle?.view,
+    scrollToBottom: () => {
+      // 方法1: 通过 handle.view 访问 scrollDOM
+      if (cmRef.value?.handle?.view?.scrollDOM) {
+        const scrollDOM = cmRef.value.handle.view.scrollDOM
+        scrollDOM.scrollTop = scrollDOM.scrollHeight
+        return
+      }
+      // 方法2: 通过 DOM 查询 .cm-scroller
+      const editorEl = cmRef.value?.$el || document.querySelector('.cm-editor')
+      if (editorEl) {
+        const scrollContainer = editorEl.querySelector('.cm-scroller')
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight
+        }
+      }
+    },
+  })
 
   watch(
     () => props.modelValue,
