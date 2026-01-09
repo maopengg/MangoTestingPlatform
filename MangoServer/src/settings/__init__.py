@@ -33,6 +33,14 @@ else:
     raise Exception(
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
 # **********************************************************************************************************************
+
+# 监控基类（MonitorBase）在作为第三方库使用时，通过以下配置动态导入 Django 项目中的模型和类。
+# 目前在本项目中默认指向自身的实现路径；如果将来拆分为独立库，其他项目只需在自己的 settings 中配置相同名称即可。
+MONITORING_REPORT_MODEL = "src.auto_test.monitoring.models.MonitoringReport"
+MONITORING_TASK_MODEL = "src.auto_test.monitoring.models.MonitoringTask"
+MONITORING_LOG_STATUS_ENUM = "src.enums.monitoring_enum.MonitoringLogStatusEnum"
+MONITORING_NOTICE_MAIN = "src.auto_test.auto_system.service.notice.NoticeMain"
+
 RETRY_FREQUENCY = 3
 API_MAX_TASKS = 10
 # **********************************************************************************************************************
