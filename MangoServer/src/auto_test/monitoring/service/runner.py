@@ -156,13 +156,14 @@ class MonitoringTaskRunner:
         os.makedirs(os.path.dirname(script_path), exist_ok=True)
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
-        # 将代码内容写入文件
+        # 将代码内容写入文件（不需要添加 Django 初始化代码，因为会通过 management command 执行）
         with open(script_path, 'w', encoding='utf-8') as f:
             f.write(task.script_content)
 
-        # 使用当前解释器，确保复用同一虚拟环境/容器的依赖
-        # 将 task_id 作为命令行参数传递给脚本
-        cmd = [sys.executable, script_path, str(task.id)]
+        # 使用 Django management command 来执行脚本，这样脚本自动在 Django 环境中运行
+        # 不需要每个脚本都初始化 Django，避免重复导入
+        manage_py_path = os.path.join(settings.BASE_DIR, 'manage.py')
+        cmd = [sys.executable, manage_py_path, 'run_monitoring_script', script_path, str(task.id)]
 
         proc = subprocess.Popen(
             cmd,

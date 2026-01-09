@@ -4,6 +4,7 @@
 # @Time   : 2026-01-06
 # @Author : 
 import os
+import re
 import uuid
 
 from django.conf import settings
@@ -67,6 +68,16 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
         if upload_file:
             content = upload_file.read().decode('utf-8')
 
+        # 将脚本中的 mangotools 基类导入替换为 Django 项目内的基类导入
+        # from mangotools.monitoring import MonitorBase
+        #   => from src.auto_test.monitoring.service.base_monitor import MonitorBase
+        if content:
+            content = re.sub(
+                r'from\s+mangotools\.monitoring\s+import\s+MonitorBase',
+                'from src.auto_test.monitoring.service.base_monitor import MonitorBase',
+                content,
+            )
+
         if not content:
             raise serializers.ValidationError('script_content 或 script_file 必须提供一个')
 
@@ -90,6 +101,14 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
         upload_file = validated_data.pop('script_file', None)
         if upload_file:
             content = upload_file.read().decode('utf-8')
+
+        # 同 create：把 mangotools 的基类导入替换为 Django 基类导入
+        if content:
+            content = re.sub(
+                r'from\s+mangotools\.monitoring\s+import\s+MonitorBase',
+                'from src.auto_test.monitoring.service.base_monitor import MonitorBase',
+                content,
+            )
 
         # 如果提供了新的代码内容，更新它
         if content is not None:
