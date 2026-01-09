@@ -96,6 +96,28 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '是否发送通知',
+    key: 'is_notice',
+    value: ref(0),
+    type: 'switch',
+    placeholder: '请选择是否发送通知',
+    required: false,
+    validator() {
+      return true
+    },
+  },
+  {
+    label: '通知组',
+    key: 'notice_group',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择通知组',
+    required: false,
+    validator() {
+      return true
+    },
+  },
 ])
 
 // 表格列
@@ -129,6 +151,20 @@ export const tableColumns = useTableColumn([
     dataIndex: 'status',
     align: 'center',
     width: 90,
+  },
+  {
+    title: '是否通知',
+    key: 'is_notice',
+    dataIndex: 'is_notice',
+    align: 'center',
+    width: 100,
+  },
+  {
+    title: '通知组',
+    key: 'notice_group',
+    dataIndex: 'notice_group',
+    align: 'left',
+    width: 150,
   },
   {
     title: 'PID',

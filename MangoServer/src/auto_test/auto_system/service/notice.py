@@ -33,6 +33,19 @@ class NoticeMain:
             cls.__ding_ding_send(notice_obj.dingding, test_report)
 
     @classmethod
+    @async_task_db_connection(max_retries=3, retry_delay=2)
+    def notice_monitoring(cls, notice_group_id: int, msg: str):
+        notice_obj = NoticeGroup.objects.get(id=notice_group_id)
+        if notice_obj.mail:
+            cls.__wend_mail_send(notice_obj.mail, original=True, msg=msg)
+        if notice_obj.work_weixin:
+            cls.__we_chat_send(notice_obj.work_weixin, original=True, msg=msg)
+        if notice_obj.feishu:
+            cls.__fs_chat_send(notice_obj.feishu, original=True, msg=msg)
+        if notice_obj.dingding:
+            cls.__ding_ding_send(notice_obj.dingding, original=True, msg=msg)
+
+    @classmethod
     def test_notice_send(cls, _id):
         notice_obj = NoticeGroup.objects.get(id=_id)
         test_report = TestReportModel(**{
@@ -68,31 +81,40 @@ class NoticeMain:
             cls.__ding_ding_send(notice_obj.dingding, test_report)
 
     @classmethod
-    def __we_chat_send(cls, webhook, test_report: TestReportModel | None = None):
+    def __we_chat_send(cls, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
             wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
-            wechat.send_wechat_notification()
+            if original:
+                wechat.send_text(msg)
+            else:
+                wechat.send_wechat_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
-    def __fs_chat_send(cls, webhook: str, test_report: TestReportModel | None = None):
+    def __fs_chat_send(cls, webhook: str, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
             wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
-            wechat.send_feishu_notification()
+            if original:
+                wechat.send_markdown(msg)
+            else:
+                wechat.send_feishu_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
-    def __ding_ding_send(cls, webhook, test_report: TestReportModel | None = None):
+    def __ding_ding_send(cls, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
             wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
-            wechat.send_feishu_notification()
+            if original:
+                wechat.send_text(msg)
+            else:
+                wechat.send_feishu_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
-    def __wend_mail_send(cls, send_list, test_report: TestReportModel | None = None):
+    def __wend_mail_send(cls, send_list, test_report: TestReportModel | None = None, original=False, msg=None):
         send_user, email_host, stamp_key = cls.mail_config()
         email = EmailSend(EmailNoticeModel(
             send_user=send_user,
@@ -100,7 +122,10 @@ class NoticeMain:
             stamp_key=stamp_key,
             send_list=send_list,
         ), test_report, cls.get_domain_name())
-        email.send_main()
+        if original:
+            email.send_mail(f'预警监控通知', msg)
+        else:
+            email.send_main()
 
     @classmethod
     def test_report(cls, test_suite_id: int) -> TestReportModel:

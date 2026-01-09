@@ -92,6 +92,14 @@
                 enumStore.monitoring_task_status[record.status].title
               }}</a-tag>
             </template>
+            <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
+              <a-tag :color="record.is_notice === 1 ? 'green' : 'gray'" size="small">
+                {{ record.is_notice === 1 ? '是' : '否' }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'notice_group'" #cell="{ record }">
+              {{ record.notice_group?.name || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button
@@ -189,6 +197,20 @@
               :options="projectInfo.projectProduct"
               allow-search
               allow-clear
+              @change="onProjectChange(item.value)"
+            />
+          </template>
+          <template v-else-if="item.type === 'switch'">
+            <a-switch v-model="item.value" :checked-value="1" :unchecked-value="0" />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'notice_group'">
+            <a-select
+              v-model="item.value"
+              :options="data.noticeList"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
             />
           </template>
         </a-form-item>
@@ -275,6 +297,7 @@
   } from '@/api/monitoring/task'
   import { useEnum } from '@/store/modules/get-enum'
   import { fieldNames } from '@/setting'
+  import { getSystemNoticeName } from '@/api/system/notice_group'
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -294,6 +317,7 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '新增',
+    noticeList: [],
   })
 
   const logDrawer = reactive({
@@ -412,12 +436,22 @@
     data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
+    // 先加载通知组列表
+    if (item.project_product?.id) {
+      onProjectChange(item.project_product.id)
+    }
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
+          if (it.key === 'project_product') {
+            it.value = propName.id
+          } else if (it.key === 'notice_group') {
+            it.value = propName?.id || ''
+          } else {
+            it.value = propName.id
+          }
         } else {
           it.value = propName ?? ''
         }
@@ -426,6 +460,34 @@
       const scriptItem = formItems.find((it) => it.key === 'script_content')
       if (scriptItem) scriptItem.value = ''
     })
+  }
+
+  function onProjectChange(projectProductId: number | number[]) {
+    // 获取项目产品ID（级联选择器可能返回数组）
+    let id: number | null = null
+    if (Array.isArray(projectProductId)) {
+      id = projectProductId[projectProductId.length - 1] as number
+    } else if (typeof projectProductId === 'number') {
+      id = projectProductId
+    }
+
+    if (!id) {
+      data.noticeList = []
+      // 清空通知组选择
+      const noticeGroupItem = formItems.find((it) => it.key === 'notice_group')
+      if (noticeGroupItem) noticeGroupItem.value = ''
+      return
+    }
+
+    getSystemNoticeName(id)
+      .then((res) => {
+        data.noticeList = (res.data || []).map((item: any) => ({
+          key: item.value,
+          label: item.label,
+          value: item.value,
+        }))
+      })
+      .catch(console.log)
   }
 
   function doRefresh(projectProductId: number | string | null = null, bool_ = false) {

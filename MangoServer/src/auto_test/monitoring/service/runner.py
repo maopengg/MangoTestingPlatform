@@ -161,7 +161,8 @@ class MonitoringTaskRunner:
             f.write(task.script_content)
 
         # 使用当前解释器，确保复用同一虚拟环境/容器的依赖
-        cmd = [sys.executable, script_path]
+        # 将 task_id 作为命令行参数传递给脚本
+        cmd = [sys.executable, script_path, str(task.id)]
 
         proc = subprocess.Popen(
             cmd,

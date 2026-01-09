@@ -6,6 +6,7 @@
 from django.urls import path
 
 from src.auto_test.monitoring.views.monitoring_task import MonitoringTaskCRUD, MonitoringTaskViews
+from src.auto_test.monitoring.views.monitoring_report import MonitoringReportCRUD, MonitoringReportViews
 
 urlpatterns = [
     path("task", MonitoringTaskCRUD.as_view()),
@@ -13,5 +14,7 @@ urlpatterns = [
     path("task/stop", MonitoringTaskViews.as_view({'post': 'stop'})),
     path("task/logs", MonitoringTaskViews.as_view({'get': 'logs'})),
     path("task/download/log", MonitoringTaskViews.as_view({'get': 'download_log'})),
+    path("report", MonitoringReportCRUD.as_view()),
+    path("report/create", MonitoringReportViews.as_view({'post': 'create_report'})),
 ]
 

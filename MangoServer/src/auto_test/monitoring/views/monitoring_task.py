@@ -13,6 +13,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_system.views.notice_group import NoticeGroupSerializers
 from src.auto_test.monitoring.models import MonitoringTask
 from src.auto_test.monitoring.service import runner
 from src.enums.monitoring_enum import MonitoringTaskStatusEnum
@@ -104,6 +105,7 @@ class MonitoringTaskSerializersC(serializers.ModelSerializer):
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     status_display = serializers.SerializerMethodField()
     project_product = ProjectProductSerializersC(read_only=True)
+    notice_group = NoticeGroupSerializers(read_only=True)
 
     class Meta:
         model = MonitoringTask
@@ -115,7 +117,7 @@ class MonitoringTaskSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.select_related('project_product')
+        queryset = queryset.select_related('project_product', 'notice_group')
         return queryset
 
 

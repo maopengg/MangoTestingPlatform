@@ -128,6 +128,11 @@ def ad_routes():
                     "parentPath": "/monitoring",
                     "menuUrl": "/monitoring/index",
                     "menuName": "脚本运行器",
+                },
+                {
+                    "parentPath": "/monitoring",
+                    "menuUrl": "/monitoring/report",
+                    "menuName": "预警监控报告",
                 }
             ],
         },
