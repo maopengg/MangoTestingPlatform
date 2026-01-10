@@ -6,6 +6,11 @@ from src.auto_test.auto_system.models import ProjectProduct, NoticeGroup
 from src.enums.monitoring_enum import MonitoringTaskStatusEnum, MonitoringLogStatusEnum
 from src.enums.tools_enum import StatusEnum
 
+"""
+     1.python manage.py makemigrations
+     2.python manage.py migrate
+"""
+
 
 class MonitoringTask(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
