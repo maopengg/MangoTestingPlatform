@@ -46,48 +46,6 @@
 
     <template #default>
       <a-space direction="vertical" fill>
-        <!-- 统计卡片 -->
-        <div style="margin-bottom: 10px">
-          <a-row :gutter="16">
-            <a-col :span="6">
-              <a-card :bordered="false">
-                <a-statistic
-                  title="总报告数"
-                  :value="statistics.total"
-                  :value-style="{ color: '#1890ff' }"
-                />
-              </a-card>
-            </a-col>
-            <a-col :span="6">
-              <a-card :bordered="false">
-                <a-statistic
-                  title="成功"
-                  :value="statistics.success"
-                  :value-style="{ color: '#52c41a' }"
-                />
-              </a-card>
-            </a-col>
-            <a-col :span="6">
-              <a-card :bordered="false">
-                <a-statistic
-                  title="失败"
-                  :value="statistics.fail"
-                  :value-style="{ color: '#ff4d4f' }"
-                />
-              </a-card>
-            </a-col>
-            <a-col :span="6">
-              <a-card :bordered="false">
-                <a-statistic
-                  title="信息"
-                  :value="statistics.info"
-                  :value-style="{ color: '#faad14' }"
-                />
-              </a-card>
-            </a-col>
-          </a-row>
-        </div>
-
         <!-- 报告表格 -->
         <a-table
           :scrollbar="true"
@@ -161,7 +119,7 @@
         <a-tag color="blue">{{ detailDrawer.data.task_name }}</a-tag>
       </a-descriptions-item>
       <a-descriptions-item label="状态">
-        <a-tag :color="getStatusColor(detailDrawer.data.status)">
+        <a-tag :color="enumStore.colors[detailDrawer.data.status]">
           {{ detailDrawer.data.status_display }}
         </a-tag>
       </a-descriptions-item>
@@ -206,14 +164,6 @@
   const rowKey = useRowKey('id')
   const enumStore = useEnum()
 
-  // 统计信息
-  const statistics = reactive({
-    total: 0,
-    success: 0,
-    fail: 0,
-    info: 0,
-  })
-
   // 详情抽屉
   const detailDrawer = reactive({
     visible: false,
@@ -228,17 +178,8 @@
       .then((res: any) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize || 0)
-        // 计算统计信息
-        calculateStatistics(res.data || [])
       })
       .catch(console.log)
-  }
-
-  function calculateStatistics(data: MonitoringReport[]) {
-    statistics.total = data.length
-    statistics.success = data.filter((item) => item.status === 0).length
-    statistics.fail = data.filter((item) => item.status === 1).length
-    statistics.info = data.filter((item) => item.status === 2).length
   }
 
   function tableScrollHeight() {
