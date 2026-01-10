@@ -3,8 +3,7 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-
-from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
+from src.auto_test.auto_system.service.test_suite.update_test_suite import UpdateTestSuite
 from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 
 from src.models.system_model import TestSuiteDetailsResultModel

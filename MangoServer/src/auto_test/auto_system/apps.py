@@ -3,26 +3,24 @@
 # @Description:
 # @Time   : 2023/1/17 10:20
 # @Author : 毛鹏
-import os
 import threading
-import traceback
 from datetime import timedelta
 
 import atexit
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
+from django.db import transaction
 from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import TaskEnum, StatusEnum
+from src.enums.tools_enum import TaskEnum
 from src.settings import RETRY_FREQUENCY
+from src.tools import is_main_process
 from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
-from src.tools import is_main_process
-from django.db import transaction
 
 
 class AutoSystemConfig(AppConfig):
@@ -47,7 +45,8 @@ class AutoSystemConfig(AppConfig):
             except (RuntimeError, SystemError) as e:
                 # 忽略进程关闭时的错误（开发服务器重载时常见）
                 error_msg = str(e).lower()
-                if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+                if any(keyword in error_msg for keyword in
+                       ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
                     log.system.debug(f'系统模块：忽略进程关闭错误: {e}')
                     return
                 log.system.error(f'系统模块初始化异常: {e}')
@@ -64,7 +63,6 @@ class AutoSystemConfig(AppConfig):
         if not hasattr(AutoSystemConfig, '_shutdown_registered'):
             atexit.register(self.shutdown)
             AutoSystemConfig._shutdown_registered = True
-
 
     @staticmethod
     def delayed_task():
@@ -220,7 +218,7 @@ class AutoSystemConfig(AppConfig):
     def check_task_status(self):
         """检查所有任务状态，每3分钟执行一次"""
         try:
-            from src.auto_test.auto_system.service.notice import NoticeMain
+            from auto_test.auto_system.service.test_suite.send_notice import SendNotice
 
             reset_time = 30
             # 检查全部执行完，没有修改测试套结果的，和没有发送测试报告的
@@ -236,12 +234,7 @@ class AutoSystemConfig(AppConfig):
                     else:
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
-                if i.is_notice != StatusEnum.SUCCESS.value and i.tasks is not None and i.tasks.notice_group and i.tasks.is_notice == StatusEnum.SUCCESS.value:
-                    if (i.tasks.fail_notice == StatusEnum.SUCCESS.value and i.status != StatusEnum.SUCCESS.value) or i.tasks.fail_notice != StatusEnum.SUCCESS.value:
-                        log.system.info(f'通过定时任务发送通知：{i.pk}')
-                        NoticeMain.notice_main(i.tasks.notice_group_id, i.pk)
-                        i.is_notice = StatusEnum.SUCCESS.value
-                        i.save()
+                SendNotice(i.id).send_test_suite()
 
             # 把进行中的，修改为待开始,或者失败
             test_suite_details_list = TestSuiteDetails \
@@ -271,7 +264,8 @@ class AutoSystemConfig(AppConfig):
         except (RuntimeError, SystemError) as e:
             # 忽略进程关闭时的错误（开发服务器重载时常见）
             error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+            if any(keyword in error_msg for keyword in
+                   ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
                 log.system.debug(f'检查任务状态时忽略关闭错误: {e}')
                 return
             log.system.error(f'检查任务状态时发生异常: {e}')
@@ -290,7 +284,8 @@ class AutoSystemConfig(AppConfig):
         except (RuntimeError, SystemError) as e:
             # 忽略关闭时的正常错误
             error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+            if any(keyword in error_msg for keyword in
+                   ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
                 return
             log.system.debug(f'停止调度器时忽略错误: {e}')
         except Exception as e:
@@ -324,7 +319,8 @@ class AutoSystemConfig(AppConfig):
         except (RuntimeError, SystemError) as e:
             # 忽略进程关闭时的错误（开发服务器重载时常见）
             error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+            if any(keyword in error_msg for keyword in
+                   ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
                 log.system.debug(f'设置用例状态时忽略关闭错误: {e}')
                 return
             log.system.error(f'设置用例状态时发生异常: {e}')

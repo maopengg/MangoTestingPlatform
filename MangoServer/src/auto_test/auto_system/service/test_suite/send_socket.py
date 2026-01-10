@@ -1,0 +1,11 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description: 
+# @Time   : 2026-01-10 22:45
+# @Author : 毛鹏
+
+
+class SendSocket:
+
+    def __init__(self):
+        pass

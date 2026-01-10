@@ -4,9 +4,8 @@
 # @Time   : 2025-08-28 15:08
 # @Author : 毛鹏
 from src.auto_test.auto_pytest.service.test_report_writing import PtestTestReportWriting
-from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
+from src.auto_test.auto_system.service.test_suite.update_test_suite import UpdateTestSuite
 from src.models.pytest_model import PytestCaseResultModel
-
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.tools.decorator.retry import async_task_db_connection
 
