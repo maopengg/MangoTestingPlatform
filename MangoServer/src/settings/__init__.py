@@ -19,7 +19,16 @@ VERSION = '5.9.0'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
-print('设置启动环境DJANGO_ENV={}'.format(DJANGO_ENV))
+# 只在主进程（实际运行服务器的进程）中打印，避免Django自动重载导致的重复打印
+# RUN_MAIN 是 Django runserver 自动重载器设置的，只有在实际运行服务器的子进程中才会是 'true'
+# 如果使用其他方式启动（如 uvicorn），RUN_MAIN 可能不存在，此时也打印一次
+run_main = os.environ.get('RUN_MAIN')
+# 只在主进程中打印：RUN_MAIN == 'true'（runserver 的实际运行进程）或 RUN_MAIN 不存在（其他启动方式）
+if run_main == 'true' or (run_main is None and 'runserver' not in sys.argv):
+    # 使用模块级别的标志来确保每个进程只打印一次
+    if not hasattr(sys.modules[__name__], '_env_printed'):
+        print('设置启动环境DJANGO_ENV={}'.format(DJANGO_ENV))
+        sys.modules[__name__]._env_printed = True
 if DJANGO_ENV == SystemEnvEnum.DEV.value:
     from .dev import *
 elif DJANGO_ENV == SystemEnvEnum.PROD.value:

@@ -25,14 +25,24 @@ class ApiCaseFlow:
     @classmethod
     def start(cls):
         """启动后台任务获取线程"""
-        cls.thread = threading.Thread(target=cls._background_task_fetcher)
+        cls.thread = threading.Thread(target=cls._background_task_fetcher, daemon=True)
         cls.thread.start()
 
     @classmethod
     def stop(cls):
         """停止后台任务获取"""
         cls.running = False
-        cls.executor.shutdown(wait=True)
+        try:
+            # 不等待，快速关闭，避免在服务器关闭时阻塞
+            cls.executor.shutdown(wait=False)
+        except (RuntimeError, SystemError) as e:
+            # 忽略关闭时的正常错误
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+                return
+            log.system.debug(f'停止API任务执行器时忽略错误: {e}')
+        except Exception as e:
+            log.system.error(f'停止API任务执行器异常: {e}')
 
     @classmethod
     def _background_task_fetcher(cls):
@@ -42,6 +52,14 @@ class ApiCaseFlow:
             try:
                 cls.get_case()
                 time.sleep(0.5)
+            except (RuntimeError, SystemError) as e:
+                # 忽略进程关闭时的错误（开发服务器重载时常见）
+                error_msg = str(e).lower()
+                if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+                    log.api.debug(f'API任务获取器：忽略进程关闭错误: {e}')
+                    break
+                log.system.error(f'API任务获取器出错: {e}')
+                time.sleep(2)
             except Exception as e:
                 log.system.error(f'API任务获取器出错: {e}')
                 time.sleep(2)

@@ -33,7 +33,7 @@ class MonitorBase(Mb):
         log_text = f"[{timestamp}] [{level}] {message}"
         print(log_text)
 
-        if not self.task_id:
+        if not self.task_id or level == "INFO":
             return
 
         level_upper = (level or "INFO").upper()
@@ -72,11 +72,14 @@ class MonitorBase(Mb):
             return
 
         task = MonitoringTask.objects.get(id=self.task_id)
-        if task.notice_group_id is not None:
-            NoticeMain.notice_monitoring(task.notice_group_id, send_text)
+        if task.notice_group is None:
+            return
+        if not task.is_notice != StatusEnum.SUCCESS.value:
+            return
+        NoticeMain.notice_monitoring(task.notice_group_id, send_text)
         MonitoringReport.objects.create(
             task_id=self.task_id,
-            status=MonitoringLogStatusEnum.ERROR.value,  # 失败状态
+            status=MonitoringLogStatusEnum.ERROR.value,
             msg=base_msg,
             send_text=send_text,
             is_notice=StatusEnum.SUCCESS.value,

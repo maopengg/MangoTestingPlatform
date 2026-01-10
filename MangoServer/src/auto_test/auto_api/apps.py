@@ -5,6 +5,8 @@ import time
 import os
 from django.apps import AppConfig
 
+from src.tools import is_main_process
+
 
 class AutoApiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -12,32 +14,33 @@ class AutoApiConfig(AppConfig):
 
     def ready(self):
         # 多进程保护机制，防止在多进程环境下重复执行
-        if self._is_duplicate_process():
+        if is_main_process():
             return
 
         def run():
-            time.sleep(10)
-            self.test_case_consumption()
+            try:
+                time.sleep(10)
+                self.test_case_consumption()
+            except (RuntimeError, SystemError) as e:
+                # 忽略进程关闭时的错误（开发服务器重载时常见）
+                error_msg = str(e).lower()
+                if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
+                    return
+                raise
+            except Exception as e:
+                # 其他异常记录日志但不影响启动
+                import traceback
+                traceback.print_exc()
 
-        task = Thread(target=run)
+        # 设置为 daemon 线程，确保在服务关闭时能够快速退出
+        task = Thread(target=run, daemon=True)
         task.start()
-        atexit.register(self.shutdown)
+        # 只在主进程中注册退出处理函数，避免在开发服务器重载时被意外触发
+        # 使用模块级别的标志确保只注册一次
+        if not hasattr(AutoApiConfig, '_shutdown_registered'):
+            atexit.register(self.shutdown)
+            AutoApiConfig._shutdown_registered = True
 
-    def _is_duplicate_process(self):
-        """
-        检查是否为重复进程，防止在多进程环境下重复执行
-        """
-        # 检查是否为重载进程
-        run_main = os.environ.get('RUN_MAIN', None)
-        if run_main != 'true':
-            return True
-
-        # 检查DJANGO环境变量
-        django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
-        if not django_settings:
-            return True
-
-        return False
 
     def test_case_consumption(self):
         from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow

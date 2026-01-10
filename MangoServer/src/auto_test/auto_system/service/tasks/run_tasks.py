@@ -147,10 +147,16 @@ class RunTasks:
             for scheduled_tasks in scheduled_tasks_obj:
                 log.system.debug(f'触发任务：{scheduled_tasks}')
                 cls.distribute(scheduled_tasks)
-        except RuntimeError as e:
+        except (RuntimeError, SystemError) as e:
             # 捕获调度器关闭时的错误（服务关闭或重新加载时常见）
             error_msg = str(e).lower()
-            if 'cannot schedule new futures after shutdown' in error_msg or 'after shutdown' in error_msg:
+            if any(keyword in error_msg for keyword in [
+                'cannot schedule new futures after shutdown',
+                'after shutdown',
+                'interpreter shutdown',
+                'shutdown',
+                'interpreter'
+            ]):
                 log.system.debug(f'调度器已关闭，忽略定时任务执行: {e}')
                 return
             # 其他 RuntimeError 重新抛出

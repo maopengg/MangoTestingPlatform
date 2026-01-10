@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-11-28 17:58
 # @Author : 毛鹏
-import json
 
 from django.utils.timezone import localtime
 from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel
@@ -18,36 +17,52 @@ from src.tools.decorator.retry import async_task_db_connection
 
 class NoticeMain:
 
+    def __init__(self, notice_group_id: int):
+        """
+        初始化通知主类
+        
+        Args:
+            notice_group_id: 通知组ID
+        """
+        self.notice_group_id = notice_group_id
+        self.notice_obj = NoticeGroup.objects.get(id=notice_group_id)
+
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def notice_main(cls, notice_group_id: int, test_suite_id: int):
-        notice_obj = NoticeGroup.objects.get(id=notice_group_id)
-        test_report = cls.test_report(test_suite_id)
-        if notice_obj.mail:
-            cls.__wend_mail_send(notice_obj.mail, test_report)
-        if notice_obj.work_weixin:
-            cls.__we_chat_send(notice_obj.work_weixin, test_report)
-        if notice_obj.feishu:
-            cls.__fs_chat_send(notice_obj.feishu, test_report)
-        if notice_obj.dingding:
-            cls.__ding_ding_send(notice_obj.dingding, test_report)
+        """
+        发送测试套件通知
+        
+        Args:
+            notice_group_id: 通知组ID
+            test_suite_id: 测试套件ID
+        """
+        notice_obj = cls.__get_notice_group(notice_group_id)
+        test_report = cls.__test_report(test_suite_id)
+        cls.__send_notifications(notice_obj, test_report=test_report)
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def notice_monitoring(cls, notice_group_id: int, msg: str):
-        notice_obj = NoticeGroup.objects.get(id=notice_group_id)
-        if notice_obj.mail:
-            cls.__wend_mail_send(notice_obj.mail, original=True, msg=msg)
-        if notice_obj.work_weixin:
-            cls.__we_chat_send(notice_obj.work_weixin, original=True, msg=msg)
-        if notice_obj.feishu:
-            cls.__fs_chat_send(notice_obj.feishu, original=True, msg=msg)
-        if notice_obj.dingding:
-            cls.__ding_ding_send(notice_obj.dingding, original=True, msg=msg)
+        """
+        发送监控通知
+        
+        Args:
+            notice_group_id: 通知组ID
+            msg: 通知消息内容
+        """
+        notice_obj = cls.__get_notice_group(notice_group_id)
+        cls.__send_notifications(notice_obj, original=True, msg=msg)
 
     @classmethod
-    def test_notice_send(cls, _id):
-        notice_obj = NoticeGroup.objects.get(id=_id)
+    def test_notice_send(cls, _id: int):
+        """
+        发送测试通知（用于测试）
+        
+        Args:
+            _id: 通知组ID
+        """
+        notice_obj = cls.__get_notice_group(_id)
         test_report = TestReportModel(**{
             "test_suite_id": 197899881973,
             'task_name': None,
@@ -71,19 +86,52 @@ class NoticeMain:
             "execution_duration": "03:40:36",
             "test_time": "2025-07-05 06:26:47"
         })
+        cls.__send_notifications(notice_obj, test_report=test_report)
+
+    @classmethod
+    def __get_notice_group(cls, notice_group_id: int) -> NoticeGroup:
+        """
+        获取通知组对象（提取的公共方法）
+        
+        Args:
+            notice_group_id: 通知组ID
+            
+        Returns:
+            NoticeGroup: 通知组对象
+        """
+        return NoticeGroup.objects.get(id=notice_group_id)
+
+    @classmethod
+    def __send_notifications(
+        cls,
+        notice_obj: NoticeGroup,
+        test_report: TestReportModel | None = None,
+        original: bool = False,
+        msg: str | None = None
+    ):
+        """
+        发送所有类型的通知（提取的公共方法）
+        
+        Args:
+            notice_obj: 通知组对象
+            test_report: 测试报告对象（可选）
+            original: 是否发送原始消息
+            msg: 原始消息内容（当 original=True 时使用）
+        """
         if notice_obj.mail:
-            cls.__wend_mail_send(notice_obj.mail, test_report)
+            cls.__wend_mail_send(notice_obj.mail, test_report, original=original, msg=msg)
         if notice_obj.work_weixin:
-            cls.__we_chat_send(notice_obj.work_weixin, test_report)
+            cls.__we_chat_send(notice_obj.work_weixin, test_report, original=original, msg=msg)
         if notice_obj.feishu:
-            cls.__fs_chat_send(notice_obj.feishu, test_report)
+            cls.__fs_chat_send(notice_obj.feishu, test_report, original=original, msg=msg)
         if notice_obj.dingding:
-            cls.__ding_ding_send(notice_obj.dingding, test_report)
+            cls.__ding_ding_send(notice_obj.dingding, test_report, original=original, msg=msg)
 
     @classmethod
     def __we_chat_send(cls, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
+        """发送企业微信通知（私有方法）"""
         try:
-            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
+            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, cls.__get_domain_name())
             if original:
                 wechat.send_text(msg)
             else:
@@ -93,42 +141,45 @@ class NoticeMain:
 
     @classmethod
     def __fs_chat_send(cls, webhook: str, test_report: TestReportModel | None = None, original=False, msg=None):
+        """发送飞书通知（私有方法）"""
         try:
-            wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
+            feishu = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.__get_domain_name())
             if original:
-                wechat.send_markdown(msg)
+                feishu.send_markdown(msg)
             else:
-                wechat.send_feishu_notification()
+                feishu.send_feishu_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
     def __ding_ding_send(cls, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
+        """发送钉钉通知（私有方法）"""
         try:
-            wechat = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.get_domain_name())
+            dingding = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, cls.__get_domain_name())
             if original:
-                wechat.send_text(msg)
+                dingding.send_text(msg)
             else:
-                wechat.send_feishu_notification()
+                dingding.send_feishu_notification()
         except ToolsError as error:
             raise MangoServerError(error.code, error.msg)
 
     @classmethod
     def __wend_mail_send(cls, send_list, test_report: TestReportModel | None = None, original=False, msg=None):
-        send_user, email_host, stamp_key = cls.mail_config()
+        """发送邮件通知（私有方法）"""
+        send_user, email_host, stamp_key = cls.__mail_config()
         email = EmailSend(EmailNoticeModel(
             send_user=send_user,
             email_host=email_host,
             stamp_key=stamp_key,
             send_list=send_list,
-        ), test_report, cls.get_domain_name())
+        ), test_report, cls.__get_domain_name())
         if original:
             email.send_mail(f'预警监控通知', msg)
         else:
             email.send_main()
 
     @classmethod
-    def test_report(cls, test_suite_id: int) -> TestReportModel:
+    def __test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
         execution_duration = test_suite.update_time - test_suite.create_time
         case_sum = 0
@@ -195,7 +246,7 @@ class NoticeMain:
         )
 
     @staticmethod
-    def mail_config():
+    def __mail_config():
         try:
             send_user = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_SEND_USER.name).value
             email_host = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_EMAIL_HOST.name).value
@@ -208,7 +259,7 @@ class NoticeMain:
         return send_user, email_host, stamp_key
 
     @classmethod
-    def get_domain_name(cls):
+    def __get_domain_name(cls):
         domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.value}，此处才会显示跳转连接'
         try:
             cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.name)

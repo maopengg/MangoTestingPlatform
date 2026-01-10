@@ -18,7 +18,7 @@
                   style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="statusOptions"
+                  :options="enumStore.monitoring_log_status"
                   @change="doRefresh"
                   :field-names="fieldNames"
                   value-key="key"
@@ -118,8 +118,8 @@
                 <a-tag color="blue" size="small">{{ record.task_name }}</a-tag>
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
-                <a-tag :color="getStatusColor(record.status)" size="small">
-                  {{ record.status_display }}
+                <a-tag :color="enumStore.colors[record.status]" size="small"
+                  >{{ enumStore.monitoring_log_status[record.status].title }}
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'msg'" #cell="{ record }">
@@ -134,7 +134,12 @@
                 {{ record.task_notice_group?.name || '-' }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onViewDetail(record)">
+                <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="onViewDetail(record)"
+                >
                   查看详情
                 </a-button>
               </template>
@@ -149,12 +154,7 @@
   </TableBody>
 
   <!-- 详情抽屉 -->
-  <a-drawer
-    v-model:visible="detailDrawer.visible"
-    :width="600"
-    title="报告详情"
-    :footer="false"
-  >
+  <a-drawer v-model:visible="detailDrawer.visible" :width="600" title="报告详情" :footer="false">
     <a-descriptions :column="1" bordered v-if="detailDrawer.data">
       <a-descriptions-item label="报告ID">{{ detailDrawer.data.id }}</a-descriptions-item>
       <a-descriptions-item label="关联任务">
@@ -165,7 +165,9 @@
           {{ detailDrawer.data.status_display }}
         </a-tag>
       </a-descriptions-item>
-      <a-descriptions-item label="创建时间">{{ detailDrawer.data.create_time }}</a-descriptions-item>
+      <a-descriptions-item label="创建时间"
+        >{{ detailDrawer.data.create_time }}
+      </a-descriptions-item>
       <a-descriptions-item label="是否通知">
         <a-tag :color="detailDrawer.data.is_notice === 1 ? 'green' : 'gray'" size="small">
           {{ detailDrawer.data.is_notice === 1 ? '是' : '否' }}
@@ -190,19 +192,19 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useTable } from '@/hooks/table'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { nextTick, onMounted, reactive } from 'vue'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, tableColumns } from './report-config'
-  import { getMonitoringReportList } from '@/api/monitoring/report'
+  import { getMonitoringReportList, MonitoringReport } from '@/api/monitoring/report'
   import { useProject } from '@/store/modules/get-project'
-  import { MonitoringReport } from '@/api/monitoring/report'
+  import { useEnum } from '@/store/modules/get-enum'
 
   const projectInfo = useProject()
   const pagination = usePagination(doRefresh)
-  pagination.pageSize = 10
   const table = useTable()
   const rowKey = useRowKey('id')
+  const enumStore = useEnum()
 
   // 统计信息
   const statistics = reactive({
@@ -212,27 +214,11 @@
     info: 0,
   })
 
-  // 状态选项
-  const statusOptions = [
-    { key: 0, title: '成功' },
-    { key: 1, title: '失败' },
-    { key: 2, title: '信息' },
-  ]
-
   // 详情抽屉
   const detailDrawer = reactive({
     visible: false,
     data: null as MonitoringReport | null,
   })
-
-  function getStatusColor(status: number): string {
-    const colorMap: Record<number, string> = {
-      0: 'green', // 成功
-      1: 'red', // 失败
-      2: 'orange', // 信息
-    }
-    return colorMap[status] || 'default'
-  }
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
@@ -285,5 +271,3 @@
     padding: 16px;
   }
 </style>
-
-

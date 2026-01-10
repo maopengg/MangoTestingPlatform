@@ -88,9 +88,9 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="getStatusColor(record.status)" size="small">{{
-                enumStore.monitoring_task_status[record.status].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.status]" size="small"
+                >{{ enumStore.monitoring_task_status[record.status].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
               <a-tag :color="record.is_notice === 1 ? 'green' : 'gray'" size="small">
@@ -108,16 +108,16 @@
                   class="custom-mini-btn"
                   :disabled="record.status === 1"
                   @click="onStart(record)"
-                  >启动</a-button
-                >
+                  >启动
+                </a-button>
                 <a-button
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
                   :disabled="record.status !== 1"
                   @click="onStop(record)"
-                  >停止</a-button
-                >
+                  >停止
+                </a-button>
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
@@ -127,8 +127,8 @@
                         size="mini"
                         class="custom-mini-btn"
                         @click="onUpdate(record)"
-                        >编辑</a-button
-                      >
+                        >编辑
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -136,8 +136,8 @@
                         size="mini"
                         class="custom-mini-btn"
                         @click="onLogs(record)"
-                        >日志</a-button
-                      >
+                        >日志
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -145,8 +145,8 @@
                         size="mini"
                         class="custom-mini-btn"
                         @click="onViewFile(record)"
-                        >文件</a-button
-                      >
+                        >文件
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -155,8 +155,8 @@
                         size="mini"
                         class="custom-mini-btn"
                         @click="onDelete(record)"
-                        >删除</a-button
-                      >
+                        >删除
+                      </a-button>
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -332,17 +332,6 @@
     taskId: 0,
     task: null as any,
   })
-
-  function getStatusColor(status: number) {
-    const map: Record<number, string> = {
-      0: 'arcoblue', // 待执行
-      1: 'green', // 运行中
-      2: 'gray', // 已停止
-      3: 'red', // 失败
-      4: 'orangered', // 已完成
-    }
-    return map[status] || 'arcoblue'
-  }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
