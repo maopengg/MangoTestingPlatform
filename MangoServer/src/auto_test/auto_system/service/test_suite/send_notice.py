@@ -29,7 +29,7 @@ class SendNotice:
                 return
             if self.test_suite.tasks.is_notice != StatusEnum.SUCCESS.value:
                 return
-            if self.test_suite.tasks.fail_notice == StatusEnum.SUCCESS.value and self.test_suite.status != StatusEnum.SUCCESS.value:
+            if self.test_suite.tasks.fail_notice == StatusEnum.SUCCESS.value and self.test_suite.status == StatusEnum.SUCCESS.value:
                 return
             if self.test_suite.status not in [StatusEnum.SUCCESS.value, StatusEnum.FAIL.value]:
                 return
