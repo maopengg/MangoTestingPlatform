@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Description: 预警监控脚本运行器
 import os
+import re
 import threading
 import subprocess
 import sys
@@ -156,9 +157,20 @@ class MonitoringTaskRunner:
         os.makedirs(os.path.dirname(script_path), exist_ok=True)
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
+        # 将脚本中的 mangotools 基类导入替换为 Django 项目内的基类导入
+        # from mangotools.monitoring import MonitorBase
+        #   => from src.auto_test.monitoring.service.base_monitor import MonitorBase
+        script_content = task.script_content
+        if script_content:
+            script_content = re.sub(
+                r'from\s+mangotools\.monitoring\s+import\s+MonitorBase',
+                'from src.auto_test.monitoring.service.base_monitor import MonitorBase',
+                script_content,
+            )
+
         # 将代码内容写入文件（不需要添加 Django 初始化代码，因为会通过 management command 执行）
         with open(script_path, 'w', encoding='utf-8') as f:
-            f.write(task.script_content)
+            f.write(script_content)
 
         # 使用 Django management command 来执行脚本，这样脚本自动在 Django 环境中运行
         # 不需要每个脚本都初始化 Django，避免重复导入
