@@ -6,9 +6,8 @@
 from datetime import datetime
 
 from mangotools.monitoring import MonitorBase as Mb
-from src.auto_test.auto_system.service.notice import NoticeMain
 
-from auto_test.auto_system.service.test_suite.send_notice import SendNotice
+from src.auto_test.auto_system.service.test_suite.send_notice import SendNotice
 from src.auto_test.monitoring.models import MonitoringReport
 from src.enums.monitoring_enum import MonitoringLogStatusEnum
 

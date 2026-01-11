@@ -218,7 +218,7 @@ class AutoSystemConfig(AppConfig):
     def check_task_status(self):
         """检查所有任务状态，每3分钟执行一次"""
         try:
-            from auto_test.auto_system.service.test_suite.send_notice import SendNotice
+            from src.auto_test.auto_system.service.test_suite.send_notice import SendNotice
 
             reset_time = 30
             # 检查全部执行完，没有修改测试套结果的，和没有发送测试报告的
