@@ -21,7 +21,6 @@ class MonitoringConfig(AppConfig):
 
         # 多进程保护机制，防止在多进程环境下重复执行
         if is_main_process(lock_name='mango_monitoring_init', logger=log.system):
-            log.system.info('监控模块：检测到重复进程，跳过初始化')
             return
 
 
