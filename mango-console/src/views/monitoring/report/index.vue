@@ -153,7 +153,7 @@
   import { nextTick, onMounted, reactive } from 'vue'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { conditionItems, tableColumns } from './report-config'
+  import { conditionItems, tableColumns } from './config'
   import { getMonitoringReportList, MonitoringReport } from '@/api/monitoring/report'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'

@@ -126,12 +126,12 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/monitoring",
-                    "menuUrl": "/monitoring/index",
+                    "menuUrl": "/monitoring/task/index",
                     "menuName": "脚本运行器",
                 },
                 {
                     "parentPath": "/monitoring",
-                    "menuUrl": "/monitoring/report",
+                    "menuUrl": "/monitoring/report/index",
                     "menuName": "预警监控报告",
                 }
             ],

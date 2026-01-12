@@ -74,7 +74,7 @@ export const formItems: FormItem[] = reactive([
     label: '任务描述',
     key: 'description',
     value: ref(''),
-    type: 'textarea',
+    type: 'input',
     placeholder: '请输入任务描述',
     required: false,
     validator() {
@@ -82,22 +82,7 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '脚本内容',
-    key: 'script_content',
-    value: ref(''),
-    type: 'textarea',
-    placeholder: '请粘贴 python 脚本内容',
-    required: true,
-    validator() {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '是否发送通知',
+    label: '是否通知',
     key: 'is_notice',
     value: ref(0),
     type: 'switch',
@@ -115,6 +100,21 @@ export const formItems: FormItem[] = reactive([
     placeholder: '请选择通知组',
     required: false,
     validator() {
+      return true
+    },
+  },
+  {
+    label: '脚本内容',
+    key: 'script_content',
+    value: ref(''),
+    type: 'textarea',
+    placeholder: '请粘贴 python 脚本内容',
+    required: true,
+    validator() {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
