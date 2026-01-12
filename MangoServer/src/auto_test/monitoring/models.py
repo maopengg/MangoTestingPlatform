@@ -44,13 +44,7 @@ class MonitoringReport(models.Model):
     """预警监控报告表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    task = models.ForeignKey(
-        to=MonitoringTask,
-        to_field="id",
-        on_delete=models.CASCADE,
-        verbose_name="关联任务",
-        related_name="reports"
-    )
+    task = models.ForeignKey(to=MonitoringTask, to_field="id", on_delete=models.SET_NULL, null=True)
     status = models.SmallIntegerField(
         verbose_name="状态",
         choices=MonitoringLogStatusEnum.choices(),
