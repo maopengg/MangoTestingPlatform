@@ -117,6 +117,7 @@ class MonitoringTaskRunner:
         os.makedirs(os.path.dirname(abs_log_path), exist_ok=True)
         with open(abs_log_path, 'a', encoding='utf-8') as f:
             f.write(text)
+            f.flush()  
     
     def start_task(self, task: MonitoringTask):
         """
