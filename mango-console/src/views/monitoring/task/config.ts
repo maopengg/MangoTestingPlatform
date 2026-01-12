@@ -89,6 +89,9 @@ export const formItems: FormItem[] = reactive([
     placeholder: '请选择是否发送通知',
     required: false,
     validator() {
+      if (this.value === null) {
+        this.value = 0
+      }
       return true
     },
   },
