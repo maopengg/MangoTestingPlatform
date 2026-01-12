@@ -174,7 +174,7 @@ export const tableColumns = useTableColumn([
     key: 'pid',
     dataIndex: 'pid',
     align: 'center',
-    width: 100,
+    width: 80,
   },
   {
     title: '开始时间',
