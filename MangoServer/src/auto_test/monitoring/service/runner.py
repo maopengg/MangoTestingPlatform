@@ -117,7 +117,8 @@ class MonitoringTaskRunner:
         os.makedirs(os.path.dirname(abs_log_path), exist_ok=True)
         with open(abs_log_path, 'a', encoding='utf-8') as f:
             f.write(text)
-            f.flush()  
+            f.flush()  # 刷新 Python 缓冲区
+            os.fsync(f.fileno())  # 强制刷新到磁盘，确保数据立即写入  
     
     def start_task(self, task: MonitoringTask):
         """
@@ -175,8 +176,9 @@ class MonitoringTaskRunner:
 
         # 使用 Django management command 来执行脚本，这样脚本自动在 Django 环境中运行
         # 不需要每个脚本都初始化 Django，避免重复导入
+        # 使用 -u 参数禁用 Python 的标准输出缓冲，确保日志实时输出
         manage_py_path = os.path.join(settings.BASE_DIR, 'manage.py')
-        cmd = [sys.executable, manage_py_path, 'run_monitoring_script', script_path, str(task.id)]
+        cmd = [sys.executable, '-u', manage_py_path, 'run_monitoring_script', script_path, str(task.id)]
 
         proc = subprocess.Popen(
             cmd,
