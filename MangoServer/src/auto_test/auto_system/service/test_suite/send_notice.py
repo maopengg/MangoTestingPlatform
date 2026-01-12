@@ -39,6 +39,7 @@ class SendNotice:
             self.test_suite.is_notice = StatusEnum.SUCCESS.value
             self.test_suite.save()
 
+    @classmethod
     def send_monitoring(cls, task_id, send_text, base_msg):
         with cls._monitoring_lock:
             task = MonitoringTask.objects.get(id=task_id)
