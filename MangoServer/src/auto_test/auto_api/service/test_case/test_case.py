@@ -11,7 +11,7 @@ from mangotools.exceptions import MangoToolsError
 
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
-from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
+from src.auto_test.auto_system.service.test_suite.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.exceptions import *
@@ -85,6 +85,8 @@ class TestCase:
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
+            self.api_case.status = StatusEnum.FAIL.value
+            self.api_case.save()
         self.case_base.case_posterior_main()
         self.update_test_case(self.case_id, self.api_case_result.status)
         if self.test_suite and self.test_suite_details:

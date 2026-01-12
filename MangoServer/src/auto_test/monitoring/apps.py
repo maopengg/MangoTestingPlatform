@@ -7,6 +7,7 @@ import atexit
 from django.apps import AppConfig
 
 from src.tools.log_collector import log
+from src.tools import is_main_process
 
 
 class MonitoringConfig(AppConfig):
@@ -19,7 +20,7 @@ class MonitoringConfig(AppConfig):
         """
 
         # 多进程保护机制，防止在多进程环境下重复执行
-        if self._is_duplicate_process():
+        if is_main_process(lock_name='mango_monitoring_init', logger=log.system):
             log.system.info('监控模块：检测到重复进程，跳过初始化')
             return
 
@@ -49,53 +50,12 @@ class MonitoringConfig(AppConfig):
 
         task = threading.Thread(target=run, daemon=True)
         task.start()
-        atexit.register(self.shutdown)
+        # 只在主进程中注册退出处理函数，避免在开发服务器重载时被意外触发
+        # 使用模块级别的标志确保只注册一次
+        if not hasattr(MonitoringConfig, '_shutdown_registered'):
+            atexit.register(self.shutdown)
+            MonitoringConfig._shutdown_registered = True
 
-    def _is_duplicate_process(self):
-        """
-        检查是否为重复进程，防止在多进程环境下重复执行
-        """
-        # 获取当前进程ID
-        pid = os.getpid()
-
-        # 检查是否为重载进程
-        run_main = os.environ.get('RUN_MAIN', None)
-        if run_main != 'true':
-            log.system.debug(f"【监控模块】跳过重复进程初始化 - PID: {pid}, RUN_MAIN: {run_main}")
-            return True
-
-        # 检查DJANGO环境变量
-        django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
-        if not django_settings:
-            log.system.debug(f"【监控模块】跳过重复进程初始化 - PID: {pid}, DJANGO_SETTINGS_MODULE未设置")
-            return True
-
-        if os.name == 'nt':  # Windows系统
-            temp_dir = os.environ.get('TEMP', os.environ.get('TMP', 'C:\\temp'))
-            lock_file = f"{temp_dir}\\mango_monitoring_init_{os.getppid()}.lock"
-        else:  # Linux/Unix系统
-            lock_file = f"/tmp/mango_monitoring_init_{os.getppid()}.lock"
-        try:
-            # 尝试创建锁文件
-            fd = os.open(lock_file, os.O_CREAT | os.O_EXCL)
-            os.close(fd)
-            # 注册退出时清理锁文件
-            import atexit
-            atexit.register(lambda: os.path.exists(lock_file) and os.remove(lock_file))
-            log.system.debug(f"监控模块主进程初始化 - PID: {pid}")
-            return False
-        except FileExistsError:
-            log.system.debug(f"【监控模块】跳过重复进程初始化 - PID: {pid}, 锁文件已存在")
-            return True
-        except Exception as e:
-            # 如果无法创建锁文件（如权限问题），使用备用方法
-            log.system.debug(f"锁文件检查异常 - PID: {pid}, 错误: {e}")
-            # 检查父进程ID，避免在子进程中重复执行
-            ppid = os.getppid()
-            if hasattr(self, '_initialized_ppid') and self._initialized_ppid == ppid:
-                return True
-            self._initialized_ppid = ppid
-            return False
 
     @staticmethod
     def restore_tasks():

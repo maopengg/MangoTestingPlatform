@@ -25,6 +25,7 @@ interface EnumState {
   file_status: StateValueType
   file_type: StateValueType
   monitoring_task_status: StateValueType
+  monitoring_log_status: StateValueType
   colors: string[]
   status_colors: string[]
 }
@@ -52,6 +53,7 @@ export const useEnum = defineStore('get-enum', {
     file_status: [],
     file_type: [],
     monitoring_task_status: [],
+    monitoring_log_status: [],
     colors: [
       'magenta',
       'cyan',
@@ -97,6 +99,7 @@ export const useEnum = defineStore('get-enum', {
             this.file_status = res.data.file_status
             this.file_type = res.data.file_type
             this.monitoring_task_status = res.data.monitoring_task_status
+            this.monitoring_log_status = res.data.monitoring_log_status
           }
         })
         .catch(console.log)

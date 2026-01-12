@@ -45,6 +45,14 @@ class Command(BaseCommand):
             
             # 执行脚本代码（在 Django 环境中，所以所有 Django 相关的导入都能正常工作）
             exec(compile(script_code, script_path, 'exec'), script_globals)
+        except Exception as e:
+            # 捕获脚本执行异常，避免脚本错误导致 Django 服务停止
+            import traceback
+            error_msg = f"执行监控脚本失败: {str(e)}\n{traceback.format_exc()}"
+            self.stdout.write(self.style.ERROR(error_msg))
+            # 不重新抛出异常，避免导致 Django 服务停止
+            # 脚本错误不应该影响 Django 服务的运行
+            return
         finally:
             # 恢复原始 sys.argv
             sys.argv = original_argv

@@ -10,7 +10,6 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import TestObject, ProjectProduct
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_user.models import User
@@ -63,7 +62,7 @@ class SocketApiViews(ViewSet):
         status = request.data.get('status')
         username = request.data.get('username')
         user_obj = SocketUser.get_user_obj(username)
-        from src.auto_test.auto_system.consumers import ChatConsumer
+        from auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'执行器连接成功，当前OPEN状态：{SocketUser.get_user_obj(username).is_open}',
@@ -86,7 +85,7 @@ class SocketApiViews(ViewSet):
         status = request.data.get('status')
         username = request.data.get('username')
         user_obj = SocketUser.get_user_obj(username)
-        from src.auto_test.auto_system.consumers import ChatConsumer
+        from auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'执行器连接成功，当前debug状态：{SocketUser.get_user_obj(username).is_open}',
@@ -150,5 +149,6 @@ class SocketApiViews(ViewSet):
                     func_args={}
                 )
             )
+        from auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(send_socket_data)
         return ResponseData.success(RESPONSE_MSG_0059, )

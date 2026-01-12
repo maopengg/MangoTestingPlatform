@@ -4,11 +4,12 @@
 # @Time   : 2025-01-09
 # @Author : 毛鹏
 from datetime import datetime
+
 from mangotools.monitoring import MonitorBase as Mb
-from src.auto_test.auto_system.service.notice import NoticeMain
-from src.auto_test.monitoring.models import MonitoringReport, MonitoringTask
+
+from src.auto_test.auto_system.service.test_suite.send_notice import SendNotice
+from src.auto_test.monitoring.models import MonitoringReport
 from src.enums.monitoring_enum import MonitoringLogStatusEnum
-from src.enums.tools_enum import StatusEnum
 
 
 class MonitorBase(Mb):
@@ -33,7 +34,7 @@ class MonitorBase(Mb):
         log_text = f"[{timestamp}] [{level}] {message}"
         print(log_text)
 
-        if not self.task_id:
+        if not self.task_id or level == "INFO":
             return
 
         level_upper = (level or "INFO").upper()
@@ -71,13 +72,4 @@ class MonitorBase(Mb):
         if not self.task_id:
             return
 
-        task = MonitoringTask.objects.get(id=self.task_id)
-        if task.notice_group_id is not None:
-            NoticeMain.notice_monitoring(task.notice_group_id, send_text)
-        MonitoringReport.objects.create(
-            task_id=self.task_id,
-            status=MonitoringLogStatusEnum.ERROR.value,  # 失败状态
-            msg=base_msg,
-            send_text=send_text,
-            is_notice=StatusEnum.SUCCESS.value,
-        )
+        SendNotice.send_monitoring(self.task_id, send_text, base_msg)

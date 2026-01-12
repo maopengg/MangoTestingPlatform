@@ -3,10 +3,9 @@
 # @Description: 
 # @Time   : 2024-11-25 15:04
 # @Author : 毛鹏
-
 from src.auto_test.auto_pytest.service.test_report_writing import PtestTestReportWriting
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
-from src.auto_test.auto_system.service.notice import NoticeMain
+from src.auto_test.auto_system.service.test_suite.send_notice import SendNotice
 from src.auto_test.auto_system.service.testcounter import TestCounter
 from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 from src.enums.system_enum import ClientTypeEnum
@@ -57,11 +56,7 @@ class UpdateTestSuite:
     @classmethod
     def send_test_result(cls, test_suite_id: int, msg: str):
         test_suite = TestSuite.objects.get(id=test_suite_id)
-        if test_suite.is_notice != StatusEnum.SUCCESS.value and test_suite.tasks is not None and test_suite.tasks.notice_group and test_suite.tasks.is_notice == StatusEnum.SUCCESS.value:
-            if (test_suite.tasks.fail_notice == StatusEnum.SUCCESS.value and test_suite.status != StatusEnum.SUCCESS.value) or test_suite.tasks.fail_notice!= StatusEnum.SUCCESS.value:
-                NoticeMain.notice_main(test_suite.tasks.notice_group_id, test_suite_id)
-                test_suite.is_notice = StatusEnum.SUCCESS.value
-                test_suite.save()
+        SendNotice(test_suite_id).send_test_suite()
         from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200 if test_suite.status else 300,

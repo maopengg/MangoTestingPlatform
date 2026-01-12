@@ -66,7 +66,7 @@ class NoticeGroupViews(ViewSet):
         _id = request.query_params.get('id')
         try:
             # NoticeMain.notice_main(2, 2, 197899881973)
-            NoticeMain.test_notice_send(_id)
+            NoticeMain(_id).test_notice_send()
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         else:

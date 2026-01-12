@@ -67,42 +67,42 @@ class TestCase:
                 for e in i.get('parametrize'):
                     if not e.get('key') or not e.get('value'):
                         raise UiError(*ERROR_MSG_0032)
+            case_model = CaseModel(
+                send_user=send_case_user if send_case_user else self.send_user,
+                test_suite_details=test_suite_details,
+                test_suite_id=test_suite,
+                id=case.id,
+                name=case_name if case_name else case.name,
+                module_name=case.module.name,
+                project_product=case.project_product.id,
+                project_product_name=case.project_product.name,
+                test_env=self.test_env,
+                case_people=case.case_people.name,
+                front_custom=case.front_custom,
+                front_sql=case.front_sql,
+                posterior_sql=case.posterior_sql,
+                parametrize=case.parametrize,
+                steps=[self.steps_model(i.page_step.id, i, bool(i.switch_step_open_url)) for i in case_steps_detailed],
+            )
+            if case.parametrize and test_suite is None:
+                for i in case.parametrize:
+                    case_model_1 = copy.deepcopy(case_model)
+                    case_model_1.parametrize = i.get('parametrize')
+                    case_model_1.name = f'{case.name} - {i.get("name")}'
+                    self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                       data_model=case_model_1, is_open=True)
+            elif test_suite and test_suite_details and parametrize:
+                case_model.parametrize = parametrize
+                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                   data_model=case_model, is_open=True)
+            else:
+                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                   data_model=case_model, is_open=True)
+            return case_model
         except Exception as error:
             case.status = TaskEnum.FAIL.value
             case.save()
             raise error
-        case_model = CaseModel(
-            send_user=send_case_user if send_case_user else self.send_user,
-            test_suite_details=test_suite_details,
-            test_suite_id=test_suite,
-            id=case.id,
-            name=case_name if case_name else case.name,
-            module_name=case.module.name,
-            project_product=case.project_product.id,
-            project_product_name=case.project_product.name,
-            test_env=self.test_env,
-            case_people=case.case_people.name,
-            front_custom=case.front_custom,
-            front_sql=case.front_sql,
-            posterior_sql=case.posterior_sql,
-            parametrize=case.parametrize,
-            steps=[self.steps_model(i.page_step.id, i, bool(i.switch_step_open_url)) for i in case_steps_detailed],
-        )
-        if case.parametrize and test_suite is None:
-            for i in case.parametrize:
-                case_model_1 = copy.deepcopy(case_model)
-                case_model_1.parametrize = i.get('parametrize')
-                case_model_1.name = f'{case.name} - {i.get("name")}'
-                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                                   data_model=case_model_1, is_open=True)
-        elif test_suite and test_suite_details and parametrize:
-            case_model.parametrize = parametrize
-            self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                               data_model=case_model, is_open=True)
-        else:
-            self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                               data_model=case_model, is_open=True)
-        return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
         try:

@@ -52,6 +52,9 @@ class ProjectDir:
 
 project_dir = ProjectDir()
 
+# 导入进程工具函数
+from .process_utils import is_main_process
+
 if __name__ == '__main__':
     print(project_dir.logs())
     print(project_dir.root_path())

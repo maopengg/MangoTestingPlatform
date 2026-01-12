@@ -3,10 +3,8 @@
 # @Description: 
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
-import atexit
-import os
-import sys
 import logging
+
 import apscheduler.events
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -20,6 +18,7 @@ from src.tools.log_collector import log
 
 class SchedulerErrorFilter(logging.Filter):
     """过滤调度器关闭时的正常错误"""
+
     def filter(self, record):
         error_msg = str(record.getMessage()).lower()
         # 过滤掉服务关闭时的正常错误
@@ -34,7 +33,7 @@ class SchedulerErrorFilter(logging.Filter):
 
 class RunTasks:
     scheduler = None
-    
+
     @classmethod
     def _error_listener(cls, event):
         """调度器错误监听器"""
@@ -48,7 +47,7 @@ class RunTasks:
             log.system.error(f'调度器执行任务时发生错误: {event.exception}')
             import traceback
             traceback.print_exc()
-    
+
     @classmethod
     def _get_scheduler(cls):
         """获取或创建调度器实例"""
@@ -57,14 +56,14 @@ class RunTasks:
             cls.scheduler = BackgroundScheduler(daemon=True)
             # 添加错误监听器，监听任务执行错误
             cls.scheduler.add_listener(
-                cls._error_listener, 
+                cls._error_listener,
                 apscheduler.events.EVENT_JOB_ERROR | apscheduler.events.EVENT_JOB_EXECUTED
             )
             # 配置 APScheduler 的日志记录器，过滤关闭时的正常错误
             scheduler_logger = logging.getLogger('apscheduler')
             scheduler_logger.addFilter(SchedulerErrorFilter())
         return cls.scheduler
-    
+
     @classmethod
     def shutdown_scheduler(cls):
         """关闭调度器"""
@@ -98,7 +97,7 @@ class RunTasks:
     def create_jobs(cls):
         try:
             scheduler = cls._get_scheduler()
-            
+
             # 如果调度器已经在运行，先关闭它（避免重复启动）
             if scheduler.running:
                 log.system.warning('调度器已在运行，先关闭再重新创建')
@@ -111,14 +110,14 @@ class RunTasks:
                 # 创建新的调度器实例
                 cls.scheduler = BackgroundScheduler(daemon=True)
                 cls.scheduler.add_listener(
-                    cls._error_listener, 
+                    cls._error_listener,
                     apscheduler.events.EVENT_JOB_ERROR | apscheduler.events.EVENT_JOB_EXECUTED
                 )
                 # 配置 APScheduler 的日志记录器，过滤关闭时的正常错误
                 scheduler_logger = logging.getLogger('apscheduler')
                 scheduler_logger.addFilter(SchedulerErrorFilter())
                 scheduler = cls.scheduler
-            
+
             queryset = TimeTasks.objects.all()
             for timer in queryset:
                 if timer.cron:
@@ -129,7 +128,7 @@ class RunTasks:
                         id=f'timing_{timer.id}',
                         replace_existing=True,  # 如果任务已存在则替换
                     )
-                    log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
+                    # log.system.debug(f'设置的定时任务：{timer.name},cron:{timer.cron}')
             scheduler.start()
             log.system.info('定时任务调度器启动成功')
         except Exception as e:
@@ -147,10 +146,16 @@ class RunTasks:
             for scheduled_tasks in scheduled_tasks_obj:
                 log.system.debug(f'触发任务：{scheduled_tasks}')
                 cls.distribute(scheduled_tasks)
-        except RuntimeError as e:
+        except (RuntimeError, SystemError) as e:
             # 捕获调度器关闭时的错误（服务关闭或重新加载时常见）
             error_msg = str(e).lower()
-            if 'cannot schedule new futures after shutdown' in error_msg or 'after shutdown' in error_msg:
+            if any(keyword in error_msg for keyword in [
+                'cannot schedule new futures after shutdown',
+                'after shutdown',
+                'interpreter shutdown',
+                'shutdown',
+                'interpreter'
+            ]):
                 log.system.debug(f'调度器已关闭，忽略定时任务执行: {e}')
                 return
             # 其他 RuntimeError 重新抛出
