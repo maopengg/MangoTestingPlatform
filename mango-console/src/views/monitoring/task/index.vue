@@ -106,7 +106,7 @@
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
-                  :disabled="record.status === 1"
+                  v-if="record.status === 1"
                   @click="onStart(record)"
                   >启动
                 </a-button>
@@ -114,9 +114,12 @@
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
-                  :disabled="record.status !== 1"
+                  v-if="record.status !== 1"
                   @click="onStop(record)"
                   >停止
+                </a-button>
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onLogs(record)"
+                  >日志
                 </a-button>
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
@@ -128,15 +131,6 @@
                         class="custom-mini-btn"
                         @click="onUpdate(record)"
                         >编辑
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        type="text"
-                        size="mini"
-                        class="custom-mini-btn"
-                        @click="onLogs(record)"
-                        >日志
                       </a-button>
                     </a-doption>
                     <a-doption>
