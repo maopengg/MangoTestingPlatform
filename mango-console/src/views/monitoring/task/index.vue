@@ -106,7 +106,7 @@
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
-                  v-if="record.status === 1"
+                  v-if="record.status !== 1"
                   @click="onStart(record)"
                   >启动
                 </a-button>
@@ -114,7 +114,7 @@
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
-                  v-if="record.status !== 1"
+                  v-if="record.status === 1"
                   @click="onStop(record)"
                   >停止
                 </a-button>
