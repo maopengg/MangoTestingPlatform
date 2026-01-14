@@ -55,7 +55,6 @@
           :columns="tableColumns"
           :pagination="false"
           :rowKey="rowKey"
-          :scroll="{ x: 1200, y: tableScrollHeight() }"
         >
           <template #columns>
             <a-table-column
@@ -180,12 +179,6 @@
         pagination.setTotalSize((res as any).totalSize || 0)
       })
       .catch(console.log)
-  }
-
-  function tableScrollHeight() {
-    const headerHeight = 460
-    const footerHeight = 45
-    return `calc(94vh - ${headerHeight}px - ${footerHeight}px)`
   }
 
   function onResetSearch() {
