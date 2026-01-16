@@ -43,9 +43,11 @@ class ApiCaseFlow:
         """后台任务获取循环"""
         while cls.running:
             try:
-                log.api.info(f'当前线程池：{cls._active_tasks}')
-                cls.get_case()
-                time.sleep(0.5)  # 短暂休眠避免过度轮询
+                log.api.info(f'当前线程池：{cls._active_tasks}，最大：{API_MAX_TASKS}')
+                if cls._active_tasks > API_MAX_TASKS:
+                    time.sleep(3)  # 短暂休眠避免过度轮询
+                else:
+                    cls.get_case()
             except Exception as e:
                 log.api.error(f'API任务获取器出错: {e}')
                 time.sleep(2)  # 出错时增加休眠时间
@@ -54,8 +56,7 @@ class ApiCaseFlow:
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_case(cls, ):
         with cls._get_case_lock:
-            if cls._active_tasks > API_MAX_TASKS:
-                return
+
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
                 retry__lt=RETRY_FREQUENCY + 1,
@@ -96,7 +97,6 @@ class ApiCaseFlow:
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
-        log.api.info(f'执行的用例：{case_model}')
         from src.auto_test.auto_api.service.test_case.test_case import TestCase
         test_case = TestCase(
             user_id=case_model.user_id,

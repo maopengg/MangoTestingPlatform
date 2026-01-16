@@ -61,7 +61,7 @@ class TestCase:
         pass
 
     def test_case(self, case_sort: int | None = None) -> ApiCaseResultModel:
-        log.api.debug(f'开始执行用例ID：{self.case_id}')
+        log.api.info(f'开始执行用例ID：{self.case_id}')
         res = None
         try:
             self.test_setup.init_test_object(self.api_case.project_product_id, self.test_env)
