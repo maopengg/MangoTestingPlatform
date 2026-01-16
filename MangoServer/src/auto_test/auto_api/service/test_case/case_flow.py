@@ -19,6 +19,7 @@ from src.tools.log_collector import log
 class ApiCaseFlow:
     executor = ThreadPoolExecutor(max_workers=API_MAX_TASKS)
     _get_case_lock = threading.Lock()
+    _get_case_lock1 = threading.Lock()
     running = True
     # 用于跟踪当前活跃的任务数
     _active_tasks = 0
@@ -81,7 +82,7 @@ class ApiCaseFlow:
                     # 添加回调，在任务完成后减少计数
                     def task_done(fut):
                         # 在回调函数中也需要使用锁来保证线程安全
-                        with cls._get_case_lock:
+                        with cls._get_case_lock1:
                             cls._active_tasks = max(0, cls._active_tasks - 1)
 
                     future.add_done_callback(task_done)

@@ -10,11 +10,13 @@ from mangotools.monitoring import MonitorBase as Mb
 from src.auto_test.auto_system.service.test_suite.send_notice import SendNotice
 from src.auto_test.monitoring.models import MonitoringReport
 from src.enums.monitoring_enum import MonitoringLogStatusEnum
+from src.tools.decorator.retry import async_task_db_connection
 
 
 class MonitorBase(Mb):
     """监控基类，提供MySQL连接管理和日志输出功能"""
 
+    @async_task_db_connection
     def run(self):
         pass
 
