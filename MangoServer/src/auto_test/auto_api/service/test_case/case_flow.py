@@ -96,7 +96,7 @@ class ApiCaseFlow:
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
-        log.api.info(f'当前线程池：{cls._active_tasks}')
+        log.api.info(f'执行的用例：{case_model}')
         from src.auto_test.auto_api.service.test_case.test_case import TestCase
         test_case = TestCase(
             user_id=case_model.user_id,
