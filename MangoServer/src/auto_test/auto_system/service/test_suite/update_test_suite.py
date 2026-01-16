@@ -24,6 +24,13 @@ class UpdateTestSuite:
         test_suite.save()
 
     @classmethod
+    def update_test_suite_details_status(cls, test_suite_details_id: int, status, msg):
+        test_suite_detail = TestSuiteDetails.objects.get(id=test_suite_details_id)
+        test_suite_detail.status = status
+        test_suite_detail.error_message = msg
+        test_suite_detail.save()
+
+    @classmethod
     def update_test_suite_details(cls, data: TestSuiteDetailsResultModel):
         log.system.debug(f'开始更新测试套数据：{data.model_dump_json()}')
         test_suite_detail = TestSuiteDetails.objects.get(id=data.id)

@@ -39,6 +39,12 @@ class TestCase:
         try:
             self.api_case: ApiCase = ApiCase.objects.get(id=case_id)
         except ApiCase.DoesNotExist:
+            if self.test_suite_details:
+                UpdateTestSuite.update_test_suite_details_status(
+                    self.test_suite_details,
+                    StatusEnum.FAIL.value,
+                    ERROR_MSG_0057[1]
+                )
             raise ApiError(*ERROR_MSG_0057)
         self.case_base = CaseBase(self.test_setup, self.api_case)
 
