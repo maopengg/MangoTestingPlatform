@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import threading
 from concurrent.futures import ThreadPoolExecutor
+
 import time
 from django.utils import timezone
 
@@ -42,10 +43,11 @@ class ApiCaseFlow:
         """后台任务获取循环"""
         while cls.running:
             try:
+                log.api.info(f'当前线程池：{cls._active_tasks}')
                 cls.get_case()
                 time.sleep(0.5)  # 短暂休眠避免过度轮询
             except Exception as e:
-                log.system.error(f'API任务获取器出错: {e}')
+                log.api.error(f'API任务获取器出错: {e}')
                 time.sleep(2)  # 出错时增加休眠时间
 
     @classmethod
@@ -72,7 +74,7 @@ class ApiCaseFlow:
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                         parametrize=test_suite_details.parametrize,
                     )
-                    log.system.debug(f'API发送用例：{case_model.model_dump_json()}')
+                    log.api.debug(f'API发送用例：{case_model.model_dump_json()}')
                     # 提交任务到线程池执行
                     future = cls.executor.submit(cls.execute_task, case_model)
                     # 增加活跃任务计数
@@ -87,13 +89,14 @@ class ApiCaseFlow:
 
                     future.add_done_callback(task_done)
             except Exception as error:
-                log.system.error(f'执行器主动拉取任务失败：{error}')
+                log.api.error(f'执行器主动拉取任务失败：{error}')
                 test_suite_details.status = TaskEnum.FAIL.value
                 test_suite_details.retry += 1
                 test_suite_details.save()
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
+        log.api.info(f'当前线程池：{cls._active_tasks}')
         from src.auto_test.auto_api.service.test_case.test_case import TestCase
         test_case = TestCase(
             user_id=case_model.user_id,

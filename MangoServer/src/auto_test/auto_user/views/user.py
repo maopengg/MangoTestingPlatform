@@ -4,17 +4,17 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 import os
-from datetime import datetime
 from urllib.parse import unquote
 
 from django.forms import model_to_dict
 from django.http import FileResponse
+from django.utils import timezone
+from mangotools.data_processor import EncryptionTool
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangotools.data_processor import EncryptionTool
 from src import settings
 from src.auto_test.auto_system.service.menu import ad_routes
 from src.auto_test.auto_user.models import User
@@ -152,7 +152,7 @@ class LoginViews(ViewSet):
             if request.data.get('version') != settings.VERSION:
                 return ResponseData.fail(RESPONSE_MSG_0037)
         elif source_type == ClientTypeEnum.WEB.value:
-            user_info.last_login_time = datetime.now()
+            user_info.last_login_time = timezone.now()
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
         user_info.ip = ip
@@ -208,8 +208,6 @@ class LoginViews(ViewSet):
             data_cleanup(v)
             return ResponseData.success(RESPONSE_MSG_0045, )
         else:
-            from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
-            UpdateTestSuite.send_test_result(268315135315,'')
             return ResponseData.success(RESPONSE_MSG_0044, {'title': ''})
 
     @error_response('user')
