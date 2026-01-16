@@ -18,10 +18,10 @@ class SendNotice:
     _monitoring_lock = threading.Lock()
 
     def __init__(self, _id: int):
-        log.system.info(f'开始发送通知：{_id}')
         self.test_suite = TestSuite.objects.get(id=_id)
 
     def send_test_suite(self):
+        log.system.info(f'开始发送通知：{self.test_suite.id}')
         with self._test_suite_lock:
             if self.test_suite.tasks is None:
                 return
@@ -35,6 +35,7 @@ class SendNotice:
                 return
             if self.test_suite.is_notice == StatusEnum.SUCCESS.value:
                 return
+            log.system.info(f'成功开始发送通知：{self.test_suite.id}')
             NoticeMain(self.test_suite.tasks.notice_group_id).notice_main(self.test_suite.id)
             self.test_suite.is_notice = StatusEnum.SUCCESS.value
             self.test_suite.save()
