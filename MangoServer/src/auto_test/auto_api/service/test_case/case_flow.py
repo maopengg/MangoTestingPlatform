@@ -43,7 +43,7 @@ class ApiCaseFlow:
         """后台任务获取循环"""
         while cls.running:
             try:
-                log.api.info(f'当前线程池：{cls._active_tasks}，最大：{API_MAX_TASKS}')
+                # log.api.info(f'当前线程池：{cls._active_tasks}，最大：{API_MAX_TASKS}')
                 if cls._active_tasks > API_MAX_TASKS:
                     time.sleep(3)  # 短暂休眠避免过度轮询
                 else:
