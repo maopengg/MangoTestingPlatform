@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import threading
 from concurrent.futures import ThreadPoolExecutor
-
 import time
 from django.utils import timezone
 
@@ -20,42 +19,47 @@ from src.tools.log_collector import log
 class ApiCaseFlow:
     executor = ThreadPoolExecutor(max_workers=API_MAX_TASKS)
     _get_case_lock = threading.Lock()
-    thread = None
+    running = True
+    # 用于跟踪当前活跃的任务数
+    _active_tasks = 0
 
     @classmethod
     def start(cls):
         """启动后台任务获取线程"""
-        if cls.thread is not None and cls.thread.is_alive():
-            log.api.info('API任务获取线程已在运行，跳过重复启动')
-            return
-        cls.thread = threading.Thread(target=cls._background_task_fetcher, daemon=True)
-        cls.thread.start()
-        log.api.info('API任务获取线程已启动')
+        thread = threading.Thread(target=cls._background_task_fetcher)
+        thread.daemon = True
+        thread.start()
+
+    @classmethod
+    def stop(cls):
+        """停止后台任务获取"""
+        cls.running = False
+        cls.executor.shutdown(wait=True)  # 关闭线程池
 
     @classmethod
     def _background_task_fetcher(cls):
         """后台任务获取循环"""
-        log.api.info('API用例执行启动成功！')
-        while True:
+        while cls.running:
             try:
-                cls.executor.submit(cls.get_case, )
-                time.sleep(0.5)
+                cls.get_case()
+                time.sleep(0.5)  # 短暂休眠避免过度轮询
             except Exception as e:
-                log.api.info(f'API任务获取器出错: {str(e)}, 类型: {type(e).__name__}')
-                import traceback
-                log.api.info(f'详细错误信息: {traceback.format_exc()}')
+                log.system.error(f'API任务获取器出错: {e}')
+                time.sleep(2)  # 出错时增加休眠时间
 
     @classmethod
-    @async_task_db_connection(max_retries=1, retry_delay=1)
+    @async_task_db_connection(max_retries=3, retry_delay=2)
     def get_case(cls, ):
         with cls._get_case_lock:
+            if cls._active_tasks > API_MAX_TASKS:
+                return
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
                 retry__lt=RETRY_FREQUENCY + 1,
                 type=TestCaseTypeEnum.API.value
             ).first()
-            if test_suite_details:
-                try:
+            try:
+                if test_suite_details:
                     test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
                     case_model = ConsumerCaseModel(
                         test_suite_details=test_suite_details.id,
@@ -67,15 +71,25 @@ class ApiCaseFlow:
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                         parametrize=test_suite_details.parametrize,
                     )
-                    log.api.info(f'API发送用例：{case_model.model_dump_json()}')
-                    cls.execute_task(case_model)
+                    log.system.debug(f'API发送用例：{case_model.model_dump_json()}')
+                    # 提交任务到线程池执行
+                    future = cls.executor.submit(cls.execute_task, case_model)
+                    # 增加活跃任务计数
+                    cls._active_tasks += 1
                     cls.update_status_proceed(test_suite, test_suite_details)
 
-                except Exception as error:
-                    log.api.info(f'执行器主动拉取任务失败：{error}')
-                    test_suite_details.status = TaskEnum.FAIL.value
-                    test_suite_details.retry += 1
-                    test_suite_details.save()
+                    # 添加回调，在任务完成后减少计数
+                    def task_done(fut):
+                        # 在回调函数中也需要使用锁来保证线程安全
+                        with cls._get_case_lock:
+                            cls._active_tasks = max(0, cls._active_tasks - 1)
+
+                    future.add_done_callback(task_done)
+            except Exception as error:
+                log.system.error(f'执行器主动拉取任务失败：{error}')
+                test_suite_details.status = TaskEnum.FAIL.value
+                test_suite_details.retry += 1
+                test_suite_details.save()
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
@@ -89,7 +103,6 @@ class ApiCaseFlow:
         )
         return test_case.test_case()
 
-
     @classmethod
     def update_status_proceed(cls, test_suite, test_suite_details):
         test_suite.status = TaskEnum.PROCEED.value
@@ -99,3 +112,10 @@ class ApiCaseFlow:
         test_suite_details.retry += 1
         test_suite_details.push_time = timezone.now()
         test_suite_details.save()
+
+    @classmethod
+    def add_task(cls, case_model: ConsumerCaseModel):
+        # API任务现在完全通过数据库队列管理
+        # 不需要做任何特殊处理，后台任务获取器会自动获取待执行的任务
+        # 任务状态已经在add_test_suite_details中设置为STAY_BEGIN
+        pass

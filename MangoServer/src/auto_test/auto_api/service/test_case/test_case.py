@@ -80,6 +80,7 @@ class TestCase:
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
             self.api_case_result.error_message = e.msg
+            self.api_case.status = StatusEnum.FAIL.value
         except Exception as error:
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()

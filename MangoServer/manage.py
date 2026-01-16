@@ -4,9 +4,6 @@ import sys
 from src.tools import project_dir
 
 
-
-
-
 def main():
     """Run administrative tasks."""
     project_dir.init_folder()

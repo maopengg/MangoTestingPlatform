@@ -27,7 +27,6 @@ run_main = os.environ.get('RUN_MAIN')
 if run_main == 'true' or (run_main is None and 'runserver' not in sys.argv):
     # 使用模块级别的标志来确保每个进程只打印一次
     if not hasattr(sys.modules[__name__], '_env_printed'):
-        print('设置启动环境DJANGO_ENV={}'.format(DJANGO_ENV))
         sys.modules[__name__]._env_printed = True
 if DJANGO_ENV == SystemEnvEnum.DEV.value:
     from .dev import *
