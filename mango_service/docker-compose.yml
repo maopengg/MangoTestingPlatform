@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - ""8000:8000""
+    environment:
+      - DATABASE_URL=postgresql://mango:password@db:5432/mango_service
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=mango_service
+      - POSTGRES_USER=mango
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  celery-worker:
+    build: .
+    command: celery -A src.core.celery_worker worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://mango:password@db:5432/mango_service
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  celery-beat:
+    build: .
+    command: celery -A src.core.celery_worker beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://mango:password@db:5432/mango_service
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
