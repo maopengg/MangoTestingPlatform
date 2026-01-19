@@ -43,14 +43,14 @@ class ApiCaseFlow:
         """后台任务获取循环"""
         while cls.running:
             try:
-                # log.api.info(f'当前线程池：{cls._active_tasks}，最大：{API_MAX_TASKS}')
                 if cls._active_tasks > API_MAX_TASKS:
-                    time.sleep(3)  # 短暂休眠避免过度轮询
+                    log.api.debug(f'当前线程池：{cls._active_tasks}，最大：{API_MAX_TASKS}')
+                    time.sleep(3)
                 else:
                     cls.get_case()
             except Exception as e:
                 log.api.error(f'API任务获取器出错: {e}')
-                time.sleep(2)  # 出错时增加休眠时间
+                time.sleep(2)
 
     @classmethod
     @async_task_db_connection(max_retries=3, retry_delay=2)
@@ -76,15 +76,11 @@ class ApiCaseFlow:
                         parametrize=test_suite_details.parametrize,
                     )
                     log.api.debug(f'API发送用例：{case_model.model_dump_json()}')
-                    # 提交任务到线程池执行
                     future = cls.executor.submit(cls.execute_task, case_model)
-                    # 增加活跃任务计数
                     cls._active_tasks += 1
                     cls.update_status_proceed(test_suite, test_suite_details)
 
-                    # 添加回调，在任务完成后减少计数
                     def task_done(fut):
-                        # 在回调函数中也需要使用锁来保证线程安全
                         with cls._get_case_lock1:
                             cls._active_tasks = max(0, cls._active_tasks - 1)
 
