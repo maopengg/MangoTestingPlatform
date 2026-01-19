@@ -53,6 +53,7 @@ class ApiCaseFlow:
     def get_case(cls, ):
         with cls._get_case_lock:
             if cls._active_tasks > API_MAX_TASKS:
+                log.api.debug(f'当前任务数：{cls._active_tasks}，最大：{API_MAX_TASKS}')
                 return
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
