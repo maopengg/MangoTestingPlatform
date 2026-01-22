@@ -123,5 +123,5 @@ class PytestCaseViews(ViewSet):
     def pytest_test_case(self, request: Request):
 
         report_data = TestCase(request.user.get('username')) \
-            .test_case(request.query_params.get('id'), request.query_params.get("test_env"))
+            .test_case(request.query_params.get('id'), int(request.query_params.get("test_env")))
         return ResponseData.success(RESPONSE_MSG_0086, data=report_data)
