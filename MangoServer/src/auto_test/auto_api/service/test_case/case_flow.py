@@ -22,8 +22,6 @@ class ApiCaseFlow:
     _get_case_lock = threading.Lock()
     _get_case_lock1 = threading.Lock()
     running = True
-    # 用于跟踪当前活跃的任务数
-    _active_tasks = 0
 
     @classmethod
     def start(cls):
@@ -43,8 +41,9 @@ class ApiCaseFlow:
         """后台任务获取循环"""
         while cls.running:
             try:
-                if cls._active_tasks > API_MAX_TASKS:
-                    log.api.debug(f'当前线程池：{cls._active_tasks}，最大：{API_MAX_TASKS}')
+                active_count = cls.executor._work_queue.qsize()
+                log.api.debug(f'当前线程池：{active_count}，最大：{API_MAX_TASKS}')
+                if active_count > API_MAX_TASKS:
                     time.sleep(3)
                 else:
                     cls.get_case()
@@ -77,12 +76,15 @@ class ApiCaseFlow:
                     )
                     log.api.debug(f'API发送用例：{case_model.model_dump_json()}')
                     future = cls.executor.submit(cls.execute_task, case_model)
-                    cls._active_tasks += 1
                     cls.update_status_proceed(test_suite, test_suite_details)
 
                     def task_done(fut):
-                        with cls._get_case_lock1:
-                            cls._active_tasks = max(0, cls._active_tasks - 1)
+                        try:
+                            fut.result()
+                        except Exception as e:
+                            log.api.error(f'任务执行失败: {e}')
+                        finally:
+                            pass
 
                     future.add_done_callback(task_done)
             except Exception as error:
