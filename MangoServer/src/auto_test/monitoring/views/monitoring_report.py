@@ -90,8 +90,7 @@ class MonitoringReportCRUD(ModelCRUD):
 
 class MonitoringReportViews(ViewSet):
     """
-    预警监控报告视图
-    提供创建报告的接口，供监控脚本调用
+    监控报告视图
     """
     model = MonitoringReport
     serializer_class = MonitoringReportSerializers
@@ -99,8 +98,7 @@ class MonitoringReportViews(ViewSet):
     @error_response('system')
     def create_report(self, request: Request):
         """
-        创建预警监控报告
-        供监控脚本调用，传入 task_id, status, msg, detail(可选)
+        创建监控报告
         """
         task_id = request.data.get('task_id')
         status = request.data.get('status')

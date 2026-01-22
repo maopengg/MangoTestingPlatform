@@ -158,6 +158,31 @@ class Pytest:
         cls.log.error(msg)
 
 
+
+class Monitoring:
+    log = logging.getLogger('monitoring')
+
+    @classmethod
+    def debug(cls, msg: str):
+        if settings.IS_DEBUG_LOG:
+            cls.log.critical(msg)
+
+    @classmethod
+    def info(cls, msg: str):
+        cls.log.info(msg)
+
+    @classmethod
+    def warning(cls, msg: str):
+        cls.log.warning(msg)
+
+    @classmethod
+    def critical(cls, msg: str):
+        cls.log.critical(msg)
+
+    @classmethod
+    def error(cls, msg: str):
+        cls.log.error(msg)
+
 class Log:
     system = System
     ui = Ui
@@ -165,6 +190,7 @@ class Log:
     user = User
     perf = Perf
     pytest = Pytest
+    monitoring = Monitoring
 
 
 log = Log

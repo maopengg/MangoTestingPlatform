@@ -130,7 +130,7 @@ class MonitoringTaskCRUD(ModelCRUD):
 
 class MonitoringTaskViews(ViewSet):
     """
-    任务的启动/停止/日志查询
+    监控任务视图
     """
     model = MonitoringTask
     serializer_class = MonitoringTaskSerializers
@@ -155,7 +155,7 @@ class MonitoringTaskViews(ViewSet):
         if not task:
             return ResponseData.fail(RESPONSE_MSG_0142)
         try:
-            runner.stop_task(task)
+            runner.stop_task(task, update_status=True)
         except Exception as e:
             return ResponseData.fail(RESPONSE_MSG_0144, f'停止失败: {str(e)}')
         task.refresh_from_db()
@@ -174,7 +174,7 @@ class MonitoringTaskViews(ViewSet):
     @error_response('system')
     def download_log(self, request: Request):
         """
-        下载完整的日志文件
+        下载日志文件
         """
         task_id = request.query_params.get('id') or request.data.get('id')
         task = MonitoringTask.objects.filter(id=task_id).first()

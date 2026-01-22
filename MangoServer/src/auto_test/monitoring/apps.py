@@ -16,11 +16,11 @@ class MonitoringConfig(AppConfig):
 
     def ready(self):
         """
-        服务启动时恢复任务状态
+        服务启动时恢复任务
         """
 
         # 多进程保护机制，防止在多进程环境下重复执行
-        if is_main_process(lock_name='mango_monitoring_init', logger=log.system):
+        if is_main_process(lock_name='mango_monitoring_init', logger=log.monitoring):
             return
 
 
@@ -31,19 +31,19 @@ class MonitoringConfig(AppConfig):
                 import sys
                 delay = 10 if ('runserver' in sys.argv or 'runserver_plus' in sys.argv) else 5
                 time.sleep(delay)
-                log.system.info('监控模块：开始执行任务恢复')
+                log.monitoring.info('监控模块：开始执行任务恢复')
                 self.restore_tasks()
-            except (RuntimeError, SystemError) as e:
+            except RuntimeError as e:
                 # 忽略进程关闭时的错误（开发服务器重载时常见）
                 error_msg = str(e).lower()
                 if any(keyword in error_msg for keyword in ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
                     # 开发模式下这些错误是正常的，静默忽略
-                    log.system.debug(f'监控模块：忽略进程关闭错误: {e}')
+                    log.monitoring.debug(f'监控模块：忽略进程关闭错误: {e}')
                     return
-                log.system.error(f'恢复监控任务状态异常: {e}')
+                log.monitoring.error(f'恢复监控任务状态异常: {e}')
             except Exception as e:
                 # 其他异常记录日志但不影响启动
-                log.system.error(f'恢复监控任务状态异常: {e}')
+                log.monitoring.error(f'恢复监控任务状态异常: {e}')
                 import traceback
                 traceback.print_exc()
 
@@ -59,29 +59,28 @@ class MonitoringConfig(AppConfig):
     @staticmethod
     def restore_tasks():
         """
-        恢复任务状态
+        恢复任务
         """
         try:
-            log.system.info('监控模块：开始执行任务恢复...')
+            log.monitoring.info('监控模块：开始执行任务恢复...')
             from src.auto_test.monitoring.service.runner import restore_running_tasks
             restore_running_tasks()
-            log.system.info('监控模块：任务恢复完成')
+            log.monitoring.info('监控模块：任务恢复完成')
         except Exception as e:
-            log.system.error(f'恢复监控任务状态异常: {e}')
+            log.monitoring.error(f'恢复监控任务状态异常: {e}')
             import traceback
             traceback.print_exc()
 
     def shutdown(self):
         """
-        服务停止时的清理函数
-        同步停止所有正在运行的监控任务子进程
+        停止所有监控任务
         """
         try:
             from src.auto_test.monitoring.service.runner import stop_all_tasks
             stop_all_tasks(timeout=5.0)
-            log.system.info('监控模块已停止所有任务')
+            log.monitoring.info('监控模块已终止所有任务进程，状态保持不变以便重启时恢复')
         except Exception as e:
-            log.system.error(f'停止监控任务时发生异常: {e}')
+            log.monitoring.error(f'停止监控任务时发生异常: {e}')
             import traceback
             traceback.print_exc()
 

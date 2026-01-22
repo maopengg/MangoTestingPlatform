@@ -41,7 +41,7 @@ class MonitoringTask(models.Model):
 
 
 class MonitoringReport(models.Model):
-    """预警监控报告表"""
+    """监控报告表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     task = models.ForeignKey(to=MonitoringTask, to_field="id", on_delete=models.SET_NULL, null=True)

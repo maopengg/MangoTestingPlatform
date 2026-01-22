@@ -288,6 +288,15 @@ LOGGING = {
             'backupCount': 10,
             'encoding': 'utf-8',
         },
+        'monitoring': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs/monitoring/log.log',
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 50,
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
         'django': {  # 添加Django核心日志处理器
             'level': 'WARNING',
             'class': 'logging.handlers.RotatingFileHandler',
