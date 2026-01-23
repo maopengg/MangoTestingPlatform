@@ -41,8 +41,8 @@ class ApiCaseFlow:
         while cls.running:
             try:
                 active_count = cls.executor._work_queue.qsize()
+                log.api.debug(f'当前线程池：{active_count}，最大：{API_MAX_TASKS}')
                 if active_count > API_MAX_TASKS:
-                    log.api.debug(f'当前线程池：{active_count}，最大：{API_MAX_TASKS}')
                     time.sleep(3)
                 else:
                     cls.get_case()
@@ -51,7 +51,7 @@ class ApiCaseFlow:
                 time.sleep(2)
 
     @classmethod
-    @async_task_db_connection(max_retries=3, retry_delay=2)
+    @async_task_db_connection(max_retries=1, retry_delay=1)
     def get_case(cls, ):
         with cls._get_case_lock:
 
@@ -94,15 +94,34 @@ class ApiCaseFlow:
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
+        """
+        执行API测试任务
+        每个线程独立管理数据库连接
+        """
+        from django.db import connection
         from src.auto_test.auto_api.service.test_case.test_case import TestCase
-        test_case = TestCase(
-            user_id=case_model.user_id,
-            test_env=case_model.test_env,
-            case_id=case_model.case_id,
-            test_suite=case_model.test_suite,
-            test_suite_details=case_model.test_suite_details,
-        )
-        return test_case.test_case()
+
+        try:
+            connection.close()
+            test_case = TestCase(
+                user_id=case_model.user_id,
+                test_env=case_model.test_env,
+                case_id=case_model.case_id,
+                test_suite=case_model.test_suite,
+                test_suite_details=case_model.test_suite_details,
+            )
+            result = test_case.test_case()
+
+            return result
+
+        except Exception as e:
+            log.api.error(f'执行测试用例失败: case_id={case_model.case_id}, 错误: {e}')
+            raise
+        finally:
+            try:
+                connection.close()
+            except Exception as close_error:
+                log.api.warning(f'关闭数据库连接失败: {close_error}')
 
     @classmethod
     def update_status_proceed(cls, test_suite, test_suite_details):
