@@ -41,8 +41,8 @@ class ApiCaseFlow:
         while cls.running:
             try:
                 active_count = cls.executor._work_queue.qsize()
-                log.api.debug(f'当前线程池：{active_count}，最大：{API_MAX_TASKS}')
                 if active_count > API_MAX_TASKS:
+                    log.api.debug(f'当前线程池：{active_count}，最大：{API_MAX_TASKS}')
                     time.sleep(3)
                 else:
                     cls.get_case()
