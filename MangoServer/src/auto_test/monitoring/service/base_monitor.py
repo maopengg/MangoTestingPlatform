@@ -39,13 +39,20 @@ class MonitorBase(Mb):
             "DEBUG": MonitoringLogStatusEnum.DEBUG.value,
         }
         status = level_map.get(level_upper, MonitoringLogStatusEnum.INFO.value)
-
-        MonitoringReport.objects.create(
+        from django.db import connection
+        try:
+            connection.close()
+            MonitoringReport.objects.create(
             task_id=self.task_id,
             status=status,
             msg=message,
             send_text=log_text,
         )
+        except Exception as e:
+            raise
+        finally:
+            connection.close()
+        
 
     def send(self, send_text: str, msg: str = None):
         """
