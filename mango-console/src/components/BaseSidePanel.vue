@@ -50,7 +50,7 @@
 
   const props = withDefaults(defineProps<Props>(), {
     visible: false,
-    width: 600,
+    width: 800,
     data: undefined,
     showConfirmButton: true,
     confirmLoading: false,
