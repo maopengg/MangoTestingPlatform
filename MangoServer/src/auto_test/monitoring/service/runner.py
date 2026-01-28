@@ -419,7 +419,7 @@ class MonitoringTaskRunner:
                     log.monitoring.info(f'监控任务状态恢复完成，共恢复 {restored_count} 个任务状态')
             else:
                 log.monitoring.info('没有需要恢复或重启的任务')
-        except (RuntimeError, monitoringError) as e:
+        except (RuntimeError, SystemError) as e:
             # 忽略进程关闭时的错误
             if 'shutdown' in str(e).lower() or 'interpreter' in str(e).lower():
                 return

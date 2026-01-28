@@ -212,66 +212,26 @@
     </template>
   </ModalDialog>
 
-  <a-drawer
-    :width="1000"
-    :visible="logDrawer.visible"
-    placement="right"
-    @cancel="logDrawer.visible = false"
-    unmountOnClose
-    :footer="false"
-  >
-    <template #title>
-      <div class="log-drawer-title">
-        <span>任务日志</span>
-        <a-space>
-          <a-button size="small" @click="onDownloadLogs">下载</a-button>
-          <a-button size="small" type="primary" @click="onRefreshLogs">刷新</a-button>
-        </a-space>
-      </div>
-    </template>
-    <div class="log-drawer-body">
-      <CodeEditor
-        ref="logEditorRef"
-        v-model="logDrawer.codeText"
-        placeholder="日志内容"
-        :codeStyle="{ height: '100%' }"
-        :dark="true"
-      />
-    </div>
-  </a-drawer>
+  <LogDrawer
+    v-model:visible="logDrawer.visible"
+    :taskId="logDrawer.taskId"
+  />
 
-  <a-drawer
-    :width="1000"
-    :visible="fileDrawer.visible"
-    placement="right"
+  <FileDrawer
+    v-model:visible="fileDrawer.visible"
+    :taskId="fileDrawer.taskId"
+    :task="fileDrawer.task"
+    v-model:codeText="fileDrawer.codeText"
     @cancel="onFileCancel"
-    unmountOnClose
-    :footer="false"
-  >
-    <template #title>
-      <div class="log-drawer-title">
-        <span>任务文件</span>
-        <a-space>
-          <a-button size="small" @click="onFileCancel">取消</a-button>
-          <a-button size="small" type="primary" @click="onFileSave">保存</a-button>
-        </a-space>
-      </div>
-    </template>
-    <div class="log-drawer-body">
-      <CodeEditor
-        ref="fileEditorRef"
-        v-model="fileDrawer.codeText"
-        placeholder="脚本内容"
-        :codeStyle="{ height: '100%' }"
-        :dark="true"
-      />
-    </div>
-  </a-drawer>
+    @save="onFileSave"
+  />
 </template>
 
 <script lang="ts" setup>
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+  import LogDrawer from '@/components/LogDrawer.vue'
+  import FileDrawer from '@/components/FileDrawer.vue'
   import { ModalDialogType } from '@/types/components'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
@@ -295,7 +255,7 @@
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const logEditorRef = ref<any>(null)
+
   const fileEditorRef = ref<any>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -316,7 +276,6 @@
 
   const logDrawer = reactive({
     visible: false,
-    codeText: '',
     taskId: 0,
   })
 
@@ -506,100 +465,13 @@
       .catch(console.log)
   }
 
-  function scrollToBottom() {
-    // 使用多次 nextTick 和 setTimeout 确保 DOM 完全渲染后再滚动
-    nextTick(() => {
-      setTimeout(() => {
-        // 方法1: 使用 CodeEditor 暴露的 scrollToBottom 方法
-        if (logEditorRef.value && logEditorRef.value.scrollToBottom) {
-          logEditorRef.value.scrollToBottom()
-          return
-        }
-        // 方法2: 通过 ref 访问 CodeMirror 实例
-        if (logEditorRef.value) {
-          const codemirrorInstance = logEditorRef.value.codemirror
-          if (codemirrorInstance && codemirrorInstance.scrollDOM) {
-            codemirrorInstance.scrollDOM.scrollTop = codemirrorInstance.scrollDOM.scrollHeight
-            return
-          }
-        }
-        // 方法3: 通过 DOM 查询直接访问滚动容器
-        const scrollContainer = document.querySelector('.log-drawer-body .cm-scroller')
-        if (scrollContainer) {
-          ;(scrollContainer as HTMLElement).scrollTop = (
-            scrollContainer as HTMLElement
-          ).scrollHeight
-        }
-      }, 300)
-    })
-  }
 
-  function fetchLogs() {
-    if (!logDrawer.taskId) return
-    getMonitoringTaskLogs(logDrawer.taskId, 300)
-      .then((res) => {
-        logDrawer.codeText = (res.data || []).join('')
-        scrollToBottom()
-      })
-      .catch(console.log)
-  }
 
-  // 监听日志内容变化，自动滚动到底部
-  watch(
-    () => logDrawer.codeText,
-    () => {
-      if (logDrawer.visible) {
-        scrollToBottom()
-      }
-    }
-  )
 
-  // 监听 drawer 打开状态，打开时滚动到底部
-  watch(
-    () => logDrawer.visible,
-    (visible) => {
-      if (visible && logDrawer.codeText) {
-        scrollToBottom()
-      }
-    }
-  )
 
   function onLogs(record: any) {
     logDrawer.taskId = record.id
     logDrawer.visible = true
-    // drawer 打开后再加载日志，确保滚动功能正常
-    nextTick(() => {
-      fetchLogs()
-    })
-  }
-
-  function onRefreshLogs() {
-    fetchLogs()
-  }
-
-  function onDownloadLogs() {
-    if (!logDrawer.taskId) {
-      Message.warning('请先选择任务')
-      return
-    }
-    downloadMonitoringTaskLog(logDrawer.taskId)
-      .then((res: any) => {
-        // 后端返回的是文件流
-        const blob = new Blob([res.data], { type: 'text/plain;charset=utf-8' })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `任务日志_${logDrawer.taskId}_${new Date().getTime()}.log`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-        Message.success('日志下载成功')
-      })
-      .catch((error) => {
-        console.log(error)
-        Message.error('下载失败')
-      })
   }
 
   function onViewFile(record: any) {
@@ -675,16 +547,84 @@
   }
 
   .log-drawer-body {
-    height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    height: 100%;
 
     :deep(.cm-editor) {
-      height: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
 
       .cm-scroller {
-        overflow: auto !important;
+        flex: 1;
+        overflow-y: auto !important;
+        height: auto !important;
       }
     }
+  }
+
+  .log-drawer-footer {
+    margin-top: 12px;
+    padding-bottom: 12px;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  :deep(.arco-drawer-body) {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: calc(100vh - 60px) !important;
+  }
+
+  .log-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* 自定义滚动条样式 */
+  :deep(.log-drawer-body)::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  :deep(.log-drawer-body)::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  :deep(.log-drawer-body)::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  :deep(.log-drawer-body)::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* CodeMirror编辑器的滚动条 */
+  :deep(.cm-scroller)::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  :deep(.cm-scroller)::-webkit-scrollbar-track {
+    background: #f8f8f8;
+    border-radius: 4px;
+  }
+
+  :deep(.cm-scroller)::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 4px;
+  }
+
+  :deep(.cm-scroller)::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
   }
 </style>

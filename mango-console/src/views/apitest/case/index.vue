@@ -531,6 +531,7 @@
     const timeoutId = setTimeout(() => {
       Message.info('测试用例异步执行中，请稍后刷新页面查看该用例的测试结果~')
       caseRunning.value = false
+      doRefresh()
     }, 30000)
 
     try {

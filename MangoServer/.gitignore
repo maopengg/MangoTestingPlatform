@@ -12,3 +12,4 @@ mango_pytest/
 download/
 upload/
 monitoring_scripts/
+__pycache__/
