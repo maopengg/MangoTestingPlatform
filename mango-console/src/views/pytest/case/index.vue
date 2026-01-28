@@ -95,20 +95,33 @@
             <div>
               <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
             </div>
-            <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
-              <template #title> 设为定时任务</template>
-              <div>
-                <a-select
-                  v-model="data.value"
-                  placeholder="请选择定时任务进行绑定"
-                  :options="data.scheduledName"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </div>
-            </a-modal>
+            <BaseSidePanel
+              :visible="data.visible"
+              :title="'设为定时任务'"
+              @update:visible="
+                (val) => {
+                  data.visible = val
+                }
+              "
+              @cancel="handleCancel"
+            >
+              <template #default>
+                <div>
+                  <a-select
+                    v-model="data.value"
+                    placeholder="请选择定时任务进行绑定"
+                    :options="data.scheduledName"
+                    :field-names="fieldNames"
+                    value-key="key"
+                    allow-clear
+                    allow-search
+                  />
+                </div>
+              </template>
+              <template #extra-buttons>
+                <a-button type="primary" @click="handleOk">确定</a-button>
+              </template>
+            </BaseSidePanel>
           </a-space>
         </template>
       </a-tabs>
@@ -223,40 +236,52 @@
           </a-table-column>
         </template>
       </a-table>
-      <a-drawer
-        :width="1000"
+      <BaseSidePanel
         :visible="data.drawerVisible"
-        @ok="drawerOk"
-        @cancel="data.drawerVisible = false"
-        unmountOnClose
+        :title="data.isResult ? '查看测试结果' : '编辑代码'"
+        :width="1000"
+        @update:visible="
+          (val) => {
+            data.drawerVisible = val
+          }
+        "
+        @cancel="
+          () => {
+            data.drawerVisible = false
+          }
+        "
       >
-        <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
-        <div v-if="!data.isResult">
-          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
-        </div>
-        <div v-else>
-          <a-collapse
-            v-for="item of data?.codeText"
-            :bordered="false"
-            :key="item?.uuid"
-            accordion
-            destroy-on-hide
-          >
-            <a-collapse-item :style="customStyle" :key="item?.uuid">
-              <template #header>
-                <div class="custom-header">
-                  <span>{{ item?.name }}</span>
-                  <span style="width: 20px"></span>
-                  <a-tag :color="enumStore.status_colors[item?.status]"
-                    >{{ enumStore.task_status[item?.status].title }}
-                  </a-tag>
-                </div>
-              </template>
-              <PytestTestReport :resultData="item" />
-            </a-collapse-item>
-          </a-collapse>
-        </div>
-      </a-drawer>
+        <template #default>
+          <div v-if="!data.isResult">
+            <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+          </div>
+          <div v-else>
+            <a-collapse
+              v-for="item of data?.codeText"
+              :bordered="false"
+              :key="item?.uuid"
+              accordion
+              destroy-on-hide
+            >
+              <a-collapse-item :style="customStyle" :key="item?.uuid">
+                <template #header>
+                  <div class="custom-header">
+                    <span>{{ item?.name }}</span>
+                    <span style="width: 20px"></span>
+                    <a-tag :color="enumStore.status_colors[item?.status]"
+                      >{{ enumStore.task_status[item?.status].title }}
+                    </a-tag>
+                  </div>
+                </template>
+                <PytestTestReport :resultData="item" />
+              </a-collapse-item>
+            </a-collapse>
+          </div>
+        </template>
+        <template #extra-buttons>
+          <a-button v-if="!data.isResult" type="primary" @click="drawerOk">保存</a-button>
+        </template>
+      </BaseSidePanel>
     </template>
 
     <template #footer>
@@ -361,6 +386,7 @@
   import { getSystemTasksName } from '@/api/system/tasks'
   import useUserStore from '@/store/modules/user'
   import { conditionItems } from '@/views/pytest/case/config'
+  import BaseSidePanel from '@/components/BaseSidePanel.vue'
 
   const projectInfo = useProject()
 

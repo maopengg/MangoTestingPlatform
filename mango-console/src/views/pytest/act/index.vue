@@ -144,18 +144,30 @@
           </a-table-column>
         </template>
       </a-table>
-      <a-drawer
+      <BaseSidePanel
         :visible="data.drawerVisible"
+        :title="'编辑代码'"
         :width="1000"
-        unmountOnClose
-        @cancel="data.drawerVisible = false"
-        @ok="drawerOk"
+        @update:visible="
+          (val) => {
+            data.drawerVisible = val
+          }
+        "
+        @cancel="
+          () => {
+            data.drawerVisible = false
+          }
+        "
       >
-        <template #title> 编辑代码</template>
-        <div>
-          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
-        </div>
-      </a-drawer>
+        <template #default>
+          <div>
+            <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+          </div>
+        </template>
+        <template #extra-buttons>
+          <a-button type="primary" @click="drawerOk">保存</a-button>
+        </template>
+      </BaseSidePanel>
     </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
@@ -230,6 +242,7 @@
   } from '@/api/pytest/act'
   import CodeEditor from '@/components/CodeEditor.vue'
   import { useProject } from '@/store/modules/get-project'
+  import BaseSidePanel from '@/components/BaseSidePanel.vue'
 
   const projectInfo = useProject()
 
