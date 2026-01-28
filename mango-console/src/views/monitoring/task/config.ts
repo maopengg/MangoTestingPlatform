@@ -167,7 +167,9 @@ export const tableColumns = useTableColumn([
     key: 'notice_group',
     dataIndex: 'notice_group',
     align: 'left',
-    width: 100,
+    width: 150,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: 'PID',

@@ -72,7 +72,7 @@
                 <span style="width: 80px; display: inline-block">{{ record.id }}</span>
               </template>
               <template v-else-if="item.key === 'task_name'" #cell="{ record }">
-                <a-tag color="blue" size="small">{{ record.task_name }}</a-tag>
+                {{ record.task_name }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-tag :color="enumStore.colors[record.status]" size="small"
