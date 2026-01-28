@@ -49,7 +49,7 @@ class MonitorBase(Mb):
             send_text=log_text,
         )
         except Exception as e:
-            raise
+                
         finally:
             connection.close()
         

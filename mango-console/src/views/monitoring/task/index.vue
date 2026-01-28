@@ -212,31 +212,78 @@
     </template>
   </ModalDialog>
 
-  <LogDrawer
-    v-model:visible="logDrawer.visible"
-    :taskId="logDrawer.taskId"
-  />
+  <BaseSidePanel
+    :visible="logDrawer.visible"
+    :title="'任务日志'"
+    :data="{ taskId: logDrawer.taskId }"
+    @update:visible="
+      (val) => {
+        logDrawer.visible = val
+      }
+    "
+    @cancel="
+      () => {
+        logDrawer.visible = false
+      }
+    "
+  >
+    <template #default>
+      <div class="log-drawer-content">
+        <div class="log-drawer-body">
+          <CodeEditor
+            ref="logEditorRef"
+            v-model="logCodeText"
+            placeholder="日志内容"
+            :codeStyle="{ height: '100%' }"
+            :dark="true"
+          />
+        </div>
+      </div>
+    </template>
+    <template #extra-buttons>
+      <a-button status="success" @click="handleDownloadLog">下载</a-button>
+      <a-button type="primary" @click="fetchLogData">刷新</a-button>
+    </template>
+  </BaseSidePanel>
 
-  <FileDrawer
-    v-model:visible="fileDrawer.visible"
-    :taskId="fileDrawer.taskId"
-    :task="fileDrawer.task"
-    v-model:codeText="fileDrawer.codeText"
+  <BaseSidePanel
+    :visible="fileDrawer.visible"
+    :title="'任务文件'"
+    :data="{ taskId: fileDrawer.taskId, task: fileDrawer.task }"
+    @update:visible="
+      (val) => {
+        fileDrawer.visible = val
+      }
+    "
     @cancel="onFileCancel"
-    @save="onFileSave"
-  />
+  >
+    <template #default>
+      <div class="file-drawer-content">
+        <div class="file-drawer-body">
+          <CodeEditor
+            ref="fileEditorRef"
+            v-model="fileDrawer.codeText"
+            placeholder="脚本内容"
+            :codeStyle="{ height: '100%' }"
+            :dark="true"
+          />
+        </div>
+      </div>
+    </template>
+    <template #extra-buttons>
+      <a-button type="primary" @click="onFileSave">保存</a-button>
+    </template>
+  </BaseSidePanel>
 </template>
 
 <script lang="ts" setup>
   import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-  import LogDrawer from '@/components/LogDrawer.vue'
-  import FileDrawer from '@/components/FileDrawer.vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+  import BaseSidePanel from '@/components/BaseSidePanel.vue'
   import { ModalDialogType } from '@/types/components'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
-  import CodeEditor from '@/components/CodeEditor.vue'
   import { useProject } from '@/store/modules/get-project'
   import {
     deleteMonitoringTask,
@@ -273,6 +320,9 @@
     actionTitle: '新增',
     noticeList: [],
   })
+
+  const logCodeText = ref('')
+  const logEditorRef = ref<any>(null)
 
   const logDrawer = reactive({
     visible: false,
@@ -465,13 +515,13 @@
       .catch(console.log)
   }
 
-
-
-
-
-  function onLogs(record: any) {
+  async function onLogs(record: any) {
     logDrawer.taskId = record.id
     logDrawer.visible = true
+    // 等待组件渲染完成后获取日志数据
+    nextTick(() => {
+      fetchLogData()
+    })
   }
 
   function onViewFile(record: any) {
@@ -524,6 +574,41 @@
         console.log(error)
         Message.error('保存失败')
       })
+  }
+
+  // 日志相关方法
+  async function fetchLogData() {
+    if (!logDrawer.taskId) return
+    try {
+      const res = await getMonitoringTaskLogs(logDrawer.taskId, 300)
+      logCodeText.value = (res.data || []).join('')
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  async function handleDownloadLog() {
+    if (!logDrawer.taskId) {
+      Message.warning('请先选择任务')
+      return
+    }
+    try {
+      const res: any = await downloadMonitoringTaskLog(logDrawer.taskId)
+      // 后端返回的是文件流
+      const blob = new Blob([res.data], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `任务日志_${logDrawer.taskId}_${new Date().getTime()}.log`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      Message.success('日志下载成功')
+    } catch (error) {
+      console.log(error)
+      Message.error('下载失败')
+    }
   }
 
   onMounted(() => {
