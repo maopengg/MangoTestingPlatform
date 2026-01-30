@@ -49,7 +49,7 @@ class MonitorBase(Mb):
             send_text=log_text,
         )
         except Exception as e:
-                
+            self.log(f"监控任务日志失败: {e}")
         finally:
             connection.close()
         
