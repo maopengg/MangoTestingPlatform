@@ -24,7 +24,6 @@ class APIBaseTestSetup(PublicBase):
                     api_info_id,
                     test_env: int,
                     request_model: RequestModel = None,
-                    is_merge_headers=False,
                     ) -> ResponseModel:
         api_info = ApiInfo.objects.get(id=api_info_id)
         log.api.debug(f'执行API接口-1->ID:{api_info_id},name:{api_info.name}')
@@ -32,10 +31,7 @@ class APIBaseTestSetup(PublicBase):
         self.init_test_object(api_info.project_product_id, test_env)
         # API info的请求
         if request_model is None:
-            if is_merge_headers and api_info.headers:
-                headers = self.init_headers(api_info.project_product_id)
-                self.update_dict_case_insensitive(headers, api_info.headers if api_info.headers else {})
-            elif api_info.headers is not None:
+            if api_info.headers is not None:
                 headers = api_info.headers
             else:
                 headers = self.init_headers(api_info.project_product_id)
