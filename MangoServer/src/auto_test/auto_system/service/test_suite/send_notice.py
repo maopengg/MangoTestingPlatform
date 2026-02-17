@@ -46,7 +46,7 @@ class SendNotice:
             task = MonitoringTask.objects.get(id=task_id)
             if task.notice_group is None:
                 return
-            if not task.is_notice != StatusEnum.SUCCESS.value:
+            if task.is_notice != StatusEnum.SUCCESS.value:
                 return
             NoticeMain(task.notice_group_id).notice_monitoring(send_text)
             MonitoringReport.objects.create(
