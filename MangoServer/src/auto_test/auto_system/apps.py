@@ -234,7 +234,7 @@ class AutoSystemConfig(AppConfig):
                     else:
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
-            test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value)
+            test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value, status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value])
             for i in test_suite:
                 SendNotice(i.id).send_test_suite()
 
