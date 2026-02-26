@@ -67,7 +67,7 @@ export const tableColumns = useTableColumn([
     title: '通知结果',
     key: 'is_notice',
     dataIndex: 'is_notice',
-    width: 70,
+    width: 90,
   },
   {
     title: '操作',

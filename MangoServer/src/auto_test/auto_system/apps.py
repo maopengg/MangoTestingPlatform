@@ -15,7 +15,7 @@ from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
-from src.enums.system_enum import CacheDataKeyEnum
+from src.enums.system_enum import CacheDataKeyEnum, TestSuiteNoticeEnum
 from src.enums.tools_enum import TaskEnum
 from src.settings import RETRY_FREQUENCY
 from src.tools import is_main_process
@@ -234,6 +234,8 @@ class AutoSystemConfig(AppConfig):
                     else:
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
+            test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value)
+            for i in test_suite:
                 SendNotice(i.id).send_test_suite()
 
             # 把进行中的，修改为待开始,或者失败
