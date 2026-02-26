@@ -98,4 +98,4 @@ class TestSuiteNoticeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {cls.NOT_SENT: "未发送", cls.SENT: "已发送", cls.EXPIRED: "已过期"}
+        return {cls.NOT_SENT.value: "未发送", cls.SENT.value: "已发送", cls.EXPIRED.value: "已过期"}
