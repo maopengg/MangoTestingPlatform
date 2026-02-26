@@ -91,7 +91,9 @@
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
-                {{ record.is_notice === 1 ? '已发送' : '未发送' }}
+                <a-tag :color="enumStore.colors[record.is_notice]" size="small"
+                  >{{ enumStore.test_suite_notice[record.is_notice].title }}
+                </a-tag>
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>

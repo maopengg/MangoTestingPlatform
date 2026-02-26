@@ -62,7 +62,7 @@ class SocketApiViews(ViewSet):
         status = request.data.get('status')
         username = request.data.get('username')
         user_obj = SocketUser.get_user_obj(username)
-        from auto_test.auto_system.consumers import ChatConsumer
+        from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'执行器连接成功，当前OPEN状态：{SocketUser.get_user_obj(username).is_open}',
@@ -85,7 +85,7 @@ class SocketApiViews(ViewSet):
         status = request.data.get('status')
         username = request.data.get('username')
         user_obj = SocketUser.get_user_obj(username)
-        from auto_test.auto_system.consumers import ChatConsumer
+        from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'执行器连接成功，当前debug状态：{SocketUser.get_user_obj(username).is_open}',
@@ -149,6 +149,6 @@ class SocketApiViews(ViewSet):
                     func_args={}
                 )
             )
-        from auto_test.auto_system.consumers import ChatConsumer
+        from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(send_socket_data)
         return ResponseData.success(RESPONSE_MSG_0059, )

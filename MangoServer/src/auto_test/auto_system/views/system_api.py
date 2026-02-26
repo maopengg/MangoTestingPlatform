@@ -52,6 +52,7 @@ class SystemViews(ViewSet):
             'file_status': FileStatusEnum.get_option(),
             'monitoring_task_status': MonitoringTaskStatusEnum.get_option(),
             'monitoring_log_status': MonitoringLogStatusEnum.get_option(),
+            'test_suite_notice': TestSuiteNoticeEnum.get_option(),
         }
         return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 

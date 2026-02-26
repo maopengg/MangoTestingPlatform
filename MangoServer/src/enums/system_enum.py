@@ -88,3 +88,14 @@ class CacheDataKey2Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {'DOMAIN_NAME': "本系统的URL地址"}
+
+
+class TestSuiteNoticeEnum(BaseEnum):
+    """缓存KEY的名称，不在系统设置页面展示"""
+    NOT_SENT = 0
+    SENT = 1
+    EXPIRED = 2
+
+    @classmethod
+    def obj(cls):
+        return {cls.NOT_SENT: "未发送", cls.SENT: "已发送", cls.EXPIRED: "已过期"}
