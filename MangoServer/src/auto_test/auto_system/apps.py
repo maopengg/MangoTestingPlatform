@@ -234,8 +234,6 @@ class AutoSystemConfig(AppConfig):
                     else:
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
-            test_suite = TestSuite.objects.filter(status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value])
-            for i in test_suite:
                 SendNotice(i.id).send_test_suite()
 
             # 把进行中的，修改为待开始,或者失败
