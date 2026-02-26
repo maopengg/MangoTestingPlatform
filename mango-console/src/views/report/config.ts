@@ -43,19 +43,16 @@ export const tableColumns = useTableColumn([
     title: '测试环境',
     key: 'test_env',
     dataIndex: 'test_env',
-    width: 120,
   },
   {
     title: '创建时间',
     key: 'create_time',
     dataIndex: 'create_time',
-    width: 170,
   },
   {
     title: '执行人',
     key: 'user',
     dataIndex: 'user',
-    width: 139,
   },
   {
     title: '测试结果',
