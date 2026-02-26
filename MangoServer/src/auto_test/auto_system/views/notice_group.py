@@ -11,8 +11,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import NoticeGroup
+from src.auto_test.auto_system.service.test_suite.base_notice import NoticeMain
 from src.auto_test.auto_system.views.project import ProjectSerializers
-from src.auto_test.auto_user.views.user import UserSerializers
 from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -62,11 +62,10 @@ class NoticeGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def test(self, request: Request):
-        from src.auto_test.auto_system.service.notice import NoticeMain
         _id = request.query_params.get('id')
         try:
             # NoticeMain.notice_main(2, 2, 197899881973)
-            NoticeMain(_id).test_notice_send()
+            NoticeMain(int(_id)).test_notice_send()
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         else:
