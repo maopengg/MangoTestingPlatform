@@ -236,8 +236,10 @@ class AutoSystemConfig(AppConfig):
                     i.save()
             test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value, status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value])
             for i in test_suite:
-                SendNotice(i.id).send_test_suite()
-
+                try:
+                    SendNotice(i.id).send_test_suite()
+                except Exception:
+                    pass
             # 把进行中的，修改为待开始,或者失败
             test_suite_details_list = TestSuiteDetails \
                 .objects \
