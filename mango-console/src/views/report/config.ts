@@ -38,21 +38,26 @@ export const tableColumns = useTableColumn([
     key: 'tasks',
     dataIndex: 'tasks',
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '测试环境',
     key: 'test_env',
     dataIndex: 'test_env',
+    width: 100,
   },
   {
     title: '创建时间',
     key: 'create_time',
     dataIndex: 'create_time',
+    width: 170,
   },
   {
     title: '执行人',
     key: 'user',
     dataIndex: 'user',
+    width: 110,
   },
   {
     title: '测试结果',
