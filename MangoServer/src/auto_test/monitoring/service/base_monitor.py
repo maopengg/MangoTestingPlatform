@@ -43,22 +43,22 @@ class MonitorBase(Mb):
         try:
             connection.close()
             MonitoringReport.objects.create(
-            task_id=self.task_id,
-            status=status,
-            msg=message,
-            send_text=log_text,
-        )
+                task_id=self.task_id,
+                status=status,
+                msg=message,
+                send_text=log_text,
+            )
         except Exception as e:
             self.log(f"监控任务日志失败: {e}")
         finally:
             connection.close()
-        
 
     def send(self, send_text: str, msg: str = None):
         """
         发送通知
         """
         base_msg = msg if msg else "监控任务失败"
+        self.log(f'准备发送消息：{self.task_id}，{base_msg}，{send_text}')
 
         if not self.task_id:
             return
