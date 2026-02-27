@@ -41,7 +41,7 @@
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import { Message } from '@arco-design/web-vue'
-  import { postCaseDetailedParameterTestJsonpath } from '@/api/apitest/case-detailed-parameter'
+  import { postCaseDetailedParameterTestExtractResponseAfter } from '@/api/apitest/case-detailed-parameter'
 
   const props = defineProps({
     data: {
@@ -188,7 +188,11 @@
       return
     }
 
-    postCaseDetailedParameterTestJsonpath(jsonpathInput.value.trim(), jsonData)
+    postCaseDetailedParameterTestExtractResponseAfter(
+      'jsonpath',
+      jsonpathInput.value.trim(),
+      jsonData
+    )
       .then((res) => {
         Message.success('测试成功，提取的值：【' + res.data.value + '】')
       })

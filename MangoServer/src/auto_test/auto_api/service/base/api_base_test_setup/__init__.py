@@ -116,7 +116,7 @@ class APIBaseTestSetup(PublicBase):
             value: str = self.test_data.replace(i.get('value'))
             if not key or not value:
                 raise ApiError(*ERROR_MSG_0018)
-            res = re.findall(response.text, value)
+            res = re.findall(value, response.text)
             if len(res) <= 0:
                 raise ApiError(*ERROR_MSG_0017)
             self.test_data.set_cache(key, res[0])

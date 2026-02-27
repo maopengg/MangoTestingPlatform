@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
+import re
 
 from mangotools.data_processor import JsonTool
 from rest_framework import serializers
@@ -11,6 +12,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiInfo, ApiCaseDetailedParameter
+from src.exceptions import ApiError, ERROR_MSG_0017
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -55,16 +57,23 @@ class ApiCaseDetailedParameterViews(ViewSet):
 
     @action(methods=['POST'], detail=False)
     @error_response('api')
-    def post_test_jsonpath(self, request: Request):
-        jsonpath = request.data.get('jsonpath')
-        response_json = request.data.get('response_json')
-        if isinstance(jsonpath, str):
+    def post_extract_response_after(self, request: Request):
+        expression = request.data.get('expression')
+        _type = request.data.get('type')
+        response = request.data.get('response')
+        if isinstance(expression, str):
             key = None
-            value = jsonpath
+            value = expression
         else:
-            key = jsonpath.get('key')
-            value = jsonpath.get('value')
-        if key and key.startswith('$.'):
-            key = JsonTool.get_json_path_value(response_json, key)
-        value = JsonTool.get_json_path_value(response_json, value)
-        return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})
+            key = expression.get('key')
+            value = expression.get('value')
+        if _type == 'jsonpath':
+            if key and key.startswith('$.'):
+                key = JsonTool.get_json_path_value(response, key)
+            value = JsonTool.get_json_path_value(response, value)
+            return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})
+        else:
+            value = re.findall(value, response)
+            if len(value) <= 0:
+                raise ApiError(*ERROR_MSG_0017)
+            return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})

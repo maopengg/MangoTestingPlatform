@@ -76,6 +76,11 @@ class CaseParameter:
                 response.json,
                 self.test_setup.test_data.replace(self.parameter.posterior_response)
             )
+        if self.parameter.posterior_response_text:
+            self.__posterior_response_text(
+                response,
+                self.test_setup.test_data.replace(self.parameter.posterior_response_text)
+            )
         if self.parameter.posterior_sql:
             self.__posterior_sql(self.test_setup.test_data.replace(self.parameter.posterior_sql))
         if self.parameter.posterior_sleep:
@@ -109,17 +114,20 @@ class CaseParameter:
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])
 
-    def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
+    def __posterior_response(self, response_dict: dict, posterior_response: list[dict]):
         for i in posterior_response:
             key: str = i.get('key')
             value: str = i.get('value')
             if not key or not value:
                 raise ApiError(*ERROR_MSG_0044)
             if key and key.startswith('$.'):
-                key = self.test_setup.test_data.get_json_path_value(response_text, i.get('key'))
-            value = self.test_setup.test_data.get_json_path_value(response_text, i.get('value'))
+                key = self.test_setup.test_data.get_json_path_value(response_dict, i.get('key'))
+            value = self.test_setup.test_data.get_json_path_value(response_dict, i.get('value'))
             log.api.debug(f'用例详情后置-1->key：{i["value"]}，value：{value}')
             self.test_setup.test_data.set_cache(key, value)
+
+    def __posterior_response_text(self, response: ResponseModel, posterior_response: list[dict]):
+        self.test_setup.api_info_posterior_json_re(posterior_response, response)
 
     def __posterior_file(self, posterior_file: list[dict]):
         for i in posterior_file:
@@ -145,6 +153,7 @@ class CaseParameter:
             for i in ass_jsonpath:
                 actual = self.test_setup.test_data.replace(i.get('actual'))
                 expect = self.test_setup.test_data.replace(i.get('expect'))
+                log.api.debug(f'开始断言jsonpath，实际：{actual}, 预期：{expect}')
                 if not i.get('method') or not actual:
                     raise ApiError(*ERROR_MSG_0039)
                 ass_dict = {

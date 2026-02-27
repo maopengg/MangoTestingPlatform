@@ -95,6 +95,7 @@
                   </a-tab-pane>
                   <a-tab-pane key="13" title="默认请求头">
                     <a-space direction="vertical">
+                      <TipMessage message="此处请求头会应用到所有接口中" />
                       <a-checkbox-group
                         v-for="item of data.headers_list"
                         :key="item.id"
@@ -259,6 +260,9 @@
                           <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
                             <a-tab-pane key="00" title="请求头">
                               <div class="m-2" style="height: 180px; overflow-y: auto">
+                                <TipMessage
+                                  message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
+                                />
                                 <a-space direction="vertical" style="width: 100%">
                                   <a-checkbox-group
                                     v-for="header of data.parameter_headers_list"
@@ -449,8 +453,11 @@
                                 </a-button>
                               </a-space>
                             </template>
-                            <a-tab-pane key="40" title="响应结果提取">
+                            <a-tab-pane key="40" title="响应JSON提取">
                               <div class="m-2">
+                                <TipMessage
+                                  message="从响应json中提取，请输入jsonpath语法的表达式，并点击测试按钮进行测试"
+                                />
                                 <KeyValueList
                                   :data-list="item.posterior_response"
                                   :field-config="[
@@ -500,7 +507,70 @@
                                     <a-button
                                       size="small"
                                       status="success"
-                                      @click="jsonpathTest(item, index)"
+                                      @click="testExtractResponseAfter('jsonpath', item, index)"
+                                      class="test-btn"
+                                    >
+                                      测试
+                                    </a-button>
+                                  </template>
+                                </KeyValueList>
+                              </div>
+                            </a-tab-pane>
+                            <a-tab-pane key="44" title="响应文本提取">
+                              <div class="m-2">
+                                <TipMessage
+                                  message="从响应文本中提取，请输入正则表达式，并点击测试按钮进行测试"
+                                />
+                                <KeyValueList
+                                  :data-list="item.posterior_response_text"
+                                  :field-config="[
+                                    {
+                                      field: 'value',
+                                      label: '正则语法',
+                                      placeholder: '请输入正则语法',
+                                    },
+                                    { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
+                                  ]"
+                                  :on-delete-item="
+                                    (index) =>
+                                      removeFrontSql(
+                                        item.posterior_response_text,
+                                        index,
+                                        'posterior_response_text',
+                                        item.id
+                                      )
+                                  "
+                                  :on-save="
+                                    () =>
+                                      blurSave(
+                                        'posterior_response_text',
+                                        item.posterior_response_text,
+                                        item.id
+                                      )
+                                  "
+                                  @update:item="
+                                    (index, value) =>
+                                      updateArrayItem(
+                                        item.posterior_response_text,
+                                        index,
+                                        value,
+                                        item,
+                                        'posterior_response_text',
+                                        () =>
+                                          blurSave(
+                                            'posterior_response_text',
+                                            item.posterior_response_text,
+                                            item.id
+                                          )
+                                      )
+                                  "
+                                  empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
+                                >
+                                  <template #extra="{ index }">
+                                    <a-button
+                                      size="small"
+                                      status="success"
+                                      @click="testExtractResponseAfter('re', item, index)"
                                       class="test-btn"
                                     >
                                       测试
@@ -592,6 +662,9 @@
                             </template>
                             <a-tab-pane key="30" title="json一致断言">
                               <div class="m-2">
+                                <TipMessage
+                                  message="注意以你输入的断言json的key和value为主，你没有输入响应中key和value则不断言"
+                                />
                                 <a-textarea
                                   v-model="item.ass_json_all"
                                   :auto-size="{ minRows: 9, maxRows: 9 }"
@@ -603,6 +676,7 @@
                             </a-tab-pane>
                             <a-tab-pane key="31" title="jsonpath断言">
                               <div class="m-2">
+                                <TipMessage message="只能输入jsonpath语法提取响应的json进行断言" />
                                 <KeyValueList
                                   :data-list="item.ass_jsonpath"
                                   :field-config="[
@@ -662,6 +736,7 @@
                             </a-tab-pane>
                             <a-tab-pane key="33" title="文本一致断言">
                               <div class="m-2">
+                                <TipMessage message="响应的text全匹配断言" />
                                 <a-textarea
                                   v-model="item.ass_text_all"
                                   :auto-size="{ minRows: 9, maxRows: 9 }"
@@ -673,6 +748,9 @@
                             </a-tab-pane>
                             <a-tab-pane key="32" title="通用断言">
                               <div class="m-2">
+                                <TipMessage
+                                  message="支持任意类型断言，实际值和预期值均可输入缓存变量"
+                                />
                                 <KeyValueList
                                   :data-list="item.ass_general"
                                   :field-config="[
@@ -852,12 +930,13 @@
     deleteApiCaseDetailedParameter,
     getApiCaseDetailedParameter,
     postApiCaseDetailedParameter,
-    postCaseDetailedParameterTestJsonpath,
+    postCaseDetailedParameterTestExtractResponseAfter,
     putApiCaseDetailedParameter,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import KeyValueList from '@/components/KeyValueList.vue' // 引入新组件
-  import AssertionResult from '@/components/AssertionResult.vue' // 引入断言结果组件
+  import AssertionResult from '@/components/AssertionResult.vue'
+  import TipMessage from '@/components/TipMessage.vue' // 引入断言结果组件
 
   const userStore = useUserStore()
 
@@ -994,6 +1073,8 @@
       item['posterior_response'].push({ key: '', value: '' })
     } else if ('41' === data.tabsKey) {
       item['posterior_sql'].push({ key: '', value: '' })
+    } else if ('44' === data.tabsKey) {
+      item['posterior_response_text'].push({ key: '', value: '' })
     }
   }
 
@@ -1137,18 +1218,56 @@
     blurSave(key, item, id)
   }
 
-  function jsonpathTest(item: any, index: number) {
-    if (
-      item.result_data?.response?.json === null ||
-      (typeof item.result_data?.response?.json !== 'object' &&
-        !Array.isArray(item.result_data?.response?.json))
-    ) {
-      Message.error('响应JSON是空或者不是JSON格式，无法进行测试！')
+  function testExtractResponseAfter(type: string, item: any, index: number) {
+    // 1. 验证 result_data 是否存在
+    if (!item.result_data) {
+      Message.error('测试数据不存在：result_data 为空！')
       return
     }
-    postCaseDetailedParameterTestJsonpath(
-      item.posterior_response[index],
-      item.result_data?.response?.json
+
+    // 2. 验证 response 是否存在
+    if (!item.result_data.response) {
+      Message.error('响应数据不存在：response 为空！')
+      return
+    }
+
+    // 3. 验证 json/text 是否存在且格式正确
+    if (type === 'jsonpath') {
+      if (item.result_data.response.json === null) {
+        Message.error('响应JSON是空，无法进行测试！')
+        return
+      }
+      if (
+        typeof item.result_data.response.json !== 'object' &&
+        !Array.isArray(item.result_data.response.json)
+      ) {
+        Message.error('响应JSON格式不正确，无法进行测试！')
+        return
+      }
+    } else {
+      if (!item.result_data.response.text) {
+        Message.error('响应文本为空，无法进行测试！')
+        return
+      }
+    }
+
+    // 4. 验证后置响应数据是否存在
+    if (type === 'jsonpath') {
+      if (!item.posterior_response || !item.posterior_response[index]) {
+        Message.error('后置响应数据不存在！')
+        return
+      }
+    } else {
+      if (!item.posterior_response_text || !item.posterior_response_text[index]) {
+        Message.error('后置响应文本数据不存在！')
+        return
+      }
+    }
+
+    postCaseDetailedParameterTestExtractResponseAfter(
+      type,
+      type === 'jsonpath' ? item.posterior_response[index] : item.posterior_response_text[index],
+      type === 'jsonpath' ? item.result_data.response.json : item.result_data.response.text
     )
       .then((res) => {
         Message.success(

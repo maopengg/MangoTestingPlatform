@@ -41,13 +41,18 @@ export function deleteApiCaseDetailedParameter(id: number | string[] | number[])
   })
 }
 
-export function postCaseDetailedParameterTestJsonpath(jsonpath: object, response_json: object) {
+export function postCaseDetailedParameterTestExtractResponseAfter(
+  type: string,
+  expression: object,
+  response: object | string
+) {
   return post({
-    url: '/api/case/detailed/parameter/test/jsonpath',
+    url: '/api/case/detailed/parameter/test/extract/response/after',
     data: () => {
       return {
-        jsonpath: jsonpath,
-        response_json: response_json,
+        type: type,
+        expression: expression,
+        response: response,
       }
     },
   })

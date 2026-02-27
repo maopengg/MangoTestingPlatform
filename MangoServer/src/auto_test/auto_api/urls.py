@@ -34,8 +34,8 @@ urlpatterns = [
     path("case/detailed/refresh", ApiCaseDetailedViews.as_view({'put': 'put_refresh_api_info'})),
     #
     path("case/detailed/parameter", ApiCaseDetailedParameterCRUD.as_view()),
-    path("case/detailed/parameter/test/jsonpath",
-         ApiCaseDetailedParameterViews.as_view({'post': 'post_test_jsonpath'})),
+    path("case/detailed/parameter/test/extract/response/after",
+         ApiCaseDetailedParameterViews.as_view({'post': 'post_extract_response_after'})),
     #
     path("public", ApiPublicCRUD.as_view()),
     path("public/status", ApiPublicViews.as_view({'put': 'put_status'})),
