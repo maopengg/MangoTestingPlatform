@@ -1036,6 +1036,8 @@
         data.tabsKey = '41'
       } else if (item.posterior_func && item.posterior_func.length > 0) {
         data.tabsKey = '43'
+      } else if (item.posterior_response_text) {
+        data.tabsKey = '44'
       } else if (item.posterior_sleep) {
         data.tabsKey = '42'
       } else {

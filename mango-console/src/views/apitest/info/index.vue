@@ -657,6 +657,8 @@
               modalDialogRef.value?.setConfirmLoading(false)
             })
         }
+      } else {
+        modalDialogRef.value?.setConfirmLoading(false)
       }
     } else if (data.addType === 1) {
       if (formItemsImport.every((it) => (it.validator ? it.validator() : true))) {
@@ -674,6 +676,8 @@
           .finally(() => {
             modalDialogRef.value?.setConfirmLoading(false)
           })
+      } else {
+        modalDialogRef.value?.setConfirmLoading(false)
       }
     } else {
       modalDialogRef.value?.setConfirmLoading(false)

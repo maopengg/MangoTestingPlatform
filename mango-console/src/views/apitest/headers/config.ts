@@ -68,7 +68,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入缓存的key',
+    placeholder: '请输入请求头的key',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
@@ -83,7 +83,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请根据规则输入value值',
+    placeholder: '请输入key的value值',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')

@@ -35,10 +35,7 @@
           </template>
           <a-tab-pane key="0" title="请求头">
             <a-space direction="vertical" fill>
-              <span class="form-tip">
-                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                提示：请必须输入json格式的请求头
-              </span>
+              <TipMessage message="请必须输入json格式的请求头" />
               <a-textarea
                 v-model="data.headers"
                 :auto-size="data.textareaAutoSize"
@@ -50,10 +47,7 @@
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
             <a-space direction="vertical" fill>
-              <div class="form-tip">
-                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                提示：当前必须输入json格式的请求参数，否则后续会提示错误
-              </div>
+              <TipMessage message="建议输入json格式的参数" />
               <a-textarea
                 v-model="data.api_info.params"
                 :auto-size="data.textareaAutoSize"
@@ -65,10 +59,8 @@
           </a-tab-pane>
           <a-tab-pane key="2" title="表单">
             <a-space direction="vertical" fill>
-              <div class="form-tip">
-                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                提示：当前必须输入json格式的请求参数，否则后续会提示错误
-              </div>
+              <TipMessage message="当前必须输入json格式的请求参数，否则请求时会提示错误" />
+
               <a-textarea
                 v-model="data.api_info.data"
                 :auto-size="data.textareaAutoSize"
@@ -80,10 +72,8 @@
           </a-tab-pane>
           <a-tab-pane key="3" title="JSON">
             <a-space direction="vertical" fill>
-              <div class="form-tip">
-                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                提示：当前必须输入json格式的请求参数，否则后续会提示错误
-              </div>
+              <TipMessage message="当前必须输入json格式的请求参数，否则请求时会提示错误" />
+
               <a-textarea
                 v-model="data.api_info.json"
                 :auto-size="data.textareaAutoSize"
@@ -95,10 +85,8 @@
           </a-tab-pane>
           <a-tab-pane key="4" title="文件">
             <a-space direction="vertical" fill>
-              <div class="form-tip">
-                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
-                提示：当前必须输入json格式的请求参数，否则后续会提示错误
-              </div>
+              <TipMessage message="当前必须输入json格式的请求参数，否则请求时会提示错误" />
+
               <a-row :gutter="16">
                 <a-col :span="12">
                   <a-textarea
@@ -288,6 +276,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import KeyValueList from '@/components/KeyValueList.vue'
+  import TipMessage from '@/components/TipMessage.vue'
 
   const enumStore = useEnum()
   const userStore = useUserStore()

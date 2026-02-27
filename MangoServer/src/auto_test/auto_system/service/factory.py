@@ -48,6 +48,7 @@ def func_test_object_value(env: int, project_product_id: int, auto_type: int) ->
     @return:
     """
     try:
+        log.system.debug(f'获取测试对象：{env}, {project_product_id}, {auto_type}')
         return TestObject.objects.get(project_product=project_product_id,
                                       environment=env,
                                       auto_type__in=[auto_type, AutoTypeEnum.CURRENCY.value])
