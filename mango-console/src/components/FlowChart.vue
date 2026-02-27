@@ -273,11 +273,29 @@
     event.dataTransfer!.dropEffect = 'move'
   }
 
-  // 计算鼠标在画布内坐标
+  // 计算鼠标在画布内坐标（考虑滚动偏移）
   const getCanvasPosition = (clientX: number, clientY: number): Position => {
     const el = canvasRef.value!
     const rect = el.getBoundingClientRect()
-    return { x: clientX - rect.left, y: clientY - rect.top }
+    return { 
+      x: clientX - rect.left + el.scrollLeft, 
+      y: clientY - rect.top + el.scrollTop 
+    }
+  }
+
+  // 限制节点位置在画布范围内
+  const constrainPosition = (position: Position): Position => {
+    const nodeWidth = 120
+    const nodeHeight = 50
+    const minX = 10
+    const minY = 10
+    const maxX = 3000 - nodeWidth - 10  // 画布宽度 - 节点宽度 - 边距
+    const maxY = 2000 - nodeHeight - 10  // 画布高度 - 节点高度 - 边距
+
+    return {
+      x: Math.max(minX, Math.min(maxX, position.x)),
+      y: Math.max(minY, Math.min(maxY, position.y))
+    }
   }
 
   // 放置到画布：创建节点
@@ -287,7 +305,7 @@
     const type = event.dataTransfer?.getData('application/mango-flow')
     if (!type) return
 
-    const position = getCanvasPosition(event.clientX, event.clientY)
+    const position = constrainPosition(getCanvasPosition(event.clientX, event.clientY))
     const id = `${type}-${Date.now()}`
     const nodeType = parseInt(type, 10)
     const nodeTypeInfo = props.nodeTypes.find((nt) => nt.type === nodeType)
@@ -342,8 +360,13 @@
       const idx = nodes.value.findIndex((n) => n.id === draggingId.value)
       if (idx !== -1) {
         const currentNode = nodes.value[idx]
-        const newX = pos.x - dragOffset.value.x
-        const newY = pos.y - dragOffset.value.y
+        let newX = pos.x - dragOffset.value.x
+        let newY = pos.y - dragOffset.value.y
+
+        // 限制节点在画布范围内
+        const constrainedPos = constrainPosition({ x: newX, y: newY })
+        newX = constrainedPos.x
+        newY = constrainedPos.y
 
         // 只有位置真正改变时才更新
         if (
@@ -559,8 +582,8 @@
       const node = nodes.value.find((n) => n.id === connector.node_id)
       if (node) {
         // 更新缓存位置
-        const nodeWidth = 140
-        const nodeHeight = 56
+        const nodeWidth = 120
+        const nodeHeight = 50
         const baseX = node.position.x
         const baseY = node.position.y
 
@@ -584,8 +607,8 @@
     const node = nodes.value.find((n) => n.id === connector.node_id)
     if (!node) return { x: 0, y: 0 }
 
-    const nodeWidth = 140
-    const nodeHeight = 56
+    const nodeWidth = 120
+    const nodeHeight = 50
 
     // 基础位置（节点左上角）
     const baseX = node.position.x
@@ -717,13 +740,15 @@
     display: flex;
     height: 100%;
     width: 100%;
+    gap: 12px;
   }
 
   .left-panel {
-    width: 200px;
+    width: 220px;
     height: 100%;
-    border-right: 1px solid var(--color-border-2, #e5e6eb);
-    background-color: #fff;
+    border: 1px solid #e5e6eb;
+    border-radius: 4px;
+    background: #fff;
   }
 
   .center-panel {
@@ -732,29 +757,30 @@
   }
 
   .drag-panel {
-    padding: 8px 0;
+    padding: 0;
   }
 
   .node-types {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .node-type-item {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
-    border: 1px solid var(--color-border-2, #e5e6eb);
-    border-radius: 6px;
+    padding: 10px 12px;
+    border: 1px solid #e5e6eb;
+    border-radius: 4px;
     cursor: grab;
     transition: all 0.2s;
-    background-color: #fff;
+    background: #fff;
+    font-size: 13px;
   }
 
   .node-type-item:hover {
-    background-color: var(--color-fill-2, #f7f8fa);
-    border-color: var(--color-primary, #1677ff);
+    background: #f2f3f5;
+    border-color: #165dff;
   }
 
   .node-type-item:active {
@@ -773,30 +799,40 @@
     position: relative;
     width: 100%;
     height: 100%;
-    border: 1px solid var(--color-border-2, #e5e6eb);
-    border-radius: 8px;
+    border: 1px solid #e5e6eb;
+    border-radius: 4px;
     overflow: auto;
-    background-color: #f5f5f5;
-    background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 0),
-      linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 0);
+    background-color: #fafbfc;
+    background-image: 
+      radial-gradient(circle, #e5e6eb 1px, transparent 1px);
     background-size: 20px 20px;
     min-height: 600px;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
   }
 
-  /* 隐藏WebKit浏览器的滚动条 */
   .flow-canvas::-webkit-scrollbar {
-    display: none;
+    width: 8px;
+    height: 8px;
+  }
+
+  .flow-canvas::-webkit-scrollbar-track {
+    background: #f7f8fa;
+  }
+
+  .flow-canvas::-webkit-scrollbar-thumb {
+    background: #c9cdd4;
+    border-radius: 4px;
+  }
+
+  .flow-canvas::-webkit-scrollbar-thumb:hover {
+    background: #a9aeb8;
   }
 
   .edges {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    min-height: 2000px;
+    width: 3000px;
+    height: 2000px;
     pointer-events: none;
   }
 
@@ -804,13 +840,22 @@
     position: absolute;
     background: #fff;
     padding: 8px 10px;
-    border: 2px solid #1677ff;
-    border-radius: 8px;
-    min-width: 140px;
-    min-height: 56px;
+    border: 2px solid #165dff;
+    border-radius: 6px;
+    width: 120px;
+    height: 50px;
     cursor: grab;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     user-select: none;
+    transition: all 0.2s;
+    overflow: visible;
+  }
+
+  .node:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    height: auto;
+    min-height: 50px;
+    z-index: 100;
   }
 
   .node:active {
@@ -818,11 +863,13 @@
   }
 
   .node.active {
-    box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.2);
+    border-color: #0e42d2;
   }
 
   .node.linking {
-    outline: 2px dashed #1677ff;
+    outline: 2px dashed #165dff;
+    outline-offset: 2px;
   }
 
   .delete-button {
@@ -831,36 +878,44 @@
     right: -8px;
     width: 16px;
     height: 16px;
-    background-color: #f5222d;
+    background-color: #f53f3f;
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: bold;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
     z-index: 20;
+    border: 2px solid white;
   }
 
   .node:hover .delete-button {
     opacity: 1;
   }
 
+  .delete-button:hover {
+    background-color: #cb272d;
+    transform: scale(1.1);
+  }
+
   .edge-delete-button {
     position: absolute;
     width: 16px;
     height: 16px;
-    background-color: #f5222d;
+    background-color: #f53f3f;
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: bold;
     cursor: pointer;
-    opacity: 0.8;
+    opacity: 0.9;
     transition: all 0.2s;
     z-index: 30;
     border: 2px solid white;
@@ -869,8 +924,8 @@
 
   .edge-delete-button:hover {
     opacity: 1;
-    transform: scale(1.1);
-    background-color: #cf1322;
+    transform: scale(1.15);
+    background-color: #cb272d;
   }
 
   .connector-top,
@@ -883,35 +938,62 @@
   }
 
   .connector-top {
-    top: -8px;
+    top: -7px;
   }
 
   .connector-bottom {
-    bottom: -8px;
+    bottom: -7px;
   }
 
   .connector-point {
     width: 14px;
     height: 14px;
     background-color: #fff;
-    border: 3px solid #1677ff;
+    border: 3px solid #165dff;
     border-radius: 50%;
     cursor: pointer;
     z-index: 10;
+    transition: all 0.2s;
   }
 
   .connector-point:hover {
-    background-color: #1677ff;
+    background-color: #165dff;
+    transform: scale(1.2);
   }
 
   .node-title {
     font-weight: 600;
-    margin-bottom: 4px;
-    color: #000;
+    margin-bottom: 3px;
+    color: #1d2129;
+    font-size: 13px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+
+  .node:hover .node-title {
+    display: block;
+    -webkit-line-clamp: unset;
+    word-break: break-all;
   }
 
   .node-content {
-    font-size: 12px;
-    color: #666;
+    font-size: 11px;
+    color: #4e5969;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+
+  .node:hover .node-content {
+    display: block;
+    -webkit-line-clamp: unset;
+    word-break: break-all;
   }
 </style>

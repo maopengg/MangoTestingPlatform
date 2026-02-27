@@ -5,7 +5,7 @@
     </template>
     <a-tab-pane key="1" title="执行过程">
       <a-space direction="vertical" style="width: 100%">
-        <span style="padding-left: 20px"> tips：如果不是最新的测试结果，请点击上面的刷新！</span>
+        <TipMessage message="如果不是最新的测试结果，请点击上面的刷新！" />
         <a-collapse
           v-for="item of resultData?.element_result_list"
           :bordered="false"
@@ -147,6 +147,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import TipMessage from '@/components/TipMessage.vue'
 
   defineProps({
     resultData: {

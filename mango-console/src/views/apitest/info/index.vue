@@ -243,10 +243,9 @@
           :checked-value="1"
           :unchecked-value="0"
           checked-text="调试接口"
-          unchecked-text="批量生成"
-        />
-        <span>tips:如果需要直接上传到调试接口Tab里面，请点击开关打开</span></a-space
-      >
+          unchecked-text="批量生成" />
+        <TipMessage message="如果需要直接上传到调试接口Tab里面，请点击开关打开"
+      /></a-space>
       <div style="margin-top: 10px">
         <a-button type="primary" @click="fileInputRef?.click()">选择文件</a-button>
         <span v-if="selectedFile" style="margin-left: 10px">已选择: {{ selectedFile.name }}</span>
@@ -347,6 +346,7 @@
   import { strJson } from '@/utils/tools'
   import { getSystemSocketNewBrowser } from '@/api/system/socket_api'
   import { baseURL } from '@/api/axios.config'
+  import TipMessage from '@/components/TipMessage.vue'
 
   const router = useRouter()
   const enumStore = useEnum()

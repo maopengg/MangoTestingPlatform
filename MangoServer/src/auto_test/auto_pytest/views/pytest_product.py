@@ -104,7 +104,7 @@ class PytestProductViews(ViewSet):
     @error_response('pytest')
     def pytest_project_name(self, request: Request):
         """
-        执行单个用例组
+        获取pytest的项目名称
         @param request:
         @return:
         """
@@ -120,4 +120,4 @@ class PytestProductViews(ViewSet):
                 'label': name,
                 'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]
             })
-        return ResponseData.success(RESPONSE_MSG_0074, data_list)
+        return ResponseData.success(RESPONSE_MSG_0154, data_list)

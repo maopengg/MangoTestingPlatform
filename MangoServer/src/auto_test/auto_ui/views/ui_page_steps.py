@@ -103,7 +103,7 @@ class PageStepsViews(ViewSet):
                 .test_steps(int(request.query_params.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
-        return ResponseData.success(RESPONSE_MSG_0074, case_json.model_dump(), value=(ClientNameEnum.DRIVER.value,))
+        return ResponseData.success(RESPONSE_MSG_0077, case_json.model_dump(), value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['GET'], detail=False)
     @error_response('ui')

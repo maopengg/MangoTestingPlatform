@@ -4,14 +4,13 @@
       <a-card :bordered="false" style="border-radius: 10px; overflow: hidden" title="页面步骤详情">
         <template #extra>
           <a-space>
-            <a-button size="small" type="primary" @click="saveFlow">保存</a-button>
+            <a-button size="small" type="primary" @click="saveFlow">保存画布</a-button>
             <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
               >调试
             </a-button>
             <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
-        <div class="container"></div>
       </a-card>
     </template>
     <template #default>
@@ -82,11 +81,17 @@
 
                   <!-- 自定义配置编辑 -->
                   <div class="config-editor">
-                    <div v-if="data.formItems.length > 0" style="padding: 0px 100px 0px 0px">
+                    <div v-if="data.formItems.length > 0">
                       <h3>节点详情</h3>
-                      <span v-if="data.type === 4" style="color: red">
-                        提示：判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！
-                      </span>
+                      <TipMessage
+                        v-if="data.condition"
+                        :message="
+                          data.isAdd
+                            ? '判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！'
+                            : '判断节点直接判断为True或False，为True则走第一条线，为False则走第二条线，设置第三条线无意义'
+                        "
+                      />
+
                       <a-form :model="formModel" ref="formRef">
                         <a-form-item
                           v-for="item of data.formItems"
@@ -250,6 +255,7 @@
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import CodeEditor from '@/components/CodeEditor.vue'
   import { useEnum } from '@/store/modules/get-enum'
+  import TipMessage from '@/components/TipMessage.vue'
 
   const formRef = ref()
 
@@ -285,9 +291,12 @@
     uiPageName: [], // 元素名称
     type: 0, // 点击的节点类型
     condition: 0, // 上一个节点是否是判断类型
+    conditionId: 0, // 上一个节点是否是判断类型
     result_data: {}, // 测试结果数据
     selectResultData: {}, // 选择的节点数据
     formItems: [], // 表单数据
+    isConditionExpect: true,
+    isAdd: false,
   })
   const caseRunning = ref(false)
 
@@ -460,12 +469,13 @@
     setSelectData(node)
     // 检查上一个节点是否为判断类型（type: 4）
     const previousNode = findPreviousNode(node.id)
+    data.isAdd = false
     if (previousNode && previousNode.type === 4) {
+      data.conditionId = previousNode.config.id
       data.condition = true
     } else {
       data.condition = false
     }
-
     // 先清空表单项，重新构建基础表单
     changeStatus(node.type)
 
@@ -487,7 +497,19 @@
     // 清空表单项，重新构建
     data.formItems = []
     if (data.condition) {
-      data.formItems.push(...formItemsElementCondition)
+      data.dataList.forEach((item: object) => {
+        if (item.id === data.conditionId) {
+          let byValue = useSelectValue.findItemByValue(item.ope_key)
+          byValue.parameter.forEach((itme1) => {
+            if (itme1.f === 'expect') {
+              data.isAdd = true
+            }
+          })
+        }
+      })
+      if (data.isAdd) {
+        data.formItems.push(...formItemsElementCondition)
+      }
     }
     if (event === 0) {
       data.formItems.push(...formItemsElementOpe)
@@ -714,20 +736,11 @@
   })
 </script>
 <style scoped>
-  .container .a-space span {
-    font-size: 14px !important;
-    display: block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .flow-demo-page {
-    padding: 16px;
-    height: calc(100vh - 32px);
+    height: 100%;
     display: flex;
     flex-direction: column;
+    padding: 0;
   }
 
   .demo-header h2 {
@@ -740,7 +753,7 @@
   .demo-body {
     flex: 1;
     display: flex;
-    gap: 16px;
+    gap: 12px;
     min-height: 0;
   }
 
@@ -751,18 +764,20 @@
 
   .right-panel {
     flex: 0 0 40%;
-    min-width: 300px;
+    min-width: 500px;
+    border: 1px solid #e5e6eb;
+    border-radius: 4px;
+    background: #fff;
   }
 
-  .data-info p {
-    margin: 4px 0;
-    font-size: 13px;
-    color: var(--color-text-3);
+  .right-panel :deep(.arco-tabs-content) {
+    padding: 8px;
   }
 
-  .node-details h4 {
-    margin: 0 0 16px 0;
-    color: var(--color-text-1);
+  .node-details h3 {
+    margin: 0 0 20px 0;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .detail-item {
@@ -782,55 +797,46 @@
     color: var(--color-text-1);
   }
 
-  .config-json {
-    background: var(--color-fill-2);
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin: 0;
-    white-space: pre-wrap;
-    max-height: 120px;
-    overflow-y: auto;
+  .detail-item > div > div > div > span:last-child {
+    color: #1d2129;
+    word-break: break-all;
   }
 
   .config-editor {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--color-border);
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border-2);
   }
 
-  .config-editor h5 {
-    margin: 0 0 8px 0;
-    font-size: 13px;
-    color: var(--color-text-2);
+  .config-editor h3 {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .config-editor > div {
+    padding: 0 !important;
+  }
+
+  .config-editor :deep(.arco-form) {
+    margin-top: 12px;
   }
 
   .no-selection {
     text-align: center;
     color: var(--color-text-3);
-    padding: 40px 0;
+    padding: 60px 20px;
   }
 
-  .dynamic-form h5 {
-    margin: 0 0 12px 0;
-    font-size: 13px;
-    color: var(--color-text-2);
-  }
-
-  .form-item__require :deep(.arco-form-item-label-col) {
-    font-weight: 600;
-  }
-
-  .form-item__require :deep(.arco-form-item-label-col::before) {
-    content: '*';
-    color: #f53f3f;
-    margin-right: 4px;
+  .no-selection p {
+    font-size: 14px;
+    margin: 0;
   }
 
   .form-actions {
     margin-top: 16px;
     display: flex;
-    gap: 12px;
+    gap: 8px;
     justify-content: flex-end;
   }
 </style>
