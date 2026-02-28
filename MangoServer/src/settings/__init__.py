@@ -15,7 +15,7 @@ def set_env():
             del sys.argv[i]
             break
 set_env()
-VERSION = '5.9.1'
+VERSION = '5.9.2'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
