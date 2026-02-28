@@ -23,7 +23,14 @@
 
     <!-- 中间流程图画布 -->
     <div class="center-panel">
-      <div ref="canvasRef" class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
+      <div 
+        ref="canvasRef" 
+        class="flow-canvas" 
+        :class="{ 'canvas-dragging': isDraggingCanvas }"
+        @drop="onDrop" 
+        @dragover="onDragOver"
+        @mousedown="onCanvasMouseDown"
+      >
         <!-- SVG 边渲染 -->
         <svg class="edges" xmlns="http://www.w3.org/2000/svg">
           <g>
@@ -170,6 +177,11 @@
   const draggingId = ref<string | null>(null)
   const dragOffset = ref<Position>({ x: 0, y: 0 })
   const wasDragging = ref(false)
+
+  // 画布拖动状态
+  const isDraggingCanvas = ref(false)
+  const canvasDragStart = ref<Position>({ x: 0, y: 0 })
+  const canvasScrollStart = ref<Position>({ x: 0, y: 0 })
 
   // 连线状态
   const linkStartConnector = ref<Connector | null>(null)
@@ -329,10 +341,25 @@
     }
   }
 
+  // 画布鼠标按下：开始拖动画布
+  const onCanvasMouseDown = (e: MouseEvent) => {
+    // 只有在点击空白区域且不是右键时才拖动画布
+    if (e.target === canvasRef.value && e.button === 0) {
+      isDraggingCanvas.value = true
+      canvasDragStart.value = { x: e.clientX, y: e.clientY }
+      canvasScrollStart.value = {
+        x: canvasRef.value!.scrollLeft,
+        y: canvasRef.value!.scrollTop
+      }
+      e.preventDefault()
+    }
+  }
+
   // 节点鼠标按下：开始拖拽
   const onNodeMouseDown = (e: MouseEvent, node: UINode) => {
     if (props.readonly || e.button !== 0) return
     e.preventDefault()
+    e.stopPropagation() // 阻止冒泡到画布
     const start = getCanvasPosition(e.clientX, e.clientY)
     draggingId.value = node.id
     dragOffset.value = { x: start.x - node.position.x, y: start.y - node.position.y }
@@ -353,6 +380,16 @@
   // 鼠标移动：更新拖拽节点坐标和连线位置
   const onMouseMove = (e: MouseEvent) => {
     if (props.readonly) return
+
+    // 画布拖动
+    if (isDraggingCanvas.value && canvasRef.value) {
+      const deltaX = canvasDragStart.value.x - e.clientX
+      const deltaY = canvasDragStart.value.y - e.clientY
+      
+      canvasRef.value.scrollLeft = canvasScrollStart.value.x + deltaX
+      canvasRef.value.scrollTop = canvasScrollStart.value.y + deltaY
+      return
+    }
 
     if (draggingId.value) {
       // 节点拖拽逻辑 - 使用requestAnimationFrame优化
@@ -397,6 +434,11 @@
 
   // 鼠标抬起：结束拖拽
   const onMouseUp = () => {
+    // 重置画布拖动状态
+    if (isDraggingCanvas.value) {
+      isDraggingCanvas.value = false
+    }
+
     // 重置拖拽状态
     if (draggingId.value) {
       // 延迟重置wasDragging，确保点击事件能正确判断
@@ -715,6 +757,119 @@
     emit('nodeDelete', node)
   }
 
+  // 美化画布布局 - 从上往下的流程
+  const beautifyLayout = () => {
+    if (nodes.value.length === 0) return
+
+    // 找到所有没有输入连接的节点（起始节点）
+    const startNodes = nodes.value.filter(node => {
+      return !edges.value.some(edge => edge.target.node_id === node.id)
+    })
+
+    if (startNodes.length === 0) {
+      // 如果没有起始节点（可能是循环），就选择第一个节点
+      startNodes.push(nodes.value[0])
+    }
+
+    // 布局参数 - 从上往下，从画布左侧开始
+    const startX = 200  // 从左侧开始，留一些边距
+    const startY = 80
+    const horizontalGap = 200  // 同层级节点的水平间距
+    const verticalGap = 150    // 不同层级的垂直间距
+
+    // 已处理的节点和层级信息
+    const processedNodes = new Set<string>()
+    const nodeLevels = new Map<string, number>()
+    const levelNodes = new Map<number, string[]>()
+
+    // 第一步：计算每个节点的层级（从上往下）
+    const calculateLevel = (nodeId: string, level: number) => {
+      if (processedNodes.has(nodeId)) return
+      
+      processedNodes.add(nodeId)
+      nodeLevels.set(nodeId, level)
+      
+      if (!levelNodes.has(level)) {
+        levelNodes.set(level, [])
+      }
+      levelNodes.get(level)!.push(nodeId)
+
+      // 查找所有子节点
+      const childEdges = edges.value.filter(edge => edge.source.node_id === nodeId)
+      childEdges.forEach(edge => {
+        calculateLevel(edge.target.node_id, level + 1)
+      })
+    }
+
+    // 从每个起始节点开始计算层级
+    startNodes.forEach(startNode => {
+      calculateLevel(startNode.id, 0)
+    })
+
+    // 第二步：为每个层级的节点分配初始位置（从左往右）
+    const nodePositions = new Map<string, Position>()
+    
+    levelNodes.forEach((nodeIds, level) => {
+      const y = startY + level * verticalGap  // 垂直方向按层级排列
+      
+      nodeIds.forEach((nodeId, index) => {
+        const x = startX + index * horizontalGap  // 从左往右排列
+        nodePositions.set(nodeId, { x, y })
+      })
+    })
+
+    // 第三步：调整父节点位置，使其居中对齐子节点
+    // 从最底层往上调整，确保每个父节点都在其子节点的中间
+    const maxLevel = Math.max(...Array.from(levelNodes.keys()))
+    for (let level = maxLevel - 1; level >= 0; level--) {
+      const nodeIds = levelNodes.get(level) || []
+      
+      nodeIds.forEach(nodeId => {
+        // 找到该节点的所有子节点
+        const childEdges = edges.value.filter(edge => edge.source.node_id === nodeId)
+        if (childEdges.length > 0) {
+          // 计算所有子节点的X坐标范围
+          const childPositions = childEdges
+            .map(edge => nodePositions.get(edge.target.node_id))
+            .filter(pos => pos !== undefined) as Position[]
+          
+          if (childPositions.length > 0) {
+            // 计算子节点的最小和最大X坐标
+            const minX = Math.min(...childPositions.map(pos => pos.x))
+            const maxX = Math.max(...childPositions.map(pos => pos.x))
+            
+            // 将父节点放在子节点的中间
+            const centerX = (minX + maxX) / 2
+            const currentPos = nodePositions.get(nodeId)
+            if (currentPos) {
+              nodePositions.set(nodeId, { x: centerX, y: currentPos.y })
+            }
+          }
+        }
+      })
+    }
+
+    // 第四步：应用新位置并确保在画布范围内
+    nodePositions.forEach((position, nodeId) => {
+      const node = nodes.value.find(n => n.id === nodeId)
+      if (node) {
+        // 确保节点在画布范围内
+        const constrainedX = Math.max(50, Math.min(2800, position.x))
+        const constrainedY = Math.max(50, Math.min(1900, position.y))
+        
+        node.position.x = constrainedX
+        node.position.y = constrainedY
+        
+        // 清理缓存
+        connectorPositionCache.delete(`${nodeId}-top`)
+        connectorPositionCache.delete(`${nodeId}-bottom`)
+      }
+    })
+
+    // 通知数据变化
+    notifyDataChange()
+  }
+
   // 暴露方法给父组件
   defineExpose({
     clearSelection: () => {
@@ -732,6 +887,7 @@
       nodes: [...nodes.value],
       edges: [...edges.value],
     }),
+    beautifyLayout,
   })
 </script>
 
@@ -807,6 +963,16 @@
       radial-gradient(circle, #e5e6eb 1px, transparent 1px);
     background-size: 20px 20px;
     min-height: 600px;
+  }
+
+  .flow-canvas.canvas-dragging {
+    cursor: grab !important;
+    cursor: -webkit-grab !important;
+  }
+
+  .flow-canvas.canvas-dragging:active {
+    cursor: grabbing !important;
+    cursor: -webkit-grabbing !important;
   }
 
   .flow-canvas::-webkit-scrollbar {

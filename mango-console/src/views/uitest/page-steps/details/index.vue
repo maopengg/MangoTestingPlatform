@@ -4,6 +4,7 @@
       <a-card :bordered="false" style="border-radius: 10px; overflow: hidden" title="页面步骤详情">
         <template #extra>
           <a-space>
+            <a-button size="small" type="outline" @click="beautifyCanvas">美化画布</a-button>
             <a-button size="small" type="primary" @click="saveFlow">保存画布</a-button>
             <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
               >调试
@@ -11,112 +12,114 @@
             <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
-      </a-card>
-    </template>
-    <template #default>
-      <div class="flow-demo-page">
-        <div class="demo-body">
-          <!-- FlowChart 组件（包含左侧操作面板） -->
-          <div class="center-panel">
-            <FlowChart
-              ref="flowChartRef"
-              :flow-data="flowData"
-              :table-data="data.dataList"
-              :node-types="nodeTypes"
-              :readonly="false"
-              :allow-drop="true"
-              @node-click="onNodeClick"
-              @node-select="onNodeSelect"
-              @flow-change="onFlowChange"
-              @edge-delete="onEdgeDelete"
-              @node-delete="onNodeDelete"
-            />
-          </div>
 
-          <!-- 右侧详情面板 -->
-          <div class="right-panel">
-            <a-tabs default-active-key="1">
-              <a-tab-pane key="1" title="节点配置信息">
-                <div v-if="selectedNode" class="node-details">
-                  <h3>最近测试结果</h3>
-                  <div class="detail-item">
-                    <div
-                      v-if="
-                        data?.selectResultData?.elements &&
-                        data.selectResultData.elements.length > 0
-                      "
-                    >
+        <div class="flow-demo-page">
+          <div class="demo-body">
+            <!-- FlowChart 组件（包含左侧操作面板） -->
+            <div class="center-panel">
+              <FlowChart
+                ref="flowChartRef"
+                :flow-data="flowData"
+                :table-data="data.dataList"
+                :node-types="nodeTypes"
+                :readonly="false"
+                :allow-drop="true"
+                @node-click="onNodeClick"
+                @node-select="onNodeSelect"
+                @flow-change="onFlowChange"
+                @edge-delete="onEdgeDelete"
+                @node-delete="onNodeDelete"
+              />
+            </div>
+
+            <!-- 右侧详情面板 -->
+            <div class="right-panel">
+              <a-tabs default-active-key="1">
+                <a-tab-pane key="1" title="节点配置信息">
+                  <div v-if="selectedNode" class="node-details">
+                    <h3>最近测试结果</h3>
+                    <div class="detail-item">
                       <div
-                        v-for="(element, index) in data.selectResultData.elements"
-                        :key="index"
-                        style="margin-bottom: 16px"
+                        v-if="
+                          data?.selectResultData?.elements &&
+                          data.selectResultData.elements.length > 0
+                        "
                       >
-                        <div style="font-weight: 600; margin-bottom: 8px">元素 {{ index + 1 }}</div>
-                        <div style="display: flex; flex-direction: column; gap: 6px">
-                          <div style="display: flex">
-                            <span>定位类型：</span>
-                            <span>{{
-                              enumStore.element_exp.find((item1) => item1.key === element.exp).title
-                            }}</span>
-                          </div>
-                          <div style="display: flex">
-                            <span>元素定位：</span>
-                            <span>{{ element.loc }}</span>
-                          </div>
-                          <div style="display: flex">
-                            <span>元素个数：</span>
-                            <span>{{ element.ele_quantity }}</span>
-                          </div>
-                          <div style="display: flex">
-                            <span>元素文本：</span>
-                            <span>{{ element.element_text }}</span>
+                        <div
+                          v-for="(element, index) in data.selectResultData.elements"
+                          :key="index"
+                          style="margin-bottom: 16px"
+                        >
+                          <div style="font-weight: 600; margin-bottom: 8px"
+                            >元素 {{ index + 1 }}</div
+                          >
+                          <div style="display: flex; flex-direction: column; gap: 6px">
+                            <div style="display: flex">
+                              <span>定位类型：</span>
+                              <span>{{
+                                enumStore.element_exp.find((item1) => item1.key === element.exp)
+                                  .title
+                              }}</span>
+                            </div>
+                            <div style="display: flex">
+                              <span>元素定位：</span>
+                              <span>{{ element.loc }}</span>
+                            </div>
+                            <div style="display: flex">
+                              <span>元素个数：</span>
+                              <span>{{ element.ele_quantity }}</span>
+                            </div>
+                            <div style="display: flex">
+                              <span>元素文本：</span>
+                              <span>{{ element.element_text }}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
+                      <div v-else>
+                        <span style="color: #c9cdd4">暂无元素信息</span>
+                      </div>
                     </div>
-                    <div v-else>
-                      <span style="color: #c9cdd4">暂无元素信息</span>
-                    </div>
-                  </div>
 
-                  <!-- 自定义配置编辑 -->
-                  <div class="config-editor">
-                    <div v-if="data.formItems.length > 0">
-                      <h3>节点详情</h3>
-                      <TipMessage
-                        v-if="data.condition"
-                        :message="
-                          data.isAdd
-                            ? '判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！'
-                            : '判断节点直接判断为True或False，为True则走第一条线，为False则走第二条线，设置第三条线无意义'
-                        "
-                      />
+                    <!-- 自定义配置编辑 -->
+                    <div class="config-editor">
+                      <div v-if="data.formItems.length > 0">
+                        <h3>节点详情</h3>
+                        <TipMessage
+                          v-if="data.condition"
+                          :message="
+                            data.isAdd
+                              ? '判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！'
+                              : '判断节点直接判断为True或False，为True则走第一条线，为False则走第二条线，设置第三条线无意义'
+                          "
+                        />
 
-                      <a-form :model="formModel" ref="formRef">
-                        <a-form-item
-                          v-for="item of data.formItems"
-                          :key="item.key"
-                          :required="item.required"
-                          :label="item.label"
-                        >
-                          <template v-if="item.type === 'input'">
-                            <a-input v-model="item.value" :placeholder="item.placeholder" />
-                          </template>
-                          <template v-else-if="item.type === 'select' && item.label === '选择元素'">
-                            <a-select
-                              v-model="item.value"
-                              :field-names="fieldNames"
-                              :options="data.uiPageName"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                              allow-search
-                              value-key="key"
-                            />
-                          </template>
-                          <template
-                            v-else-if="item.type === 'cascader' && item.label === '元素操作'"
+                        <a-form :model="formModel" ref="formRef">
+                          <a-form-item
+                            v-for="item of data.formItems"
+                            :key="item.key"
+                            :required="item.required"
+                            :label="item.label"
                           >
-                            <a-space direction="vertical">
+                            <template v-if="item.type === 'input'">
+                              <a-input v-model="item.value" :placeholder="item.placeholder" />
+                            </template>
+                            <template
+                              v-else-if="item.type === 'select' && item.label === '选择元素'"
+                            >
+                              <a-select
+                                v-model="item.value"
+                                :field-names="fieldNames"
+                                :options="data.uiPageName"
+                                :placeholder="item.placeholder"
+                                allow-clear
+                                allow-search
+                                value-key="key"
+                              />
+                            </template>
+                            <template
+                              v-else-if="item.type === 'cascader' && item.label === '元素操作'"
+                            >
                               <a-cascader
                                 v-model="item.value"
                                 :default-value="item.value"
@@ -129,19 +132,16 @@
                                 allow-clear
                                 allow-search
                                 expand-trigger="hover"
-                                style="width: 440px"
                                 value-key="key"
                                 @change="upDataOpeValue(item.value)"
                               />
-                            </a-space>
-                          </template>
-                          <template
-                            v-else-if="
-                              item.type === 'cascader' &&
-                              (item.label === '断言操作' || item.label === '判断方法')
-                            "
-                          >
-                            <a-space direction="vertical">
+                            </template>
+                            <template
+                              v-else-if="
+                                item.type === 'cascader' &&
+                                (item.label === '断言操作' || item.label === '判断方法')
+                              "
+                            >
                               <a-cascader
                                 v-model="item.value"
                                 :default-value="item.value"
@@ -154,74 +154,75 @@
                                 allow-clear
                                 allow-search
                                 expand-trigger="hover"
-                                style="width: 440px"
                                 value-key="key"
                                 @change="upDataOpeValue(item.value)"
                               />
-                            </a-space>
-                          </template>
-                          <template
-                            v-else-if="
-                              item.type === 'textarea' &&
-                              item.key !== 'key_list' &&
-                              item.key !== 'sql'
-                            "
-                          >
-                            <a-textarea
-                              v-model="item.value"
-                              :auto-size="{ minRows: 4, maxRows: 7 }"
-                              :default-value="item.value"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                            />
-                          </template>
-                          <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
-                            <a-textarea
-                              v-model="item.value"
-                              :auto-size="{ minRows: 4, maxRows: 7 }"
-                              :default-value="item.value"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                            />
-                          </template>
+                            </template>
+                            <template
+                              v-else-if="
+                                item.type === 'textarea' &&
+                                item.key !== 'key_list' &&
+                                item.key !== 'sql'
+                              "
+                            >
+                              <a-textarea
+                                v-model="item.value"
+                                :auto-size="{ minRows: 4, maxRows: 7 }"
+                                :default-value="item.value"
+                                :placeholder="item.placeholder"
+                                allow-clear
+                              />
+                            </template>
+                            <template
+                              v-else-if="item.type === 'textarea' && item.key === 'key_list'"
+                            >
+                              <a-textarea
+                                v-model="item.value"
+                                :auto-size="{ minRows: 4, maxRows: 7 }"
+                                :default-value="item.value"
+                                :placeholder="item.placeholder"
+                                allow-clear
+                              />
+                            </template>
 
-                          <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
-                            <a-textarea
-                              v-model="item.value"
-                              :auto-size="{ minRows: 4, maxRows: 7 }"
-                              :default-value="item.value"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                            />
-                          </template>
-                          <template v-else-if="item.type === 'code'">
-                            <CodeEditor
-                              v-model="item.value"
-                              :placeholder="item.placeholder"
-                              style="height: 360px; width: 700px"
-                            />
-                          </template>
-                        </a-form-item>
-                      </a-form>
-                      <div class="form-actions">
-                        <a-button type="primary" @click="saveFormData">保存配置</a-button>
+                            <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
+                              <a-textarea
+                                v-model="item.value"
+                                :auto-size="{ minRows: 4, maxRows: 7 }"
+                                :default-value="item.value"
+                                :placeholder="item.placeholder"
+                                allow-clear
+                              />
+                            </template>
+                            <template v-else-if="item.type === 'code'">
+                              <CodeEditor
+                                v-model="item.value"
+                                :placeholder="item.placeholder"
+                                style="height: 360px"
+                              />
+                            </template>
+                          </a-form-item>
+                        </a-form>
+                        <div class="form-actions">
+                          <a-button type="primary" @click="saveFormData">保存配置</a-button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div v-else class="no-selection">
-                  <p>请选择一个节点查看详情</p>
-                </div>
-              </a-tab-pane>
-              <a-tab-pane key="2" title="步骤测试结果">
-                <div v-if="data.result_data">
-                  <ElementTestReport :result-data="data.result_data || {}" />
-                </div>
-              </a-tab-pane>
-            </a-tabs>
+                  <div v-else class="no-selection">
+                    <p>请选择一个节点查看详情</p>
+                  </div>
+                </a-tab-pane>
+                <a-tab-pane key="2" title="步骤测试结果">
+                  <div v-if="data.result_data">
+                    <ElementTestReport :result-data="data.result_data || {}" />
+                  </div>
+                </a-tab-pane>
+              </a-tabs>
+            </div>
           </div>
         </div>
-      </div>
+      </a-card>
     </template>
   </TableBody>
 </template>
@@ -292,13 +293,27 @@
     type: 0, // 点击的节点类型
     condition: 0, // 上一个节点是否是判断类型
     conditionId: 0, // 上一个节点是否是判断类型
-    result_data: {}, // 测试结果数据
+    result_data: [], // 测试结果数据
     selectResultData: {}, // 选择的节点数据
     formItems: [], // 表单数据
     isConditionExpect: true,
     isAdd: false,
   })
   const caseRunning = ref(false)
+
+  // 美化画布布局
+  const beautifyCanvas = () => {
+    if (flowData.value.nodes.length === 0) {
+      Message.warning('画布中没有节点')
+      return
+    }
+
+    // 调用 FlowChart 组件的美化方法
+    if (flowChartRef.value && flowChartRef.value.beautifyLayout) {
+      flowChartRef.value.beautifyLayout()
+      Message.success('画布已美化')
+    }
+  }
 
   const saveFlow = () => {
     if (!checkNodeConnections()) return
@@ -737,10 +752,11 @@
 </script>
 <style scoped>
   .flow-demo-page {
-    height: 100%;
+    height: calc(100vh - 210px);
     display: flex;
     flex-direction: column;
     padding: 0;
+    overflow: hidden;
   }
 
   .demo-header h2 {
@@ -820,6 +836,26 @@
 
   .config-editor :deep(.arco-form) {
     margin-top: 12px;
+  }
+
+  .config-editor :deep(.arco-form-item-wrapper-col) {
+    width: 100%;
+  }
+
+  .config-editor :deep(.arco-input),
+  .config-editor :deep(.arco-select),
+  .config-editor :deep(.arco-textarea),
+  .config-editor :deep(.arco-cascader),
+  .config-editor :deep(.arco-space) {
+    width: 100% !important;
+  }
+
+  .config-editor :deep(.arco-cascader) {
+    max-width: 100%;
+  }
+
+  .config-editor :deep(.arco-form-item-content) {
+    width: 100%;
   }
 
   .no-selection {

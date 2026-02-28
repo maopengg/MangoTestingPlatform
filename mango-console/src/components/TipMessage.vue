@@ -23,7 +23,7 @@
     // 提示文字
     message: {
       type: String,
-      default: 'tips：从响应json中提取，请输入jsonpath语法的表达式，并点击测试按钮进行测试',
+      default: '从响应json中提取，请输入jsonpath语法的表达式，并点击测试按钮进行测试',
     },
     // 图标
     icon: {
