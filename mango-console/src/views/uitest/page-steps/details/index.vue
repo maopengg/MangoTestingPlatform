@@ -37,7 +37,7 @@
               <a-tabs default-active-key="1">
                 <a-tab-pane key="1" title="节点配置信息">
                   <div v-if="selectedNode" class="node-details">
-                    <h3>最近测试结果</h3>
+                    <h3>最近测试的元素信息</h3>
                     <div class="detail-item">
                       <div
                         v-if="
@@ -337,7 +337,10 @@
       }
     })
     data.selectResultData = {}
+    console.log(data.result_data)
+    console.log(data.selectData.id)
     data.result_data?.element_result_list.forEach((item: any) => {
+      debugger
       if (item.id === data.selectData.id) {
         data.selectResultData = item
       }
@@ -372,7 +375,7 @@
         data.formItems.splice(i, 1)
       }
     }
-    const label = useSelectValue.getTopLevelLabelByValue(value)
+    const label: any = useSelectValue.getTopLevelLabelByValue(value)
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
         if (
@@ -512,7 +515,7 @@
     // 清空表单项，重新构建
     data.formItems = []
     if (data.condition) {
-      data.dataList.forEach((item: object) => {
+      data.dataList.forEach((item: any) => {
         if (item.id === data.conditionId) {
           let byValue = useSelectValue.findItemByValue(item.ope_key)
           byValue.parameter.forEach((itme1) => {
@@ -786,10 +789,6 @@
     background: #fff;
   }
 
-  .right-panel :deep(.arco-tabs-content) {
-    padding: 8px;
-  }
-
   .node-details h3 {
     margin: 0 0 20px 0;
     font-size: 14px;
@@ -800,7 +799,7 @@
     display: flex;
     margin-bottom: 12px;
     font-size: 13px;
-    padding: 0px 0px 0px 40px;
+    padding: 0 0 0 40px;
   }
 
   .detail-item label {
@@ -832,30 +831,6 @@
 
   .config-editor > div {
     padding: 0 !important;
-  }
-
-  .config-editor :deep(.arco-form) {
-    margin-top: 12px;
-  }
-
-  .config-editor :deep(.arco-form-item-wrapper-col) {
-    width: 100%;
-  }
-
-  .config-editor :deep(.arco-input),
-  .config-editor :deep(.arco-select),
-  .config-editor :deep(.arco-textarea),
-  .config-editor :deep(.arco-cascader),
-  .config-editor :deep(.arco-space) {
-    width: 100% !important;
-  }
-
-  .config-editor :deep(.arco-cascader) {
-    max-width: 100%;
-  }
-
-  .config-editor :deep(.arco-form-item-content) {
-    width: 100%;
   }
 
   .no-selection {
