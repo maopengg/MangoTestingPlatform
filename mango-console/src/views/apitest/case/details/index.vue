@@ -13,7 +13,7 @@
             >
               执行
             </a-button>
-            <a-button size="small" status="warning" @click="doResetSearch">返回 </a-button>
+            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">
@@ -821,6 +821,25 @@
                                 </KeyValueList>
                               </div>
                             </a-tab-pane>
+                            <a-tab-pane key="34" title="结构化断言">
+                              <div class="m-2">
+                                <a-space>
+                                  <TipMessage
+                                    message="如果接口管理中开启了则会默认使用进行断言，如果你输入了则会覆盖"
+                                  />
+                                  <a-button size="mini" type="primary" @click="setSchema(item.id)"
+                                    >自动生成</a-button
+                                  >
+                                </a-space>
+                                <a-textarea
+                                  v-model="item.ass_schema"
+                                  :auto-size="{ minRows: 9, maxRows: 9 }"
+                                  allow-clear
+                                  placeholder="请输入响应的结构化类型"
+                                  @blur="blurSave('ass_schema', item.ass_schema, item.id)"
+                                />
+                              </div>
+                            </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
                         <a-tab-pane key="5" title="缓存数据">
@@ -932,6 +951,7 @@
     postApiCaseDetailedParameter,
     postCaseDetailedParameterTestExtractResponseAfter,
     putApiCaseDetailedParameter,
+    putSetSchema,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import KeyValueList from '@/components/KeyValueList.vue' // 引入新组件
@@ -1027,6 +1047,9 @@
       } else if (item.ass_text_all) {
         data.tabsKey = '33'
         data.assClickAdd = false
+      } else if (item.ass_schema) {
+        data.tabsKey = '34'
+        data.assClickAdd = false
       } else {
         data.tabsKey = '30'
         data.assClickAdd = false
@@ -1096,6 +1119,15 @@
 
   function doResetSearch() {
     window.history.back()
+  }
+
+  function setSchema(id: number) {
+    putSetSchema(id)
+      .then((res) => {
+        Message.success(res.msg)
+        doRefreshParameter(data.tabelJson.id)
+      })
+      .catch(console.log)
   }
 
   function parameterEditing(item: any) {
@@ -1187,7 +1219,7 @@
       'json',
       'params',
     ]
-    const in_serialize = ['file', 'ass_json_all']
+    const in_serialize = ['file', 'ass_json_all', 'ass_schema']
     const payload: any = {
       id: id,
       [key]: null,
@@ -1336,7 +1368,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         if (res.data.length !== 0) {
           data.selectDataObj = res.data
           const formatItemData = (item: any) => {
-            const propertiesToFormat = ['ass_json_all', 'file']
+            const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
             propertiesToFormat.forEach((prop) => {
               if (typeof item[prop] === 'object') {
                 item[prop] = formatJson(item[prop])
@@ -1677,33 +1709,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   /* 确保KeyValueList中的所有元素都在一行 */
-  :deep(.key-value-row) {
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    width: 100%;
-    min-width: 0; /* 允许子元素收缩 */
-    overflow-x: hidden; /* 防止水平滚动 */
-  }
-
-  :deep(.key-value-field) {
-    flex: 1;
-    min-width: 100px; /* 减小最小宽度 */
-    overflow: hidden; /* 防止内容溢出 */
-  }
-
-  :deep(.button-container) {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    flex-shrink: 0;
-    white-space: nowrap; /* 防止按钮内文字换行 */
-    min-width: fit-content; /* 确保按钮容器不会收缩 */
-  }
-
-  :deep(.remove-btn) {
-    flex-shrink: 0;
-    margin-top: 18px;
-  }
 
   :deep(.test-btn) {
     flex-shrink: 0;
@@ -1722,25 +1727,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
   @media (max-width: 768px) {
-    :deep(.key-value-row) {
-      flex-wrap: wrap;
-    }
-
-    :deep(.key-value-field) {
-      min-width: 120px;
-    }
-
-    :deep(.button-container) {
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 8px;
-    }
-
-    :deep(.remove-btn) {
-      margin-top: 0;
-      align-self: center;
-    }
-
     :deep(.test-btn) {
       margin-top: 0;
       align-self: center;

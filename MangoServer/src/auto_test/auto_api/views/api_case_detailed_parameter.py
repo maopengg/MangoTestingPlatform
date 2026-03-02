@@ -17,6 +17,7 @@ from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
+from genson import SchemaBuilder
 
 
 class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
@@ -77,3 +78,17 @@ class ApiCaseDetailedParameterViews(ViewSet):
             if len(value) <= 0:
                 raise ApiError(*ERROR_MSG_0017)
             return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})
+
+    @action(methods=['put'], detail=False)
+    @error_response('api')
+    def put_auto_schema(self, request):
+        model = self.model.objects.get(id=request.data.get('id'))
+        response = model.result_data.get('response', {}).get('json')
+        if response is None:
+            return ResponseData.fail(RESPONSE_MSG_0156)
+        builder = SchemaBuilder()
+        builder.add_object(response)
+        schema = builder.to_schema()
+        model.ass_schema = schema
+        model.save()
+        return ResponseData.success(RESPONSE_MSG_0157, data=schema)

@@ -57,3 +57,14 @@ export function postCaseDetailedParameterTestExtractResponseAfter(
     },
   })
 }
+
+export function putSetSchema(id: number) {
+  return put({
+    url: '/api/case/detailed/parameter/schema',
+    data: () => {
+      return {
+        id: id,
+      }
+    },
+  })
+}

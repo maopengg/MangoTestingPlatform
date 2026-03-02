@@ -143,7 +143,7 @@ class TestCase:
     def detailed_parameter(self, case_detailed: ApiCaseDetailed) -> tuple[int, str] | None:
         res_list = []
         for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
-            case_parameter = CaseParameter(self.test_setup, parameter)
+            case_parameter = CaseParameter(self.test_setup, parameter, case_detailed.api_info)
             self.test_setup.init_test_object(case_detailed.api_info.project_product_id, self.test_env)
             self.test_setup.init_public(case_detailed.api_info.project_product_id, self.test_env)
             error_retry = 0

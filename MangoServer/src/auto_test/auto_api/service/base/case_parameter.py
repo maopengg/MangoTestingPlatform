@@ -7,6 +7,7 @@ import json
 import os
 import traceback
 
+import jsonschema
 import requests
 import time
 from mangotools.assertion import MangoAssertion
@@ -17,15 +18,17 @@ from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.tools import project_dir
-from ...models import ApiCaseDetailedParameter, ApiHeaders
+from ...models import ApiCaseDetailedParameter, ApiHeaders, ApiInfo
+from jsonschema import validate
 
 
 class CaseParameter:
     """ 测试用例详情的前后置+断言+缓存 """
 
-    def __init__(self, api_base_test_setup: APIBaseTestSetup, parameter: ApiCaseDetailedParameter):
+    def __init__(self, api_base_test_setup: APIBaseTestSetup, parameter: ApiCaseDetailedParameter, api_info: ApiInfo):
         self.test_setup = api_base_test_setup
         self.parameter = parameter
+        self.api_info = api_info
         self.ass_result: list[AssResultModel] = []
 
         self.test_data = api_base_test_setup.test_data
@@ -63,6 +66,7 @@ class CaseParameter:
                 self.__ass_json_all(response.json, ass_json_all)
             if self.parameter.ass_text_all:
                 self.__ass_test_all(response.text, self.test_setup.test_data.replace(self.parameter.ass_text_all))
+            self.__ass_schema(response)
         except (ToolsError, ApiError, MangoToolsError) as error:
             return self.ass_result, StatusEnum.FAIL.value, error.msg
         except Exception as e:
@@ -193,7 +197,6 @@ class CaseParameter:
         log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
         ass_result = AssResultModel(
             method='JSON一致性断言',
-            actual=None,
             expect=json.dumps(expect, ensure_ascii=False),
         )
         try:
@@ -202,7 +205,6 @@ class CaseParameter:
             ass_result.ass_msg = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data).p_in_dict(
                 actual, expect)
             self.ass_result.append(ass_result)
-            ass_result.status = StatusEnum.SUCCESS.value
         except AssertionError as error:
             ass_result.status = StatusEnum.FAIL.value
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
@@ -217,15 +219,38 @@ class CaseParameter:
             expect=expect,
             ass_msg=f'实际={actual}, 预期={expect}'
         )
-        self.ass_result.append(ass_result)
         try:
             assert actual.strip() == expect.strip(), f'实际={actual}, 预期={expect}'
-            ass_result.status = StatusEnum.SUCCESS.value
+            self.ass_result.append(ass_result)
         except AssertionError as error:
             ass_result.status = StatusEnum.FAIL.value
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
             raise ApiError(300, ass_result.ass_msg)
+
+    def __ass_schema(self, response):
+        actual = response.json
+        if self.api_info.is_schema == StatusEnum.SUCCESS.value and self.api_info.ass_schema:
+            expect = self.api_info.ass_schema
+        elif self.parameter.ass_schema:
+            expect = self.parameter.ass_schema
+        else:
+            return
+        log.api.debug(f'用例详情断言-5->实际：{actual}，预期：{expect}')
+        ass_result = AssResultModel(
+            method='结构断言',
+            actual=actual,
+            expect=expect,
+            ass_msg=f'实际={actual}, 预期={expect}'
+        )
+        try:
+            validate(instance=actual, schema=expect)
+            self.ass_result.append(ass_result)
+        except jsonschema.exceptions.ValidationError:
+            ass_result.status = StatusEnum.FAIL.value
+            ass_result.ass_msg = f'结构断言失败，实际={actual}, 预期={expect}'
+            self.ass_result.append(ass_result)
+            raise ApiError(*ERROR_MSG_0060)
 
     def __ass_(self, mango_assertion, ass_dict: dict, _error_msg: tuple):
         ass_result = AssResultModel(
@@ -239,7 +264,6 @@ class CaseParameter:
         try:
             ass_result.ass_msg = mango_assertion.ass(**ass_dict)
             self.ass_result.append(ass_result)
-            ass_result.status = StatusEnum.SUCCESS.value
         except AssertionError as error:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             ass_result.status = StatusEnum.FAIL.value

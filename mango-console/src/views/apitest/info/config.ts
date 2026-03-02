@@ -269,6 +269,12 @@ export const tableColumns = useTableColumn([
     width: 70,
   },
   {
+    title: '结构化断言',
+    key: 'is_schema',
+    dataIndex: 'is_schema',
+    width: 120,
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',

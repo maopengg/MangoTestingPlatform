@@ -39,6 +39,8 @@ class ApiInfo(models.Model):
 
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
+    is_schema = models.SmallIntegerField(verbose_name="schema状态，是否给这个接口全用例开启", default=0)
+    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
 
     class Meta:
         db_table = 'api_info'
@@ -115,6 +117,7 @@ class ApiCaseDetailedParameter(models.Model):
     data = models.TextField(verbose_name="data", null=True)
     json = models.TextField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
+    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
 
     # 前置
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
