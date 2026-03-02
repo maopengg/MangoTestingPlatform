@@ -6,9 +6,11 @@
 import asyncio
 import json
 import os
+import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
+from mangoautomation.mangos.mangos import MangoAutomationError
 from mangotools.data_processor import EncryptionTool, SqlCache
 from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
@@ -95,7 +97,7 @@ class WebSocketClient:
                     cls.running = False
                     os._exit(1)
                 else:
-                    log.debug(f'错误类型-1：{error}')
+                    log.debug(f'错误类型-1：{error}，详情：{traceback.print_exc()}')
                     send_global_msg(0, MessageEnum.WS_LINK)
                     send_global_msg(f"链接已断开，正在尝试重新连接！当前重试次数：{retry}", MessageEnum.BOTTOM)
                     await asyncio.sleep(5)
@@ -183,12 +185,19 @@ class WebSocketClient:
         """
         主动发送消息
         :param data: 发送的数据
-        :return:
+        :return: JSON字符串，失败返回None
         """
         try:
-            data_json = data.model_dump_json()
-        except TypeError:
-            log.error(f'序列化数据错误，请检查发送数据！')
-        else:
+            data_json = data.model_dump_json(exclude_none=True)
             log.debug(f"发送的数据：{data_json}")
             return data_json
+        except Exception as e:
+            log.error(f'序列化数据失败: {e}, 详情：{traceback.print_exc()}')
+            error_data = SocketDataModel(
+                code=500,
+                msg=f"JSON序列化失败，请联系管理员: {str(e)}",
+                user=data.user if data else None,
+                is_notice=data.is_notice,
+                data=None
+            )
+            return error_data.model_dump_json(exclude_none=True)
