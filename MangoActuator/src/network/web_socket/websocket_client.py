@@ -188,11 +188,12 @@ class WebSocketClient:
         :return: JSON字符串，失败返回None
         """
         try:
-            data_json = data.model_dump_json(exclude_none=True)
+            data_dict = data.model_dump(exclude_none=True)
+            data_json = json.dumps(data_dict, ensure_ascii=False)
             log.debug(f"发送的数据：{data_json}")
             return data_json
         except Exception as e:
-            log.error(f'序列化数据失败: {e}, 详情：{traceback.print_exc()}')
+            log.error(f'序列化数据失败: {e}')
             error_data = SocketDataModel(
                 code=500,
                 msg=f"JSON序列化失败，请联系管理员: {str(e)}",
@@ -200,4 +201,4 @@ class WebSocketClient:
                 is_notice=data.is_notice,
                 data=None
             )
-            return error_data.model_dump_json(exclude_none=True)
+            return json.dumps(error_data.model_dump(), ensure_ascii=False)

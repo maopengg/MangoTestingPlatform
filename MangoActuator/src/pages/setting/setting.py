@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
+import json
 import os
 
 from PySide6.QtWidgets import QWidget
@@ -10,7 +11,7 @@ from mangotools.data_processor import SqlCache
 
 from mangoui.widgets.container import MangoCard
 from mangoui.widgets.display import MangoLabel
-from mangoui.widgets.input import MangoToggle, MangoLineEdit
+from mangoui.widgets.input import MangoToggle, MangoLineEdit, MangoPushButton
 from mangoui.widgets.layout import MangoHBoxLayout, MangoVBoxLayout, MangoGridLayout
 from mangoui.widgets.window import MangoScrollArea
 
@@ -61,6 +62,11 @@ class SettingPage(QWidget):
         card_layout1.addWidget(MangoLabel('请输入MinioUrl：'), 3, 0)
         card_layout1.addWidget(self.minio, 3, 1)
 
+        self.but_test = MangoPushButton('测试')
+        self.but_test.clicked.connect(self.test)
+        card_layout1.addWidget(MangoLabel('测试按钮：'), 4, 0)
+        card_layout1.addWidget(self.but_test, 4, 1)
+
         h_layout.addLayout(card_layout1)
         h_layout.addStretch()
 
@@ -104,6 +110,12 @@ class SettingPage(QWidget):
 
     def show_data(self):
         pass
+
+    def test(self):
+        from src.network import socket_conn
+        with open(r'D:\code\MangoTestingPlatform\MangoActuator\src\network\web_socket\send.json', 'r', encoding='utf-8') as f:
+            data_dict: dict = json.loads(json.dumps(json.loads(f.read(), ), ensure_ascii=False))
+            socket_conn.sync_send(**data_dict)
 
     def debug(self, value):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
