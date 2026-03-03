@@ -25,6 +25,7 @@ from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
+from genson import SchemaBuilder
 
 
 class ApiInfoSerializers(serializers.ModelSerializer):
@@ -152,7 +153,7 @@ class ApiInfoViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0140, data=data)
 
     @action(methods=['POST'], detail=False)
-    @error_response('ui')
+    @error_response('api')
     def post_upload_api(self, request):
         uploaded_file = request.FILES['file']
         df = pd.read_excel(uploaded_file, keep_default_na=False)
@@ -180,8 +181,9 @@ class ApiInfoViews(ViewSet):
                 record['module'] = ProductModule.objects.get(name=record['module'],
                                                              project_product=record['project_product']).id
             except (
-            ProductModule.MultipleObjectsReturned, ProjectProduct.MultipleObjectsReturned, ProductModule.DoesNotExist,
-            ProjectProduct.DoesNotExist):
+                    ProductModule.MultipleObjectsReturned, ProjectProduct.MultipleObjectsReturned,
+                    ProductModule.DoesNotExist,
+                    ProjectProduct.DoesNotExist):
                 return ResponseData.fail(RESPONSE_MSG_0138)
             for i in ['headers', 'params', 'data', 'json', 'file']:
                 if record[i] == '' or record[i] is None:
@@ -193,3 +195,17 @@ class ApiInfoViews(ViewSet):
                         return ResponseData.fail(RESPONSE_MSG_0137)
             ApiInfoCRUD.inside_post(record)
         return ResponseData.success(RESPONSE_MSG_0083)
+
+    @action(methods=['put'], detail=False)
+    @error_response('api')
+    def put_auto_schema(self, request):
+        model = ApiInfo.objects.get(id=request.data.get('id'))
+        response = model.result_data.get('json')
+        if response is None:
+            return ResponseData.fail(RESPONSE_MSG_0156)
+        builder = SchemaBuilder()
+        builder.add_object(response)
+        schema = builder.to_schema()
+        model.ass_schema = schema
+        model.save()
+        return ResponseData.success(RESPONSE_MSG_0157, data=schema)

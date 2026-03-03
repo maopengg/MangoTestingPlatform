@@ -263,6 +263,19 @@
               </a-tab-pane>
             </a-tabs>
           </a-tab-pane>
+          <a-tab-pane key="10" title="结构化断言配置">
+            <a-space direction="vertical" fill>
+              <TipMessage message="请参照帮助文档设置结构化断言配置" />
+              <a-button size="mini" type="primary" @click="setSchema(data.api_info.id)"
+                >自动生成</a-button
+              >
+              <a-textarea
+                v-model="data.ass_schema"
+                :auto-size="data.textareaAutoSize"
+                allow-clear
+                placeholder="根据帮助文档，输入结构化断言"
+                @blur="upDate('ass_schema', data.ass_schema)" /></a-space
+          ></a-tab-pane>
         </a-tabs>
       </a-card>
     </template>
@@ -272,7 +285,7 @@
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
-  import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
+  import { getApiCaseInfoRun, getApiInfo, putApiInfo, putSetSchema } from '@/api/apitest/info'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import KeyValueList from '@/components/KeyValueList.vue'
@@ -290,6 +303,7 @@
     api_info: pageData.record,
     headers: formatJson(pageData.record.headers),
     file: formatJson(pageData.record.file),
+    ass_schema: formatJson(pageData.record.ass_schema),
     textareaAutoSize: { minRows: 21, maxRows: 25 },
     fileDemo:
       '示例：' +
@@ -349,7 +363,7 @@
 
   function upDate(key: string, value1: string) {
     let value = ''
-    if (key === 'headers' || key === 'file') {
+    if (key === 'headers' || key === 'file' || key === 'ass_schema') {
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
@@ -413,6 +427,16 @@
         data.api_info = res_data
         data.headers = formatJson(res_data.headers)
         data.file = formatJson(res_data.file)
+        data.ass_schema = formatJson(res_data.ass_schema)
+      })
+      .catch(console.log)
+  }
+
+  function setSchema(id: number) {
+    putSetSchema(id)
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
       })
       .catch(console.log)
   }
@@ -432,13 +456,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .form-tip {
-    color: #ff7d00;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
   }
 
   /* 响应信息样式 */
@@ -495,63 +512,5 @@
 
   .error-item:hover {
     background-color: #fff2e8;
-  }
-
-  /* 如果需要调整表单间距 */
-  :deep(.ant-form-inline .ant-form-item) {
-    margin-right: 12px;
-    margin-bottom: 0;
-  }
-
-  /* 确保KeyValueList中的所有元素都在一行 */
-  :deep(.key-value-row) {
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    width: 100%;
-    min-width: 0; /* 允许子元素收缩 */
-    overflow-x: hidden; /* 防止水平滚动 */
-  }
-
-  :deep(.key-value-field) {
-    flex: 1;
-    min-width: 100px; /* 减小最小宽度 */
-    overflow: hidden; /* 防止内容溢出 */
-  }
-
-  :deep(.button-container) {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    flex-shrink: 0;
-    white-space: nowrap; /* 防止按钮内文字换行 */
-    min-width: fit-content; /* 确保按钮容器不会收缩 */
-  }
-
-  :deep(.remove-btn) {
-    flex-shrink: 0;
-    margin-top: 18px;
-    min-width: fit-content; /* 确保按钮不会收缩 */
-  }
-
-  /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
-  @media (max-width: 768px) {
-    :deep(.key-value-row) {
-      flex-wrap: wrap;
-    }
-
-    :deep(.key-value-field) {
-      min-width: 120px;
-    }
-
-    :deep(.button-container) {
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 8px;
-    }
-
-    :deep(.remove-btn) {
-      margin-top: 0;
-      align-self: center;
-    }
   }
 </style>

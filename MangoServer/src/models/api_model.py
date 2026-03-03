@@ -80,10 +80,10 @@ class RecordingApiModel(BaseModel):
 
 class AssResultModel(BaseModel):
     method: str
-    expect: str | None = None
-    actual: Any | None
+    expect: Any | None = None
+    actual: Any | None = None
     ass_msg: str | None = None
-    status: int | None = None
+    status: int = 0
 
 
 class ApiCaseStepsResultModel(BaseModel):

@@ -4,7 +4,7 @@
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏
 RESPONSE_MSG_0001 = (200, '获取数据成功')
-RESPONSE_MSG_0002 = (200, '新增成功')
+RESPONSE_MSG_0002 = (200, '新增数据成功')
 RESPONSE_MSG_0003 = (300, '保存数据时出错，请检查数据')
 RESPONSE_MSG_0004 = (300, '修改数据时出错，请检查数据')
 RESPONSE_MSG_0005 = (200, '删除成功')
@@ -157,4 +157,7 @@ RESPONSE_MSG_0151 = (300, '创建预警监控报告失败')
 RESPONSE_MSG_0152 = (300, '关联的任务不存在')
 RESPONSE_MSG_0153 = (200, '创建预警监控报告成功')
 RESPONSE_MSG_0154 = (200, '获取pytest项目名称成功')
+RESPONSE_MSG_0155 = (200, '修改is_schema成功')
+RESPONSE_MSG_0156 = (300, '响应JSON为空，请先请求正确一次再设置结构化断言')
+RESPONSE_MSG_0157 = (200, '自动设置结构化断言成功')
 

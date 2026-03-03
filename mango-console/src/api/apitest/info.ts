@@ -92,6 +92,16 @@ export function postApiCopyInfo(id: number) {
     },
   })
 }
+export function putSetSchema(id: number) {
+  return put({
+    url: '/api/info/schema',
+    data: () => {
+      return {
+        id: id,
+      }
+    },
+  })
+}
 
 export function postApiUploadApi(type: number, file?: File) {
   const formData = new FormData()

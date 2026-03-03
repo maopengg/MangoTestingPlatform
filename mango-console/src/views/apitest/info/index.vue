@@ -141,6 +141,12 @@
                 >{{ enumStore.task_status[record.status].title }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'is_schema'" #cell="{ record }">
+              <a-switch
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'is_schema')"
+                :default-checked="record.is_schema === 1"
+              />
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <template>
                 <a-modal
@@ -551,6 +557,25 @@
     } else {
       selectedFile.value = null
     }
+  }
+
+  const onModifyStatus = async (newValue: boolean, id: number, is_schema: number) => {
+    return new Promise<any>((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          let value: any = false
+          await putApiInfo({ id: id, [is_schema]: newValue ? 1 : 0 })
+            .then((res) => {
+              Message.success(res.msg)
+              value = res.code === 200
+            })
+            .catch(reject)
+          resolve(value)
+        } catch (error) {
+          reject(error)
+        }
+      }, 300)
+    })
   }
 
   function onBatchUpload() {
