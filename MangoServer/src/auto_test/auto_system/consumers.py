@@ -67,11 +67,12 @@ class ChatConsumer(WebsocketConsumer):
             raise StopConsumer()
 
         try:
-            msg = SocketDataModel(**json.loads(message.get('text')))
+            msg = message.get('text')
+            log.system.debug(f'服务器接收到消息：{msg}')
+            msg = SocketDataModel(**json.loads(msg))
         except json.decoder.JSONDecodeError as e:
             log.system.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
         else:
-            self.__serialize(msg)
             if msg.data:
                 if msg.data.func_name:
                     self.api_reflection.server_data_received.send(sender='websocket', data=msg.data)

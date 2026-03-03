@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-# @Project: 芒果测试平台
-# @Description:
-# @Time   : 2023-09-09 23:17
-# @Author : 毛鹏
 import asyncio
 import json
 import os
@@ -10,11 +6,10 @@ import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
-from mangoautomation.mangos.mangos import MangoAutomationError
-from mangotools.data_processor import EncryptionTool, SqlCache
-from websockets.exceptions import WebSocketException
+from websockets.exceptions import ConnectionClosed
 from websockets.legacy.client import WebSocketClientProtocol
 
+from mangotools.data_processor import EncryptionTool, SqlCache
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import CacheKeyEnum, MessageEnum
 from src.models.socket_model import SocketDataModel, QueueModel
@@ -30,94 +25,144 @@ T = TypeVar('T')
 
 class WebSocketClient:
     parent = None
-    websocket: Optional[WebSocketClientProtocol | None] = None
+    websocket: Optional[WebSocketClientProtocol] = None
     running = True
+    _send_lock = asyncio.Lock()
+    _heartbeat_task = None
 
     @classmethod
     async def close(cls):
-        await cls.websocket.close()
         cls.running = False
+        if cls.websocket:
+            await cls.websocket.close()
 
-    @classmethod
-    async def client_hands(cls):
-        """
-        判断链接是否可以被建立
-        @return:
-        """
-        while True:
-            await cls.async_send(f'{ClientNameEnum.DRIVER.value} 请求连接！')
-            response_str = await cls.websocket.recv()
-            res = cls.__output_method(response_str)
-            if res.code == 200:
-                send_global_msg(res.msg, MessageEnum.BOTTOM)
-                from src.network import ToolsSocketEnum
-                await cls.async_send(
-                    '设置缓存数据成功',
-                    func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
-                    is_notice=ClientTypeEnum.WEB,
-                    func_args={'version': settings.SETTINGS.get('version'), 'data': func_info}
-
-                )
-                await cls.async_send(
-                    '设置执行器用户信息',
-                    func_name=ToolsSocketEnum.SET_USERINFO.value,
-                    func_args=SetUserOpenSatusModel(
-                        username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-                        is_open=bool(settings.IS_OPEN),
-                        debug=bool(settings.IS_DEBUG))
-                )
-                return True
-            else:
-                return False
-
+    # ==========================
+    # 连接主循环
+    # ==========================
     @classmethod
     async def client_run(cls):
-        """
-        进行websocket连接
-        @return:
-        """
-        server_url = f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}client/socket?username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}&password={EncryptionTool.md5_32_small(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value))}"
+        server_url = (
+            f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}"
+            f"client/socket?"
+            f"username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}"
+            f"&password={EncryptionTool.md5_32_small(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value))}"
+        )
+
         log.debug(f"websocketURL:{server_url}")
+
         retry = 0
         max_retries = 720
+
         while cls.running:
-            retry += 1
             try:
-                async with websockets.connect(server_url, max_size=50000000) as cls.websocket:
+                async with websockets.connect(
+                        server_url,
+                        max_size=50_000_000,
+                        ping_interval=20,
+                        ping_timeout=20,
+                        close_timeout=5
+                ) as ws:
+                    cls.websocket = ws
+                    retry = 0
+
+                    send_global_msg(1, MessageEnum.WS_LINK)
+                    log.info("WebSocket连接成功")
+
+                    # 启动心跳
+                    cls._heartbeat_task = asyncio.create_task(cls._heartbeat())
+
                     if await cls.client_hands():
-                        retry = 0
                         await cls.client_recv()
-                    await asyncio.sleep(2)
-            except Exception as error:
+
+            except Exception as e:
+                retry += 1
+                send_global_msg(0, MessageEnum.WS_LINK)
+
+                log.error(f"连接异常: {e}")
+                log.debug(traceback.format_exc())
+
                 if retry >= max_retries:
-                    log.error(f"已达到最大重试次数({max_retries})，程序将退出")
-                    send_global_msg('连接失败，已达到最大重试次数，程序将退出', MessageEnum.BOTTOM)
-                    send_global_msg(0, MessageEnum.WS_LINK)
-
-                    cls.running = False
+                    log.error("达到最大重试次数，程序退出")
                     os._exit(1)
-                else:
-                    log.debug(f'错误类型-1：{error}，详情：{traceback.print_exc()}')
-                    send_global_msg(0, MessageEnum.WS_LINK)
-                    send_global_msg(f"链接已断开，正在尝试重新连接！当前重试次数：{retry}", MessageEnum.BOTTOM)
-                    await asyncio.sleep(5)
 
+                await asyncio.sleep(5)
+
+    # ==========================
+    # 心跳机制
+    # ==========================
+    @classmethod
+    async def _heartbeat(cls):
+        while cls.running and cls.websocket:
+            try:
+                await cls.websocket.ping()
+                await asyncio.sleep(15)
+            except Exception:
+                break
+
+    # ==========================
+    # 握手
+    # ==========================
+    @classmethod
+    async def client_hands(cls):
+        await cls.async_send(f'{ClientNameEnum.DRIVER.value} 请求连接！')
+
+        try:
+            response_str = await cls.websocket.recv()
+        except Exception:
+            return False
+
+        res = cls.__output_method(response_str)
+
+        if not res or res.code != 200:
+            return False
+
+        send_global_msg(res.msg, MessageEnum.BOTTOM)
+
+        from src.network import ToolsSocketEnum
+
+        await cls.async_send(
+            '设置缓存数据成功',
+            func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
+            is_notice=ClientTypeEnum.WEB,
+            func_args={'version': settings.SETTINGS.get('version'), 'data': func_info}
+        )
+
+        await cls.async_send(
+            '设置执行器用户信息',
+            func_name=ToolsSocketEnum.SET_USERINFO.value,
+            func_args=SetUserOpenSatusModel(
+                username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                is_open=bool(settings.IS_OPEN),
+                debug=bool(settings.IS_DEBUG)
+            )
+        )
+
+        return True
+
+    # ==========================
+    # 接收
+    # ==========================
     @classmethod
     async def client_recv(cls):
-        """
-        接受消息
-        @return:
-        """
         from src.consumer import SocketConsumer
-        send_global_msg(1, MessageEnum.WS_LINK)
-        log.info('ws连接成功，开始获取数据！')
-        while cls.running:
-            recv_json = await cls.websocket.recv()
-            receive_data = cls.__output_method(recv_json)
-            if receive_data.data:
-                await SocketConsumer.add_task(receive_data.data)
-            await asyncio.sleep(0.2)
 
+        while cls.running:
+            try:
+                recv_json = await cls.websocket.recv()
+            except ConnectionClosed:
+                log.warning("连接已关闭，退出接收循环")
+                break
+            except Exception as e:
+                log.error(f"接收异常: {e}")
+                break
+
+            receive_data = cls.__output_method(recv_json)
+            if receive_data and receive_data.data:
+                await SocketConsumer.add_task(receive_data.data)
+
+    # ==========================
+    # 发送（带锁 + 自动判断）
+    # ==========================
     @classmethod
     async def async_send(cls,
                          msg: str,
@@ -127,78 +172,66 @@ class WebSocketClient:
                          is_notice: ClientTypeEnum | None = None,
                          user: str | None = None
                          ):
+
+        if not cls.websocket or cls.websocket.closed:
+            log.warning("发送失败：WebSocket未连接")
+            return
+
         send_data = SocketDataModel(
             code=code,
             msg=msg,
             user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-            is_notice=is_notice if is_notice else None,
-            data=None
+            is_notice=is_notice,
+            data=QueueModel(func_name=func_name, func_args=func_args) if func_name else None
         )
-        if func_name:
-            send_data.data = QueueModel(func_name=func_name, func_args=func_args)
 
-        if cls.websocket and cls.websocket.open:
+        data_json = cls.__serialize(send_data)
+
+        async with cls._send_lock:
             try:
-                await cls.websocket.send(cls.__serialize(send_data))
-            except WebSocketException:
-                await cls.client_run()
-                if cls.websocket and cls.websocket.open:
-                    await cls.websocket.send(cls.__serialize(send_data))
+                await cls.websocket.send(data_json)
+                log.debug(f"发送成功，信息: {data_json}")
+            except ConnectionClosed:
+                log.error("发送时连接已关闭")
+            except Exception as e:
+                log.error(f"发送异常: {e}")
 
+    # ==========================
+    # 同步发送封装
+    # ==========================
     @classmethod
-    def sync_send(cls,
-                  msg: str,
-                  code: int = 200,
-                  func_name: None = None,
-                  func_args: Optional[Union[list[T], T]] | None = None,
-                  is_notice: ClientTypeEnum | None = None,
-                  user: str | None = None
-                  ):
+    def sync_send(cls, *args, **kwargs):
         async def send_message():
-            await cls.async_send(msg, code, func_name, func_args, is_notice, user)
+            await cls.async_send(*args, **kwargs)
 
         cls.parent.loop.create_task(send_message())
 
+    # ==========================
+    # 输出解析
+    # ==========================
     @staticmethod
-    def __output_method(recv_json) -> SocketDataModel | None:
-        """
-        输出函数
-        :param recv_json:
-        :return:
-        """
+    def __output_method(recv_json) -> Optional[SocketDataModel]:
         try:
             out = json.loads(recv_json)
-            log.debug(f"SOCKET接收的数据：{json.dumps(out, ensure_ascii=False)}")
-            if out['data']:
-                if settings.IS_DEBUG:
-                    try:
-                        with open(fr'{project_dir.root_path()}\tests\test.json', 'w', encoding='utf-8') as f:
-                            f.write(json.dumps(out['data'], ensure_ascii=False))
-                    except Exception:
-                        pass
+            log.debug(f"接收数据：{json.dumps(out, ensure_ascii=False)}")
             return SocketDataModel(**out)
-        except json.decoder.JSONDecodeError:
-            log.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')
+        except Exception:
+            log.error(f"数据解析失败：{recv_json}")
+            return None
 
+    # ==========================
+    # 序列化（使用 Pydantic 原生）
+    # ==========================
     @staticmethod
     def __serialize(data: SocketDataModel):
-        """
-        主动发送消息
-        :param data: 发送的数据
-        :return: JSON字符串，失败返回None
-        """
         try:
-            data_dict = data.model_dump(exclude_none=True)
-            data_json = json.dumps(data_dict, ensure_ascii=False)
-            log.debug(f"发送的数据：{data_json}")
-            return data_json
-        except Exception as e:
-            log.error(f'序列化数据失败: {e}')
-            error_data = SocketDataModel(
-                code=500,
-                msg=f"JSON序列化失败，请联系管理员: {str(e)}",
-                user=data.user if data else None,
-                is_notice=data.is_notice,
-                data=None
+            return data.model_dump_json(
+                exclude_none=True,
+                exclude_unset=True
             )
-            return json.dumps(error_data.model_dump(), ensure_ascii=False)
+        except Exception as e:
+            log.error(f"序列化失败: {e}")
+            return json.dumps({
+                "code": 500,
+                "msg": f"JSON序列化失败: {str(e)}"
+            }, ensure_ascii=False)
