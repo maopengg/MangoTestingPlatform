@@ -26,6 +26,7 @@ class TestCase:
         self.test_suite_details = test_suite_details
 
     def test_case(self, case_id, test_env: int) -> dict:
+        log.pytest.debug(f'开始测试pytest用例：{case_id}， test_env:{test_env}')
         try:
             obj: PytestCase = PytestCase.objects.get(id=case_id)
         except PytestCase.DoesNotExist:
@@ -55,6 +56,7 @@ class TestCase:
             git_username=repo.username,
             git_password=repo.password,
         )
+        log.pytest.debug(f'发送pytest测试数据:{send_data}')
         self.__socket_send(send_data, True)
         return send_data.model_dump()
 
