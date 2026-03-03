@@ -6,6 +6,7 @@ from src.tools import project_dir
 
 def main():
     """Run administrative tasks."""
+    print('如出现：You have 1 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): auto_api. 请执行：python manage.py migrate  进行迁移')
     project_dir.init_folder()
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
     try:
