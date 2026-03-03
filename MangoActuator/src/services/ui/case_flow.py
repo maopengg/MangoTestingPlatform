@@ -81,9 +81,11 @@ class CaseFlow:
     @classmethod
     @async_memory
     async def execute_task(cls, case_model: CaseModel):
-        async with TestCase(cls.parent, case_model, cls.driver_object) as obj:
-            send_global_msg(f'开始执行UI测试用例：{case_model.name}')
-            await obj.case_main()
+        try:
+            async with TestCase(cls.parent, case_model, cls.driver_object) as obj:
+                send_global_msg(f'开始执行UI测试用例：{case_model.name}')
+                await obj.case_main()
+        finally:
             cls.running_tasks -= 1
 
     @classmethod

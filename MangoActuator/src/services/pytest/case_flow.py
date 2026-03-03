@@ -75,9 +75,11 @@ class PytestCaseFlow:
 
     @classmethod
     async def execute_task(cls, case_model: PytestCaseModel):
-        async with TestCase(cls.parent, case_model) as obj:
-            send_global_msg(f'开始执行Pytest测试用例：{case_model.name}')
-            await obj.test_case()
+        try:
+            async with TestCase(cls.parent, case_model) as obj:
+                send_global_msg(f'开始执行Pytest用例：{case_model.name}')
+                await obj.case_main()
+        finally:
             cls.running_tasks -= 1
 
     @classmethod
