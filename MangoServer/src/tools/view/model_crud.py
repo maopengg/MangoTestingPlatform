@@ -19,7 +19,6 @@ from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
 from src.tools.view import *
 
-
 class ModelCRUD(GenericAPIView):
     model = None
     project_model = None
@@ -107,15 +106,33 @@ class ModelCRUD(GenericAPIView):
             th.start()
 
     @classmethod
-    def paging_list(cls, size: int, current: int, books: QuerySet, serializer) -> tuple[list, int]:
-        count = books.count()
-        if count <= int(size):
-            current = 1
+    def paging_list(
+            cls,
+            size: int,
+            current: int,
+            books: QuerySet,
+            serializer
+    ) -> tuple[list, int]:
+
+        size = int(size)
+        current = int(current)
+
         try:
-            return serializer(
-                instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
-                many=True).data, count
-        except FieldError:
-            return serializer(
-                instance=Paginator(books, size).page(current),
-                many=True).data, count
+            queryset = serializer.setup_eager_loading(books)
+        except (AttributeError, FieldError):
+            queryset = books
+
+        paginator = Paginator(queryset, size)
+
+        # 防止页码越界
+        if current > paginator.num_pages and paginator.num_pages > 0:
+            current = paginator.num_pages
+
+        page_obj = paginator.page(current)
+
+        data = serializer(
+            instance=page_obj.object_list,
+            many=True
+        ).data
+
+        return data, paginator.count
