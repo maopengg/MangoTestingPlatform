@@ -26,17 +26,37 @@ class PytestCaseFlow:
 
     @classmethod
     async def process_tasks(cls):
-        s = time.time()
+        last_get_time = 0
+
         while cls.running:
             await asyncio.sleep(0.1)
-            if cls.running_tasks < cls.max_tasks and not cls.queue.empty():  # type: ignore
+
+            allow_max = cls.max_tasks + 1  # 满池 +1
+            total_tasks = cls.running_tasks + cls.queue.qsize()
+
+            if cls.running_tasks < cls.max_tasks and not cls.queue.empty():
                 case_model: PytestCaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
-            else:
-                if time.time() - s > 5:
-                    s = time.time()
+
+            now = time.time()
+            time_diff = now - last_get_time
+
+            # 空池
+            if total_tasks == 0:
+                if time_diff >= 10:
                     await cls.get_case_task()
+                    last_get_time = now
+
+            # 未达到 满池+1
+            elif total_tasks < allow_max:
+                if time_diff >= 2:
+                    await cls.get_case_task()
+                    last_get_time = now
+
+            # 满池 +1
+            elif total_tasks >= allow_max:
+                pass
 
     @classmethod
     async def get_case_task(cls):

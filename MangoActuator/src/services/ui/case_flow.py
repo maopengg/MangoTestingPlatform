@@ -23,7 +23,6 @@ from src.tools.set_config import SetConfig
 
 class CaseFlow:
     queue = asyncio.Queue()
-    max_tasks = 2
     running_tasks = 0
     parent = None
     driver_object = DriverObject(log, True)
@@ -31,18 +30,38 @@ class CaseFlow:
 
     @classmethod
     async def process_tasks(cls):
-        s = time.time()
+        last_get_time = 0
 
         while cls.running:
             await asyncio.sleep(0.1)
-            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
+
+            max_parallel = SetConfig.get_web_parallel()
+            allow_max = max_parallel + 1
+
+            if cls.running_tasks < max_parallel and not cls.queue.empty():
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
-            else:
-                if time.time() - s > 5:
-                    s = time.time()
+
+            now = time.time()
+            time_diff = now - last_get_time
+
+
+            # 空池 → 10秒拉一次
+            if cls.running_tasks == 0:
+                if time_diff >= 10:
                     await cls.get_case_task()
+                    last_get_time = now
+
+            # 未满（允许 +1 等待位）
+            elif 0 < cls.running_tasks < allow_max:
+                if time_diff >= 2:
+                    await cls.get_case_task()
+                    last_get_time = now
+
+            # 满池 +1 已占 → 不拉
+            elif cls.running_tasks >= allow_max:
+                pass
 
     @classmethod
     async def get_case_task(cls):
