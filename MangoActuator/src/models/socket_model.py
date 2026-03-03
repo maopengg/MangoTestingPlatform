@@ -6,7 +6,7 @@
 from typing import Union, Optional, TypeVar
 
 from mangotools.decorator import singleton
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.enums.system_enum import ClientTypeEnum
 
@@ -19,6 +19,8 @@ class QueueModel(BaseModel):
 
 
 class SocketDataModel(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     code: int
     msg: str
     user: str | None = None
