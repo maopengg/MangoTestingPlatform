@@ -34,7 +34,6 @@ class TasksSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    test_obj = TestObjectSerializersC(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
     notice_group = NoticeGroupSerializers(read_only=True)
@@ -47,7 +46,6 @@ class TasksSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project_product',
-            'test_obj',
             'timing_strategy',
             'notice_group',
             'case_people')
