@@ -78,7 +78,7 @@ class PytestCaseFlow:
         try:
             async with TestCase(cls.parent, case_model) as obj:
                 send_global_msg(f'开始执行Pytest用例：{case_model.name}')
-                await obj.case_main()
+                await obj.test_case()
         finally:
             cls.running_tasks -= 1
 
