@@ -6,10 +6,10 @@ import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
+from mangotools.data_processor import EncryptionTool, SqlCache
 from websockets.exceptions import ConnectionClosed
 from websockets.legacy.client import WebSocketClientProtocol
 
-from mangotools.data_processor import EncryptionTool, SqlCache
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import CacheKeyEnum, MessageEnum
 from src.models.socket_model import SocketDataModel, QueueModel
@@ -173,19 +173,29 @@ class WebSocketClient:
                          user: str | None = None
                          ):
 
-        if not cls.websocket or cls.websocket.closed:
-            log.warning("发送失败：WebSocket未连接")
+        try:
+            data_json = SocketDataModel(
+                code=code,
+                msg=msg,
+                user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                is_notice=is_notice,
+                data=QueueModel(func_name=func_name, func_args=func_args) if func_name else None
+            ).model_dump_json()
+        except Exception as e:
+            log.error(f"序列化失败: {e}, traceback: {traceback.format_exc()}")
+            data_json = SocketDataModel(
+                code=300,
+                msg=f'发送消息时序列化失败，请检查数据！{e}',
+                user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                is_notice=ClientTypeEnum.WEB
+            ).model_dump_json()
+
+        if settings.IS_DEBUG and not cls.websocket or cls.websocket.closed:
+            log.warning(f'模拟发送：{data_json}')
             return
-
-        send_data = SocketDataModel(
-            code=code,
-            msg=msg,
-            user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-            is_notice=is_notice,
-            data=QueueModel(func_name=func_name, func_args=func_args) if func_name else None
-        )
-
-        data_json = cls.__serialize(send_data)
+        if not cls.websocket or cls.websocket.closed:
+            log.warning('websocket未链接')
+            return
 
         async with cls._send_lock:
             try:
@@ -194,7 +204,7 @@ class WebSocketClient:
             except ConnectionClosed:
                 log.error("发送时连接已关闭")
             except Exception as e:
-                log.error(f"发送异常: {e}")
+                log.error(f"发送异常: {e}，traceback: {traceback.format_exc()}")
 
     # ==========================
     # 同步发送封装
@@ -218,20 +228,3 @@ class WebSocketClient:
         except Exception:
             log.error(f"数据解析失败：{recv_json}")
             return None
-
-    # ==========================
-    # 序列化（使用 Pydantic 原生）
-    # ==========================
-    @staticmethod
-    def __serialize(data: SocketDataModel):
-        try:
-            return data.model_dump_json(
-                exclude_none=True,
-                exclude_unset=True
-            )
-        except Exception as e:
-            log.error(f"序列化失败: {e}")
-            return json.dumps({
-                "code": 500,
-                "msg": f"JSON序列化失败: {str(e)}"
-            }, ensure_ascii=False)
