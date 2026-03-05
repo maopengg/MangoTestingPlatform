@@ -30,38 +30,18 @@ class CaseFlow:
 
     @classmethod
     async def process_tasks(cls):
-        last_get_time = 0
+        s = time.time()
 
         while cls.running:
             await asyncio.sleep(0.1)
-
-            max_parallel = SetConfig.get_web_parallel()
-            allow_max = max_parallel + 1
-
-            if cls.running_tasks < max_parallel and not cls.queue.empty():
+            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
-
-            now = time.time()
-            time_diff = now - last_get_time
-
-
-            # 空池 → 10秒拉一次
-            if cls.running_tasks == 0:
-                if time_diff >= 10:
+            else:
+                if time.time() - s > 5:
+                    s = time.time()
                     await cls.get_case_task()
-                    last_get_time = now
-
-            # 未满（允许 +1 等待位）
-            elif 0 < cls.running_tasks < allow_max:
-                if time_diff >= 2:
-                    await cls.get_case_task()
-                    last_get_time = now
-
-            # 满池 +1 已占 → 不拉
-            elif cls.running_tasks >= allow_max:
-                pass
 
     @classmethod
     async def get_case_task(cls):
@@ -81,12 +61,10 @@ class CaseFlow:
     @classmethod
     @async_memory
     async def execute_task(cls, case_model: CaseModel):
-        try:
             async with TestCase(cls.parent, case_model, cls.driver_object) as obj:
                 send_global_msg(f'开始执行UI测试用例：{case_model.name}')
                 await obj.case_main()
-        finally:
-            cls.running_tasks -= 1
+                cls.running_tasks -= 1
 
     @classmethod
     async def add_task(cls, case_model: CaseModel):

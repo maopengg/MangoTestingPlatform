@@ -26,37 +26,17 @@ class PytestCaseFlow:
 
     @classmethod
     async def process_tasks(cls):
-        last_get_time = 0
-
+        s = time.time()
         while cls.running:
             await asyncio.sleep(0.1)
-
-            allow_max = cls.max_tasks + 1  # 满池 +1
-            total_tasks = cls.running_tasks + cls.queue.qsize()
-
-            if cls.running_tasks < cls.max_tasks and not cls.queue.empty():
+            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
                 case_model: PytestCaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
-
-            now = time.time()
-            time_diff = now - last_get_time
-
-            # 空池
-            if total_tasks == 0:
-                if time_diff >= 10:
+            else:
+                if time.time() - s > 5:
+                    s = time.time()
                     await cls.get_case_task()
-                    last_get_time = now
-
-            # 未达到 满池+1
-            elif total_tasks < allow_max:
-                if time_diff >= 2:
-                    await cls.get_case_task()
-                    last_get_time = now
-
-            # 满池 +1
-            elif total_tasks >= allow_max:
-                pass
 
     @classmethod
     async def get_case_task(cls):
@@ -75,11 +55,9 @@ class PytestCaseFlow:
 
     @classmethod
     async def execute_task(cls, case_model: PytestCaseModel):
-        try:
-            async with TestCase(cls.parent, case_model) as obj:
-                send_global_msg(f'开始执行Pytest用例：{case_model.name}')
-                await obj.test_case()
-        finally:
+        async with TestCase(cls.parent, case_model) as obj:
+            send_global_msg(f'开始执行Pytest用例：{case_model.name}')
+            await obj.test_case()
             cls.running_tasks -= 1
 
     @classmethod

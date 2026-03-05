@@ -36,7 +36,6 @@ class TestCase:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        traceback.print_exc()
         return self
 
     async def test_case(self) -> list[dict]:
