@@ -4,7 +4,6 @@
 # @Time   : 2025-08-27 10:19
 # @Author : 毛鹏
 import os
-import traceback
 
 from mangotools.mangos import GitRepoOperator, pytest_test_case
 

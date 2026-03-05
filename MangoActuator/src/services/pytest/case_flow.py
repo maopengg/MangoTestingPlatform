@@ -29,7 +29,7 @@ class PytestCaseFlow:
         s = time.time()
         while cls.running:
             await asyncio.sleep(0.1)
-            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
+            if cls.running_tasks < cls.max_tasks and not cls.queue.empty():
                 case_model: PytestCaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
