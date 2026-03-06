@@ -383,25 +383,24 @@ class WebSocketClient:
         async with cls._state_lock:
             state = cls._connection_state
 
-        # DEBUG模式处理
-        if settings.IS_DEBUG and (not cls.websocket or cls.websocket.closed):
-            try:
-                data_json = SocketDataModel(
-                    code=code,
-                    msg=msg,
-                    user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-                    is_notice=is_notice,
-                    data=QueueModel(func_name=func_name, func_args=func_args) if func_name else None
-                ).model_dump_json()
-                log.warning(f'模拟发送：{data_json}')
-            except Exception as e:
-                log.error(f"DEBUG模式序列化失败: {e}")
-            return
-
         # 连接未就绪，放入队列
         if state != ConnectionState.AUTHENTICATED:
             cls._message_queue.append(message_data)
             log.warning(f'连接未就绪(状态:{state.name})，消息已加入队列，当前队列长度: {len(cls._message_queue)}')
+            
+            # DEBUG模式下额外打印消息内容
+            if settings.IS_DEBUG:
+                try:
+                    data_json = SocketDataModel(
+                        code=code,
+                        msg=msg,
+                        user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                        is_notice=is_notice,
+                        data=QueueModel(func_name=func_name, func_args=func_args) if func_name else None
+                    ).model_dump_json()
+                    log.debug(f'DEBUG-队列消息内容：{data_json}')
+                except Exception as e:
+                    log.error(f"DEBUG模式序列化失败: {e}")
             return
 
         # 连接已就绪，尝试直接发送

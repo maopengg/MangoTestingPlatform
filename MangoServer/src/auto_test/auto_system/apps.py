@@ -186,6 +186,7 @@ class AutoSystemConfig(AppConfig):
     def setup_scheduler(self):
         """设置定时任务调度器"""
         try:
+            log.system.info('开始设置定时任务调度器...')
             # 创建调度器实例（使用 daemon 线程，确保在服务关闭时能够快速退出）
             self.scheduler = BackgroundScheduler(daemon=True)
 
@@ -196,16 +197,20 @@ class AutoSystemConfig(AppConfig):
                 minutes=5,
                 id='set_case_status'
             )
+            log.system.info('已添加定时任务: set_case_status (每5分钟)')
 
-            # 添加任务状态检查任务，每3分钟执行一次
+            # 添加任务状态检查任务，每1分钟执行一次
             self.scheduler.add_job(
                 self.check_task_status,
                 'interval',
-                minutes=3,
+                minutes=1,
                 id='check_task_status'
             )
+            log.system.info('已添加定时任务: check_task_status (每1分钟)')
 
             self.scheduler.start()
+            log.system.info('定时任务调度器已启动成功！')
+            
             # 只在主进程中注册退出处理函数，避免在开发服务器重载时被意外触发
             # 使用模块级别的标志确保只注册一次
             if not hasattr(AutoSystemConfig, '_scheduler_shutdown_registered'):
@@ -213,10 +218,13 @@ class AutoSystemConfig(AppConfig):
                 AutoSystemConfig._scheduler_shutdown_registered = True
         except Exception as e:
             log.system.error(f'定时任务调度器设置异常: {e}')
+            import traceback
+            traceback.print_exc()
 
     @async_task_db_connection()
     def check_task_status(self):
-        """检查所有任务状态，每3分钟执行一次"""
+        """检查所有任务状态，每1分钟执行一次"""
+        log.system.info('========== 开始执行 check_task_status 定时任务 ==========')
         try:
             from src.auto_test.auto_system.service.test_suite.send_notice import SendNotice
 
@@ -224,6 +232,8 @@ class AutoSystemConfig(AppConfig):
             # 检查全部执行完，没有修改测试套结果的，和没有发送测试报告的
             from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
             test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
+            log.system.info(f'查询到 {test_suite.count()} 个进行中或待开始的测试套件')
+            
             for i in test_suite:
                 status_list = TestSuiteDetails \
                     .objects \
@@ -234,7 +244,10 @@ class AutoSystemConfig(AppConfig):
                     else:
                         i.status = TaskEnum.SUCCESS.value
                     i.save()
-            test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value, status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value])
+            test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value,
+                                                  status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value])
+            log.system.info(f'查询到 {test_suite.count()} 个需要发送通知的测试套件')
+            
             for i in test_suite:
                 try:
                     SendNotice(i.id).send_test_suite()
@@ -244,7 +257,14 @@ class AutoSystemConfig(AppConfig):
             test_suite_details_list = TestSuiteDetails \
                 .objects \
                 .filter(status=TaskEnum.PROCEED.value, retry__lt=RETRY_FREQUENCY + 1)
+            
+            log.system.info(f'查询到 {test_suite_details_list.count()} 个进行中的测试套件详情（重试次数 < {RETRY_FREQUENCY + 1}）')
+            print(f'========== 1111 查询到 {test_suite_details_list.count()} 条记录 ==========')
+            
             for test_suite_detail in test_suite_details_list:
+                print(f'处理记录 ID: {test_suite_detail.id}, push_time: {test_suite_detail.push_time}')
+                log.system.info(f'处理测试套件详情 ID: {test_suite_detail.id}, push_time: {test_suite_detail.push_time}')
+                
                 if test_suite_detail.push_time and (
                         timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
                     test_suite_detail.status = TaskEnum.STAY_BEGIN.value
@@ -257,6 +277,9 @@ class AutoSystemConfig(AppConfig):
                 .objects \
                 .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value],
                         retry__gte=RETRY_FREQUENCY + 1)
+            
+            log.system.info(f'查询到 {test_suite_details_list.count()} 个重试次数已满的测试套件详情（重试次数 >= {RETRY_FREQUENCY + 1}）')
+            
             for test_suite_detail in test_suite_details_list:
                 if test_suite_detail.push_time and (
                         timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
@@ -264,6 +287,8 @@ class AutoSystemConfig(AppConfig):
                     test_suite_detail.save()
                     log.system.info(
                         f'重试次数超过{RETRY_FREQUENCY + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
+            
+            log.system.info('========== check_task_status 定时任务执行完成 ==========')
 
         except (RuntimeError, SystemError) as e:
             # 忽略进程关闭时的错误（开发服务器重载时常见）
