@@ -258,13 +258,7 @@ class AutoSystemConfig(AppConfig):
                 .objects \
                 .filter(status=TaskEnum.PROCEED.value, retry__lt=RETRY_FREQUENCY + 1)
             
-            log.system.info(f'查询到 {test_suite_details_list.count()} 个进行中的测试套件详情（重试次数 < {RETRY_FREQUENCY + 1}）')
-            print(f'========== 1111 查询到 {test_suite_details_list.count()} 条记录 ==========')
-            
             for test_suite_detail in test_suite_details_list:
-                print(f'处理记录 ID: {test_suite_detail.id}, push_time: {test_suite_detail.push_time}')
-                log.system.info(f'处理测试套件详情 ID: {test_suite_detail.id}, push_time: {test_suite_detail.push_time}')
-                
                 if test_suite_detail.push_time and (
                         timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
                     test_suite_detail.status = TaskEnum.STAY_BEGIN.value
