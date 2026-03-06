@@ -82,7 +82,6 @@
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message } from '@arco-design/web-vue'
   import { getFormItems } from '@/utils/datacleaning'
-  import { websocket } from '@/utils/socket'
   import { getUserInfo, postUserPassword } from '@/api/user/user'
 
   const userStore = useUserStore()
@@ -186,7 +185,6 @@
             window.localStorage.removeItem('visited-routes')
             window.location.reload()
             localStorage.clear()
-            websocket(13213, '231', false)
           })
         })
         .catch((error) => {

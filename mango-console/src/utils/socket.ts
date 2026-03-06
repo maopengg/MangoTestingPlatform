@@ -1,18 +1,40 @@
-import WebSocketService from '@/utils/websocket'
-import { webSocketURL } from '@/api/axios.config'
+// 简化的 WebSocket 工具函数
+import { websocketService } from './websocket'
 
-// let webSocketService: WebSocketService | null = null
+/**
+ * 连接 WebSocket
+ * @param username 用户名
+ * @param password 密码
+ */
+export function connectWebSocket(username: string, password: string): void {
+  websocketService.connect(username, password)
+}
 
-export function websocket(userName: number, password: string, close = true) {
-  let webSocketService
-  if (!webSocketService) {
-    webSocketService = new WebSocketService(
-      `${webSocketURL}username=${userName}&password=${password}`
-    )
-  }
-  if (close) {
-    webSocketService.connect()
-  } else if (!close) {
-    webSocketService.disconnect()
-  }
+/**
+ * 断开 WebSocket
+ */
+export function disconnectWebSocket(): void {
+  websocketService.disconnect()
+}
+
+/**
+ * 发送消息
+ * @param message 消息对象
+ */
+export function sendWebSocketMessage(message: any): void {
+  websocketService.send(message)
+}
+
+/**
+ * 获取连接状态
+ */
+export function getWebSocketState(): string {
+  return websocketService.getState()
+}
+
+/**
+ * 检查是否已连接
+ */
+export function isWebSocketConnected(): boolean {
+  return websocketService.isConnected()
 }

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { UserState } from '../types'
 import store from '../pinia'
+import { disconnectWebSocket } from '@/utils/socket'
 
 import Avatar from '@/assets/img_avatar.gif'
 
@@ -44,6 +45,10 @@ const useUserStore = defineStore('user-info', {
     },
     logout() {
       return new Promise<void>((resolve) => {
+        // 先断开 WebSocket
+        disconnectWebSocket()
+        
+        // 清理用户数据
         this.$reset()
         localStorage.clear()
         sessionStorage.clear()

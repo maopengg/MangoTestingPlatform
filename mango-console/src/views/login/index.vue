@@ -193,6 +193,7 @@
   import setting from '../../setting'
   import useAppInfo from '@/hooks/useAppInfo'
   import useUserStore from '@/store/modules/user'
+  import { connectWebSocket } from '@/utils/socket'
 
   const projectName = setting.projectName
   const { version } = useAppInfo()
@@ -237,6 +238,9 @@
       .then((res: Response) => {
         const data = res.data as UserState
         userStore.saveUser(data, md5(baseData.password)).then(() => {
+          // 登录成功后立即连接 WebSocket
+          connectWebSocket(baseData.username, md5(baseData.password))
+          
           router
             .replace({
               path: '/index/home',
