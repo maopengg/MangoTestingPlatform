@@ -48,7 +48,8 @@ class MonitoringReport(models.Model):
     status = models.SmallIntegerField(
         verbose_name="状态",
         choices=MonitoringLogStatusEnum.choices(),
-        default=MonitoringLogStatusEnum.INFO.value
+        default=MonitoringLogStatusEnum.INFO.value,
+        db_index=True
     )
     msg = models.TextField(verbose_name="消息内容", null=True, blank=True, default=None)
     send_text = models.TextField(verbose_name="详细信息", blank=True, null=True, default=None)

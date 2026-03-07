@@ -69,7 +69,7 @@ class PageSteps(models.Model):
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="步骤名称", max_length=64)
     run_flow = models.TextField(verbose_name="步骤顺序", null=True)
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
     result_data = models.JSONField(verbose_name="测试结果", null=True)
     flow_data = models.JSONField(verbose_name="flow_data", default=dict)
 
@@ -129,8 +129,8 @@ class UiCase(models.Model):
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
     parametrize = models.JSONField(verbose_name="参数化", default=list)
     # 0失败，1成功，2待开始，3，进行中
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
-    level = models.SmallIntegerField(verbose_name="用例级别", default=0)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
+    level = models.SmallIntegerField(verbose_name="用例级别", default=0, db_index=True)
     front_custom = models.JSONField(verbose_name="前置自定义", default=list)
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
@@ -181,18 +181,3 @@ class UiPublic(models.Model):
     class Meta:
         db_table = 'ui_public'
         ordering = ['-id']
-
-#
-# class UiConfig(models.Model):
-#     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-#     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-#     user = models.ForeignKey(to=User, to_field="id", on_delete=models.PROTECT)
-#     # 0是web，1是安卓
-#     type = models.SmallIntegerField(verbose_name="什么客户端")
-#     config = models.JSONField(verbose_name="配置json")
-#     # 是否开启
-#     status = models.SmallIntegerField(verbose_name="状态", default=0)
-#
-#     class Meta:
-#         db_table = 'ui_config'
-#         ordering = ['-id']
