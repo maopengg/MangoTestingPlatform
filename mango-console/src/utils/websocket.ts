@@ -29,16 +29,16 @@ class WebSocketService {
   private socket: WebSocket | null = null
   private connectionState: ConnectionState = ConnectionState.DISCONNECTED
   private reconnectTimer: number | null = null
-  private reconnectAttempts: number = 0
-  private maxReconnectAttempts: number = Infinity // 无限重连
-  private reconnectInterval: number = 5000 // 5秒
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = Infinity // 无限重连
+  private reconnectInterval = 5000 // 5秒
   private heartbeatTimer: number | null = null
-  private heartbeatInterval: number = 30000 // 30秒心跳
-  private url: string = ''
-  private username: string = ''
-  private password: string = ''
+  private heartbeatInterval = 30000 // 30秒心跳
+  private url = ''
+  private username = ''
+  private password = ''
   private notificationMessage: any = null
-  private isManualClose: boolean = false // 是否手动关闭
+  private isManualClose = false // 是否手动关闭
 
   private constructor() {
     // 私有构造函数，确保单例
@@ -112,13 +112,6 @@ class WebSocketService {
 
     // 启动心跳
     this._startHeartbeat()
-
-    // 通知用户
-    Notification.success({
-      title: 'WebSocket 已连接',
-      content: '实时消息通道已建立',
-      duration: 2000,
-    })
   }
 
   // 接收消息
@@ -232,7 +225,10 @@ class WebSocketService {
 
   // 发送消息
   public send(message: WebSocketMessage): void {
-    if (this.connectionState !== ConnectionState.AUTHENTICATED && this.connectionState !== ConnectionState.CONNECTED) {
+    if (
+      this.connectionState !== ConnectionState.AUTHENTICATED &&
+      this.connectionState !== ConnectionState.CONNECTED
+    ) {
       console.warn('WebSocket 未连接，消息未发送:', message)
       Notification.warning({
         title: '发送失败',
