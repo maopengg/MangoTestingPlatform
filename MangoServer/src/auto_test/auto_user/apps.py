@@ -84,7 +84,7 @@ class AutoUserConfig(AppConfig):
         import re
         import requests
         from src.settings import VERSION
-        text = requests.get('https://gitee.com/mao-peng/MangoTestingPlatform').text
+        text = requests.get('https://gitee.com/mao-peng/MangoTestingPlatform', proxies={'http': None, 'https': None}).text
         match = re.search(r'VERSION\s*=\s*([\d.]+)', text)
         if not (match and match.group(1) == VERSION):
             raise Exception(

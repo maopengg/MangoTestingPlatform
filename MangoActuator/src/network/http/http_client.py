@@ -45,7 +45,7 @@ class HttpClientApi(HttpBase):
             raise ToolsError(*ERROR_MSG_0003)
 
     @classmethod
-    def upload_file(cls, file_path: str, file_name: str):
+    def upload_file(cls, file_path: str, file_name: str, retry=0):
         data = {
             'type': ClientTypeEnum.ACTUATOR.value,
             'name': file_name,
@@ -55,14 +55,18 @@ class HttpClientApi(HttpBase):
         files = [
             ('failed_screenshot', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
         ]
-        for i in range(3):
-            headers = copy.copy(cls.headers)
-            response = cls.post('/system/file', headers=headers, data=data, files=files)
-            if response.code == 200:
-                return response.data
-            else:
-                log.error(f'上传文件报错，请管理员检查，响应结果：{response.model_dump()}')
-                cls.login(SetConfig.get_username(), SetConfig.get_password())  # type: ignore
+        headers = copy.copy(cls.headers)
+        response = cls.post('/system/file', headers=headers, data=data, files=files)
+        if response.code == 200:
+            return response.data
+        elif response.code == 1004:
+            log.error(f'上传文件报错，请管理员检查，响应结果：{response.model_dump()}')
+            return None
+        else:
+            if retry >= 0:
+                return None
+            cls.login(SetConfig.get_username(), SetConfig.get_password())
+            return cls.upload_file(file_path, file_name, retry + 1)
 
     @classmethod
     def login(cls, username: str = None, password=None, retry=0, is_retry=False):
