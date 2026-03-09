@@ -50,8 +50,8 @@ class PytestCase(models.Model):
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
                                     null=True)
     name = models.CharField(verbose_name="自定义用例名称", max_length=1024)
-    level = models.SmallIntegerField(verbose_name="用例级别", default=1)
-    status = models.SmallIntegerField(verbose_name="状态", default=0)
+    level = models.SmallIntegerField(verbose_name="用例级别", default=1, db_index=True)
+    status = models.SmallIntegerField(verbose_name="状态", default=0, db_index=True)
     file_name = models.CharField(verbose_name="文件名称", max_length=1024)
     file_path = models.CharField(verbose_name="文件路径", max_length=1024)
     file_status = models.SmallIntegerField(verbose_name="文件状态", default=0)

@@ -49,7 +49,7 @@ class TasksDetailsSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'task',
-            'ui_case'
+            'ui_case',
             'api_case'
         )
         return queryset

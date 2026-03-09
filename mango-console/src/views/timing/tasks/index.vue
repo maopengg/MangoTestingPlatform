@@ -120,7 +120,12 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onTrigger(record)"
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  :loading="data.triggerLoading"
+                  @click="onTrigger(record)"
                   >触发
                 </a-button>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
@@ -252,16 +257,16 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useRouter } from 'vue-router'
-  import { formItems, tableColumns, conditionItems } from './config'
+  import { conditionItems, formItems, tableColumns } from './config'
   import {
     deleteSystemTasks,
     getSystemTasks,
-    postSystemTasks,
     getSystemTriggerTiming,
+    postSystemTasks,
     putSystemTasks,
   } from '@/api/system/tasks'
   import { getSystemTimingList } from '@/api/system/time'
@@ -284,6 +289,7 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '新增',
+    triggerLoading: false,
     userList: [],
     timingList: [],
     noticeList: [],
@@ -343,9 +349,17 @@
   }
 
   function onTrigger(record: any) {
-    getSystemTriggerTiming(record.id).then((res) => {
-      Message.success(res.msg)
-    })
+    data.triggerLoading = true
+    getSystemTriggerTiming(record.id)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch((error) => {
+        Message.error(error?.msg || '触发失败')
+      })
+      .finally(() => {
+        data.triggerLoading = false
+      })
   }
 
   function onUpdate(item: any) {
@@ -456,6 +470,7 @@
       },
     })
   }
+
   function onProjectChange(id) {
     getSystemNoticeName(id)
       .then((res) => {
@@ -463,6 +478,7 @@
       })
       .catch(console.log)
   }
+
   onMounted(() => {
     nextTick(async () => {
       getTiming()

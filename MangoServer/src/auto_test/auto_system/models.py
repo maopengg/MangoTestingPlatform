@@ -267,8 +267,8 @@ class TestSuite(models.Model):
     user = models.ForeignKey(to=User, to_field="id", verbose_name='用例执行人', on_delete=models.PROTECT)
     tasks = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)
 
-    status = models.SmallIntegerField(verbose_name="测试结果")
-    is_notice = models.SmallIntegerField(verbose_name="是否发送通知")
+    status = models.SmallIntegerField(verbose_name="测试结果", db_index=True)
+    is_notice = models.SmallIntegerField(verbose_name="是否发送通知", db_index=True)
 
     class Meta:
         db_table = 'test_suite'
@@ -285,14 +285,14 @@ class TestSuiteDetails(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_suite = models.ForeignKey(to=TestSuite, to_field="id", on_delete=models.CASCADE)
     # type=0是UI,=1是接口,=2是pytest
-    type = models.SmallIntegerField(verbose_name="类型")
+    type = models.SmallIntegerField(verbose_name="类型", db_index=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     case_id = models.SmallIntegerField(verbose_name="用例ID")
     case_name = models.CharField(verbose_name="key", max_length=528, null=True)
     parametrize = models.JSONField(verbose_name="参数化", default=list)
     # 2待开始，3是进行中，0是失败，1是成功
-    status = models.SmallIntegerField(verbose_name="测试结果")
+    status = models.SmallIntegerField(verbose_name="测试结果", db_index=True)
     error_message = models.TextField(verbose_name="错误提示", null=True)
     result_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     retry = models.SmallIntegerField(verbose_name="重试次数")
@@ -305,3 +305,7 @@ class TestSuiteDetails(models.Model):
     class Meta:
         db_table = 'test_suite_details'
         ordering = ['-create_time']
+        indexes = [
+            models.Index(fields=['type', 'status'], name='idx_type_status'),
+            models.Index(fields=['test_suite_id', 'type', 'status'], name='idx_suite_type_status'),
+        ]

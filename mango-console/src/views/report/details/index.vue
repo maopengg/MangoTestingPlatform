@@ -143,7 +143,7 @@
         <icon-unordered-list />
         <span>测试套用例列表</span>
       </template>
-      <a-tabs @tab-click="(key) => doRefresh(key)">
+      <a-tabs v-model:active-key="currentActiveTab" @tab-click="(key) => onTabChange(key)">
         <template #extra>
           <a-space>
             <a-button type="primary" size="small" :loading="caseRunning" @click="doCaseStatus(null)"
@@ -166,8 +166,10 @@
         <a-tab-pane
           key="0"
           :title="'UI测试（' + data.summary.ui_count + '）'"
+          :disabled="tabLoading && currentActiveTab !== '0'"
           v-if="data.summary.ui_count > 0"
         >
+          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px;">
           <a-collapse :default-active-key="[1]" :bordered="false" accordion destroy-on-hide>
             <a-collapse-item v-for="item of data.dataList" :key="item.id">
               <template #header>
@@ -229,12 +231,15 @@
               </a-table>
             </a-collapse-item>
           </a-collapse>
+          </a-spin>
         </a-tab-pane>
         <a-tab-pane
           key="1"
           :title="'API测试（' + data.summary.api_count + '）'"
+          :disabled="tabLoading && currentActiveTab !== '1'"
           v-if="data.summary.api_count > 0"
         >
+          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px;">
           <a-collapse
             :default-active-key="[1]"
             :bordered="false"
@@ -310,12 +315,15 @@
               </a-table>
             </a-collapse-item>
           </a-collapse>
+          </a-spin>
         </a-tab-pane>
         <a-tab-pane
           key="2"
           :title="'Pytest测试（' + data.summary.pytest_count + '）'"
+          :disabled="tabLoading && currentActiveTab !== '2'"
           v-if="data.summary.pytest_count > 0"
         >
+          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px;">
           <a-collapse
             :default-active-key="[1]"
             :bordered="false"
@@ -392,6 +400,7 @@
               </a-table>
             </a-collapse-item>
           </a-collapse>
+          </a-spin>
         </a-tab-pane>
       </a-tabs>
     </a-card>
@@ -460,6 +469,8 @@
     caseType: null,
   })
   const caseRunning = ref(false)
+  const tabLoading = ref(false)
+  const currentActiveTab = ref('0')
   // 添加轮询相关的响应式变量
   const pollingTimer = ref(null)
   const isPolling = ref(false)
@@ -561,10 +572,39 @@
     })
   }
 
+  // 新增tab切换处理函数
+  function onTabChange(key) {
+    // 如果正在加载中，阻止切换
+    if (tabLoading.value) {
+      return
+    }
+    
+    currentActiveTab.value = key
+    tabLoading.value = true
+    doRefresh(key)
+      .then(() => {
+        // 数据加载完成
+      })
+      .catch((error) => {
+        Message.error(error?.msg || '加载失败')
+      })
+      .finally(() => {
+        tabLoading.value = false
+      })
+  }
+
   function doRefreshSummary() {
     getSystemTestSuiteDetailsSummary(pageData.record.id)
       .then((res) => {
         data.summary = res.data
+        // 初始化当前激活的tab
+        if (data.summary?.ui_count > 0) {
+          currentActiveTab.value = '0'
+        } else if (data.summary.api_count > 0) {
+          currentActiveTab.value = '1'
+        } else if (data.summary.pytest_count > 0) {
+          currentActiveTab.value = '2'
+        }
         doRefresh(data.caseType)
 
         // 检查是否有正在进行的测试

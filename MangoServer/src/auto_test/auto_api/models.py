@@ -18,7 +18,7 @@ class ApiInfo(models.Model):
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     # 0和空等于录制，1等于本期接口，2是调试完成
-    type = models.SmallIntegerField(verbose_name='接口的类型', default=1)
+    type = models.SmallIntegerField(verbose_name='接口的类型', default=1, db_index=True)
     name = models.CharField(verbose_name="接口名称", max_length=1024)
 
     url = models.CharField(verbose_name="请求url", max_length=1024)
@@ -37,10 +37,8 @@ class ApiInfo(models.Model):
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     posterior_file = models.CharField(verbose_name="下载文件名称key", max_length=1024, null=True)
 
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
-    is_schema = models.SmallIntegerField(verbose_name="schema状态，是否给这个接口全用例开启", default=0)
-    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
 
     class Meta:
         db_table = 'api_info'
@@ -67,7 +65,7 @@ class ApiCase(models.Model):
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
     front_headers = models.JSONField(verbose_name="前置请求头", default=list)
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
 
     class Meta:
         db_table = 'api_case'
@@ -88,7 +86,7 @@ class ApiCaseDetailed(models.Model):
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.PROTECT)
     api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.PROTECT)
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
     error_message = models.TextField(verbose_name="失败提示", null=True)
 
     class Meta:
@@ -100,10 +98,6 @@ class ApiCaseDetailed(models.Model):
         super().delete(*args, **kwargs)
 
 
-    # def clean(self):
-    #     if self.status not in [StatusEnum.FAIL, StatusEnum.SUCCESS]:
-    #         raise ValidationError("状态值只能是 0 或 1")
-    #     super().clean()
 class ApiCaseDetailedParameter(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
@@ -117,7 +111,6 @@ class ApiCaseDetailedParameter(models.Model):
     data = models.TextField(verbose_name="data", null=True)
     json = models.TextField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
-    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
 
     # 前置
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
@@ -131,11 +124,10 @@ class ApiCaseDetailedParameter(models.Model):
     # 后置
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
     posterior_response = models.JSONField(verbose_name="后置响应处理", default=list)
-    posterior_response_text = models.JSONField(verbose_name="后置响应文本处理", default=list)
     posterior_sleep = models.SmallIntegerField(verbose_name="强制等待", null=True)
     posterior_file = models.JSONField(verbose_name="文件下载", default=dict)
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
@@ -149,7 +141,7 @@ class ApiHeaders(models.Model):
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     key = models.CharField(verbose_name="键", max_length=128)
     value = models.TextField(verbose_name="值")
-    status = models.SmallIntegerField(verbose_name="是否默认开启", default=0)
+    status = models.SmallIntegerField(verbose_name="是否默认开启", default=0, db_index=True)
 
     class Meta:
         db_table = 'api_headers'
@@ -167,11 +159,11 @@ class ApiPublic(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     # 0等于自定义，1等于sql，2等于登录
-    type = models.SmallIntegerField(verbose_name="自定义变量类型", default=0)
+    type = models.SmallIntegerField(verbose_name="自定义变量类型", default=0, db_index=True)
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128)
     value = models.TextField(verbose_name="值")
-    status = models.SmallIntegerField(verbose_name="状态", default=0)
+    status = models.SmallIntegerField(verbose_name="状态", default=0, db_index=True)
 
     class Meta:
         db_table = 'api_public'
