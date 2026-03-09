@@ -28,9 +28,9 @@ class ObtainTestData(DataProcessor):
         return str(uuid.uuid4())
 
     @classmethod
-    def get_file(cls, file_name) -> str:
+    async def get_file(cls, file_name) -> str:
         """传入文件名称，返回文件"""
-        HTTP.not_auth.download_file(file_name)
+        await HTTP.not_auth.download_file(file_name)
         file_path = os.path.join(project_dir.upload(), file_name)
         if os.path.exists(file_path):
             return file_path

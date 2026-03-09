@@ -5,8 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-import requests
-from requests import Response
+import httpx
 
 from src.enums.system_enum import ClientTypeEnum
 from src.models.socket_model import ResponseModel
@@ -23,28 +22,32 @@ class HttpBase:
 
     @classmethod
     @request_log()
-    def get(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.get(urljoin(SetConfig.get_host(), url),  # type: ignore
-                            headers=headers if headers else cls.headers, proxies={'http': None, 'https': None},
-                            **kwargs)
+    async def get(cls, url, headers=None, **kwargs) -> ResponseModel | httpx.Response:
+        async with httpx.AsyncClient() as client:
+            return await client.get(urljoin(SetConfig.get_host(), url),  # type: ignore
+                                headers=headers if headers else cls.headers,
+                                **kwargs)
 
     @classmethod
     @request_log()
-    def post(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.post(urljoin(SetConfig.get_host(), url),  # type: ignore
-                             headers=headers if headers else cls.headers, proxies={'http': None, 'https': None},
-                             **kwargs)
+    async def post(cls, url, headers=None, **kwargs) -> ResponseModel | httpx.Response:
+        async with httpx.AsyncClient() as client:
+            return await client.post(urljoin(SetConfig.get_host(), url),  # type: ignore
+                                 headers=headers if headers else cls.headers,
+                                 **kwargs)
 
     @classmethod
     @request_log()
-    def put(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.put(urljoin(SetConfig.get_host(), url),  # type: ignore
-                            headers=headers if headers else cls.headers, proxies={'http': None, 'https': None},
-                            **kwargs)
+    async def put(cls, url, headers=None, **kwargs) -> ResponseModel | httpx.Response:
+        async with httpx.AsyncClient() as client:
+            return await client.put(urljoin(SetConfig.get_host(), url),  # type: ignore
+                                headers=headers if headers else cls.headers,
+                                **kwargs)
 
     @classmethod
     @request_log()
-    def delete(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.delete(urljoin(SetConfig.get_host(), url),  # type: ignore
-                               headers=headers if headers else cls.headers, proxies={'http': None, 'https': None},
-                               **kwargs)
+    async def delete(cls, url, headers=None, **kwargs) -> ResponseModel | httpx.Response:
+        async with httpx.AsyncClient() as client:
+            return await client.delete(urljoin(SetConfig.get_host(), url),  # type: ignore
+                                   headers=headers if headers else cls.headers,
+                                   **kwargs)
