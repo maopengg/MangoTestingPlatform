@@ -36,6 +36,8 @@ class ApiInfo(models.Model):
     posterior_re = models.JSONField(verbose_name="后置正则提取", default=list)
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     posterior_file = models.CharField(verbose_name="下载文件名称key", max_length=1024, null=True)
+    is_schema = models.SmallIntegerField(verbose_name="schema状态，是否给这个接口全用例开启", default=0)
+    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
 
     status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
@@ -121,6 +123,7 @@ class ApiCaseDetailedParameter(models.Model):
     ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)
     ass_text_all = models.TextField(verbose_name="响应文本全匹配断言", null=True)
     ass_jsonpath = models.JSONField(verbose_name="响应jsonpath断言", default=list)
+    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
     # 后置
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
     posterior_response = models.JSONField(verbose_name="后置响应处理", default=list)
