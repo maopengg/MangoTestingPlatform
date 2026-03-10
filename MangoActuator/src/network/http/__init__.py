@@ -7,7 +7,7 @@ from mangoui.widgets.network import BaseHttpClient
 
 from src.enums.system_enum import ClientTypeEnum
 from src.tools.set_config import SetConfig
-
+from src.tools.log_collector import log
 
 class AuthManager:
     """Token 管理器，全局维护鉴权状态"""
@@ -32,7 +32,7 @@ class AuthManager:
 
 auth_manager = AuthManager()
 
-_client: BaseHttpClient = BaseHttpClient()
+_client: BaseHttpClient = BaseHttpClient(logger=log)
 
 
 def get_client() -> BaseHttpClient:
@@ -46,6 +46,7 @@ def reinit_client():
     _client = BaseHttpClient(
         base_url=SetConfig.get_host() or '',
         headers=auth_manager.get_headers(),
+        logger=log
     )
 
 

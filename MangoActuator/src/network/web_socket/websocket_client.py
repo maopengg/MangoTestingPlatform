@@ -142,7 +142,6 @@ class WebSocketClient:
                 send_global_msg(0, MessageEnum.WS_LINK)
 
                 log.error(f"连接异常: {e}")
-                log.debug(traceback.format_exc())
 
                 if retry >= max_retries:
                     log.error("达到最大重试次数，程序退出")
