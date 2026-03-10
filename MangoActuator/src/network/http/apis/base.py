@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 try:
     from mangoui.widgets.network import BaseHttpClient
-except ImportError:
+except Exception:
     import httpx
 
     class ApiError(Exception):
