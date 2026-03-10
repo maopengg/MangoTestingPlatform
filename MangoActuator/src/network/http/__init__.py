@@ -3,7 +3,7 @@
 # @Description: HTTP 模块统一入口 —— 客户端管理 + API 聚合
 # @Time   : 2024-09-12 18:08
 # @Author : 毛鹏
-from mangoui.widgets.network import BaseHttpClient
+from src.network.http.apis.base import BaseHttpClient
 
 from src.enums.system_enum import ClientTypeEnum
 from src.tools.set_config import SetConfig
