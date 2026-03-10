@@ -48,7 +48,7 @@ class CaseFlow:
         try:
             if settings.IS_OPEN:
                 from src.network import ToolsSocketEnum, socket_conn
-                from src import CacheKeyEnum
+                from src.enums.tools_enum import CacheKeyEnum
                 from src.tools.set_config import SetConfig
                 await socket_conn.async_send(
                     '请求获取任务',
