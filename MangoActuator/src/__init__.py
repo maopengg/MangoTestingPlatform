@@ -9,7 +9,6 @@ import traceback
 from src.services.ui.case_flow import CaseFlow
 from src.tools.set_config import SetConfig
 from .consumer import SocketConsumer
-from .enums.tools_enum import CacheKeyEnum
 from .network.web_socket import WebSocketClient, socket_conn
 from .services.pytest.case_flow import PytestCaseFlow
 from .tools import project_dir
@@ -31,9 +30,11 @@ async def process(parent, is_login=False, retry=0):
         case_flow_task = asyncio.create_task(PytestCaseFlow.process_tasks())
         if is_login:
             from src.network import HTTP
-            from src.settings import settings
-            from mangotools.data_processor import EncryptionTool
-            await HTTP.not_auth.login(SetConfig.get_username(), SetConfig.get_password(), is_retry=True)  # type:
+            await HTTP.system.login(
+                SetConfig.get_username(),
+                SetConfig.get_password(),
+                is_retry=True
+            )
         retry = 0
     except Exception as error:
         if websocket_task:

@@ -15,7 +15,8 @@ from mangoui.widgets.input import MangoToggle, MangoLineEdit, MangoPushButton
 from mangoui.widgets.layout import MangoHBoxLayout, MangoVBoxLayout, MangoGridLayout
 from mangoui.widgets.window import MangoScrollArea
 
-from src import project_dir, CacheKeyEnum
+from src import project_dir
+from src.enums.tools_enum import CacheKeyEnum
 from src.models.system_model import SetUserOpenSatusModel
 from src.network import HTTP, ToolsSocketEnum
 from src.network import socket_conn

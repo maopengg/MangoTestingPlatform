@@ -3,12 +3,12 @@
 # @Description:
 # @Time   : 2023-03-05 11:34
 # @Author : 毛鹏
-import asyncio
 import os
+import sys
 import traceback
 
 from PySide6.QtWidgets import QApplication
-from mangotools.mangos import Mango
+from mangoui.widgets.network import QEventLoop
 
 from src.pages.login.login_window import LoginLogic
 from src.tools import project_dir
@@ -18,21 +18,30 @@ from src.tools.set_config import SetConfig
 os.environ["QT_FONT_DPI"] = "96"
 
 
-async def main():
+def main():
     try:
         project_dir.cache_file()
-        await asyncio.sleep(0)
         SetConfig.set_web_default(False)  # type: ignore
-        app = QApplication([])
-        login_window = LoginLogic(Mango.t())
+
+        app = QApplication(sys.argv)
+        loop = QEventLoop(app)
+
+        import asyncio
+        asyncio.set_event_loop(loop)
+
+        login_window = LoginLogic(loop)
         login_window.show()
-        app.exec()
+
+        with loop:
+            loop.run_forever()
+
     except Exception as error:
         traceback.print_exc()
         log.error(f"顶级任务出现异常：{error}")
 
 
-asyncio.run(main())
+main()
+
 # 下面是需要打包成exe的人看的
 r"""
 pyinstaller `
