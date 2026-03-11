@@ -1,2 +1,2 @@
-mangotools==1.1.78
+mangotools==1.1.79
 mangoautomation==1.1.41
