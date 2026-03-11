@@ -77,12 +77,14 @@ class _HTTP:
 
     def _rebuild_apis(self):
         client = get_client()
+        print('初始化的ID', id(_client))
         self.system = SystemApi(client, auth_manager)
         self.user = UserApi(client, auth_manager)
 
     def refresh(self):
         """token / base_url 变更后调用，重建所有 API 实例"""
         reinit_client()
+        print('更新后的ID', id(_client))
         self._rebuild_apis()
 
 
