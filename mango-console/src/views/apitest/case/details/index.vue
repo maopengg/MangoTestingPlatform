@@ -218,7 +218,8 @@
                 <a-button size="small" type="primary" @click="addParameter">增加</a-button>
               </a-space>
               <a-space direction="vertical" fill>
-                <a-collapse :bordered="false" :default-active-key="[0]" accordion>
+                <a-spin :loading="data.collapseLoading" tip="数据加载中..." style="width: 100%">
+                <a-collapse :bordered="false" :active-key="data.activeCollapseKey" accordion @change="onCollapseChange">
                   <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
                     <template #header>
                       <div class="custom-header">
@@ -250,8 +251,14 @@
                         >删除
                       </a-button>
                     </template>
-                    <div>
+                    <!-- 重内容只在展开时挂载，避免全量渲染阻塞主线程 -->
+                    <div v-if="data.activeCollapseKey.includes(index)">
+                      <!-- 展开动画期间显示 loading，内容挂载完成后消失 -->
+                      <div v-if="data.expandingIndex === index" style="padding: 40px 0; text-align: center">
+                        <a-spin tip="内容加载中..." />
+                      </div>
                       <a-tabs
+                        v-else
                         :active-key="data.caseDetailsTypeKey"
                         position="left"
                         @tab-click="(key) => switchApiInfoType(key, item)"
@@ -856,6 +863,7 @@
                     </div>
                   </a-collapse-item>
                 </a-collapse>
+                </a-spin>
               </a-space>
             </a-space>
           </div>
@@ -989,6 +997,9 @@
     actionParameterTitle: '新增接口场景',
     isAdd: true,
     updateId: null,
+    activeCollapseKey: [0],
+    collapseLoading: false,   // 列表整体 loading
+    expandingIndex: -1,       // 正在展开中的 item index，-1 表示无
   })
 
   const caseRunning = ref(false)
@@ -1363,26 +1374,65 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function doRefreshParameter(id: number) {
+    data.collapseLoading = true
     return getApiCaseDetailedParameter({ case_detailed_id: id })
       .then((res) => {
-        if (res.data.length !== 0) {
-          data.selectDataObj = res.data
-          const formatItemData = (item: any) => {
-            const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
-            propertiesToFormat.forEach((prop) => {
-              if (typeof item[prop] === 'object') {
-                item[prop] = formatJson(item[prop])
-              }
-            })
-          }
-          data.selectDataObj.forEach((item: any) => {
-            formatItemData(item)
-          })
-        } else {
-          data.selectDataObj = []
+        // 先清空，解除旧数据的响应式绑定，让 Vue 立即释放旧 DOM
+        data.selectDataObj = []
+        if (!res.data || res.data.length === 0) {
+          data.collapseLoading = false
+          return
         }
+
+        const BATCH_SIZE = 5  // 每帧渲染条数，可按实际数据量调整
+        let index = 0
+
+        function writeBatch() {
+          const end = Math.min(index + BATCH_SIZE, res.data.length)
+          for (; index < end; index++) {
+            data.selectDataObj.push(res.data[index])
+          }
+          if (index < res.data.length) {
+            // 还有数据，下一帧继续写入，让浏览器有机会响应用户操作
+            requestAnimationFrame(writeBatch)
+          } else {
+            data.collapseLoading = false
+          }
+        }
+
+        requestAnimationFrame(writeBatch)
       })
-      .catch(console.log)
+      .catch((e) => {
+        data.collapseLoading = false
+        console.log(e)
+      })
+  }
+
+  // 在 collapse 展开时懒格式化当前 item，避免首次渲染时阻塞主线程
+  function onCollapseChange(keys: any[]) {
+    if (keys.length === 0) {
+      data.activeCollapseKey = []
+      data.expandingIndex = -1
+      return
+    }
+    const idx = keys[keys.length - 1]
+    // 先显示 loading，下一帧再挂载重内容
+    data.expandingIndex = idx
+    data.activeCollapseKey = keys
+    setTimeout(() => {
+      // 懒格式化当前 item
+      const item = data.selectDataObj[idx]
+      if (item && !item.__formatted) {
+        const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
+        propertiesToFormat.forEach((prop) => {
+          if (typeof item[prop] === 'object') {
+            item[prop] = formatJson(item[prop])
+          }
+        })
+        item.__formatted = true
+      }
+      data.expandingIndex = -1
+    }, 30)
   }
 
   function doRefreshHeaders(project_product_id: any, is_parameter = false) {

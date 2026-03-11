@@ -214,8 +214,8 @@
       await nextTick()
       showComponent.value = true
       forceRerender.value++
-    },
-    { immediate: true }
+    }
+    // 去掉 immediate: true，首次渲染由 onMounted 处理，避免挂载时触发两次重建
   )
 
   // 监听展开状态变化
