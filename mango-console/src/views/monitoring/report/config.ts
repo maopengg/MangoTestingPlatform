@@ -92,5 +92,3 @@ export const tableColumns = useTableColumn([
     width: 120,
   },
 ])
-
-

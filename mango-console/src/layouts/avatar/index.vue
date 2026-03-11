@@ -65,7 +65,7 @@
       onOk: () => {
         // 先断开 WebSocket
         disconnectWebSocket()
-        
+
         // 执行登出逻辑
         userStore.logout().then(() => {
           window.localStorage.removeItem('visited-routes')

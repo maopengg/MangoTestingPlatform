@@ -23,11 +23,11 @@
 
     <!-- 中间流程图画布 -->
     <div class="center-panel">
-      <div 
-        ref="canvasRef" 
-        class="flow-canvas" 
+      <div
+        ref="canvasRef"
+        class="flow-canvas"
         :class="{ 'canvas-dragging': isDraggingCanvas }"
-        @drop="onDrop" 
+        @drop="onDrop"
         @dragover="onDragOver"
         @mousedown="onCanvasMouseDown"
       >
@@ -289,9 +289,9 @@
   const getCanvasPosition = (clientX: number, clientY: number): Position => {
     const el = canvasRef.value!
     const rect = el.getBoundingClientRect()
-    return { 
-      x: clientX - rect.left + el.scrollLeft, 
-      y: clientY - rect.top + el.scrollTop 
+    return {
+      x: clientX - rect.left + el.scrollLeft,
+      y: clientY - rect.top + el.scrollTop,
     }
   }
 
@@ -301,12 +301,12 @@
     const nodeHeight = 50
     const minX = 10
     const minY = 10
-    const maxX = 3000 - nodeWidth - 10  // 画布宽度 - 节点宽度 - 边距
-    const maxY = 2000 - nodeHeight - 10  // 画布高度 - 节点高度 - 边距
+    const maxX = 3000 - nodeWidth - 10 // 画布宽度 - 节点宽度 - 边距
+    const maxY = 2000 - nodeHeight - 10 // 画布高度 - 节点高度 - 边距
 
     return {
       x: Math.max(minX, Math.min(maxX, position.x)),
-      y: Math.max(minY, Math.min(maxY, position.y))
+      y: Math.max(minY, Math.min(maxY, position.y)),
     }
   }
 
@@ -349,7 +349,7 @@
       canvasDragStart.value = { x: e.clientX, y: e.clientY }
       canvasScrollStart.value = {
         x: canvasRef.value!.scrollLeft,
-        y: canvasRef.value!.scrollTop
+        y: canvasRef.value!.scrollTop,
       }
       e.preventDefault()
     }
@@ -385,7 +385,7 @@
     if (isDraggingCanvas.value && canvasRef.value) {
       const deltaX = canvasDragStart.value.x - e.clientX
       const deltaY = canvasDragStart.value.y - e.clientY
-      
+
       canvasRef.value.scrollLeft = canvasScrollStart.value.x + deltaX
       canvasRef.value.scrollTop = canvasScrollStart.value.y + deltaY
       return
@@ -762,8 +762,8 @@
     if (nodes.value.length === 0) return
 
     // 找到所有没有输入连接的节点（起始节点）
-    const startNodes = nodes.value.filter(node => {
-      return !edges.value.some(edge => edge.target.node_id === node.id)
+    const startNodes = nodes.value.filter((node) => {
+      return !edges.value.some((edge) => edge.target.node_id === node.id)
     })
 
     if (startNodes.length === 0) {
@@ -772,10 +772,10 @@
     }
 
     // 布局参数 - 从上往下，从画布左侧开始
-    const startX = 200  // 从左侧开始，留一些边距
+    const startX = 200 // 从左侧开始，留一些边距
     const startY = 80
-    const horizontalGap = 200  // 同层级节点的水平间距
-    const verticalGap = 150    // 不同层级的垂直间距
+    const horizontalGap = 200 // 同层级节点的水平间距
+    const verticalGap = 150 // 不同层级的垂直间距
 
     // 已处理的节点和层级信息
     const processedNodes = new Set<string>()
@@ -785,35 +785,35 @@
     // 第一步：计算每个节点的层级（从上往下）
     const calculateLevel = (nodeId: string, level: number) => {
       if (processedNodes.has(nodeId)) return
-      
+
       processedNodes.add(nodeId)
       nodeLevels.set(nodeId, level)
-      
+
       if (!levelNodes.has(level)) {
         levelNodes.set(level, [])
       }
       levelNodes.get(level)!.push(nodeId)
 
       // 查找所有子节点
-      const childEdges = edges.value.filter(edge => edge.source.node_id === nodeId)
-      childEdges.forEach(edge => {
+      const childEdges = edges.value.filter((edge) => edge.source.node_id === nodeId)
+      childEdges.forEach((edge) => {
         calculateLevel(edge.target.node_id, level + 1)
       })
     }
 
     // 从每个起始节点开始计算层级
-    startNodes.forEach(startNode => {
+    startNodes.forEach((startNode) => {
       calculateLevel(startNode.id, 0)
     })
 
     // 第二步：为每个层级的节点分配初始位置（从左往右）
     const nodePositions = new Map<string, Position>()
-    
+
     levelNodes.forEach((nodeIds, level) => {
-      const y = startY + level * verticalGap  // 垂直方向按层级排列
-      
+      const y = startY + level * verticalGap // 垂直方向按层级排列
+
       nodeIds.forEach((nodeId, index) => {
-        const x = startX + index * horizontalGap  // 从左往右排列
+        const x = startX + index * horizontalGap // 从左往右排列
         nodePositions.set(nodeId, { x, y })
       })
     })
@@ -823,21 +823,21 @@
     const maxLevel = Math.max(...Array.from(levelNodes.keys()))
     for (let level = maxLevel - 1; level >= 0; level--) {
       const nodeIds = levelNodes.get(level) || []
-      
-      nodeIds.forEach(nodeId => {
+
+      nodeIds.forEach((nodeId) => {
         // 找到该节点的所有子节点
-        const childEdges = edges.value.filter(edge => edge.source.node_id === nodeId)
+        const childEdges = edges.value.filter((edge) => edge.source.node_id === nodeId)
         if (childEdges.length > 0) {
           // 计算所有子节点的X坐标范围
           const childPositions = childEdges
-            .map(edge => nodePositions.get(edge.target.node_id))
-            .filter(pos => pos !== undefined) as Position[]
-          
+            .map((edge) => nodePositions.get(edge.target.node_id))
+            .filter((pos) => pos !== undefined) as Position[]
+
           if (childPositions.length > 0) {
             // 计算子节点的最小和最大X坐标
-            const minX = Math.min(...childPositions.map(pos => pos.x))
-            const maxX = Math.max(...childPositions.map(pos => pos.x))
-            
+            const minX = Math.min(...childPositions.map((pos) => pos.x))
+            const maxX = Math.max(...childPositions.map((pos) => pos.x))
+
             // 将父节点放在子节点的中间
             const centerX = (minX + maxX) / 2
             const currentPos = nodePositions.get(nodeId)
@@ -851,15 +851,15 @@
 
     // 第四步：应用新位置并确保在画布范围内
     nodePositions.forEach((position, nodeId) => {
-      const node = nodes.value.find(n => n.id === nodeId)
+      const node = nodes.value.find((n) => n.id === nodeId)
       if (node) {
         // 确保节点在画布范围内
         const constrainedX = Math.max(50, Math.min(2800, position.x))
         const constrainedY = Math.max(50, Math.min(1900, position.y))
-        
+
         node.position.x = constrainedX
         node.position.y = constrainedY
-        
+
         // 清理缓存
         connectorPositionCache.delete(`${nodeId}-top`)
         connectorPositionCache.delete(`${nodeId}-bottom`)
@@ -959,8 +959,7 @@
     border-radius: 4px;
     overflow: auto;
     background-color: #fafbfc;
-    background-image: 
-      radial-gradient(circle, #e5e6eb 1px, transparent 1px);
+    background-image: radial-gradient(circle, #e5e6eb 1px, transparent 1px);
     background-size: 20px 20px;
     min-height: 600px;
   }

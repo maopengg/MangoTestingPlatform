@@ -293,34 +293,34 @@
 </script>
 
 <style lang="less" scoped>
-/* 禁用表格横向滚动 */
-.arco-table-container {
-  overflow-x: hidden !important;
-}
+  /* 禁用表格横向滚动 */
+  .arco-table-container {
+    overflow-x: hidden !important;
+  }
 
-.arco-table-content {
-  overflow-x: hidden !important;
-}
+  .arco-table-content {
+    overflow-x: hidden !important;
+  }
 
-.arco-table {
-  table-layout: fixed;
-  width: 100%;
-}
+  .arco-table {
+    table-layout: fixed;
+    width: 100%;
+  }
 
-.arco-table-th {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .arco-table-th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-.arco-table-td {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .arco-table-td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-/* 确保父容器不产生横向滚动 */
-.arco-table-wrapper {
-  overflow-x: hidden;
-}
+  /* 确保父容器不产生横向滚动 */
+  .arco-table-wrapper {
+    overflow-x: hidden;
+  }
 </style>

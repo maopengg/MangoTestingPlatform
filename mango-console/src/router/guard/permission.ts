@@ -17,12 +17,12 @@ function usePermissionGuard() {
         query: { redirect: to.fullPath },
       }
     }
-    
+
     // 用户已登录，确保 WebSocket 已连接（处理页面刷新的情况）
     if (userStore.userName && userStore.password) {
       connectWebSocket(userStore.userName, userStore.password)
     }
-    
+
     const permissionStore = usePermissionStore()
     const isEmptyRoute = permissionStore.isEmptyPermissionRoute()
     if (isEmptyRoute) {

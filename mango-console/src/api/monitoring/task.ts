@@ -61,7 +61,7 @@ export function postMonitoringTaskStop(id: number) {
   })
 }
 
-export function getMonitoringTaskLogs(id: number, limit: number = 200) {
+export function getMonitoringTaskLogs(id: number, limit = 200) {
   return get({
     url: 'monitoring/task/logs',
     data: () => {
@@ -100,4 +100,3 @@ export function getMonitoringTaskDetail(id: number) {
     return res
   })
 }
-

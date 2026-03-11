@@ -47,7 +47,7 @@ const useUserStore = defineStore('user-info', {
       return new Promise<void>((resolve) => {
         // 先断开 WebSocket
         disconnectWebSocket()
-        
+
         // 清理用户数据
         this.$reset()
         localStorage.clear()

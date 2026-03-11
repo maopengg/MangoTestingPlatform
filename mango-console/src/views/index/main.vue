@@ -92,7 +92,6 @@
       .catch(console.log)
   }
 
-
   onMounted(() => {
     nextTick(async () => {
       caseSum()

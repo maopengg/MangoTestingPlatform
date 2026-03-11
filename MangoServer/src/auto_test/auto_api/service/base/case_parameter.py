@@ -10,6 +10,7 @@ import traceback
 import jsonschema
 import requests
 import time
+from jsonschema import validate
 from mangotools.assertion import MangoAssertion
 from mangotools.exceptions import MangoToolsError
 
@@ -19,7 +20,6 @@ from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.tools import project_dir
 from ...models import ApiCaseDetailedParameter, ApiHeaders, ApiInfo
-from jsonschema import validate
 
 
 class CaseParameter:

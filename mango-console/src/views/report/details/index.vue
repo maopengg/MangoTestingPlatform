@@ -169,68 +169,72 @@
           :disabled="tabLoading && currentActiveTab !== '0'"
           v-if="data.summary.ui_count > 0"
         >
-          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px;">
-          <a-collapse :default-active-key="[1]" :bordered="false" accordion destroy-on-hide>
-            <a-collapse-item v-for="item of data.dataList" :key="item.id">
-              <template #header>
-                <div class="custom-header">
-                  <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
-                    >{{ item.case_id }}-{{ item.case_name }}</span
-                  >
-                  <span style="width: 20px"></span>
-                  <a-tag :color="enumStore.status_colors[item.status]"
-                    >{{ enumStore.task_status[item.status].title }}
-                  </a-tag>
-                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
-                    失败提示：{{ item.error_message }}
-                  </span>
-                </div>
-              </template>
-              <template #extra>
-                <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
-              </template>
-              <a-table
-                :bordered="false"
-                :columns="uiColumns"
-                :data="item.children"
-                :pagination="false"
-              >
-                <template #columns>
-                  <a-table-column
-                    v-for="itemRow of uiColumns"
-                    :key="itemRow.key"
-                    :align="itemRow.align ? itemRow.align : 'center'"
-                    :data-index="itemRow.dataIndex"
-                    :fixed="itemRow.fixed"
-                    :title="itemRow.title"
-                    :width="itemRow.width"
-                    :ellipsis="itemRow.ellipsis"
-                    :tooltip="itemRow.tooltip"
-                  >
-                    <template v-if="itemRow.key === 'id'" #cell="{ record }">
-                      <span>{{ record.id }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-                      <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                        >{{ enumStore.task_status[record.status].title }}
-                      </a-tag>
-                    </template>
-                    <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-                      <a-space>
-                        <a-button
-                          v-if="!record.children"
-                          type="text"
-                          size="mini"
-                          @click="showDetails(record)"
-                          >查看详细报告
-                        </a-button>
-                      </a-space>
-                    </template>
-                  </a-table-column>
+          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px">
+            <a-collapse :default-active-key="[1]" :bordered="false" accordion destroy-on-hide>
+              <a-collapse-item v-for="item of data.dataList" :key="item.id">
+                <template #header>
+                  <div class="custom-header">
+                    <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
+                      >{{ item.case_id }}-{{ item.case_name }}</span
+                    >
+                    <span style="width: 20px"></span>
+                    <a-tag :color="enumStore.status_colors[item.status]"
+                      >{{ enumStore.task_status[item.status].title }}
+                    </a-tag>
+                    <span
+                      v-if="item.error_message"
+                      class="error-message"
+                      :title="item.error_message"
+                    >
+                      失败提示：{{ item.error_message }}
+                    </span>
+                  </div>
                 </template>
-              </a-table>
-            </a-collapse-item>
-          </a-collapse>
+                <template #extra>
+                  <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
+                </template>
+                <a-table
+                  :bordered="false"
+                  :columns="uiColumns"
+                  :data="item.children"
+                  :pagination="false"
+                >
+                  <template #columns>
+                    <a-table-column
+                      v-for="itemRow of uiColumns"
+                      :key="itemRow.key"
+                      :align="itemRow.align ? itemRow.align : 'center'"
+                      :data-index="itemRow.dataIndex"
+                      :fixed="itemRow.fixed"
+                      :title="itemRow.title"
+                      :width="itemRow.width"
+                      :ellipsis="itemRow.ellipsis"
+                      :tooltip="itemRow.tooltip"
+                    >
+                      <template v-if="itemRow.key === 'id'" #cell="{ record }">
+                        <span>{{ record.id }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
+                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                          >{{ enumStore.task_status[record.status].title }}
+                        </a-tag>
+                      </template>
+                      <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
+                        <a-space>
+                          <a-button
+                            v-if="!record.children"
+                            type="text"
+                            size="mini"
+                            @click="showDetails(record)"
+                            >查看详细报告
+                          </a-button>
+                        </a-space>
+                      </template>
+                    </a-table-column>
+                  </template>
+                </a-table>
+              </a-collapse-item>
+            </a-collapse>
           </a-spin>
         </a-tab-pane>
         <a-tab-pane
@@ -239,82 +243,86 @@
           :disabled="tabLoading && currentActiveTab !== '1'"
           v-if="data.summary.api_count > 0"
         >
-          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px;">
-          <a-collapse
-            :default-active-key="[1]"
-            :bordered="false"
-            v-for="item of data.dataList"
-            :key="item.id"
-            accordion
-            destroy-on-hide
-            style="padding: 0 0 0 0"
-          >
-            <a-collapse-item :header="item.case_name" key="1">
-              <template #header>
-                <div class="custom-header">
-                  <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
-                    >{{ item.case_id }}-{{ item.case_name }}</span
-                  >
-                  <span style="width: 20px"></span>
-                  <a-tag :color="enumStore.status_colors[item.status]"
-                    >{{ enumStore.task_status[item.status].title }}
-                  </a-tag>
-                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
-                    失败提示：{{ item.error_message }}
-                  </span>
-                </div>
-              </template>
-              <template #extra>
-                <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
-              </template>
-              <a-table
-                :bordered="false"
-                :columns="apiColumns"
-                :data="item.children"
-                :pagination="false"
-              >
-                <template #columns>
-                  <a-table-column
-                    v-for="itemRow of apiColumns"
-                    :key="itemRow.key"
-                    :align="itemRow.align ? itemRow.align : 'center'"
-                    :data-index="itemRow.dataIndex"
-                    :fixed="itemRow.fixed"
-                    :title="itemRow.title"
-                    :width="itemRow.width"
-                    :ellipsis="itemRow.ellipsis"
-                    :tooltip="itemRow.tooltip"
-                  >
-                    <template v-if="itemRow.key === 'id'" #cell="{ record }">
-                      <span>{{ record.api_info_id }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-                      <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                        >{{ enumStore.task_status[record.status].title }}
-                      </a-tag>
-                    </template>
-                    <template v-else-if="itemRow.key === 'request_url'" #cell="{ record }">
-                      <span>{{ record?.request?.url }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'response_time'" #cell="{ record }">
-                      <span>{{ record?.response?.time }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-                      <a-space>
-                        <a-button
-                          v-if="!record.children"
-                          type="text"
-                          size="mini"
-                          @click="showDetails(record)"
-                          >查看详细报告
-                        </a-button>
-                      </a-space>
-                    </template>
-                  </a-table-column>
+          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px">
+            <a-collapse
+              :default-active-key="[1]"
+              :bordered="false"
+              v-for="item of data.dataList"
+              :key="item.id"
+              accordion
+              destroy-on-hide
+              style="padding: 0 0 0 0"
+            >
+              <a-collapse-item :header="item.case_name" key="1">
+                <template #header>
+                  <div class="custom-header">
+                    <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
+                      >{{ item.case_id }}-{{ item.case_name }}</span
+                    >
+                    <span style="width: 20px"></span>
+                    <a-tag :color="enumStore.status_colors[item.status]"
+                      >{{ enumStore.task_status[item.status].title }}
+                    </a-tag>
+                    <span
+                      v-if="item.error_message"
+                      class="error-message"
+                      :title="item.error_message"
+                    >
+                      失败提示：{{ item.error_message }}
+                    </span>
+                  </div>
                 </template>
-              </a-table>
-            </a-collapse-item>
-          </a-collapse>
+                <template #extra>
+                  <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
+                </template>
+                <a-table
+                  :bordered="false"
+                  :columns="apiColumns"
+                  :data="item.children"
+                  :pagination="false"
+                >
+                  <template #columns>
+                    <a-table-column
+                      v-for="itemRow of apiColumns"
+                      :key="itemRow.key"
+                      :align="itemRow.align ? itemRow.align : 'center'"
+                      :data-index="itemRow.dataIndex"
+                      :fixed="itemRow.fixed"
+                      :title="itemRow.title"
+                      :width="itemRow.width"
+                      :ellipsis="itemRow.ellipsis"
+                      :tooltip="itemRow.tooltip"
+                    >
+                      <template v-if="itemRow.key === 'id'" #cell="{ record }">
+                        <span>{{ record.api_info_id }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
+                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                          >{{ enumStore.task_status[record.status].title }}
+                        </a-tag>
+                      </template>
+                      <template v-else-if="itemRow.key === 'request_url'" #cell="{ record }">
+                        <span>{{ record?.request?.url }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'response_time'" #cell="{ record }">
+                        <span>{{ record?.response?.time }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
+                        <a-space>
+                          <a-button
+                            v-if="!record.children"
+                            type="text"
+                            size="mini"
+                            @click="showDetails(record)"
+                            >查看详细报告
+                          </a-button>
+                        </a-space>
+                      </template>
+                    </a-table-column>
+                  </template>
+                </a-table>
+              </a-collapse-item>
+            </a-collapse>
           </a-spin>
         </a-tab-pane>
         <a-tab-pane
@@ -323,83 +331,87 @@
           :disabled="tabLoading && currentActiveTab !== '2'"
           v-if="data.summary.pytest_count > 0"
         >
-          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px;">
-          <a-collapse
-            :default-active-key="[1]"
-            :bordered="false"
-            v-for="item of data.dataList"
-            :key="item.id"
-            accordion
-            destroy-on-hide
-            style="padding: 0 0 0 0"
-          >
-            <a-collapse-item :header="item.case_name" key="1">
-              <template #header>
-                <div class="custom-header">
-                  <span :title="item.case_name" class="case-name">{{ item.case_name }}</span>
-                  <span style="width: 20px"></span>
-                  <a-tag :color="enumStore.status_colors[item.status]"
-                    >{{ enumStore.task_status[item.status].title }}
-                  </a-tag>
-                  <span v-if="item.error_message" class="error-message" :title="item.error_message">
-                    失败提示：{{ item.error_message }}
-                  </span>
-                </div>
-              </template>
-              <template #extra>
-                <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
-              </template>
-              <a-table
-                :bordered="false"
-                :columns="pytestColumns"
-                :data="item.children"
-                :pagination="false"
-              >
-                <template #columns>
-                  <a-table-column
-                    v-for="itemRow of pytestColumns"
-                    :key="itemRow.key"
-                    :align="itemRow.align ? itemRow.align : 'center'"
-                    :data-index="itemRow.dataIndex"
-                    :fixed="itemRow.fixed"
-                    :title="itemRow.title"
-                    :width="itemRow.width"
-                    :ellipsis="itemRow.ellipsis"
-                    :tooltip="itemRow.tooltip"
-                  >
-                    <template v-if="itemRow.key === 'id'" #cell="{ record }">
-                      <span>{{ record.id }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-                      <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                        >{{ enumStore.task_status[record.status].title }}
-                      </a-tag>
-                    </template>
-                    <template v-else-if="itemRow.key === 'start'" #cell="{ record }">
-                      <span>{{ formatDateTime(record.start) }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
-                      <span>{{ formatDateTime(record.stop) }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'error_message'" #cell="{ record }">
-                      <span>{{ record?.statusDetails?.message }}</span>
-                    </template>
-                    <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-                      <a-space>
-                        <a-button
-                          v-if="!record.children"
-                          type="text"
-                          size="mini"
-                          @click="showDetails(record)"
-                          >查看详细报告
-                        </a-button>
-                      </a-space>
-                    </template>
-                  </a-table-column>
+          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px">
+            <a-collapse
+              :default-active-key="[1]"
+              :bordered="false"
+              v-for="item of data.dataList"
+              :key="item.id"
+              accordion
+              destroy-on-hide
+              style="padding: 0 0 0 0"
+            >
+              <a-collapse-item :header="item.case_name" key="1">
+                <template #header>
+                  <div class="custom-header">
+                    <span :title="item.case_name" class="case-name">{{ item.case_name }}</span>
+                    <span style="width: 20px"></span>
+                    <a-tag :color="enumStore.status_colors[item.status]"
+                      >{{ enumStore.task_status[item.status].title }}
+                    </a-tag>
+                    <span
+                      v-if="item.error_message"
+                      class="error-message"
+                      :title="item.error_message"
+                    >
+                      失败提示：{{ item.error_message }}
+                    </span>
+                  </div>
                 </template>
-              </a-table>
-            </a-collapse-item>
-          </a-collapse>
+                <template #extra>
+                  <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
+                </template>
+                <a-table
+                  :bordered="false"
+                  :columns="pytestColumns"
+                  :data="item.children"
+                  :pagination="false"
+                >
+                  <template #columns>
+                    <a-table-column
+                      v-for="itemRow of pytestColumns"
+                      :key="itemRow.key"
+                      :align="itemRow.align ? itemRow.align : 'center'"
+                      :data-index="itemRow.dataIndex"
+                      :fixed="itemRow.fixed"
+                      :title="itemRow.title"
+                      :width="itemRow.width"
+                      :ellipsis="itemRow.ellipsis"
+                      :tooltip="itemRow.tooltip"
+                    >
+                      <template v-if="itemRow.key === 'id'" #cell="{ record }">
+                        <span>{{ record.id }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
+                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                          >{{ enumStore.task_status[record.status].title }}
+                        </a-tag>
+                      </template>
+                      <template v-else-if="itemRow.key === 'start'" #cell="{ record }">
+                        <span>{{ formatDateTime(record.start) }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
+                        <span>{{ formatDateTime(record.stop) }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'error_message'" #cell="{ record }">
+                        <span>{{ record?.statusDetails?.message }}</span>
+                      </template>
+                      <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
+                        <a-space>
+                          <a-button
+                            v-if="!record.children"
+                            type="text"
+                            size="mini"
+                            @click="showDetails(record)"
+                            >查看详细报告
+                          </a-button>
+                        </a-space>
+                      </template>
+                    </a-table-column>
+                  </template>
+                </a-table>
+              </a-collapse-item>
+            </a-collapse>
           </a-spin>
         </a-tab-pane>
       </a-tabs>
@@ -578,7 +590,7 @@
     if (tabLoading.value) {
       return
     }
-    
+
     currentActiveTab.value = key
     tabLoading.value = true
     doRefresh(key)

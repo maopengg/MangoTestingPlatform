@@ -240,7 +240,7 @@
         userStore.saveUser(data, md5(baseData.password)).then(() => {
           // 登录成功后立即连接 WebSocket
           connectWebSocket(baseData.username, md5(baseData.password))
-          
+
           router
             .replace({
               path: '/index/home',

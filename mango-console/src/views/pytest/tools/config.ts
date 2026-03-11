@@ -148,6 +148,8 @@ export const tableColumns = useTableColumn([
     dataIndex: 'name',
     align: 'left',
     width: 300,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '文件名称',

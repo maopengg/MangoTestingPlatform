@@ -45,12 +45,16 @@ export const tableColumns = useTableColumn([
     dataIndex: 'name',
     align: 'left',
     width: 300,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '角色描述',
     key: 'description',
     dataIndex: 'description',
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '创建时间',

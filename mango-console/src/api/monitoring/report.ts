@@ -71,4 +71,3 @@ export function getMonitoringReportDetail(id: number) {
     return res
   })
 }
-
