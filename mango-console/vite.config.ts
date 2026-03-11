@@ -14,12 +14,7 @@ export default defineConfig(({ mode }) => {
     base: dotenvObj?.BUILD_PATH || '/',
     build: {
       outDir: dotenvObj?.BUILD_OUT_DIR || 'dist',
-      // 提升 target，让 esbuild 支持现代 CSS nesting 语法
-      target: 'es2022',
-      // CSS 单独指定目标，避免 less scoped 样式被 esbuild 误判为非法嵌套
-      cssTarget: 'chrome95',
       rollupOptions: {
-        maxParallelFileOps: 5,
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {

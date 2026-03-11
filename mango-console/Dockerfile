@@ -7,8 +7,6 @@ COPY . .
 ARG VUE_ENV
 ENV VUE_ENV=${VUE_ENV}
 ENV NODE_OPTIONS=--max-old-space-size=4096
-# 限制 libuv 线程池大小，减少 less 并发编译压力
-ENV UV_THREADPOOL_SIZE=4
 RUN npm run build:${VUE_ENV}
 
 FROM nginx:stable-alpine3.20-perl AS production-stage
