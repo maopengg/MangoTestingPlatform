@@ -9,6 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from src.enums.tools_enum import StatusEnum
 from src.exceptions import ApiError, ERROR_MSG_0003
 from src.tools.log_collector import log
 
@@ -83,7 +84,7 @@ class AssResultModel(BaseModel):
     expect: Any | None = None
     actual: Any | None = None
     ass_msg: str | None = None
-    status: int = 0
+    status: int = StatusEnum.SUCCESS.value
 
 
 class ApiCaseStepsResultModel(BaseModel):
