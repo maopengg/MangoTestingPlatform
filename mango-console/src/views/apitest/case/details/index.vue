@@ -223,20 +223,19 @@
                   <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
                     <template #header>
                       <div class="custom-header">
-                        <span>{{ '场景名称：' + item.name }}</span>
-                        <span style="width: 20px"></span>
-                        <a-tag :color="enumStore.status_colors[item.status]"
-                          >{{ enumStore.task_status[item.status].title }}
-                        </a-tag>
-                        <a-tag color="purple">
-                          {{
-                            item.error_retry
-                              ? `重试 ${item.error_retry} 次，每次间隔 ${
-                                  item.retry_interval ? item.retry_interval : 0
-                                } 秒`
-                              : '不重试'
-                          }}
-                        </a-tag>
+                        <span class="custom-header__name">{{ '场景名称：' + item.name }}</span>
+                        <div class="custom-header__tags">
+                          <a-tag :color="enumStore.status_colors[item.status]">
+                            {{ enumStore.task_status[item.status].title }}
+                          </a-tag>
+                          <a-tag color="purple">
+                            {{
+                              item.error_retry
+                                ? `重试 ${item.error_retry} 次 / ${item.retry_interval ? item.retry_interval : 0}s`
+                                : '不重试'
+                            }}
+                          </a-tag>
+                        </div>
                       </div>
                     </template>
                     <template #extra>
@@ -1673,41 +1672,89 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 </script>
 
 <style scoped>
+  /* ── 顶部信息卡片 ─────────────────────────────────────────────────── */
+  .container {
+    display: flex;
+    gap: 16px;
+    padding: 4px 0;
+  }
+
   .container .a-space span {
-    font-size: 14px !important;
+    font-size: 13px;
     display: block;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--color-text-2);
+    line-height: 1.8;
   }
 
+  /* ── 主体布局 ────────────────────────────────────────────────────── */
   .main_box {
     width: 100%;
-    margin: 0 auto;
-    padding: 5px;
-    box-sizing: border-box;
     display: flex;
+    gap: 12px;
+    box-sizing: border-box;
   }
 
   .left {
-    padding: 5px;
     width: 45%;
+    min-width: 0;
+    border-right: 1px solid var(--color-border);
+    padding-right: 12px;
   }
 
   .right {
-    padding: 5px;
     width: 55%;
+    min-width: 0;
+    padding-left: 4px;
+  }
+
+  /* ── Collapse header ─────────────────────────────────────────────── */
+  /* 强制 arco collapse header 插槽撑满整行 */
+  :deep(.arco-collapse-item-header-title) {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .custom-header {
     display: flex;
     align-items: center;
-    gap: 12px; /* 控制标签间距 */
-    font-size: 14px;
+    gap: 0;
+    width: 100%;
+    overflow: hidden;
   }
 
-  /* 通用断言样式 */
+  .custom-header__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-1);
+  }
+
+  .custom-header__tags {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 6px;
+    /* 固定宽度保证所有行 tag 起始位置对齐 */
+    width: 200px;
+  }
+
+  .custom-header__tags :deep(.arco-tag) {
+    /* 每个 tag 固定最小宽度，防止内容不同导致宽度变化 */
+    min-width: 52px;
+    justify-content: center;
+  }
+
+  /* ── 断言参数区域 ────────────────────────────────────────────────── */
   .assertion-parameters {
     flex: 2;
     min-width: 300px;
@@ -1717,12 +1764,12 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .parameter-label {
     font-size: 12px;
-    color: #666;
+    color: var(--color-text-3);
     font-weight: 500;
   }
 
@@ -1730,14 +1777,12 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     width: 100%;
   }
 
-  /* 通用断言行内样式 */
   .assertion-parameters-inline {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     flex: 2;
     min-width: 300px;
-    margin-top: 0;
   }
 
   .parameter-item-inline {
@@ -1745,12 +1790,12 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     flex-direction: column;
     gap: 4px;
     flex: 1;
-    min-width: 150px;
+    min-width: 140px;
   }
 
   .parameter-label-inline {
     font-size: 12px;
-    color: #666;
+    color: var(--color-text-3);
     font-weight: 500;
   }
 
@@ -1758,24 +1803,57 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     width: 100%;
   }
 
-  /* 确保KeyValueList中的所有元素都在一行 */
-
+  /* ── Deep 样式穿透 ───────────────────────────────────────────────── */
   :deep(.test-btn) {
     flex-shrink: 0;
     margin-top: 18px;
-    min-width: fit-content; /* 确保按钮不会收缩 */
+    min-width: fit-content;
   }
 
   :deep(.assertion-parameters-inline) {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     flex: 2;
     min-width: 300px;
     margin-top: 0;
   }
 
-  /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
+  /* Collapse 折叠面板优化 */
+  :deep(.arco-collapse-item) {
+    border-radius: 6px;
+    margin-bottom: 6px;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+  }
+
+  :deep(.arco-collapse-item-header) {
+    padding: 10px 16px;
+    background-color: var(--color-fill-1);
+    transition: background-color 0.2s;
+  }
+
+  :deep(.arco-collapse-item-header:hover) {
+    background-color: var(--color-fill-2);
+  }
+
+  :deep(.arco-collapse-item-content) {
+    padding: 12px 16px;
+    background-color: var(--color-bg-1);
+  }
+
+  /* tab 内容区统一内边距 */
+  :deep(.arco-tabs-content) {
+    padding-top: 8px;
+  }
+
+  /* spin loading 居中 */
+  :deep(.arco-spin) {
+    width: 100%;
+    display: block;
+  }
+
+  /* ── 响应式 ──────────────────────────────────────────────────────── */
   @media (max-width: 768px) {
     :deep(.test-btn) {
       margin-top: 0;
@@ -1786,9 +1864,17 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       flex-direction: column;
     }
 
-    .left,
+    .left {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--color-border);
+      padding-right: 0;
+      padding-bottom: 12px;
+    }
+
     .right {
       width: 100%;
+      padding-left: 0;
     }
   }
 </style>
