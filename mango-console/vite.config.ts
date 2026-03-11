@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       // CSS 单独指定目标，避免 less scoped 样式被 esbuild 误判为非法嵌套
       cssTarget: 'chrome95',
       rollupOptions: {
-        maxParallelFileOps: 20,
+        maxParallelFileOps: 5,
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
