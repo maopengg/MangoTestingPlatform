@@ -230,11 +230,12 @@ class CaseParameter:
 
     def __ass_schema(self, response):
         actual = response.json
+        expect = None
         if self.api_info.is_schema == StatusEnum.SUCCESS.value and self.api_info.ass_schema:
             expect = self.api_info.ass_schema
-        elif self.parameter.ass_schema:
+        if self.parameter.ass_schema:
             expect = self.parameter.ass_schema
-        else:
+        if expect is None:
             return
         log.api.debug(f'用例详情断言-5->实际：{actual}，预期：{expect}')
         ass_result = AssResultModel(
