@@ -12,7 +12,31 @@ from mangotools.data_processor import DataProcessor, ObtainRandomData
 from src.exceptions import ToolsError, ERROR_MSG_0026
 from src.network import HTTP
 from src.tools import project_dir
+import asyncio
+import asyncio
+import threading
 
+
+def run_async(coro):
+    """在同步环境执行 async 并等待结果（兼容已存在事件循环）"""
+    result = None
+    error = None
+
+    def runner():
+        nonlocal result, error
+        try:
+            result = asyncio.run(coro)
+        except Exception as e:
+            error = e
+
+    t = threading.Thread(target=runner)
+    t.start()
+    t.join()
+
+    if error:
+        raise error
+
+    return result
 
 class ObtainTestData(DataProcessor):
 
@@ -28,10 +52,13 @@ class ObtainTestData(DataProcessor):
         return str(uuid.uuid4())
 
     @classmethod
-    async def get_file(cls, file_name) -> str:
+    def get_file(cls, file_name) -> str:
         """传入文件名称，返回文件"""
-        await HTTP.system.download_file(file_name)
+
+        run_async(HTTP.system.download_file(file_name))
+
         file_path = os.path.join(project_dir.upload(), file_name)
+
         if os.path.exists(file_path):
             return file_path
         else:
