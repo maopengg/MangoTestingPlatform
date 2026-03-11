@@ -28,8 +28,9 @@ async def process(parent, is_login=False, retry=0):
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
         case_flow_task = asyncio.create_task(PytestCaseFlow.process_tasks())
+        from src.network import HTTP
+        HTTP.refresh()
         if is_login:
-            from src.network import HTTP
             await HTTP.system.login(
                 SetConfig.get_username(),
                 SetConfig.get_password(),
