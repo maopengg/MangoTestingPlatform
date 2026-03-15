@@ -4,6 +4,8 @@
 import json
 from typing import Optional
 
+from src.tools.log_collector import log
+
 
 def _get_ai_config() -> dict:
     """从 CacheData 读取 AI 配置"""
@@ -22,12 +24,14 @@ def _get_ai_config() -> dict:
             config[key] = obj.value if obj.value else defaults[key]
         except CacheData.DoesNotExist:
             config[key] = defaults[key]
+    log.api.debug(f'[AI配置] base_url={config.get("AI_BASE_URL")}, model={config.get("AI_MODEL")}, timeout={config.get("AI_TIMEOUT")}')
     return config
 
 
 def _call_ai(messages: list, config: dict) -> dict:
     """调用大模型，返回解析后的 JSON dict"""
     from openai import OpenAI
+    log.api.debug(f'[AI请求] model={config.get("AI_MODEL")}, messages数量={len(messages)}')
     client = OpenAI(
         api_key=config['AI_API_KEY'],
         base_url=config['AI_BASE_URL'],
@@ -39,9 +43,16 @@ def _call_ai(messages: list, config: dict) -> dict:
         response_format={'type': 'json_object'},
     )
     content = response.choices[0].message.content
+    log.api.debug(
+        f'[AI响应] 原始内容长度={len(content)}, 内容={content[:500]}...'
+        if len(content) > 500
+        else f'[AI响应] 内容={content}'
+    )
     import re as _re
-    content = _re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", content)
-    return json.loads(content)
+    content = _re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', content)
+    result = json.loads(content)
+    log.api.debug(f'[AI响应] 解析后 keys={list(result.keys())}')
+    return result
 
 
 def parse_text_to_api(text: str, name: Optional[str] = None) -> dict:
@@ -53,7 +64,10 @@ def parse_text_to_api(text: str, name: Optional[str] = None) -> dict:
     返回 dict 包含：
       name, url, method, params, json_body, data
     （不含 headers，由全局请求头统一管理）
+
+    若文本中不包含任何请求信息，抛出 ValueError。
     """
+    log.api.debug(f'[parse_text_to_api] 开始解析，文本长度={len(text)}, 自定义名称={name!r}')
     config = _get_ai_config()
     if not config.get('AI_API_KEY'):
         raise ValueError('AI_API_KEY 未配置，请在系统设置-配置管理中填写 AI 的 API Key')
@@ -67,6 +81,7 @@ def parse_text_to_api(text: str, name: Optional[str] = None) -> dict:
 - params: query参数对象，没有则为null
 - json_body: JSON body对象，没有则为null
 - data: form-data对象，没有则为null
+- has_request_info: 布尔值，文本中是否包含有效的接口请求信息（URL或HTTP方法），如果只是普通文字、无关内容则为false
 
 注意：不需要返回 headers 字段，请求头由系统全局统一管理。
 只返回 JSON，不要有任何额外说明文字。"""
@@ -79,6 +94,20 @@ def parse_text_to_api(text: str, name: Optional[str] = None) -> dict:
         {'role': 'system', 'content': system_prompt},
         {'role': 'user', 'content': user_content},
     ], config)
+
+    has_request_info = result.get('has_request_info', True)  # 兼容旧模型不返回该字段
+    url = (result.get('url') or '').strip()
+    method = (result.get('method') or '').strip()
+    log.api.debug(
+        f'[parse_text_to_api] AI解析结果: has_request_info={has_request_info}, '
+        f'url={url!r}, method={method!r}, name={result.get("name")!r}'
+    )
+
+    # 判断文本是否包含有效请求信息
+    if has_request_info is False or (not url and not method):
+        log.api.debug('[parse_text_to_api] 文本中未检测到有效的接口请求信息，拒绝解析')
+        raise ValueError('上传的文本中未包含有效的接口请求信息（如 URL、HTTP 方法等），请粘贴接口文档、cURL 命令或相关请求描述')
+
     return result
 
 
@@ -92,12 +121,14 @@ def generate_case_config(api_info_id: int) -> list:
     from src.auto_test.auto_api.models import ApiInfo
     from src.enums.api_enum import MethodEnum
 
+    log.api.debug(f'[generate_case_config] 开始推断用例，api_info_id={api_info_id}')
     config = _get_ai_config()
     if not config.get('AI_API_KEY'):
         raise ValueError('AI_API_KEY 未配置，请在系统设置-配置管理中填写 AI 的 API Key')
 
     api = ApiInfo.objects.get(id=api_info_id)
     method_name = MethodEnum.get_value(api.method) if api.method is not None else 'UNKNOWN'
+    log.api.debug(f'[generate_case_config] 接口信息: name={api.name!r}, url={api.url!r}, method={method_name}')
 
     # 构造接口摘要给 AI（不含 headers，由全局管理）
     api_summary = {
@@ -130,9 +161,11 @@ def generate_case_config(api_info_id: int) -> list:
     ], config)
 
     cases = result.get('cases', [])
+    log.api.debug(f'[generate_case_config] AI返回用例数量={len(cases)}')
 
     # 保底：AI 未返回 cases 时给一条默认
     if not cases:
+        log.api.debug('[generate_case_config] AI未返回cases，使用默认用例')
         cases = [{'case_name': f'{api.name}_正常流程', 'step_name': f'步骤1-{api.name}'}]
 
     # 截断长度限制
@@ -144,4 +177,5 @@ def generate_case_config(api_info_id: int) -> list:
         if len(case['step_name']) > 124:
             case['step_name'] = case['step_name'][:124]
 
+    log.api.debug(f'[generate_case_config] 最终用例列表={[c["case_name"] for c in cases]}')
     return cases

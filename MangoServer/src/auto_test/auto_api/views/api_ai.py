@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.tools.decorator.error_response import error_response
+from src.tools.log_collector import log
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
 
@@ -32,6 +33,11 @@ class ApiAiViews(ViewSet):
         module_id = request.data.get('module_id')
         api_type = request.data.get('api_type', 1)
 
+        log.api.debug(
+            f'[post_ai_import] text长度={len(text)}, name={name!r}, '
+            f'project_product_id={project_product_id}, module_id={module_id}'
+        )
+
         if not text:
             return ResponseData.fail((400, '请粘贴接口信息'))
         if not project_product_id or not module_id:
@@ -41,12 +47,14 @@ class ApiAiViews(ViewSet):
         from src.enums.api_enum import MethodEnum
 
         if text.lower().startswith('curl'):
+            log.api.debug('[post_ai_import] 检测到 cURL 格式，使用 curlparser 解析')
             from curlparser import parse
             parsed = parse(text)
 
             url_components = urlparse(parsed.url)
             path = url_components.path
             api_name = name or path.split('/')[-1] or 'cURL导入接口'
+            log.api.debug(f'[post_ai_import] cURL解析结果: url={parsed.url!r}, method={parsed.method!r}')
 
             result = {
                 'name': api_name,
@@ -67,9 +75,18 @@ class ApiAiViews(ViewSet):
             elif parsed.json and parsed.data is None:
                 result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
         else:
+            log.api.debug('[post_ai_import] 非 cURL 格式，调用 AI 解析')
             from src.auto_test.auto_api.service.ai_service.ai_parser import parse_text_to_api
-            parsed_ai = parse_text_to_api(text, name)
+            try:
+                parsed_ai = parse_text_to_api(text, name)
+            except ValueError as e:
+                log.api.debug(f'[post_ai_import] AI解析拒绝：{e}')
+                return ResponseData.fail((400, str(e)))
             method_str = (parsed_ai.get('method') or 'GET').upper()
+            log.api.debug(
+                f'[post_ai_import] AI解析成功: name={parsed_ai.get("name")!r}, '
+                f'url={parsed_ai.get("url")!r}, method={method_str!r}'
+            )
             result = {
                 'name': parsed_ai.get('name') or name or '未命名接口',
                 'module': module_id,
@@ -85,7 +102,9 @@ class ApiAiViews(ViewSet):
             if parsed_ai.get('data'):
                 result['data'] = json.dumps(parsed_ai['data'], indent=4, ensure_ascii=False)
 
+        log.api.debug(f'[post_ai_import] 准备写入 ApiInfo: {result}')
         api_res = ApiInfoCRUD.inside_post(result)
+        log.api.debug(f'[post_ai_import] ApiInfo 写入成功, id={api_res.get("id")}')
 
         return ResponseData.success(RESPONSE_MSG_0140, data={
             'api_info_id': api_res.get('id'),
@@ -111,8 +130,10 @@ class ApiAiViews(ViewSet):
         if not case_people_id:
             return ResponseData.fail((400, '请选择用例责任人'))
 
+        log.api.debug(f'[post_ai_preview_case] api_info_id={api_info_id}, case_people_id={case_people_id}')
         from src.auto_test.auto_api.service.ai_service.ai_parser import generate_case_config
         cases = generate_case_config(api_info_id)
+        log.api.debug(f'[post_ai_preview_case] 生成用例数量={len(cases)}')
 
         return ResponseData.success(RESPONSE_MSG_0011, data={
             'api_info_id': api_info_id,
@@ -145,6 +166,13 @@ class ApiAiViews(ViewSet):
         if not cases:
             return ResponseData.fail((400, '请至少提供一条用例'))
 
+        log.api.debug(
+            f'[post_ai_confirm_case] api_info_id={api_info_id}, case_people_id={case_people_id}, '
+            f'用例数={len(cases)}, front_custom数={len(front_custom)}, '
+            f'front_sql数={len(front_sql_list)}, front_headers数={len(front_headers_list)}, '
+            f'posterior_sql数={len(posterior_sql_list)}'
+        )
+
         try:
             api = ApiInfo.objects.get(id=api_info_id)
         except ApiInfo.DoesNotExist:
@@ -155,6 +183,7 @@ class ApiAiViews(ViewSet):
             for idx, item in enumerate(cases):
                 case_name = (item.get('case_name') or f'{api.name}_自动用例_{idx + 1}')[:64]
                 step_name = (item.get('step_name') or f'步骤1-{api.name}')[:124]
+                log.api.debug(f'[post_ai_confirm_case] 写入第{idx + 1}条用例: case_name={case_name!r}, step_name={step_name!r}')
 
                 case_data = {
                     'name': case_name,
@@ -194,5 +223,7 @@ class ApiAiViews(ViewSet):
                 }
                 ApiCaseDetailedParameterCRUD.inside_post(param_data)
                 created.append({'case_id': case_id, 'detailed_id': detailed_id, 'case_name': case_name})
+                log.api.debug(f'[post_ai_confirm_case] 第{idx + 1}条用例写入成功: case_id={case_id}, detailed_id={detailed_id}')
 
+        log.api.debug(f'[post_ai_confirm_case] 全部写入完成，共{len(created)}条')
         return ResponseData.success(RESPONSE_MSG_0009, data={'created': created})
