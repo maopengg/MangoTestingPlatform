@@ -42,6 +42,19 @@ export const constantRoutes = [
     ],
   },
   {
+    path: '/aicase',
+    component: LAYOUT,
+    meta: { hidden: true },
+    children: [
+      {
+        path: 'requirement/detail',
+        name: 'AiCaseRequirementDetail',
+        component: (): any => import('@/views/aicase/requirement/detail.vue'),
+        meta: { title: '需求详情', hidden: true },
+      },
+    ],
+  },
+  {
     path: '/404',
     name: '404',
     component: () => import('@/views/exception/404.vue'),
