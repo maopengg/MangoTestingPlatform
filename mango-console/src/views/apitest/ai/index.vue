@@ -115,16 +115,21 @@
                       </div>
                     </div>
                   </a-tab-pane>
-                  <a-tab-pane key="front_headers" title="请求 Headers">
-                    <div class="kv-section">
-                      <div class="kv-toolbar"><a-button size="small" type="primary" @click="caseConfig.front_headers.push({key:'',value:''})">+ 增加</a-button></div>
-                      <div v-if="!caseConfig.front_headers.length" class="placeholder-tip">暂无自定义 Headers</div>
-                      <div v-for="(item, idx) in caseConfig.front_headers" :key="idx" class="kv-row">
-                        <a-input v-model="item.key" placeholder="Header 名称" size="small" />
-                        <a-input v-model="item.value" placeholder="Header 值" size="small" />
-                        <a-button size="mini" status="danger" type="text" @click="caseConfig.front_headers.splice(idx,1)">删除</a-button>
-                      </div>
-                    </div>
+                  <a-tab-pane key="front_headers" title="默认请求头">
+                    <a-space direction="vertical">
+                      <TipMessage message="此处请求头会应用到所有接口中" />
+                      <a-checkbox-group
+                        v-for="item of headersList"
+                        :key="item.id"
+                        v-model="caseConfig.front_headers"
+                        direction="vertical"
+                      >
+                        <a-checkbox :value="item.id">
+                          {{ item.key + ': ' + item.value }}
+                        </a-checkbox>
+                      </a-checkbox-group>
+                      <div v-if="!headersList.length" class="placeholder-tip">暂无可用请求头，请先在接口管理中配置</div>
+                    </a-space>
                   </a-tab-pane>
                 </a-tabs>
               </a-tab-pane>
@@ -218,7 +223,9 @@
     postAiPreviewCase,
   } from '@/api/apitest/ai'
   import { putApiInfo } from '@/api/apitest/info'
+  import { getApiHeaders } from '@/api/apitest/headers'
   import { makeCasePreview, makeImportForm } from './config'
+  import TipMessage from '@/components/TipMessage.vue'
 
   const router = useRouter()
   const projectInfo = useProject()
@@ -243,10 +250,29 @@
   const doneResult = reactive<{
     created: { case_id: number; detailed_id: number; case_name: string }[]
   }>({ created: [] })
+  const headersList = ref<any[]>([])
+
+  function loadHeaders(project_product: any) {
+    const id = Array.isArray(project_product)
+      ? project_product[project_product.length - 1]
+      : project_product
+    if (!id) {
+      headersList.value = []
+      return
+    }
+    getApiHeaders({ page: 1, pageSize: 10000, project_product_id: id })
+      .then((res: any) => {
+        headersList.value = res.data || []
+      })
+      .catch(() => {
+        headersList.value = []
+      })
+  }
 
   function onProductChange(val: any) {
     productModule.getProjectModule(val)
     importForm.module_id = ''
+    loadHeaders(val)
   }
 
   async function onImport() {
@@ -350,7 +376,7 @@
   const caseConfig = reactive({
     front_custom: [] as { key: string; value: string }[],
     front_sql: [] as { key: string; value: string }[],
-    front_headers: [] as { key: string; value: string }[],
+    front_headers: [] as number[],
     posterior_sql: [] as { key: string; value: string }[],
   })
 
@@ -404,6 +430,7 @@
     caseConfig.front_sql = []
     caseConfig.front_headers = []
     caseConfig.posterior_sql = []
+    headersList.value = []
   }
 
   onMounted(async () => {

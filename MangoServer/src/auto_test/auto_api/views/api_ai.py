@@ -42,10 +42,7 @@ class ApiAiViews(ViewSet):
 
         if text.lower().startswith('curl'):
             from curlparser import parse
-            try:
-                parsed = parse(text)
-            except Exception as e:
-                return ResponseData.fail((400, f'cURL 解析失败：{e}'))
+            parsed = parse(text)
 
             url_components = urlparse(parsed.url)
             path = url_components.path
@@ -71,13 +68,7 @@ class ApiAiViews(ViewSet):
                 result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
         else:
             from src.auto_test.auto_api.service.ai_service.ai_parser import parse_text_to_api
-            try:
-                parsed_ai = parse_text_to_api(text, name)
-            except ValueError as e:
-                return ResponseData.fail((400, str(e)))
-            except Exception as e:
-                return ResponseData.fail((500, f'AI 解析失败：{e}'))
-
+            parsed_ai = parse_text_to_api(text, name)
             method_str = (parsed_ai.get('method') or 'GET').upper()
             result = {
                 'name': parsed_ai.get('name') or name or '未命名接口',
@@ -94,10 +85,7 @@ class ApiAiViews(ViewSet):
             if parsed_ai.get('data'):
                 result['data'] = json.dumps(parsed_ai['data'], indent=4, ensure_ascii=False)
 
-        try:
-            api_res = ApiInfoCRUD.inside_post(result)
-        except Exception as e:
-            return ResponseData.fail((500, f'写入接口数据失败：{e}'))
+        api_res = ApiInfoCRUD.inside_post(result)
 
         return ResponseData.success(RESPONSE_MSG_0140, data={
             'api_info_id': api_res.get('id'),
@@ -124,12 +112,7 @@ class ApiAiViews(ViewSet):
             return ResponseData.fail((400, '请选择用例责任人'))
 
         from src.auto_test.auto_api.service.ai_service.ai_parser import generate_case_config
-        try:
-            cases = generate_case_config(api_info_id)
-        except ValueError as e:
-            return ResponseData.fail((400, str(e)))
-        except Exception as e:
-            return ResponseData.fail((500, f'AI 生成用例配置失败：{e}'))
+        cases = generate_case_config(api_info_id)
 
         return ResponseData.success(RESPONSE_MSG_0011, data={
             'api_info_id': api_info_id,
@@ -168,54 +151,48 @@ class ApiAiViews(ViewSet):
             return ResponseData.fail((400, f'ApiInfo ID={api_info_id} 不存在'))
 
         created = []
-        try:
-            with transaction.atomic():
-                for idx, item in enumerate(cases):
-                    case_name = (item.get('case_name') or f'{api.name}_自动用例_{idx + 1}')[:64]
-                    step_name = (item.get('step_name') or f'步骤1-{api.name}')[:124]
+        with transaction.atomic():
+            for idx, item in enumerate(cases):
+                case_name = (item.get('case_name') or f'{api.name}_自动用例_{idx + 1}')[:64]
+                step_name = (item.get('step_name') or f'步骤1-{api.name}')[:124]
 
-                    case_data = {
-                        'name': case_name,
-                        'project_product': api.project_product_id,
-                        'module': api.module_id,
-                        'case_people': case_people_id,
-                        'level': 1,
-                        'status': StatusEnum.FAIL.value,
-                        'parametrize': [],
-                        'front_custom': front_custom,
-                        'front_sql': front_sql_list,
-                        'front_headers': front_headers_list,
-                        'posterior_sql': posterior_sql_list,
-                    }
-                    case_res = ApiCaseCRUD.inside_post(case_data)
-                    case_id = case_res.get('id')
+                case_data = {
+                    'name': case_name,
+                    'project_product': api.project_product_id,
+                    'module': api.module_id,
+                    'case_people': case_people_id,
+                    'level': 1,
+                    'status': StatusEnum.FAIL.value,
+                    'parametrize': [],
+                    'front_custom': front_custom,
+                    'front_sql': front_sql_list,
+                    'front_headers': front_headers_list,
+                    'posterior_sql': posterior_sql_list,
+                }
+                case_res = ApiCaseCRUD.inside_post(case_data)
+                case_id = case_res.get('id')
 
-                    detailed_data = {
-                        'case': case_id,
-                        'api_info': api_info_id,
-                        'case_sort': 1,
-                        'status': StatusEnum.FAIL.value,
-                    }
-                    detailed_res = ApiCaseDetailedCRUD.inside_post(detailed_data)
-                    detailed_id = detailed_res.get('id')
+                detailed_data = {
+                    'case': case_id,
+                    'api_info': api_info_id,
+                    'case_sort': 1,
+                    'status': StatusEnum.FAIL.value,
+                }
+                detailed_res = ApiCaseDetailedCRUD.inside_post(detailed_data)
+                detailed_id = detailed_res.get('id')
 
-                    # 创建 ApiCaseDetailedParameter，复制 ApiInfo 的请求数据
-                    from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
-                    param_data = {
-                        'case_detailed': detailed_id,
-                        'name': step_name,
-                        'params': api.params,
-                        'data': api.data,
-                        'json': api.json,
-                        'file': api.file,
-                        'status': StatusEnum.FAIL.value,
-                    }
-                    ApiCaseDetailedParameterCRUD.inside_post(param_data)
-                    created.append({'case_id': case_id, 'detailed_id': detailed_id, 'case_name': case_name})
-
-        except Exception as e:
-            return ResponseData.fail((500, f'写入用例失败：{e}'))
+                # 创建 ApiCaseDetailedParameter，复制 ApiInfo 的请求数据
+                from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
+                param_data = {
+                    'case_detailed': detailed_id,
+                    'name': step_name,
+                    'params': api.params,
+                    'data': api.data,
+                    'json': api.json,
+                    'file': api.file,
+                    'status': StatusEnum.FAIL.value,
+                }
+                ApiCaseDetailedParameterCRUD.inside_post(param_data)
+                created.append({'case_id': case_id, 'detailed_id': detailed_id, 'case_name': case_name})
 
         return ResponseData.success(RESPONSE_MSG_0009, data={'created': created})
-
-                    
