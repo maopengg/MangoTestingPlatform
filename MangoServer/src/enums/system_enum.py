@@ -56,6 +56,10 @@ class CacheDataKeyEnum(BaseEnum):
     PYTEST_TESTCASE = '测试用例目录名称'
     PYTEST_TOOLS = '工具文件目录名称'
     PYTEST_UPLOAD = '测试文件目录名称'
+    AI_API_KEY = 'AI的APIKey'
+    AI_BASE_URL = 'AI接口地址(兼容OpenAI格式)'
+    AI_MODEL = 'AI模型名称'
+    AI_TIMEOUT = 'AI请求超时时间(秒)'
 
     @classmethod
     def obj(cls):
@@ -72,6 +76,10 @@ class CacheDataKeyEnum(BaseEnum):
             'PYTEST_TESTCASE': 'test_case',
             'PYTEST_TOOLS': 'scripts',
             'PYTEST_UPLOAD': 'upload',
+            'AI_API_KEY': None,
+            'AI_BASE_URL': 'https://api.deepseek.com',
+            'AI_MODEL': 'deepseek-chat',
+            'AI_TIMEOUT': 60,
         }
 
     @classmethod

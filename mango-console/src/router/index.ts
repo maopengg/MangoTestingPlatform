@@ -59,6 +59,13 @@ export const extraRoutes = [
           title: '用例详情',
         },
       },
+      {
+        path: 'ai/index',
+        component: () => import('@/views/apitest/ai/index.vue'),
+        meta: {
+          title: 'AI写用例',
+        },
+      },
     ],
   },
   {

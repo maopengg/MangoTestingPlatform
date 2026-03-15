@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from django.urls import path
 
+from src.auto_test.auto_api.views.api_ai import ApiAiViews
 from src.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD, \
@@ -44,4 +45,9 @@ urlpatterns = [
     #
     path("headers", ApiHeadersCRUD.as_view()),
     # path("public/status", ApiHeadersViews.as_view({'put': 'put_status'})),
+
+    # AI 写用例
+    path("info/ai/import", ApiAiViews.as_view({'post': 'post_ai_import'})),
+    path("info/ai/preview_case", ApiAiViews.as_view({'post': 'post_ai_preview_case'})),
+    path("info/ai/confirm_case", ApiAiViews.as_view({'post': 'post_ai_confirm_case'})),
 ]

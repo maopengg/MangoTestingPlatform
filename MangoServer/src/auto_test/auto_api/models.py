@@ -12,7 +12,7 @@ from src.exceptions import ToolsError
 
 
 class ApiInfo(models.Model):
-    """api用例表"""
+    """api信息管理表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)

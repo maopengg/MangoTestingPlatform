@@ -33,6 +33,19 @@ class RequestModel(BaseModel):
     posterior_file: str | None = None
 
     def serialize(self):
+        # 对 headers value 中的非 latin-1 字符做 percent-encoding，避免 UnicodeEncodeError
+        if self.headers:
+            from urllib.parse import quote
+            sanitized = {}
+            for k, v in self.headers.items():
+                v_str = str(v) if v is not None else ''
+                try:
+                    v_str.encode('latin-1')
+                    sanitized[k] = v_str
+                except UnicodeEncodeError:
+                    sanitized[k] = quote(v_str, safe='')
+            self.headers = sanitized
+
         for field in ['data', 'json', 'params']:
             field_value = getattr(self, field)
             if field_value is not None:

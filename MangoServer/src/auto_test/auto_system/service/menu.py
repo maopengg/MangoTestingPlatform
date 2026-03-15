@@ -65,6 +65,11 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/apitest",
+                    "menuUrl": "/apitest/ai/index",
+                    "menuName": "AI写用例",
+                },
+                {
+                    "parentPath": "/apitest",
                     "menuUrl": "/apitest/info/index",
                     "menuName": "接口管理",
                 },
