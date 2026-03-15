@@ -37,6 +37,7 @@ urlpatterns = [
     path('user/', include("src.auto_test.auto_user.urls")),
     path('pytest/', include("src.auto_test.auto_pytest.urls")),
     path('monitoring/', include("src.auto_test.monitoring.urls")),
+    path('ai/', include("src.auto_test.auto_ai.urls")),
 ]
 
 if not IS_MINIO:

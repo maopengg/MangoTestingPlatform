@@ -23,6 +23,24 @@ def ad_routes():
             ],
         },
         {
+            "menuUrl": "/aicase",
+            "menuName": "AI写用例",
+            "icon": "IconRobot",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/aicase",
+                    "menuUrl": "/aicase/generate/index",
+                    "menuName": "AI生成用例",
+                },
+                {
+                    "parentPath": "/aicase",
+                    "menuUrl": "/aicase/requirement/index",
+                    "menuName": "需求管理",
+                },
+            ],
+        },
+        {
             "menuUrl": "/uitest",
             "menuName": "界面自动化",
             "icon": "IconFindReplace",
