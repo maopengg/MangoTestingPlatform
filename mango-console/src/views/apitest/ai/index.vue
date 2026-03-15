@@ -252,7 +252,7 @@
   async function onImport() {
     if (!importForm.project_product) return Message.error('请选择项目产品')
     if (!importForm.module_id) return Message.error('请选择模块')
-    if (!importForm.text.trim()) return Message.error('请选择项目产品')
+    if (!importForm.text.trim()) return Message.error('请粘贴接口信息')
     importing.value = true
     try {
       const res = await postAiImport({
@@ -350,6 +350,7 @@
   const caseConfig = reactive({
     front_custom: [] as { key: string; value: string }[],
     front_sql: [] as { key: string; value: string }[],
+    front_headers: [] as { key: string; value: string }[],
     posterior_sql: [] as { key: string; value: string }[],
   })
 
@@ -391,7 +392,9 @@
     importForm.name = ''
     importForm.text = ''
     Object.keys(apiInfo).forEach((k) => delete apiInfo[k])
+    apiInfo.api_info_id = null
     Object.keys(apiForm).forEach((k) => delete apiForm[k])
+    Object.assign(apiForm, { name: '', url: '', method: '', params: '', json: '', data: '' })
     testResult.value = null
     casePeopleId.value = null
     Object.assign(casePreview, makeCasePreview())
@@ -399,6 +402,7 @@
     editingApi.value = false
     caseConfig.front_custom = []
     caseConfig.front_sql = []
+    caseConfig.front_headers = []
     caseConfig.posterior_sql = []
   }
 
