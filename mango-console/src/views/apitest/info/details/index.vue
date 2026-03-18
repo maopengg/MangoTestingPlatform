@@ -367,7 +367,6 @@
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
-          console.log(value1)
           if (typeof parsedValue === 'object') {
             value = parsedValue
           } else {
@@ -378,7 +377,6 @@
           value = null
         }
       } catch (e) {
-        console.log(e)
         Message.error(`请输入json格式的：${key}`)
         return
       }

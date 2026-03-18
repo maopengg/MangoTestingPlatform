@@ -337,8 +337,6 @@
       }
     })
     data.selectResultData = {}
-    console.log(data.result_data)
-    console.log(data.selectData.id)
     data.result_data?.element_result_list.forEach((item: any) => {
       debugger
       if (item.id === data.selectData.id) {

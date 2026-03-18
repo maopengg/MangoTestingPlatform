@@ -532,7 +532,6 @@
         debugInterface.value = 0
       })
       .catch((error) => {
-        console.log(error)
         Message.error('上传失败')
       })
   }

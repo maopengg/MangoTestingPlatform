@@ -219,649 +219,679 @@
               </a-space>
               <a-space direction="vertical" fill>
                 <a-spin :loading="data.collapseLoading" tip="数据加载中..." style="width: 100%">
-                <a-collapse :bordered="false" :active-key="data.activeCollapseKey" accordion @change="onCollapseChange">
-                  <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
-                    <template #header>
-                      <div class="custom-header">
-                        <span class="custom-header__name">{{ '场景名称：' + item.name }}</span>
-                        <div class="custom-header__tags">
-                          <a-tag :color="enumStore.status_colors[item.status]">
-                            {{ enumStore.task_status[item.status].title }}
-                          </a-tag>
-                          <a-tag color="purple">
-                            {{
-                              item.error_retry
-                                ? `重试 ${item.error_retry} 次 / ${item.retry_interval ? item.retry_interval : 0}s`
-                                : '不重试'
-                            }}
-                          </a-tag>
+                  <a-collapse
+                    :bordered="false"
+                    :active-key="data.activeCollapseKey"
+                    accordion
+                    @change="onCollapseChange"
+                  >
+                    <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
+                      <template #header>
+                        <div class="custom-header">
+                          <span class="custom-header__name">{{ '场景名称：' + item.name }}</span>
+                          <div class="custom-header__tags">
+                            <a-tag :color="enumStore.status_colors[item.status]">
+                              {{ enumStore.task_status[item.status].title }}
+                            </a-tag>
+                            <a-tag color="purple">
+                              {{
+                                item.error_retry
+                                  ? `重试 ${item.error_retry} 次 / ${
+                                      item.retry_interval ? item.retry_interval : 0
+                                    }s`
+                                  : '不重试'
+                              }}
+                            </a-tag>
+                          </div>
                         </div>
-                      </div>
-                    </template>
-                    <template #extra>
-                      <a-button size="mini" type="text" @click.stop="parameterEditing(item)"
-                        >编辑
-                      </a-button>
-                      <a-button
-                        size="mini"
-                        status="danger"
-                        type="text"
-                        @click.stop="parameterDelete(item)"
-                        >删除
-                      </a-button>
-                    </template>
-                    <!-- 重内容只在展开时挂载，避免全量渲染阻塞主线程 -->
-                    <div v-if="data.activeCollapseKey.includes(index)">
-                      <!-- 展开动画期间显示 loading，内容挂载完成后消失 -->
-                      <div v-if="data.expandingIndex === index" style="padding: 40px 0; text-align: center">
-                        <a-spin tip="内容加载中..." />
-                      </div>
-                      <a-tabs
-                        v-else
-                        :active-key="data.caseDetailsTypeKey"
-                        position="left"
-                        @tab-click="(key) => switchApiInfoType(key, item)"
-                      >
-                        <a-tab-pane key="0" title="请求配置">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
-                            <a-tab-pane key="00" title="请求头">
-                              <div class="m-2" style="height: 180px; overflow-y: auto">
-                                <TipMessage
-                                  message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
-                                />
-                                <a-space direction="vertical" style="width: 100%">
-                                  <a-checkbox-group
-                                    v-for="header of data.parameter_headers_list"
-                                    :key="header.id"
-                                    v-model="item.headers"
-                                    direction="vertical"
-                                    @change="
-                                      (selectedValues) => changeHeadersApi(selectedValues, item)
-                                    "
-                                  >
-                                    <a-checkbox :value="header.id">
-                                      {{ header.key + ': ' + header.value }}
-                                    </a-checkbox>
-                                  </a-checkbox-group>
-                                </a-space>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="01" title="参数">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.params"
-                                  allow-clear
-                                  :auto-size="{ minRows: 6 }"
-                                  placeholder="请输入参数"
-                                  @blur="blurSave('params', item.params, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="02" title="表单">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.data"
-                                  allow-clear
-                                  :auto-size="{ minRows: 6 }"
-                                  placeholder="请输入表单"
-                                  @blur="blurSave('data', item.data, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="03" title="JSON">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.json"
-                                  allow-clear
-                                  :auto-size="{ minRows: 6 }"
-                                  placeholder="请输入JSON"
-                                  @blur="blurSave('json', item.json, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="04" title="文件">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.file"
-                                  allow-clear
-                                  :auto-size="{ minRows: 6 }"
-                                  placeholder="请输入file，json格式数据"
-                                  @blur="blurSave('file', item.file, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-tab-pane>
-                        <a-tab-pane key="1" title="前置处理">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
-                            <template #extra>
-                              <a-space v-if="data.assClickAdd">
-                                <a-button size="small" type="primary" @click="clickAdd(item)"
-                                  >增加
-                                </a-button>
-                              </a-space>
-                            </template>
-                            <a-tab-pane key="10" title="前置sql">
-                              <div class="m-2">
-                                <KeyValueList
-                                  :data-list="item.front_sql"
-                                  :field-config="[
-                                    {
-                                      field: 'key',
-                                      label: 'Key',
-                                      placeholder: '请输入缓存key',
-                                    },
-                                    {
-                                      field: 'value',
-                                      label: 'Sql语句',
-                                      placeholder: '请输入sql语句',
-                                    },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(item.front_sql, index, 'front_sql', item.id)
-                                  "
-                                  :on-save="() => blurSave('front_sql', item.front_sql, item.id)"
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.front_sql,
-                                        index,
-                                        value,
-                                        item,
-                                        'front_sql',
-                                        () => blurSave('front_sql', item.front_sql, item.id)
-                                      )
-                                  "
-                                  empty-text='暂无前置sql语句，点击上方"增加"按钮添加'
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="11" title="前置函数">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.front_func"
-                                  :auto-size="{ minRows: 10, maxRows: 10 }"
-                                  allow-clear
-                                  placeholder="根据帮助文档，输入自定义前置函数"
-                                  @blur="blurSave('front_func', item.front_func, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-tab-pane>
-                        <a-tab-pane key="2" title="响应结果">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
-                            <a-tab-pane key="20" title="基础信息">
-                              <div class="m-2">
-                                <a-space direction="vertical">
-                                  <span>URL：{{ item.result_data?.request?.url }}</span>
-                                  <span>请求方法：{{ item.result_data?.request?.method }}</span>
-                                  <span>响应code：{{ item.result_data?.response?.code }}</span>
-                                  <span>测试时间：{{ item.result_data?.test_time }}</span>
-                                  <span
-                                    >响应时间：{{
-                                      item.result_data?.response?.time.toFixed(2)
-                                    }}
-                                    秒</span
-                                  >
-                                  <span v-if="item.result_data?.error_message"
-                                    >失败原因：{{ item.result_data?.error_message }}</span
-                                  >
-                                </a-space>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="21" title="请求头">
-                              <div class="m-2">
-                                <JsonDisplay :data="item.result_data?.request?.headers" />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="25" title="请求数据">
-                              <div class="m-2" v-if="item.result_data?.request?.data">
-                                <JsonDisplay :data="item.result_data?.request?.data" />
-                              </div>
-                              <div class="m-2" v-if="item.result_data?.request?.json">
-                                <JsonDisplay :data="item.result_data?.request?.json" />
-                              </div>
-                              <div class="m-2" v-if="item.result_data?.request?.params">
-                                <JsonDisplay :data="item.result_data?.request?.params" />
-                              </div>
-                              <div class="m-2" v-if="item.result_data?.request?.file">
-                                <JsonDisplay :data="item.result_data?.request?.file" />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="22" title="响应头">
-                              <div class="m-2">
-                                <JsonDisplay :data="item.result_data?.response?.headers" />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="23" title="响应JSON">
-                              <div class="m-2">
-                                <JsonDisplay
-                                  :data="item.result_data?.response?.json"
-                                  :jsonpath="true"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="24" title="响应文本">
-                              <div class="m-2">
-                                <JsonDisplay :data="item.result_data?.response?.text" />
-                              </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-tab-pane>
-                        <a-tab-pane key="4" title="后置处理">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
-                            <template #extra>
-                              <a-space v-if="data.assClickAdd">
-                                <a-button size="small" type="primary" @click="clickAdd(item)"
-                                  >增加
-                                </a-button>
-                              </a-space>
-                            </template>
-                            <a-tab-pane key="40" title="响应JSON提取">
-                              <div class="m-2">
-                                <TipMessage
-                                  message="从响应json中提取，请输入jsonpath语法的表达式，并点击测试按钮进行测试"
-                                />
-                                <KeyValueList
-                                  :data-list="item.posterior_response"
-                                  :field-config="[
-                                    {
-                                      field: 'value',
-                                      label: 'jsonpath语法',
-                                      placeholder: '请输入jsonpath语法',
-                                    },
-                                    { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.posterior_response,
-                                        index,
-                                        'posterior_response',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () =>
-                                      blurSave(
-                                        'posterior_response',
-                                        item.posterior_response,
-                                        item.id
-                                      )
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.posterior_response,
-                                        index,
-                                        value,
-                                        item,
-                                        'posterior_response',
-                                        () =>
-                                          blurSave(
-                                            'posterior_response',
-                                            item.posterior_response,
-                                            item.id
-                                          )
-                                      )
-                                  "
-                                  empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
-                                >
-                                  <template #extra="{ index }">
-                                    <a-button
-                                      size="small"
-                                      status="success"
-                                      @click="testExtractResponseAfter('jsonpath', item, index)"
-                                      class="test-btn"
-                                    >
-                                      测试
-                                    </a-button>
-                                  </template>
-                                </KeyValueList>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="44" title="响应文本提取">
-                              <div class="m-2">
-                                <TipMessage
-                                  message="从响应文本中提取，请输入正则表达式，并点击测试按钮进行测试"
-                                />
-                                <KeyValueList
-                                  :data-list="item.posterior_response_text"
-                                  :field-config="[
-                                    {
-                                      field: 'value',
-                                      label: '正则语法',
-                                      placeholder: '请输入正则语法',
-                                    },
-                                    { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.posterior_response_text,
-                                        index,
-                                        'posterior_response_text',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () =>
-                                      blurSave(
-                                        'posterior_response_text',
-                                        item.posterior_response_text,
-                                        item.id
-                                      )
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.posterior_response_text,
-                                        index,
-                                        value,
-                                        item,
-                                        'posterior_response_text',
-                                        () =>
-                                          blurSave(
-                                            'posterior_response_text',
-                                            item.posterior_response_text,
-                                            item.id
-                                          )
-                                      )
-                                  "
-                                  empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
-                                >
-                                  <template #extra="{ index }">
-                                    <a-button
-                                      size="small"
-                                      status="success"
-                                      @click="testExtractResponseAfter('re', item, index)"
-                                      class="test-btn"
-                                    >
-                                      测试
-                                    </a-button>
-                                  </template>
-                                </KeyValueList>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="41" title="后置sql处理">
-                              <div class="m-2">
-                                <KeyValueList
-                                  :data-list="item.posterior_sql"
-                                  :field-config="[
-                                    {
-                                      field: 'key',
-                                      label: 'Key',
-                                      placeholder: '请输入缓存key，示例：key1,key2',
-                                    },
-                                    {
-                                      field: 'value',
-                                      label: 'Sql语句',
-                                      placeholder: '请输入sql语句',
-                                    },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.posterior_sql,
-                                        index,
-                                        'posterior_sql',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () => blurSave('posterior_sql', item.posterior_sql, item.id)
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.posterior_sql,
-                                        index,
-                                        value,
-                                        item,
-                                        'posterior_sql',
-                                        () => blurSave('posterior_sql', item.posterior_sql, item.id)
-                                      )
-                                  "
-                                  empty-text='暂无后置sql处理语句，点击上方"增加"按钮添加'
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="42" title="强制等待">
-                              <div class="m-2">
-                                <a-space direction="vertical">
-                                  <a-space direction="vertical">
-                                    <a-input
-                                      v-model="item.posterior_sleep"
-                                      placeholder="请输入强制等待时间，单位是秒"
-                                      style="width: 300px"
-                                      @blur="
-                                        blurSave('posterior_sleep', item.posterior_sleep, item.id)
-                                      "
-                                    />
-                                  </a-space>
-                                </a-space>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="43" title="后置函数">
-                              <div class="m-2">
-                                <a-textarea
-                                  v-model="item.posterior_func"
-                                  :auto-size="{ minRows: 10, maxRows: 10 }"
-                                  allow-clear
-                                  placeholder="根据帮助文档，输入自定义后置函数"
-                                  @blur="blurSave('posterior_func', item.posterior_func, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-tab-pane>
-                        <a-tab-pane key="3" title="接口断言">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
-                            <template #extra>
-                              <a-space v-if="data.assClickAdd">
-                                <a-button size="small" type="primary" @click="clickAdd(item)">
-                                  增加
-                                </a-button>
-                              </a-space>
-                            </template>
-                            <a-tab-pane key="30" title="json一致断言">
-                              <div class="m-2">
-                                <TipMessage
-                                  message="注意以你输入的断言json的key和value为主，你没有输入响应中key和value则不断言"
-                                />
-                                <a-textarea
-                                  v-model="item.ass_json_all"
-                                  :auto-size="{ minRows: 9, maxRows: 9 }"
-                                  allow-clear
-                                  placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
-                                  @blur="blurSave('ass_json_all', item.ass_json_all, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="31" title="jsonpath断言">
-                              <div class="m-2">
-                                <TipMessage message="只能输入jsonpath语法提取响应的json进行断言" />
-                                <KeyValueList
-                                  :data-list="item.ass_jsonpath"
-                                  :field-config="[
-                                    {
-                                      field: 'actual',
-                                      label: '实际值',
-                                      placeholder: '请输入jsonpath提取的实际结果',
-                                    },
-                                    {
-                                      field: 'method',
-                                      label: '断言方法',
-                                      type: 'cascader',
-                                      options: data.textAss,
-                                      placeholder: '请选择断言方法',
-                                      expandTrigger: 'hover',
-                                      valueKey: 'key',
-                                      onChange: (value, currentItem, currentIndex) =>
-                                        handleJsonpathMethodChange(
-                                          value,
-                                          currentItem,
-                                          currentIndex,
-                                          item
-                                        ),
-                                    },
-                                    {
-                                      field: 'expect',
-                                      label: '预期值',
-                                      placeholder: '请输入预期值',
-                                    },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.ass_jsonpath,
-                                        index,
-                                        'ass_jsonpath',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () => blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.ass_jsonpath,
-                                        index,
-                                        value,
-                                        item,
-                                        'ass_jsonpath',
-                                        () => blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
-                                      )
-                                  "
-                                  empty-text='暂无jsonpath断言，点击上方"增加"按钮添加'
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="33" title="文本一致断言">
-                              <div class="m-2">
-                                <TipMessage message="响应的text全匹配断言" />
-                                <a-textarea
-                                  v-model="item.ass_text_all"
-                                  :auto-size="{ minRows: 9, maxRows: 9 }"
-                                  allow-clear
-                                  placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
-                                  @blur="blurSave('ass_text_all', item.ass_text_all, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="32" title="通用断言">
-                              <div class="m-2">
-                                <TipMessage
-                                  message="支持任意类型断言，实际值和预期值均可输入缓存变量"
-                                />
-                                <KeyValueList
-                                  :data-list="item.ass_general"
-                                  :field-config="[
-                                    {
-                                      field: 'method',
-                                      label: '断言方法',
-                                      type: 'cascader',
-                                      options: data.ass,
-                                      placeholder: '请选择断言方法',
-                                      expandTrigger: 'hover',
-                                      valueKey: 'key',
-                                      onChange: (value, currentItem, currentIndex) =>
-                                        handleGeneralMethodChange(
-                                          value,
-                                          currentItem,
-                                          currentIndex,
-                                          item
-                                        ),
-                                    },
-                                  ]"
-                                  :on-delete-item="
-                                    (index) =>
-                                      removeFrontSql(
-                                        item.ass_general,
-                                        index,
-                                        'ass_general',
-                                        item.id
-                                      )
-                                  "
-                                  :on-save="
-                                    () => blurSave('ass_general', item.ass_general, item.id)
-                                  "
-                                  @update:item="
-                                    (index, value) =>
-                                      updateArrayItem(
-                                        item.ass_general,
-                                        index,
-                                        value,
-                                        item,
-                                        'ass_general',
-                                        () => blurSave('ass_general', item.ass_general, item.id)
-                                      )
-                                  "
-                                  empty-text='暂无通用断言，点击上方"增加"按钮添加'
-                                >
-                                  <template #extra="{ index, item: assItem }">
-                                    <div
-                                      v-if="assItem?.value && assItem?.value?.parameter"
-                                      class="assertion-parameters-inline"
-                                    >
-                                      <div
-                                        v-for="(param, pIdx) in assItem.value.parameter"
-                                        :key="param.f"
-                                        class="parameter-item-inline"
-                                      >
-                                        <span class="parameter-label-inline">{{ param.n }}:</span>
-                                        <a-textarea
-                                          v-model="assItem.value.parameter[pIdx].v"
-                                          :placeholder="param.p"
-                                          :required="param.d"
-                                          :auto-size="{ minRows: 1, maxRows: 2 }"
-                                          class="parameter-input-inline"
-                                          @blur="blurSave('ass_general', item.ass_general, item.id)"
-                                        />
-                                      </div>
-                                    </div>
-                                  </template>
-                                </KeyValueList>
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="34" title="结构化断言">
-                              <div class="m-2">
-                                <a-space>
+                      </template>
+                      <template #extra>
+                        <a-button size="mini" type="text" @click.stop="parameterEditing(item)"
+                          >编辑
+                        </a-button>
+                        <a-button
+                          size="mini"
+                          status="danger"
+                          type="text"
+                          @click.stop="parameterDelete(item)"
+                          >删除
+                        </a-button>
+                      </template>
+                      <!-- 重内容只在展开时挂载，避免全量渲染阻塞主线程 -->
+                      <div v-if="data.activeCollapseKey.includes(index)">
+                        <!-- 展开动画期间显示 loading，内容挂载完成后消失 -->
+                        <div
+                          v-if="data.expandingIndex === index"
+                          style="padding: 40px 0; text-align: center"
+                        >
+                          <a-spin tip="内容加载中..." />
+                        </div>
+                        <a-tabs
+                          v-else
+                          :active-key="data.caseDetailsTypeKey"
+                          position="left"
+                          @tab-click="(key) => switchApiInfoType(key, item)"
+                        >
+                          <a-tab-pane key="0" title="请求配置">
+                            <a-tabs
+                              :active-key="data.tabsKey"
+                              @tab-click="(key) => tabsChange(key)"
+                            >
+                              <a-tab-pane key="00" title="请求头">
+                                <div class="m-2" style="height: 180px; overflow-y: auto">
                                   <TipMessage
-                                    message="如果接口管理中开启了则会默认使用进行断言，如果你输入了则会覆盖"
+                                    message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
                                   />
-                                  <a-button size="mini" type="primary" @click="setSchema(item.id)"
-                                    >自动生成</a-button
-                                  >
+                                  <a-space direction="vertical" style="width: 100%">
+                                    <a-checkbox-group
+                                      v-for="header of data.parameter_headers_list"
+                                      :key="header.id"
+                                      v-model="item.headers"
+                                      direction="vertical"
+                                      @change="
+                                        (selectedValues) => changeHeadersApi(selectedValues, item)
+                                      "
+                                    >
+                                      <a-checkbox :value="header.id">
+                                        {{ header.key + ': ' + header.value }}
+                                      </a-checkbox>
+                                    </a-checkbox-group>
+                                  </a-space>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="01" title="参数">
+                                <div class="m-2">
+                                  <a-textarea
+                                    v-model="item.params"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入参数"
+                                    @blur="blurSave('params', item.params, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="02" title="表单">
+                                <div class="m-2">
+                                  <a-textarea
+                                    v-model="item.data"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入表单"
+                                    @blur="blurSave('data', item.data, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="03" title="JSON">
+                                <div class="m-2">
+                                  <a-textarea
+                                    v-model="item.json"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入JSON"
+                                    @blur="blurSave('json', item.json, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="04" title="文件">
+                                <div class="m-2">
+                                  <a-textarea
+                                    v-model="item.file"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入file，json格式数据"
+                                    @blur="blurSave('file', item.file, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                            </a-tabs>
+                          </a-tab-pane>
+                          <a-tab-pane key="1" title="前置处理">
+                            <a-tabs
+                              :active-key="data.tabsKey"
+                              @tab-click="(key) => tabsChange(key)"
+                            >
+                              <template #extra>
+                                <a-space v-if="data.assClickAdd">
+                                  <a-button size="small" type="primary" @click="clickAdd(item)"
+                                    >增加
+                                  </a-button>
                                 </a-space>
-                                <a-textarea
-                                  v-model="item.ass_schema"
-                                  :auto-size="{ minRows: 9, maxRows: 9 }"
-                                  allow-clear
-                                  placeholder="请输入响应的结构化类型"
-                                  @blur="blurSave('ass_schema', item.ass_schema, item.id)"
-                                />
-                              </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-tab-pane>
-                        <a-tab-pane key="5" title="缓存数据">
-                          <div class="m-2">
-                            <JsonDisplay :data="item.result_data?.cache_data" />
-                          </div>
-                        </a-tab-pane>
-                        <a-tab-pane key="6" title="断言结果">
-                          <div class="m-2">
-                            <AssertionResult :data="item.result_data?.ass" />
-                          </div>
-                        </a-tab-pane>
-                      </a-tabs>
-                    </div>
-                  </a-collapse-item>
-                </a-collapse>
+                              </template>
+                              <a-tab-pane key="10" title="前置sql">
+                                <div class="m-2">
+                                  <KeyValueList
+                                    :data-list="item.front_sql"
+                                    :field-config="[
+                                      {
+                                        field: 'key',
+                                        label: 'Key',
+                                        placeholder: '请输入缓存key',
+                                      },
+                                      {
+                                        field: 'value',
+                                        label: 'Sql语句',
+                                        placeholder: '请输入sql语句',
+                                      },
+                                    ]"
+                                    :on-delete-item="
+                                      (index) =>
+                                        removeFrontSql(item.front_sql, index, 'front_sql', item.id)
+                                    "
+                                    :on-save="() => blurSave('front_sql', item.front_sql, item.id)"
+                                    @update:item="
+                                      (index, value) =>
+                                        updateArrayItem(
+                                          item.front_sql,
+                                          index,
+                                          value,
+                                          item,
+                                          'front_sql',
+                                          () => blurSave('front_sql', item.front_sql, item.id)
+                                        )
+                                    "
+                                    empty-text='暂无前置sql语句，点击上方"增加"按钮添加'
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="11" title="前置函数">
+                                <div class="m-2">
+                                  <a-textarea
+                                    v-model="item.front_func"
+                                    :auto-size="{ minRows: 10, maxRows: 10 }"
+                                    allow-clear
+                                    placeholder="根据帮助文档，输入自定义前置函数"
+                                    @blur="blurSave('front_func', item.front_func, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                            </a-tabs>
+                          </a-tab-pane>
+                          <a-tab-pane key="2" title="响应结果">
+                            <a-tabs
+                              :active-key="data.tabsKey"
+                              @tab-click="(key) => tabsChange(key)"
+                            >
+                              <a-tab-pane key="20" title="基础信息">
+                                <div class="m-2">
+                                  <a-space direction="vertical">
+                                    <span>URL：{{ item.result_data?.request?.url }}</span>
+                                    <span>请求方法：{{ item.result_data?.request?.method }}</span>
+                                    <span>响应code：{{ item.result_data?.response?.code }}</span>
+                                    <span>测试时间：{{ item.result_data?.test_time }}</span>
+                                    <span
+                                      >响应时间：{{
+                                        item.result_data?.response?.time.toFixed(2)
+                                      }}
+                                      秒</span
+                                    >
+                                    <span v-if="item.result_data?.error_message"
+                                      >失败原因：{{ item.result_data?.error_message }}</span
+                                    >
+                                  </a-space>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="21" title="请求头">
+                                <div class="m-2">
+                                  <JsonDisplay :data="item.result_data?.request?.headers" />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="25" title="请求数据">
+                                <div class="m-2" v-if="item.result_data?.request?.data">
+                                  <JsonDisplay :data="item.result_data?.request?.data" />
+                                </div>
+                                <div class="m-2" v-if="item.result_data?.request?.json">
+                                  <JsonDisplay :data="item.result_data?.request?.json" />
+                                </div>
+                                <div class="m-2" v-if="item.result_data?.request?.params">
+                                  <JsonDisplay :data="item.result_data?.request?.params" />
+                                </div>
+                                <div class="m-2" v-if="item.result_data?.request?.file">
+                                  <JsonDisplay :data="item.result_data?.request?.file" />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="22" title="响应头">
+                                <div class="m-2">
+                                  <JsonDisplay :data="item.result_data?.response?.headers" />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="23" title="响应JSON">
+                                <div class="m-2">
+                                  <JsonDisplay
+                                    :data="item.result_data?.response?.json"
+                                    :jsonpath="true"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="24" title="响应文本">
+                                <div class="m-2">
+                                  <JsonDisplay :data="item.result_data?.response?.text" />
+                                </div>
+                              </a-tab-pane>
+                            </a-tabs>
+                          </a-tab-pane>
+                          <a-tab-pane key="4" title="后置处理">
+                            <a-tabs
+                              :active-key="data.tabsKey"
+                              @tab-click="(key) => tabsChange(key)"
+                            >
+                              <template #extra>
+                                <a-space v-if="data.assClickAdd">
+                                  <a-button size="small" type="primary" @click="clickAdd(item)"
+                                    >增加
+                                  </a-button>
+                                </a-space>
+                              </template>
+                              <a-tab-pane key="40" title="响应JSON提取">
+                                <div class="m-2">
+                                  <TipMessage
+                                    message="从响应json中提取，请输入jsonpath语法的表达式，并点击测试按钮进行测试"
+                                  />
+                                  <KeyValueList
+                                    :data-list="item.posterior_response"
+                                    :field-config="[
+                                      {
+                                        field: 'value',
+                                        label: 'jsonpath语法',
+                                        placeholder: '请输入jsonpath语法',
+                                      },
+                                      { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
+                                    ]"
+                                    :on-delete-item="
+                                      (index) =>
+                                        removeFrontSql(
+                                          item.posterior_response,
+                                          index,
+                                          'posterior_response',
+                                          item.id
+                                        )
+                                    "
+                                    :on-save="
+                                      () =>
+                                        blurSave(
+                                          'posterior_response',
+                                          item.posterior_response,
+                                          item.id
+                                        )
+                                    "
+                                    @update:item="
+                                      (index, value) =>
+                                        updateArrayItem(
+                                          item.posterior_response,
+                                          index,
+                                          value,
+                                          item,
+                                          'posterior_response',
+                                          () =>
+                                            blurSave(
+                                              'posterior_response',
+                                              item.posterior_response,
+                                              item.id
+                                            )
+                                        )
+                                    "
+                                    empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
+                                  >
+                                    <template #extra="{ index }">
+                                      <a-button
+                                        size="small"
+                                        status="success"
+                                        @click="testExtractResponseAfter('jsonpath', item, index)"
+                                        class="test-btn"
+                                      >
+                                        测试
+                                      </a-button>
+                                    </template>
+                                  </KeyValueList>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="44" title="响应文本提取">
+                                <div class="m-2">
+                                  <TipMessage
+                                    message="从响应文本中提取，请输入正则表达式，并点击测试按钮进行测试"
+                                  />
+                                  <KeyValueList
+                                    :data-list="item.posterior_response_text"
+                                    :field-config="[
+                                      {
+                                        field: 'value',
+                                        label: '正则语法',
+                                        placeholder: '请输入正则语法',
+                                      },
+                                      { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
+                                    ]"
+                                    :on-delete-item="
+                                      (index) =>
+                                        removeFrontSql(
+                                          item.posterior_response_text,
+                                          index,
+                                          'posterior_response_text',
+                                          item.id
+                                        )
+                                    "
+                                    :on-save="
+                                      () =>
+                                        blurSave(
+                                          'posterior_response_text',
+                                          item.posterior_response_text,
+                                          item.id
+                                        )
+                                    "
+                                    @update:item="
+                                      (index, value) =>
+                                        updateArrayItem(
+                                          item.posterior_response_text,
+                                          index,
+                                          value,
+                                          item,
+                                          'posterior_response_text',
+                                          () =>
+                                            blurSave(
+                                              'posterior_response_text',
+                                              item.posterior_response_text,
+                                              item.id
+                                            )
+                                        )
+                                    "
+                                    empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
+                                  >
+                                    <template #extra="{ index }">
+                                      <a-button
+                                        size="small"
+                                        status="success"
+                                        @click="testExtractResponseAfter('re', item, index)"
+                                        class="test-btn"
+                                      >
+                                        测试
+                                      </a-button>
+                                    </template>
+                                  </KeyValueList>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="41" title="后置sql处理">
+                                <div class="m-2">
+                                  <KeyValueList
+                                    :data-list="item.posterior_sql"
+                                    :field-config="[
+                                      {
+                                        field: 'key',
+                                        label: 'Key',
+                                        placeholder: '请输入缓存key，示例：key1,key2',
+                                      },
+                                      {
+                                        field: 'value',
+                                        label: 'Sql语句',
+                                        placeholder: '请输入sql语句',
+                                      },
+                                    ]"
+                                    :on-delete-item="
+                                      (index) =>
+                                        removeFrontSql(
+                                          item.posterior_sql,
+                                          index,
+                                          'posterior_sql',
+                                          item.id
+                                        )
+                                    "
+                                    :on-save="
+                                      () => blurSave('posterior_sql', item.posterior_sql, item.id)
+                                    "
+                                    @update:item="
+                                      (index, value) =>
+                                        updateArrayItem(
+                                          item.posterior_sql,
+                                          index,
+                                          value,
+                                          item,
+                                          'posterior_sql',
+                                          () =>
+                                            blurSave('posterior_sql', item.posterior_sql, item.id)
+                                        )
+                                    "
+                                    empty-text='暂无后置sql处理语句，点击上方"增加"按钮添加'
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="42" title="强制等待">
+                                <div class="m-2">
+                                  <a-space direction="vertical">
+                                    <a-space direction="vertical">
+                                      <a-input
+                                        v-model="item.posterior_sleep"
+                                        placeholder="请输入强制等待时间，单位是秒"
+                                        style="width: 300px"
+                                        @blur="
+                                          blurSave('posterior_sleep', item.posterior_sleep, item.id)
+                                        "
+                                      />
+                                    </a-space>
+                                  </a-space>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="43" title="后置函数">
+                                <div class="m-2">
+                                  <a-textarea
+                                    v-model="item.posterior_func"
+                                    :auto-size="{ minRows: 10, maxRows: 10 }"
+                                    allow-clear
+                                    placeholder="根据帮助文档，输入自定义后置函数"
+                                    @blur="blurSave('posterior_func', item.posterior_func, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                            </a-tabs>
+                          </a-tab-pane>
+                          <a-tab-pane key="3" title="接口断言">
+                            <a-tabs
+                              :active-key="data.tabsKey"
+                              @tab-click="(key) => tabsChange(key)"
+                            >
+                              <template #extra>
+                                <a-space v-if="data.assClickAdd">
+                                  <a-button size="small" type="primary" @click="clickAdd(item)">
+                                    增加
+                                  </a-button>
+                                </a-space>
+                              </template>
+                              <a-tab-pane key="30" title="json一致断言">
+                                <div class="m-2">
+                                  <TipMessage
+                                    message="注意以你输入的断言json的key和value为主，你没有输入响应中key和value则不断言"
+                                  />
+                                  <a-textarea
+                                    v-model="item.ass_json_all"
+                                    :auto-size="{ minRows: 9, maxRows: 9 }"
+                                    allow-clear
+                                    placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
+                                    @blur="blurSave('ass_json_all', item.ass_json_all, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="31" title="jsonpath断言">
+                                <div class="m-2">
+                                  <TipMessage
+                                    message="只能输入jsonpath语法提取响应的json进行断言"
+                                  />
+                                  <KeyValueList
+                                    :data-list="item.ass_jsonpath"
+                                    :field-config="[
+                                      {
+                                        field: 'actual',
+                                        label: '实际值',
+                                        placeholder: '请输入jsonpath提取的实际结果',
+                                      },
+                                      {
+                                        field: 'method',
+                                        label: '断言方法',
+                                        type: 'cascader',
+                                        options: data.textAss,
+                                        placeholder: '请选择断言方法',
+                                        expandTrigger: 'hover',
+                                        valueKey: 'key',
+                                        onChange: (value, currentItem, currentIndex) =>
+                                          handleJsonpathMethodChange(
+                                            value,
+                                            currentItem,
+                                            currentIndex,
+                                            item
+                                          ),
+                                      },
+                                      {
+                                        field: 'expect',
+                                        label: '预期值',
+                                        placeholder: '请输入预期值',
+                                      },
+                                    ]"
+                                    :on-delete-item="
+                                      (index) =>
+                                        removeFrontSql(
+                                          item.ass_jsonpath,
+                                          index,
+                                          'ass_jsonpath',
+                                          item.id
+                                        )
+                                    "
+                                    :on-save="
+                                      () => blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
+                                    "
+                                    @update:item="
+                                      (index, value) =>
+                                        updateArrayItem(
+                                          item.ass_jsonpath,
+                                          index,
+                                          value,
+                                          item,
+                                          'ass_jsonpath',
+                                          () => blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
+                                        )
+                                    "
+                                    empty-text='暂无jsonpath断言，点击上方"增加"按钮添加'
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="33" title="文本一致断言">
+                                <div class="m-2">
+                                  <TipMessage message="响应的text全匹配断言" />
+                                  <a-textarea
+                                    v-model="item.ass_text_all"
+                                    :auto-size="{ minRows: 9, maxRows: 9 }"
+                                    allow-clear
+                                    placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
+                                    @blur="blurSave('ass_text_all', item.ass_text_all, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="32" title="通用断言">
+                                <div class="m-2">
+                                  <TipMessage
+                                    message="支持任意类型断言，实际值和预期值均可输入缓存变量"
+                                  />
+                                  <KeyValueList
+                                    :data-list="item.ass_general"
+                                    :field-config="[
+                                      {
+                                        field: 'method',
+                                        label: '断言方法',
+                                        type: 'cascader',
+                                        options: data.ass,
+                                        placeholder: '请选择断言方法',
+                                        expandTrigger: 'hover',
+                                        valueKey: 'key',
+                                        onChange: (value, currentItem, currentIndex) =>
+                                          handleGeneralMethodChange(
+                                            value,
+                                            currentItem,
+                                            currentIndex,
+                                            item
+                                          ),
+                                      },
+                                    ]"
+                                    :on-delete-item="
+                                      (index) =>
+                                        removeFrontSql(
+                                          item.ass_general,
+                                          index,
+                                          'ass_general',
+                                          item.id
+                                        )
+                                    "
+                                    :on-save="
+                                      () => blurSave('ass_general', item.ass_general, item.id)
+                                    "
+                                    @update:item="
+                                      (index, value) =>
+                                        updateArrayItem(
+                                          item.ass_general,
+                                          index,
+                                          value,
+                                          item,
+                                          'ass_general',
+                                          () => blurSave('ass_general', item.ass_general, item.id)
+                                        )
+                                    "
+                                    empty-text='暂无通用断言，点击上方"增加"按钮添加'
+                                  >
+                                    <template #extra="{ index, item: assItem }">
+                                      <div
+                                        v-if="assItem?.value && assItem?.value?.parameter"
+                                        class="assertion-parameters-inline"
+                                      >
+                                        <div
+                                          v-for="(param, pIdx) in assItem.value.parameter"
+                                          :key="param.f"
+                                          class="parameter-item-inline"
+                                        >
+                                          <span class="parameter-label-inline">{{ param.n }}:</span>
+                                          <a-textarea
+                                            v-model="assItem.value.parameter[pIdx].v"
+                                            :placeholder="param.p"
+                                            :required="param.d"
+                                            :auto-size="{ minRows: 1, maxRows: 2 }"
+                                            class="parameter-input-inline"
+                                            @blur="
+                                              blurSave('ass_general', item.ass_general, item.id)
+                                            "
+                                          />
+                                        </div>
+                                      </div>
+                                    </template>
+                                  </KeyValueList>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="34" title="结构化断言">
+                                <div class="m-2">
+                                  <a-space>
+                                    <TipMessage
+                                      message="如果接口管理中开启了则会默认使用进行断言，如果你输入了则会覆盖"
+                                    />
+                                    <a-button size="mini" type="primary" @click="setSchema(item.id)"
+                                      >自动生成</a-button
+                                    >
+                                  </a-space>
+                                  <a-textarea
+                                    v-model="item.ass_schema"
+                                    :auto-size="{ minRows: 9, maxRows: 9 }"
+                                    allow-clear
+                                    placeholder="请输入响应的结构化类型"
+                                    @blur="blurSave('ass_schema', item.ass_schema, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                            </a-tabs>
+                          </a-tab-pane>
+                          <a-tab-pane key="5" title="缓存数据">
+                            <div class="m-2">
+                              <JsonDisplay :data="item.result_data?.cache_data" />
+                            </div>
+                          </a-tab-pane>
+                          <a-tab-pane key="6" title="断言结果">
+                            <div class="m-2">
+                              <AssertionResult :data="item.result_data?.ass" />
+                            </div>
+                          </a-tab-pane>
+                        </a-tabs>
+                      </div>
+                    </a-collapse-item>
+                  </a-collapse>
                 </a-spin>
               </a-space>
             </a-space>
@@ -997,8 +1027,8 @@
     isAdd: true,
     updateId: null,
     activeCollapseKey: [0],
-    collapseLoading: false,   // 列表整体 loading
-    expandingIndex: -1,       // 正在展开中的 item index，-1 表示无
+    collapseLoading: false, // 列表整体 loading
+    expandingIndex: -1, // 正在展开中的 item index，-1 表示无
   })
 
   const caseRunning = ref(false)
@@ -1383,7 +1413,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
           return
         }
 
-        const BATCH_SIZE = 5  // 每帧渲染条数，可按实际数据量调整
+        const BATCH_SIZE = 5 // 每帧渲染条数，可按实际数据量调整
         let index = 0
 
         function writeBatch() {
@@ -1403,7 +1433,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       })
       .catch((e) => {
         data.collapseLoading = false
-        console.log(e)
       })
   }
 
@@ -1613,6 +1642,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     doRefreshHeaders(record.api_info.project_product, true)
     doRefreshParameter(data.tabelJson.id).then(() => {
       switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0])
+      onCollapseChange([0])
     })
   }
 
@@ -1748,35 +1778,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     width: 200px;
   }
 
-  .custom-header__tags :deep(.arco-tag) {
-    /* 每个 tag 固定最小宽度，防止内容不同导致宽度变化 */
-    min-width: 52px;
-    justify-content: center;
-  }
-
-  /* ── 断言参数区域 ────────────────────────────────────────────────── */
-  .assertion-parameters {
-    flex: 2;
-    min-width: 300px;
-  }
-
-  .parameter-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 10px;
-  }
-
-  .parameter-label {
-    font-size: 12px;
-    color: var(--color-text-3);
-    font-weight: 500;
-  }
-
-  .parameter-input {
-    width: 100%;
-  }
-
   .assertion-parameters-inline {
     display: flex;
     flex-wrap: wrap;
@@ -1817,40 +1818,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     flex: 2;
     min-width: 300px;
     margin-top: 0;
-  }
-
-  /* Collapse 折叠面板优化 */
-  :deep(.arco-collapse-item) {
-    border-radius: 6px;
-    margin-bottom: 6px;
-    border: 1px solid var(--color-border);
-    overflow: hidden;
-  }
-
-  :deep(.arco-collapse-item-header) {
-    padding: 10px 16px;
-    background-color: var(--color-fill-1);
-    transition: background-color 0.2s;
-  }
-
-  :deep(.arco-collapse-item-header:hover) {
-    background-color: var(--color-fill-2);
-  }
-
-  :deep(.arco-collapse-item-content) {
-    padding: 12px 16px;
-    background-color: var(--color-bg-1);
-  }
-
-  /* tab 内容区统一内边距 */
-  :deep(.arco-tabs-content) {
-    padding-top: 8px;
-  }
-
-  /* spin loading 居中 */
-  :deep(.arco-spin) {
-    width: 100%;
-    display: block;
   }
 
   /* ── 响应式 ──────────────────────────────────────────────────────── */

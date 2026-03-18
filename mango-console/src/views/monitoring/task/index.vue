@@ -542,7 +542,6 @@
           }
         })
         .catch((error) => {
-          console.log(error)
           Message.error('获取文件内容失败')
           fileDrawer.codeText = '获取文件内容失败'
         })
@@ -571,7 +570,6 @@
         doRefresh()
       })
       .catch((error) => {
-        console.log(error)
         Message.error('保存失败')
       })
   }
@@ -606,7 +604,6 @@
       URL.revokeObjectURL(url)
       Message.success('日志下载成功')
     } catch (error) {
-      console.log(error)
       Message.error('下载失败')
     }
   }

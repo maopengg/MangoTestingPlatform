@@ -669,7 +669,6 @@
             // 成功后不清空表单，保持模态框打开以便连续提交
           })
           .catch((error) => {
-            console.log(error)
             Message.error('操作失败，请重试')
           })
           .finally(() => {

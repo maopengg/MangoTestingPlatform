@@ -71,12 +71,10 @@ class WebSocketService {
   // 内部连接方法
   private _connect(): void {
     if (this.isManualClose) {
-      console.log('WebSocket 已手动关闭，停止重连')
       return
     }
 
     this.connectionState = ConnectionState.CONNECTING
-    console.log(`WebSocket 正在连接... (尝试次数: ${this.reconnectAttempts + 1})`)
 
     try {
       this.socket = new WebSocket(this.url)
@@ -94,7 +92,6 @@ class WebSocketService {
 
   // 连接成功
   private _onOpen(): void {
-    console.log('WebSocket 连接成功')
     this.connectionState = ConnectionState.CONNECTED
     this.reconnectAttempts = 0
 
@@ -119,8 +116,6 @@ class WebSocketService {
     try {
       const res: WebSocketMessage = JSON.parse(event.data)
       const currentTime = this._formatDateTime(new Date())
-
-      console.log('收到消息:', res)
 
       // 更新消息中心
       if (this.notificationMessage) {
@@ -153,7 +148,6 @@ class WebSocketService {
 
   // 连接关闭
   private _onClose(event: CloseEvent): void {
-    console.log('WebSocket 连接关闭:', event.code, event.reason)
     this.connectionState = ConnectionState.DISCONNECTED
     this._stopHeartbeat()
 
@@ -241,7 +235,6 @@ class WebSocketService {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       try {
         this.socket.send(JSON.stringify(message))
-        console.log('消息已发送:', message)
       } catch (error) {
         console.error('消息发送失败:', error)
       }
@@ -250,7 +243,6 @@ class WebSocketService {
 
   // 断开连接
   public disconnect(): void {
-    console.log('手动断开 WebSocket 连接')
     this.isManualClose = true
     this.connectionState = ConnectionState.DISCONNECTED
 
