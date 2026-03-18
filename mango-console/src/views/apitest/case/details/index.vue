@@ -258,16 +258,15 @@
                         </a-button>
                       </template>
                       <!-- 重内容只在展开时挂载，避免全量渲染阻塞主线程 -->
-                      <div v-if="data.activeCollapseKey.includes(index)">
+                      <div>
                         <!-- 展开动画期间显示 loading，内容挂载完成后消失 -->
-                        <div
-                          v-if="data.expandingIndex === index"
-                          style="padding: 40px 0; text-align: center"
-                        >
-                          <a-spin tip="内容加载中..." />
-                        </div>
+                        <!--                        <div-->
+                        <!--                          v-if="data.expandingIndex === index"-->
+                        <!--                          style="padding: 40px 0; text-align: center"-->
+                        <!--                        >-->
+                        <!--                          <a-spin tip="内容加载中..." />-->
+                        <!--                        </div>-->
                         <a-tabs
-                          v-else
                           :active-key="data.caseDetailsTypeKey"
                           position="left"
                           @tab-click="(key) => switchApiInfoType(key, item)"
@@ -1444,23 +1443,18 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       return
     }
     const idx = keys[keys.length - 1]
-    // 先显示 loading，下一帧再挂载重内容
-    data.expandingIndex = idx
     data.activeCollapseKey = keys
-    setTimeout(() => {
-      // 懒格式化当前 item
-      const item = data.selectDataObj[idx]
-      if (item && !item.__formatted) {
-        const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
-        propertiesToFormat.forEach((prop) => {
-          if (typeof item[prop] === 'object') {
-            item[prop] = formatJson(item[prop])
-          }
-        })
-        item.__formatted = true
-      }
-      data.expandingIndex = -1
-    }, 30)
+    // 懒格式化当前 item
+    const item = data.selectDataObj[idx]
+    if (item && !item.__formatted) {
+      const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
+      propertiesToFormat.forEach((prop) => {
+        if (typeof item[prop] === 'object') {
+          item[prop] = formatJson(item[prop])
+        }
+      })
+      item.__formatted = true
+    }
   }
 
   function doRefreshHeaders(project_product_id: any, is_parameter = false) {
