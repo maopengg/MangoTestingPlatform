@@ -3,16 +3,16 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+from mangotools.database import MysqlConnect
+from mangotools.exceptions import MangoToolsError
+from mangotools.models import MysqlConingModel
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangotools.database import MysqlConnect
-from mangotools.exceptions import MangoToolsError
-from mangotools.models import MysqlConingModel
 from src.auto_test.auto_system.models import Database
-from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from src.enums.tools_enum import StatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -32,7 +32,7 @@ class DatabaseSerializers(serializers.ModelSerializer):
 class DatabaseSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = ProjectProductSerializersC(read_only=True)
+    test_object = TestObjectSerializersC(read_only=True)
 
     class Meta:
         model = Database
@@ -41,7 +41,7 @@ class DatabaseSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project_product',
+            'test_object',
         )
         return queryset
 
