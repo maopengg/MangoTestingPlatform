@@ -338,7 +338,6 @@
     })
     data.selectResultData = {}
     data.result_data?.element_result_list.forEach((item: any) => {
-      debugger
       if (item.id === data.selectData.id) {
         data.selectResultData = item
       }
