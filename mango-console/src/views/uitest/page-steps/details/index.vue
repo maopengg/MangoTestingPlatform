@@ -512,17 +512,22 @@
     // 清空表单项，重新构建
     data.formItems = []
     if (data.condition) {
+      let placeholder: any = null
       data.dataList.forEach((item: any) => {
         if (item.id === data.conditionId) {
           let byValue = useSelectValue.findItemByValue(item.ope_key)
           byValue.parameter.forEach((itme1) => {
             if (itme1.f === 'expect') {
+              placeholder = itme1.p
               data.isAdd = true
             }
           })
         }
       })
       if (data.isAdd) {
+        if (placeholder) {
+          formItemsElementCondition[0].placeholder = placeholder
+        }
         data.formItems.push(...formItemsElementCondition)
       }
     }
@@ -784,6 +789,7 @@
     border: 1px solid #e5e6eb;
     border-radius: 4px;
     background: #fff;
+        padding: 10px;
   }
 
   .node-details h3 {

@@ -433,7 +433,12 @@ class WebSocketClient:
         try:
             out = json.loads(recv_json)
             log.debug(f"接收数据：{json.dumps(out, ensure_ascii=False)}")
-            return SocketDataModel(**out)
+            socket_data = SocketDataModel(**out)
+            if settings.IS_DEBUG:
+                with open('tests/test.json', 'w', encoding='utf-8') as f:
+                    f.write(socket_data.data.model_dump_json(indent=2))
+            return socket_data
+
         except Exception:
-            log.error(f"数据解析失败：{recv_json}")
+            log.error(f"数据解析失败：{recv_json}， {traceback.format_exc()}")
             return None
