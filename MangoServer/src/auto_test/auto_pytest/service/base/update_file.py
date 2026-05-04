@@ -5,9 +5,8 @@
 # @Author : 毛鹏
 import os
 
-from exceptions import ERROR_MSG_0061, ERROR_MSG_0062, ERROR_MSG_0063
 from src.auto_test.auto_pytest.service.base import git_obj
-from src.exceptions import PytestError
+from src.exceptions import PytestError, ERROR_MSG_0061, ERROR_MSG_0062, ERROR_MSG_0063
 from src.models.pytest_model import FileModel, UpdateFileModel
 
 
