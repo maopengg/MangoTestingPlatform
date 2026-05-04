@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import random
 
-from exceptions import ERROR_MSG_0064
+from src.exceptions import ERROR_MSG_0064
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_pytest.service.base import git_obj
 from src.auto_test.auto_system.consumers import ChatConsumer
