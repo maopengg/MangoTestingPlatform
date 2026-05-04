@@ -132,7 +132,8 @@ export const tableColumns = useTableColumn([
     key: 'project_product',
     dataIndex: 'project_product',
     align: 'left',
-    width: 200,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '类型',
