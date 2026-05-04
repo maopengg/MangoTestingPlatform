@@ -9,8 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_api.models import ApiCaseDetailedParameter, ApiCase, ApiInfo, ApiHeaders
-from src.auto_test.auto_pytest.models import PytestCase, PytestAct, PytestTools, PytestTestFile
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter, ApiInfo, ApiHeaders
+from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.models import TestSuiteDetails
 from src.auto_test.auto_ui.models import UiCase, PageElement, Page, PageSteps
 from src.auto_test.auto_user.models import UserLogs, User
@@ -245,22 +245,20 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-        # 使用数据库连接上下文管理器确保连接被正确释放
-        with db_connection_context():
-            return ResponseData.success(RESPONSE_MSG_0092, {'uiStats': {
-                'elementCount': PageElement.objects.count(),
-                'pageCount': Page.objects.count(),
-                'stepCount': PageSteps.objects.count(),
-                'caseCount': UiCase.objects.count(),
+        return ResponseData.success(RESPONSE_MSG_0092, {'uiStats': {
+            'elementCount': PageElement.objects.count(),
+            'pageCount': Page.objects.count(),
+            'stepCount': PageSteps.objects.count(),
+            'caseCount': UiCase.objects.count(),
+        },
+            'apiStats': {
+                'interfaceCount': ApiInfo.objects.count(),
+                'caseCount': ApiCaseDetailedParameter.objects.count(),
+                'headersCount': ApiHeaders.objects.count(),
             },
-                'apiStats': {
-                    'interfaceCount': ApiInfo.objects.count(),
-                    'caseCount': ApiCaseDetailedParameter.objects.count(),
-                    'headersCount': ApiHeaders.objects.count(),
-                },
-                'pytestStats': {
-                    'processObjects': PytestAct.objects.count(),
-                    'caseCount': PytestCase.objects.count(),
-                    'toolFiles': PytestTools.objects.count(),
-                    'testFiles': PytestTestFile.objects.count(),
-                }})
+            'pytestStats': {
+                'processObjects': 0,
+                'caseCount': PytestCase.objects.count(),
+                'toolFiles': 0,
+                'testFiles': 0,
+            }})
