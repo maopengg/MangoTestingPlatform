@@ -50,6 +50,21 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '测试目录',
+    key: 'test_dir',
+    value: ref([]),
+    placeholder: '请输入测试文件所在目录名称，回车输入多个',
+    required: true,
+    type: 'input-tag',
+    validator: function () {
+      if (!this.value || this.value.length === 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
@@ -82,6 +97,14 @@ export const tableColumns = useTableColumn([
     key: 'auto_type',
     dataIndex: 'auto_type',
     width: 120,
+  },
+  {
+    title: '测试文件目录',
+    key: 'test_dir',
+    dataIndex: 'test_dir',
+    width: 300,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',

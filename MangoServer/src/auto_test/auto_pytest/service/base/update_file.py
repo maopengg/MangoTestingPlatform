@@ -7,8 +7,7 @@ import os
 
 from src.auto_test.auto_pytest.service.base import git_obj
 from src.models.pytest_model import FileModel, UpdateFileModel
-from mangotools.method import ensure_path_sep
-
+from src.auto_test.auto_pytest.models import PytestProduct
 
 class UpdateFile:
 
@@ -51,7 +50,7 @@ class UpdateFile:
         if os.path.isdir(subdir_path) and os.path.exists(subdir_path):
             return self.list_files(subdir_path, components=True)
 
-    def find_test_files(self, is_project=False, auto_test_dir='auto_test') -> list[UpdateFileModel]:
+    def find_test_files(self, is_project=False, auto_test_dir='auto_tests') -> list[UpdateFileModel]:
         directory = os.path.join(self.repo.local_dir, auto_test_dir)
         subdirectories = []
         for item in os.listdir(directory):

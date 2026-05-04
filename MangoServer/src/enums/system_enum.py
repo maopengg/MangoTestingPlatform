@@ -52,10 +52,6 @@ class CacheDataKeyEnum(BaseEnum):
     PYTEST_GIT_URL = 'git的请求url示例>https://gitee.com/mao-peng/MangoPytest'
     PYTEST_GIT_USERNAME = 'git账号'
     PYTEST_GIT_PASSWORD = 'git密码'
-    PYTEST_ACT = '过程对象目录名称'
-    PYTEST_TESTCASE = '测试用例目录名称'
-    PYTEST_TOOLS = '工具文件目录名称'
-    PYTEST_UPLOAD = '测试文件目录名称'
 
     @classmethod
     def obj(cls):
@@ -68,10 +64,6 @@ class CacheDataKeyEnum(BaseEnum):
             'PYTEST_GIT_URL': None,
             'PYTEST_GIT_USERNAME': None,
             'PYTEST_GIT_PASSWORD': None,
-            'PYTEST_ACT': 'abstract',
-            'PYTEST_TESTCASE': 'test_case',
-            'PYTEST_TOOLS': 'scripts',
-            'PYTEST_UPLOAD': 'upload',
         }
 
     @classmethod

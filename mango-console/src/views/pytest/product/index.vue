@@ -153,6 +153,9 @@
               value-key="key"
             />
           </template>
+          <template v-else-if="item.type === 'input-tag'">
+            <a-input-tag v-model="item.value" :placeholder="item.placeholder" allow-clear />
+          </template>
         </a-form-item>
       </a-form>
     </template>
@@ -285,7 +288,9 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        if (Array.isArray(propName)) {
+          it.value = propName
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
           it.value = propName
