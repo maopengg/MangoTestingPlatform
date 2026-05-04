@@ -38,11 +38,11 @@ export function putPytestCase(data: object) {
   })
 }
 
-export function getPytestCaseUpdate() {
-  return get({
+export function postPytestCaseUpdate(projectId: number) {
+  return post({
     url: 'pytest/case/update',
     data: () => {
-      return {}
+      return { project_id: projectId }
     },
   })
 }

@@ -65,7 +65,7 @@ class PytestCaseViews(ViewSet):
     model = PytestCase
     serializer_class = PytestCaseSerializers
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['post'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
         """
@@ -73,25 +73,32 @@ class PytestCaseViews(ViewSet):
         @param request:
         @return:
         """
+        project_id = request.data.get('project_id')
+        if not project_id:
+            return ResponseData.error(RESPONSE_MSG_0079)
+
+        product = PytestProduct.objects.filter(id=project_id).first()
+        if not product:
+            return ResponseData.error(RESPONSE_MSG_0080)
+
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
-        for product in PytestProduct.objects.all():
-            for project in UpdateFile(product.test_dir).find_test_files():
-                for file in project.auto_test:
-                    _file_path_list.append(file.path)
-                    pytest_act, created = self.model.objects.get_or_create(
-                        file_path=file.path,
-                        defaults={
-                            'name': file.name,
-                            'file_name': file.name,
-                            'file_status': FileStatusEnum.UNBOUND.value,
-                            'file_update_time': file.time.replace(tzinfo=None),
+        for project in UpdateFile(product.test_dir).find_test_files():
+            for file in project.auto_test:
+                _file_path_list.append(file.path)
+                pytest_act, created = self.model.objects.get_or_create(
+                    file_path=file.path,
+                    defaults={
+                        'name': file.name,
+                        'file_name': file.name,
+                        'file_status': FileStatusEnum.UNBOUND.value,
+                        'file_update_time': file.time.replace(tzinfo=None),
 
-                        }
-                    )
-                    if not created:
-                        pytest_act.file_update_time = file.time.replace(tzinfo=None)
-                        pytest_act.save()
+                    }
+                )
+                if not created:
+                    pytest_act.file_update_time = file.time.replace(tzinfo=None)
+                    pytest_act.save()
         deleted_files = set(file_path_list) - set(_file_path_list)
         if deleted_files:
             self.model.objects.filter(file_path__in=deleted_files).update(

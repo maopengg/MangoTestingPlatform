@@ -87,7 +87,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+              <a-button type="primary" size="small" @click="openUpdateModal">更新目录</a-button>
             </div>
             <div>
               <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
@@ -122,6 +122,30 @@
                 <a-button type="primary" @click="handleOk">确定</a-button>
               </template>
             </BaseSidePanel>
+            <ModalDialog
+              ref="updateModalRef"
+              title="选择项目进行同步"
+              @confirm="handleUpdateConfirm"
+            >
+              <template #content>
+                <a-form :model="updateForm">
+                  <a-form-item
+                    :class="'form-item__require'"
+                  >
+                    <template #label>
+                      <span>项目/产品</span>
+                    </template>
+                    <a-cascader
+                      v-model="updateForm.projectId"
+                      placeholder="请选择项目/产品"
+                      :options="projectInfo.projectPytest2"
+                      allow-search
+                      allow-clear
+                    />
+                  </a-form-item>
+                </a-form>
+              </template>
+            </ModalDialog>
           </a-space>
         </template>
       </a-tabs>
@@ -370,15 +394,15 @@
   import { formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-    deletePytestCase,
-    getPytestCase,
-    getPytestCaseRead,
-    getPytestCaseTest,
-    getPytestCaseUpdate,
-    postPytestCase,
-    postPytestCaseWrite,
-    putPytestCase,
-  } from '@/api/pytest/case'
+  deletePytestCase,
+  getPytestCase,
+  getPytestCaseRead,
+  getPytestCaseTest,
+  postPytestCaseUpdate,
+  postPytestCase,
+  postPytestCaseWrite,
+  putPytestCase,
+} from '@/api/pytest/case'
   import CodeEditor from '@/components/CodeEditor.vue'
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
@@ -391,6 +415,7 @@
   const projectInfo = useProject()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const updateModalRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
@@ -409,6 +434,10 @@
     scheduledName: [],
     isResult: false,
     visible: false,
+  })
+
+  const updateForm = reactive({
+    projectId: null as number | null,
   })
   const caseRunning = ref(false)
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
@@ -475,15 +504,36 @@
     })
   }
 
-  function clickUpdate() {
+  function openUpdateModal() {
+    updateForm.projectId = null
+    updateModalRef.value?.toggle()
+  }
+
+  function handleUpdateConfirm() {
+    const projectId = Array.isArray(updateForm.projectId) 
+      ? updateForm.projectId[updateForm.projectId.length - 1] 
+      : updateForm.projectId
+    
+    if (!projectId) {
+      Message.error('请选择项目/产品')
+      updateModalRef.value?.setConfirmLoading(false)
+      return
+    }
     Message.loading('文件更新中，请耐心等待10秒左右...')
 
-    getPytestCaseUpdate()
+    postPytestCaseUpdate(projectId)
       .then((res) => {
+        updateModalRef.value?.toggle()
         Message.success(res.msg)
         doRefresh()
       })
-      .catch(console.log)
+      .catch((error) => {
+        console.log(error)
+        Message.error(error?.msg || '同步失败')
+      })
+      .finally(() => {
+        updateModalRef.value?.setConfirmLoading(false)
+      })
   }
 
   function onDataForm() {
