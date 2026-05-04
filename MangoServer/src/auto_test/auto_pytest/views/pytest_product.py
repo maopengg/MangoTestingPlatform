@@ -65,16 +65,19 @@ class PytestProductViews(ViewSet):
     def pytest_update(self, request: Request):
         repo = git_obj()
         repo.pull()
-        update_file = UpdateFile('').find_test_files(True)
-        for project in update_file:
-            projects = self.model.objects.filter(file_name=project.project_name)
-            if not projects.exists():
-                self.model.objects.create(
-                    name=project.project_name,
-                    file_name=project.project_name,
-                    init_file=project.init_file_path,
-                )
-        return ResponseData.success(RESPONSE_MSG_0078)
+        # 遍历所有项目目录
+        auto_tests_dir = os.path.join(repo.local_dir, 'auto_tests')
+        for item in os.listdir(auto_tests_dir):
+            item_path = os.path.join(auto_tests_dir, item)
+            if os.path.isdir(item_path) and not '.' in item and '__pycache__' != item:
+                projects = self.model.objects.filter(file_name=item)
+                if not projects.exists():
+                    self.model.objects.create(
+                        name=item,
+                        file_name=item,
+                        init_file=os.path.join('mango_pytest', 'auto_tests', item, '__init__.py'),
+                    )
+        return ResponseData.success(RESPONSE_MSG_0090_1)
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')

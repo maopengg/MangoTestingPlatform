@@ -262,7 +262,7 @@
       </a-table>
       <BaseSidePanel
         :visible="data.drawerVisible"
-        :title="data.isResult ? '查看测试结果' : (data.fileType === 'feature' ? '编辑 Feature 文件' : '编辑 Python 文件')"
+        :title="data.isResult ? '查看测试结果' : '编辑代码'"
         :width="1000"
         @update:visible="
           (val) => {
@@ -277,13 +277,15 @@
       >
         <template #default>
           <div v-if="!data.isResult">
-            <div v-if="data.hasFeatureFile" style="margin-bottom: 10px;">
-              <a-radio-group v-model="data.fileType" type="button" @change="onFileTypeChange">
-                <a-radio value="py">Python 文件</a-radio>
-                <a-radio value="feature">Feature 文件</a-radio>
-              </a-radio-group>
-            </div>
-            <CodeEditor v-model="data.codeText" :placeholder="data.fileType === 'feature' ? '输入 Gherkin 语法' : '输入python代码'" />
+            <a-tabs v-if="data.hasFeatureFile" :active-key="data.fileType" @change="(key) => { data.fileType = key; onFileTypeChange(); }">
+              <a-tab-pane key="py" title="Python 文件">
+                <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+              </a-tab-pane>
+              <a-tab-pane key="feature" title="Feature 文件">
+                <CodeEditor v-model="data.codeText" placeholder="输入 Gherkin 语法" />
+              </a-tab-pane>
+            </a-tabs>
+            <CodeEditor v-else v-model="data.codeText" placeholder="输入python代码" />
           </div>
           <div v-else>
             <a-collapse

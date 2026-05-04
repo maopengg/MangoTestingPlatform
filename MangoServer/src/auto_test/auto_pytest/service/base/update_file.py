@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 import os
 
+from exceptions import ERROR_MSG_0061, ERROR_MSG_0062, ERROR_MSG_0063
 from src.auto_test.auto_pytest.service.base import git_obj
+from src.exceptions import PytestError
 from src.models.pytest_model import FileModel, UpdateFileModel
-from src.auto_test.auto_pytest.models import PytestProduct
-from src.exceptions import ToolsError
 
 
 class UpdateFile:
@@ -18,7 +18,8 @@ class UpdateFile:
         self.warehouse_name = 'mango_pytest'
         self.repo = git_obj()
 
-    def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False, include_feature=False) -> list[FileModel]:
+    def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False,
+                   include_feature=False) -> list[FileModel]:
         file_list = []
         for root, dirs, files in os.walk(directory):
             if '__pycache__' not in dirs and '__pycache__' not in root:
@@ -55,13 +56,13 @@ class UpdateFile:
 
     def generate_json(self, directory):
         if not self.test_dirs:
-            raise ToolsError(300, "test_dir 不能为空列表")
+            raise PytestError(*ERROR_MSG_0061)
 
         all_files = []
         for test_dir in self.test_dirs:
             subdir_path = os.path.join(directory, test_dir)
             if not os.path.exists(subdir_path) or not os.path.isdir(subdir_path):
-                raise ToolsError(300, f"目录 {test_dir} 不存在")
+                raise PytestError(*ERROR_MSG_0062, value=(test_dir,))
             files = self.list_files(subdir_path, components=True, include_feature=True)
             all_files.extend(files)
         return all_files
@@ -71,7 +72,7 @@ class UpdateFile:
         subdirectories = []
         item_path = os.path.join(directory, project_name)
         if not os.path.exists(item_path) or not os.path.isdir(item_path):
-            raise ToolsError(300, f"项目 {project_name} 不存在")
+            raise PytestError(*ERROR_MSG_0063, value=(project_name,))
         module_path = os.path.join(item_path, 'test_case')
         if os.path.exists(module_path):
             module_name = [d for d in os.listdir(module_path) if
