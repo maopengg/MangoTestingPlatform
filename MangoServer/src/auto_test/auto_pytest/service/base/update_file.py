@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: 
+# @Description:
 # @Time   : 2025-02-18 17:05
 # @Author : 毛鹏
 import os
@@ -8,11 +8,13 @@ import os
 from src.auto_test.auto_pytest.service.base import git_obj
 from src.models.pytest_model import FileModel, UpdateFileModel
 from src.auto_test.auto_pytest.models import PytestProduct
+from src.exceptions import ToolsError
+
 
 class UpdateFile:
 
-    def __init__(self, file_type: str):
-        self.file_type: str = file_type
+    def __init__(self, test_dirs: list):
+        self.test_dirs = test_dirs
         self.warehouse_name = 'mango_pytest'
         self.repo = git_obj()
 
@@ -46,9 +48,17 @@ class UpdateFile:
         return file_list
 
     def generate_json(self, directory):
-        subdir_path = os.path.join(directory, self.file_type)
-        if os.path.isdir(subdir_path) and os.path.exists(subdir_path):
-            return self.list_files(subdir_path, components=True)
+        if not self.test_dirs:
+            raise ToolsError(300, "test_dir 不能为空列表")
+
+        all_files = []
+        for test_dir in self.test_dirs:
+            subdir_path = os.path.join(directory, test_dir)
+            if not os.path.exists(subdir_path) or not os.path.isdir(subdir_path):
+                raise ToolsError(300, f"目录 {test_dir} 不存在")
+            files = self.list_files(subdir_path, components=True)
+            all_files.extend(files)
+        return all_files
 
     def find_test_files(self, is_project=False, auto_test_dir='auto_tests') -> list[UpdateFileModel]:
         directory = os.path.join(self.repo.local_dir, auto_test_dir)

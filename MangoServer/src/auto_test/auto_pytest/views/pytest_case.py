@@ -9,14 +9,13 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_pytest.models import PytestCase, PytestProduct
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.pytest_enum import FileStatusEnum
-from src.enums.system_enum import CacheDataKeyEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -76,22 +75,23 @@ class PytestCaseViews(ViewSet):
         """
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
-        for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TESTCASE)).find_test_files():
-            for file in project.auto_test:
-                _file_path_list.append(file.path)
-                pytest_act, created = self.model.objects.get_or_create(
-                    file_path=file.path,
-                    defaults={
-                        'name': file.name,
-                        'file_name': file.name,
-                        'file_status': FileStatusEnum.UNBOUND.value,
-                        'file_update_time': file.time.replace(tzinfo=None),
+        for product in PytestProduct.objects.all():
+            for project in UpdateFile(product.test_dir).find_test_files():
+                for file in project.auto_test:
+                    _file_path_list.append(file.path)
+                    pytest_act, created = self.model.objects.get_or_create(
+                        file_path=file.path,
+                        defaults={
+                            'name': file.name,
+                            'file_name': file.name,
+                            'file_status': FileStatusEnum.UNBOUND.value,
+                            'file_update_time': file.time.replace(tzinfo=None),
 
-                    }
-                )
-                if not created:
-                    pytest_act.file_update_time = file.time.replace(tzinfo=None)
-                    pytest_act.save()
+                        }
+                    )
+                    if not created:
+                        pytest_act.file_update_time = file.time.replace(tzinfo=None)
+                        pytest_act.save()
         deleted_files = set(file_path_list) - set(_file_path_list)
         if deleted_files:
             self.model.objects.filter(file_path__in=deleted_files).update(
