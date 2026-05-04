@@ -60,34 +60,25 @@ class UpdateFile:
             all_files.extend(files)
         return all_files
 
-    def find_test_files(self, is_project=False, auto_test_dir='auto_tests') -> list[UpdateFileModel]:
+    def find_test_files(self, project_name: str, auto_test_dir='auto_tests') -> list[UpdateFileModel]:
         directory = os.path.join(self.repo.local_dir, auto_test_dir)
         subdirectories = []
-        for item in os.listdir(directory):
-            item_path = os.path.join(directory, item)
-            if os.path.isdir(item_path) and not '.' in item and '__pycache__' != item:
-                module_path = os.path.join(item_path, 'test_case')
-                if os.path.exists(module_path):
-                    module_name = [d for d in os.listdir(module_path) if
-                                   os.path.isdir(os.path.join(module_path, d)) and '__pycache__' not in d]
-                else:
-                    module_name = []
-                auto_test = self.generate_json(item_path)
-                if is_project:
-                    subdirectories.append(UpdateFileModel(
-                        project_name=item,
-                        auto_test=auto_test if auto_test else [],
-                        init_file_path=os.path.join(self.warehouse_name, auto_test_dir, item, '__init__.py'),
-                        module_name=module_name
-                    ))
-                else:
-                    subdirectories.append(UpdateFileModel(
-                        project_name=item,
-                        auto_test=auto_test if auto_test else [],
-                        init_file_path=os.path.join(self.warehouse_name, auto_test_dir, item, '__init__.py'),
-                        module_name=module_name
-
-                    ))
+        item_path = os.path.join(directory, project_name)
+        if not os.path.exists(item_path) or not os.path.isdir(item_path):
+            raise ToolsError(300, f"项目 {project_name} 不存在")
+        module_path = os.path.join(item_path, 'test_case')
+        if os.path.exists(module_path):
+            module_name = [d for d in os.listdir(module_path) if
+                           os.path.isdir(os.path.join(module_path, d)) and '__pycache__' not in d]
+        else:
+            module_name = []
+        auto_test = self.generate_json(item_path)
+        subdirectories.append(UpdateFileModel(
+            project_name=project_name,
+            auto_test=auto_test if auto_test else [],
+            init_file_path=os.path.join(self.warehouse_name, auto_test_dir, project_name, '__init__.py'),
+            module_name=module_name
+        ))
         return subdirectories
 
     def __path(self, abs_path):

@@ -83,7 +83,8 @@ class PytestCaseViews(ViewSet):
 
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
-        for project in UpdateFile(product.test_dir).find_test_files():
+        created_count = 0
+        for project in UpdateFile(product.test_dir).find_test_files(product.file_name):
             for file in project.auto_test:
                 _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(
@@ -93,10 +94,12 @@ class PytestCaseViews(ViewSet):
                         'file_name': file.name,
                         'file_status': FileStatusEnum.UNBOUND.value,
                         'file_update_time': file.time.replace(tzinfo=None),
-
+                        'project_product': product,
                     }
                 )
-                if not created:
+                if created:
+                    created_count += 1
+                else:
                     pytest_act.file_update_time = file.time.replace(tzinfo=None)
                     pytest_act.save()
         deleted_files = set(file_path_list) - set(_file_path_list)
@@ -104,7 +107,7 @@ class PytestCaseViews(ViewSet):
             self.model.objects.filter(file_path__in=deleted_files).update(
                 file_status=FileStatusEnum.DELETED.value,
             )
-        return ResponseData.success(RESPONSE_MSG_0078)
+        return ResponseData.success(RESPONSE_MSG_0078, value=(created_count,))
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
