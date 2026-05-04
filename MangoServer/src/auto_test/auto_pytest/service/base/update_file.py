@@ -18,7 +18,7 @@ class UpdateFile:
         self.warehouse_name = 'mango_pytest'
         self.repo = git_obj()
 
-    def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False) -> list[FileModel]:
+    def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False, include_feature=False) -> list[FileModel]:
         file_list = []
         for root, dirs, files in os.walk(directory):
             if '__pycache__' not in dirs and '__pycache__' not in root:
@@ -44,6 +44,12 @@ class UpdateFile:
                                 path=self.__path(abs_path),
                                 time=self.repo.get_file_last_commit_time(abs_path)
                             ))
+                        if include_feature and file.endswith('.feature'):
+                            file_list.append(FileModel(
+                                name=str(os.path.join(parent_dir, file)),
+                                path=self.__path(abs_path),
+                                time=self.repo.get_file_last_commit_time(abs_path)
+                            ))
 
         return file_list
 
@@ -56,7 +62,7 @@ class UpdateFile:
             subdir_path = os.path.join(directory, test_dir)
             if not os.path.exists(subdir_path) or not os.path.isdir(subdir_path):
                 raise ToolsError(300, f"目录 {test_dir} 不存在")
-            files = self.list_files(subdir_path, components=True)
+            files = self.list_files(subdir_path, components=True, include_feature=True)
             all_files.extend(files)
         return all_files
 

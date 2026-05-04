@@ -262,7 +262,7 @@
       </a-table>
       <BaseSidePanel
         :visible="data.drawerVisible"
-        :title="data.isResult ? '查看测试结果' : '编辑代码'"
+        :title="data.isResult ? '查看测试结果' : (data.fileType === 'feature' ? '编辑 Feature 文件' : '编辑 Python 文件')"
         :width="1000"
         @update:visible="
           (val) => {
@@ -277,7 +277,13 @@
       >
         <template #default>
           <div v-if="!data.isResult">
-            <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+            <div v-if="data.hasFeatureFile" style="margin-bottom: 10px;">
+              <a-radio-group v-model="data.fileType" type="button" @change="onFileTypeChange">
+                <a-radio value="py">Python 文件</a-radio>
+                <a-radio value="feature">Feature 文件</a-radio>
+              </a-radio-group>
+            </div>
+            <CodeEditor v-model="data.codeText" :placeholder="data.fileType === 'feature' ? '输入 Gherkin 语法' : '输入python代码'" />
           </div>
           <div v-else>
             <a-collapse
@@ -434,6 +440,8 @@
     scheduledName: [],
     isResult: false,
     visible: false,
+    fileType: 'py',
+    hasFeatureFile: false,
   })
 
   const updateForm = reactive({
@@ -646,7 +654,7 @@
 
   function drawerOk() {
     data.drawerVisible = false
-    postPytestCaseWrite(data.updateId, data.codeText)
+    postPytestCaseWrite(data.updateId, data.codeText, data.fileType)
       .then((res) => {
         data.codeText = res.data
         Message.success(res.msg)
@@ -660,11 +668,21 @@
     data.codeText = record.result_data
   }
 
+  function onFileTypeChange() {
+    getPytestCaseRead(data.updateId, data.fileType)
+      .then((res) => {
+        data.codeText = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2)
+      })
+      .catch(console.log)
+  }
+
   function onClick(record: any) {
     data.isResult = false
     data.drawerVisible = true
     data.updateId = record.id
-    getPytestCaseRead(record.id)
+    data.fileType = 'py'
+    data.hasFeatureFile = !!record.feature_file_path
+    getPytestCaseRead(record.id, 'py')
       .then((res) => {
         // 确保传递给CodeMirror的值是字符串类型
         data.codeText = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2)

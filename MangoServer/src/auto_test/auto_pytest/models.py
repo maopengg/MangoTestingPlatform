@@ -36,6 +36,7 @@ class PytestCase(models.Model):
     status = models.SmallIntegerField(verbose_name="状态", default=0, db_index=True)
     file_name = models.CharField(verbose_name="文件名称", max_length=1024)
     file_path = models.CharField(verbose_name="文件路径", max_length=1024)
+    feature_file_path = models.CharField(verbose_name="feature文件路径", max_length=1024, null=True, blank=True)
     file_status = models.SmallIntegerField(verbose_name="文件状态", default=0)
     file_update_time = models.DateTimeField(verbose_name="文档修改时间")
     result_data = models.JSONField(verbose_name='最新一次测试结果', null=True)

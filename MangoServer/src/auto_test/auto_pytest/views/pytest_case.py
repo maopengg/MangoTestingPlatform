@@ -4,6 +4,8 @@
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
 
+import os
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -85,8 +87,19 @@ class PytestCaseViews(ViewSet):
         _file_path_list = []
         created_count = 0
         for project in UpdateFile(product.test_dir).find_test_files(product.file_name):
-            for file in project.auto_test:
+            # 分离 .py 文件和 .feature 文件
+            py_files = [f for f in project.auto_test if f.path.endswith('.py')]
+            feature_files = {os.path.basename(f.name).replace('.feature', ''): f.path for f in project.auto_test if f.path.endswith('.feature')}
+            
+            for file in py_files:
                 _file_path_list.append(file.path)
+                # 检查是否有同名的 .feature 文件
+                # file.name 可能包含目录路径，如 'alert\test_alert_bdd.py'
+                # 需要提取纯文件名进行匹配
+                pure_file_name = os.path.basename(file.name)
+                file_name_without_ext = pure_file_name.replace('.py', '')
+                feature_file_path = feature_files.get(file_name_without_ext)
+
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,
                     defaults={
@@ -95,12 +108,15 @@ class PytestCaseViews(ViewSet):
                         'file_status': FileStatusEnum.UNBOUND.value,
                         'file_update_time': file.time.replace(tzinfo=None),
                         'project_product': product,
+                        'feature_file_path': feature_file_path,
                     }
                 )
                 if created:
                     created_count += 1
                 else:
                     pytest_act.file_update_time = file.time.replace(tzinfo=None)
+                    # 更新 feature_file_path（可能新增或删除了 feature 文件）
+                    pytest_act.feature_file_path = feature_file_path
                     pytest_act.save()
         deleted_files = set(file_path_list) - set(_file_path_list)
         if deleted_files:
@@ -112,7 +128,14 @@ class PytestCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_read(self, request: Request):
-        file_path = self.model.objects.get(id=request.query_params.get('id')).file_path
+        case = self.model.objects.get(id=request.query_params.get('id'))
+        file_type = request.query_params.get('file_type', 'py')
+        
+        if file_type == 'feature' and case.feature_file_path:
+            file_path = case.feature_file_path
+        else:
+            file_path = case.file_path
+            
         with open(file_path, 'r', encoding='utf-8') as file:
             file_content = file.read()
         return ResponseData.success(RESPONSE_MSG_0084, data=file_content)
@@ -120,8 +143,15 @@ class PytestCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('pytest')
     def pytest_write(self, request: Request):
-        file_path = self.model.objects.get(id=request.data.get('id')).file_path
+        case = self.model.objects.get(id=request.data.get('id'))
+        file_type = request.data.get('file_type', 'py')
         file_content = request.data.get('file_content')
+        
+        if file_type == 'feature' and case.feature_file_path:
+            file_path = case.feature_file_path
+        else:
+            file_path = case.file_path
+            
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(file_content)
         return ResponseData.success(RESPONSE_MSG_0085)
