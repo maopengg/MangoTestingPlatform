@@ -98,23 +98,8 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/act/index",
-                    "menuName": "过程对象",
-                },
-                {
-                    "parentPath": "/pytest",
                     "menuUrl": "/pytest/case/index",
                     "menuName": "测试用例",
-                },
-                {
-                    "parentPath": "/pytest",
-                    "menuUrl": "/pytest/tools/index",
-                    "menuName": "工具文件",
-                },
-                {
-                    "parentPath": "/pytest",
-                    "menuUrl": "/pytest/test-file/index",
-                    "menuName": "测试文件",
                 }
             ]
         },

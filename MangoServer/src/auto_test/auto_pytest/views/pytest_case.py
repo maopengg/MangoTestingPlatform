@@ -4,19 +4,20 @@
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
 
+import os
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_pytest.models import PytestCase, PytestProduct
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.pytest_enum import FileStatusEnum
-from src.enums.system_enum import CacheDataKeyEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -66,7 +67,7 @@ class PytestCaseViews(ViewSet):
     model = PytestCase
     serializer_class = PytestCaseSerializers
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['post'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
         """
@@ -74,11 +75,31 @@ class PytestCaseViews(ViewSet):
         @param request:
         @return:
         """
+        project_id = request.data.get('project_id')
+        if not project_id:
+            return ResponseData.error(RESPONSE_MSG_0079)
+
+        product = PytestProduct.objects.filter(id=project_id).first()
+        if not product:
+            return ResponseData.error(RESPONSE_MSG_0080)
+
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
-        for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TESTCASE)).find_test_files():
-            for file in project.auto_test:
+        created_count = 0
+        for project in UpdateFile(product.test_dir).find_test_files(product.file_name):
+            # 分离 .py 文件和 .feature 文件
+            py_files = [f for f in project.auto_test if f.path.endswith('.py')]
+            feature_files = {os.path.basename(f.name).replace('.feature', ''): f.path for f in project.auto_test if f.path.endswith('.feature')}
+            
+            for file in py_files:
                 _file_path_list.append(file.path)
+                # 检查是否有同名的 .feature 文件
+                # file.name 可能包含目录路径，如 'alert\test_alert_bdd.py'
+                # 需要提取纯文件名进行匹配
+                pure_file_name = os.path.basename(file.name)
+                file_name_without_ext = pure_file_name.replace('.py', '')
+                feature_file_path = feature_files.get(file_name_without_ext)
+
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,
                     defaults={
@@ -86,23 +107,35 @@ class PytestCaseViews(ViewSet):
                         'file_name': file.name,
                         'file_status': FileStatusEnum.UNBOUND.value,
                         'file_update_time': file.time.replace(tzinfo=None),
-
+                        'project_product': product,
+                        'feature_file_path': feature_file_path,
                     }
                 )
-                if not created:
+                if created:
+                    created_count += 1
+                else:
                     pytest_act.file_update_time = file.time.replace(tzinfo=None)
+                    # 更新 feature_file_path（可能新增或删除了 feature 文件）
+                    pytest_act.feature_file_path = feature_file_path
                     pytest_act.save()
         deleted_files = set(file_path_list) - set(_file_path_list)
         if deleted_files:
             self.model.objects.filter(file_path__in=deleted_files).update(
                 file_status=FileStatusEnum.DELETED.value,
             )
-        return ResponseData.success(RESPONSE_MSG_0078)
+        return ResponseData.success(RESPONSE_MSG_0078, value=(created_count,))
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_read(self, request: Request):
-        file_path = self.model.objects.get(id=request.query_params.get('id')).file_path
+        case = self.model.objects.get(id=request.query_params.get('id'))
+        file_type = request.query_params.get('file_type', 'py')
+        
+        if file_type == 'feature' and case.feature_file_path:
+            file_path = case.feature_file_path
+        else:
+            file_path = case.file_path
+            
         with open(file_path, 'r', encoding='utf-8') as file:
             file_content = file.read()
         return ResponseData.success(RESPONSE_MSG_0084, data=file_content)
@@ -110,8 +143,15 @@ class PytestCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('pytest')
     def pytest_write(self, request: Request):
-        file_path = self.model.objects.get(id=request.data.get('id')).file_path
+        case = self.model.objects.get(id=request.data.get('id'))
+        file_type = request.data.get('file_type', 'py')
         file_content = request.data.get('file_content')
+        
+        if file_type == 'feature' and case.feature_file_path:
+            file_path = case.feature_file_path
+        else:
+            file_path = case.file_path
+            
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(file_content)
         return ResponseData.success(RESPONSE_MSG_0085)

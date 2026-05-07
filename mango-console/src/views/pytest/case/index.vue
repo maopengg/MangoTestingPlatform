@@ -87,7 +87,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+              <a-button type="primary" size="small" @click="openUpdateModal">更新目录</a-button>
             </div>
             <div>
               <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
@@ -122,6 +122,30 @@
                 <a-button type="primary" @click="handleOk">确定</a-button>
               </template>
             </BaseSidePanel>
+            <ModalDialog
+              ref="updateModalRef"
+              title="选择项目进行同步"
+              @confirm="handleUpdateConfirm"
+            >
+              <template #content>
+                <a-form :model="updateForm">
+                  <a-form-item
+                    :class="'form-item__require'"
+                  >
+                    <template #label>
+                      <span>项目/产品</span>
+                    </template>
+                    <a-cascader
+                      v-model="updateForm.projectId"
+                      placeholder="请选择项目/产品"
+                      :options="projectInfo.projectPytest2"
+                      allow-search
+                      allow-clear
+                    />
+                  </a-form-item>
+                </a-form>
+              </template>
+            </ModalDialog>
           </a-space>
         </template>
       </a-tabs>
@@ -253,7 +277,15 @@
       >
         <template #default>
           <div v-if="!data.isResult">
-            <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+            <a-tabs v-if="data.hasFeatureFile" :active-key="data.fileType" @change="(key) => { data.fileType = key; onFileTypeChange(); }">
+              <a-tab-pane key="py" title="Python 文件">
+                <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+              </a-tab-pane>
+              <a-tab-pane key="feature" title="Feature 文件">
+                <CodeEditor v-model="data.codeText" placeholder="输入 Gherkin 语法" />
+              </a-tab-pane>
+            </a-tabs>
+            <CodeEditor v-else v-model="data.codeText" placeholder="输入python代码" />
           </div>
           <div v-else>
             <a-collapse
@@ -370,15 +402,15 @@
   import { formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-    deletePytestCase,
-    getPytestCase,
-    getPytestCaseRead,
-    getPytestCaseTest,
-    getPytestCaseUpdate,
-    postPytestCase,
-    postPytestCaseWrite,
-    putPytestCase,
-  } from '@/api/pytest/case'
+  deletePytestCase,
+  getPytestCase,
+  getPytestCaseRead,
+  getPytestCaseTest,
+  postPytestCaseUpdate,
+  postPytestCase,
+  postPytestCaseWrite,
+  putPytestCase,
+} from '@/api/pytest/case'
   import CodeEditor from '@/components/CodeEditor.vue'
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
@@ -391,6 +423,7 @@
   const projectInfo = useProject()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const updateModalRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
@@ -409,6 +442,12 @@
     scheduledName: [],
     isResult: false,
     visible: false,
+    fileType: 'py',
+    hasFeatureFile: false,
+  })
+
+  const updateForm = reactive({
+    projectId: null as number | null,
   })
   const caseRunning = ref(false)
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
@@ -475,15 +514,36 @@
     })
   }
 
-  function clickUpdate() {
+  function openUpdateModal() {
+    updateForm.projectId = null
+    updateModalRef.value?.toggle()
+  }
+
+  function handleUpdateConfirm() {
+    const projectId = Array.isArray(updateForm.projectId) 
+      ? updateForm.projectId[updateForm.projectId.length - 1] 
+      : updateForm.projectId
+    
+    if (!projectId) {
+      Message.error('请选择项目/产品')
+      updateModalRef.value?.setConfirmLoading(false)
+      return
+    }
     Message.loading('文件更新中，请耐心等待10秒左右...')
 
-    getPytestCaseUpdate()
+    postPytestCaseUpdate(projectId)
       .then((res) => {
+        updateModalRef.value?.toggle()
         Message.success(res.msg)
         doRefresh()
       })
-      .catch(console.log)
+      .catch((error) => {
+        console.log(error)
+        Message.error(error?.msg || '同步失败')
+      })
+      .finally(() => {
+        updateModalRef.value?.setConfirmLoading(false)
+      })
   }
 
   function onDataForm() {
@@ -596,7 +656,7 @@
 
   function drawerOk() {
     data.drawerVisible = false
-    postPytestCaseWrite(data.updateId, data.codeText)
+    postPytestCaseWrite(data.updateId, data.codeText, data.fileType)
       .then((res) => {
         data.codeText = res.data
         Message.success(res.msg)
@@ -610,11 +670,21 @@
     data.codeText = record.result_data
   }
 
+  function onFileTypeChange() {
+    getPytestCaseRead(data.updateId, data.fileType)
+      .then((res) => {
+        data.codeText = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2)
+      })
+      .catch(console.log)
+  }
+
   function onClick(record: any) {
     data.isResult = false
     data.drawerVisible = true
     data.updateId = record.id
-    getPytestCaseRead(record.id)
+    data.fileType = 'py'
+    data.hasFeatureFile = !!record.feature_file_path
+    getPytestCaseRead(record.id, 'py')
       .then((res) => {
         // 确保传递给CodeMirror的值是字符串类型
         data.codeText = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2)

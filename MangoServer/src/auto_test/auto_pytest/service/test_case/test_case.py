@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import random
 
+from src.exceptions import ERROR_MSG_0064
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_pytest.service.base import git_obj
 from src.auto_test.auto_system.consumers import ChatConsumer
@@ -39,6 +40,8 @@ class TestCase:
         commit_hash = repo.get_repo_info().get('commit_hash')
         if commit_hash is None:
             raise PytestError(*ERROR_MSG_0020)
+        if obj.module is None:
+            raise PytestError(*ERROR_MSG_0064)
         send_data = PytestCaseModel(
             send_user=self.user_id,
             test_suite_details=self.test_suite_details,
@@ -56,7 +59,7 @@ class TestCase:
             git_username=repo.username,
             git_password=repo.password,
         )
-        log.pytest.debug(f'发送pytest测试数据:{send_data}')
+        log.pytest.debug(f'发送pytest测试数据:{send_data.model_dump_json()}')
         self.__socket_send(send_data, True)
         return send_data.model_dump()
 
