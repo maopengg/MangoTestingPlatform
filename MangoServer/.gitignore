@@ -13,3 +13,5 @@ download/
 upload/
 monitoring_scripts/
 __pycache__/
+allure-report/
+allure-results/

@@ -137,6 +137,29 @@ def ad_routes():
             ],
         },
         {
+            "menuUrl": "/data-factory",
+            "menuName": "数据工厂",
+            "icon": "IconStorage",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/data-factory",
+                    "menuUrl": "/data-factory/entity/index",
+                    "menuName": "工厂实体",
+                },
+                {
+                    "parentPath": "/data-factory",
+                    "menuUrl": "/data-factory/template/index",
+                    "menuName": "状态模板",
+                },
+                {
+                    "parentPath": "/data-factory",
+                    "menuUrl": "/data-factory/execution/index",
+                    "menuName": "执行记录",
+                },
+            ],
+        },
+        {
             "menuUrl": "/report",
             "menuName": "测试报告",
             "icon": "icon-calendar-clock",

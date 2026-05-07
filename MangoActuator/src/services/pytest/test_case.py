@@ -3,9 +3,15 @@
 # @Description:
 # @Time   : 2025-08-27 10:19
 # @Author : 毛鹏
+import json
 import os
+import shutil
+import subprocess
+import uuid
+from pathlib import Path
 
-from mangotools.mangos import GitRepoOperator, pytest_test_case
+import sys
+from mangotools.mangos import GitRepoOperator
 
 from src.enums.pytest_enum import PytestSystemEnum, AllureStatusEnum
 from src.enums.system_enum import ClientTypeEnum
@@ -14,10 +20,11 @@ from src.models.pytest_model import PytestCaseModel, PytestCaseResultModel
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.network import socket_conn
 from src.network.web_socket.socket_api_enum import PytestSocketEnum
+from src.settings import settings
 from src.tools import project_dir
 from src.tools.log_collector import log
 from src.tools.send_global_msg import send_global_msg
-from src.settings import settings
+
 
 class TestCase:
 
@@ -49,7 +56,7 @@ class TestCase:
         send_global_msg(f'开始pytest的文件：{self.case_model.file_path}')
         git.clone()
         git.pull(self.case_model.commit_hash)
-        report_data = pytest_test_case(
+        report_data = self.pytest_test_case(
             allure=project_dir.allure(),
             log=log,
             test_env_name=PytestSystemEnum.TEST_ENV.value,
@@ -95,3 +102,76 @@ class TestCase:
             user=self.case_model.send_user,
         )
         send_global_msg(f'pytest用例<{self.case_model.name}>测试完成')
+
+    def pytest_test_case(self, **kwargs):
+        """
+        使用子进程执行 pytest
+        """
+
+        allure_results_dir = os.path.join(
+            kwargs.get('allure'),
+            f'allure-results-{uuid.uuid4()}'
+        )
+
+        kwargs.get('log').debug(f'生成的用例存储目录：{allure_results_dir}')
+        os.makedirs(allure_results_dir, exist_ok=True)
+
+        # 设置环境变量
+        env = os.environ.copy()
+        env[kwargs.get('test_env_name')] = f'{kwargs.get("test_env")}'
+
+        pytest_cmd = [
+            sys.executable,  # 当前虚拟环境 python
+            "-m",
+            "pytest",
+            os.path.abspath(kwargs.get('file_path')),
+            "--alluredir",
+            allure_results_dir
+        ]
+
+        if kwargs.get('quiet'):
+            pytest_cmd.append("-q")
+        if kwargs.get('verbose'):
+            pytest_cmd.append("-v")
+        if kwargs.get('show_output'):
+            pytest_cmd.append("-s")
+
+        kwargs.get('log').debug(f"启动 pytest 子进程命令: {pytest_cmd}")
+
+        process = subprocess.Popen(
+            pytest_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            text=True,
+            encoding="utf-8",
+            errors="ignore"
+        )
+
+        stdout, stderr = process.communicate()
+
+        kwargs.get('log').debug(f"pytest标准输出：\n{stdout}")
+        kwargs.get('log').debug(f"pytest标准错误：\n{stderr}")
+        kwargs.get('log').debug(f"pytest退出代码：{process.returncode}")
+        report_data = self.read_allure_json_results(allure_results_dir)
+        self.delete_allure_results(allure_results_dir)
+        return report_data
+
+    def read_allure_json_results(self, results_dir):
+        report_data = []
+        for json_file in Path(results_dir).glob('*-result.json'):
+            with open(json_file, 'r', encoding='utf-8') as f:
+                res_dict = json.load(f)
+                for i in res_dict.get('attachments', []):
+                    try:
+                        with open(os.path.join(results_dir, i.get('source')), 'r', encoding='utf-8') as text:
+                            content = text.read()
+                            i['source'] = content
+                    except FileNotFoundError:
+                        i['source'] = '用例执行失败，这一项没有生成内容，所以没有结果'
+                report_data.append(res_dict)
+        return report_data
+
+    def delete_allure_results(self, results_dir):
+        if os.path.exists(results_dir):
+            shutil.rmtree(results_dir)
