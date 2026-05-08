@@ -64,6 +64,10 @@ export function postDataFactoryFieldBatchSave(data: object) {
   return post({ url: '/data-factory/field/batch-save', data: () => data })
 }
 
+export function postDataFactoryFieldPreviewValues(data: object) {
+  return post({ url: '/data-factory/field/preview-values', data: () => data })
+}
+
 export function postDataFactoryDiscoverTestConnection(data: object) {
   return post({ url: '/data-factory/discover/test-connection', data: () => data })
 }

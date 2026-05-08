@@ -9,6 +9,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_data_factory.models import DataFactoryEntity, DataFactoryField
+from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGenerator
+from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
@@ -233,6 +235,75 @@ class DataFactoryFieldViews(ViewSet):
 
         return ResponseData.success(RESPONSE_MSG_0001, saved_fields, len(saved_fields))
 
+    @action(methods=['post'], detail=False)
+    @error_response('system')
+    def preview_values(self, request: Request):
+        fields = request.data.get('fields') or []
+        context = request.data.get('context') or {}
+        if not isinstance(fields, list):
+            raise ToolsError(300, "fields 必须是列表")
+
+        payload = {}
+        rows = []
+        for field_data in fields:
+            field_data = dict(field_data)
+            try:
+                field_data["generator_config"] = field_data.get("generator_config") or {}
+                self.normalize_field_data(field_data)
+                field = DataFactoryField(
+                    name=field_data.get("name"),
+                    label=field_data.get("label") or field_data.get("name"),
+                    db_type=field_data.get("db_type") or field_data.get("platform_type") or "string",
+                    platform_type=field_data.get("platform_type") or "string",
+                    nullable=field_data.get("nullable", True),
+                    primary_key=field_data.get("primary_key", False),
+                    autoincrement=field_data.get("autoincrement", False),
+                    max_length=field_data.get("max_length"),
+                    enum_values=field_data.get("enum_values") or [],
+                    generator_type=field_data.get("generator_type", DataFactoryGeneratorTypeEnum.FIXED.value),
+                    generator_config=field_data.get("generator_config") or {},
+                    output_enabled=field_data.get("output_enabled", True),
+                    output_name=field_data.get("output_name") or field_data.get("name"),
+                    sort=field_data.get("sort", 0),
+                )
+                if field.generator_type == DataFactoryGeneratorTypeEnum.SKIP.value:
+                    rows.append({
+                        "name": field.name,
+                        "value": None,
+                        "valid": True,
+                        "message": "跳过字段",
+                    })
+                    continue
+                if field.generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
+                    dependency_preview = self.preview_dependency_field(field, context)
+                    if dependency_preview is not None:
+                        rows.append(dependency_preview)
+                        continue
+
+                value = DataFactoryValueGenerator.generate(field, payload, context)
+                value = DataFactoryValueGenerator.replace_value(value)
+                value = DataFactoryTypeCast.cast(value, field.platform_type)
+                DataFactoryValueGenerator.validate(field, value)
+                payload[field.name] = value
+                rows.append({
+                    "name": field.name,
+                    "value": DataFactoryTypeCast.to_jsonable(value),
+                    "valid": True,
+                    "message": "",
+                })
+            except Exception as error:
+                rows.append({
+                    "name": field_data.get("name"),
+                    "value": None,
+                    "valid": False,
+                    "message": str(error),
+                })
+
+        return ResponseData.success(RESPONSE_MSG_0001, {
+            "payload": DataFactoryTypeCast.to_jsonable(payload),
+            "fields": rows,
+        }, len(rows))
+
     @staticmethod
     def normalize_field_data(field_data: dict):
         generator_type = field_data.get("generator_type")
@@ -246,3 +317,25 @@ class DataFactoryFieldViews(ViewSet):
         if generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
             value = generator_config.get("value") or generator_config.get("expression") or generator_config.get("template")
             field_data["generator_config"] = {"value": value or ""}
+
+    @staticmethod
+    def preview_dependency_field(field: DataFactoryField, context: dict):
+        config = field.generator_config or {}
+        alias = config.get("alias")
+        target_field = config.get("field", "id")
+        if alias and alias in context:
+            return None
+
+        if alias:
+            value = f"${{{{{alias}.{target_field}}}}}"
+        elif config.get("template_id"):
+            value = f"${{{{template:{config.get('template_id')}.{target_field}}}}}"
+        else:
+            value = "${{依赖模板.id}}"
+
+        return {
+            "name": field.name,
+            "value": value,
+            "valid": True,
+            "message": "依赖字段，当前仅展示关联占位值",
+        }

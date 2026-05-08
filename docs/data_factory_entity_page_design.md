@@ -44,7 +44,6 @@
 | --- | --- |
 | ID | 实体 ID |
 | 实体名称 | 例如订单 |
-| 实体编码 | 例如 order |
 | 所属产品 | 关联 `ProjectProduct` |
 | 逻辑数据源 | 例如商城主库 |
 | 数据库类型 | 来自逻辑数据源 |
@@ -68,7 +67,7 @@
 
 - 所属项目/产品
 - 实体名称
-- 实体编码
+- 表名
 - 数据库类型
 - 创建方式
 - 状态
@@ -81,15 +80,12 @@
 | --- | --- | --- |
 | 所属项目产品 | 是 | 关联 `ProjectProduct` |
 | 实体名称 | 是 | 中文名，例如订单 |
-| 实体编码 | 是 | 英文编码，例如 order |
-| 默认别名 | 是 | 默认注入上下文的名称，例如订单 |
 | 描述 | 否 | 业务说明 |
 | 状态 | 是 | 启用/禁用 |
 
 校验规则：
 
-- 同一产品下 `实体编码` 唯一。
-- 默认别名不能为空。
+- 同一产品、同一逻辑数据源下 `表名` 唯一。
 - 实体启用前必须至少有一种创建方式。
 
 ## 5. 数据源与表发现
@@ -179,8 +175,9 @@ def discover_table(db_url: str, table_name: str) -> dict:
 | 自增 | 是否自增 |
 | 生成方式 | 字段如何生成 |
 | 生成配置 | 根据生成方式展开 |
+| 实际值 | 点击“生成实际值”后展示当前配置生成出的结果 |
 | 输出变量 | 是否注入上下文 |
-| 输出名 | 例如 订单.order_no |
+| 输出名 | 例如 order_no |
 
 平台类型归一化：
 
@@ -252,7 +249,7 @@ def discover_table(db_url: str, table_name: str) -> dict:
 | 依赖模板 | 默认产品 |
 | 取值字段 | id |
 | 依赖策略 | 优先复用已有 |
-| 上下文别名 | 产品 |
+| 上下文名称 | 默认使用依赖模板名称，也可在高级配置中覆盖 |
 
 依赖策略：
 
@@ -346,7 +343,7 @@ delete from orders where id = :id
 | POST | `/data-factory/entity` | 新增实体 |
 | PUT | `/data-factory/entity` | 修改实体 |
 | DELETE | `/data-factory/entity` | 删除实体 |
-| POST | `/data-factory/entity/copy` | 复制实体 |
+| POST | `/data-factory/entity/copy` | 当前返回“不支持复制”，实体是表级定义 |
 | PUT | `/data-factory/entity/status` | 启用/禁用 |
 | GET | `/data-factory/datasource-alias` | 逻辑数据源列表 |
 | POST | `/data-factory/discover/tables` | 读取表列表 |

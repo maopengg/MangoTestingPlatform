@@ -30,6 +30,7 @@ urlpatterns = [
     path("entity/status", DataFactoryEntityViews.as_view({'put': 'status'})),
     path("field", DataFactoryFieldCRUD.as_view()),
     path("field/batch-save", DataFactoryFieldViews.as_view({'post': 'batch_save'})),
+    path("field/preview-values", DataFactoryFieldViews.as_view({'post': 'preview_values'})),
     path("template", DataFactoryTemplateCRUD.as_view()),
     path("template/copy", DataFactoryTemplateViews.as_view({'post': 'copy'})),
     path("template/status", DataFactoryTemplateViews.as_view({'put': 'status'})),

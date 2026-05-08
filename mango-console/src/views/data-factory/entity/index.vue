@@ -114,9 +114,10 @@
       <a-select v-model="discoverTestObjectId" :options="testObjectOptions" :field-names="{ value: 'id', label: 'name' }" allow-search placeholder="结构发现环境" style="width: 220px" />
       <a-select v-model="selectedTable" :options="tableOptions" allow-search placeholder="请选择表" style="width: 260px" />
       <a-button @click="discoverFields">同步字段</a-button>
+      <a-button :loading="fieldPreviewLoading" @click="previewFieldValues">生成实际值</a-button>
       <a-switch v-model="replaceFields" checked-text="替换" unchecked-text="追加" />
     </a-space>
-    <a-table :data="fieldRows" :pagination="false" :scroll="{ x: 1600, y: 460 }">
+    <a-table :data="fieldRows" :pagination="false" :scroll="{ x: 1800, y: 460 }">
       <template #columns>
         <a-table-column title="字段" data-index="name" :width="160" fixed="left" />
         <a-table-column title="说明" :width="160"><template #cell="{ record }"><a-input v-model="record.label" /></template></a-table-column>
@@ -130,8 +131,16 @@
             <a-select v-model="record.generator_type" :options="enumStore.data_factory_generator_type" :field-names="enumFieldNames" />
           </template>
         </a-table-column>
-        <a-table-column title="生成配置(JSON)" :width="280">
+        <a-table-column title="生成配置" :width="280">
           <template #cell="{ record }"><a-textarea v-model="record.generator_config_text" :auto-size="{ minRows: 1, maxRows: 4 }" /></template>
+        </a-table-column>
+        <a-table-column title="实际值" :width="220">
+          <template #cell="{ record }">
+            <a-tooltip v-if="record.preview_message" :content="record.preview_message">
+              <a-tag :color="record.preview_valid ? 'green' : 'red'">{{ formatPreviewValue(record.preview_value) }}</a-tag>
+            </a-tooltip>
+            <span v-else>{{ formatPreviewValue(record.preview_value) }}</span>
+          </template>
         </a-table-column>
         <a-table-column title="输出" :width="80"><template #cell="{ record }"><a-switch v-model="record.output_enabled" /></template></a-table-column>
         <a-table-column title="输出名" :width="150"><template #cell="{ record }"><a-input v-model="record.output_name" /></template></a-table-column>
@@ -152,6 +161,7 @@
     postDataFactoryDiscoverTables,
     postDataFactoryEntity,
     postDataFactoryFieldBatchSave,
+    postDataFactoryFieldPreviewValues,
     putDataFactoryEntity,
     putDataFactoryEntityStatus,
   } from '@/api/data-factory'
@@ -178,6 +188,7 @@
   const replaceFields = ref(true)
   const entityVisible = ref(false)
   const fieldVisible = ref(false)
+  const fieldPreviewLoading = ref(false)
   const currentEntity = ref<any>(null)
   const fieldRows = ref<any[]>([])
   const entityForm = reactive<any>({})
@@ -340,7 +351,13 @@
     selectedTable.value = record.table_name
     fieldVisible.value = true
     getDataFactoryField({ entity: record.id }).then((res) => {
-      fieldRows.value = (res.data || []).map((it: any) => ({ ...it, generator_config_text: JSON.stringify(it.generator_config || {}) }))
+      fieldRows.value = (res.data || []).map((it: any) => ({
+        ...it,
+        generator_config_text: JSON.stringify(it.generator_config || {}),
+        preview_value: undefined,
+        preview_valid: true,
+        preview_message: '',
+      }))
     })
   }
 
@@ -374,6 +391,9 @@
         generator_type: it.generator_type ?? it.recommend?.generator_type ?? 1,
         generator_config: it.generator_config || it.recommend?.generator_config || {},
         generator_config_text: JSON.stringify(it.generator_config || it.recommend?.generator_config || {}),
+        preview_value: undefined,
+        preview_valid: true,
+        preview_message: '',
         output_enabled: it.output_enabled ?? true,
         output_name: it.output_name || it.name,
         sort: index,
@@ -382,14 +402,64 @@
   }
 
   function saveFields() {
-    const fields = fieldRows.value.map((it) => ({
-      ...it,
-      generator_config: it.generator_config_text ? JSON.parse(it.generator_config_text) : {},
-    }))
+    const fields = buildFieldPayload()
+    if (!fields) {
+      return
+    }
     postDataFactoryFieldBatchSave({ entity_id: currentEntity.value.id, replace: replaceFields.value, fields }).then((res) => {
       Message.success(res.msg)
       fieldVisible.value = false
     })
+  }
+
+  function buildFieldPayload() {
+    try {
+      return fieldRows.value.map((it) => ({
+        ...it,
+        generator_config: it.generator_config_text ? JSON.parse(it.generator_config_text) : {},
+      }))
+    } catch (error) {
+      Message.error('生成配置不是合法 JSON')
+      return null
+    }
+  }
+
+  function previewFieldValues() {
+    const fields = buildFieldPayload()
+    if (!fields) {
+      return
+    }
+    fieldPreviewLoading.value = true
+    postDataFactoryFieldPreviewValues({ fields })
+      .then((res) => {
+        const previewMap = new Map((res.data?.fields || []).map((it: any) => [it.name, it]))
+        fieldRows.value = fieldRows.value.map((row) => {
+          const preview = previewMap.get(row.name) as any
+          return {
+            ...row,
+            preview_value: preview?.value,
+            preview_valid: preview?.valid ?? true,
+            preview_message: preview?.message || '',
+          }
+        })
+        Message.success('实际值生成完成')
+      })
+      .finally(() => {
+        fieldPreviewLoading.value = false
+      })
+  }
+
+  function formatPreviewValue(value: any) {
+    if (value === undefined) {
+      return '-'
+    }
+    if (value === null || value === '') {
+      return '空'
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value)
+    }
+    return String(value)
   }
 
   onMounted(() => {

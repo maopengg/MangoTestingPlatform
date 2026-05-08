@@ -89,7 +89,13 @@ class DataFactoryDiscover:
             autoincrement=autoincrement,
             enum_values=enum_values,
         )
-        generator_config = cls.recommend_generator_config(name, platform_type, enum_values)
+        generator_config = cls.recommend_generator_config(
+            name=name,
+            platform_type=platform_type,
+            enum_values=enum_values,
+            primary_key=primary_key,
+            autoincrement=autoincrement,
+        )
 
         return {
             "name": name,
@@ -179,18 +185,28 @@ class DataFactoryDiscover:
         return DataFactoryGeneratorTypeEnum.FIXED.value
 
     @staticmethod
-    def recommend_generator_config(name: str, platform_type: str, enum_values: list[str]) -> dict[str, Any]:
+    def recommend_generator_config(
+            name: str,
+            platform_type: str,
+            enum_values: list[str],
+            primary_key: bool = False,
+            autoincrement: bool = False,
+    ) -> dict[str, Any]:
+        if primary_key and autoincrement:
+            return {"reason": "数据库自增主键"}
         expression = DataFactoryDiscover.recommend_test_data_expression(name)
         if expression:
             if name in ["password", "passwd", "pwd"]:
                 return {"value": "123456"}
             return {"value": expression}
+        if name.endswith("_id"):
+            return {"template_id": None, "field": "id", "strategy": "reuse_or_create"}
         if name.endswith("_no") or name.endswith("_code"):
-            return {"prefix": f"AUTO_{name.upper()}_", "length": 8}
+            return {}
         if platform_type == "integer":
-            return {"min": 1, "max": 100}
+            return {}
         if platform_type == "decimal":
-            return {"min": 1, "max": 100, "precision": 2}
+            return {}
         if enum_values:
             return {"values": enum_values, "mode": "fixed", "value": enum_values[0] if enum_values else None}
         return {}
