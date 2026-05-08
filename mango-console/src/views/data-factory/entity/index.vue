@@ -120,7 +120,23 @@
         </a-table-column>
         <a-table-column title="生成配置" :width="280">
           <template #cell="{ record }">
+            <a-space v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD" direction="vertical" fill>
+              <a-select
+                v-model="record.generator_config.template_id"
+                :options="getDependencyTemplateOptions(record)"
+                allow-clear
+                allow-search
+                placeholder="请选择依赖模板"
+                @change="refreshDependencyConfigValue(record)"
+              />
+              <a-input
+                v-model="record.generator_config.field"
+                placeholder="取值字段，例如 id"
+                @input="refreshDependencyConfigValue(record)"
+              />
+            </a-space>
             <a-input
+              v-else
               v-model="record.generator_config_value"
               :disabled="isReadonlyGeneratorConfig(record)"
               :placeholder="getGeneratorConfigPlaceholder(record)"
@@ -149,6 +165,7 @@
     getDataFactoryDatasourceAlias,
     getDataFactoryEntity,
     getDataFactoryField,
+    getDataFactoryTemplate,
     postDataFactoryDiscoverTable,
     postDataFactoryDiscoverTables,
     postDataFactoryEntity,
@@ -171,6 +188,8 @@
   const userStore = useUserStore()
   const enumFieldNames = { value: 'key', label: 'title' }
   const datasourceAliasOptions = ref<any[]>([])
+  const dependencyTemplateOptions = ref<any[]>([])
+  const entityNameMap = ref<Record<string, string>>({})
   const tableOptions = ref<any[]>([])
   const entityTableOptions = ref<any[]>([])
   const entityDiscoveredColumns = ref<any[]>([])
@@ -220,6 +239,34 @@
   function loadOptions() {
     getDataFactoryDatasourceAlias({}).then((res) => {
       datasourceAliasOptions.value = res.data || []
+    })
+  }
+
+  function loadDependencyTemplates(record?: any) {
+    const projectProduct = record?.project_product?.id || record?.project_product || entityForm.project_product
+    if (!projectProduct) {
+      dependencyTemplateOptions.value = []
+      entityNameMap.value = {}
+      return
+    }
+    Promise.all([
+      getDataFactoryEntity({ project_product: projectProduct, page: 1, pageSize: 9999 }),
+      getDataFactoryTemplate({ project_product: projectProduct, page: 1, pageSize: 9999 }),
+    ]).then(([entityRes, templateRes]) => {
+      entityNameMap.value = Object.fromEntries(
+        (entityRes.data || []).map((entity: any) => [String(entity.id), entity.name || entity.table_name || entity.id])
+      )
+      dependencyTemplateOptions.value = (templateRes.data || []).map((it: any) => {
+        const entityId = it.entity?.id || it.entity
+        const entityName = it.entity?.name || entityNameMap.value[String(entityId)] || entityId || '未知实体'
+        return {
+          label: `${entityName} / ${it.name}`,
+          value: it.id,
+          entity_id: entityId,
+          table_name: it.entity?.table_name,
+          template: it,
+        }
+      })
     })
   }
 
@@ -377,6 +424,7 @@
     currentEntity.value = record
     selectedTable.value = record.table_name
     fieldVisible.value = true
+    loadDependencyTemplates(record)
     getDataFactoryField({ entity: record.id }).then((res) => {
       fieldRows.value = (res.data || []).map((it: any) => normalizeFieldRow(it))
     })
@@ -491,6 +539,9 @@
 
   function normalizeFieldRow(row: any) {
     const generatorConfig = row.generator_config || row.recommend?.generator_config || {}
+    if (row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD && !generatorConfig.field) {
+      generatorConfig.field = 'id'
+    }
     return {
       ...row,
       generator_config: generatorConfig,
@@ -520,6 +571,16 @@
       return `请选择依赖模板.${targetField}`
     }
     return ''
+  }
+
+  function getDependencyTemplateOptions(row: any) {
+    return dependencyTemplateOptions.value.filter((item) => item.entity_id !== currentEntity.value?.id)
+  }
+
+  function refreshDependencyConfigValue(row: any) {
+    row.generator_config_value = getGeneratorConfigValue(row)
+    row.preview_value = undefined
+    row.preview_message = ''
   }
 
   function isReadonlyGeneratorConfig(row: any) {
