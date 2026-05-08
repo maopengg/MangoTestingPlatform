@@ -116,6 +116,7 @@ class DataFactoryTemplateViews(ViewSet):
             overrides=request.data.get('overrides') or {},
             context=request.data.get('context') or {},
             test_object_id=request.data.get('test_object_id'),
+            test_env=request.data.get('test_env'),
         )
         return ResponseData.success(RESPONSE_MSG_0001, result)
 
@@ -127,6 +128,7 @@ class DataFactoryTemplateViews(ViewSet):
             overrides=request.data.get('overrides') or {},
             context=request.data.get('context') or {},
             test_object_id=request.data.get('test_object_id'),
+            test_env=request.data.get('test_env'),
         )
         return ResponseData.success(RESPONSE_MSG_0001, result)
 

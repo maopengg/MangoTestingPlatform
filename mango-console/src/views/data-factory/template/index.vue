@@ -89,13 +89,6 @@
     </a-space>
   </a-modal>
 
-  <a-modal v-model:visible="debugRunVisible" title="选择调试环境" width="520px" @ok="confirmDebugRun" @cancel="resetRunMode">
-    <a-form layout="vertical">
-      <a-form-item label="测试环境" required>
-        <a-select v-model="debugTestObjectId" :options="testObjectOptions" :field-names="{ value: 'id', label: 'name' }" allow-search />
-      </a-form-item>
-    </a-form>
-  </a-modal>
 </template>
 
 <script lang="ts" setup>
@@ -111,10 +104,10 @@
     putDataFactoryTemplate,
     putDataFactoryTemplateStatus,
   } from '@/api/data-factory'
-  import { getUserTestObject } from '@/api/system/test_object'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
+  import useUserStore from '@/store/modules/user'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref } from 'vue'
 
@@ -122,16 +115,14 @@
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
   const projectInfo = useProject()
+  const userStore = useUserStore()
   const enumFieldNames = { value: 'key', label: 'title' }
   const entityOptions = ref<any[]>([])
   const templateVisible = ref(false)
   const debugVisible = ref(false)
   const previewVisible = ref(false)
-  const debugRunVisible = ref(false)
   const debugTemplate = ref<any>(null)
   const previewTemplate = ref<any>(null)
-  const debugTestObjectId = ref<any>(null)
-  const testObjectOptions = ref<any[]>([])
   const debugResult = ref<any>({})
   const previewResult = ref<any>({})
   const templateForm = reactive<any>({})
@@ -235,15 +226,21 @@
   }
 
   function previewRun(record: any) {
+    if (!ensureSelectedEnvironment()) {
+      return
+    }
     previewTemplate.value = record
     debugTemplate.value = null
-    debugRunVisible.value = true
+    confirmDebugRun()
   }
 
   function debugRun(record: any) {
+    if (!ensureSelectedEnvironment()) {
+      return
+    }
     debugTemplate.value = record
     previewTemplate.value = null
-    debugRunVisible.value = true
+    confirmDebugRun()
   }
 
   function resetRunMode() {
@@ -252,22 +249,19 @@
   }
 
   function confirmDebugRun() {
-    if (!debugTestObjectId.value) {
-      Message.error('请选择测试环境')
+    if (!ensureSelectedEnvironment()) {
       return
     }
     if (previewTemplate.value) {
-      postDataFactoryTemplatePreview({ template_id: previewTemplate.value.id, test_object_id: debugTestObjectId.value }).then((res) => {
+      postDataFactoryTemplatePreview({ template_id: previewTemplate.value.id, test_env: userStore.selected_environment }).then((res) => {
         previewResult.value = res.data || {}
         previewTemplate.value = null
-        debugRunVisible.value = false
         previewVisible.value = true
       })
       return
     }
-    postDataFactoryTemplateDebugRun({ template_id: debugTemplate.value.id, test_object_id: debugTestObjectId.value }).then((res) => {
+    postDataFactoryTemplateDebugRun({ template_id: debugTemplate.value.id, test_env: userStore.selected_environment }).then((res) => {
       debugResult.value = res.data || {}
-      debugRunVisible.value = false
       debugVisible.value = true
       debugTemplate.value = null
     })
@@ -279,10 +273,17 @@
     })
   }
 
+  function ensureSelectedEnvironment() {
+    if (userStore.selected_environment == null) {
+      Message.error('请先在顶部选择测试环境')
+      return false
+    }
+    return true
+  }
+
   onMounted(() => {
     enumStore.getEnum()
     projectInfo.projectProductName()
-    getUserTestObject({}).then((res) => (testObjectOptions.value = res.data || []))
     loadEntities()
     doRefresh()
   })

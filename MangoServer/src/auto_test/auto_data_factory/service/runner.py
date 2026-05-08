@@ -34,12 +34,15 @@ class DataFactoryRunner:
             overrides: dict | None = None,
             context: dict | None = None,
             test_object_id: int | None = None,
+            test_env: int | None = None,
     ) -> dict:
         template = DataFactoryTemplate.objects.select_related(
             'entity',
             'entity__datasource_alias',
             'project_product',
         ).get(id=template_id)
+        if not test_object_id and test_env:
+            test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         runtime_context = context or {}
         return cls.preview_by_template(template, overrides or {}, runtime_context, test_object_id, set())
 
@@ -211,12 +214,15 @@ class DataFactoryRunner:
             overrides: dict | None = None,
             context: dict | None = None,
             test_object_id: int | None = None,
+            test_env: int | None = None,
     ) -> dict:
         template = DataFactoryTemplate.objects.select_related(
             'entity',
             'entity__datasource_alias',
             'project_product',
         ).get(id=template_id)
+        if not test_object_id and test_env:
+            test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         execution = DataFactoryExecution.objects.create(
             execution_no=cls.build_execution_no(),
             source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,

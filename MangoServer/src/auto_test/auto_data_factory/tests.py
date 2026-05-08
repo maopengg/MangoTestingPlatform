@@ -63,17 +63,17 @@ class DataFactoryGeneratorTests(SimpleTestCase):
 
 
 class DataFactoryFieldSerializerTests(SimpleTestCase):
-    def test_dependency_field_must_config_template_id(self):
+    def test_dependency_field_can_save_without_template_id(self):
         serializer = DataFactoryFieldSerializer()
 
-        with self.assertRaises(serializers.ValidationError):
-            serializer.validate({
+        result = serializer.validate({
             "name": "user_id",
             "db_type": "bigint",
             "platform_type": "integer",
             "generator_type": DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
             "generator_config": {"alias": "用户", "field": "id"},
         })
+        self.assertEqual(result["generator_config"]["field"], "id")
 
     def test_random_range_must_be_valid(self):
         serializer = DataFactoryFieldSerializer()

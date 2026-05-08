@@ -78,8 +78,6 @@ class DataFactoryFieldSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("测试数据方法必须配置 value，例如 ${{character_email()}}")
 
         if generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
-            if not generator_config.get("template_id"):
-                raise serializers.ValidationError("依赖字段必须配置 template_id")
             strategy = generator_config.get("strategy", "reuse_or_create")
             if strategy not in ["reuse_or_create", "must_exist", "create_always"]:
                 raise serializers.ValidationError("依赖字段 strategy 只能是 reuse_or_create、must_exist、create_always")

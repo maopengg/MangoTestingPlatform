@@ -19,7 +19,15 @@ class DataFactoryDiscoverViews(ViewSet):
     def _get_database(request: Request) -> Database:
         datasource_alias_id = request.data.get('datasource_alias_id') or request.query_params.get('datasource_alias_id')
         test_object_id = request.data.get('test_object_id') or request.query_params.get('test_object_id')
+        test_env = request.data.get('test_env') or request.query_params.get('test_env')
+        project_product_id = request.data.get('project_product') or request.query_params.get('project_product')
         if datasource_alias_id:
+            if test_env and project_product_id:
+                return DataFactoryDatasourceResolver.resolve_alias_by_env(
+                    datasource_alias_id,
+                    project_product_id,
+                    test_env,
+                )
             return DataFactoryDatasourceResolver.resolve_alias(datasource_alias_id, test_object_id)
         database_id = request.data.get('database_id') or request.query_params.get('database_id')
         return Database.objects.get(id=database_id)

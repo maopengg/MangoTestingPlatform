@@ -6,7 +6,8 @@ from urllib.parse import quote_plus
 
 from src.auto_test.auto_data_factory.models import DataFactoryDatasourceBinding
 from src.auto_test.auto_system.models import Database
-from src.enums.tools_enum import StatusEnum
+from src.auto_test.auto_system.service.factory import func_test_object_value
+from src.enums.tools_enum import AutoTypeEnum, StatusEnum
 from src.enums.tools_enum import DatabaseTypeEnum
 from src.exceptions import ToolsError
 
@@ -67,6 +68,27 @@ class DataFactoryDatasourceResolver:
     """把数据工厂逻辑数据源解析成某个测试环境下的真实数据库。"""
 
     @classmethod
+    def resolve_test_object_id(cls, project_product_id: int, test_env: int | None) -> int:
+        if not test_env:
+            raise ToolsError(300, "请先在顶部选择测试环境")
+        try:
+            project_product_id = int(project_product_id)
+            test_env = int(test_env)
+        except (TypeError, ValueError) as error:
+            raise ToolsError(300, "测试环境或产品参数不合法") from error
+        test_object = func_test_object_value(
+            env=test_env,
+            project_product_id=project_product_id,
+            auto_type=AutoTypeEnum.API.value,
+        )
+        return test_object.id
+
+    @classmethod
+    def resolve_by_env(cls, entity, test_env: int | None) -> Database:
+        test_object_id = cls.resolve_test_object_id(entity.project_product_id, test_env)
+        return cls.resolve(entity, test_object_id)
+
+    @classmethod
     def resolve(cls, entity, test_object_id: int | None) -> Database:
         if not entity.datasource_alias_id:
             raise ToolsError(300, f"实体 {entity.name} 未绑定逻辑数据源")
@@ -104,3 +126,8 @@ class DataFactoryDatasourceResolver:
         if binding.database.db_type != binding.datasource_alias.db_type:
             raise ToolsError(300, "逻辑数据源类型与实际数据库类型不一致")
         return binding.database
+
+    @classmethod
+    def resolve_alias_by_env(cls, datasource_alias_id: int, project_product_id: int, test_env: int | None) -> Database:
+        test_object_id = cls.resolve_test_object_id(project_product_id, test_env)
+        return cls.resolve_alias(datasource_alias_id, test_object_id)

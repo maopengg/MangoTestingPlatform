@@ -66,18 +66,6 @@
             />
           </a-form-item>
         </a-grid-item>
-        <a-grid-item>
-          <a-form-item label="结构发现环境">
-            <a-select
-              v-model="discoverTestObjectId"
-              :field-names="{ value: 'id', label: 'name' }"
-              :options="testObjectOptions"
-              allow-clear
-              allow-search
-              @change="onDiscoverEnvChange"
-            />
-          </a-form-item>
-        </a-grid-item>
         <a-grid-item><a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item></a-grid-item>
         <a-grid-item>
           <a-form-item label="表名">
@@ -111,7 +99,6 @@
   <a-modal v-model:visible="fieldVisible" :title="`${currentEntity?.name || ''} 字段规则`" width="1180px" @ok="saveFields">
     <a-space style="margin-bottom: 12px">
       <a-button type="primary" @click="discoverTables">发现表</a-button>
-      <a-select v-model="discoverTestObjectId" :options="testObjectOptions" :field-names="{ value: 'id', label: 'name' }" allow-search placeholder="结构发现环境" style="width: 220px" />
       <a-select v-model="selectedTable" :options="tableOptions" allow-search placeholder="请选择表" style="width: 260px" />
       <a-button @click="discoverFields">同步字段</a-button>
       <a-button :loading="fieldPreviewLoading" @click="previewFieldValues">生成实际值</a-button>
@@ -157,7 +144,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { getUserTestObject } from '@/api/system/test_object'
   import {
     deleteDataFactoryEntity,
     getDataFactoryDatasourceAlias,
@@ -174,6 +160,7 @@
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
+  import useUserStore from '@/store/modules/user'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref } from 'vue'
 
@@ -181,15 +168,14 @@
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
   const projectInfo = useProject()
+  const userStore = useUserStore()
   const enumFieldNames = { value: 'key', label: 'title' }
   const datasourceAliasOptions = ref<any[]>([])
-  const testObjectOptions = ref<any[]>([])
   const tableOptions = ref<any[]>([])
   const entityTableOptions = ref<any[]>([])
   const entityDiscoveredColumns = ref<any[]>([])
   const entityTableLoading = ref(false)
   const syncFieldsAfterSave = ref(true)
-  const discoverTestObjectId = ref<any>(null)
   const selectedTable = ref('')
   const replaceFields = ref(true)
   const entityVisible = ref(false)
@@ -235,9 +221,6 @@
     getDataFactoryDatasourceAlias({}).then((res) => {
       datasourceAliasOptions.value = res.data || []
     })
-    getUserTestObject({}).then((res) => {
-      testObjectOptions.value = res.data || []
-    })
   }
 
   function openEntity(record?: any) {
@@ -245,7 +228,7 @@
     syncFieldsAfterSave.value = !record?.id
     entityDiscoveredColumns.value = []
     entityTableOptions.value = record?.table_name ? [{ label: record.table_name, value: record.table_name }] : []
-    if (record?.datasource_alias && discoverTestObjectId.value) {
+    if (record?.datasource_alias && userStore.selected_environment) {
       loadEntityTables(record.datasource_alias?.id || record.datasource_alias)
     }
     entityVisible.value = true
@@ -256,11 +239,19 @@
     const request = entityForm.id ? putDataFactoryEntity : postDataFactoryEntity
     request({ ...entityForm }).then((res) => {
       const entityId = res.data?.id || entityForm.id
-      if (syncFieldsAfterSave.value && entityDiscoveredColumns.value.length && entityId) {
-        return syncEntityFields(entityId).then(() => {
-          Message.success('实体和字段规则保存成功')
-          entityVisible.value = false
-          doRefresh()
+      if (syncFieldsAfterSave.value && entityId) {
+        return ensureEntityDiscoveredColumns().then(() => {
+          if (!entityDiscoveredColumns.value.length) {
+            Message.warning('实体已保存，但没有发现可同步的字段，请进入字段规则手动同步')
+            entityVisible.value = false
+            doRefresh()
+            return
+          }
+          return syncEntityFields(entityId).then(() => {
+            Message.success('实体和字段规则保存成功')
+            entityVisible.value = false
+            doRefresh()
+          })
         })
       }
       Message.success(res.msg)
@@ -275,23 +266,26 @@
     entityForm.unique_key = ''
     entityDiscoveredColumns.value = []
     entityTableOptions.value = []
-    if (value && discoverTestObjectId.value) {
+    if (value && userStore.selected_environment) {
       loadEntityTables(value)
     }
   }
 
-  function onDiscoverEnvChange() {
-    entityForm.table_name = ''
-    entityDiscoveredColumns.value = []
-    entityTableOptions.value = []
-    if (entityForm.datasource_alias && discoverTestObjectId.value) {
-      loadEntityTables(entityForm.datasource_alias)
-    }
-  }
-
   function loadEntityTables(datasourceAliasId: any) {
+    if (!ensureSelectedEnvironment()) {
+      return
+    }
+    const projectProduct = entityForm.project_product || currentEntity.value?.project_product?.id || currentEntity.value?.project_product
+    if (!projectProduct) {
+      Message.error('请先选择产品')
+      return
+    }
     entityTableLoading.value = true
-    postDataFactoryDiscoverTables({ datasource_alias_id: datasourceAliasId, test_object_id: discoverTestObjectId.value })
+    postDataFactoryDiscoverTables({
+      datasource_alias_id: datasourceAliasId,
+      project_product: projectProduct,
+      test_env: userStore.selected_environment,
+    })
       .then((res) => {
         entityTableOptions.value = (res.data || []).map((name: string) => ({ label: name, value: name }))
       })
@@ -302,12 +296,13 @@
 
   function onEntityTableChange(tableName: string) {
     entityDiscoveredColumns.value = []
-    if (!entityForm.datasource_alias || !discoverTestObjectId.value || !tableName) {
+    if (!entityForm.datasource_alias || !tableName || !ensureSelectedEnvironment()) {
       return
     }
     postDataFactoryDiscoverTable({
       datasource_alias_id: entityForm.datasource_alias,
-      test_object_id: discoverTestObjectId.value,
+      project_product: entityForm.project_product,
+      test_env: userStore.selected_environment,
       table_name: tableName,
     }).then((res) => {
       const schema = res.data || {}
@@ -327,6 +322,30 @@
 
   function fillEntitySystemFields() {
     // 保留方法入口，后续如有表级默认值可集中补齐。
+  }
+
+  function ensureEntityDiscoveredColumns() {
+    if (entityDiscoveredColumns.value.length) {
+      return Promise.resolve()
+    }
+    if (!entityForm.datasource_alias || !entityForm.table_name) {
+      return Promise.resolve()
+    }
+    if (!ensureSelectedEnvironment()) {
+      return Promise.resolve()
+    }
+    return postDataFactoryDiscoverTable({
+      datasource_alias_id: entityForm.datasource_alias,
+      project_product: entityForm.project_product,
+      test_env: userStore.selected_environment,
+      table_name: entityForm.table_name,
+    }).then((res) => {
+      const schema = res.data || {}
+      entityDiscoveredColumns.value = schema.columns || []
+      entityForm.primary_key = schema.primary_keys?.[0] || entityForm.primary_key || 'id'
+      const uniqueIndex = (schema.indexes || []).find((item: any) => item.unique && item.column_names?.length === 1)
+      entityForm.unique_key = uniqueIndex?.column_names?.[0] || entityForm.unique_key || ''
+    })
   }
 
   function syncEntityFields(entityId: any) {
@@ -364,13 +383,14 @@
   }
 
   function discoverTables() {
-    if (!currentEntity.value?.datasource_alias || !discoverTestObjectId.value) {
-      Message.error('请先选择逻辑数据源和结构发现环境')
+    if (!currentEntity.value?.datasource_alias || !ensureSelectedEnvironment()) {
+      Message.error('请先选择逻辑数据源和顶部测试环境')
       return
     }
     postDataFactoryDiscoverTables({
       datasource_alias_id: currentEntity.value.datasource_alias,
-      test_object_id: discoverTestObjectId.value,
+      project_product: currentEntity.value.project_product?.id || currentEntity.value.project_product,
+      test_env: userStore.selected_environment,
     }).then((res) => {
       tableOptions.value = (res.data || []).map((name: string) => ({ label: name, value: name }))
       Message.success('表发现完成')
@@ -384,7 +404,8 @@
     }
     postDataFactoryDiscoverTable({
       datasource_alias_id: currentEntity.value.datasource_alias,
-      test_object_id: discoverTestObjectId.value,
+      project_product: currentEntity.value.project_product?.id || currentEntity.value.project_product,
+      test_env: userStore.selected_environment,
       table_name: selectedTable.value,
     }).then((res) => {
       fieldRows.value = (res.data.columns || []).map((it: any, index: number) => ({
@@ -513,6 +534,14 @@
       return '请选择依赖模板.id'
     }
     return '填写 value，例如 ${{character_email()}}'
+  }
+
+  function ensureSelectedEnvironment() {
+    if (userStore.selected_environment == null) {
+      Message.error('请先在顶部选择测试环境')
+      return false
+    }
+    return true
   }
 
   onMounted(() => {
