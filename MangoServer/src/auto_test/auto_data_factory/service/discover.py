@@ -18,13 +18,19 @@ class DataFactoryDiscover:
     """通过 SQLAlchemy inspector 发现外部业务库结构。"""
 
     @classmethod
-    def get_tables(cls, database: Database) -> list[str]:
+    def get_tables(cls, database: Database) -> list[dict[str, Any]]:
         engine = DataFactoryDatasource.create_engine(database)
         try:
             from sqlalchemy import inspect
 
             inspector = inspect(engine)
-            return sorted(inspector.get_table_names())
+            tables = []
+            for table_name in sorted(inspector.get_table_names()):
+                tables.append({
+                    "name": table_name,
+                    "comment": cls._get_table_comment(inspector, table_name),
+                })
+            return tables
         except Exception as error:
             raise ToolsError(300, f"读取数据表失败：{error}") from error
         finally:
@@ -55,6 +61,7 @@ class DataFactoryDiscover:
 
             return {
                 "table": table_name,
+                "table_comment": cls._get_table_comment(inspector, table_name),
                 "primary_keys": pk_columns,
                 "columns": columns,
                 "indexes": indexes,
@@ -66,6 +73,14 @@ class DataFactoryDiscover:
             raise ToolsError(300, f"读取表结构失败：{error}") from error
         finally:
             engine.dispose()
+
+    @staticmethod
+    def _get_table_comment(inspector, table_name: str) -> str:
+        try:
+            table_comment = inspector.get_table_comment(table_name) or {}
+            return table_comment.get("text") or ""
+        except Exception:
+            return ""
 
     @classmethod
     def _normalize_column(

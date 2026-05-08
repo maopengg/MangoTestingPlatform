@@ -8,7 +8,7 @@ export const executionTableColumns = useTableColumn([
     title: '执行编号',
     key: 'execution_no',
     dataIndex: 'execution_no',
-    width: 230,
+    width: 300,
   },
   {
     title: '来源',
@@ -49,7 +49,7 @@ export const executionTableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 180,
+    width: 160,
   },
 ])
 

@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
 # @Description: 数据工厂逻辑数据源视图
 
 from rest_framework import serializers
 from rest_framework.request import Request
 
-from src.auto_test.auto_data_factory.models import (
-    DataFactoryDatasourceAlias,
-    DataFactoryDatasourceBinding,
-)
+from src.auto_test.auto_data_factory.models import DataFactoryDatasourceAlias
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 
@@ -23,35 +21,18 @@ class DataFactoryDatasourceAliasSerializer(serializers.ModelSerializer):
         validators = []
 
 
-class DataFactoryDatasourceAliasSerializerC(DataFactoryDatasourceAliasSerializer):
-    @staticmethod
-    def setup_eager_loading(queryset):
-        return queryset.select_related('project_product')
-
-
-class DataFactoryDatasourceBindingSerializer(serializers.ModelSerializer):
+class DataFactoryDatasourceAliasSerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
-        model = DataFactoryDatasourceBinding
+        model = DataFactoryDatasourceAlias
         fields = '__all__'
 
-    def validate(self, attrs):
-        datasource_alias = attrs.get(
-            'datasource_alias',
-            self.instance.datasource_alias if self.instance else None
-        )
-        database = attrs.get('database', self.instance.database if self.instance else None)
-        if datasource_alias and database and datasource_alias.db_type != database.db_type:
-            raise serializers.ValidationError("逻辑数据源类型与实际数据库类型不一致")
-        return attrs
-
-
-class DataFactoryDatasourceBindingSerializerC(DataFactoryDatasourceBindingSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related('datasource_alias', 'test_object', 'database')
+        return queryset.select_related('project_product', 'project_product__project')
 
 
 class DataFactoryDatasourceAliasCRUD(ModelCRUD):
@@ -83,11 +64,3 @@ class DataFactoryDatasourceAliasCRUD(ModelCRUD):
         if exclude_id:
             queryset = queryset.exclude(id=exclude_id)
         return queryset.first()
-
-
-class DataFactoryDatasourceBindingCRUD(ModelCRUD):
-    model = DataFactoryDatasourceBinding
-    queryset = DataFactoryDatasourceBinding.objects.all()
-    serializer_class = DataFactoryDatasourceBindingSerializerC
-    serializer = DataFactoryDatasourceBindingSerializer
-    not_matching_str = ModelCRUD.not_matching_str + ['datasource_alias', 'database']

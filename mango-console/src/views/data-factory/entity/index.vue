@@ -67,7 +67,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="逻辑数据源">
+          <a-form-item label="逻辑数据源" required>
             <a-select
               v-model="entityForm.datasource_alias"
               :field-names="{ value: 'id', label: 'name' }"
@@ -78,9 +78,8 @@
             />
           </a-form-item>
         </a-grid-item>
-        <a-grid-item><a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item></a-grid-item>
         <a-grid-item>
-          <a-form-item label="表名">
+          <a-form-item label="表名" required>
             <a-select
               v-model="entityForm.table_name"
               :loading="entityTableLoading"
@@ -92,6 +91,7 @@
             />
           </a-form-item>
         </a-grid-item>
+        <a-grid-item><a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item></a-grid-item>
         <a-grid-item><a-form-item label="主键字段"><a-input v-model="entityForm.primary_key" /></a-form-item></a-grid-item>
         <a-grid-item><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item></a-grid-item>
         <a-grid-item><a-form-item label="清理顺序"><a-input-number v-model="entityForm.cleanup_order" style="width: 100%" /></a-form-item></a-grid-item>
@@ -300,6 +300,22 @@
   }
 
   function saveEntity() {
+    if (!entityForm.project_product) {
+      Message.error('请选择产品')
+      return
+    }
+    if (!entityForm.datasource_alias) {
+      Message.error('请选择逻辑数据源')
+      return
+    }
+    if (!entityForm.table_name) {
+      Message.error('请选择表名')
+      return
+    }
+    if (!entityForm.name) {
+      Message.error('请填写实体名称')
+      return
+    }
     fillEntitySystemFields()
     const request = entityForm.id ? putDataFactoryEntity : postDataFactoryEntity
     request({ ...entityForm }).then((res) => {
@@ -352,11 +368,24 @@
       test_env: userStore.selected_environment,
     })
       .then((res) => {
-        entityTableOptions.value = (res.data || []).map((name: string) => ({ label: name, value: name }))
+        entityTableOptions.value = (res.data || []).map(normalizeTableOption)
       })
       .finally(() => {
         entityTableLoading.value = false
       })
+  }
+
+  function normalizeTableOption(table: any) {
+    if (typeof table === 'string') {
+      return { label: table, value: table, comment: '' }
+    }
+    const name = table.name || table.table || ''
+    const comment = table.comment || table.table_comment || ''
+    return {
+      label: comment ? `${name} / ${comment}` : name,
+      value: name,
+      comment,
+    }
   }
 
   function onEntityTableChange(tableName: string) {
@@ -375,13 +404,15 @@
       entityForm.primary_key = schema.primary_keys?.[0] || entityForm.primary_key || 'id'
       const uniqueIndex = (schema.indexes || []).find((item: any) => item.unique && item.column_names?.length === 1)
       entityForm.unique_key = uniqueIndex?.column_names?.[0] || entityForm.unique_key || ''
-      applyEntityNameSuggestion(tableName)
+      applyEntityNameSuggestion(tableName, schema.table_comment)
     })
   }
 
-  function applyEntityNameSuggestion(tableName: string) {
-    if (!entityForm.name) {
-      entityForm.name = tableName
+  function applyEntityNameSuggestion(tableName: string, tableComment?: string) {
+    const selectedTable = entityTableOptions.value.find((item: any) => item.value === tableName)
+    const suggestedName = tableComment || selectedTable?.comment || tableName
+    if (!entityForm.id || !entityForm.name || entityForm.name === entityForm.table_name) {
+      entityForm.name = suggestedName
     }
   }
 

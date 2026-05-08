@@ -329,7 +329,34 @@ orders.product_id = 2001
 | 状态模板 | `template/config.ts` | 模板列、预览字段列 |
 | 执行记录 | `execution/config.ts` | 执行记录列、执行明细列 |
 
-## 11. 验收标准
+## 11. 后端视图组织
+
+数据工厂后端 `views` 按“一张表一个文件”组织。每个表级文件中同时维护：
+
+- 写入 Serializer。
+- 查询 SerializerC。
+- CRUD。
+- 该表独有的 ViewSet 动作。
+
+表级文件：
+
+| 模型 | 文件 |
+| --- | --- |
+| `DataFactoryDatasourceAlias` | `views/datasource_alias.py` |
+| `DataFactoryDatasourceBinding` | `views/datasource_binding.py` |
+| `DataFactoryEntity` | `views/entity.py` |
+| `DataFactoryField` | `views/field.py` |
+| `DataFactoryTemplate` | `views/template.py` |
+| `DataFactoryExecution` | `views/execution.py` |
+| `DataFactoryExecutionItem` | `views/execution_item.py` |
+
+非表级能力单独保留：
+
+| 能力 | 文件 |
+| --- | --- |
+| 表结构发现、连接测试 | `views/discover.py` |
+
+## 12. 验收标准
 
 - 可以在数据库配置中选择 MySQL/PostgreSQL 等类型。
 - 可以在“数据源映射”页面创建逻辑数据源。

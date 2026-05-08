@@ -10,6 +10,8 @@ from rest_framework.viewsets import ViewSet
 from src.auto_test.auto_data_factory.models import DataFactoryTemplate
 from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
 from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
+from src.auto_test.auto_data_factory.views.entity import DataFactoryEntitySerializerC
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -41,6 +43,8 @@ class DataFactoryTemplateSerializer(serializers.ModelSerializer):
 class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
+    entity = DataFactoryEntitySerializerC(read_only=True)
 
     class Meta:
         model = DataFactoryTemplate
@@ -48,7 +52,19 @@ class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related('project_product', 'entity')
+        return queryset.select_related(
+            'project_product',
+            'project_product__project',
+            'entity',
+            'entity__project_product',
+            'entity__project_product__project',
+            'entity__database',
+            'entity__database__test_object',
+            'entity__database__test_object__project_product',
+            'entity__database__test_object__executor_name',
+            'entity__datasource_alias',
+            'entity__datasource_alias__project_product',
+        )
 
 
 class DataFactoryTemplateCRUD(ModelCRUD):

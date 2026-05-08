@@ -9,6 +9,9 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
 from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
+from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateSerializerC
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -34,25 +37,48 @@ class DataFactoryExecutionSerializer(serializers.ModelSerializer):
         return obj.source_type
 
 
-class DataFactoryExecutionItemSerializer(serializers.ModelSerializer):
+class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     cleanup_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    source_display = serializers.SerializerMethodField(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
+    test_object = TestObjectSerializersC(read_only=True)
+    template = DataFactoryTemplateSerializerC(read_only=True)
 
     class Meta:
-        model = DataFactoryExecutionItem
+        model = DataFactoryExecution
         fields = '__all__'
 
     @staticmethod
-    def setup_eager_loading(queryset):
-        return queryset.select_related('execution', 'template', 'template__entity', 'database')
+    def get_source_display(obj):
+        if obj.template_id and obj.template:
+            return obj.template.name
+        if obj.source_id:
+            return f"{obj.source_type}#{obj.source_id}"
+        return obj.source_type
 
-
-class DataFactoryExecutionSerializerC(DataFactoryExecutionSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related('project_product', 'test_object', 'template')
-
+        return queryset.select_related(
+            'project_product',
+            'project_product__project',
+            'test_object',
+            'test_object__project_product',
+            'test_object__executor_name',
+            'template',
+            'template__project_product',
+            'template__project_product__project',
+            'template__entity',
+            'template__entity__project_product',
+            'template__entity__project_product__project',
+            'template__entity__database',
+            'template__entity__database__test_object',
+            'template__entity__database__test_object__project_product',
+            'template__entity__database__test_object__executor_name',
+            'template__entity__datasource_alias',
+            'template__entity__datasource_alias__project_product',
+        )
 
 class DataFactoryExecutionCRUD(ModelCRUD):
     model = DataFactoryExecution
@@ -61,32 +87,23 @@ class DataFactoryExecutionCRUD(ModelCRUD):
     serializer = DataFactoryExecutionSerializer
     not_matching_str = ModelCRUD.not_matching_str + ['template']
 
-
-class DataFactoryExecutionItemCRUD(ModelCRUD):
-    model = DataFactoryExecutionItem
-    queryset = DataFactoryExecutionItem.objects.all()
-    serializer_class = DataFactoryExecutionItemSerializer
-    serializer = DataFactoryExecutionItemSerializer
-    not_matching_str = ModelCRUD.not_matching_str + ['execution', 'template', 'database']
-
-
 class DataFactoryExecutionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def detail_view(self, request: Request):
+        from src.auto_test.auto_data_factory.views.execution_item import DataFactoryExecutionItemSerializerC
+
         execution = DataFactoryExecution.objects.select_related(
             'project_product',
             'test_object',
             'template',
         ).get(id=request.query_params.get('execution_id'))
-        items = DataFactoryExecutionItem.objects.select_related(
-            'template',
-            'template__entity',
-            'database',
+        items = DataFactoryExecutionItemSerializerC.setup_eager_loading(
+            DataFactoryExecutionItem.objects.all()
         ).filter(execution=execution).order_by('cleanup_order', 'id')
         return ResponseData.success(RESPONSE_MSG_0001, {
-            "execution": DataFactoryExecutionSerializer(execution).data,
-            "items": DataFactoryExecutionItemSerializer(items, many=True).data,
+            "execution": DataFactoryExecutionSerializerC(execution).data,
+            "items": DataFactoryExecutionItemSerializerC(items, many=True).data,
             "context": execution.context,
         })
 

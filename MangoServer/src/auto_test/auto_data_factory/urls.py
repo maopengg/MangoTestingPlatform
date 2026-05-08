@@ -5,21 +5,18 @@
 from django.urls import path
 
 from src.auto_test.auto_data_factory.views.discover import DataFactoryDiscoverViews
-from src.auto_test.auto_data_factory.views.datasource import (
-    DataFactoryDatasourceAliasCRUD,
-    DataFactoryDatasourceBindingCRUD,
-)
+from src.auto_test.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasCRUD
+from src.auto_test.auto_data_factory.views.datasource_binding import DataFactoryDatasourceBindingCRUD
 from src.auto_test.auto_data_factory.views.entity import (
     DataFactoryEntityCRUD,
     DataFactoryEntityViews,
-    DataFactoryFieldCRUD,
-    DataFactoryFieldViews,
 )
+from src.auto_test.auto_data_factory.views.field import DataFactoryFieldCRUD, DataFactoryFieldViews
 from src.auto_test.auto_data_factory.views.execution import (
     DataFactoryExecutionCRUD,
-    DataFactoryExecutionItemCRUD,
     DataFactoryExecutionViews,
 )
+from src.auto_test.auto_data_factory.views.execution_item import DataFactoryExecutionItemCRUD
 from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateCRUD, DataFactoryTemplateViews
 
 urlpatterns = [
