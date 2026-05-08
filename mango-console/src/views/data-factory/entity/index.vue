@@ -132,7 +132,13 @@
           </template>
         </a-table-column>
         <a-table-column title="生成配置" :width="280">
-          <template #cell="{ record }"><a-textarea v-model="record.generator_config_text" :auto-size="{ minRows: 1, maxRows: 4 }" /></template>
+          <template #cell="{ record }">
+            <a-input
+              v-model="record.generator_config_value"
+              :disabled="isReadonlyGeneratorConfig(record)"
+              :placeholder="getGeneratorConfigPlaceholder(record)"
+            />
+          </template>
         </a-table-column>
         <a-table-column title="实际值" :width="220">
           <template #cell="{ record }">
@@ -192,6 +198,8 @@
   const currentEntity = ref<any>(null)
   const fieldRows = ref<any[]>([])
   const entityForm = reactive<any>({})
+  const GENERATOR_TYPE_SKIP = 0
+  const GENERATOR_TYPE_DEPENDENCY_FIELD = 11
 
   function resetEntityForm(record?: any) {
     Object.keys(entityForm).forEach((key) => delete entityForm[key])
@@ -351,13 +359,7 @@
     selectedTable.value = record.table_name
     fieldVisible.value = true
     getDataFactoryField({ entity: record.id }).then((res) => {
-      fieldRows.value = (res.data || []).map((it: any) => ({
-        ...it,
-        generator_config_text: JSON.stringify(it.generator_config || {}),
-        preview_value: undefined,
-        preview_valid: true,
-        preview_message: '',
-      }))
+      fieldRows.value = (res.data || []).map((it: any) => normalizeFieldRow(it))
     })
   }
 
@@ -386,17 +388,15 @@
       table_name: selectedTable.value,
     }).then((res) => {
       fieldRows.value = (res.data.columns || []).map((it: any, index: number) => ({
-        ...it,
-        entity: currentEntity.value.id,
-        generator_type: it.generator_type ?? it.recommend?.generator_type ?? 1,
-        generator_config: it.generator_config || it.recommend?.generator_config || {},
-        generator_config_text: JSON.stringify(it.generator_config || it.recommend?.generator_config || {}),
-        preview_value: undefined,
-        preview_valid: true,
-        preview_message: '',
-        output_enabled: it.output_enabled ?? true,
-        output_name: it.output_name || it.name,
-        sort: index,
+        ...normalizeFieldRow({
+          ...it,
+          entity: currentEntity.value.id,
+          generator_type: it.generator_type ?? it.recommend?.generator_type ?? 1,
+          generator_config: it.generator_config || it.recommend?.generator_config || {},
+          output_enabled: it.output_enabled ?? true,
+          output_name: it.output_name || it.name,
+          sort: index,
+        }),
       }))
     })
   }
@@ -413,15 +413,21 @@
   }
 
   function buildFieldPayload() {
-    try {
-      return fieldRows.value.map((it) => ({
+    return fieldRows.value.map((it) => {
+      const generatorConfig = { ...(it.generator_config || {}) }
+      if (!isReadonlyGeneratorConfig(it)) {
+        const value = it.generator_config_value ?? ''
+        if (value === '') {
+          delete generatorConfig.value
+        } else {
+          generatorConfig.value = value
+        }
+      }
+      return {
         ...it,
-        generator_config: it.generator_config_text ? JSON.parse(it.generator_config_text) : {},
-      }))
-    } catch (error) {
-      Message.error('生成配置不是合法 JSON')
-      return null
-    }
+        generator_config: generatorConfig,
+      }
+    })
   }
 
   function previewFieldValues() {
@@ -451,15 +457,62 @@
 
   function formatPreviewValue(value: any) {
     if (value === undefined) {
-      return '-'
+      return 'null'
     }
-    if (value === null || value === '') {
-      return '空'
+    if (value === null) {
+      return 'null'
     }
     if (typeof value === 'object') {
       return JSON.stringify(value)
     }
     return String(value)
+  }
+
+  function normalizeFieldRow(row: any) {
+    const generatorConfig = row.generator_config || row.recommend?.generator_config || {}
+    return {
+      ...row,
+      generator_config: generatorConfig,
+      generator_config_value: getGeneratorConfigValue({ ...row, generator_config: generatorConfig }),
+      preview_value: undefined,
+      preview_valid: true,
+      preview_message: '',
+    }
+  }
+
+  function getGeneratorConfigValue(row: any) {
+    const config = row.generator_config || {}
+    if (config.value !== undefined && config.value !== null) {
+      return String(config.value)
+    }
+    if (row.generator_type === GENERATOR_TYPE_SKIP) {
+      return config.reason || '数据库生成'
+    }
+    if (row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD) {
+      const targetField = config.field || 'id'
+      if (config.alias) {
+        return `${config.alias}.${targetField}`
+      }
+      if (config.template_id) {
+        return `template:${config.template_id}.${targetField}`
+      }
+      return `请选择依赖模板.${targetField}`
+    }
+    return ''
+  }
+
+  function isReadonlyGeneratorConfig(row: any) {
+    return row.generator_type === GENERATOR_TYPE_SKIP || row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD
+  }
+
+  function getGeneratorConfigPlaceholder(row: any) {
+    if (row.generator_type === GENERATOR_TYPE_SKIP) {
+      return '数据库生成'
+    }
+    if (row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD) {
+      return '请选择依赖模板.id'
+    }
+    return '填写 value，例如 ${{character_email()}}'
   }
 
   onMounted(() => {

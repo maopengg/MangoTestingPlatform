@@ -47,6 +47,11 @@ class DataFactoryValueGenerator:
         config = field.generator_config or {}
         generator_type = field.generator_type
 
+        if generator_type not in [
+            DataFactoryGeneratorTypeEnum.ENUM.value,
+            DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
+        ] and config.get("value") not in [None, ""]:
+            return config.get("value")
         if generator_type == DataFactoryGeneratorTypeEnum.FIXED.value:
             return config.get("value")
         if generator_type == DataFactoryGeneratorTypeEnum.RANDOM_STRING.value:

@@ -269,7 +269,7 @@ class DataFactoryFieldViews(ViewSet):
                 if field.generator_type == DataFactoryGeneratorTypeEnum.SKIP.value:
                     rows.append({
                         "name": field.name,
-                        "value": None,
+                        "value": field.generator_config.get("reason") or "数据库生成",
                         "valid": True,
                         "message": "跳过字段",
                     })

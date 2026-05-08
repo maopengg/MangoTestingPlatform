@@ -174,7 +174,7 @@ def discover_table(db_url: str, table_name: str) -> dict:
 | 主键 | 是否主键 |
 | 自增 | 是否自增 |
 | 生成方式 | 字段如何生成 |
-| 生成配置 | 根据生成方式展开 |
+| 生成配置 | 页面直接展示 `generator_config.value` 或可读说明，不展示 JSON |
 | 实际值 | 点击“生成实际值”后展示当前配置生成出的结果 |
 | 输出变量 | 是否注入上下文 |
 | 输出名 | 例如 order_no |
