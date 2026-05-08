@@ -61,6 +61,25 @@ class AutoTypeEnum(BaseEnum):
         return {0: "界面&接口通用", 1: "界面自动化", 2: "接口自动化"}
 
 
+class DatabaseTypeEnum(BaseEnum):
+    """数据库类型枚举"""
+    MYSQL = 0
+    POSTGRESQL = 1
+    SQLITE = 2
+    ORACLE = 3
+    SQLSERVER = 4
+
+    @classmethod
+    def obj(cls):
+        return {
+            0: "MySQL",
+            1: "PostgreSQL",
+            2: "SQLite",
+            3: "Oracle",
+            4: "SQL Server",
+        }
+
+
 class SystemEnvEnum(BaseEnum):
     MASTER = 'master'
     PROD = 'prod'

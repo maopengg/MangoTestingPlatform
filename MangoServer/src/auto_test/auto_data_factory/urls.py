@@ -1,0 +1,48 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description: 数据工厂子路由
+
+from django.urls import path
+
+from src.auto_test.auto_data_factory.views.discover import DataFactoryDiscoverViews
+from src.auto_test.auto_data_factory.views.datasource import (
+    DataFactoryDatasourceAliasCRUD,
+    DataFactoryDatasourceBindingCRUD,
+)
+from src.auto_test.auto_data_factory.views.entity import (
+    DataFactoryEntityCRUD,
+    DataFactoryEntityViews,
+    DataFactoryFieldCRUD,
+    DataFactoryFieldViews,
+)
+from src.auto_test.auto_data_factory.views.execution import (
+    DataFactoryExecutionCRUD,
+    DataFactoryExecutionItemCRUD,
+    DataFactoryExecutionViews,
+)
+from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateCRUD, DataFactoryTemplateViews
+
+urlpatterns = [
+    path("datasource-alias", DataFactoryDatasourceAliasCRUD.as_view()),
+    path("datasource-binding", DataFactoryDatasourceBindingCRUD.as_view()),
+    path("entity", DataFactoryEntityCRUD.as_view()),
+    path("entity/copy", DataFactoryEntityViews.as_view({'post': 'copy'})),
+    path("entity/status", DataFactoryEntityViews.as_view({'put': 'status'})),
+    path("field", DataFactoryFieldCRUD.as_view()),
+    path("field/batch-save", DataFactoryFieldViews.as_view({'post': 'batch_save'})),
+    path("template", DataFactoryTemplateCRUD.as_view()),
+    path("template/copy", DataFactoryTemplateViews.as_view({'post': 'copy'})),
+    path("template/status", DataFactoryTemplateViews.as_view({'put': 'status'})),
+    path("template/preview", DataFactoryTemplateViews.as_view({'post': 'preview'})),
+    path("template/debug-run", DataFactoryTemplateViews.as_view({'post': 'debug_run'})),
+    path("template/debug-cleanup", DataFactoryTemplateViews.as_view({'post': 'debug_cleanup'})),
+    path("execution", DataFactoryExecutionCRUD.as_view()),
+    path("execution/item", DataFactoryExecutionItemCRUD.as_view()),
+    path("execution/detail", DataFactoryExecutionViews.as_view({'get': 'detail'})),
+    path("execution/context", DataFactoryExecutionViews.as_view({'get': 'context'})),
+    path("execution/cleanup", DataFactoryExecutionViews.as_view({'post': 'cleanup'})),
+    path("execution/cleanup-retry", DataFactoryExecutionViews.as_view({'post': 'cleanup_retry'})),
+    path("discover/test-connection", DataFactoryDiscoverViews.as_view({'post': 'test_connection'})),
+    path("discover/tables", DataFactoryDiscoverViews.as_view({'post': 'tables'})),
+    path("discover/table", DataFactoryDiscoverViews.as_view({'post': 'table'})),
+]

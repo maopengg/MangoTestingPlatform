@@ -18,6 +18,21 @@ export const conditionItems: Array<FormItem> = reactive([
 ])
 export const formItems: FormItem[] = reactive([
   {
+    label: '数据库类型',
+    key: 'db_type',
+    value: 0,
+    type: 'select',
+    required: true,
+    placeholder: '请选择数据库类型',
+    validator: function () {
+      if (this.value === null || this.value === undefined || this.value === '') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '域名',
     key: 'host',
     value: ref(''),
@@ -100,6 +115,12 @@ export const tableColumns = useTableColumn([
     key: 'host',
     dataIndex: 'host',
     align: 'left',
+  },
+  {
+    title: '类型',
+    key: 'db_type',
+    dataIndex: 'db_type',
+    width: 120,
   },
   {
     title: '端口',

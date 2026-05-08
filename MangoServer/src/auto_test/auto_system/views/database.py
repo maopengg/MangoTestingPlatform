@@ -13,7 +13,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import Database
 from src.auto_test.auto_system.views.test_object import TestObjectSerializersC
-from src.enums.tools_enum import StatusEnum
+from src.enums.tools_enum import DatabaseTypeEnum, StatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -81,6 +81,10 @@ class DatabaseViews(ViewSet):
     @error_response('system')
     def test(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('id'))
+        if obj.db_type != DatabaseTypeEnum.MYSQL.value:
+            db_type_name = DatabaseTypeEnum.obj().get(obj.db_type, obj.db_type)
+            return ResponseData.fail((300, f'{db_type_name} 连接测试暂未支持'))
+
         try:
             mysql_conn = MysqlConnect(MysqlConingModel(
                 host=obj.host,

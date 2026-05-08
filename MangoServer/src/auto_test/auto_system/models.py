@@ -151,6 +151,7 @@ class Database(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.PROTECT)
+    db_type = models.SmallIntegerField(verbose_name="数据库类型", default=0)
     name = models.CharField(verbose_name="数据库名称", max_length=64)
     user = models.CharField(verbose_name="登录用户名", max_length=64)
     password = models.CharField(verbose_name="登录密码", max_length=64)

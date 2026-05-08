@@ -15,6 +15,7 @@ from rest_framework.viewsets import ViewSet
 
 from src import settings
 from src.enums.api_enum import *
+from src.enums.data_factory_enum import *
 from src.enums.monitoring_enum import MonitoringTaskStatusEnum, MonitoringLogStatusEnum
 from src.enums.pytest_enum import *
 from src.enums.system_enum import *
@@ -46,6 +47,15 @@ class SystemViews(ViewSet):
             'api_parameter_type': ApiParameterTypeEnum.get_option(),
             'product_type': ProductTypeEnum.get_option(),
             'auto_type': AutoTypeEnum.get_option(),
+            'database_type': DatabaseTypeEnum.get_option(),
+            'data_factory_source_mode': DataFactorySourceModeEnum.get_option(),
+            'data_factory_operation_type': DataFactoryOperationTypeEnum.get_option(),
+            'data_factory_generator_type': DataFactoryGeneratorTypeEnum.get_option(),
+            'data_factory_cleanup_strategy': DataFactoryCleanupStrategyEnum.get_option(),
+            'data_factory_execution_source': DataFactoryExecutionSourceEnum.get_option(),
+            'data_factory_execution_stage': DataFactoryExecutionStageEnum.get_option(),
+            'data_factory_execution_status': DataFactoryExecutionStatusEnum.get_option(),
+            'data_factory_cleanup_status': DataFactoryCleanupStatusEnum.get_option(),
             'task_status': TaskEnum.get_option(),
             'environment_type': EnvironmentEnum.get_option(),
             'test_case_type': TestCaseTypeEnum.get_option(),

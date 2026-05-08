@@ -31,6 +31,7 @@ urlpatterns = [
     path("download", LoginViews.as_view({'get': 'get_download'})),
     #
     path('system/', include("src.auto_test.auto_system.urls")),
+    path('data-factory/', include("src.auto_test.auto_data_factory.urls")),
     path('api/', include("src.auto_test.auto_api.urls")),
     path('ui/', include("src.auto_test.auto_ui.urls")),
     path('perf/', include("src.auto_test.auto_perf.urls")),

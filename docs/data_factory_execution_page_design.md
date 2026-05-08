@@ -27,7 +27,7 @@
 右侧/弹窗：执行详情
   上下文 JSON
   创建数据明细
-  清理日志
+  清理结果
 ```
 
 ## 3. 执行批次列表
@@ -53,8 +53,7 @@
 - 查看详情
 - 手动清理
 - 重试清理
-- 标记已清理
-- 下载上下文 JSON
+- 查看上下文 JSON
 
 筛选：
 
@@ -104,6 +103,7 @@
 | 实体 | 用户/订单 |
 | 模板 | 默认用户/已支付订单 |
 | 别名 | 用户/订单 |
+| 实际数据库 | 创建该数据时解析到的真实 `Database` |
 | 主键值 | id |
 | 唯一值 | order_no/username |
 | 清理策略 | 执行结束/手动/不清理 |
@@ -111,13 +111,13 @@
 | 清理状态 | 未清理/已清理/失败 |
 | 清理错误 | 失败原因 |
 
-清理日志：
+清理结果：
 
 | 字段 | 说明 |
 | --- | --- |
 | 时间 | 清理时间 |
 | 实体 | 清理对象 |
-| 动作 | API 删除/SQL 删除/函数删除 |
+| 动作 | SQL 主键删除 |
 | 结果 | 成功/失败 |
 | 错误 | 错误详情 |
 
@@ -151,13 +151,12 @@
 
 ## 6. 手动清理
 
-支持三类手动清理：
+当前页面支持按执行批次清理和重试清理：
 
 | 操作 | 说明 |
 | --- | --- |
 | 清理当前执行批次 | 清理该 execution 下所有可清理数据 |
-| 清理选中明细 | 只清理勾选的数据 |
-| 重试失败清理 | 只重试清理失败的数据 |
+| 重试清理 | 对同一个 execution 再次执行清理逻辑 |
 
 清理顺序：
 
@@ -222,6 +221,7 @@ class DataFactoryExecutionItem(models.Model):
     execution = models.ForeignKey(DataFactoryExecution, on_delete=models.CASCADE)
     entity = models.ForeignKey("auto_data_factory.DataFactoryEntity", on_delete=models.PROTECT)
     template = models.ForeignKey("auto_data_factory.DataFactoryTemplate", null=True, on_delete=models.PROTECT)
+    database = models.ForeignKey("auto_system.Database", null=True, on_delete=models.PROTECT)
     alias = models.CharField(max_length=64)
     primary_value = models.CharField(max_length=256)
     unique_value = models.CharField(max_length=256, null=True)
@@ -240,11 +240,9 @@ class DataFactoryExecutionItem(models.Model):
 | --- | --- | --- |
 | GET | `/data-factory/execution` | 执行批次列表 |
 | GET | `/data-factory/execution/detail` | 执行详情 |
-| GET | `/data-factory/execution/items` | 创建明细列表 |
+| GET | `/data-factory/execution/item` | 创建明细列表 |
 | POST | `/data-factory/execution/cleanup` | 清理执行批次 |
-| POST | `/data-factory/execution/items/cleanup` | 清理选中明细 |
-| POST | `/data-factory/execution/retry-cleanup` | 重试失败清理 |
-| PUT | `/data-factory/execution/mark-cleaned` | 标记已清理 |
+| POST | `/data-factory/execution/cleanup-retry` | 重试清理 |
 | GET | `/data-factory/execution/context` | 获取上下文 JSON |
 
 ## 10. 验收标准
@@ -253,6 +251,7 @@ class DataFactoryExecutionItem(models.Model):
 - 可以按来源、状态、清理状态筛选。
 - 可以查看上下文 JSON。
 - 可以查看每条创建数据的实体、主键、唯一值。
+- 可以查看每条创建数据实际使用的数据库。
 - 可以手动清理单个执行批次。
 - 可以重试清理失败的数据。
 - 清理时按依赖倒序执行。

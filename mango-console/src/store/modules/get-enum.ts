@@ -27,6 +27,15 @@ interface EnumState {
   monitoring_task_status: StateValueType
   monitoring_log_status: StateValueType
   test_suite_notice: StateValueType
+  database_type: StateValueType
+  data_factory_source_mode: StateValueType
+  data_factory_operation_type: StateValueType
+  data_factory_generator_type: StateValueType
+  data_factory_cleanup_strategy: StateValueType
+  data_factory_execution_source: StateValueType
+  data_factory_execution_stage: StateValueType
+  data_factory_execution_status: StateValueType
+  data_factory_cleanup_status: StateValueType
   colors: string[]
   status_colors: string[]
 }
@@ -56,6 +65,15 @@ export const useEnum = defineStore('get-enum', {
     monitoring_task_status: [],
     monitoring_log_status: [],
     test_suite_notice: [],
+    database_type: [],
+    data_factory_source_mode: [],
+    data_factory_operation_type: [],
+    data_factory_generator_type: [],
+    data_factory_cleanup_strategy: [],
+    data_factory_execution_source: [],
+    data_factory_execution_stage: [],
+    data_factory_execution_status: [],
+    data_factory_cleanup_status: [],
     colors: [
       'magenta',
       'cyan',
@@ -103,6 +121,15 @@ export const useEnum = defineStore('get-enum', {
             this.monitoring_task_status = res.data.monitoring_task_status
             this.monitoring_log_status = res.data.monitoring_log_status
             this.test_suite_notice = res.data.test_suite_notice
+            this.database_type = res.data.database_type
+            this.data_factory_source_mode = res.data.data_factory_source_mode
+            this.data_factory_operation_type = res.data.data_factory_operation_type
+            this.data_factory_generator_type = res.data.data_factory_generator_type
+            this.data_factory_cleanup_strategy = res.data.data_factory_cleanup_strategy
+            this.data_factory_execution_source = res.data.data_factory_execution_source
+            this.data_factory_execution_stage = res.data.data_factory_execution_stage
+            this.data_factory_execution_status = res.data.data_factory_execution_status
+            this.data_factory_cleanup_status = res.data.data_factory_cleanup_status
           }
         })
         .catch(console.log)

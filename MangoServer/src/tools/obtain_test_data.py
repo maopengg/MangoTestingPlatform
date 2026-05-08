@@ -48,3 +48,8 @@ class ObtainTestData(DataProcessor):
         except IOError as e:
             traceback.print_exc()
             raise ToolsError(*ERROR_MSG_0024, value=(file_name,))
+
+
+if __name__ == '__main__':
+    test_data = ObtainTestData()
+    print(test_data.replace("${{random_demo()}}"))

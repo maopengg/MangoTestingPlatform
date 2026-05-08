@@ -45,6 +45,9 @@
             <template v-else-if="item.key === 'host'" #cell="{ record }">
               {{ record.host }}
             </template>
+            <template v-else-if="item.key === 'db_type'" #cell="{ record }">
+              {{ getDatabaseTypeName(record.db_type) }}
+            </template>
             <template v-else-if="item.key === 'port'" #cell="{ record }">
               {{ record.port }}
             </template>
@@ -92,6 +95,17 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
+          <template v-else-if="item.key === 'db_type'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.database_type"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
           <template v-else-if="item.type === 'cascader'">
             <a-cascader
               v-model="item.value"
@@ -113,6 +127,7 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useProject } from '@/store/modules/get-project'
+  import { useEnum } from '@/store/modules/get-enum'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
@@ -126,6 +141,8 @@
   const route = useRoute()
 
   const projectInfo = useProject()
+  const enumStore = useEnum()
+  const fieldNames = { value: 'key', label: 'title' }
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
@@ -153,6 +170,10 @@
 
   function doResetSearch() {
     window.history.back()
+  }
+
+  function getDatabaseTypeName(value: number) {
+    return enumStore.database_type?.find((item) => item.key === value)?.title || value
   }
 
   function onAdd() {
@@ -241,5 +262,8 @@
     }
   }
 
-  onMounted(doRefresh)
+  onMounted(() => {
+    enumStore.getEnum()
+    doRefresh()
+  })
 </script>

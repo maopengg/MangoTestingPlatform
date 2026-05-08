@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'src.auto_test.auto_ui',
     'src.auto_test.auto_api',
     'src.auto_test.auto_system',
+    'src.auto_test.auto_data_factory',
     'src.auto_test.auto_perf',
     'src.auto_test.auto_user',
     'src.auto_test.auto_pytest',

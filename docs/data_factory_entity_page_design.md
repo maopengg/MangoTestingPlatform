@@ -12,7 +12,7 @@
 
 这个页面包含三类能力：
 
-- 数据源选择与表结构发现。
+- 逻辑数据源选择与表结构发现。
 - 实体基本信息和创建/删除方式配置。
 - 字段规则和依赖字段配置。
 
@@ -46,7 +46,8 @@
 | 实体名称 | 例如订单 |
 | 实体编码 | 例如 order |
 | 所属产品 | 关联 `ProjectProduct` |
-| 数据库类型 | MySQL/PostgreSQL 等 |
+| 逻辑数据源 | 例如商城主库 |
+| 数据库类型 | 来自逻辑数据源 |
 | 表名 | 例如 orders |
 | 创建方式 | API/SQL/函数 |
 | 删除方式 | API/SQL/函数 |
@@ -93,27 +94,30 @@
 
 ## 5. 数据源与表发现
 
-数据工厂复用系统已有 `Database` 配置。`Database` 需要新增 `db_type` 字段表示数据库类型。
+工厂实体不直接绑定某个测试环境下的真实数据库，而是绑定逻辑数据源 `DataFactoryDatasourceAlias`。
+
+表结构发现需要额外选择一个测试环境，用于把逻辑数据源解析成真实 `Database` 后读取表结构。
 
 数据源配置：
 
 | 字段 | 说明 |
 | --- | --- |
-| 数据源模式 | 固定数据库 / 跟随执行环境 |
-| 测试对象 | 选择 `TestObject` |
-| 数据库配置 | 选择启用的 `Database` |
-| 数据库类型 | 来自 `Database.db_type` |
-| 数据库名称 | 来自 `Database.name` |
+| 逻辑数据源 | 选择 `DataFactoryDatasourceAlias` |
+| 结构发现环境 | 选择 `TestObject`，只用于读取表结构 |
+| 真实数据库 | 根据逻辑数据源和测试环境自动解析 |
+| 数据库类型 | 来自逻辑数据源和真实数据库校验 |
 | 表名 | 下拉选择或手动输入 |
-
-第一期建议实现“固定数据库”，第二期再实现“跟随执行环境”。
 
 发现流程：
 
 ```text
-选择数据库配置
+选择逻辑数据源
+  ↓
+选择结构发现环境
   ↓
 点击读取表
+  ↓
+服务端解析绑定关系得到真实 Database
   ↓
 服务端根据 db_type 创建 SQLAlchemy engine
   ↓
@@ -208,6 +212,32 @@ def discover_table(db_url: str, table_name: str) -> dict:
 | 表达式 | `${{unit_price}} * ${{quantity}}` |
 | 依赖实体字段 | 从依赖实体取字段 |
 | SQL 查询结果 | 查询并取单个值 |
+| 测试数据方法 | 调用 `ObtainTestData().replace("${{方法名(参数)}}")` |
+
+测试数据方法配置：
+
+| 字段 | 说明 |
+| --- | --- |
+| `value` | 固定值或 `${{}}` 表达式，例如 `${{character_email()}}` |
+
+示例：
+
+```json
+{"value":"${{character_email()}}"}
+```
+
+常用字段推荐：
+
+| 字段 | 推荐生成方式 | 生成配置 |
+| --- | --- | --- |
+| `username` | 测试数据方法 | `{"value":"${{str_lowercase(10)}}"}` |
+| `email` | 测试数据方法 | `{"value":"${{character_email()}}"}` |
+| `full_name` | 测试数据方法 | `{"value":"${{character_male_name()}}"}` |
+| `phone` | 测试数据方法 | `{"value":"${{character_phone()}}"}` |
+| `password` | 固定值 | `{"value":"123456"}` |
+| `address` | 测试数据方法 | `{"value":"${{character_address()}}"}` |
+
+所有生成结果中的字符串 `value` 都会经过 `ObtainTestData().replace()`，所以固定值也可以写 `${{}}` 表达式。页面后续应提供方法下拉框，用户选择“生成邮箱”等中文名称后，由前端自动生成上述配置。JSON 只作为高级配置展示。
 
 ## 7. 依赖字段
 
@@ -257,49 +287,29 @@ user_id = 用户.id
 
 ## 8. 创建方式
 
-支持三类创建方式。
+当前已实现 SQL 自动创建。实体配置中的 `create_type` 保留了 API/SQL/函数扩展位，但当前 runner 只执行自动 insert。
 
-API 创建：
-
-| 配置 | 示例 |
-| --- | --- |
-| 请求方法 | POST |
-| 请求地址 | `/orders` |
-| 请求头 | 可引用公共请求头 |
-| 请求体 | JSON 模板 |
-| 成功条件 | 状态码 200 或响应字段 |
-| 主键提取 | `$.data.id` |
-
-SQL 创建：
+SQL 自动创建：
 
 | 配置 | 示例 |
 | --- | --- |
-| 插入方式 | 自动 insert / 自定义 SQL |
-| SQL 模板 | `insert into orders (...) values (...)` |
-| 主键获取 | last_insert_id / returning / 查询 SQL |
+| 插入方式 | 自动 insert |
+| 表名 | `orders` |
+| 字段来源 | 实体字段规则和模板字段覆盖 |
+| 主键获取 | SQLAlchemy insert result 或 payload 中的主键字段 |
 | 事务 | 自动提交 |
 
-自定义函数创建：
+暂未实现：
 
-| 配置 | 示例 |
-| --- | --- |
-| 函数名 | create_order |
-| 入参 | 字段上下文 |
-| 出参 | 必须包含主键字段 |
-
-第一期建议实现 API 创建和自动 insert。
+- API 创建。
+- 自定义 SQL 创建。
+- 自定义函数创建。
 
 ## 9. 删除方式
 
 删除方式用于自动清理。
 
-API 删除：
-
-```text
-DELETE /orders/${{订单.id}}
-```
-
-SQL 删除：
+当前已实现 SQL 主键删除。执行时会在 `DataFactoryExecutionItem.database` 中记录真实落库数据库，清理时使用该数据库删除，避免环境绑定变更导致误删。
 
 ```sql
 delete from orders where id = :id
@@ -309,10 +319,10 @@ delete from orders where id = :id
 
 | 字段 | 说明 |
 | --- | --- |
-| 删除方式 | API/SQL/函数 |
-| 删除条件 | 主键/唯一字段/自定义条件 |
+| 删除方式 | 当前实现 SQL 主键删除 |
+| 删除条件 | 实体主键字段和执行明细主键值 |
 | 清理顺序 | 数值越大越先清理 |
-| 失败处理 | 继续/中断/重试 |
+| 失败处理 | 记录失败原因，可在执行记录中重试 |
 
 清理顺序示例：
 
@@ -338,22 +348,20 @@ delete from orders where id = :id
 | DELETE | `/data-factory/entity` | 删除实体 |
 | POST | `/data-factory/entity/copy` | 复制实体 |
 | PUT | `/data-factory/entity/status` | 启用/禁用 |
-| GET | `/data-factory/database/list` | 数据库配置列表 |
+| GET | `/data-factory/datasource-alias` | 逻辑数据源列表 |
 | POST | `/data-factory/discover/tables` | 读取表列表 |
 | POST | `/data-factory/discover/table` | 读取指定表字段 |
 | GET | `/data-factory/field` | 字段规则列表 |
-| PUT | `/data-factory/field` | 保存字段规则 |
-| POST | `/data-factory/entity/debug-create` | 调试创建 |
-| POST | `/data-factory/entity/debug-cleanup` | 清理调试数据 |
+| POST | `/data-factory/field/batch-save` | 批量保存字段规则 |
 
 ## 11. 验收标准
 
-- 可以选择 MySQL/PostgreSQL 类型数据库。
-- 可以读取数据库表列表。
+- 可以选择逻辑数据源。
+- 可以选择结构发现环境并读取数据库表列表。
 - 可以读取 `orders` 表字段。
 - 自增主键默认跳过。
 - `_id` 字段默认推荐为依赖字段。
 - 可以把 `product_id` 关联到产品实体的 `id`。
 - 可以把 `user_id` 关联到用户实体的 `id`。
-- 调试创建订单时能自动创建产品和用户。
-- 调试清理时按订单、产品、用户顺序清理。
+- 通过状态模板调试创建订单时能自动创建产品和用户。
+- 通过执行记录清理时按订单、产品、用户顺序清理。

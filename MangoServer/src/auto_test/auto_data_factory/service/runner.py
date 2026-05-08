@@ -1,0 +1,383 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description: 数据工厂执行服务
+
+import uuid
+
+from django.db import transaction
+
+from src.auto_test.auto_data_factory.models import (
+    DataFactoryExecution,
+    DataFactoryExecutionItem,
+    DataFactoryTemplate,
+)
+from src.enums.data_factory_enum import (
+    DataFactoryCleanupStatusEnum,
+    DataFactoryExecutionSourceEnum,
+    DataFactoryExecutionStageEnum,
+    DataFactoryExecutionStatusEnum,
+    DataFactoryGeneratorTypeEnum,
+    DataFactoryOperationTypeEnum,
+)
+from src.exceptions import ToolsError
+
+from .datasource import DataFactoryDatasource, DataFactoryDatasourceResolver
+from .generator import DataFactoryValueGenerator
+from .type_cast import DataFactoryTypeCast
+
+
+class DataFactoryRunner:
+    @classmethod
+    def preview_template(
+            cls,
+            template_id: int,
+            overrides: dict | None = None,
+            context: dict | None = None,
+            test_object_id: int | None = None,
+    ) -> dict:
+        template = DataFactoryTemplate.objects.select_related(
+            'entity',
+            'entity__datasource_alias',
+            'project_product',
+        ).get(id=template_id)
+        runtime_context = context or {}
+        return cls.preview_by_template(template, overrides or {}, runtime_context, test_object_id, set())
+
+    @classmethod
+    def preview_by_template(
+            cls,
+            template: DataFactoryTemplate,
+            overrides: dict,
+            context: dict,
+            test_object_id: int | None,
+            visiting: set[int],
+            alias_override: str | None = None,
+    ) -> dict:
+        if template.id in visiting:
+            raise ToolsError(300, f"检测到数据工厂循环依赖：{template.name}")
+        visiting.add(template.id)
+
+        try:
+            return cls._preview_by_template(template, overrides, context, test_object_id, visiting, alias_override)
+        finally:
+            visiting.remove(template.id)
+
+    @classmethod
+    def _preview_by_template(
+            cls,
+            template: DataFactoryTemplate,
+            overrides: dict,
+            context: dict,
+            test_object_id: int | None,
+            visiting: set[int],
+            alias_override: str | None,
+    ) -> dict:
+        entity = template.entity
+        if not entity.table_name:
+            raise ToolsError(300, f"实体 {entity.name} 未配置表名")
+        database = DataFactoryDatasourceResolver.resolve(entity, test_object_id)
+
+        fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
+        merged_overrides = {**(template.field_overrides or {}), **overrides}
+        payload = {}
+        field_items = []
+        missing_fields = []
+        dependencies = []
+        alias = alias_override or template.name
+
+        for field in fields:
+            if field.generator_type == DataFactoryGeneratorTypeEnum.SKIP.value:
+                field_items.append(cls.build_preview_field(field, None, True, "跳过字段"))
+                continue
+
+            try:
+                value = cls.preview_field_value(
+                    field=field,
+                    payload=payload,
+                    context=context,
+                    overrides=merged_overrides,
+                    test_object_id=test_object_id,
+                    visiting=visiting,
+                    dependencies=dependencies,
+                )
+                payload[field.name] = DataFactoryTypeCast.to_jsonable(value)
+                if value is None and not field.nullable and not field.primary_key:
+                    message = "必填字段生成结果为空"
+                    missing_fields.append({"field": field.name, "message": message})
+                    field_items.append(cls.build_preview_field(field, value, False, message))
+                else:
+                    field_items.append(cls.build_preview_field(field, payload[field.name], True, ""))
+            except Exception as error:
+                message = str(error)
+                missing_fields.append({"field": field.name, "message": message})
+                field_items.append(cls.build_preview_field(field, None, False, message))
+
+        context[alias] = payload
+        return {
+            "template": {
+                "id": template.id,
+                "name": template.name,
+                "alias": alias,
+            },
+            "entity": {
+                "id": entity.id,
+                "name": entity.name,
+                "table_name": entity.table_name,
+                "primary_key": entity.primary_key,
+                "unique_key": entity.unique_key,
+            },
+            "database": {
+                "id": database.id,
+                "name": database.name,
+                "db_type": database.db_type,
+                "host": database.host,
+                "port": database.port,
+            },
+            "payload": payload,
+            "fields": field_items,
+            "missing_fields": missing_fields,
+            "dependencies": dependencies,
+            "context": context,
+            "can_debug_run": not missing_fields and all(item.get("can_debug_run", False) for item in dependencies),
+        }
+
+    @classmethod
+    def preview_field_value(
+            cls,
+            field,
+            payload: dict,
+            context: dict,
+            overrides: dict,
+            test_object_id: int | None,
+            visiting: set[int],
+            dependencies: list,
+    ):
+        if field.name in overrides:
+            return overrides[field.name]
+
+        if field.generator_type != DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
+            return DataFactoryValueGenerator.generate(field, payload, context)
+
+        config = field.generator_config or {}
+        target_field = config.get("field", "id")
+        alias = config.get("alias")
+        template_id = config.get("template_id")
+        if alias and alias in context:
+            return context[alias].get(target_field)
+        if not template_id:
+            raise ToolsError(300, "依赖字段未配置依赖模板 template_id")
+
+        dependency_template = DataFactoryTemplate.objects.select_related(
+            'entity',
+            'project_product',
+            'entity__datasource_alias',
+        ).get(id=template_id)
+        dependency_alias = alias or dependency_template.name
+        dependency_preview = cls.preview_by_template(
+            dependency_template,
+            config.get("overrides") or {},
+            context,
+            test_object_id,
+            visiting,
+            alias_override=dependency_alias,
+        )
+        dependencies.append(dependency_preview)
+
+        dependency_value = context.get(dependency_alias, {}).get(target_field)
+        if dependency_value is None:
+            return f"${{{{{dependency_alias}.{target_field}}}}}"
+        return dependency_value
+
+    @staticmethod
+    def build_preview_field(field, value, valid: bool, message: str) -> dict:
+        return {
+            "name": field.name,
+            "label": field.label,
+            "platform_type": field.platform_type,
+            "nullable": field.nullable,
+            "primary_key": field.primary_key,
+            "generator_type": field.generator_type,
+            "generator_config": field.generator_config,
+            "value": DataFactoryTypeCast.to_jsonable(value),
+            "valid": valid,
+            "message": message,
+        }
+
+    @classmethod
+    @transaction.atomic
+    def debug_run_template(
+            cls,
+            template_id: int,
+            overrides: dict | None = None,
+            context: dict | None = None,
+            test_object_id: int | None = None,
+    ) -> dict:
+        template = DataFactoryTemplate.objects.select_related(
+            'entity',
+            'entity__datasource_alias',
+            'project_product',
+        ).get(id=template_id)
+        execution = DataFactoryExecution.objects.create(
+            execution_no=cls.build_execution_no(),
+            source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
+            source_id=template.id,
+            source_name=template.name,
+            template=template,
+            project_product=template.project_product,
+            test_object_id=test_object_id,
+            stage=DataFactoryExecutionStageEnum.DEBUG.value,
+            status=DataFactoryExecutionStatusEnum.PROCEED.value,
+            context=context or {},
+        )
+
+        try:
+            runtime_context = context or {}
+            data = cls.create_by_template(template, execution, overrides or {}, runtime_context)
+            execution.context = runtime_context
+            execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
+            execution.save()
+            return {
+                "execution_id": execution.id,
+                "execution_no": execution.execution_no,
+                "context": execution.context,
+                "data": data,
+            }
+        except Exception as error:
+            execution.status = DataFactoryExecutionStatusEnum.FAIL.value
+            execution.error_message = str(error)
+            execution.save()
+            raise
+
+    @classmethod
+    def create_by_template(
+            cls,
+            template: DataFactoryTemplate,
+            execution: DataFactoryExecution,
+            overrides: dict,
+            context: dict,
+            alias_override: str | None = None,
+            visiting: set[int] | None = None,
+    ) -> dict:
+        visiting = visiting or set()
+        if template.id in visiting:
+            raise ToolsError(300, f"检测到数据工厂循环依赖：{template.name}")
+        visiting.add(template.id)
+
+        try:
+            return cls._create_by_template(template, execution, overrides, context, alias_override, visiting)
+        finally:
+            visiting.remove(template.id)
+
+    @classmethod
+    def _create_by_template(
+            cls,
+            template: DataFactoryTemplate,
+            execution: DataFactoryExecution,
+            overrides: dict,
+            context: dict,
+            alias_override: str | None,
+            visiting: set[int],
+    ) -> dict:
+        entity = template.entity
+        if entity.create_type != DataFactoryOperationTypeEnum.SQL.value:
+            raise ToolsError(300, "当前阶段仅支持 SQL 创建方式")
+        if not entity.table_name:
+            raise ToolsError(300, f"实体 {entity.name} 未配置表名")
+        database = DataFactoryDatasourceResolver.resolve(entity, execution.test_object_id)
+
+        fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
+        merged_overrides = {**(template.field_overrides or {}), **overrides}
+        cls.resolve_dependencies(fields, execution, context, visiting)
+        payload = DataFactoryValueGenerator.build_payload(fields, merged_overrides, context)
+        created = cls.insert(entity, database, payload)
+        jsonable_payload = DataFactoryTypeCast.to_jsonable({**payload, **created})
+        alias = alias_override or template.name
+
+        DataFactoryExecutionItem.objects.create(
+            execution=execution,
+            entity=entity,
+            template=template,
+            database=database,
+            alias=alias,
+            primary_value=str(created.get(entity.primary_key) or ""),
+            unique_value=str(jsonable_payload.get(entity.unique_key) or "") if entity.unique_key else None,
+            data=jsonable_payload,
+            cleanup_strategy=template.cleanup_strategy,
+            cleanup_order=entity.cleanup_order,
+            cleanup_status=DataFactoryCleanupStatusEnum.NOT_CLEANED.value,
+        )
+        context[alias] = jsonable_payload
+        return jsonable_payload
+
+    @classmethod
+    def resolve_dependencies(
+            cls,
+            fields: list,
+            execution: DataFactoryExecution,
+            context: dict,
+            visiting: set[int],
+    ) -> None:
+        for field in fields:
+            if field.generator_type != DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
+                continue
+
+            config = field.generator_config or {}
+            alias = config.get("alias")
+            strategy = config.get("strategy", "reuse_or_create")
+            if alias and strategy != "create_always" and alias in context:
+                continue
+            if strategy == "must_exist":
+                raise ToolsError(300, f"字段 {field.name} 依赖上下文不存在：{alias}")
+
+            template_id = config.get("template_id")
+            if not template_id:
+                raise ToolsError(300, f"字段 {field.name} 未配置依赖模板 template_id")
+
+            dependency_template = DataFactoryTemplate.objects.select_related(
+                'entity',
+                'project_product',
+                'entity__datasource_alias',
+            ).get(id=template_id)
+            dependency_alias = alias or dependency_template.name
+            if strategy != "create_always" and dependency_alias in context:
+                config["alias"] = dependency_alias
+                field.generator_config = config
+                continue
+
+            config["alias"] = dependency_alias
+            field.generator_config = config
+            dependency_overrides = config.get("overrides") or {}
+            cls.create_by_template(
+                dependency_template,
+                execution,
+                dependency_overrides,
+                context,
+                alias_override=dependency_alias,
+                visiting=visiting,
+            )
+
+    @classmethod
+    def insert(cls, entity, database, payload: dict) -> dict:
+        try:
+            from sqlalchemy import MetaData, Table, insert
+        except ImportError as error:
+            raise ToolsError(300, "请先安装 SQLAlchemy 依赖后再使用数据工厂") from error
+
+        engine = DataFactoryDatasource.create_engine(database)
+        try:
+            metadata = MetaData()
+            table = Table(entity.table_name, metadata, autoload_with=engine)
+            with engine.begin() as connection:
+                result = connection.execute(insert(table).values(**payload))
+                created = dict(payload)
+                if result.inserted_primary_key and entity.primary_key:
+                    created[entity.primary_key] = result.inserted_primary_key[0]
+                return created
+        except Exception as error:
+            raise ToolsError(300, f"SQL创建数据失败：{error}") from error
+        finally:
+            engine.dispose()
+
+    @staticmethod
+    def build_execution_no() -> str:
+        return f"DF{uuid.uuid4().hex[:24].upper()}"
