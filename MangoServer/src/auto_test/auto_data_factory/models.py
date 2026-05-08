@@ -113,11 +113,6 @@ class DataFactoryEntity(models.Model):
     create_config = models.JSONField(verbose_name="创建配置", default=dict)
     delete_config = models.JSONField(verbose_name="删除配置", default=dict)
 
-    cleanup_strategy = models.SmallIntegerField(
-        verbose_name="默认清理策略",
-        choices=DataFactoryCleanupStrategyEnum.choices(),
-        default=DataFactoryCleanupStrategyEnum.MANUAL.value,
-    )
     cleanup_order = models.IntegerField(verbose_name="清理顺序", default=100)
     status = models.SmallIntegerField(
         verbose_name="状态",
@@ -162,8 +157,6 @@ class DataFactoryField(models.Model):
         default=DataFactoryGeneratorTypeEnum.FIXED.value,
     )
     generator_config = models.JSONField(verbose_name="生成配置", default=dict)
-    output_enabled = models.BooleanField(verbose_name="是否输出变量", default=True)
-    output_name = models.CharField(verbose_name="输出名称", max_length=128, null=True, blank=True)
     sort = models.IntegerField(verbose_name="排序", default=0)
 
     class Meta:
@@ -220,7 +213,6 @@ class DataFactoryExecution(models.Model):
         default=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
     )
     source_id = models.IntegerField(verbose_name="来源ID", null=True, blank=True)
-    source_name = models.CharField(verbose_name="来源名称", max_length=256, null=True, blank=True)
     template = models.ForeignKey(to=DataFactoryTemplate, to_field="id", on_delete=models.SET_NULL, null=True, blank=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
@@ -260,12 +252,10 @@ class DataFactoryExecutionItem(models.Model):
     cleanup_time = models.DateTimeField(verbose_name="清理时间", null=True, blank=True)
 
     execution = models.ForeignKey(to=DataFactoryExecution, to_field="id", on_delete=models.CASCADE)
-    entity = models.ForeignKey(to=DataFactoryEntity, to_field="id", on_delete=models.PROTECT)
     template = models.ForeignKey(to=DataFactoryTemplate, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     database = models.ForeignKey(to=Database, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     alias = models.CharField(verbose_name="上下文别名", max_length=64)
     primary_value = models.CharField(verbose_name="主键值", max_length=256, null=True, blank=True)
-    unique_value = models.CharField(verbose_name="唯一值", max_length=256, null=True, blank=True)
     data = models.JSONField(verbose_name="创建数据", default=dict)
 
     cleanup_strategy = models.SmallIntegerField(

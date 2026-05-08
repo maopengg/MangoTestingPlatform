@@ -131,7 +131,3 @@ export function getDataFactoryExecutionDetail(data: object) {
 export function postDataFactoryExecutionCleanup(data: object) {
   return post({ url: '/data-factory/execution/cleanup', data: () => data })
 }
-
-export function postDataFactoryExecutionCleanupRetry(data: object) {
-  return post({ url: '/data-factory/execution/cleanup-retry', data: () => data })
-}

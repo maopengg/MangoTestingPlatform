@@ -260,8 +260,6 @@ class DataFactoryFieldViews(ViewSet):
                     enum_values=field_data.get("enum_values") or [],
                     generator_type=field_data.get("generator_type", DataFactoryGeneratorTypeEnum.FIXED.value),
                     generator_config=field_data.get("generator_config") or {},
-                    output_enabled=field_data.get("output_enabled", True),
-                    output_name=field_data.get("output_name") or field_data.get("name"),
                     sort=field_data.get("sort", 0),
                 )
                 if field.generator_type == DataFactoryGeneratorTypeEnum.SKIP.value:

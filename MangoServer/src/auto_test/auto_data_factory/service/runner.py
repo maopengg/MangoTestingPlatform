@@ -86,6 +86,7 @@ class DataFactoryRunner:
         field_items = []
         missing_fields = []
         dependencies = []
+        dependency_nodes = []
         alias = alias_override or template.name
 
         for field in fields:
@@ -102,6 +103,7 @@ class DataFactoryRunner:
                     test_object_id=test_object_id,
                     visiting=visiting,
                     dependencies=dependencies,
+                    dependency_nodes=dependency_nodes,
                 )
                 payload[field.name] = DataFactoryTypeCast.to_jsonable(value)
                 if value is None and not field.nullable and not field.primary_key:
@@ -116,6 +118,13 @@ class DataFactoryRunner:
                 field_items.append(cls.build_preview_field(field, None, False, message))
 
         context[alias] = payload
+        dependency_tree = cls.build_dependency_tree(
+            template=template,
+            entity=entity,
+            alias=alias,
+            action="root",
+            children=dependency_nodes,
+        )
         return {
             "template": {
                 "id": template.id,
@@ -140,6 +149,7 @@ class DataFactoryRunner:
             "fields": field_items,
             "missing_fields": missing_fields,
             "dependencies": dependencies,
+            "dependency_tree": dependency_tree,
             "context": context,
             "can_debug_run": not missing_fields and all(item.get("can_debug_run", False) for item in dependencies),
         }
@@ -154,6 +164,7 @@ class DataFactoryRunner:
             test_object_id: int | None,
             visiting: set[int],
             dependencies: list,
+            dependency_nodes: list,
     ):
         if field.name in overrides:
             return overrides[field.name]
@@ -164,8 +175,20 @@ class DataFactoryRunner:
         config = field.generator_config or {}
         target_field = config.get("field", "id")
         alias = config.get("alias")
+        strategy = config.get("strategy", "reuse_or_create")
         template_id = config.get("template_id")
         if alias and alias in context:
+            dependency_nodes.append(cls.build_dependency_tree(
+                template=None,
+                entity=None,
+                alias=alias,
+                action="reuse",
+                field=field.name,
+                target_field=target_field,
+                strategy=strategy,
+                value=context[alias].get(target_field),
+                message="复用上下文已有数据",
+            ))
             return context[alias].get(target_field)
         if not template_id:
             raise ToolsError(300, "依赖字段未配置依赖模板 template_id")
@@ -176,6 +199,40 @@ class DataFactoryRunner:
             'entity__datasource_alias',
         ).get(id=template_id)
         dependency_alias = alias or dependency_template.name
+        if strategy != "create_always" and dependency_alias in context:
+            dependency_value = context.get(dependency_alias, {}).get(target_field)
+            dependencies.append({
+                "template": {
+                    "id": dependency_template.id,
+                    "name": dependency_template.name,
+                    "alias": dependency_alias,
+                },
+                "entity": {
+                    "id": dependency_template.entity.id,
+                    "name": dependency_template.entity.name,
+                    "table_name": dependency_template.entity.table_name,
+                },
+                "payload": context.get(dependency_alias, {}),
+                "fields": [],
+                "missing_fields": [],
+                "dependencies": [],
+                "dependency_tree": cls.build_dependency_tree(
+                    template=dependency_template,
+                    entity=dependency_template.entity,
+                    alias=dependency_alias,
+                    action="reuse",
+                    field=field.name,
+                    target_field=target_field,
+                    strategy=strategy,
+                    value=dependency_value,
+                    message="复用上下文已有数据",
+                ),
+                "context": context,
+                "can_debug_run": True,
+            })
+            dependency_nodes.append(dependencies[-1]["dependency_tree"])
+            return dependency_value
+
         dependency_preview = cls.preview_by_template(
             dependency_template,
             config.get("overrides") or {},
@@ -184,7 +241,12 @@ class DataFactoryRunner:
             visiting,
             alias_override=dependency_alias,
         )
+        dependency_preview["dependency_tree"]["field"] = field.name
+        dependency_preview["dependency_tree"]["target_field"] = target_field
+        dependency_preview["dependency_tree"]["strategy"] = strategy
+        dependency_preview["dependency_tree"]["action"] = "create"
         dependencies.append(dependency_preview)
+        dependency_nodes.append(dependency_preview["dependency_tree"])
 
         dependency_value = context.get(dependency_alias, {}).get(target_field)
         if dependency_value is None:
@@ -204,6 +266,36 @@ class DataFactoryRunner:
             "value": DataFactoryTypeCast.to_jsonable(value),
             "valid": valid,
             "message": message,
+        }
+
+    @staticmethod
+    def build_dependency_tree(
+            template,
+            entity,
+            alias: str,
+            action: str,
+            children: list | None = None,
+            field: str | None = None,
+            target_field: str | None = None,
+            strategy: str | None = None,
+            value=None,
+            message: str = "",
+    ) -> dict:
+        return {
+            "template_id": template.id if template else None,
+            "template_name": template.name if template else alias,
+            "entity_id": entity.id if entity else None,
+            "entity_name": entity.name if entity else None,
+            "table_name": entity.table_name if entity else None,
+            "alias": alias,
+            "field": field,
+            "target_field": target_field,
+            "strategy": strategy,
+            "action": action,
+            "reused": action == "reuse",
+            "value": DataFactoryTypeCast.to_jsonable(value),
+            "message": message,
+            "children": children or [],
         }
 
     @classmethod
@@ -227,7 +319,6 @@ class DataFactoryRunner:
             execution_no=cls.build_execution_no(),
             source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
             source_id=template.id,
-            source_name=template.name,
             template=template,
             project_product=template.project_product,
             test_object_id=test_object_id,
@@ -301,12 +392,10 @@ class DataFactoryRunner:
 
         DataFactoryExecutionItem.objects.create(
             execution=execution,
-            entity=entity,
             template=template,
             database=database,
             alias=alias,
             primary_value=str(created.get(entity.primary_key) or ""),
-            unique_value=str(jsonable_payload.get(entity.unique_key) or "") if entity.unique_key else None,
             data=jsonable_payload,
             cleanup_strategy=template.cleanup_strategy,
             cleanup_order=entity.cleanup_order,

@@ -71,7 +71,7 @@
 ## 6. 解析流程
 
 ```text
-输入：datasource_alias_id + test_object_id
+输入：datasource_alias_id + 顶部全局测试环境
   ↓
 查找 DataFactoryDatasourceBinding
   ↓
@@ -101,10 +101,25 @@
 | PUT | `/data-factory/datasource-binding` | 修改环境绑定 |
 | DELETE | `/data-factory/datasource-binding` | 删除环境绑定 |
 
-## 8. 验收标准
+## 8. 前端页面结构
+
+数据源映射页面采用 `index.vue + config.ts`：
+
+| 文件 | 说明 |
+| --- | --- |
+| `datasource/config.ts` | 逻辑数据源主表列、环境绑定明细列 |
+| `datasource/index.vue` | 逻辑数据源 CRUD、环境绑定 CRUD |
+
+操作列统一只保留两个主按钮：
+
+| 主按钮 | 下拉菜单 |
+| --- | --- |
+| 编辑、环境绑定 | 删除 |
+
+## 9. 验收标准
 
 - 可以创建逻辑数据源。
 - 可以给逻辑数据源绑定多个测试环境。
 - 绑定时会校验数据库类型一致。
 - 工厂实体页面可以选择逻辑数据源。
-- 表发现和模板调试运行都可以通过“逻辑数据源 + 测试环境”解析真实数据库。
+- 表发现和模板调试运行都可以通过“逻辑数据源 + 顶部全局测试环境”解析真实数据库。

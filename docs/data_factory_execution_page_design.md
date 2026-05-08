@@ -40,7 +40,7 @@
 | 来源类型 | 模板调试 / 手动执行 / 系统调用 |
 | 阶段 | 前置 / 后置 / 调试 |
 | 所属产品 | 关联产品 |
-| 来源名称 | 模板名称或调用来源名称 |
+| 来源 | 根据 `source_type/source_id/template_id` 推导展示，不单独落库保存 |
 | 测试环境 | TestObject 环境 |
 | 执行状态 | 成功/失败/进行中 |
 | 清理状态 | 未清理/部分清理/已清理/清理失败 |
@@ -52,7 +52,6 @@
 
 - 查看详情
 - 手动清理
-- 重试清理
 - 查看上下文 JSON
 
 筛选：
@@ -100,12 +99,10 @@
 
 | 字段 | 说明 |
 | --- | --- |
-| 实体 | 用户/订单 |
 | 模板 | 默认用户/已支付订单 |
 | 别名 | 用户/订单 |
 | 实际数据库 | 创建该数据时解析到的真实 `Database` |
 | 主键值 | id |
-| 唯一值 | order_no/username |
 | 清理策略 | 执行结束/手动/不清理 |
 | 清理顺序 | 数值越大越先清理 |
 | 清理状态 | 未清理/已清理/失败 |
@@ -151,26 +148,39 @@
 
 ## 6. 手动清理
 
-当前页面支持按执行批次清理和重试清理：
+当前页面支持按执行批次清理：
 
 | 操作 | 说明 |
 | --- | --- |
 | 清理当前执行批次 | 清理该 execution 下所有可清理数据 |
-| 重试清理 | 对同一个 execution 再次执行清理逻辑 |
 
 清理顺序：
 
 ```text
 按 cleanup_order 倒序清理
-同顺序按创建时间倒序清理
+同顺序按执行明细 id 倒序清理
 ```
+
+清理范围：
+
+- 清理对象是同一个 `DataFactoryExecution` 下的所有未清理执行明细。
+- 根模板创建的数据会清理。
+- 依赖模板在本次执行中自动创建的数据也会清理。
+- 复用上下文已有的数据不会生成执行明细，因此不会被清理，避免误删业务基线数据。
 
 清理确认弹窗需要展示：
 
 - 将清理多少条数据。
 - 涉及哪些实体。
-- 是否包含清理失败重试。
 - 清理后不可恢复。
+
+重复清理过滤：
+
+| 场景 | 处理 |
+| --- | --- |
+| 批次已清理 | 页面直接提示“当前执行记录已清理，无需重复清理” |
+| 接口收到已清理批次 | 返回成功响应和明确提示，不重复执行 SQL 删除 |
+| 明细已清理 | 清理服务过滤掉已清理明细 |
 
 ## 7. 自动清理触发点
 
@@ -201,7 +211,6 @@ class DataFactoryExecution(models.Model):
     execution_no = models.CharField(max_length=64, unique=True)
     source_type = models.SmallIntegerField()  # TEMPLATE_DEBUG/MANUAL/SYSTEM
     source_id = models.IntegerField(null=True)
-    source_name = models.CharField(max_length=256, null=True)
     template_id = models.IntegerField(null=True)
     project_product = models.ForeignKey("auto_system.ProjectProduct", on_delete=models.PROTECT)
     test_object = models.ForeignKey("auto_system.TestObject", null=True, on_delete=models.PROTECT)
@@ -219,12 +228,10 @@ class DataFactoryExecution(models.Model):
 ```python
 class DataFactoryExecutionItem(models.Model):
     execution = models.ForeignKey(DataFactoryExecution, on_delete=models.CASCADE)
-    entity = models.ForeignKey("auto_data_factory.DataFactoryEntity", on_delete=models.PROTECT)
     template = models.ForeignKey("auto_data_factory.DataFactoryTemplate", null=True, on_delete=models.PROTECT)
     database = models.ForeignKey("auto_system.Database", null=True, on_delete=models.PROTECT)
     alias = models.CharField(max_length=64)
     primary_value = models.CharField(max_length=256)
-    unique_value = models.CharField(max_length=256, null=True)
     data = models.JSONField(default=dict)
     cleanup_strategy = models.SmallIntegerField(default=1)
     cleanup_order = models.IntegerField(default=100)
@@ -242,17 +249,31 @@ class DataFactoryExecutionItem(models.Model):
 | GET | `/data-factory/execution/detail` | 执行详情 |
 | GET | `/data-factory/execution/item` | 创建明细列表 |
 | POST | `/data-factory/execution/cleanup` | 清理执行批次 |
-| POST | `/data-factory/execution/cleanup-retry` | 重试清理 |
 | GET | `/data-factory/execution/context` | 获取上下文 JSON |
 
-## 10. 验收标准
+## 10. 前端页面结构
+
+执行记录页面采用 `index.vue + config.ts`：
+
+| 文件 | 说明 |
+| --- | --- |
+| `execution/config.ts` | 执行记录主表列、执行明细表格列 |
+| `execution/index.vue` | 详情加载、清理、错误展示 |
+
+操作列：
+
+| 主按钮 | 下拉菜单 |
+| --- | --- |
+| 详情、清理 | 无 |
+
+## 11. 验收标准
 
 - 可以查看所有数据工厂执行批次。
 - 可以按来源、状态、清理状态筛选。
 - 可以查看上下文 JSON。
-- 可以查看每条创建数据的实体、主键、唯一值。
+- 可以查看每条创建数据的模板、主键和完整数据。
 - 可以查看每条创建数据实际使用的数据库。
 - 可以手动清理单个执行批次。
-- 可以重试清理失败的数据。
+- 已清理的执行批次再次点击清理时返回明确提示，不重复清理。
 - 清理时按依赖倒序执行。
 - 清理失败时能看到明确错误。

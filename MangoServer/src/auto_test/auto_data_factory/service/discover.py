@@ -115,8 +115,6 @@ class DataFactoryDiscover:
                 "generator_type": generator_type,
                 "generator_config": generator_config,
             },
-            "output_enabled": not (primary_key and autoincrement),
-            "output_name": name,
             "sort": sort,
         }
 

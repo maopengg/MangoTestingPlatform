@@ -12,21 +12,34 @@
     </template>
 
     <template #default>
-      <a-table :data="aliasTable.dataList" :loading="aliasTable.tableLoading.value" :pagination="false" :row-key="'id'">
+      <a-table :columns="datasourceAliasColumns" :data="aliasTable.dataList" :loading="aliasTable.tableLoading.value" :pagination="false" :row-key="'id'">
         <template #columns>
-          <a-table-column title="ID" data-index="id" :width="80" />
-          <a-table-column title="名称" data-index="name" />
-          <a-table-column title="编码" data-index="code" />
-          <a-table-column title="类型" :width="120">
-            <template #cell="{ record }">{{ enumTitle(enumStore.database_type, record.db_type) }}</template>
-          </a-table-column>
-          <a-table-column title="描述" data-index="description" />
-          <a-table-column title="操作" :width="300" fixed="right">
-            <template #cell="{ record }">
+          <a-table-column
+            v-for="item of datasourceAliasColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'db_type'" #cell="{ record }">
+              {{ enumTitle(enumStore.database_type, record.db_type) }}
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" @click="openAlias(record)">编辑</a-button>
                 <a-button size="mini" type="text" @click="openBinding(record)">环境绑定</a-button>
-                <a-button size="mini" status="danger" type="text" @click="removeAlias(record)">删除</a-button>
+                <a-dropdown trigger="hover">
+                  <a-button size="mini" type="text">···</a-button>
+                  <template #content>
+                    <a-doption>
+                      <a-button size="mini" status="danger" type="text" @click="removeAlias(record)">删除</a-button>
+                    </a-doption>
+                  </template>
+                </a-dropdown>
               </a-space>
             </template>
           </a-table-column>
@@ -55,14 +68,25 @@
       <a-button type="primary" @click="openBindingForm()">新增绑定</a-button>
       <a-button @click="loadBindings">刷新</a-button>
     </a-space>
-    <a-table :data="bindingRows" :pagination="false" :row-key="'id'">
+    <a-table :columns="datasourceBindingColumns" :data="bindingRows" :pagination="false" :row-key="'id'">
       <template #columns>
-        <a-table-column title="ID" data-index="id" :width="80" />
-        <a-table-column title="测试环境" :width="180"><template #cell="{ record }">{{ displayName(record.test_object) }}</template></a-table-column>
-        <a-table-column title="实际数据库"><template #cell="{ record }">{{ displayDatabase(record.database) }}</template></a-table-column>
-        <a-table-column title="描述" data-index="description" />
-        <a-table-column title="操作" :width="160">
-          <template #cell="{ record }">
+        <a-table-column
+          v-for="item of datasourceBindingColumns"
+          :key="item.key"
+          :data-index="item.key"
+          :title="item.title"
+          :width="item.width"
+        >
+          <template v-if="item.key === 'index'" #cell="{ record }">
+            {{ record.id }}
+          </template>
+          <template v-else-if="item.key === 'test_object'" #cell="{ record }">
+            {{ displayName(record.test_object) }}
+          </template>
+          <template v-else-if="item.key === 'database'" #cell="{ record }">
+            {{ displayDatabase(record.database) }}
+          </template>
+          <template v-else-if="item.key === 'actions'" #cell="{ record }">
             <a-space>
               <a-button size="mini" type="text" @click="openBindingForm(record)">编辑</a-button>
               <a-button size="mini" status="danger" type="text" @click="removeBinding(record)">删除</a-button>
@@ -104,6 +128,7 @@
   import { useProject } from '@/store/modules/get-project'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref } from 'vue'
+  import { datasourceAliasColumns, datasourceBindingColumns } from './config'
 
   const aliasTable = useTable()
   const pagination = usePagination(doRefresh)

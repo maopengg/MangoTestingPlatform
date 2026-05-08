@@ -7,28 +7,49 @@
     </template>
 
     <template #default>
-      <a-table :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
+      <a-table :columns="templateTableColumns" :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
         <template #columns>
-          <a-table-column title="ID" data-index="id" :width="80" />
-          <a-table-column title="名称" data-index="name" />
-          <a-table-column title="实体" :width="180">
-            <template #cell="{ record }">{{ record.entity?.name || record.entity }}</template>
-          </a-table-column>
-          <a-table-column title="清理策略" :width="120">
-            <template #cell="{ record }">{{ enumTitle(enumStore.data_factory_cleanup_strategy, record.cleanup_strategy) }}</template>
-          </a-table-column>
-          <a-table-column title="状态" :width="90">
-            <template #cell="{ record }"><a-tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '启用' : '禁用' }}</a-tag></template>
-          </a-table-column>
-          <a-table-column title="操作" :width="360" fixed="right">
-            <template #cell="{ record }">
+          <a-table-column
+            v-for="item of templateTableColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'entity'" #cell="{ record }">
+              {{ record.entity?.name || record.entity }}
+            </template>
+            <template v-else-if="item.key === 'cleanup_strategy'" #cell="{ record }">
+              {{ enumTitle(enumStore.data_factory_cleanup_strategy, record.cleanup_strategy) }}
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '启用' : '禁用' }}</a-tag>
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space wrap>
-                <a-button size="mini" type="text" @click="openTemplate(record)">编辑</a-button>
-                <a-button size="mini" type="text" @click="copyTemplate(record)">复制</a-button>
-                <a-button size="mini" type="text" @click="switchTemplate(record)">{{ record.status === 1 ? '禁用' : '启用' }}</a-button>
                 <a-button size="mini" type="text" @click="previewRun(record)">预览数据</a-button>
                 <a-button size="mini" type="text" @click="debugRun(record)">调试运行</a-button>
-                <a-button size="mini" status="danger" type="text" @click="removeTemplate(record)">删除</a-button>
+                <a-dropdown trigger="hover">
+                  <a-button size="mini" type="text">···</a-button>
+                  <template #content>
+                    <a-doption>
+                      <a-button size="mini" type="text" @click="openTemplate(record)">编辑</a-button>
+                    </a-doption>
+                    <a-doption>
+                      <a-button size="mini" type="text" @click="copyTemplate(record)">复制</a-button>
+                    </a-doption>
+                    <a-doption>
+                      <a-button size="mini" type="text" @click="switchTemplate(record)">{{ record.status === 1 ? '禁用' : '启用' }}</a-button>
+                    </a-doption>
+                    <a-doption>
+                      <a-button size="mini" status="danger" type="text" @click="removeTemplate(record)">删除</a-button>
+                    </a-doption>
+                  </template>
+                </a-dropdown>
               </a-space>
             </template>
           </a-table-column>
@@ -73,19 +94,52 @@
         当前还有 {{ previewResult.missing_fields.length }} 个字段需要配置，建议补齐后再调试运行。
       </a-alert>
       <a-alert v-else-if="previewResult.payload" type="success">当前模板字段已能生成 payload，可以继续调试运行。</a-alert>
-      <a-table v-if="previewResult.fields?.length" :data="previewResult.fields" :pagination="false" :row-key="'name'" size="small">
+      <a-table
+        v-if="flattenDependencyTree(previewResult.dependency_tree).length"
+        :columns="dependencyTreeColumns"
+        :data="flattenDependencyTree(previewResult.dependency_tree)"
+        :pagination="false"
+        :row-key="'path'"
+        size="small"
+      >
         <template #columns>
-          <a-table-column title="字段" data-index="name" :width="150" />
-          <a-table-column title="生成值">
-            <template #cell="{ record }">{{ formatPreviewValue(record.value) }}</template>
+          <a-table-column
+            v-for="item of dependencyTreeColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'node'" #cell="{ record }">
+              <span :style="{ paddingLeft: `${record.level * 18}px` }">{{ record.template_name }}</span>
+              <a-tag v-if="record.level === 0" size="small" color="arcoblue" style="margin-left: 8px">根节点</a-tag>
+              <a-tag v-else-if="record.reused" size="small" color="green" style="margin-left: 8px">复用</a-tag>
+              <a-tag v-else size="small" color="orange" style="margin-left: 8px">创建</a-tag>
+            </template>
+            <template v-else-if="item.key === 'action'" #cell="{ record }">
+              <a-tag :color="getDependencyActionColor(record.action)" size="small">{{ getDependencyActionText(record.action) }}</a-tag>
+            </template>
           </a-table-column>
-          <a-table-column title="状态" :width="110">
-            <template #cell="{ record }"><a-tag :color="record.valid ? 'green' : 'red'">{{ record.valid ? '正常' : '需配置' }}</a-tag></template>
-          </a-table-column>
-          <a-table-column title="说明" data-index="message" :width="260" />
         </template>
       </a-table>
-      <a-textarea :model-value="JSON.stringify(previewResult, null, 2)" :auto-size="{ minRows: 10, maxRows: 20 }" readonly />
+      <a-table v-if="previewResult.fields?.length" :columns="previewFieldColumns" :data="previewResult.fields" :pagination="false" :row-key="'name'" size="small">
+        <template #columns>
+          <a-table-column
+            v-for="item of previewFieldColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'value'" #cell="{ record }">
+              {{ formatPreviewValue(record.value) }}
+            </template>
+            <template v-else-if="item.key === 'valid'" #cell="{ record }">
+              <a-tag :color="record.valid ? 'green' : 'red'">{{ record.valid ? '正常' : '需配置' }}</a-tag>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
     </a-space>
   </a-modal>
 
@@ -110,6 +164,7 @@
   import useUserStore from '@/store/modules/user'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref } from 'vue'
+  import { dependencyTreeColumns, previewFieldColumns, templateTableColumns } from './config'
 
   const table = useTable()
   const pagination = usePagination(doRefresh)
@@ -223,6 +278,41 @@
       return JSON.stringify(value)
     }
     return String(value)
+  }
+
+  function flattenDependencyTree(tree: any, level = 0, path = '0'): any[] {
+    if (!tree) {
+      return []
+    }
+    const current = {
+      ...tree,
+      level,
+      path,
+      node: tree.template_name,
+      message: tree.message || (tree.reused ? '复用上下文已有数据' : ''),
+    }
+    const children = (tree.children || []).flatMap((child: any, index: number) =>
+      flattenDependencyTree(child, level + 1, `${path}-${index}`)
+    )
+    return [current, ...children]
+  }
+
+  function getDependencyActionText(action: string) {
+    const map: Record<string, string> = {
+      root: '根节点',
+      create: '创建',
+      reuse: '复用',
+    }
+    return map[action] || action || '-'
+  }
+
+  function getDependencyActionColor(action: string) {
+    const map: Record<string, string> = {
+      root: 'arcoblue',
+      create: 'orange',
+      reuse: 'green',
+    }
+    return map[action] || 'gray'
   }
 
   function previewRun(record: any) {

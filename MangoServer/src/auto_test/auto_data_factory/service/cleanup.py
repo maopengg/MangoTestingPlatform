@@ -21,13 +21,34 @@ class DataFactoryCleanup:
     @transaction.atomic
     def cleanup_execution(cls, execution_id: int) -> dict:
         execution = DataFactoryExecution.objects.get(id=execution_id)
+        if execution.cleanup_status == DataFactoryCleanupStatusEnum.SUCCESS.value:
+            return {
+                "execution_id": execution.id,
+                "success": 0,
+                "fail": 0,
+                "skipped": 0,
+                "errors": [],
+                "already_cleaned": True,
+                "message": "当前执行记录已清理，无需重复清理",
+            }
+
         items = list(
             DataFactoryExecutionItem.objects
-            .select_related('entity', 'database')
+            .select_related('template__entity', 'database')
             .filter(execution=execution)
             .exclude(cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value)
             .order_by('-cleanup_order', '-id')
         )
+        if not items:
+            return {
+                "execution_id": execution.id,
+                "success": 0,
+                "fail": 0,
+                "skipped": 0,
+                "errors": [],
+                "already_cleaned": True,
+                "message": "当前执行记录没有需要清理的数据",
+            }
 
         success = 0
         fail = 0
@@ -66,7 +87,7 @@ class DataFactoryCleanup:
 
     @classmethod
     def cleanup_item(cls, item: DataFactoryExecutionItem):
-        entity = item.entity
+        entity = cls.get_item_entity(item)
         if entity.delete_type != DataFactoryOperationTypeEnum.SQL.value:
             raise ToolsError(300, "当前阶段仅支持 SQL 删除方式")
         if not item.database:
@@ -89,7 +110,7 @@ class DataFactoryCleanup:
         except ImportError as error:
             raise ToolsError(300, "请先安装 SQLAlchemy 依赖后再使用数据工厂") from error
 
-        entity = item.entity
+        entity = cls.get_item_entity(item)
         if not item.database:
             raise ToolsError(300, f"执行明细 {item.id} 未记录实际数据库，无法安全清理")
         engine = DataFactoryDatasource.create_engine(item.database)
@@ -104,6 +125,12 @@ class DataFactoryCleanup:
             raise ToolsError(300, f"SQL清理数据失败：{error}") from error
         finally:
             engine.dispose()
+
+    @staticmethod
+    def get_item_entity(item: DataFactoryExecutionItem):
+        if not item.template_id or not item.template:
+            raise ToolsError(300, f"执行明细 {item.id} 未记录模板，无法推导清理实体")
+        return item.template.entity
 
     @staticmethod
     def mark_failed(item: DataFactoryExecutionItem, error: str):

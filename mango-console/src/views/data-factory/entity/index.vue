@@ -11,29 +11,41 @@
     </template>
 
     <template #default>
-      <a-table :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
+      <a-table :columns="entityTableColumns" :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
         <template #columns>
-          <a-table-column title="ID" data-index="id" :width="80" />
-          <a-table-column title="名称" data-index="name" />
-          <a-table-column title="表名" data-index="table_name" />
-          <a-table-column title="主键" data-index="primary_key" :width="100" />
-          <a-table-column title="清理顺序" data-index="cleanup_order" :width="100" />
-          <a-table-column title="状态" :width="100">
-            <template #cell="{ record }">
+          <a-table-column
+            v-for="item of entityTableColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="record.status === 1 ? 'green' : 'gray'">
                 {{ record.status === 1 ? '启用' : '禁用' }}
               </a-tag>
             </template>
-          </a-table-column>
-          <a-table-column title="操作" :width="360" fixed="right">
-            <template #cell="{ record }">
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space wrap>
                 <a-button size="mini" type="text" @click="openEntity(record)">编辑</a-button>
                 <a-button size="mini" type="text" @click="openFields(record)">字段规则</a-button>
-                <a-button size="mini" type="text" @click="switchEntity(record)">
-                  {{ record.status === 1 ? '禁用' : '启用' }}
-                </a-button>
-                <a-button size="mini" status="danger" type="text" @click="removeEntity(record)">删除</a-button>
+                <a-dropdown trigger="hover">
+                  <a-button size="mini" type="text">···</a-button>
+                  <template #content>
+                    <a-doption>
+                      <a-button size="mini" type="text" @click="switchEntity(record)">
+                        {{ record.status === 1 ? '禁用' : '启用' }}
+                      </a-button>
+                    </a-doption>
+                    <a-doption>
+                      <a-button size="mini" status="danger" type="text" @click="removeEntity(record)">删除</a-button>
+                    </a-doption>
+                  </template>
+                </a-dropdown>
               </a-space>
             </template>
           </a-table-column>
@@ -82,11 +94,6 @@
         </a-grid-item>
         <a-grid-item><a-form-item label="主键字段"><a-input v-model="entityForm.primary_key" /></a-form-item></a-grid-item>
         <a-grid-item><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item></a-grid-item>
-        <a-grid-item>
-          <a-form-item label="清理策略">
-            <a-select v-model="entityForm.cleanup_strategy" :options="enumStore.data_factory_cleanup_strategy" :field-names="enumFieldNames" />
-          </a-form-item>
-        </a-grid-item>
         <a-grid-item><a-form-item label="清理顺序"><a-input-number v-model="entityForm.cleanup_order" style="width: 100%" /></a-form-item></a-grid-item>
       </a-grid>
       <a-form-item label="同步字段规则">
@@ -98,28 +105,43 @@
 
   <a-modal v-model:visible="fieldVisible" :title="`${currentEntity?.name || ''} 字段规则`" width="1180px" @ok="saveFields">
     <a-space style="margin-bottom: 12px">
-      <a-button type="primary" @click="discoverTables">发现表</a-button>
-      <a-select v-model="selectedTable" :options="tableOptions" allow-search placeholder="请选择表" style="width: 260px" />
-      <a-button @click="discoverFields">同步字段</a-button>
+      <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
+      <a-button type="primary" @click="syncCurrentEntityFields">同步当前表字段</a-button>
       <a-button :loading="fieldPreviewLoading" @click="previewFieldValues">生成实际值</a-button>
       <a-switch v-model="replaceFields" checked-text="替换" unchecked-text="追加" />
     </a-space>
-    <a-table :data="fieldRows" :pagination="false" :scroll="{ x: 1800, y: 460 }">
+    <a-table :columns="fieldRuleColumns" :data="fieldRows" :pagination="false" :scroll="{ x: 1600, y: 460 }">
       <template #columns>
-        <a-table-column title="字段" data-index="name" :width="160" fixed="left" />
-        <a-table-column title="说明" :width="160"><template #cell="{ record }"><a-input v-model="record.label" /></template></a-table-column>
-        <a-table-column title="DB类型" data-index="db_type" :width="130" />
-        <a-table-column title="平台类型" data-index="platform_type" :width="110" />
-        <a-table-column title="可空" :width="80"><template #cell="{ record }"><a-switch v-model="record.nullable" /></template></a-table-column>
-        <a-table-column title="主键" :width="80"><template #cell="{ record }"><a-switch v-model="record.primary_key" /></template></a-table-column>
-        <a-table-column title="自增" :width="80"><template #cell="{ record }"><a-switch v-model="record.autoincrement" /></template></a-table-column>
-        <a-table-column title="生成方式" :width="180">
-          <template #cell="{ record }">
+        <a-table-column
+          v-for="item of fieldRuleColumns"
+          :key="item.key"
+          :data-index="item.key"
+          :fixed="item.fixed"
+          :title="item.title"
+          :width="item.width"
+        >
+          <template v-if="item.key === 'label'" #cell="{ record }">
+            <a-input v-model="record.label" />
+          </template>
+          <template v-else-if="item.key === 'nullable'" #cell="{ record }">
+            <a-tag :color="record.nullable ? 'gray' : 'orange'">
+              {{ record.nullable ? '可空' : '必填' }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'primary_key'" #cell="{ record }">
+            <a-tag :color="record.primary_key ? 'arcoblue' : 'gray'">
+              {{ record.primary_key ? '主键' : '普通' }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'autoincrement'" #cell="{ record }">
+            <a-tag :color="record.autoincrement ? 'green' : 'gray'">
+              {{ record.autoincrement ? '自增' : '非自增' }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'generator_type'" #cell="{ record }">
             <a-select v-model="record.generator_type" :options="enumStore.data_factory_generator_type" :field-names="enumFieldNames" />
           </template>
-        </a-table-column>
-        <a-table-column title="生成配置" :width="280">
-          <template #cell="{ record }">
+          <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
             <a-space v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD" direction="vertical" fill>
               <a-select
                 v-model="record.generator_config.template_id"
@@ -142,18 +164,16 @@
               :placeholder="getGeneratorConfigPlaceholder(record)"
             />
           </template>
-        </a-table-column>
-        <a-table-column title="实际值" :width="220">
-          <template #cell="{ record }">
+          <template v-else-if="item.key === 'preview_value'" #cell="{ record }">
             <a-tooltip v-if="record.preview_message" :content="record.preview_message">
               <a-tag :color="record.preview_valid ? 'green' : 'red'">{{ formatPreviewValue(record.preview_value) }}</a-tag>
             </a-tooltip>
             <span v-else>{{ formatPreviewValue(record.preview_value) }}</span>
           </template>
+          <template v-else-if="item.key === 'sort'" #cell="{ record }">
+            <a-input-number v-model="record.sort" />
+          </template>
         </a-table-column>
-        <a-table-column title="输出" :width="80"><template #cell="{ record }"><a-switch v-model="record.output_enabled" /></template></a-table-column>
-        <a-table-column title="输出名" :width="150"><template #cell="{ record }"><a-input v-model="record.output_name" /></template></a-table-column>
-        <a-table-column title="排序" :width="100"><template #cell="{ record }"><a-input-number v-model="record.sort" /></template></a-table-column>
       </template>
     </a-table>
   </a-modal>
@@ -180,6 +200,7 @@
   import useUserStore from '@/store/modules/user'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref } from 'vue'
+  import { entityTableColumns, fieldRuleColumns } from './config'
 
   const table = useTable()
   const pagination = usePagination(doRefresh)
@@ -190,12 +211,10 @@
   const datasourceAliasOptions = ref<any[]>([])
   const dependencyTemplateOptions = ref<any[]>([])
   const entityNameMap = ref<Record<string, string>>({})
-  const tableOptions = ref<any[]>([])
   const entityTableOptions = ref<any[]>([])
   const entityDiscoveredColumns = ref<any[]>([])
   const entityTableLoading = ref(false)
   const syncFieldsAfterSave = ref(true)
-  const selectedTable = ref('')
   const replaceFields = ref(true)
   const entityVisible = ref(false)
   const fieldVisible = ref(false)
@@ -222,7 +241,6 @@
       delete_type: record?.delete_type || 2,
       create_config: record?.create_config || {},
       delete_config: record?.delete_config || {},
-      cleanup_strategy: record?.cleanup_strategy || 2,
       cleanup_order: record?.cleanup_order || 100,
       status: record?.status || 1,
     })
@@ -401,8 +419,6 @@
       entity: entityId,
       generator_type: it.generator_type ?? it.recommend?.generator_type ?? 1,
       generator_config: it.generator_config || it.recommend?.generator_config || {},
-      output_enabled: it.output_enabled ?? true,
-      output_name: it.output_name || it.name,
       sort: index,
     }))
     return postDataFactoryFieldBatchSave({ entity_id: entityId, replace: true, fields })
@@ -422,7 +438,6 @@
 
   function openFields(record: any) {
     currentEntity.value = record
-    selectedTable.value = record.table_name
     fieldVisible.value = true
     loadDependencyTemplates(record)
     getDataFactoryField({ entity: record.id }).then((res) => {
@@ -430,31 +445,20 @@
     })
   }
 
-  function discoverTables() {
-    if (!currentEntity.value?.datasource_alias || !ensureSelectedEnvironment()) {
-      Message.error('请先选择逻辑数据源和顶部测试环境')
+  function syncCurrentEntityFields() {
+    if (!currentEntity.value?.table_name) {
+      Message.error('当前实体未绑定表名，请先编辑实体选择表')
       return
     }
-    postDataFactoryDiscoverTables({
-      datasource_alias_id: currentEntity.value.datasource_alias,
-      project_product: currentEntity.value.project_product?.id || currentEntity.value.project_product,
-      test_env: userStore.selected_environment,
-    }).then((res) => {
-      tableOptions.value = (res.data || []).map((name: string) => ({ label: name, value: name }))
-      Message.success('表发现完成')
-    })
-  }
-
-  function discoverFields() {
-    if (!selectedTable.value) {
-      Message.error('请先选择表')
+    if (!currentEntity.value?.datasource_alias || !ensureSelectedEnvironment()) {
+      Message.error('请先选择逻辑数据源和顶部测试环境')
       return
     }
     postDataFactoryDiscoverTable({
       datasource_alias_id: currentEntity.value.datasource_alias,
       project_product: currentEntity.value.project_product?.id || currentEntity.value.project_product,
       test_env: userStore.selected_environment,
-      table_name: selectedTable.value,
+      table_name: currentEntity.value.table_name,
     }).then((res) => {
       fieldRows.value = (res.data.columns || []).map((it: any, index: number) => ({
         ...normalizeFieldRow({
@@ -462,8 +466,6 @@
           entity: currentEntity.value.id,
           generator_type: it.generator_type ?? it.recommend?.generator_type ?? 1,
           generator_config: it.generator_config || it.recommend?.generator_config || {},
-          output_enabled: it.output_enabled ?? true,
-          output_name: it.output_name || it.name,
           sort: index,
         }),
       }))

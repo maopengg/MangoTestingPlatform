@@ -19,10 +19,19 @@ class DataFactoryExecutionSerializer(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     cleanup_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    source_display = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = DataFactoryExecution
         fields = '__all__'
+
+    @staticmethod
+    def get_source_display(obj):
+        if obj.template_id and obj.template:
+            return obj.template.name
+        if obj.source_id:
+            return f"{obj.source_type}#{obj.source_id}"
+        return obj.source_type
 
 
 class DataFactoryExecutionItemSerializer(serializers.ModelSerializer):
@@ -36,7 +45,7 @@ class DataFactoryExecutionItemSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related('execution', 'entity', 'template', 'database')
+        return queryset.select_related('execution', 'template', 'template__entity', 'database')
 
 
 class DataFactoryExecutionSerializerC(DataFactoryExecutionSerializer):
@@ -58,19 +67,23 @@ class DataFactoryExecutionItemCRUD(ModelCRUD):
     queryset = DataFactoryExecutionItem.objects.all()
     serializer_class = DataFactoryExecutionItemSerializer
     serializer = DataFactoryExecutionItemSerializer
-    not_matching_str = ModelCRUD.not_matching_str + ['execution', 'entity', 'template', 'database']
+    not_matching_str = ModelCRUD.not_matching_str + ['execution', 'template', 'database']
 
 
 class DataFactoryExecutionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
-    def detail(self, request: Request):
+    def detail_view(self, request: Request):
         execution = DataFactoryExecution.objects.select_related(
             'project_product',
             'test_object',
             'template',
         ).get(id=request.query_params.get('execution_id'))
-        items = DataFactoryExecutionItem.objects.filter(execution=execution).order_by('cleanup_order', 'id')
+        items = DataFactoryExecutionItem.objects.select_related(
+            'template',
+            'template__entity',
+            'database',
+        ).filter(execution=execution).order_by('cleanup_order', 'id')
         return ResponseData.success(RESPONSE_MSG_0001, {
             "execution": DataFactoryExecutionSerializer(execution).data,
             "items": DataFactoryExecutionItemSerializer(items, many=True).data,
@@ -87,10 +100,6 @@ class DataFactoryExecutionViews(ViewSet):
     @error_response('system')
     def cleanup(self, request: Request):
         result = DataFactoryCleanup.cleanup_execution(request.data.get('execution_id'))
-        return ResponseData.success(RESPONSE_MSG_0001, result)
-
-    @action(methods=['post'], detail=False)
-    @error_response('system')
-    def cleanup_retry(self, request: Request):
-        result = DataFactoryCleanup.cleanup_execution(request.data.get('execution_id'))
+        if result.get("already_cleaned"):
+            return ResponseData.success((200, result.get("message") or "当前执行记录没有需要清理的数据"), result)
         return ResponseData.success(RESPONSE_MSG_0001, result)

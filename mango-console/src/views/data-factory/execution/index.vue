@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <TableBody>
     <template #header>
       <a-card title="数据工厂 / 执行记录" :bordered="false">
@@ -7,26 +7,32 @@
     </template>
 
     <template #default>
-      <a-table :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
+      <a-table :columns="executionTableColumns" :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
         <template #columns>
-          <a-table-column title="ID" data-index="id" :width="80" />
-          <a-table-column title="执行编号" data-index="execution_no" :width="230" />
-          <a-table-column title="来源" data-index="source_name" />
-          <a-table-column title="阶段" :width="110"><template #cell="{ record }">{{ enumTitle(enumStore.data_factory_execution_stage, record.stage) }}</template></a-table-column>
-          <a-table-column title="状态" :width="110">
-            <template #cell="{ record }"><a-tag :color="record.status === 2 ? 'green' : record.status === 3 ? 'red' : 'orange'">{{ enumTitle(enumStore.data_factory_execution_status, record.status) }}</a-tag></template>
-          </a-table-column>
-          <a-table-column title="清理状态" :width="120">
-            <template #cell="{ record }"><a-tag>{{ enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status) }}</a-tag></template>
-          </a-table-column>
-          <a-table-column title="错误" data-index="error_message" />
-          <a-table-column title="创建时间" data-index="create_time" :width="180" />
-          <a-table-column title="操作" :width="180" fixed="right">
-            <template #cell="{ record }">
+          <a-table-column
+            v-for="item of executionTableColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'stage'" #cell="{ record }">
+              {{ enumTitle(enumStore.data_factory_execution_stage, record.stage) }}
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-tag :color="record.status === 2 ? 'green' : record.status === 3 ? 'red' : 'orange'">{{ enumTitle(enumStore.data_factory_execution_status, record.status) }}</a-tag>
+            </template>
+            <template v-else-if="item.key === 'cleanup_status'" #cell="{ record }">
+              <a-tag>{{ enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status) }}</a-tag>
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" @click="openDetail(record)">详情</a-button>
                 <a-button size="mini" status="danger" type="text" @click="cleanup(record)">清理</a-button>
-                <a-button size="mini" type="text" @click="cleanupRetry(record)">重试</a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -43,18 +49,24 @@
         <a-textarea :model-value="JSON.stringify(detail.context || {}, null, 2)" :auto-size="{ minRows: 18, maxRows: 28 }" readonly />
       </a-tab-pane>
       <a-tab-pane key="items" title="创建明细">
-        <a-table :data="detail.items || []" :pagination="false" :scroll="{ x: 1200 }">
+        <a-table :columns="executionItemColumns" :data="detail.items || []" :pagination="false" :scroll="{ x: 1200 }">
           <template #columns>
-            <a-table-column title="ID" data-index="id" :width="80" />
-            <a-table-column title="别名" data-index="alias" :width="120" />
-            <a-table-column title="主键" data-index="primary_value" :width="150" />
-            <a-table-column title="唯一值" data-index="unique_value" :width="180" />
-            <a-table-column title="清理顺序" data-index="cleanup_order" :width="100" />
-            <a-table-column title="清理状态" :width="120">
-              <template #cell="{ record }">{{ enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status) }}</template>
-            </a-table-column>
-            <a-table-column title="数据">
-              <template #cell="{ record }"><a-typography-paragraph copyable>{{ JSON.stringify(record.data) }}</a-typography-paragraph></template>
+            <a-table-column
+              v-for="item of executionItemColumns"
+              :key="item.key"
+              :data-index="item.key"
+              :title="item.title"
+              :width="item.width"
+            >
+              <template v-if="item.key === 'index'" #cell="{ record }">
+                {{ record.id }}
+              </template>
+              <template v-else-if="item.key === 'cleanup_status'" #cell="{ record }">
+                {{ enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status) }}
+              </template>
+              <template v-else-if="item.key === 'data'" #cell="{ record }">
+                <a-typography-paragraph copyable>{{ JSON.stringify(record.data) }}</a-typography-paragraph>
+              </template>
             </a-table-column>
           </template>
         </a-table>
@@ -72,12 +84,12 @@
     getDataFactoryExecution,
     getDataFactoryExecutionDetail,
     postDataFactoryExecutionCleanup,
-    postDataFactoryExecutionCleanupRetry,
   } from '@/api/data-factory'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref } from 'vue'
+  import { executionItemColumns, executionTableColumns } from './config'
 
   const table = useTable()
   const pagination = usePagination(doRefresh)
@@ -105,6 +117,10 @@
   }
 
   function cleanup(record: any) {
+    if (record.cleanup_status === 1) {
+      Message.info('当前执行记录已清理，无需重复清理')
+      return
+    }
     Modal.confirm({
       title: '清理执行数据',
       content: `确认清理 ${record.execution_no} 创建的数据？`,
@@ -113,13 +129,6 @@
           Message.success(res.msg)
           doRefresh()
         }),
-    })
-  }
-
-  function cleanupRetry(record: any) {
-    postDataFactoryExecutionCleanupRetry({ execution_id: record.id }).then((res) => {
-      Message.success(res.msg)
-      doRefresh()
     })
   }
 
