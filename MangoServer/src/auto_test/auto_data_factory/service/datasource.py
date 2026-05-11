@@ -12,6 +12,10 @@ from src.enums.tools_enum import DatabaseTypeEnum
 from src.exceptions import ToolsError
 
 
+def is_missing_value(value) -> bool:
+    return value is None or value == ""
+
+
 class DataFactoryDatasource:
     """构建外部业务库连接信息。"""
 
@@ -69,7 +73,7 @@ class DataFactoryDatasourceResolver:
 
     @classmethod
     def resolve_test_object_id(cls, project_product_id: int, test_env: int | None) -> int:
-        if not test_env:
+        if is_missing_value(test_env):
             raise ToolsError(300, "请先在顶部选择测试环境")
         try:
             project_product_id = int(project_product_id)

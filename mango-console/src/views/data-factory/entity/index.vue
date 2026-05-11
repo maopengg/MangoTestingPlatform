@@ -5,13 +5,20 @@
         <template #extra>
           <a-space>
             <a-button size="small" type="primary" @click="openEntity()">新增实体</a-button>
+            <a-button size="small" @click="openBatchGenerate">批量生成</a-button>
           </a-space>
         </template>
       </a-card>
     </template>
 
     <template #default>
-      <a-table :columns="entityTableColumns" :data="table.dataList" :loading="table.tableLoading.value" :pagination="false" :row-key="'id'">
+      <a-table
+        :columns="entityTableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
+        :pagination="false"
+        :row-key="'id'"
+      >
         <template #columns>
           <a-table-column
             v-for="item of entityTableColumns"
@@ -32,17 +39,24 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space wrap>
                 <a-button size="mini" type="text" @click="openEntity(record)">编辑</a-button>
-                <a-button size="mini" type="text" @click="openFields(record)">字段规则</a-button>
+                <a-button :loading="actionLoading === `fields-${record.id}`" size="mini" type="text" @click="openFields(record)">字段规则</a-button>
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="switchEntity(record)">
+                      <a-button :loading="actionLoading === `switch-${record.id}`" size="mini" type="text" @click="switchEntity(record)">
                         {{ record.status === 1 ? '禁用' : '启用' }}
                       </a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" status="danger" type="text" @click="removeEntity(record)">删除</a-button>
+                      <a-button
+                        :loading="actionLoading === `delete-${record.id}`"
+                        size="mini"
+                        status="danger"
+                        type="text"
+                        @click="removeEntity(record)"
+                        >删除</a-button
+                      >
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -58,12 +72,108 @@
     </template>
   </TableBody>
 
-  <a-modal v-model:visible="entityVisible" :title="entityForm.id ? '编辑实体' : '新增实体'" width="760px" @ok="saveEntity">
+  <a-drawer v-model:visible="batchVisible" title="批量生成工厂实体" width="50%">
+    <a-form :model="batchForm" layout="vertical">
+      <a-grid :cols="2" :col-gap="16">
+        <a-grid-item>
+          <a-form-item label="产品" required>
+            <a-cascader
+              v-model="batchForm.project_product"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
+            />
+          </a-form-item>
+        </a-grid-item>
+        <a-grid-item>
+          <a-form-item label="逻辑数据源" required>
+            <a-select
+              v-model="batchForm.datasource_alias"
+              :field-names="{ value: 'id', label: 'name' }"
+              :options="datasourceAliasOptions"
+              allow-clear
+              allow-search
+            />
+          </a-form-item>
+        </a-grid-item>
+      </a-grid>
+      <a-space style="margin-bottom: 12px">
+        <a-switch
+          v-model="batchForm.sync_fields"
+          checked-text="同步字段规则"
+          unchecked-text="不同步字段"
+        />
+        <a-switch
+          v-model="batchForm.skip_exists"
+          checked-text="跳过已存在"
+          unchecked-text="已存在报错"
+        />
+        <a-button :loading="batchLoading" type="primary" @click="loadBatchTables">加载表</a-button>
+        <a-button :loading="batchGenerating" status="success" @click="batchGenerateEntities"
+          >生成</a-button
+        >
+      </a-space>
+    </a-form>
+    <a-alert style="margin-bottom: 12px" type="info">
+      当前使用顶部全局测试环境读取表结构。实体名称默认使用表注释，没有表注释时使用表名。
+    </a-alert>
+    <a-table
+      :columns="batchEntityTableColumns"
+      :data="batchRows"
+      :loading="batchLoading || batchGenerating"
+      :pagination="false"
+      :row-key="'table_name'"
+      :row-selection="batchRowSelection"
+      :scroll="{ x: 900, y: 520 }"
+      @selection-change="onBatchSelectionChange"
+    >
+      <template #columns>
+        <a-table-column
+          v-for="item of batchEntityTableColumns"
+          :key="item.key"
+          :data-index="item.key"
+          :title="item.title"
+          :width="item.width"
+        >
+          <template v-if="item.key === 'name'" #cell="{ record }">
+            <a-input v-model="record.name" :disabled="record.disabled" />
+          </template>
+          <template v-else-if="item.key === 'status'" #cell="{ record }">
+            <a-tag :color="getBatchStatusColor(record.status)">{{
+              getBatchStatusText(record.status)
+            }}</a-tag>
+          </template>
+        </a-table-column>
+      </template>
+    </a-table>
+    <template #footer>
+      <a-space>
+        <a-button @click="batchVisible = false">关闭</a-button>
+        <a-button :loading="batchLoading" @click="loadBatchTables">重新加载</a-button>
+        <a-button :loading="batchGenerating" status="success" type="primary" @click="batchGenerateEntities">
+          确认生成
+        </a-button>
+      </a-space>
+    </template>
+  </a-drawer>
+
+  <a-modal
+    v-model:visible="entityVisible"
+    :on-before-ok="saveEntity"
+    :ok-loading="entitySaving"
+    :title="entityForm.id ? '编辑实体' : '新增实体'"
+    width="760px"
+  >
     <a-form :model="entityForm" layout="vertical">
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
           <a-form-item label="产品" required>
-            <a-cascader v-model="entityForm.project_product" :options="projectInfo.projectProduct" allow-search allow-clear />
+            <a-cascader
+              v-model="entityForm.project_product"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
+            />
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
@@ -91,10 +201,19 @@
             />
           </a-form-item>
         </a-grid-item>
-        <a-grid-item><a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item></a-grid-item>
-        <a-grid-item><a-form-item label="主键字段"><a-input v-model="entityForm.primary_key" /></a-form-item></a-grid-item>
-        <a-grid-item><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item></a-grid-item>
-        <a-grid-item><a-form-item label="清理顺序"><a-input-number v-model="entityForm.cleanup_order" style="width: 100%" /></a-form-item></a-grid-item>
+        <a-grid-item
+          ><a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item
+        ></a-grid-item>
+        <a-grid-item
+          ><a-form-item label="主键字段"><a-input v-model="entityForm.primary_key" /></a-form-item
+        ></a-grid-item>
+        <a-grid-item
+          ><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item
+        ></a-grid-item>
+        <a-grid-item
+          ><a-form-item label="清理顺序"
+            ><a-input-number v-model="entityForm.cleanup_order" style="width: 100%" /></a-form-item
+        ></a-grid-item>
       </a-grid>
       <a-form-item label="同步字段规则">
         <a-switch v-model="syncFieldsAfterSave" checked-text="保存后同步" unchecked-text="不同步" />
@@ -103,14 +222,25 @@
     </a-form>
   </a-modal>
 
-  <a-modal v-model:visible="fieldVisible" :title="`${currentEntity?.name || ''} 字段规则`" width="1180px" @ok="saveFields">
+  <a-modal
+    v-model:visible="fieldVisible"
+    :on-before-ok="saveFields"
+    :ok-loading="fieldSaving"
+    :title="`${currentEntity?.name || ''} 字段规则`"
+    width="1180px"
+  >
     <a-space style="margin-bottom: 12px">
       <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
-      <a-button type="primary" @click="syncCurrentEntityFields">同步当前表字段</a-button>
+      <a-button :loading="fieldSyncLoading" type="primary" @click="syncCurrentEntityFields">同步当前表字段</a-button>
       <a-button :loading="fieldPreviewLoading" @click="previewFieldValues">生成实际值</a-button>
       <a-switch v-model="replaceFields" checked-text="替换" unchecked-text="追加" />
     </a-space>
-    <a-table :columns="fieldRuleColumns" :data="fieldRows" :pagination="false" :scroll="{ x: 1600, y: 460 }">
+    <a-table
+      :columns="fieldRuleColumns"
+      :data="fieldRows"
+      :pagination="false"
+      :scroll="{ x: 1600, y: 460 }"
+    >
       <template #columns>
         <a-table-column
           v-for="item of fieldRuleColumns"
@@ -139,10 +269,18 @@
             </a-tag>
           </template>
           <template v-else-if="item.key === 'generator_type'" #cell="{ record }">
-            <a-select v-model="record.generator_type" :options="enumStore.data_factory_generator_type" :field-names="enumFieldNames" />
+            <a-select
+              v-model="record.generator_type"
+              :options="enumStore.data_factory_generator_type"
+              :field-names="enumFieldNames"
+            />
           </template>
           <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
-            <a-space v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD" direction="vertical" fill>
+            <a-space
+              v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD"
+              direction="vertical"
+              fill
+            >
               <a-select
                 v-model="record.generator_config.template_id"
                 :options="getDependencyTemplateOptions(record)"
@@ -166,7 +304,9 @@
           </template>
           <template v-else-if="item.key === 'preview_value'" #cell="{ record }">
             <a-tooltip v-if="record.preview_message" :content="record.preview_message">
-              <a-tag :color="record.preview_valid ? 'green' : 'red'">{{ formatPreviewValue(record.preview_value) }}</a-tag>
+              <a-tag :color="record.preview_valid ? 'green' : 'red'">{{
+                formatPreviewValue(record.preview_value)
+              }}</a-tag>
             </a-tooltip>
             <span v-else>{{ formatPreviewValue(record.preview_value) }}</span>
           </template>
@@ -189,6 +329,7 @@
     postDataFactoryDiscoverTable,
     postDataFactoryDiscoverTables,
     postDataFactoryEntity,
+    postDataFactoryEntityBatchGenerate,
     postDataFactoryFieldBatchSave,
     postDataFactoryFieldPreviewValues,
     putDataFactoryEntity,
@@ -199,8 +340,8 @@
   import { useProject } from '@/store/modules/get-project'
   import useUserStore from '@/store/modules/user'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, reactive, ref } from 'vue'
-  import { entityTableColumns, fieldRuleColumns } from './config'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { batchEntityTableColumns, entityTableColumns, fieldRuleColumns } from './config'
 
   const table = useTable()
   const pagination = usePagination(doRefresh)
@@ -218,11 +359,32 @@
   const replaceFields = ref(true)
   const entityVisible = ref(false)
   const fieldVisible = ref(false)
+  const batchVisible = ref(false)
+  const batchLoading = ref(false)
+  const batchGenerating = ref(false)
   const fieldPreviewLoading = ref(false)
+  const entitySaving = ref(false)
+  const fieldSaving = ref(false)
+  const fieldSyncLoading = ref(false)
+  const actionLoading = ref('')
   const currentEntity = ref<any>(null)
   const fieldRows = ref<any[]>([])
+  const batchRows = ref<any[]>([])
+  const batchSelectedKeys = ref<any[]>([])
   const entityForm = reactive<any>({})
+  const batchForm = reactive<any>({
+    project_product: null,
+    datasource_alias: null,
+    sync_fields: true,
+    skip_exists: true,
+  })
+  const batchRowSelection = computed(() => ({
+    selectedRowKeys: batchSelectedKeys.value,
+    showCheckedAll: true,
+    getCheckboxProps: (record: any) => ({ disabled: record.disabled }),
+  }))
   const GENERATOR_TYPE_SKIP = 0
+  const GENERATOR_TYPE_FIXED = 1
   const GENERATOR_TYPE_DEPENDENCY_FIELD = 11
 
   function resetEntityForm(record?: any) {
@@ -236,11 +398,8 @@
       table_name: record?.table_name || '',
       primary_key: record?.primary_key || 'id',
       unique_key: record?.unique_key || '',
-      source_mode: record?.source_mode || 1,
       create_type: record?.create_type || 2,
       delete_type: record?.delete_type || 2,
-      create_config: record?.create_config || {},
-      delete_config: record?.delete_config || {},
       cleanup_order: record?.cleanup_order || 100,
       status: record?.status || 1,
     })
@@ -261,22 +420,27 @@
   }
 
   function loadDependencyTemplates(record?: any) {
-    const projectProduct = record?.project_product?.id || record?.project_product || entityForm.project_product
+    const projectProduct =
+      record?.project_product?.id || record?.project_product || entityForm.project_product
     if (!projectProduct) {
       dependencyTemplateOptions.value = []
       entityNameMap.value = {}
-      return
+      return Promise.resolve()
     }
-    Promise.all([
+    return Promise.all([
       getDataFactoryEntity({ project_product: projectProduct, page: 1, pageSize: 9999 }),
       getDataFactoryTemplate({ project_product: projectProduct, page: 1, pageSize: 9999 }),
     ]).then(([entityRes, templateRes]) => {
       entityNameMap.value = Object.fromEntries(
-        (entityRes.data || []).map((entity: any) => [String(entity.id), entity.name || entity.table_name || entity.id])
+        (entityRes.data || []).map((entity: any) => [
+          String(entity.id),
+          entity.name || entity.table_name || entity.id,
+        ])
       )
       dependencyTemplateOptions.value = (templateRes.data || []).map((it: any) => {
         const entityId = it.entity?.id || it.entity
-        const entityName = it.entity?.name || entityNameMap.value[String(entityId)] || entityId || '未知实体'
+        const entityName =
+          it.entity?.name || entityNameMap.value[String(entityId)] || entityId || '未知实体'
         return {
           label: `${entityName} / ${it.name}`,
           value: it.id,
@@ -292,53 +456,68 @@
     resetEntityForm(record)
     syncFieldsAfterSave.value = !record?.id
     entityDiscoveredColumns.value = []
-    entityTableOptions.value = record?.table_name ? [{ label: record.table_name, value: record.table_name }] : []
-    if (record?.datasource_alias && userStore.selected_environment) {
+    entityTableOptions.value = record?.table_name
+      ? [{ label: record.table_name, value: record.table_name }]
+      : []
+    if (record?.datasource_alias && userStore.selected_environment != null) {
       loadEntityTables(record.datasource_alias?.id || record.datasource_alias)
     }
     entityVisible.value = true
   }
 
-  function saveEntity() {
+  function openBatchGenerate() {
+    batchForm.project_product = entityForm.project_product || null
+    batchForm.datasource_alias = null
+    batchForm.sync_fields = true
+    batchForm.skip_exists = true
+    batchRows.value = []
+    batchSelectedKeys.value = []
+    batchVisible.value = true
+  }
+
+  async function saveEntity() {
     if (!entityForm.project_product) {
       Message.error('请选择产品')
-      return
+      return false
     }
     if (!entityForm.datasource_alias) {
       Message.error('请选择逻辑数据源')
-      return
+      return false
     }
     if (!entityForm.table_name) {
       Message.error('请选择表名')
-      return
+      return false
     }
     if (!entityForm.name) {
       Message.error('请填写实体名称')
-      return
+      return false
     }
     fillEntitySystemFields()
     const request = entityForm.id ? putDataFactoryEntity : postDataFactoryEntity
-    request({ ...entityForm }).then((res) => {
+    entitySaving.value = true
+    try {
+      const res = await request({ ...entityForm })
       const entityId = res.data?.id || entityForm.id
       if (syncFieldsAfterSave.value && entityId) {
-        return ensureEntityDiscoveredColumns().then(() => {
-          if (!entityDiscoveredColumns.value.length) {
-            Message.warning('实体已保存，但没有发现可同步的字段，请进入字段规则手动同步')
-            entityVisible.value = false
-            doRefresh()
-            return
-          }
-          return syncEntityFields(entityId).then(() => {
-            Message.success('实体和字段规则保存成功')
-            entityVisible.value = false
-            doRefresh()
-          })
-        })
+        await ensureEntityDiscoveredColumns()
+        if (!entityDiscoveredColumns.value.length) {
+          Message.warning('实体已保存，但没有发现可同步的字段，请进入字段规则手动同步')
+          doRefresh()
+          return true
+        }
+        await syncEntityFields(entityId)
+        Message.success('实体和字段规则保存成功')
+        doRefresh()
+        return true
       }
       Message.success(res.msg)
-      entityVisible.value = false
       doRefresh()
-    })
+      return true
+    } catch (error) {
+      return false
+    } finally {
+      entitySaving.value = false
+    }
   }
 
   function onEntityDatasourceChange(value: any) {
@@ -347,7 +526,7 @@
     entityForm.unique_key = ''
     entityDiscoveredColumns.value = []
     entityTableOptions.value = []
-    if (value && userStore.selected_environment) {
+    if (value && userStore.selected_environment != null) {
       loadEntityTables(value)
     }
   }
@@ -356,7 +535,10 @@
     if (!ensureSelectedEnvironment()) {
       return
     }
-    const projectProduct = entityForm.project_product || currentEntity.value?.project_product?.id || currentEntity.value?.project_product
+    const projectProduct =
+      entityForm.project_product ||
+      currentEntity.value?.project_product?.id ||
+      currentEntity.value?.project_product
     if (!projectProduct) {
       Message.error('请先选择产品')
       return
@@ -388,6 +570,145 @@
     }
   }
 
+  function normalizeBatchTable(table: any, existsMap: Map<string, any>) {
+    const name = typeof table === 'string' ? table : table.name || table.table || ''
+    const comment = typeof table === 'string' ? '' : table.comment || table.table_comment || ''
+    const existed = existsMap.get(name)
+    return {
+      table_name: name,
+      table_comment: comment,
+      name: existed?.name || comment || name,
+      status: existed ? 'exists' : 'ready',
+      message: existed ? `已存在实体：${existed.name}` : '可生成',
+      disabled: Boolean(existed),
+    }
+  }
+
+  function loadBatchTables() {
+    if (!batchForm.project_product) {
+      Message.error('请选择产品')
+      return
+    }
+    if (!batchForm.datasource_alias) {
+      Message.error('请选择逻辑数据源')
+      return
+    }
+    if (!ensureSelectedEnvironment()) {
+      return
+    }
+    batchLoading.value = true
+    Promise.all([
+      postDataFactoryDiscoverTables({
+        datasource_alias_id: batchForm.datasource_alias,
+        project_product: batchForm.project_product,
+        test_env: userStore.selected_environment,
+      }),
+      getDataFactoryEntity({
+        project_product: batchForm.project_product,
+        datasource_alias: batchForm.datasource_alias,
+        page: 1,
+        pageSize: 9999,
+      }),
+    ])
+      .then(([tableRes, entityRes]) => {
+        const existsMap = new Map(
+          (entityRes.data || []).map((entity: any) => [entity.table_name, entity])
+        )
+        batchRows.value = (tableRes.data || []).map((it: any) => normalizeBatchTable(it, existsMap))
+        batchSelectedKeys.value = batchRows.value
+          .filter((it) => !it.disabled)
+          .map((it) => it.table_name)
+        Message.success('表加载完成')
+      })
+      .finally(() => {
+        batchLoading.value = false
+      })
+  }
+
+  function onBatchSelectionChange(keys: any[]) {
+    const disabledKeys = batchRows.value.filter((it) => it.disabled).map((it) => it.table_name)
+    batchSelectedKeys.value = keys.filter((key) => !disabledKeys.includes(key))
+  }
+
+  function batchGenerateEntities() {
+    const selectedRows = batchRows.value.filter(
+      (it) => batchSelectedKeys.value.includes(it.table_name) && !it.disabled
+    )
+    if (!selectedRows.length) {
+      Message.error('请至少选择一张可生成的表')
+      return
+    }
+    const emptyNameRow = selectedRows.find((it) => !it.name)
+    if (emptyNameRow) {
+      Message.error(`表 ${emptyNameRow.table_name} 的实体名称不能为空`)
+      return
+    }
+    batchGenerating.value = true
+    postDataFactoryEntityBatchGenerate({
+      project_product: batchForm.project_product,
+      datasource_alias: batchForm.datasource_alias,
+      test_env: userStore.selected_environment,
+      sync_fields: batchForm.sync_fields,
+      skip_exists: batchForm.skip_exists,
+      tables: selectedRows.map((it) => ({
+        table_name: it.table_name,
+        name: it.name,
+      })),
+    })
+      .then((res) => {
+        const resultMap = new Map((res.data?.items || []).map((it: any) => [it.table_name, it]))
+        batchRows.value = batchRows.value.map((row) => {
+          const result = resultMap.get(row.table_name) as any
+          if (!result) {
+            return row
+          }
+          return {
+            ...row,
+            status: result.status,
+            message: result.message,
+            entity_id: result.entity_id,
+            field_count: result.field_count,
+            disabled: result.status === 'success' || result.status === 'skipped',
+          }
+        })
+        batchSelectedKeys.value = batchRows.value
+          .filter((it) => batchSelectedKeys.value.includes(it.table_name) && !it.disabled)
+          .map((it) => it.table_name)
+        Message.success(
+          `生成完成：成功 ${res.data?.success || 0}，跳过 ${res.data?.skipped || 0}，失败 ${
+            res.data?.failed || 0
+          }`
+        )
+        batchVisible.value = false
+        doRefresh()
+      })
+      .finally(() => {
+        batchGenerating.value = false
+      })
+  }
+
+  function getBatchStatusText(status: string) {
+    const statusMap: Record<string, string> = {
+      ready: '可生成',
+      exists: '已存在',
+      success: '成功',
+      skipped: '跳过',
+      failed: '失败',
+    }
+    return statusMap[status] || status || '-'
+  }
+
+  function getBatchStatusColor(status: string) {
+    const colorMap: Record<string, string> = {
+      ready: 'arcoblue',
+      exists: 'gray',
+      success: 'green',
+      skipped: 'orange',
+      failed: 'red',
+    }
+    return colorMap[status] || 'gray'
+  }
+
   function onEntityTableChange(tableName: string) {
     entityDiscoveredColumns.value = []
     if (!entityForm.datasource_alias || !tableName || !ensureSelectedEnvironment()) {
@@ -402,7 +723,9 @@
       const schema = res.data || {}
       entityDiscoveredColumns.value = schema.columns || []
       entityForm.primary_key = schema.primary_keys?.[0] || entityForm.primary_key || 'id'
-      const uniqueIndex = (schema.indexes || []).find((item: any) => item.unique && item.column_names?.length === 1)
+      const uniqueIndex = (schema.indexes || []).find(
+        (item: any) => item.unique && item.column_names?.length === 1
+      )
       entityForm.unique_key = uniqueIndex?.column_names?.[0] || entityForm.unique_key || ''
       applyEntityNameSuggestion(tableName, schema.table_comment)
     })
@@ -439,7 +762,9 @@
       const schema = res.data || {}
       entityDiscoveredColumns.value = schema.columns || []
       entityForm.primary_key = schema.primary_keys?.[0] || entityForm.primary_key || 'id'
-      const uniqueIndex = (schema.indexes || []).find((item: any) => item.unique && item.column_names?.length === 1)
+      const uniqueIndex = (schema.indexes || []).find(
+        (item: any) => item.unique && item.column_names?.length === 1
+      )
       entityForm.unique_key = uniqueIndex?.column_names?.[0] || entityForm.unique_key || ''
     })
   }
@@ -459,21 +784,41 @@
     Modal.confirm({
       title: '删除实体',
       content: `确认删除 ${record.name}？`,
-      onOk: () => deleteDataFactoryEntity(record.id).then(() => doRefresh()),
+      onOk: () => {
+        actionLoading.value = `delete-${record.id}`
+        return deleteDataFactoryEntity(record.id)
+          .then(() => doRefresh())
+          .finally(() => {
+            actionLoading.value = ''
+          })
+      },
     })
   }
 
   function switchEntity(record: any) {
-    putDataFactoryEntityStatus({ id: record.id, status: record.status === 1 ? 0 : 1 }).then(() => doRefresh())
+    actionLoading.value = `switch-${record.id}`
+    putDataFactoryEntityStatus({ id: record.id, status: record.status === 1 ? 0 : 1 })
+      .then(() => doRefresh())
+      .finally(() => {
+        actionLoading.value = ''
+      })
   }
 
   function openFields(record: any) {
+    actionLoading.value = `fields-${record.id}`
     currentEntity.value = record
-    fieldVisible.value = true
-    loadDependencyTemplates(record)
-    getDataFactoryField({ entity: record.id }).then((res) => {
-      fieldRows.value = (res.data || []).map((it: any) => normalizeFieldRow(it))
-    })
+    Promise.all([
+      loadDependencyTemplates(record),
+      getDataFactoryField({ entity: record.id }).then((res) => {
+        fieldRows.value = (res.data || []).map((it: any) => normalizeFieldRow(it))
+      }),
+    ])
+      .then(() => {
+        fieldVisible.value = true
+      })
+      .finally(() => {
+        actionLoading.value = ''
+      })
   }
 
   function syncCurrentEntityFields() {
@@ -485,9 +830,11 @@
       Message.error('请先选择逻辑数据源和顶部测试环境')
       return
     }
+    fieldSyncLoading.value = true
     postDataFactoryDiscoverTable({
       datasource_alias_id: currentEntity.value.datasource_alias,
-      project_product: currentEntity.value.project_product?.id || currentEntity.value.project_product,
+      project_product:
+        currentEntity.value.project_product?.id || currentEntity.value.project_product,
       test_env: userStore.selected_environment,
       table_name: currentEntity.value.table_name,
     }).then((res) => {
@@ -500,18 +847,31 @@
           sort: index,
         }),
       }))
+      Message.success('字段同步完成')
+    }).finally(() => {
+      fieldSyncLoading.value = false
     })
   }
 
-  function saveFields() {
+  async function saveFields() {
     const fields = buildFieldPayload()
     if (!fields) {
-      return
+      return false
     }
-    postDataFactoryFieldBatchSave({ entity_id: currentEntity.value.id, replace: replaceFields.value, fields }).then((res) => {
+    fieldSaving.value = true
+    try {
+      const res = await postDataFactoryFieldBatchSave({
+        entity_id: currentEntity.value.id,
+        replace: replaceFields.value,
+        fields,
+      })
       Message.success(res.msg)
-      fieldVisible.value = false
-    })
+      return true
+    } catch (error) {
+      return false
+    } finally {
+      fieldSaving.value = false
+    }
   }
 
   function buildFieldPayload() {
@@ -519,7 +879,9 @@
       const generatorConfig = { ...(it.generator_config || {}) }
       if (!isReadonlyGeneratorConfig(it)) {
         const value = it.generator_config_value ?? ''
-        if (value === '') {
+        if (it.generator_type === GENERATOR_TYPE_FIXED) {
+          generatorConfig.value = value
+        } else if (value === '') {
           delete generatorConfig.value
         } else {
           generatorConfig.value = value
@@ -578,7 +940,10 @@
     return {
       ...row,
       generator_config: generatorConfig,
-      generator_config_value: getGeneratorConfigValue({ ...row, generator_config: generatorConfig }),
+      generator_config_value: getGeneratorConfigValue({
+        ...row,
+        generator_config: generatorConfig,
+      }),
       preview_value: undefined,
       preview_valid: true,
       preview_message: '',
@@ -607,7 +972,9 @@
   }
 
   function getDependencyTemplateOptions(row: any) {
-    return dependencyTemplateOptions.value.filter((item) => item.entity_id !== currentEntity.value?.id)
+    return dependencyTemplateOptions.value.filter(
+      (item) => item.entity_id !== currentEntity.value?.id
+    )
   }
 
   function refreshDependencyConfigValue(row: any) {
@@ -617,7 +984,10 @@
   }
 
   function isReadonlyGeneratorConfig(row: any) {
-    return row.generator_type === GENERATOR_TYPE_SKIP || row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD
+    return (
+      row.generator_type === GENERATOR_TYPE_SKIP ||
+      row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD
+    )
   }
 
   function getGeneratorConfigPlaceholder(row: any) {

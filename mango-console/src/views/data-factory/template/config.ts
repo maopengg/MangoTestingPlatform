@@ -10,6 +10,14 @@ export const templateTableColumns = useTableColumn([
     dataIndex: 'name',
   },
   {
+    title: '描述',
+    key: 'description',
+    dataIndex: 'description',
+    width: 220,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '实体',
     key: 'entity',
     dataIndex: 'entity',

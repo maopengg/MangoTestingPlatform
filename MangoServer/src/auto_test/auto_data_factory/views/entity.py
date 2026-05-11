@@ -6,10 +6,12 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from django.db import transaction
 
 from src.auto_test.auto_data_factory.models import DataFactoryEntity
+from src.auto_test.auto_data_factory.service.datasource import DataFactoryDatasourceResolver, is_missing_value
+from src.auto_test.auto_data_factory.service.discover import DataFactoryDiscover
 from src.auto_test.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasSerializerC
-from src.auto_test.auto_system.views.database import DatabaseSerializersC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
@@ -58,7 +60,6 @@ class DataFactoryEntitySerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    database = DatabaseSerializersC(read_only=True)
     datasource_alias = DataFactoryDatasourceAliasSerializerC(read_only=True)
 
     class Meta:
@@ -70,10 +71,6 @@ class DataFactoryEntitySerializerC(serializers.ModelSerializer):
         return queryset.select_related(
             'project_product',
             'project_product__project',
-            'database',
-            'database__test_object',
-            'database__test_object__project_product',
-            'database__test_object__executor_name',
             'datasource_alias',
             'datasource_alias__project_product',
         )
@@ -116,6 +113,135 @@ class DataFactoryEntityCRUD(ModelCRUD):
 
 
 class DataFactoryEntityViews(ViewSet):
+    @action(methods=['post'], detail=False)
+    @error_response('system')
+    def batch_generate(self, request: Request):
+        project_product = request.data.get('project_product')
+        datasource_alias = request.data.get('datasource_alias')
+        test_env = request.data.get('test_env')
+        tables = request.data.get('tables') or []
+        sync_fields = request.data.get('sync_fields', True)
+        skip_exists = request.data.get('skip_exists', True)
+
+        if not project_product:
+            raise ToolsError(300, "产品不能为空")
+        if not datasource_alias:
+            raise ToolsError(300, "逻辑数据源不能为空")
+        if is_missing_value(test_env):
+            raise ToolsError(300, "请先在顶部选择测试环境")
+        if not isinstance(tables, list) or not tables:
+            raise ToolsError(300, "请至少选择一张表")
+
+        database = DataFactoryDatasourceResolver.resolve_alias_by_env(
+            datasource_alias,
+            project_product,
+            test_env,
+        )
+        result_items = []
+        success = 0
+        skipped = 0
+        failed = 0
+
+        for table in tables:
+            table_name = table.get('table_name') or table.get('name')
+            entity_name = table.get('name') or table.get('table_comment') or table_name
+            if not table_name or not entity_name:
+                failed += 1
+                result_items.append({
+                    "table_name": table_name,
+                    "name": entity_name,
+                    "status": "failed",
+                    "entity_id": None,
+                    "field_count": 0,
+                    "message": "表名和实体名称不能为空",
+                })
+                continue
+
+            duplicated = DataFactoryEntity.objects.filter(
+                project_product_id=project_product,
+                datasource_alias_id=datasource_alias,
+                table_name=table_name,
+            ).first()
+            if duplicated:
+                if skip_exists:
+                    skipped += 1
+                    result_items.append({
+                        "table_name": table_name,
+                        "name": duplicated.name,
+                        "status": "skipped",
+                        "entity_id": duplicated.id,
+                        "field_count": 0,
+                        "message": "当前逻辑数据源下已存在实体",
+                    })
+                    continue
+                failed += 1
+                result_items.append({
+                    "table_name": table_name,
+                    "name": entity_name,
+                    "status": "failed",
+                    "entity_id": duplicated.id,
+                    "field_count": 0,
+                    "message": "当前逻辑数据源下已存在实体",
+                })
+                continue
+
+            try:
+                schema = DataFactoryDiscover.get_table_schema(database, table_name)
+                unique_key = ""
+                for index in schema.get("indexes") or []:
+                    column_names = index.get("column_names") or []
+                    if index.get("unique") and len(column_names) == 1:
+                        unique_key = column_names[0]
+                        break
+
+                with transaction.atomic():
+                    entity = DataFactoryEntity.objects.create(
+                        project_product_id=project_product,
+                        datasource_alias_id=datasource_alias,
+                        name=entity_name,
+                        table_name=table_name,
+                        primary_key=(schema.get("primary_keys") or ["id"])[0],
+                        unique_key=unique_key,
+                        cleanup_order=100,
+                    )
+                    field_count = 0
+                    if sync_fields:
+                        from src.auto_test.auto_data_factory.views.field import DataFactoryFieldViews
+
+                        saved_fields = DataFactoryFieldViews.save_schema_fields(
+                            entity,
+                            schema.get("columns") or [],
+                            replace=True,
+                        )
+                        field_count = len(saved_fields)
+
+                success += 1
+                result_items.append({
+                    "table_name": table_name,
+                    "name": entity.name,
+                    "status": "success",
+                    "entity_id": entity.id,
+                    "field_count": field_count,
+                    "message": "生成成功",
+                })
+            except Exception as error:
+                failed += 1
+                result_items.append({
+                    "table_name": table_name,
+                    "name": entity_name,
+                    "status": "failed",
+                    "entity_id": None,
+                    "field_count": 0,
+                    "message": str(error),
+                })
+
+        return ResponseData.success(RESPONSE_MSG_0001, {
+            "success": success,
+            "skipped": skipped,
+            "failed": failed,
+            "items": result_items,
+        }, len(result_items))
+
     @action(methods=['post'], detail=False)
     @error_response('system')
     def copy(self, request: Request):

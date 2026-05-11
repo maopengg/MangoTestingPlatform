@@ -23,9 +23,9 @@ class ClientNameEnum(BaseEnum):
     """
     端名称
     """
-    DRIVER = '芒果执行器'
-    SERVER = '芒果服务器'
-    WEB = '芒果用户端'
+    DRIVER = '测试平台执行器'
+    SERVER = '测试平台服务器'
+    WEB = '测试平台用户端'
     PLATFORM_CHINESE = '芒果测试平台'
     PLATFORM_ENGLISH = 'MangoTestPlatform'
 

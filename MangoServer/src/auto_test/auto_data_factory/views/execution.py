@@ -72,10 +72,6 @@ class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
             'template__entity',
             'template__entity__project_product',
             'template__entity__project_product__project',
-            'template__entity__database',
-            'template__entity__database__test_object',
-            'template__entity__database__test_object__project_product',
-            'template__entity__database__test_object__executor_name',
             'template__entity__datasource_alias',
             'template__entity__datasource_alias__project_product',
         )

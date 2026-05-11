@@ -6,6 +6,7 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from pydantic import ValidationError
 
 from src.auto_test.auto_data_factory.models import DataFactoryTemplate
 from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
@@ -13,6 +14,7 @@ from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
 from src.auto_test.auto_data_factory.views.entity import DataFactoryEntitySerializerC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.exceptions import ToolsError
+from src.models.data_factory_model import DataFactoryFieldOverrideRules
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -37,6 +39,11 @@ class DataFactoryTemplateSerializer(serializers.ModelSerializer):
                 queryset = queryset.exclude(id=self.instance.id)
             if queryset.exists():
                 raise serializers.ValidationError(f"当前实体下已存在模板名称：{name}")
+        field_overrides = attrs.get('field_overrides', self.instance.field_overrides if self.instance else {})
+        try:
+            DataFactoryFieldOverrideRules.model_validate(field_overrides or {})
+        except ValidationError as error:
+            raise serializers.ValidationError(f"字段覆盖规则格式错误：{error}") from error
         return attrs
 
 
@@ -58,10 +65,6 @@ class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
             'entity',
             'entity__project_product',
             'entity__project_product__project',
-            'entity__database',
-            'entity__database__test_object',
-            'entity__database__test_object__project_product',
-            'entity__database__test_object__executor_name',
             'entity__datasource_alias',
             'entity__datasource_alias__project_product',
         )

@@ -12,6 +12,7 @@ from mangotools.data_processor import DataProcessor
 from src.auto_test.auto_system.models import FileData
 from src.exceptions import ERROR_MSG_0024, ToolsError, ERROR_MSG_0019
 from src.tools import project_dir
+from src.tools.view.snowflake import Snowflake
 
 
 class ObtainTestData(DataProcessor):
@@ -27,6 +28,11 @@ class ObtainTestData(DataProcessor):
         # 5.函数如果要接受传值，则直接接收参数，传入进来的参数默认是字符串类型
         print(demo1, demo2)
         return str(uuid.uuid4())
+
+    @classmethod
+    def number_snowflake_id(cls) -> str:
+        """雪花算法ID"""
+        return str(Snowflake.snowflake_id())
 
     @classmethod
     def get_file(cls, file_name) -> str:

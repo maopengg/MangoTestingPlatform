@@ -2,9 +2,11 @@
 # @Project: 芒果测试平台
 # @Description: 数据工厂执行服务
 
+import copy
 import uuid
 
 from django.db import transaction
+from pydantic import ValidationError
 
 from src.auto_test.auto_data_factory.models import (
     DataFactoryExecution,
@@ -20,8 +22,9 @@ from src.enums.data_factory_enum import (
     DataFactoryOperationTypeEnum,
 )
 from src.exceptions import ToolsError
+from src.models.data_factory_model import DataFactoryFieldOverrideRule, DataFactoryFieldOverrideRules
 
-from .datasource import DataFactoryDatasource, DataFactoryDatasourceResolver
+from .datasource import DataFactoryDatasource, DataFactoryDatasourceResolver, is_missing_value
 from .generator import DataFactoryValueGenerator
 from .type_cast import DataFactoryTypeCast
 
@@ -41,7 +44,7 @@ class DataFactoryRunner:
             'entity__datasource_alias',
             'project_product',
         ).get(id=template_id)
-        if not test_object_id and test_env:
+        if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         runtime_context = context or {}
         return cls.preview_by_template(template, overrides or {}, runtime_context, test_object_id, set())
@@ -82,6 +85,7 @@ class DataFactoryRunner:
 
         fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
         merged_overrides = {**(template.field_overrides or {}), **overrides}
+        fields = cls.build_effective_fields(fields, merged_overrides)
         payload = {}
         field_items = []
         missing_fields = []
@@ -99,7 +103,6 @@ class DataFactoryRunner:
                     field=field,
                     payload=payload,
                     context=context,
-                    overrides=merged_overrides,
                     test_object_id=test_object_id,
                     visiting=visiting,
                     dependencies=dependencies,
@@ -160,15 +163,11 @@ class DataFactoryRunner:
             field,
             payload: dict,
             context: dict,
-            overrides: dict,
             test_object_id: int | None,
             visiting: set[int],
             dependencies: list,
             dependency_nodes: list,
     ):
-        if field.name in overrides:
-            return overrides[field.name]
-
         if field.generator_type != DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
             return DataFactoryValueGenerator.generate(field, payload, context)
 
@@ -268,6 +267,34 @@ class DataFactoryRunner:
             "message": message,
         }
 
+    @classmethod
+    def build_effective_fields(cls, fields: list, overrides: dict | None) -> list:
+        rules = cls.parse_field_override_rules(overrides)
+        if not rules:
+            return fields
+
+        effective_fields = []
+        for field in fields:
+            rule = rules.get(field.name)
+            if not rule:
+                effective_fields.append(field)
+                continue
+
+            effective_field = copy.copy(field)
+            effective_field.generator_type = rule.generator_type
+            effective_field.generator_config = rule.generator_config or {}
+            effective_fields.append(effective_field)
+        return effective_fields
+
+    @staticmethod
+    def parse_field_override_rules(overrides: dict | None) -> dict[str, DataFactoryFieldOverrideRule]:
+        if not overrides:
+            return {}
+        try:
+            return DataFactoryFieldOverrideRules.model_validate(overrides).to_dict()
+        except ValidationError as error:
+            raise ToolsError(300, f"字段覆盖规则格式错误：{error}") from error
+
     @staticmethod
     def build_dependency_tree(
             template,
@@ -313,7 +340,7 @@ class DataFactoryRunner:
             'entity__datasource_alias',
             'project_product',
         ).get(id=template_id)
-        if not test_object_id and test_env:
+        if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         execution = DataFactoryExecution.objects.create(
             execution_no=cls.build_execution_no(),
@@ -384,8 +411,9 @@ class DataFactoryRunner:
 
         fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
         merged_overrides = {**(template.field_overrides or {}), **overrides}
+        fields = cls.build_effective_fields(fields, merged_overrides)
         cls.resolve_dependencies(fields, execution, context, visiting)
-        payload = DataFactoryValueGenerator.build_payload(fields, merged_overrides, context)
+        payload = DataFactoryValueGenerator.build_payload(fields, None, context)
         created = cls.insert(entity, database, payload)
         jsonable_payload = DataFactoryTypeCast.to_jsonable({**payload, **created})
         alias = alias_override or template.name

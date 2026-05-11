@@ -31,8 +31,8 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space wrap>
-                <a-button size="mini" type="text" @click="previewRun(record)">预览数据</a-button>
-                <a-button size="mini" type="text" @click="debugRun(record)">调试运行</a-button>
+                <a-button :loading="actionLoading === `preview-${record.id}`" size="mini" type="text" @click="previewRun(record)">预览数据</a-button>
+                <a-button :loading="actionLoading === `debug-${record.id}`" size="mini" type="text" @click="debugRun(record)">调试运行</a-button>
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
@@ -40,13 +40,13 @@
                       <a-button size="mini" type="text" @click="openTemplate(record)">编辑</a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="copyTemplate(record)">复制</a-button>
+                      <a-button :loading="actionLoading === `copy-${record.id}`" size="mini" type="text" @click="copyTemplate(record)">复制</a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="switchTemplate(record)">{{ record.status === 1 ? '禁用' : '启用' }}</a-button>
+                      <a-button :loading="actionLoading === `switch-${record.id}`" size="mini" type="text" @click="switchTemplate(record)">{{ record.status === 1 ? '禁用' : '启用' }}</a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" status="danger" type="text" @click="removeTemplate(record)">删除</a-button>
+                      <a-button :loading="actionLoading === `delete-${record.id}`" size="mini" status="danger" type="text" @click="removeTemplate(record)">删除</a-button>
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -60,7 +60,7 @@
     <template #footer><TableFooter :pagination="pagination" /></template>
   </TableBody>
 
-  <a-modal v-model:visible="templateVisible" :title="templateForm.id ? '编辑模板' : '新增模板'" width="820px" @ok="saveTemplate">
+  <a-modal v-model:visible="templateVisible" :on-before-ok="saveTemplate" :ok-loading="templateSaving" :title="templateForm.id ? '编辑模板' : '新增模板'" width="1100px">
     <a-form :model="templateForm" layout="vertical">
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
@@ -74,7 +74,17 @@
           <a-form-item label="清理策略"><a-select v-model="templateForm.cleanup_strategy" :options="enumStore.data_factory_cleanup_strategy" :field-names="enumFieldNames" /></a-form-item>
         </a-grid-item>
       </a-grid>
-      <a-form-item label="字段覆盖(JSON)"><a-textarea v-model="templateForm.field_overrides_text" :auto-size="{ minRows: 4, maxRows: 8 }" /></a-form-item>
+      <a-form-item label="字段覆盖规则">
+        <a-spin :loading="fieldOverrideLoading" style="width: 100%">
+          <FieldOverrideEditor
+            v-if="templateForm.entity"
+            v-model="templateForm.field_overrides"
+            :fields="fieldOverrideRows"
+            :generator-options="enumStore.data_factory_generator_type"
+          />
+          <a-alert v-else type="info">请先选择实体</a-alert>
+        </a-spin>
+      </a-form-item>
       <a-form-item label="输出配置(JSON)"><a-textarea v-model="templateForm.output_config_text" :auto-size="{ minRows: 3, maxRows: 6 }" /></a-form-item>
       <a-form-item label="描述"><a-textarea v-model="templateForm.description" /></a-form-item>
     </a-form>
@@ -84,7 +94,7 @@
     <a-space direction="vertical" style="width: 100%">
       <a-alert v-if="debugResult.execution_no" type="success">执行编号：{{ debugResult.execution_no }}</a-alert>
       <a-textarea :model-value="JSON.stringify(debugResult.context || debugResult, null, 2)" :auto-size="{ minRows: 12, maxRows: 20 }" readonly />
-      <a-button v-if="debugResult.execution_id" status="danger" @click="debugCleanup">清理本次调试数据</a-button>
+      <a-button v-if="debugResult.execution_id" :loading="debugCleanupLoading" status="danger" @click="debugCleanup">清理本次调试数据</a-button>
     </a-space>
   </a-modal>
 
@@ -149,6 +159,7 @@
   import {
     deleteDataFactoryTemplate,
     getDataFactoryEntity,
+    getDataFactoryField,
     getDataFactoryTemplate,
     postDataFactoryTemplate,
     postDataFactoryTemplateCopy,
@@ -162,8 +173,10 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
   import useUserStore from '@/store/modules/user'
+  import FieldOverrideEditor from '@/components/DataFactory/FieldOverrideEditor.vue'
+  import type { DataFactoryFieldOverrides, DataFactoryFieldRule } from '@/types/data-factory'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, reactive, ref } from 'vue'
+  import { onMounted, reactive, ref, watch } from 'vue'
   import { dependencyTreeColumns, previewFieldColumns, templateTableColumns } from './config'
 
   const table = useTable()
@@ -181,12 +194,19 @@
   const debugResult = ref<any>({})
   const previewResult = ref<any>({})
   const templateForm = reactive<any>({})
+  const templateSaving = ref(false)
+  const fieldOverrideLoading = ref(false)
+  const fieldOverrideRows = ref<DataFactoryFieldRule[]>([])
+  const resettingTemplateForm = ref(false)
+  const debugCleanupLoading = ref(false)
+  const actionLoading = ref('')
 
   function enumTitle(options: any[] = [], value: any) {
     return options.find((it) => it.key === value)?.title || value
   }
 
   function resetTemplateForm(record?: any) {
+    resettingTemplateForm.value = true
     Object.keys(templateForm).forEach((key) => delete templateForm[key])
     Object.assign(templateForm, {
       id: record?.id,
@@ -194,11 +214,12 @@
       entity: record?.entity?.id || record?.entity || null,
       name: record?.name || '',
       description: record?.description || '',
-      field_overrides_text: JSON.stringify(record?.field_overrides || {}, null, 2),
+      field_overrides: (record?.field_overrides || {}) as DataFactoryFieldOverrides,
       output_config_text: JSON.stringify(record?.output_config || [], null, 2),
       cleanup_strategy: record?.cleanup_strategy || 2,
       status: record?.status || 1,
     })
+    resettingTemplateForm.value = false
   }
 
   function doRefresh() {
@@ -215,59 +236,95 @@
     })
   }
 
+  function loadTemplateFields(entityId?: number) {
+    fieldOverrideRows.value = []
+    if (!entityId) {
+      return Promise.resolve()
+    }
+    fieldOverrideLoading.value = true
+    return getDataFactoryField({ entity: entityId })
+      .then((res) => {
+        fieldOverrideRows.value = res.data || []
+      })
+      .finally(() => {
+        fieldOverrideLoading.value = false
+      })
+  }
+
   function openTemplate(record?: any) {
     resetTemplateForm(record)
+    loadTemplateFields(templateForm.entity)
     templateVisible.value = true
   }
 
-  function saveTemplate() {
+  async function saveTemplate() {
     if (!templateForm.project_product || !templateForm.entity || !templateForm.name) {
       Message.error('请先填写产品、实体和模板名称')
-      return
+      return false
     }
 
-    let fieldOverrides = {}
     let outputConfig: any[] = []
     try {
-      fieldOverrides = templateForm.field_overrides_text ? JSON.parse(templateForm.field_overrides_text) : {}
       outputConfig = templateForm.output_config_text ? JSON.parse(templateForm.output_config_text) : []
     } catch (error) {
-      Message.error('字段覆盖或输出配置不是合法 JSON')
-      return
+      Message.error('输出配置不是合法 JSON')
+      return false
     }
 
     const payload = {
       ...templateForm,
-      field_overrides: fieldOverrides,
+      field_overrides: templateForm.field_overrides || {},
       output_config: outputConfig,
     }
-    delete payload.field_overrides_text
     delete payload.output_config_text
     const request = payload.id ? putDataFactoryTemplate : postDataFactoryTemplate
-    request(payload).then((res) => {
+    templateSaving.value = true
+    try {
+      const res = await request(payload)
       Message.success(res.msg)
-      templateVisible.value = false
       doRefresh()
-    })
+      return true
+    } catch (error) {
+      return false
+    } finally {
+      templateSaving.value = false
+    }
   }
 
   function removeTemplate(record: any) {
     Modal.confirm({
       title: '删除模板',
       content: `确认删除 ${record.name}？`,
-      onOk: () => deleteDataFactoryTemplate(record.id).then(() => doRefresh()),
+      onOk: () => {
+        actionLoading.value = `delete-${record.id}`
+        return deleteDataFactoryTemplate(record.id)
+          .then(() => doRefresh())
+          .finally(() => {
+            actionLoading.value = ''
+          })
+      },
     })
   }
 
   function copyTemplate(record: any) {
-    postDataFactoryTemplateCopy({ id: record.id }).then((res) => {
-      Message.success(res.msg)
-      doRefresh()
-    })
+    actionLoading.value = `copy-${record.id}`
+    postDataFactoryTemplateCopy({ id: record.id })
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .finally(() => {
+        actionLoading.value = ''
+      })
   }
 
   function switchTemplate(record: any) {
-    putDataFactoryTemplateStatus({ id: record.id, status: record.status === 1 ? 0 : 1 }).then(() => doRefresh())
+    actionLoading.value = `switch-${record.id}`
+    putDataFactoryTemplateStatus({ id: record.id, status: record.status === 1 ? 0 : 1 })
+      .then(() => doRefresh())
+      .finally(() => {
+        actionLoading.value = ''
+      })
   }
 
   function formatPreviewValue(value: any) {
@@ -319,18 +376,24 @@
     if (!ensureSelectedEnvironment()) {
       return
     }
+    actionLoading.value = `preview-${record.id}`
     previewTemplate.value = record
     debugTemplate.value = null
-    confirmDebugRun()
+    confirmDebugRun().finally(() => {
+      actionLoading.value = ''
+    })
   }
 
   function debugRun(record: any) {
     if (!ensureSelectedEnvironment()) {
       return
     }
+    actionLoading.value = `debug-${record.id}`
     debugTemplate.value = record
     previewTemplate.value = null
-    confirmDebugRun()
+    confirmDebugRun().finally(() => {
+      actionLoading.value = ''
+    })
   }
 
   function resetRunMode() {
@@ -340,17 +403,16 @@
 
   function confirmDebugRun() {
     if (!ensureSelectedEnvironment()) {
-      return
+      return Promise.resolve()
     }
     if (previewTemplate.value) {
-      postDataFactoryTemplatePreview({ template_id: previewTemplate.value.id, test_env: userStore.selected_environment }).then((res) => {
+      return postDataFactoryTemplatePreview({ template_id: previewTemplate.value.id, test_env: userStore.selected_environment }).then((res) => {
         previewResult.value = res.data || {}
         previewTemplate.value = null
         previewVisible.value = true
       })
-      return
     }
-    postDataFactoryTemplateDebugRun({ template_id: debugTemplate.value.id, test_env: userStore.selected_environment }).then((res) => {
+    return postDataFactoryTemplateDebugRun({ template_id: debugTemplate.value.id, test_env: userStore.selected_environment }).then((res) => {
       debugResult.value = res.data || {}
       debugVisible.value = true
       debugTemplate.value = null
@@ -358,9 +420,14 @@
   }
 
   function debugCleanup() {
-    postDataFactoryTemplateDebugCleanup({ execution_id: debugResult.value.execution_id }).then((res) => {
-      Message.success(res.msg)
-    })
+    debugCleanupLoading.value = true
+    postDataFactoryTemplateDebugCleanup({ execution_id: debugResult.value.execution_id })
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .finally(() => {
+        debugCleanupLoading.value = false
+      })
   }
 
   function ensureSelectedEnvironment() {
@@ -377,5 +444,16 @@
     loadEntities()
     doRefresh()
   })
+
+  watch(
+    () => templateForm.entity,
+    (entityId) => {
+      if (!templateVisible.value || resettingTemplateForm.value) {
+        return
+      }
+      templateForm.field_overrides = {}
+      loadTemplateFields(entityId)
+    }
+  )
 
 </script>

@@ -104,10 +104,6 @@ class DataFactoryFieldSerializerC(serializers.ModelSerializer):
             'entity',
             'entity__project_product',
             'entity__project_product__project',
-            'entity__database',
-            'entity__database__test_object',
-            'entity__database__test_object__project_product',
-            'entity__database__test_object__executor_name',
             'entity__datasource_alias',
             'entity__datasource_alias__project_product',
             'entity__datasource_alias__project_product__project',
@@ -150,6 +146,33 @@ class DataFactoryFieldCRUD(ModelCRUD):
 
 
 class DataFactoryFieldViews(ViewSet):
+    @staticmethod
+    def save_schema_fields(entity: DataFactoryEntity, columns: list, replace: bool = True) -> list:
+        saved_fields = []
+        field_names = []
+        for index, column in enumerate(columns):
+            recommend = column.get("recommend", {}) or {}
+            field_data = {
+                **column,
+                "entity": entity.id,
+                "generator_type": column["generator_type"] if "generator_type" in column else recommend.get("generator_type", 1),
+                "generator_config": column["generator_config"] if "generator_config" in column else recommend.get("generator_config", {}),
+                "sort": column.get("sort", index),
+            }
+            if not field_data.get("name"):
+                raise ToolsError(300, "字段 name 不能为空")
+            DataFactoryFieldViews.normalize_field_data(field_data)
+            field_names.append(field_data["name"])
+            instance = DataFactoryField.objects.filter(entity=entity, name=field_data["name"]).first()
+            serializer = DataFactoryFieldSerializer(instance=instance, data=field_data, partial=bool(instance))
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            saved_fields.append(serializer.data)
+
+        if replace:
+            DataFactoryField.objects.filter(entity=entity).exclude(name__in=field_names).delete()
+        return saved_fields
+
     @action(methods=['post'], detail=False)
     @error_response('system')
     def batch_save(self, request: Request):
@@ -162,23 +185,8 @@ class DataFactoryFieldViews(ViewSet):
             raise ToolsError(300, "fields 必须是列表")
 
         entity = DataFactoryEntity.objects.get(id=entity_id)
-        saved_fields = []
-        field_names = []
         with transaction.atomic():
-            for field_data in fields:
-                field_data = {**field_data, "entity": entity.id}
-                if not field_data.get("name"):
-                    raise ToolsError(300, "字段 name 不能为空")
-                self.normalize_field_data(field_data)
-                field_names.append(field_data["name"])
-                instance = DataFactoryField.objects.filter(entity=entity, name=field_data["name"]).first()
-                serializer = DataFactoryFieldSerializer(instance=instance, data=field_data, partial=bool(instance))
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                saved_fields.append(serializer.data)
-
-            if replace:
-                DataFactoryField.objects.filter(entity=entity).exclude(name__in=field_names).delete()
+            saved_fields = self.save_schema_fields(entity, fields, replace)
 
         return ResponseData.success(RESPONSE_MSG_0001, saved_fields, len(saved_fields))
 

@@ -52,6 +52,10 @@ export function postDataFactoryEntityCopy(data: object) {
   return post({ url: '/data-factory/entity/copy', data: () => data })
 }
 
+export function postDataFactoryEntityBatchGenerate(data: object) {
+  return post({ url: '/data-factory/entity/batch-generate', data: () => data })
+}
+
 export function putDataFactoryEntityStatus(data: object) {
   return put({ url: '/data-factory/entity/status', data: () => data })
 }

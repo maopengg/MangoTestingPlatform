@@ -2,7 +2,7 @@
   <TableBody>
     <template #header>
       <a-card title="数据工厂 / 执行记录" :bordered="false">
-        <template #extra><a-button size="small" @click="doRefresh">刷新</a-button></template>
+        <template #extra><a-button :loading="table.tableLoading.value" size="small" @click="doRefresh">刷新</a-button></template>
       </a-card>
     </template>
 
@@ -31,8 +31,8 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" @click="openDetail(record)">详情</a-button>
-                <a-button size="mini" status="danger" type="text" @click="cleanup(record)">清理</a-button>
+                <a-button :loading="actionLoading === `detail-${record.id}`" size="mini" type="text" @click="openDetail(record)">详情</a-button>
+                <a-button :loading="actionLoading === `cleanup-${record.id}`" size="mini" status="danger" type="text" @click="cleanup(record)">清理</a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -96,6 +96,7 @@
   const enumStore = useEnum()
   const detailVisible = ref(false)
   const detail = ref<any>({})
+  const actionLoading = ref('')
 
   function enumTitle(options: any[] = [], value: any) {
     return options.find((it) => it.key === value)?.title || value
@@ -110,10 +111,15 @@
   }
 
   function openDetail(record: any) {
-    getDataFactoryExecutionDetail({ execution_id: record.id }).then((res) => {
-      detail.value = res.data || {}
-      detailVisible.value = true
-    })
+    actionLoading.value = `detail-${record.id}`
+    getDataFactoryExecutionDetail({ execution_id: record.id })
+      .then((res) => {
+        detail.value = res.data || {}
+        detailVisible.value = true
+      })
+      .finally(() => {
+        actionLoading.value = ''
+      })
   }
 
   function cleanup(record: any) {
@@ -124,11 +130,17 @@
     Modal.confirm({
       title: '清理执行数据',
       content: `确认清理 ${record.execution_no} 创建的数据？`,
-      onOk: () =>
-        postDataFactoryExecutionCleanup({ execution_id: record.id }).then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        }),
+      onOk: () => {
+        actionLoading.value = `cleanup-${record.id}`
+        return postDataFactoryExecutionCleanup({ execution_id: record.id })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .finally(() => {
+            actionLoading.value = ''
+          })
+      },
     })
   }
 

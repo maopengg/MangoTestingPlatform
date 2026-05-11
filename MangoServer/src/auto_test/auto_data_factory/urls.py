@@ -23,6 +23,7 @@ urlpatterns = [
     path("datasource-alias", DataFactoryDatasourceAliasCRUD.as_view()),
     path("datasource-binding", DataFactoryDatasourceBindingCRUD.as_view()),
     path("entity", DataFactoryEntityCRUD.as_view()),
+    path("entity/batch-generate", DataFactoryEntityViews.as_view({'post': 'batch_generate'})),
     path("entity/copy", DataFactoryEntityViews.as_view({'post': 'copy'})),
     path("entity/status", DataFactoryEntityViews.as_view({'put': 'status'})),
     path("field", DataFactoryFieldCRUD.as_view()),

@@ -10,6 +10,14 @@ export const entityTableColumns = useTableColumn([
     dataIndex: 'name',
   },
   {
+    title: '描述',
+    key: 'description',
+    dataIndex: 'description',
+    width: 220,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '表名',
     key: 'table_name',
     dataIndex: 'table_name',
@@ -74,18 +82,6 @@ export const fieldRuleColumns = useTableColumn([
     width: 220,
   },
   {
-    title: 'DB类型',
-    key: 'db_type',
-    dataIndex: 'db_type',
-    width: 130,
-  },
-  {
-    title: '平台类型',
-    key: 'platform_type',
-    dataIndex: 'platform_type',
-    width: 110,
-  },
-  {
     title: '可空',
     key: 'nullable',
     dataIndex: 'nullable',
@@ -104,9 +100,53 @@ export const fieldRuleColumns = useTableColumn([
     width: 80,
   },
   {
+    title: 'DB类型',
+    key: 'db_type',
+    dataIndex: 'db_type',
+    width: 130,
+  },
+  {
+    title: '平台类型',
+    key: 'platform_type',
+    dataIndex: 'platform_type',
+    width: 110,
+  },
+  {
     title: '排序',
     key: 'sort',
     dataIndex: 'sort',
     width: 100,
+  },
+])
+
+export const batchEntityTableColumns = useTableColumn([
+  {
+    title: '表名',
+    key: 'table_name',
+    dataIndex: 'table_name',
+    width: 180,
+  },
+  {
+    title: '表注释',
+    key: 'table_comment',
+    dataIndex: 'table_comment',
+    width: 180,
+  },
+  {
+    title: '实体名称',
+    key: 'name',
+    dataIndex: 'name',
+    width: 220,
+  },
+  {
+    title: '状态',
+    key: 'status',
+    dataIndex: 'status',
+    width: 120,
+  },
+  {
+    title: '说明',
+    key: 'message',
+    dataIndex: 'message',
   },
 ])

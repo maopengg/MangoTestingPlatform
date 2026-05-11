@@ -13,7 +13,6 @@ from src.enums.data_factory_enum import (
     DataFactoryExecutionStatusEnum,
     DataFactoryGeneratorTypeEnum,
     DataFactoryOperationTypeEnum,
-    DataFactorySourceModeEnum,
 )
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import ToolsError
@@ -79,7 +78,6 @@ class DataFactoryEntity(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
-    database = models.ForeignKey(to=Database, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     datasource_alias = models.ForeignKey(
         to=DataFactoryDatasourceAlias,
         to_field="id",
@@ -91,11 +89,6 @@ class DataFactoryEntity(models.Model):
     name = models.CharField(verbose_name="实体名称", max_length=64)
     description = models.TextField(verbose_name="实体描述", null=True, blank=True)
 
-    source_mode = models.SmallIntegerField(
-        verbose_name="数据源模式",
-        choices=DataFactorySourceModeEnum.choices(),
-        default=DataFactorySourceModeEnum.FIXED_DATABASE.value,
-    )
     table_name = models.CharField(verbose_name="表名", max_length=128, null=True, blank=True)
     primary_key = models.CharField(verbose_name="主键字段", max_length=128, default="id")
     unique_key = models.CharField(verbose_name="唯一字段", max_length=128, null=True, blank=True)
@@ -110,8 +103,6 @@ class DataFactoryEntity(models.Model):
         choices=DataFactoryOperationTypeEnum.choices(),
         default=DataFactoryOperationTypeEnum.SQL.value,
     )
-    create_config = models.JSONField(verbose_name="创建配置", default=dict)
-    delete_config = models.JSONField(verbose_name="删除配置", default=dict)
 
     cleanup_order = models.IntegerField(verbose_name="清理顺序", default=100)
     status = models.SmallIntegerField(
