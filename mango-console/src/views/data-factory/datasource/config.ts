@@ -1,9 +1,50 @@
 import { useTable, useTableColumn } from '@/hooks/table'
+import { FormItem } from '@/types/components'
+import { reactive, ref } from 'vue'
 
 const table = useTable()
 
+export const datasourceAliasConditionItems: Array<FormItem> = reactive([
+  {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择产品',
+  },
+  {
+    key: 'name',
+    label: '名称',
+    type: 'input',
+    placeholder: '请输入名称',
+    value: ref(''),
+  },
+  {
+    key: 'code',
+    label: '编码',
+    type: 'input',
+    placeholder: '请输入编码',
+    value: ref(''),
+  },
+  {
+    key: 'db_type',
+    label: '数据库类型',
+    type: 'select',
+    placeholder: '请选择类型',
+    value: ref(''),
+  },
+])
+
 export const datasourceAliasColumns = useTableColumn([
   table.indexColumn,
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
+  },
   {
     title: '名称',
     key: 'name',
@@ -30,7 +71,7 @@ export const datasourceAliasColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 220,
+    width: 190,
   },
 ])
 
@@ -56,6 +97,6 @@ export const datasourceBindingColumns = useTableColumn([
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
-    width: 160,
+    width: 120,
   },
 ])

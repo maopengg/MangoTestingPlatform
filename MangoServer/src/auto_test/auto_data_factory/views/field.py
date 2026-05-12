@@ -65,12 +65,8 @@ class DataFactoryFieldSerializer(serializers.ModelSerializer):
             if "value" in generator_config and generator_config["value"] not in values:
                 raise serializers.ValidationError("枚举固定值必须在 values 范围内")
 
-        if generator_type == DataFactoryGeneratorTypeEnum.EXPRESSION.value:
-            if not generator_config.get("expression"):
-                raise serializers.ValidationError("表达式生成器必须配置 expression")
-
         if generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
-            value = generator_config.get("value") or generator_config.get("expression") or generator_config.get("template")
+            value = generator_config.get("value")
             if not value:
                 raise serializers.ValidationError("测试数据方法必须配置 value，例如 ${{character_email()}}")
 
@@ -78,13 +74,6 @@ class DataFactoryFieldSerializer(serializers.ModelSerializer):
             strategy = generator_config.get("strategy", "reuse_or_create")
             if strategy not in ["reuse_or_create", "must_exist", "create_always"]:
                 raise serializers.ValidationError("依赖字段 strategy 只能是 reuse_or_create、must_exist、create_always")
-
-        if generator_type == DataFactoryGeneratorTypeEnum.AUTO_CODE.value:
-            try:
-                if int(generator_config.get("length", 8)) <= 0:
-                    raise serializers.ValidationError("自动编号 length 必须大于 0")
-            except (TypeError, ValueError) as error:
-                raise serializers.ValidationError("自动编号 length 必须是合法数字") from error
 
         return attrs
 
@@ -152,18 +141,26 @@ class DataFactoryFieldViews(ViewSet):
         field_names = []
         for index, column in enumerate(columns):
             recommend = column.get("recommend", {}) or {}
+            instance = DataFactoryField.objects.filter(entity=entity, name=column.get("name")).first()
             field_data = {
                 **column,
                 "entity": entity.id,
-                "generator_type": column["generator_type"] if "generator_type" in column else recommend.get("generator_type", 1),
-                "generator_config": column["generator_config"] if "generator_config" in column else recommend.get("generator_config", {}),
+                "generator_type": (
+                    column["generator_type"]
+                    if "generator_type" in column
+                    else instance.generator_type if instance else recommend.get("generator_type", 1)
+                ),
+                "generator_config": (
+                    column["generator_config"]
+                    if "generator_config" in column
+                    else instance.generator_config if instance else recommend.get("generator_config", {})
+                ),
                 "sort": column.get("sort", index),
             }
             if not field_data.get("name"):
                 raise ToolsError(300, "字段 name 不能为空")
             DataFactoryFieldViews.normalize_field_data(field_data)
             field_names.append(field_data["name"])
-            instance = DataFactoryField.objects.filter(entity=entity, name=field_data["name"]).first()
             serializer = DataFactoryFieldSerializer(instance=instance, data=field_data, partial=bool(instance))
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -268,7 +265,7 @@ class DataFactoryFieldViews(ViewSet):
                 field_data["generator_type"] = DataFactoryGeneratorTypeEnum.FIXED.value
                 field_data["generator_config"] = {"value": ""}
         if generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
-            value = generator_config.get("value") or generator_config.get("expression") or generator_config.get("template")
+            value = generator_config.get("value")
             field_data["generator_config"] = {"value": value or ""}
 
     @staticmethod

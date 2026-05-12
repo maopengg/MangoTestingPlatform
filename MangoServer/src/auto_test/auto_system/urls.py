@@ -12,7 +12,7 @@ from .views.socket_api import SocketApiViews
 from .views.tasks import TasksCRUD, TasksViews, TasksNoPermissionViews
 from .views.tasks_details import TasksDetailsCRUD, TasksDetailsViews
 from .views.test_suite import TestSuiteCRUD
-from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsViews
+from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsViews, TestSuiteDetailsShareViews
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
 from ..auto_system.views.file_data import FileDataCRUD, FileDataViews
 from ..auto_system.views.index import IndexViews
@@ -20,7 +20,7 @@ from ..auto_system.views.notice_group import NoticeGroupCRUD, NoticeGroupViews
 from ..auto_system.views.product_module import ProductModuleViews, ProductModuleCRUD
 from ..auto_system.views.project import ProjectCRUD, ProjectViews
 from ..auto_system.views.project_product import ProjectProductCRUD, ProjectProductViews
-from ..auto_system.views.system_api import SystemViews
+from ..auto_system.views.system_api import SystemViews, SystemShareViews
 from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
@@ -50,6 +50,7 @@ urlpatterns = [
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
     path("enum", SystemViews.as_view({'get': 'enum_api'})),
+    path("enum/share", SystemShareViews.as_view({'get': 'enum_api'})),
     path("set/debug/log", SystemViews.as_view({'post': 'set_debug_log'})),
     #
     path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),
@@ -59,8 +60,11 @@ urlpatterns = [
     path("socket/put/user/debug", SocketApiViews.as_view({'put': 'set_user_debug'})),
     path("socket/new/browser", SocketApiViews.as_view({'get': 'get_new_browser_obj'})),
     #
+    path('test/suite/share', TestSuiteDetailsShareViews.as_view({'get': 'get_test_suite'})),
     path('test/suite', TestSuiteCRUD.as_view()),
     #
+    path('test/suite/details/share', TestSuiteDetailsShareViews.as_view({'get': 'get_details'})),
+    path('test/suite/details/summary/share', TestSuiteDetailsShareViews.as_view({'get': 'get_summary'})),
     path('test/suite/details', TestSuiteDetailsCRUD.as_view()),
     path('test/suite/details/report', TestSuiteDetailsViews.as_view({'get': 'test_suite_details_report'})),
     path('test/suite/details/all/retry', TestSuiteDetailsViews.as_view({'get': 'get_all_retry'})),

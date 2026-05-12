@@ -10,6 +10,13 @@ export interface DataFactoryFieldOverrideRule {
 
 export type DataFactoryFieldOverrides = Record<string, DataFactoryFieldOverrideRule>
 
+export interface DataFactoryOutputConfigItem {
+  field: string
+  key: string
+}
+
+export type DataFactoryOutputConfig = DataFactoryOutputConfigItem[]
+
 export interface DataFactoryFieldRule {
   id?: number
   name: string

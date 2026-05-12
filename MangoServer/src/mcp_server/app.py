@@ -1,0 +1,254 @@
+from __future__ import annotations
+
+import os
+import logging
+
+
+os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
+
+# The MCP SDK logs normal Streamable HTTP connection shutdowns as
+# ClosedResourceError tracebacks. They are noisy during browser probes and
+# short-lived client calls, so keep them out of MangoServer's console logs.
+logging.getLogger("mcp.server.streamable_http").setLevel(logging.CRITICAL)
+
+
+def _platform_capabilities() -> dict:
+    return {
+        "success": True,
+        "message": "操作成功",
+        "data": {
+            "capabilities": [
+                {
+                    "name": "project_context",
+                    "description": "项目、用户、测试环境上下文",
+                    "tools": [
+                        "get_current_user_context",
+                        "switch_user_test_environment",
+                        "ensure_user_test_environment",
+                        "list_test_environments",
+                        "list_project_test_objects",
+                        "list_project_products",
+                        "list_product_modules",
+                        "list_case_owners",
+                    ],
+                },
+                {
+                    "name": "api_automation",
+                    "description": "API 接口、请求头、用例、场景、执行和结果分析",
+                    "tools": [
+                        "create_api_header",
+                        "create_api_info",
+                        "create_api_case",
+                        "add_api_case_step",
+                        "update_api_case_scenario",
+                        "create_complete_api_case",
+                        "run_api_case",
+                        "get_api_case_run_result",
+                    ],
+                },
+                {
+                    "name": "data_factory",
+                    "description": "数据工厂实体、字段、模板、执行、清理和用例绑定",
+                    "tools": [
+                        "list_data_factory_entities",
+                        "get_data_factory_entity_detail",
+                        "list_data_factory_templates",
+                        "get_data_factory_template_detail",
+                        "preview_data_factory_template",
+                        "debug_run_data_factory_template",
+                        "list_data_factory_case_configs",
+                        "bind_data_factory_to_case_source",
+                        "bind_data_factory_to_api_case",
+                        "list_data_factory_executions",
+                        "get_data_factory_execution_detail",
+                        "cleanup_data_factory_execution",
+                    ],
+                },
+                {
+                    "name": "system_variable",
+                    "description": "平台变量、随机测试数据方法查询和表达式试算",
+                    "tools": [
+                        "list_test_data_methods",
+                        "evaluate_test_data_expression",
+                    ],
+                },
+            ]
+        },
+        "warnings": [],
+    }
+
+
+def mcp_asgi_app():
+    try:
+        from mcp.server.fastmcp import FastMCP
+    except ModuleNotFoundError:
+        return _missing_dependency_app
+
+    from src.mcp_server.tools.api_automation import register_api_automation_tools
+    from src.mcp_server.tools.data_factory import register_data_factory_tools
+    from src.mcp_server.tools.project_context import register_project_context_tools
+    from src.mcp_server.tools.system_variable import register_system_variable_tools
+
+    try:
+        mcp = FastMCP(
+            "MangoTestingPlatform",
+            stateless_http=True,
+            json_response=True,
+            streamable_http_path="/",
+        )
+    except TypeError:
+        mcp = FastMCP(
+            "MangoTestingPlatform",
+            stateless_http=True,
+            json_response=True,
+        )
+
+    @mcp.tool()
+    def get_platform_capabilities() -> dict:
+        """查询 Mango MCP 当前开放的能力分组。"""
+        return _platform_capabilities()
+
+    @mcp.resource("mango://project-product/{project_product_id}")
+    def get_project_product_resource(project_product_id: str) -> dict:
+        """读取项目产品上下文资源。"""
+        from src.auto_test.auto_system.models import ProjectProduct
+
+        item = ProjectProduct.objects.select_related("project").get(id=int(project_product_id))
+        return {
+            "id": item.id,
+            "name": item.name,
+            "project": {"id": item.project.id, "name": item.project.name},
+            "api_client_type": item.api_client_type,
+            "ui_client_type": item.ui_client_type,
+        }
+
+    @mcp.resource("mango://api-info/{api_info_id}")
+    def get_api_info_resource(api_info_id: str) -> dict:
+        """读取 API 接口定义资源。"""
+        from django.forms import model_to_dict
+        from src.auto_test.auto_api.models import ApiInfo
+
+        return model_to_dict(ApiInfo.objects.get(id=int(api_info_id)))
+
+    @mcp.resource("mango://api-case/{case_id}")
+    def get_api_case_resource(case_id: str) -> dict:
+        """读取完整 API case 树资源。"""
+        from src.mcp_server.tools.api_automation import _case_tree
+
+        return _case_tree(int(case_id), include_result_data=True)
+
+    @mcp.resource("mango://data-factory/entity/{entity_id}")
+    def get_data_factory_entity_resource(entity_id: str) -> dict:
+        """读取数据工厂实体和字段规则资源。"""
+        from django.forms import model_to_dict
+        from src.auto_test.auto_data_factory.models import DataFactoryEntity, DataFactoryField
+
+        entity = DataFactoryEntity.objects.get(id=int(entity_id))
+        fields = [
+            model_to_dict(item)
+            for item in DataFactoryField.objects.filter(entity_id=entity.id).order_by("sort", "id")
+        ]
+        return {"entity": model_to_dict(entity), "fields": fields}
+
+    @mcp.resource("mango://data-factory/template/{template_id}")
+    def get_data_factory_template_resource(template_id: str) -> dict:
+        """读取数据工厂状态模板、实体、字段和缓存变量资源。"""
+        from src.auto_test.auto_data_factory.models import DataFactoryField, DataFactoryTemplate
+        from src.mcp_server.tools.data_factory import _cache_keys_for_template, _template_summary
+        from django.forms import model_to_dict
+
+        template = DataFactoryTemplate.objects.select_related("entity").get(id=int(template_id))
+        fields = [
+            model_to_dict(item)
+            for item in DataFactoryField.objects.filter(entity_id=template.entity_id).order_by("sort", "id")
+        ]
+        return {
+            "template": _template_summary(template),
+            "entity": model_to_dict(template.entity),
+            "fields": fields,
+            "cache_keys": _cache_keys_for_template(template),
+        }
+
+    @mcp.resource("mango://data-factory/execution/{execution_id}")
+    def get_data_factory_execution_resource(execution_id: str) -> dict:
+        """读取数据工厂执行详情资源。"""
+        from src.mcp_server.tools.data_factory import _execution_detail
+
+        return _execution_detail(int(execution_id))
+
+    @mcp.resource("mango://data-factory/case-config/{source_type}/{source_id}")
+    def get_data_factory_case_config_resource(source_type: str, source_id: str) -> dict:
+        """读取某个用例来源绑定的数据工厂配置资源。"""
+        from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+        from src.mcp_server.tools.data_factory import _case_config_summary
+
+        queryset = DataFactoryCaseConfig.objects.select_related("template", "template__entity").filter(
+            source_type=int(source_type),
+            source_id=int(source_id),
+        )
+        return {"items": [_case_config_summary(item) for item in queryset.order_by("sort", "id")]}
+
+    @mcp.prompt()
+    def api_case_from_curl(curl_command: str, project_product_name: str = "", module_name: str = "") -> str:
+        """生成根据 curl 创建 API case 的标准提示词。"""
+        return (
+            "请根据以下 curl 在 MangoTestingPlatform 中创建 API 接口定义、API case、"
+            "默认场景参数，并在用户选择测试环境后执行 case。"
+            f"\n项目产品：{project_product_name}\n模块：{module_name}\n\ncurl:\n{curl_command}"
+        )
+
+    @mcp.prompt()
+    def api_failure_analysis(case_id: int) -> str:
+        """生成 API case 失败分析提示词。"""
+        return (
+            f"请读取 mango://api-case/{case_id}，分析最近一次 API case 执行失败原因，"
+            "给出证据和可操作修复建议。"
+        )
+
+    @mcp.prompt()
+    def data_factory_template_from_table(
+        project_product_name: str = "",
+        module_name: str = "",
+        table_name: str = "",
+        business_state: str = "",
+    ) -> str:
+        """生成根据数据库表创建数据工厂模板的标准提示词。"""
+        return (
+            "请通过 Mango 数据工厂 MCP 查询数据源、表结构、实体和字段规则，"
+            "为指定业务状态创建或更新数据工厂实体、字段规则和状态模板。"
+            f"\n项目产品：{project_product_name}\n模块：{module_name}"
+            f"\n表名：{table_name}\n业务状态：{business_state}"
+            "\n要求先预览字段生成值，再创建模板；返回 entity_id、template_id 和可用缓存变量。"
+        )
+
+    @mcp.prompt()
+    def bind_data_factory_for_api_case(case_id: int, scenario_id: int | None = None, template_name: str = "") -> str:
+        """生成给 API case 或场景绑定数据工厂的标准提示词。"""
+        target = f"API 场景 {scenario_id}" if scenario_id else f"API case {case_id}"
+        return (
+            f"请为 {target} 选择并绑定数据工厂模板。"
+            f"\n期望模板：{template_name}"
+            "\n步骤：查询模板详情，确认字段和 cache_keys；绑定到场景优先使用 source_type=3；"
+            "将请求体变量改为 `${{模板名.字段名}}`；执行 case 并根据 data_factory_cache_data 验证变量。"
+        )
+
+    register_project_context_tools(mcp)
+    register_api_automation_tools(mcp)
+    register_data_factory_tools(mcp)
+    register_system_variable_tools(mcp)
+    return mcp.streamable_http_app()
+
+
+async def _missing_dependency_app(scope, receive, send):
+    body = (
+        b'{"success": false, "message": "MCP dependency is not installed. '
+        b'Run pip install \\"mcp[cli]==1.17.0\\".", "error_code": "MCP_DEPENDENCY_MISSING"}'
+    )
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 503,
+            "headers": [(b"content-type", b"application/json; charset=utf-8")],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})

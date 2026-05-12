@@ -1,22 +1,70 @@
 <template>
   <TableBody>
     <template #header>
-      <a-card title="数据工厂 / 数据源映射" :bordered="false">
-        <template #extra>
-          <a-space>
-            <a-button size="small" type="primary" @click="openAlias()">新增逻辑源</a-button>
-            <a-button :loading="aliasTable.tableLoading.value" size="small" @click="doRefresh">刷新</a-button>
-          </a-space>
+      <TableHeader title="数据工厂 / 数据源映射" @search="doRefresh" @reset-search="onResetSearch">
+        <template #search-content>
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+            <a-form-item
+              v-for="item of datasourceAliasConditionItems"
+              :key="item.key"
+              :label="item.label"
+            >
+              <template v-if="item.type === 'input'">
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  v-model="item.value"
+                  :options="projectInfo.projectProduct"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'db_type'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="enumFieldNames"
+                  :options="enumStore.database_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  style="width: 140px"
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+            </a-form-item>
+          </a-form>
         </template>
-      </a-card>
+      </TableHeader>
     </template>
 
     <template #default>
-      <a-table :columns="datasourceAliasColumns" :data="aliasTable.dataList" :loading="aliasTable.tableLoading.value" :pagination="false" :row-key="'id'">
+      <a-tabs>
+        <template #extra>
+          <div>
+            <a-space>
+              <a-button size="small" type="primary" @click="openAlias()">新增逻辑源</a-button>
+            </a-space></div
+          >
+        </template>
+      </a-tabs>
+      <a-table
+        :columns="datasourceAliasColumns"
+        :data="aliasTable.dataList"
+        :loading="aliasTable.tableLoading.value"
+        :pagination="false"
+        :row-key="'id'"
+      >
         <template #columns>
           <a-table-column
             v-for="item of datasourceAliasColumns"
             :key="item.key"
+            :align="item.align"
             :data-index="item.key"
             :fixed="item.fixed"
             :title="item.title"
@@ -25,18 +73,42 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+            </template>
             <template v-else-if="item.key === 'db_type'" #cell="{ record }">
               {{ enumTitle(enumStore.database_type, record.db_type) }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" @click="openAlias(record)">编辑</a-button>
-                <a-button :loading="actionLoading === `binding-${record.id}`" size="mini" type="text" @click="openBinding(record)">环境绑定</a-button>
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="openAlias(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  :loading="actionLoading === `binding-${record.id}`"
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="openBinding(record)"
+                  >环境绑定</a-button
+                >
                 <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
+                  <a-button size="mini" type="text" class="custom-mini-btn">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button :loading="actionLoading === `alias-delete-${record.id}`" size="mini" status="danger" type="text" @click="removeAlias(record)">删除</a-button>
+                      <a-button
+                        :loading="actionLoading === `alias-delete-${record.id}`"
+                        size="mini"
+                        status="danger"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="removeAlias(record)"
+                        >删除</a-button
+                      >
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -49,30 +121,56 @@
     <template #footer><TableFooter :pagination="pagination" /></template>
   </TableBody>
 
-  <a-modal v-model:visible="aliasVisible" :on-before-ok="saveAlias" :ok-loading="aliasSaving" :title="aliasForm.id ? '编辑逻辑数据源' : '新增逻辑数据源'" width="680px">
+  <a-modal
+    v-model:visible="aliasVisible"
+    :on-before-ok="saveAlias"
+    :ok-loading="aliasSaving"
+    :title="aliasForm.id ? '编辑逻辑数据源' : '新增逻辑数据源'"
+    width="680px"
+  >
     <a-form :model="aliasForm" layout="vertical">
       <a-form-item label="产品" required>
-        <a-cascader v-model="aliasForm.project_product" :options="projectInfo.projectProduct" allow-search allow-clear />
+        <a-cascader
+          v-model="aliasForm.project_product"
+          :options="projectInfo.projectProduct"
+          allow-search
+          allow-clear
+        />
       </a-form-item>
       <a-form-item label="名称" required><a-input v-model="aliasForm.name" /></a-form-item>
       <a-form-item label="编码" required><a-input v-model="aliasForm.code" /></a-form-item>
       <a-form-item label="数据库类型" required>
-        <a-select v-model="aliasForm.db_type" :options="enumStore.database_type" :field-names="enumFieldNames" />
+        <a-select
+          v-model="aliasForm.db_type"
+          :options="enumStore.database_type"
+          :field-names="enumFieldNames"
+        />
       </a-form-item>
       <a-form-item label="描述"><a-textarea v-model="aliasForm.description" /></a-form-item>
     </a-form>
   </a-modal>
 
-  <a-drawer v-model:visible="bindingVisible" :title="`${currentAlias?.name || ''} / 环境绑定`" width="900px">
+  <a-drawer
+    v-model:visible="bindingVisible"
+    :title="`${currentAlias?.name || ''} / 环境绑定`"
+    width="900px"
+  >
     <a-space style="margin-bottom: 12px">
       <a-button type="primary" @click="openBindingForm()">新增绑定</a-button>
       <a-button :loading="bindingLoading" @click="loadBindings">刷新</a-button>
     </a-space>
-    <a-table :columns="datasourceBindingColumns" :data="bindingRows" :loading="bindingLoading" :pagination="false" :row-key="'id'">
+    <a-table
+      :columns="datasourceBindingColumns"
+      :data="bindingRows"
+      :loading="bindingLoading"
+      :pagination="false"
+      :row-key="'id'"
+    >
       <template #columns>
         <a-table-column
           v-for="item of datasourceBindingColumns"
           :key="item.key"
+          :align="item.align"
           :data-index="item.key"
           :title="item.title"
           :width="item.width"
@@ -88,8 +186,22 @@
           </template>
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
             <a-space>
-              <a-button size="mini" type="text" @click="openBindingForm(record)">编辑</a-button>
-              <a-button :loading="actionLoading === `binding-delete-${record.id}`" size="mini" status="danger" type="text" @click="removeBinding(record)">删除</a-button>
+              <a-button
+                size="mini"
+                type="text"
+                class="custom-mini-btn"
+                @click="openBindingForm(record)"
+                >编辑</a-button
+              >
+              <a-button
+                :loading="actionLoading === `binding-delete-${record.id}`"
+                size="mini"
+                status="danger"
+                type="text"
+                class="custom-mini-btn"
+                @click="removeBinding(record)"
+                >删除</a-button
+              >
             </a-space>
           </template>
         </a-table-column>
@@ -97,13 +209,29 @@
     </a-table>
   </a-drawer>
 
-  <a-modal v-model:visible="bindingFormVisible" :on-before-ok="saveBinding" :ok-loading="bindingSaving" :title="bindingForm.id ? '编辑绑定' : '新增绑定'" width="680px">
+  <a-modal
+    v-model:visible="bindingFormVisible"
+    :on-before-ok="saveBinding"
+    :ok-loading="bindingSaving"
+    :title="bindingForm.id ? '编辑绑定' : '新增绑定'"
+    width="680px"
+  >
     <a-form :model="bindingForm" layout="vertical">
       <a-form-item label="测试环境" required>
-        <a-select v-model="bindingForm.test_object" :options="testObjectOptions" :field-names="{ value: 'id', label: 'name' }" allow-search />
+        <a-select
+          v-model="bindingForm.test_object"
+          :options="testObjectOptions"
+          :field-names="{ value: 'id', label: 'name' }"
+          allow-search
+        />
       </a-form-item>
       <a-form-item label="实际数据库" required>
-        <a-select v-model="bindingForm.database" :options="databaseOptions" :field-names="{ value: 'id', label: 'name' }" allow-search />
+        <a-select
+          v-model="bindingForm.database"
+          :options="databaseOptions"
+          :field-names="{ value: 'id', label: 'name' }"
+          allow-search
+        />
       </a-form-item>
       <a-form-item label="描述"><a-textarea v-model="bindingForm.description" /></a-form-item>
     </a-form>
@@ -126,9 +254,14 @@
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
+  import { getFormItems } from '@/utils/datacleaning'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref } from 'vue'
-  import { datasourceAliasColumns, datasourceBindingColumns } from './config'
+  import {
+    datasourceAliasColumns,
+    datasourceAliasConditionItems,
+    datasourceBindingColumns,
+  } from './config'
 
   const aliasTable = useTable()
   const pagination = usePagination(doRefresh)
@@ -163,10 +296,22 @@
 
   function doRefresh() {
     aliasTable.tableLoading.value = true
-    getDataFactoryDatasourceAlias({ page: pagination.page, pageSize: pagination.pageSize }).then((res) => {
+    const query = getFormItems(datasourceAliasConditionItems)
+    getDataFactoryDatasourceAlias({
+      ...query,
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+    }).then((res) => {
       aliasTable.handleSuccess(res)
       pagination.setTotalSize((res as any).totalSize)
     })
+  }
+
+  function onResetSearch() {
+    datasourceAliasConditionItems.forEach((it) => {
+      it.value = ''
+    })
+    doRefresh()
   }
 
   function loadOptions() {
@@ -229,11 +374,13 @@
 
   function loadBindings() {
     bindingLoading.value = true
-    return getDataFactoryDatasourceBinding({ datasource_alias: currentAlias.value.id }).then((res) => {
-      bindingRows.value = res.data || []
-    }).finally(() => {
-      bindingLoading.value = false
-    })
+    return getDataFactoryDatasourceBinding({ datasource_alias: currentAlias.value.id })
+      .then((res) => {
+        bindingRows.value = res.data || []
+      })
+      .finally(() => {
+        bindingLoading.value = false
+      })
   }
 
   function openBindingForm(record?: any) {
@@ -250,7 +397,9 @@
   }
 
   async function saveBinding() {
-    const request = bindingForm.id ? putDataFactoryDatasourceBinding : postDataFactoryDatasourceBinding
+    const request = bindingForm.id
+      ? putDataFactoryDatasourceBinding
+      : postDataFactoryDatasourceBinding
     bindingSaving.value = true
     try {
       const res = await request({ ...bindingForm })

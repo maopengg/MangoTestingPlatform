@@ -37,3 +37,12 @@ export function deleteSystemTestSuite(id: number | string[] | number[]) {
     },
   })
 }
+
+export function getSystemTestSuiteShare(id: number | string) {
+  return get({
+    url: 'system/test/suite/share',
+    data: () => {
+      return { id: id }
+    },
+  })
+}

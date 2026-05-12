@@ -23,8 +23,14 @@ class DataFactoryDiscoverViews(ViewSet):
     def _get_param(request: Request, key: str):
         data = request.data.get(key)
         if not is_missing_value(data):
-            return data
+            return DataFactoryDiscoverViews._normalize_id_param(data)
         return request.query_params.get(key)
+
+    @staticmethod
+    def _normalize_id_param(value):
+        if isinstance(value, dict):
+            return value.get('id')
+        return value
 
     @staticmethod
     def _get_database(request: Request) -> Database:

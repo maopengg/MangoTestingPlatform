@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCase, ApiHeaders
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
+from src.auto_test.auto_api.service.base.case_data_factory import CaseDataFactory
 from src.exceptions import *
 
 
@@ -15,18 +16,23 @@ class CaseBase:
         self.test_setup = test_setup
         self.api_case = api_case
         self.case_headers = {}
+        self.case_data_factory = CaseDataFactory(test_setup, api_case)
 
     def case_front_main(self):
         if self.api_case.front_custom:
             self.__front_custom(self.api_case.front_custom)
+        self.case_data_factory.run_front()
         if self.api_case.front_sql:
             self.__front_sql(self.api_case.front_sql)
         if self.api_case.front_headers:
             self.__front_headers()
 
     def case_posterior_main(self, ):
-        if self.api_case.posterior_sql:
-            self.__posterior_sql(self.api_case.posterior_sql)
+        try:
+            if self.api_case.posterior_sql:
+                self.__posterior_sql(self.api_case.posterior_sql)
+        finally:
+            self.case_data_factory.cleanup()
 
     def case_parametrize(self, parametrize: dict):
         if parametrize:

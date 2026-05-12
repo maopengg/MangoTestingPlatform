@@ -18,6 +18,10 @@ from src.auto_test.auto_data_factory.views.execution import (
 )
 from src.auto_test.auto_data_factory.views.execution_item import DataFactoryExecutionItemCRUD
 from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateCRUD, DataFactoryTemplateViews
+from src.auto_test.auto_data_factory.views.case_config import (
+    DataFactoryCaseConfigCRUD,
+    DataFactoryCaseConfigViews,
+)
 
 urlpatterns = [
     path("datasource-alias", DataFactoryDatasourceAliasCRUD.as_view()),
@@ -35,6 +39,9 @@ urlpatterns = [
     path("template/preview", DataFactoryTemplateViews.as_view({'post': 'preview'})),
     path("template/debug-run", DataFactoryTemplateViews.as_view({'post': 'debug_run'})),
     path("template/debug-cleanup", DataFactoryTemplateViews.as_view({'post': 'debug_cleanup'})),
+    path("case-config", DataFactoryCaseConfigCRUD.as_view()),
+    path("case-config/sort", DataFactoryCaseConfigViews.as_view({'put': 'put_case_sort'})),
+    path("case-config/preview", DataFactoryCaseConfigViews.as_view({'post': 'preview'})),
     path("execution", DataFactoryExecutionCRUD.as_view()),
     path("execution/item", DataFactoryExecutionItemCRUD.as_view()),
     path("execution/detail", DataFactoryExecutionViews.as_view({'get': 'detail_view'})),

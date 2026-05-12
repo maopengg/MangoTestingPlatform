@@ -93,7 +93,7 @@ class NoticeMain:
 
     def __we_chat_send(self, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, self.__get_domain_name())
+            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report))
             if original:
                 wechat.send_text(msg)
             else:
@@ -103,7 +103,7 @@ class NoticeMain:
 
     def __fs_chat_send(self, webhook: str, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            feishu = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_domain_name())
+            feishu = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report))
             if original:
                 feishu.send_markdown(msg)
             else:
@@ -113,7 +113,7 @@ class NoticeMain:
 
     def __ding_ding_send(self, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            dingding = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_domain_name())
+            dingding = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report))
             if original:
                 dingding.send_text(msg)
             else:
@@ -128,7 +128,7 @@ class NoticeMain:
             email_host=email_host,
             stamp_key=stamp_key,
             send_list=send_list,
-        ), test_report, self.__get_domain_name())
+        ), test_report, self.__get_report_url(test_report))
         if original:
             email.send_mail(f'预警监控通知', msg)
         else:
@@ -213,6 +213,15 @@ class NoticeMain:
             if send_user is None or email_host is None or stamp_key is None:
                 raise SystemEError(*ERROR_MSG_0031)
         return send_user, email_host, stamp_key
+
+    @classmethod
+    def __get_report_url(cls, test_report: TestReportModel | None = None):
+        domain_name = cls.__get_domain_name()
+        if not test_report or not test_report.test_suite_id:
+            return domain_name
+        if not domain_name.startswith(('http://', 'https://')):
+            return domain_name
+        return f'{domain_name.rstrip("/")}/#/report/details?id={test_report.test_suite_id}'
 
     @staticmethod
     def __get_domain_name():

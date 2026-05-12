@@ -37,7 +37,7 @@
                 <div class="info-item">
                   <span class="info-label">测试环境：</span>
                   <span class="info-value">{{
-                    enumStore.environment_type[pageData.record.test_env].title
+                    enumStore.environment_type[pageData.record.test_env]?.title
                   }}</span>
                 </div>
                 <div class="info-item">
@@ -61,7 +61,7 @@
           <a-card title="用例执行进度" class="progress-card">
             <div class="chart-container">
               <div class="progress-items-wrapper">
-                <div class="progress-item">
+                <div v-if="data.summary.api_count > 0" class="progress-item">
                   <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
                   <a-progress
                     :percent="
@@ -79,7 +79,7 @@
                     :stroke-width="8"
                   />
                 </div>
-                <div class="progress-item">
+                <div v-if="data.summary.ui_count > 0" class="progress-item">
                   <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
                   <a-progress
                     :percent="
@@ -97,7 +97,7 @@
                     :stroke-width="8"
                   />
                 </div>
-                <div class="progress-item">
+                <div v-if="data.summary.pytest_count > 0" class="progress-item">
                   <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
                   <a-progress
                     :percent="
@@ -191,7 +191,9 @@
                   </div>
                 </template>
                 <template #extra>
-                  <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
+                  <a-button v-if="canRetry" type="text" size="mini" @click.stop="onRetry(item.id)"
+                    >重试</a-button
+                  >
                 </template>
                 <a-table
                   :bordered="false"
@@ -273,7 +275,9 @@
                   </div>
                 </template>
                 <template #extra>
-                  <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
+                  <a-button v-if="canRetry" type="text" size="mini" @click.stop="onRetry(item.id)"
+                    >重试</a-button
+                  >
                 </template>
                 <a-table
                   :bordered="false"
@@ -359,7 +363,9 @@
                   </div>
                 </template>
                 <template #extra>
-                  <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
+                  <a-button v-if="canRetry" type="text" size="mini" @click.stop="onRetry(item.id)"
+                    >重试</a-button
+                  >
                 </template>
                 <a-table
                   :bordered="false"
@@ -448,12 +454,14 @@
 </template>
 <script lang="ts" setup>
   import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+  import { useRoute } from 'vue-router'
   import { usePageData } from '@/store/page-data'
   import {
-    getSystemTestSuiteDetails,
+    getSystemTestSuiteDetailsShare,
     getSystemTestSuiteDetailsRetry,
-    getSystemTestSuiteDetailsSummary,
+    getSystemTestSuiteDetailsSummaryShare,
   } from '@/api/system/test_sute_details'
+  import { getSystemTestSuiteShare } from '@/api/system/test_suite'
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import ApiTestReport from '@/components/ApiTestReport.vue'
   import { useEnum } from '@/store/modules/get-enum'
@@ -468,10 +476,17 @@
   } from '@arco-design/web-vue/es/icon'
   import { Message, Modal } from '@arco-design/web-vue'
   import { apiColumns, pytestColumns, uiColumns } from '@/views/report/details/config'
+  import { useUserStoreContext } from '@/store/modules/user'
 
   const pageData: any = usePageData()
+  if (!pageData.record) {
+    pageData.setRecord({})
+  }
   const drawerVisible = ref(false)
   const enumStore = useEnum()
+  const route = useRoute()
+  const userStore = useUserStoreContext()
+  const canRetry = computed(() => !!userStore.token)
 
   const data: any = reactive({
     dataList: [],
@@ -572,7 +587,7 @@
 
     // 返回Promise
     return new Promise((resolve, reject) => {
-      getSystemTestSuiteDetails(value)
+      getSystemTestSuiteDetailsShare(value)
         .then((res) => {
           data.dataList = res.data
           resolve(res)
@@ -605,7 +620,7 @@
   }
 
   function doRefreshSummary() {
-    getSystemTestSuiteDetailsSummary(pageData.record.id)
+    getSystemTestSuiteDetailsSummaryShare(pageData.record.id)
       .then((res) => {
         data.summary = res.data
         // 初始化当前激活的tab
@@ -675,7 +690,22 @@
 
   // 组件挂载时刷新数据
   onMounted(() => {
-    doRefreshSummary()
+    if (!enumStore.task_status?.length) {
+      enumStore.getEnumShare()
+    }
+    const reportId = route.query.id as string
+    if (reportId && pageData.record?.id?.toString() !== reportId) {
+      getSystemTestSuiteShare(reportId)
+        .then((res) => {
+          pageData.setRecord(res.data)
+          doRefreshSummary()
+        })
+        .catch(console.log)
+      return
+    }
+    if (pageData.record?.id) {
+      doRefreshSummary()
+    }
   })
 
   // 添加 onUnmounted 钩子来清理定时器
@@ -887,15 +917,16 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         width: 100%;
         height: 280px;
+        padding-top: 24px;
 
         .progress-items-wrapper {
           width: 100%;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           flex: 1;
         }
       }
@@ -1079,6 +1110,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  :deep(.arco-collapse-item-content),
+  :deep(.arco-collapse-item-content-expend) {
+    background: var(--color-bg-1);
   }
 
   // 测试详情卡片 - 与首页保持一致

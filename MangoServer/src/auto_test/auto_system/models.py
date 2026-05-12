@@ -104,6 +104,13 @@ class ProductModule(models.Model):
             raise ToolsError(300, "UI页面-有关联数据，请先删除绑定的数据后再删除！")
         if PageSteps.objects.filter(module=self).exists():
             raise ToolsError(300, "页面步骤-有关联数据，请先删除绑定的数据后再删除！")
+        from src.auto_test.auto_data_factory.models import DataFactoryEntity, DataFactoryExecution, DataFactoryTemplate
+        if DataFactoryEntity.objects.filter(module=self).exists():
+            raise ToolsError(300, "数据工厂实体-有关联数据，请先删除绑定的数据后再删除！")
+        if DataFactoryTemplate.objects.filter(module=self).exists():
+            raise ToolsError(300, "数据工厂状态模板-有关联数据，请先删除绑定的数据后再删除！")
+        if DataFactoryExecution.objects.filter(module=self).exists():
+            raise ToolsError(300, "数据工厂执行记录-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 

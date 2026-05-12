@@ -80,3 +80,19 @@ object {
 .custom-mini-btn {
     padding: 0 4px ;
 }
+
+.arco-dropdown-option:has(.custom-mini-btn) {
+    min-width: 56px;
+    padding: 0;
+}
+
+.arco-dropdown-option:has(.custom-mini-btn) .arco-dropdown-option-content {
+    width: 100%;
+}
+
+.arco-dropdown-option .custom-mini-btn {
+    height: 20px;
+    justify-content: center;
+    padding: 0 8px;
+    width: 100%;
+}

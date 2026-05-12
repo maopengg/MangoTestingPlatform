@@ -93,3 +93,45 @@ export function getApiCaseName(moduleId: any) {
     },
   })
 }
+
+export function getApiCaseDataFactory(data: object) {
+  return get({
+    url: '/api/case/data-factory',
+    data: () => data,
+  })
+}
+
+export function postApiCaseDataFactory(data: object) {
+  return post({
+    url: '/api/case/data-factory',
+    data: () => data,
+  })
+}
+
+export function putApiCaseDataFactory(data: object) {
+  return put({
+    url: '/api/case/data-factory',
+    data: () => data,
+  })
+}
+
+export function putApiCaseDataFactorySort(data: object) {
+  return put({
+    url: '/api/case/data-factory/sort',
+    data: () => data,
+  })
+}
+
+export function deleteApiCaseDataFactory(id: number | string[] | number[]) {
+  return deleted({
+    url: '/api/case/data-factory',
+    data: () => ({ id }),
+  })
+}
+
+export function postApiCaseDataFactoryPreview(data: object) {
+  return post({
+    url: '/api/case/data-factory/preview',
+    data: () => data,
+  })
+}

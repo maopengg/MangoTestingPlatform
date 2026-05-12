@@ -151,7 +151,7 @@ class Migration(migrations.Migration):
                 ('autoincrement', models.BooleanField(default=False, verbose_name='是否自增')),
                 ('max_length', models.IntegerField(blank=True, null=True, verbose_name='最大长度')),
                 ('enum_values', models.JSONField(default=list, verbose_name='枚举值')),
-                ('generator_type', models.SmallIntegerField(choices=[(0, '跳过'), (1, '固定值'), (2, '随机字符串'), (3, '随机整数'), (4, '随机小数'), (5, '当前时间'), (6, '相对时间'), (7, 'UUID'), (8, '自动编号'), (9, '枚举值'), (10, '表达式'), (11, '依赖实体字段'), (12, 'SQL查询结果'), (13, '测试数据方法')], default=1, verbose_name='生成方式')),
+                ('generator_type', models.SmallIntegerField(choices=[(0, '跳过'), (1, '固定值'), (2, '随机字符串（长度8）'), (3, '随机整数（1-100）'), (4, '随机小数（1-100，2位）'), (5, '当前时间'), (6, '相对时间'), (7, 'UUID'), (9, '枚举值'), (11, '依赖实体字段'), (13, '测试数据方法')], default=1, verbose_name='生成方式')),
                 ('generator_config', models.JSONField(default=dict, verbose_name='生成配置')),
                 ('sort', models.IntegerField(default=0, verbose_name='排序')),
                 ('entity', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='auto_data_factory.datafactoryentity')),

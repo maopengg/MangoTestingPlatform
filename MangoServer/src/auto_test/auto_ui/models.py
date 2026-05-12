@@ -145,6 +145,12 @@ class UiCase(models.Model):
         from src.auto_test.auto_system.models import TasksDetails
         if TasksDetails.objects.filter(ui_case=self).exists():
             raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
+        from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+        from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+        DataFactoryCaseConfig.objects.filter(
+            source_type=DataFactoryCaseSourceTypeEnum.UI_CASE.value,
+            source_id=self.id,
+        ).delete()
         super().delete(*args, **kwargs)
 
 

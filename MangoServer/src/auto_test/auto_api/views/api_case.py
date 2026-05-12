@@ -109,6 +109,10 @@ class ApiCaseViews(ViewSet):
     @transaction.atomic
     def copy_case(self, request: Request):
         from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCaseDetailedParameter
+        from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+        from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+        from src.auto_test.auto_api.views.api_case_data_factory import ApiCaseDataFactoryCRUD
+        from src.auto_test.auto_data_factory.views.case_config import DataFactoryCaseConfigCRUD
         from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
         from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
         case_id = request.data.get('case_id')
@@ -129,9 +133,29 @@ class ApiCaseViews(ViewSet):
                 res_case_de = ApiCaseDetailedCRUD.inside_post(api_case_detailed)
                 for p in ApiCaseDetailedParameter.objects.filter(case_detailed_id=i.id):
                     parameter = model_to_dict(p)
+                    source_parameter_id = parameter['id']
                     del parameter['id']
                     parameter['case_detailed'] = res_case_de.get('id')
-                    ApiCaseDetailedParameterCRUD.inside_post(parameter)
+                    res_parameter = ApiCaseDetailedParameterCRUD.inside_post(parameter)
+                    for factory_config in DataFactoryCaseConfig.objects.filter(
+                            source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+                            source_id=source_parameter_id,
+                    ):
+                        data_factory = model_to_dict(factory_config)
+                        del data_factory['id']
+                        data_factory['source_id'] = res_parameter.get('id')
+                        data_factory['source_type'] = DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value
+                        DataFactoryCaseConfigCRUD.inside_post(data_factory)
+            for factory_config in DataFactoryCaseConfig.objects.filter(
+                    source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
+                    source_id=case_id,
+            ):
+                data_factory = model_to_dict(factory_config)
+                del data_factory['id']
+                data_factory['case'] = serializer.data['id']
+                data_factory.pop('source_id', None)
+                data_factory.pop('source_type', None)
+                ApiCaseDataFactoryCRUD.inside_post(data_factory)
             return ResponseData.success(RESPONSE_MSG_0009, serializer.data)
         else:
             return ResponseData.fail(RESPONSE_MSG_0008, serializer.errors)

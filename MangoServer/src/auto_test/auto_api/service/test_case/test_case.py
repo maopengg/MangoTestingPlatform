@@ -18,6 +18,7 @@ from src.exceptions import *
 from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel, ResponseModel
 from src.models.system_model import TestSuiteDetailsResultModel
 from ..base.case_base import CaseBase
+from ..base.case_data_factory import ParameterDataFactory
 from ..base.case_parameter import CaseParameter
 
 
@@ -153,6 +154,7 @@ class TestCase:
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
             while error_retry < retry and status != StatusEnum.SUCCESS.value:
                 error_retry += 1
+                parameter_data_factory = ParameterDataFactory(self.test_setup, parameter)
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
                     url=case_detailed.api_info.url,
@@ -173,6 +175,7 @@ class TestCase:
                     test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 try:
+                    parameter_data_factory.run_front()
                     request_model = case_parameter.front_main(request_model)
                     res_model.response = self.test_setup.api_request(
                         case_detailed.api_info_id, self.test_env, request_model)
@@ -181,6 +184,7 @@ class TestCase:
                     res_model.status = status
                     res_model.error_message = error_message
                     res_model.cache_data = self.test_setup.test_data.get_all()
+                    res_model.data_factory_cache_data = self.test_setup.test_data.get_data_factory_all()
                     self.api_case_result.steps.append(res_model)
                     self.update_api_info(case_detailed.api_info.id, res_model.response, res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
@@ -188,6 +192,7 @@ class TestCase:
                         time.sleep(parameter.retry_interval)
                 except (MangoServerError, MangoToolsError) as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
+                    res_model.data_factory_cache_data = self.test_setup.test_data.get_data_factory_all()
                     res_model.status = StatusEnum.FAIL.value
                     res_model.error_message = error.msg
                     if res_model.response:
@@ -197,6 +202,7 @@ class TestCase:
                     return StatusEnum.FAIL.value, error.msg
                 except Exception as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
+                    res_model.data_factory_cache_data = self.test_setup.test_data.get_data_factory_all()
                     res_model.status = StatusEnum.FAIL.value
                     if res_model.response:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,
@@ -206,6 +212,8 @@ class TestCase:
                     msg = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
                     res_model.error_message = msg
                     return StatusEnum.FAIL.value, msg
+                finally:
+                    parameter_data_factory.cleanup()
             res_list.append({'status': status, 'error_message': error_message})
         for i in res_list:
             if i.get('status') == StatusEnum.FAIL.value:
@@ -217,6 +225,7 @@ class TestCase:
         result_data_dict = result_data.model_dump()
         result_data_dict['name'] = model.name
         result_data_dict['cache_all'] = self.test_setup.test_data.get_all()
+        result_data_dict['data_factory_cache_all'] = self.test_setup.test_data.get_data_factory_all()
         model.result_data = result_data_dict
         model.save()
 

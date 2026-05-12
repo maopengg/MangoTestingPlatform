@@ -4,8 +4,9 @@
 
 from django.db import models
 
-from src.auto_test.auto_system.models import Database, ProjectProduct, TestObject
+from src.auto_test.auto_system.models import Database, ProductModule, ProjectProduct, TestObject
 from src.enums.data_factory_enum import (
+    DataFactoryCaseSourceTypeEnum,
     DataFactoryCleanupStatusEnum,
     DataFactoryCleanupStrategyEnum,
     DataFactoryExecutionSourceEnum,
@@ -78,6 +79,7 @@ class DataFactoryEntity(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     datasource_alias = models.ForeignKey(
         to=DataFactoryDatasourceAlias,
         to_field="id",
@@ -164,6 +166,7 @@ class DataFactoryTemplate(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     entity = models.ForeignKey(to=DataFactoryEntity, to_field="id", on_delete=models.PROTECT)
 
     name = models.CharField(verbose_name="模板名称", max_length=64)
@@ -191,6 +194,37 @@ class DataFactoryTemplate(models.Model):
         return self.name
 
 
+class DataFactoryCaseConfig(models.Model):
+    """自动化用例数据工厂前置配置"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+
+    source_type = models.SmallIntegerField(
+        verbose_name="用例类型",
+        choices=DataFactoryCaseSourceTypeEnum.choices(),
+        db_index=True,
+    )
+    source_id = models.IntegerField(verbose_name="用例ID", db_index=True)
+    template = models.ForeignKey(to=DataFactoryTemplate, to_field="id", on_delete=models.PROTECT)
+
+    name = models.CharField(verbose_name="数据名称", max_length=64, null=True, blank=True)
+    stage = models.SmallIntegerField(verbose_name="执行阶段", default=1)
+    sort = models.IntegerField(verbose_name="执行顺序", default=0)
+    field_overrides = models.JSONField(verbose_name="字段覆盖", default=dict)
+    cleanup_strategy = models.SmallIntegerField(verbose_name="清理策略覆盖", null=True, blank=True)
+    status = models.SmallIntegerField(verbose_name="状态", default=StatusEnum.SUCCESS.value, db_index=True)
+
+    class Meta:
+        db_table = 'data_factory_case_config'
+        ordering = ['sort', 'id']
+        indexes = [
+            models.Index(fields=['source_type', 'source_id', 'stage', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.source_type}:{self.source_id}:{self.name or self.template_id}"
+
+
 class DataFactoryExecution(models.Model):
     """数据工厂执行批次"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
@@ -206,6 +240,7 @@ class DataFactoryExecution(models.Model):
     source_id = models.IntegerField(verbose_name="来源ID", null=True, blank=True)
     template = models.ForeignKey(to=DataFactoryTemplate, to_field="id", on_delete=models.SET_NULL, null=True, blank=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
 
     stage = models.SmallIntegerField(

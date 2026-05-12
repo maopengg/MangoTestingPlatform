@@ -9,6 +9,15 @@ export function getSystemEnum() {
   })
 }
 
+export function getSystemEnumShare() {
+  return get({
+    url: '/system/enum/share',
+    data: () => {
+      return {}
+    },
+  })
+}
+
 export function getSystemRandomList() {
   return get({
     url: '/system/variable/random/list',

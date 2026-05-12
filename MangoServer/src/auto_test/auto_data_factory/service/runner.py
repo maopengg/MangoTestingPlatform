@@ -22,7 +22,11 @@ from src.enums.data_factory_enum import (
     DataFactoryOperationTypeEnum,
 )
 from src.exceptions import ToolsError
-from src.models.data_factory_model import DataFactoryFieldOverrideRule, DataFactoryFieldOverrideRules
+from src.models.data_factory_model import (
+    DataFactoryFieldOverrideRule,
+    DataFactoryFieldOverrideRules,
+    DataFactoryOutputConfig,
+)
 
 from .datasource import DataFactoryDatasource, DataFactoryDatasourceResolver, is_missing_value
 from .generator import DataFactoryValueGenerator
@@ -128,6 +132,7 @@ class DataFactoryRunner:
             action="root",
             children=dependency_nodes,
         )
+        output = cls.build_output(template.output_config, payload)
         return {
             "template": {
                 "id": template.id,
@@ -149,6 +154,7 @@ class DataFactoryRunner:
                 "port": database.port,
             },
             "payload": payload,
+            "output": output,
             "fields": field_items,
             "missing_fields": missing_fields,
             "dependencies": dependencies,
@@ -296,6 +302,20 @@ class DataFactoryRunner:
             raise ToolsError(300, f"字段覆盖规则格式错误：{error}") from error
 
     @staticmethod
+    def build_output(output_config: list | None, payload: dict) -> dict:
+        if not output_config:
+            return {}
+        try:
+            items = DataFactoryOutputConfig.model_validate(output_config).to_list()
+        except ValidationError as error:
+            raise ToolsError(300, f"输出配置格式错误：{error}") from error
+
+        output = {}
+        for item in items:
+            output[item.key] = payload.get(item.field)
+        return output
+
+    @staticmethod
     def build_dependency_tree(
             template,
             entity,
@@ -348,6 +368,7 @@ class DataFactoryRunner:
             source_id=template.id,
             template=template,
             project_product=template.project_product,
+            module=template.module or template.entity.module,
             test_object_id=test_object_id,
             stage=DataFactoryExecutionStageEnum.DEBUG.value,
             status=DataFactoryExecutionStatusEnum.PROCEED.value,
@@ -357,6 +378,7 @@ class DataFactoryRunner:
         try:
             runtime_context = context or {}
             data = cls.create_by_template(template, execution, overrides or {}, runtime_context)
+            output = cls.build_output(template.output_config, data)
             execution.context = runtime_context
             execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
             execution.save()
@@ -365,6 +387,68 @@ class DataFactoryRunner:
                 "execution_no": execution.execution_no,
                 "context": execution.context,
                 "data": data,
+                "output": output,
+            }
+        except Exception as error:
+            execution.status = DataFactoryExecutionStatusEnum.FAIL.value
+            execution.error_message = str(error)
+            execution.save()
+            raise
+
+    @classmethod
+    @transaction.atomic
+    def run_template(
+            cls,
+            template_id: int,
+            source_type: int,
+            source_id: int | None = None,
+            stage: int = DataFactoryExecutionStageEnum.CREATE.value,
+            overrides: dict | None = None,
+            context: dict | None = None,
+            test_object_id: int | None = None,
+            test_env: int | None = None,
+            alias_override: str | None = None,
+            cleanup_strategy_override: int | None = None,
+    ) -> dict:
+        template = DataFactoryTemplate.objects.select_related(
+            'entity',
+            'entity__datasource_alias',
+            'project_product',
+        ).get(id=template_id)
+        if not test_object_id and not is_missing_value(test_env):
+            test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
+        execution = DataFactoryExecution.objects.create(
+            execution_no=cls.build_execution_no(),
+            source_type=source_type,
+            source_id=source_id,
+            template=template,
+            project_product=template.project_product,
+            test_object_id=test_object_id,
+            stage=stage,
+            status=DataFactoryExecutionStatusEnum.PROCEED.value,
+            context=context or {},
+        )
+
+        try:
+            runtime_context = context or {}
+            data = cls.create_by_template(
+                template,
+                execution,
+                overrides or {},
+                runtime_context,
+                alias_override=alias_override,
+                cleanup_strategy_override=cleanup_strategy_override,
+            )
+            output = cls.build_output(template.output_config, data)
+            execution.context = runtime_context
+            execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
+            execution.save()
+            return {
+                "execution_id": execution.id,
+                "execution_no": execution.execution_no,
+                "context": execution.context,
+                "data": data,
+                "output": output,
             }
         except Exception as error:
             execution.status = DataFactoryExecutionStatusEnum.FAIL.value
@@ -381,6 +465,7 @@ class DataFactoryRunner:
             context: dict,
             alias_override: str | None = None,
             visiting: set[int] | None = None,
+            cleanup_strategy_override: int | None = None,
     ) -> dict:
         visiting = visiting or set()
         if template.id in visiting:
@@ -388,7 +473,15 @@ class DataFactoryRunner:
         visiting.add(template.id)
 
         try:
-            return cls._create_by_template(template, execution, overrides, context, alias_override, visiting)
+            return cls._create_by_template(
+                template,
+                execution,
+                overrides,
+                context,
+                alias_override,
+                visiting,
+                cleanup_strategy_override,
+            )
         finally:
             visiting.remove(template.id)
 
@@ -401,6 +494,7 @@ class DataFactoryRunner:
             context: dict,
             alias_override: str | None,
             visiting: set[int],
+            cleanup_strategy_override: int | None,
     ) -> dict:
         entity = template.entity
         if entity.create_type != DataFactoryOperationTypeEnum.SQL.value:
@@ -425,7 +519,8 @@ class DataFactoryRunner:
             alias=alias,
             primary_value=str(created.get(entity.primary_key) or ""),
             data=jsonable_payload,
-            cleanup_strategy=template.cleanup_strategy,
+            cleanup_strategy=cleanup_strategy_override
+            if cleanup_strategy_override is not None else template.cleanup_strategy,
             cleanup_order=entity.cleanup_order,
             cleanup_status=DataFactoryCleanupStatusEnum.NOT_CLEANED.value,
         )

@@ -19,6 +19,15 @@ export function postApiCaseDetailedParameter(data: object) {
   })
 }
 
+export function postApiCaseDetailedParameterCopy(data: object) {
+  return post({
+    url: '/api/case/detailed/parameter/copy',
+    data: () => {
+      return data
+    },
+  })
+}
+
 export function putApiCaseDetailedParameter(data: object) {
   // @ts-ignore
   return put({

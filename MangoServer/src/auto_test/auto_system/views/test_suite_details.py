@@ -13,7 +13,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from src.auto_test.auto_system.views.test_suite import TestSuiteSerializers
+from src.auto_test.auto_system.views.test_suite import TestSuiteSerializers, TestSuiteSerializersC
 from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.decorator.retry import db_connection_context
@@ -284,3 +284,94 @@ class TestSuiteDetailsViews(ViewSet):
                 'ui_in_progress_count': ui_in_progress_case_sum,
                 'pytest_in_progress_count': pytest_in_progress_case_sum,
             })
+
+
+class TestSuiteDetailsShareViews(ViewSet):
+    authentication_classes = []
+    model = TestSuiteDetails
+    serializer_class = TestSuiteDetailsSerializers
+
+    @staticmethod
+    def _summary_data(test_suite_id):
+        model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
+        from django.db.models import Sum
+        aggregates = model.aggregate(
+            total_case_sum=Sum('case_sum'),
+            total_fail=Sum('fail'),
+            total_success=Sum('success')
+        )
+        api_case_sum = model.filter(type=TestCaseTypeEnum.API.value).aggregate(total=Sum('case_sum'))['total'] or 0
+        ui_case_sum = model.filter(type=TestCaseTypeEnum.UI.value).aggregate(total=Sum('case_sum'))['total'] or 0
+        pytest_case_sum = model.filter(type=TestCaseTypeEnum.PYTEST.value).aggregate(total=Sum('case_sum'))['total'] or 0
+        api_in_progress_case_sum = model.filter(
+            type=TestCaseTypeEnum.API.value,
+            status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+        ).aggregate(total=Sum('case_sum'))['total'] or 0
+        ui_in_progress_case_sum = model.filter(
+            type=TestCaseTypeEnum.UI.value,
+            status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+        ).aggregate(total=Sum('case_sum'))['total'] or 0
+        pytest_in_progress_case_sum = model.filter(
+            type=TestCaseTypeEnum.PYTEST.value,
+            status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+        ).aggregate(total=Sum('case_sum'))['total'] or 0
+        return {
+            'count': aggregates['total_case_sum'] or 0,
+            'fail_count': aggregates['total_fail'] or 0,
+            'success_count': aggregates['total_success'] or 0,
+            'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).aggregate(
+                total=Sum('case_sum')
+            )['total'] or 0,
+            'proceed_count': model.filter(status=TaskEnum.PROCEED.value).aggregate(
+                total=Sum('case_sum')
+            )['total'] or 0,
+            'api_count': api_case_sum,
+            'ui_count': ui_case_sum,
+            'pytest_count': pytest_case_sum,
+            'api_in_progress_count': api_in_progress_case_sum,
+            'ui_in_progress_count': ui_in_progress_case_sum,
+            'pytest_in_progress_count': pytest_in_progress_case_sum,
+        }
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_test_suite(self, request: Request):
+        test_suite_id = request.query_params.get('id')
+        model = TestSuite.objects.filter(id=test_suite_id).first()
+        if not model:
+            return ResponseData.fail((300, '测试报告不存在'))
+        return ResponseData.success(RESPONSE_MSG_0001, TestSuiteSerializersC(instance=model).data)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_details(self, request: Request):
+        test_suite_id = request.query_params.get('test_suite_id')
+        if not test_suite_id:
+            return ResponseData.fail((300, '缺少测试报告ID'))
+        query_dict = {'test_suite_id': test_suite_id}
+        for key in ['status', 'type']:
+            value = request.query_params.get(key)
+            if value is not None and value != '':
+                query_dict[key] = value
+        books = self.model.objects.filter(**query_dict)
+        data_list, count = TestSuiteDetailsCRUD.paging_list(
+            request.query_params.get("pageSize", 10000),
+            request.query_params.get("page", 1),
+            books,
+            TestSuiteDetailsSerializersC
+        )
+        for item in data_list:
+            if 'result_data' in item:
+                item['children'] = item.pop('result_data')
+                if item.get('children'):
+                    for child in item.get('children'):
+                        child['case_type'] = item['type']
+        return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_summary(self, request: Request):
+        test_suite_id = request.query_params.get('test_suite_id')
+        if not test_suite_id:
+            return ResponseData.fail((300, '缺少测试报告ID'))
+        return ResponseData.success(RESPONSE_MSG_0065, self._summary_data(test_suite_id))

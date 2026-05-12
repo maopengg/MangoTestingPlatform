@@ -6,7 +6,7 @@ from rest_framework import serializers
 from src.auto_test.auto_data_factory.models import DataFactoryField
 from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGenerator
 from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
-from src.auto_test.auto_data_factory.views.entity import DataFactoryFieldSerializer
+from src.auto_test.auto_data_factory.views.field import DataFactoryFieldSerializer
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
 
 
@@ -30,18 +30,16 @@ class DataFactoryGeneratorTests(SimpleTestCase):
             generator_config=config or {},
         )
 
-    def test_build_payload_with_fixed_and_expression(self):
+    def test_build_payload_with_fixed_values(self):
         fields = [
             self.build_field("price", "decimal", DataFactoryGeneratorTypeEnum.FIXED.value, {"value": "19.90"}),
             self.build_field("quantity", "integer", DataFactoryGeneratorTypeEnum.FIXED.value, {"value": 2}),
-            self.build_field("total", "decimal", DataFactoryGeneratorTypeEnum.EXPRESSION.value, {"expression": "price * quantity"}),
         ]
 
         payload = DataFactoryValueGenerator.build_payload(fields)
 
         self.assertEqual(str(payload["price"]), "19.90")
         self.assertEqual(payload["quantity"], 2)
-        self.assertEqual(str(payload["total"]), "39.80")
 
     def test_dependency_field_reads_context(self):
         field = self.build_field(

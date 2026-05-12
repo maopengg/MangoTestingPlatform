@@ -91,9 +91,11 @@ class SystemViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def random_data(self, request: Request):
-        name = request.GET.get("name")
-        res1 = name.replace("${", "")
-        name: str = res1.replace("}", "").strip()
+        name = (request.GET.get("name") or "").strip()
+        if name.startswith("${{") and name.endswith("}}"):
+            name = name[3:-2].strip()
+        elif name.startswith("${") and name.endswith("}"):
+            name = name[2:-1].strip()
         if not name:
             return ResponseData.fail(RESPONSE_MSG_0063)
         match = re.search(r'\((.*?)\)', name)
@@ -111,3 +113,7 @@ class SystemViews(ViewSet):
         if is_debug is not None:
             settings.IS_DEBUG_LOG = is_debug
         return ResponseData.success(RESPONSE_MSG_0136, data={'is_debug': settings.IS_DEBUG_LOG})
+
+
+class SystemShareViews(SystemViews):
+    authentication_classes = []

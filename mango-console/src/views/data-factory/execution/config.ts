@@ -1,9 +1,72 @@
 import { useTable, useTableColumn } from '@/hooks/table'
+import { FormItem } from '@/types/components'
+import { reactive, ref } from 'vue'
 
 const table = useTable()
 
+export const executionConditionItems: Array<FormItem> = reactive([
+  {
+    key: 'execution_no',
+    label: '执行编号',
+    type: 'input',
+    placeholder: '请输入执行编号',
+    value: ref(''),
+  },
+  {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择产品',
+  },
+  {
+    key: 'module',
+    label: '模块',
+    type: 'select',
+    placeholder: '请选择模块',
+    value: ref(''),
+  },
+  {
+    key: 'stage',
+    label: '阶段',
+    type: 'select',
+    placeholder: '请选择阶段',
+    value: ref(''),
+  },
+  {
+    key: 'status',
+    label: '状态',
+    type: 'select',
+    placeholder: '请选择状态',
+    value: ref(''),
+  },
+  {
+    key: 'cleanup_status',
+    label: '清理状态',
+    type: 'select',
+    placeholder: '请选择清理状态',
+    value: ref(''),
+  },
+])
+
 export const executionTableColumns = useTableColumn([
   table.indexColumn,
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
   {
     title: '执行编号',
     key: 'execution_no',
@@ -49,7 +112,7 @@ export const executionTableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 160,
+    width: 120,
   },
 ])
 

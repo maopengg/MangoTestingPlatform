@@ -179,14 +179,12 @@ class DataFactoryDiscover:
     ) -> int:
         if primary_key and autoincrement:
             return DataFactoryGeneratorTypeEnum.SKIP.value
-        if cls.recommend_test_data_expression(name):
+        if cls.recommend_test_data_method(name):
             if name in ["password", "passwd", "pwd"]:
                 return DataFactoryGeneratorTypeEnum.FIXED.value
             return DataFactoryGeneratorTypeEnum.FUNCTION.value
         if name.endswith("_id"):
             return DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value
-        if name.endswith("_no") or name.endswith("_code"):
-            return DataFactoryGeneratorTypeEnum.AUTO_CODE.value
         if name in ["created_at", "updated_at", "create_time", "update_time"]:
             return DataFactoryGeneratorTypeEnum.NOW.value
         if enum_values:
@@ -207,15 +205,13 @@ class DataFactoryDiscover:
     ) -> dict[str, Any]:
         if primary_key and autoincrement:
             return {"reason": "数据库自增主键"}
-        expression = DataFactoryDiscover.recommend_test_data_expression(name)
-        if expression:
+        method_value = DataFactoryDiscover.recommend_test_data_method(name)
+        if method_value:
             if name in ["password", "passwd", "pwd"]:
                 return {"value": "123456"}
-            return {"value": expression}
+            return {"value": method_value}
         if name.endswith("_id"):
             return {"template_id": None, "field": "id", "strategy": "reuse_or_create"}
-        if name.endswith("_no") or name.endswith("_code"):
-            return {}
         if platform_type == "integer":
             return {}
         if platform_type == "decimal":
@@ -225,7 +221,7 @@ class DataFactoryDiscover:
         return {}
 
     @staticmethod
-    def recommend_test_data_expression(name: str) -> str | None:
+    def recommend_test_data_method(name: str) -> str | None:
         lower_name = name.lower()
         if lower_name in ["username", "user_name", "account", "login_name"]:
             return "${{str_lowercase(10)}}"

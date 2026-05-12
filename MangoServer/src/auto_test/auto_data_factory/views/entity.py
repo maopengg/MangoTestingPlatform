@@ -9,10 +9,12 @@ from rest_framework.viewsets import ViewSet
 from django.db import transaction
 
 from src.auto_test.auto_data_factory.models import DataFactoryEntity
+from src.auto_test.auto_system.models import ProductModule
 from src.auto_test.auto_data_factory.service.datasource import DataFactoryDatasourceResolver, is_missing_value
 from src.auto_test.auto_data_factory.service.discover import DataFactoryDiscover
 from src.auto_test.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasSerializerC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_system.views.product_module import ProductModuleSerializersC
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -40,6 +42,11 @@ class DataFactoryEntitySerializer(serializers.ModelSerializer):
             'project_product',
             self.instance.project_product if self.instance else None
         )
+        module = attrs.get('module', self.instance.module if self.instance else None)
+        if not module:
+            raise serializers.ValidationError("工厂实体必须绑定模块")
+        if project_product and module and module.project_product_id != project_product.id:
+            raise serializers.ValidationError("模块不属于当前项目/产品")
         table_name = attrs.get('table_name', self.instance.table_name if self.instance else None)
         if not table_name:
             raise serializers.ValidationError("工厂实体必须绑定表名")
@@ -60,6 +67,7 @@ class DataFactoryEntitySerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
+    module = ProductModuleSerializersC(read_only=True)
     datasource_alias = DataFactoryDatasourceAliasSerializerC(read_only=True)
 
     class Meta:
@@ -71,6 +79,7 @@ class DataFactoryEntitySerializerC(serializers.ModelSerializer):
         return queryset.select_related(
             'project_product',
             'project_product__project',
+            'module',
             'datasource_alias',
             'datasource_alias__project_product',
         )
@@ -117,6 +126,7 @@ class DataFactoryEntityViews(ViewSet):
     @error_response('system')
     def batch_generate(self, request: Request):
         project_product = request.data.get('project_product')
+        module = request.data.get('module')
         datasource_alias = request.data.get('datasource_alias')
         test_env = request.data.get('test_env')
         tables = request.data.get('tables') or []
@@ -125,6 +135,10 @@ class DataFactoryEntityViews(ViewSet):
 
         if not project_product:
             raise ToolsError(300, "产品不能为空")
+        if not module:
+            raise ToolsError(300, "模块不能为空")
+        if not ProductModule.objects.filter(id=module, project_product_id=project_product).exists():
+            raise ToolsError(300, "模块不属于当前项目/产品")
         if not datasource_alias:
             raise ToolsError(300, "逻辑数据源不能为空")
         if is_missing_value(test_env):
@@ -197,6 +211,7 @@ class DataFactoryEntityViews(ViewSet):
                 with transaction.atomic():
                     entity = DataFactoryEntity.objects.create(
                         project_product_id=project_product,
+                        module_id=module,
                         datasource_alias_id=datasource_alias,
                         name=entity_name,
                         table_name=table_name,

@@ -13,8 +13,9 @@ from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
 from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
 from src.auto_test.auto_data_factory.views.entity import DataFactoryEntitySerializerC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_system.views.product_module import ProductModuleSerializersC
 from src.exceptions import ToolsError
-from src.models.data_factory_model import DataFactoryFieldOverrideRules
+from src.models.data_factory_model import DataFactoryFieldOverrideRules, DataFactoryOutputConfig
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -31,8 +32,18 @@ class DataFactoryTemplateSerializer(serializers.ModelSerializer):
         validators = []
 
     def validate(self, attrs):
+        project_product = attrs.get('project_product', self.instance.project_product if self.instance else None)
+        module = attrs.get('module', self.instance.module if self.instance else None)
         entity = attrs.get('entity', self.instance.entity if self.instance else None)
         name = attrs.get('name', self.instance.name if self.instance else None)
+        if not module:
+            raise serializers.ValidationError("状态模板必须绑定模块")
+        if project_product and module and module.project_product_id != project_product.id:
+            raise serializers.ValidationError("模块不属于当前项目/产品")
+        if project_product and entity and entity.project_product_id != project_product.id:
+            raise serializers.ValidationError("实体不属于当前项目/产品")
+        if module and entity and entity.module_id and entity.module_id != module.id:
+            raise serializers.ValidationError("实体不属于当前模块")
         if entity and name:
             queryset = DataFactoryTemplate.objects.filter(entity=entity, name=name)
             if self.instance:
@@ -44,6 +55,11 @@ class DataFactoryTemplateSerializer(serializers.ModelSerializer):
             DataFactoryFieldOverrideRules.model_validate(field_overrides or {})
         except ValidationError as error:
             raise serializers.ValidationError(f"字段覆盖规则格式错误：{error}") from error
+        output_config = attrs.get('output_config', self.instance.output_config if self.instance else [])
+        try:
+            DataFactoryOutputConfig.model_validate(output_config or [])
+        except ValidationError as error:
+            raise serializers.ValidationError(f"输出配置格式错误：{error}") from error
         return attrs
 
 
@@ -51,6 +67,7 @@ class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
+    module = ProductModuleSerializersC(read_only=True)
     entity = DataFactoryEntitySerializerC(read_only=True)
 
     class Meta:
@@ -62,6 +79,7 @@ class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
         return queryset.select_related(
             'project_product',
             'project_product__project',
+            'module',
             'entity',
             'entity__project_product',
             'entity__project_product__project',
@@ -107,6 +125,7 @@ class DataFactoryTemplateViews(ViewSet):
         source = DataFactoryTemplate.objects.get(id=request.data.get('id'))
         target = DataFactoryTemplate.objects.create(
             project_product=source.project_product,
+            module=source.module,
             entity=source.entity,
             name=request.data.get('name') or f"{source.name}_副本",
             description=source.description,

@@ -261,6 +261,16 @@
                   </div>
                 </div>
               </a-tab-pane>
+              <a-tab-pane key="11" title="数据工厂">
+                <div class="response-section">
+                  <div class="response-item">
+                    <span class="response-label">数据工厂：</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data?.data_factory_cache_all" />
+                    </div>
+                  </div>
+                </div>
+              </a-tab-pane>
             </a-tabs>
           </a-tab-pane>
           <a-tab-pane key="10" title="结构化断言配置">

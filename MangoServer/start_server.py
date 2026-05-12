@@ -4,15 +4,17 @@
 # @Time   : 2025/12/3
 # @Author :
 
-import django
-import uvicorn
 import os
 import sys
+
+# os.environ["DJANGO_ENV"] = os.environ.get("DJANGO_ENV", "dev")
+# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
+
+import django
+import uvicorn
 from src.tools import project_dir
 
 project_dir.init_folder()
-# os.environ["DJANGO_ENV"] = "dev"
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
 try:
     django.setup()
     from django.core.management import call_command
@@ -41,5 +43,6 @@ uvicorn.run(
     workers=workers,
     log_level=log_level,
     access_log=access_log,
-    log_config=None
+    log_config=None,
+    lifespan="on",
 )

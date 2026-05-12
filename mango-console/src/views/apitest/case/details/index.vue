@@ -37,7 +37,7 @@
           <div class="left">
             <a-tabs :active-key="data.apiType" @tab-click="(key) => switchType(key)">
               <template #extra>
-                <a-space>
+                <a-space v-if="showCaseAddButton">
                   <a-button size="small" type="primary" @click="addData">增加</a-button>
                 </a-space>
               </template>
@@ -91,6 +91,15 @@
                             upDataCase
                           )
                       "
+                    />
+                  </a-tab-pane>
+                  <a-tab-pane key="14" title="数据工厂">
+                    <DataFactoryCaseConfigPanel
+                      v-if="data.apiType === '1' && data.apiSonType === '14'"
+                      ref="dataFactoryPanelRef"
+                      :case-id="route.query.case_id as string"
+                      :project-product-id="route.query.project_product as string"
+                      :source-type="1"
                     />
                   </a-tab-pane>
                   <a-tab-pane key="13" title="默认请求头">
@@ -215,7 +224,7 @@
           <div class="right">
             <a-space direction="vertical" fill>
               <a-space style="display: flex; justify-content: flex-end">
-                <a-button size="small" type="primary" @click="addParameter">增加</a-button>
+                <a-button size="small" type="primary" @click="addParameter">增加场景</a-button>
               </a-space>
               <a-space direction="vertical" fill>
                 <a-spin :loading="data.collapseLoading" tip="数据加载中..." style="width: 100%">
@@ -249,6 +258,9 @@
                         <a-button size="mini" type="text" @click.stop="parameterEditing(item)"
                           >编辑
                         </a-button>
+                        <a-button size="mini" type="text" @click.stop="parameterCopy(item)"
+                          >复制
+                        </a-button>
                         <a-button
                           size="mini"
                           status="danger"
@@ -257,15 +269,10 @@
                           >删除
                         </a-button>
                       </template>
-                      <!-- 重内容只在展开时挂载，避免全量渲染阻塞主线程 -->
-                      <div>
-                        <!-- 展开动画期间显示 loading，内容挂载完成后消失 -->
-                        <!--                        <div-->
-                        <!--                          v-if="data.expandingIndex === index"-->
-                        <!--                          style="padding: 40px 0; text-align: center"-->
-                        <!--                        >-->
-                        <!--                          <a-spin tip="内容加载中..." />-->
-                        <!--                        </div>-->
+                      <div
+                        v-if="isMountedCollapseItem(index)"
+                        v-show="isActiveCollapseItem(index)"
+                      >
                         <a-tabs
                           :active-key="data.caseDetailsTypeKey"
                           position="left"
@@ -277,7 +284,7 @@
                               @tab-click="(key) => tabsChange(key)"
                             >
                               <a-tab-pane key="00" title="请求头">
-                                <div class="m-2" style="height: 180px; overflow-y: auto">
+                                <div class="m-2" style="height: 220px; overflow-y: auto">
                                   <TipMessage
                                     message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
                                   />
@@ -403,6 +410,17 @@
                                   />
                                 </div>
                               </a-tab-pane>
+                              <a-tab-pane key="12" title="数据工厂">
+                                <div class="m-2">
+                                  <DataFactoryCaseConfigPanel
+                                    v-if="isActiveCaseDetailTab('1', '12')"
+                                    :ref="(el) => setParameterDataFactoryPanelRef(item.id, el)"
+                                    :case-id="item.id"
+                                    :project-product-id="route.query.project_product as string"
+                                    :source-type="3"
+                                  />
+                                </div>
+                              </a-tab-pane>
                             </a-tabs>
                           </a-tab-pane>
                           <a-tab-pane key="2" title="响应结果">
@@ -431,31 +449,50 @@
                               </a-tab-pane>
                               <a-tab-pane key="21" title="请求头">
                                 <div class="m-2">
-                                  <JsonDisplay :data="item.result_data?.request?.headers" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '21')"
+                                    :data="item.result_data?.request?.headers"
+                                  />
                                 </div>
                               </a-tab-pane>
                               <a-tab-pane key="25" title="请求数据">
                                 <div class="m-2" v-if="item.result_data?.request?.data">
-                                  <JsonDisplay :data="item.result_data?.request?.data" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '25')"
+                                    :data="item.result_data?.request?.data"
+                                  />
                                 </div>
                                 <div class="m-2" v-if="item.result_data?.request?.json">
-                                  <JsonDisplay :data="item.result_data?.request?.json" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '25')"
+                                    :data="item.result_data?.request?.json"
+                                  />
                                 </div>
                                 <div class="m-2" v-if="item.result_data?.request?.params">
-                                  <JsonDisplay :data="item.result_data?.request?.params" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '25')"
+                                    :data="item.result_data?.request?.params"
+                                  />
                                 </div>
                                 <div class="m-2" v-if="item.result_data?.request?.file">
-                                  <JsonDisplay :data="item.result_data?.request?.file" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '25')"
+                                    :data="item.result_data?.request?.file"
+                                  />
                                 </div>
                               </a-tab-pane>
                               <a-tab-pane key="22" title="响应头">
                                 <div class="m-2">
-                                  <JsonDisplay :data="item.result_data?.response?.headers" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '22')"
+                                    :data="item.result_data?.response?.headers"
+                                  />
                                 </div>
                               </a-tab-pane>
                               <a-tab-pane key="23" title="响应JSON">
                                 <div class="m-2">
                                   <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '23')"
                                     :data="item.result_data?.response?.json"
                                     :jsonpath="true"
                                   />
@@ -463,7 +500,10 @@
                               </a-tab-pane>
                               <a-tab-pane key="24" title="响应文本">
                                 <div class="m-2">
-                                  <JsonDisplay :data="item.result_data?.response?.text" />
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '24')"
+                                    :data="item.result_data?.response?.text"
+                                  />
                                 </div>
                               </a-tab-pane>
                             </a-tabs>
@@ -879,15 +919,32 @@
                           </a-tab-pane>
                           <a-tab-pane key="5" title="缓存数据">
                             <div class="m-2">
-                              <JsonDisplay :data="item.result_data?.cache_data" />
+                              <JsonDisplay
+                                v-if="data.caseDetailsTypeKey === '5'"
+                                :data="item.result_data?.cache_data"
+                              />
+                            </div>
+                          </a-tab-pane>
+                          <a-tab-pane key="7" title="数据工厂">
+                            <div class="m-2">
+                              <JsonDisplay
+                                v-if="data.caseDetailsTypeKey === '7'"
+                                :data="item.result_data?.data_factory_cache_data"
+                              />
                             </div>
                           </a-tab-pane>
                           <a-tab-pane key="6" title="断言结果">
                             <div class="m-2">
-                              <AssertionResult :data="item.result_data?.ass" />
+                              <AssertionResult
+                                v-if="data.caseDetailsTypeKey === '6'"
+                                :data="item.result_data?.ass"
+                              />
                             </div>
                           </a-tab-pane>
                         </a-tabs>
+                      </div>
+                      <div v-else-if="isActiveCollapseItem(index)" class="collapse-content-loading">
+                        <a-spin tip="内容加载中..." />
                       </div>
                     </a-collapse-item>
                   </a-collapse>
@@ -959,7 +1016,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
@@ -968,7 +1025,10 @@
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj } from '@/utils/tools'
   import { columns, formItems, formParameterItems } from './config'
-  import { getApiCaseRun, putApiCase } from '@/api/apitest/case'
+  import {
+    getApiCaseRun,
+    putApiCase,
+  } from '@/api/apitest/case'
   import {
     deleteApiCaseDetailed,
     getApiCaseDetailed,
@@ -985,6 +1045,7 @@
     deleteApiCaseDetailedParameter,
     getApiCaseDetailedParameter,
     postApiCaseDetailedParameter,
+    postApiCaseDetailedParameterCopy,
     postCaseDetailedParameterTestExtractResponseAfter,
     putApiCaseDetailedParameter,
     putSetSchema,
@@ -993,11 +1054,18 @@
   import KeyValueList from '@/components/KeyValueList.vue' // 引入新组件
   import AssertionResult from '@/components/AssertionResult.vue'
   import TipMessage from '@/components/TipMessage.vue' // 引入断言结果组件
+  import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
+  import { getDataFactoryCaseConfig } from '@/api/data-factory'
 
   const userStore = useUserStore()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const modalDialogRefParameter = ref<ModalDialogType | null>(null)
+  const dataFactoryPanelRef = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
+  const parameterDataFactoryPanelRefs = new Map<
+    number,
+    InstanceType<typeof DataFactoryCaseConfigPanel>
+  >()
   const formModel = ref({})
   const formParameterModel = ref({})
   const pageData: any = usePageData()
@@ -1024,13 +1092,57 @@
 
     actionParameterTitle: '新增接口场景',
     isAdd: true,
+    isCopy: false,
+    copyParameterId: null,
     updateId: null,
     activeCollapseKey: [0],
+    mountedCollapseKeys: [],
     collapseLoading: false, // 列表整体 loading
     expandingIndex: -1, // 正在展开中的 item index，-1 表示无
   })
 
   const caseRunning = ref(false)
+  const showCaseAddButton = computed(() => !(data.apiType === '1' && data.apiSonType === '13'))
+  const dataFactoryConfigCache = new Map<number, boolean>()
+
+  function isActiveCollapseItem(index: number) {
+    return data.activeCollapseKey.some((key: string | number) => String(key) === String(index))
+  }
+
+  function isMountedCollapseItem(index: number) {
+    return data.mountedCollapseKeys.some((key: string | number) => String(key) === String(index))
+  }
+
+  function mountCollapseItem(index: number) {
+    if (!isMountedCollapseItem(index)) {
+      data.mountedCollapseKeys.push(index)
+    }
+  }
+
+  function deferMountCollapseItem(index: number) {
+    data.expandingIndex = index
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!isActiveCollapseItem(index)) {
+          return
+        }
+        mountCollapseItem(index)
+        data.expandingIndex = -1
+      })
+    })
+  }
+
+  function isActiveCaseDetailTab(caseDetailsTypeKey: string, tabsKey: string) {
+    return data.caseDetailsTypeKey === caseDetailsTypeKey && data.tabsKey === tabsKey
+  }
+
+  function setParameterDataFactoryPanelRef(id: number, el: any) {
+    if (el) {
+      parameterDataFactoryPanelRefs.set(id, el)
+    } else {
+      parameterDataFactoryPanelRefs.delete(id)
+    }
+  }
 
   function findItemByValue(data: any, value: string) {
     for (let i = 0; i < data.length; i++) {
@@ -1057,7 +1169,7 @@
     data.apiType = key
   }
 
-  function switchApiInfoType(key: any, item: any) {
+  async function switchApiInfoType(key: any, item: any) {
     data.caseDetailsTypeKey = key
     if (key === '0') {
       if (item?.params) {
@@ -1072,8 +1184,7 @@
         data.tabsKey = '00'
       }
     } else if (key === '1') {
-      data.tabsKey = '10'
-      data.assClickAdd = true
+      await switchFrontProcessTab(item)
     } else if (key === '2') {
       data.tabsKey = '23'
     } else if (key === '3') {
@@ -1111,6 +1222,36 @@
     }
   }
 
+  async function switchFrontProcessTab(item: any) {
+    if (item?.front_sql && item.front_sql.length > 0) {
+      data.tabsKey = '10'
+      data.assClickAdd = true
+      return
+    }
+    if (item?.front_func) {
+      data.tabsKey = '11'
+      data.assClickAdd = false
+      return
+    }
+    try {
+      let hasDataFactoryConfig = dataFactoryConfigCache.get(item.id)
+      if (hasDataFactoryConfig === undefined) {
+        const res = await getDataFactoryCaseConfig({ source_type: 3, source_id: item.id })
+        hasDataFactoryConfig = Boolean(res.data && res.data.length > 0)
+        dataFactoryConfigCache.set(item.id, hasDataFactoryConfig)
+      }
+      if (hasDataFactoryConfig) {
+        data.tabsKey = '12'
+        data.assClickAdd = true
+        return
+      }
+    } catch (error) {
+      console.log(error)
+    }
+    data.tabsKey = '10'
+    data.assClickAdd = true
+  }
+
   function switchSonType(key: any) {
     data.apiSonType = key
   }
@@ -1139,6 +1280,8 @@
       item['posterior_sql'].push({ key: '', value: '' })
     } else if ('44' === data.tabsKey) {
       item['posterior_response_text'].push({ key: '', value: '' })
+    } else if ('12' === data.tabsKey) {
+      parameterDataFactoryPanelRefs.get(item.id)?.open()
     }
   }
 
@@ -1151,6 +1294,8 @@
       pageData.record.front_custom.push({ key: '', value: '' })
     } else if (data.apiSonType === '12') {
       pageData.record.front_sql.push({ key: '', value: '' })
+    } else if (data.apiSonType === '14') {
+      dataFactoryPanelRef.value?.open()
     } else if (data.apiSonType === '31') {
       pageData.record.posterior_sql.push({ key: '', value: '' })
     }
@@ -1172,7 +1317,28 @@
   function parameterEditing(item: any) {
     data.actionParameterTitle = '编辑接口场景名称'
     data.isAdd = false
+    data.isCopy = false
+    data.copyParameterId = null
     data.updateId = item.id
+    modalDialogRefParameter.value?.toggle()
+    nextTick(() => {
+      formParameterItems.forEach((it) => {
+        const propName = item[it.key]
+        if (typeof propName === 'object' && propName !== null) {
+          it.value = propName.id
+        } else {
+          it.value = propName
+        }
+      })
+    })
+  }
+
+  function parameterCopy(item: any) {
+    data.actionParameterTitle = '复制接口场景'
+    data.isAdd = false
+    data.isCopy = true
+    data.copyParameterId = item.id
+    data.updateId = null
     modalDialogRefParameter.value?.toggle()
     nextTick(() => {
       formParameterItems.forEach((it) => {
@@ -1403,6 +1569,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   function doRefreshParameter(id: number) {
     data.collapseLoading = true
+    dataFactoryConfigCache.clear()
+    parameterDataFactoryPanelRefs.clear()
+    data.mountedCollapseKeys = []
+    data.expandingIndex = -1
     return getApiCaseDetailedParameter({ case_detailed_id: id })
       .then((res) => {
         // 先清空，解除旧数据的响应式绑定，让 Vue 立即释放旧 DOM
@@ -1418,7 +1588,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         function writeBatch() {
           const end = Math.min(index + BATCH_SIZE, res.data.length)
           for (; index < end; index++) {
-            data.selectDataObj.push(res.data[index])
+            data.selectDataObj.push(formatParameterJsonFields(res.data[index]))
           }
           if (index < res.data.length) {
             // 还有数据，下一帧继续写入，让浏览器有机会响应用户操作
@@ -1435,6 +1605,17 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       })
   }
 
+  function formatParameterJsonFields(item: any) {
+    const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
+    propertiesToFormat.forEach((prop) => {
+      if (item && typeof item[prop] === 'object' && item[prop] !== null) {
+        item[prop] = formatJson(item[prop])
+      }
+    })
+    item.__formatted = true
+    return item
+  }
+
   // 在 collapse 展开时懒格式化当前 item，避免首次渲染时阻塞主线程
   function onCollapseChange(keys: any[]) {
     if (keys.length === 0) {
@@ -1442,18 +1623,17 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       data.expandingIndex = -1
       return
     }
-    const idx = keys[keys.length - 1]
+    const idx = Number(keys[keys.length - 1])
     data.activeCollapseKey = keys
+    if (!isMountedCollapseItem(idx)) {
+      deferMountCollapseItem(idx)
+    } else {
+      data.expandingIndex = -1
+    }
     // 懒格式化当前 item
     const item = data.selectDataObj[idx]
     if (item && !item.__formatted) {
-      const propertiesToFormat = ['ass_json_all', 'file', 'ass_schema']
-      propertiesToFormat.forEach((prop) => {
-        if (typeof item[prop] === 'object') {
-          item[prop] = formatJson(item[prop])
-        }
-      })
-      item.__formatted = true
+      formatParameterJsonFields(item)
     }
   }
 
@@ -1549,7 +1729,17 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     if (formParameterItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRefParameter.value?.toggle()
       let value = getFormItems(formParameterItems)
-      if (data.isAdd) {
+      if (data.isCopy) {
+        value['id'] = data.copyParameterId
+        postApiCaseDetailedParameterCopy(value)
+          .then((res) => {
+            Message.success(res.msg)
+            data.isCopy = false
+            data.copyParameterId = null
+            doRefreshParameter(data.tabelJson.id)
+          })
+          .catch(console.log)
+      } else if (data.isAdd) {
         value['case_detailed'] = data.tabelJson.id
         value['api_info'] = data.tabelJson.api_info.id
         postApiCaseDetailedParameter(value)
@@ -1604,6 +1794,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   function addParameter() {
     data.actionParameterTitle = '增加接口场景'
     data.isAdd = true
+    data.isCopy = false
+    data.copyParameterId = null
     modalDialogRefParameter.value?.toggle()
     formParameterItems.forEach((it) => {
       if (it.reset) {
@@ -1803,6 +1995,14 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     flex-shrink: 0;
     margin-top: 18px;
     min-width: fit-content;
+  }
+
+  .collapse-content-loading {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-3);
   }
 
   :deep(.assertion-parameters-inline) {

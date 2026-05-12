@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 import re
 
+from django.db import transaction
+from django.forms import model_to_dict
 from mangotools.data_processor import JsonTool
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -92,3 +94,34 @@ class ApiCaseDetailedParameterViews(ViewSet):
         model.ass_schema = schema
         model.save()
         return ResponseData.success(RESPONSE_MSG_0157, data=schema)
+
+    @action(methods=['post'], detail=False)
+    @error_response('api')
+    @transaction.atomic
+    def copy_parameter(self, request: Request):
+        from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+        from src.auto_test.auto_data_factory.views.case_config import DataFactoryCaseConfigCRUD
+        from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+
+        source_id = request.data.get('id')
+        source = self.model.objects.get(id=source_id)
+        parameter = model_to_dict(source)
+        del parameter['id']
+        parameter['name'] = request.data.get('name') or f"(副本){source.name}"
+        parameter['error_retry'] = request.data.get('error_retry')
+        parameter['retry_interval'] = request.data.get('retry_interval')
+        parameter['status'] = 2
+        parameter['result_data'] = None
+        new_parameter = ApiCaseDetailedParameterCRUD.inside_post(parameter)
+
+        for factory_config in DataFactoryCaseConfig.objects.filter(
+                source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+                source_id=source_id,
+        ):
+            data_factory = model_to_dict(factory_config)
+            del data_factory['id']
+            data_factory['source_type'] = DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value
+            data_factory['source_id'] = new_parameter.get('id')
+            DataFactoryCaseConfigCRUD.inside_post(data_factory)
+
+        return ResponseData.success(RESPONSE_MSG_0009, new_parameter)

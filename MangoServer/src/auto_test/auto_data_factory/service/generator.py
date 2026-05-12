@@ -46,6 +46,20 @@ class DataFactoryValueGenerator:
     def generate(cls, field: DataFactoryField, payload: dict, context: dict):
         config = field.generator_config or {}
         generator_type = field.generator_type
+        supported_generator_types = {
+            DataFactoryGeneratorTypeEnum.FIXED.value,
+            DataFactoryGeneratorTypeEnum.RANDOM_STRING.value,
+            DataFactoryGeneratorTypeEnum.RANDOM_INTEGER.value,
+            DataFactoryGeneratorTypeEnum.RANDOM_DECIMAL.value,
+            DataFactoryGeneratorTypeEnum.NOW.value,
+            DataFactoryGeneratorTypeEnum.RELATIVE_TIME.value,
+            DataFactoryGeneratorTypeEnum.UUID.value,
+            DataFactoryGeneratorTypeEnum.ENUM.value,
+            DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
+            DataFactoryGeneratorTypeEnum.FUNCTION.value,
+        }
+        if generator_type not in supported_generator_types:
+            raise ToolsError(300, f"字段 {field.name} 的生成方式不支持")
 
         if generator_type not in [
             DataFactoryGeneratorTypeEnum.ENUM.value,
@@ -76,10 +90,6 @@ class DataFactoryValueGenerator:
             )
         if generator_type == DataFactoryGeneratorTypeEnum.UUID.value:
             return str(uuid.uuid4()) if config.get("dash", False) else uuid.uuid4().hex
-        if generator_type == DataFactoryGeneratorTypeEnum.AUTO_CODE.value:
-            prefix = config.get("prefix", f"AUTO_{field.name.upper()}_")
-            length = int(config.get("length", 8))
-            return f"{prefix}{uuid.uuid4().hex[:length].upper()}"
         if generator_type == DataFactoryGeneratorTypeEnum.ENUM.value:
             values = config.get("values") or field.enum_values
             if not values:
@@ -87,8 +97,6 @@ class DataFactoryValueGenerator:
             if config.get("mode") == "random":
                 return random.choice(values)
             return config.get("value", values[0])
-        if generator_type == DataFactoryGeneratorTypeEnum.EXPRESSION.value:
-            return cls.eval_expression(str(config.get("expression", "")), payload, context)
         if generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
             alias = config.get("alias")
             target_field = config.get("field", "id")
@@ -96,12 +104,10 @@ class DataFactoryValueGenerator:
                 raise ToolsError(300, f"字段 {field.name} 依赖的实体上下文不存在：{alias}")
             return context[alias].get(target_field)
         if generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
-            value = config.get("value") or config.get("expression") or config.get("template")
+            value = config.get("value")
             if not value:
-                raise ToolsError(300, f"字段 {field.name} 未配置测试数据方法表达式")
+                raise ToolsError(300, f"字段 {field.name} 未配置测试数据方法")
             return value
-        if generator_type == DataFactoryGeneratorTypeEnum.SQL_QUERY.value:
-            raise ToolsError(300, f"字段 {field.name} 的生成方式暂未实现")
 
         return None
 
@@ -114,17 +120,6 @@ class DataFactoryValueGenerator:
         if isinstance(value, dict):
             return {key: cls.replace_value(item) for key, item in value.items()}
         return value
-
-    @staticmethod
-    def eval_expression(expression: str, payload: dict, context: dict):
-        if not expression:
-            return None
-        safe_globals = {"__builtins__": {}}
-        safe_locals = {"payload": payload, "context": context, **payload}
-        try:
-            return eval(expression, safe_globals, safe_locals)
-        except Exception as error:
-            raise ToolsError(300, f"表达式执行失败：{expression}") from error
 
     @staticmethod
     def validate(field: DataFactoryField, value):

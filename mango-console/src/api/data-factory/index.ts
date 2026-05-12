@@ -120,6 +120,30 @@ export function postDataFactoryTemplateDebugCleanup(data: object) {
   return post({ url: '/data-factory/template/debug-cleanup', data: () => data })
 }
 
+export function getDataFactoryCaseConfig(data: object) {
+  return get({ url: '/data-factory/case-config', data: () => data })
+}
+
+export function postDataFactoryCaseConfig(data: object) {
+  return post({ url: '/data-factory/case-config', data: () => data })
+}
+
+export function putDataFactoryCaseConfig(data: object) {
+  return put({ url: '/data-factory/case-config', data: () => data })
+}
+
+export function putDataFactoryCaseConfigSort(data: object) {
+  return put({ url: '/data-factory/case-config/sort', data: () => data })
+}
+
+export function deleteDataFactoryCaseConfig(id: number | string[] | number[]) {
+  return deleted({ url: '/data-factory/case-config', data: () => ({ id }) })
+}
+
+export function postDataFactoryCaseConfigPreview(data: object) {
+  return post({ url: '/data-factory/case-config/preview', data: () => data })
+}
+
 export function getDataFactoryExecution(data: object) {
   return get({ url: '/data-factory/execution', data: () => data })
 }

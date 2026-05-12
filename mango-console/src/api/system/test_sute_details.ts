@@ -72,3 +72,21 @@ export function getSystemTestSuiteDetailsSummary(test_suite_id: number) {
     },
   })
 }
+
+export function getSystemTestSuiteDetailsShare(data: object) {
+  return get({
+    url: 'system/test/suite/details/share',
+    data: () => {
+      return data
+    },
+  })
+}
+
+export function getSystemTestSuiteDetailsSummaryShare(test_suite_id: number | string) {
+  return get({
+    url: 'system/test/suite/details/summary/share',
+    data: () => {
+      return { test_suite_id: test_suite_id }
+    },
+  })
+}

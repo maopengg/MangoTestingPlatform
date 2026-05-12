@@ -13,15 +13,17 @@
       >
         {{ isExpanded ? '收起' : '展开' }}
       </a-button>
+      <a-button v-if="canPreviewJson" type="dashed" @click="openJsonDrawer">查看JSON</a-button>
     </a-space>
   </a-space>
-  <div style="position: relative">
+  <div class="json-display-content">
     <vue-json-pretty
       v-if="isObjectOrArray && showComponent"
       :key="`json-${isExpanded}-${forceRerender}`"
       :data="parsedData"
       :deep="isExpanded ? undefined : 1"
       :show-length="true"
+      :show-icon="true"
     />
 
     <pre v-else-if="isString && !isValidJson">{{ parsedData }}</pre>
@@ -30,10 +32,36 @@
       :key="`json-string-${isExpanded}-${forceRerender}`"
       :data="jsonFromString"
       :deep="isExpanded ? undefined : 1"
+      :show-icon="true"
     />
 
     <span v-else>{{ parsedData }}</span>
   </div>
+  <a-drawer
+    v-model:visible="jsonDrawerVisible"
+    title="JSON数据"
+    width="50%"
+    :footer="false"
+    unmount-on-close
+  >
+    <div class="json-drawer">
+      <div class="json-drawer-toolbar">
+        <a-button type="primary" size="small" @click="toggleDrawerExpand">
+          {{ drawerExpanded ? '收起' : '展开' }}
+        </a-button>
+      </div>
+      <div class="json-drawer-content">
+        <vue-json-pretty
+          v-if="showDrawerComponent"
+          :key="`drawer-json-${drawerExpanded}-${forceRerender}`"
+          :data="drawerJsonData"
+          :deep="drawerExpanded ? undefined : 1"
+          :show-length="true"
+          :show-icon="true"
+        />
+      </div>
+    </div>
+  </a-drawer>
 </template>
 
 <script setup>
@@ -62,6 +90,9 @@
   const forceRerender = ref(0)
   // 控制是否显示组件
   const showComponent = ref(false)
+  const jsonDrawerVisible = ref(false)
+  const drawerExpanded = ref(false)
+  const showDrawerComponent = ref(false)
 
   /**
    * 判断是否是对象或数组
@@ -155,24 +186,60 @@
     return props.jsonpath && (isObjectOrArray.value || (isString.value && isValidJson.value))
   })
 
-  const copyToClipboard = async () => {
-    let value = parsedData.value
-    if (typeof value === 'object') {
-      try {
-        value = JSON.stringify(value, null, 2)
-      } catch {
-        value = String(value)
-      }
-    } else if (value === undefined || value === null) {
-      value = ''
-    } else {
-      value = String(value)
+  const canPreviewJson = computed(() => {
+    return isObjectOrArray.value || (isString.value && isValidJson.value)
+  })
+
+  const drawerJsonData = computed(() => {
+    if (isObjectOrArray.value) {
+      return parsedData.value
     }
+    if (isString.value && isValidJson.value) {
+      return jsonFromString.value
+    }
+    return parsedData.value
+  })
+
+  const formatCopyValue = (value) => {
+    if (typeof value === 'object' && value !== null) {
+      try {
+        return JSON.stringify(value, null, 2)
+      } catch {
+        return String(value)
+      }
+    }
+    if (value === undefined || value === null) {
+      return ''
+    }
+    return String(value)
+  }
+
+  const fallbackCopy = (text) => {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', 'readonly')
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    textarea.style.top = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    textarea.setSelectionRange(0, textarea.value.length)
+    const success = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return success
+  }
+
+  const copyToClipboard = async () => {
+    const value = formatCopyValue(parsedData.value)
     try {
-      await navigator.clipboard.writeText(value)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value)
+      } else if (!fallbackCopy(value)) {
+        throw new Error('copy failed')
+      }
       Message.success('复制成功')
-    } catch (error) {
-      Message.error('复制失败: 需要使用HTTPS协议才能进行复制')
+    } catch {
+      Message.error('复制失败')
     }
   }
 
@@ -206,13 +273,30 @@
     await nextTick()
   }
 
+  const openJsonDrawer = async () => {
+    jsonDrawerVisible.value = true
+    drawerExpanded.value = true
+    showDrawerComponent.value = false
+    await nextTick()
+    showDrawerComponent.value = true
+  }
+
+  const toggleDrawerExpand = async () => {
+    drawerExpanded.value = !drawerExpanded.value
+    showDrawerComponent.value = false
+    await nextTick()
+    showDrawerComponent.value = true
+  }
+
   // 监听数据变化，确保组件正确渲染
   watch(
     () => props.data,
     async () => {
       showComponent.value = false
+      showDrawerComponent.value = false
       await nextTick()
       showComponent.value = true
+      showDrawerComponent.value = jsonDrawerVisible.value
       forceRerender.value++
     }
     // 去掉 immediate: true，首次渲染由 onMounted 处理，避免挂载时触发两次重建
@@ -237,6 +321,80 @@
 </script>
 
 <style scoped lang="less">
+  .json-display-content {
+    position: relative;
+    padding: 8px 10px;
+    background: #f7f8fa;
+    border: 1px solid #e5e6eb;
+    border-radius: 4px;
+  }
+
+  .json-display-content,
+  .json-drawer-content {
+    :deep(.vjs-tree) {
+      color: #2b2d30;
+      font-size: 13px;
+      line-height: 21px;
+      font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, Menlo, monospace;
+    }
+
+    :deep(.vjs-tree-node) {
+      border-radius: 4px;
+      transition: background-color 0.15s ease;
+    }
+
+    :deep(.vjs-tree-node:hover),
+    :deep(.vjs-tree-node.is-highlight) {
+      background-color: #edf3ff;
+    }
+
+    :deep(.vjs-key) {
+      color: #871094;
+      font-weight: 500;
+    }
+
+    :deep(.vjs-colon) {
+      color: #6c707e;
+    }
+
+    :deep(.vjs-value-string) {
+      color: #067d17;
+    }
+
+    :deep(.vjs-value-number) {
+      color: #1750eb;
+    }
+
+    :deep(.vjs-value-boolean) {
+      color: #0033b3;
+      font-weight: 500;
+    }
+
+    :deep(.vjs-value-null),
+    :deep(.vjs-value-undefined) {
+      color: #9f6700;
+      font-style: italic;
+    }
+
+    :deep(.vjs-comment) {
+      color: #8c8c8c;
+    }
+
+    :deep(.vjs-tree-brackets),
+    :deep(.vjs-carets) {
+      color: #2b2d30;
+    }
+
+    :deep(.vjs-tree-brackets:hover),
+    :deep(.vjs-carets:hover) {
+      color: #0b6fcb;
+    }
+
+    :deep(.vjs-indent-unit.has-line) {
+      border-left-color: #dcdfe6;
+    }
+  }
+
   .copy-button {
     position: absolute;
     top: 0;
@@ -254,5 +412,29 @@
     z-index: 10;
     display: flex;
     align-items: center;
+  }
+
+  .json-drawer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .json-drawer-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border-2);
+  }
+
+  .json-drawer-content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #f7f8fa;
+    border: 1px solid #e5e6eb;
+    border-radius: 4px;
   }
 </style>

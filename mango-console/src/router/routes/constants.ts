@@ -10,6 +10,16 @@ export const constantRoutes = [
     },
   },
   {
+    path: '/report/details',
+    name: 'ReportDetailsShare',
+    component: () => import('@/views/report/details/index.vue'),
+    meta: {
+      hidden: true,
+      noShowTabbar: true,
+      title: '测试报告详情',
+    },
+  },
+  {
     path: '/redirect',
     component: LAYOUT,
     meta: {

@@ -79,6 +79,14 @@
                       :on-save="upDataCase"
                     />
                   </a-tab-pane>
+                  <a-tab-pane key="14" title="数据工厂">
+                    <DataFactoryCaseConfigPanel
+                      ref="dataFactoryPanelRef"
+                      :case-id="route.query.case_id as string"
+                      :project-product-id="route.query.project_product as string"
+                      :source-type="2"
+                    />
+                  </a-tab-pane>
                 </a-tabs>
               </a-tab-pane>
 
@@ -424,6 +432,7 @@
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import CodeEditor from '@/components/CodeEditor.vue'
   import KeyValueList from '@/components/KeyValueList.vue'
+  import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -432,6 +441,7 @@
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const dataFactoryPanelRef = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
   const tableKey = ref(0)
   const data: any = reactive({
     isAdd: true,
@@ -481,6 +491,8 @@
       pageData.record.front_custom.push({ key: '', value: '' })
     } else if (data.uiSonType === '12') {
       pageData.record.front_sql.push({ sql: '', key_list: '' })
+    } else if (data.uiSonType === '14') {
+      dataFactoryPanelRef.value?.open()
     } else if (data.uiSonType === '31') {
       pageData.record.posterior_sql.push({ sql: '' })
     }

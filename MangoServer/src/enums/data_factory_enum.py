@@ -36,11 +36,8 @@ class DataFactoryGeneratorTypeEnum(BaseEnum):
     NOW = 5
     RELATIVE_TIME = 6
     UUID = 7
-    AUTO_CODE = 8
     ENUM = 9
-    EXPRESSION = 10
     DEPENDENCY_FIELD = 11
-    SQL_QUERY = 12
     FUNCTION = 13
 
     @classmethod
@@ -48,17 +45,14 @@ class DataFactoryGeneratorTypeEnum(BaseEnum):
         return {
             0: "跳过",
             1: "固定值",
-            2: "随机字符串",
-            3: "随机整数",
-            4: "随机小数",
+            2: "随机字符串（长度8）",
+            3: "随机整数（1-100）",
+            4: "随机小数（1-100，2位）",
             5: "当前时间",
             6: "相对时间",
             7: "UUID",
-            8: "自动编号",
             9: "枚举值",
-            10: "表达式",
             11: "依赖实体字段",
-            12: "SQL查询结果",
             13: "测试数据方法",
         }
 
@@ -79,10 +73,23 @@ class DataFactoryExecutionSourceEnum(BaseEnum):
     TEMPLATE_DEBUG = 1
     MANUAL = 2
     SYSTEM = 3
+    API_CASE = 4
+    API_CASE_PARAMETER = 5
 
     @classmethod
     def obj(cls):
-        return {1: "模板调试", 2: "手动执行", 3: "系统调用"}
+        return {1: "模板调试", 2: "手动执行", 3: "系统调用", 4: "API用例", 5: "API接口场景"}
+
+
+class DataFactoryCaseSourceTypeEnum(BaseEnum):
+    """用例配置来源"""
+    API_CASE = 1
+    UI_CASE = 2
+    API_CASE_PARAMETER = 3
+
+    @classmethod
+    def obj(cls):
+        return {1: "API用例", 2: "UI用例", 3: "API接口场景"}
 
 
 class DataFactoryExecutionStageEnum(BaseEnum):

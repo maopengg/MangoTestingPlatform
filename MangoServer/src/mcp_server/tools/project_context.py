@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+from src.auto_test.auto_system.models import ProductModule, ProjectProduct, TestObject
+from src.auto_test.auto_user.models import User
+from src.enums.tools_enum import EnvironmentEnum
+from src.mcp_server.common import current_user, environment_title, fail, ok
+
+
+def register_project_context_tools(mcp):
+    @mcp.tool()
+    def get_current_user_context(user_id: int | None = None) -> dict:
+        """查询当前 MCP 调用用户的项目和测试环境上下文。"""
+        try:
+            user = current_user(user_id)
+        except Exception as exc:
+            return fail(str(exc), "USER_CONTEXT_REQUIRED")
+        return ok(
+            {
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "username": user.username,
+                },
+                "selected_project": user.selected_project,
+                "selected_environment": user.selected_environment,
+                "selected_environment_title": environment_title(user.selected_environment),
+            }
+        )
+
+    @mcp.tool()
+    def switch_user_test_environment(environment_id: int, user_id: int | None = None) -> dict:
+        """切换当前用户测试环境。执行 API/UI/Pytest case 前通常需要先选择环境。"""
+        try:
+            user = current_user(user_id)
+        except Exception as exc:
+            return fail(str(exc), "USER_CONTEXT_REQUIRED")
+        if environment_id not in EnvironmentEnum.get_key_list():
+            return fail("测试环境不存在", "ENVIRONMENT_NOT_FOUND", {"environment_id": environment_id})
+        user.selected_environment = environment_id
+        user.save()
+        return ok(
+            {
+                "user_id": user.id,
+                "selected_environment": user.selected_environment,
+                "selected_environment_title": environment_title(user.selected_environment),
+            },
+            "测试环境切换成功",
+        )
+
+    @mcp.tool()
+    def ensure_user_test_environment(
+        project_product_id: int,
+        preferred_environment_id: int | None = None,
+        auto_switch: bool = False,
+        user_id: int | None = None,
+    ) -> dict:
+        """执行前确认当前用户已有可用测试环境，可选自动切换到指定环境。"""
+        try:
+            user = current_user(user_id)
+        except Exception as exc:
+            return fail(str(exc), "USER_CONTEXT_REQUIRED")
+        if preferred_environment_id is not None and auto_switch:
+            if preferred_environment_id not in EnvironmentEnum.get_key_list():
+                return fail("测试环境不存在", "ENVIRONMENT_NOT_FOUND")
+            user.selected_environment = preferred_environment_id
+            user.save()
+        if user.selected_environment is None:
+            return ok(
+                {
+                    "ready": False,
+                    "selected_environment": None,
+                    "message": "当前用户未选择测试环境，请先调用 switch_user_test_environment",
+                    "next_actions": ["list_test_environments", "switch_user_test_environment"],
+                },
+                "当前用户未选择测试环境",
+            )
+        exists = TestObject.objects.filter(
+            project_product_id=project_product_id,
+            environment=user.selected_environment,
+        ).exists()
+        if not exists:
+            return ok(
+                {
+                    "ready": False,
+                    "selected_environment": user.selected_environment,
+                    "selected_environment_title": environment_title(user.selected_environment),
+                    "message": "目标项目产品没有配置当前测试环境的测试对象",
+                    "next_actions": ["list_project_test_objects", "switch_user_test_environment"],
+                },
+                "目标项目产品没有配置当前测试环境",
+            )
+        return ok(
+            {
+                "ready": True,
+                "selected_environment": user.selected_environment,
+                "selected_environment_title": environment_title(user.selected_environment),
+                "message": "当前用户已选择可用测试环境",
+            }
+        )
+
+    @mcp.tool()
+    def list_test_environments(project_product_id: int | None = None) -> dict:
+        """查询系统测试环境枚举；传入项目产品时只返回已配置测试对象的环境。"""
+        env_items = [{"id": key, "title": value} for key, value in EnvironmentEnum.obj().items()]
+        if project_product_id is not None:
+            env_ids = set(
+                TestObject.objects.filter(project_product_id=project_product_id)
+                .values_list("environment", flat=True)
+            )
+            env_items = [item for item in env_items if item["id"] in env_ids]
+        return ok({"items": env_items})
+
+    @mcp.tool()
+    def list_project_test_objects(
+        project_id: int | None = None,
+        project_product_id: int | None = None,
+    ) -> dict:
+        """查询项目下真实测试对象环境配置，用于判断执行环境是否可用。"""
+        queryset = TestObject.objects.select_related("project_product", "project_product__project")
+        if project_id is not None:
+            queryset = queryset.filter(project_product__project_id=project_id)
+        if project_product_id is not None:
+            queryset = queryset.filter(project_product_id=project_product_id)
+        grouped: dict[int, dict] = {}
+        for item in queryset:
+            project = item.project_product.project
+            project_obj = grouped.setdefault(
+                project.id,
+                {
+                    "project_id": project.id,
+                    "project_name": project.name,
+                    "test_objects": [],
+                },
+            )
+            project_obj["test_objects"].append(
+                {
+                    "test_object_id": item.id,
+                    "project_product_id": item.project_product_id,
+                    "project_product_name": item.project_product.name,
+                    "environment": item.environment,
+                    "environment_title": environment_title(item.environment),
+                    "name": item.name,
+                    "value": item.value,
+                }
+            )
+        return ok({"items": list(grouped.values())})
+
+    @mcp.tool()
+    def list_project_products(keyword: str | None = None) -> dict:
+        """查询项目产品列表，用于创建接口、请求头和 API case。"""
+        queryset = ProjectProduct.objects.select_related("project").all()
+        if keyword:
+            queryset = queryset.filter(name__contains=keyword)
+        items = [
+            {
+                "id": item.id,
+                "name": item.name,
+                "project": {"id": item.project.id, "name": item.project.name},
+                "api_client_type": item.api_client_type,
+                "ui_client_type": item.ui_client_type,
+            }
+            for item in queryset
+        ]
+        return ok({"items": items})
+
+    @mcp.tool()
+    def list_product_modules(project_product_id: int, tree: bool = False) -> dict:
+        """查询项目产品下的模块。"""
+        queryset = ProductModule.objects.filter(project_product_id=project_product_id).order_by("id")
+        items = [
+            {
+                "id": item.id,
+                "name": item.name,
+                "superior_module_1": item.superior_module_1,
+                "superior_module_2": item.superior_module_2,
+            }
+            for item in queryset
+        ]
+        return ok({"items": items, "tree": items if tree else None})
+
+    @mcp.tool()
+    def list_case_owners(keyword: str | None = None) -> dict:
+        """查询可作为用例负责人的用户。"""
+        queryset = User.objects.all()
+        if keyword:
+            queryset = queryset.filter(name__contains=keyword)
+        return ok(
+            {
+                "items": [
+                    {
+                        "id": item.id,
+                        "name": item.name,
+                        "username": item.username,
+                    }
+                    for item in queryset
+                ]
+            }
+        )
+

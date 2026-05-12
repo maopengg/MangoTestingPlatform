@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getSystemEnum } from '@/api/system/system'
+import { getSystemEnum, getSystemEnumShare } from '@/api/system/system'
 
 type StateValueType = null | { key: number; title: string }[]
 
@@ -94,43 +94,53 @@ export const useEnum = defineStore('get-enum', {
   }),
   getters: {},
   actions: {
+    setEnumData(data: any) {
+      this.cline_type = data.cline_type
+      this.method = data.method
+      this.api_public_type = data.api_public_type
+      this.api_client = data.api_client
+      this.notice = data.notice
+      this.status = data.status
+      this.drive_type = data.drive_type
+      this.browser_type = data.browser_type
+      this.element_exp = data.element_exp
+      this.case_level = data.case_level
+      this.ui_public = data.ui_public
+      this.element_ope = data.element_ope
+      this.api_parameter_type = data.api_parameter_type
+      this.product_type = data.product_type
+      this.auto_type = data.auto_type
+      this.task_status = data.task_status
+      this.environment_type = data.environment_type
+      this.test_case_type = data.test_case_type
+      this.file_status = data.file_status
+      this.file_type = data.file_type
+      this.monitoring_task_status = data.monitoring_task_status
+      this.monitoring_log_status = data.monitoring_log_status
+      this.test_suite_notice = data.test_suite_notice
+      this.database_type = data.database_type
+      this.data_factory_source_mode = data.data_factory_source_mode
+      this.data_factory_operation_type = data.data_factory_operation_type
+      this.data_factory_generator_type = data.data_factory_generator_type
+      this.data_factory_cleanup_strategy = data.data_factory_cleanup_strategy
+      this.data_factory_execution_source = data.data_factory_execution_source
+      this.data_factory_execution_stage = data.data_factory_execution_stage
+      this.data_factory_execution_status = data.data_factory_execution_status
+      this.data_factory_cleanup_status = data.data_factory_cleanup_status
+    },
     getEnum() {
       getSystemEnum()
         .then((res) => {
           if (!this.client) {
-            this.cline_type = res.data.cline_type
-            this.method = res.data.method
-            this.api_public_type = res.data.api_public_type
-            this.api_client = res.data.api_client
-            this.notice = res.data.notice
-            this.status = res.data.status
-            this.drive_type = res.data.drive_type
-            this.browser_type = res.data.browser_type
-            this.element_exp = res.data.element_exp
-            this.case_level = res.data.case_level
-            this.ui_public = res.data.ui_public
-            this.element_ope = res.data.element_ope
-            this.api_parameter_type = res.data.api_parameter_type
-            this.product_type = res.data.product_type
-            this.auto_type = res.data.auto_type
-            this.task_status = res.data.task_status
-            this.environment_type = res.data.environment_type
-            this.test_case_type = res.data.test_case_type
-            this.file_status = res.data.file_status
-            this.file_type = res.data.file_type
-            this.monitoring_task_status = res.data.monitoring_task_status
-            this.monitoring_log_status = res.data.monitoring_log_status
-            this.test_suite_notice = res.data.test_suite_notice
-            this.database_type = res.data.database_type
-            this.data_factory_source_mode = res.data.data_factory_source_mode
-            this.data_factory_operation_type = res.data.data_factory_operation_type
-            this.data_factory_generator_type = res.data.data_factory_generator_type
-            this.data_factory_cleanup_strategy = res.data.data_factory_cleanup_strategy
-            this.data_factory_execution_source = res.data.data_factory_execution_source
-            this.data_factory_execution_stage = res.data.data_factory_execution_stage
-            this.data_factory_execution_status = res.data.data_factory_execution_status
-            this.data_factory_cleanup_status = res.data.data_factory_cleanup_status
+            this.setEnumData(res.data)
           }
+        })
+        .catch(console.log)
+    },
+    getEnumShare() {
+      getSystemEnumShare()
+        .then((res) => {
+          this.setEnumData(res.data)
         })
         .catch(console.log)
     },

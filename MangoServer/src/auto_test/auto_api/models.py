@@ -79,6 +79,12 @@ class ApiCase(models.Model):
         from src.auto_test.auto_system.models import TasksDetails
         if TasksDetails.objects.filter(api_case=self).exists():
             raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
+        from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+        from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+        DataFactoryCaseConfig.objects.filter(
+            source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
+            source_id=self.id,
+        ).delete()
         super().delete(*args, **kwargs)
 
 
@@ -96,7 +102,8 @@ class ApiCaseDetailed(models.Model):
 
     def delete(self, *args, **kwargs):
         if ApiCaseDetailedParameter.objects.filter(case_detailed=self).exists():
-            ApiCaseDetailedParameter.objects.filter(case_detailed=self).delete()
+            for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed=self):
+                parameter.delete()
         super().delete(*args, **kwargs)
 
 
@@ -136,6 +143,15 @@ class ApiCaseDetailedParameter(models.Model):
 
     class Meta:
         db_table = 'api_case_detailed_parameter'
+
+    def delete(self, *args, **kwargs):
+        from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+        from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+        DataFactoryCaseConfig.objects.filter(
+            source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+            source_id=self.id,
+        ).delete()
+        super().delete(*args, **kwargs)
 
 
 class ApiHeaders(models.Model):

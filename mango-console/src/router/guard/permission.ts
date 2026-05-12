@@ -3,7 +3,7 @@ import usePermissionStore from '@/store/modules/permission'
 import router from '..'
 import { connectWebSocket } from '@/utils/socket'
 
-const whiteRoutes: string[] = ['/login', '/404', '/403', '/500']
+const whiteRoutes: string[] = ['/login', '/404', '/403', '/500', '/report/details']
 
 function usePermissionGuard() {
   router.beforeEach(async (to) => {

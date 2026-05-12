@@ -7,7 +7,7 @@ import json
 import warnings
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import ApiError, ERROR_MSG_0003
@@ -99,6 +99,7 @@ class ApiCaseStepsResultModel(BaseModel):
     request: RequestModel
     response: ResponseModel | None = None
     cache_data: dict
+    data_factory_cache_data: dict = Field(default_factory=dict)
 
 
 class ApiCaseResultModel(BaseModel):
