@@ -27,38 +27,6 @@ class ObtainTestData(DataProcessor):
         super().__init__()
         self._data_factory_cache: dict[str, Any] = {}
 
-    def get_cache(self, key: str) -> Any:
-        """优先读取数据工厂缓存，再读取普通缓存。"""
-        if key.startswith(self.DATA_FACTORY_PREFIX):
-            return self._data_factory_cache.get(key.removeprefix(self.DATA_FACTORY_PREFIX))
-        if key in self._data_factory_cache:
-            return self._data_factory_cache.get(key)
-        return super().get_cache(key)
-
-    def set_data_factory_cache(self, key: str, value: Any) -> None:
-        """设置数据工厂专用缓存，不写入普通缓存页签。"""
-        if not key:
-            return
-        key = key.removeprefix(self.DATA_FACTORY_PREFIX)
-        self._data_factory_cache[key] = value
-
-    def get_data_factory_all(self) -> dict[str, Any]:
-        """获取全部数据工厂缓存数据。"""
-        return {key: self.to_frontend_safe_value(value) for key, value in self._data_factory_cache.items()}
-
-    @classmethod
-    def to_frontend_safe_value(cls, value: Any) -> Any:
-        """前端 JSON 解析会丢失超大整数精度，展示数据转字符串更安全。"""
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, int) and not cls.JS_SAFE_INTEGER_MIN <= value <= cls.JS_SAFE_INTEGER_MAX:
-            return str(value)
-        if isinstance(value, dict):
-            return {key: cls.to_frontend_safe_value(item) for key, item in value.items()}
-        if isinstance(value, list):
-            return [cls.to_frontend_safe_value(item) for item in value]
-        return value
-
     @classmethod
     def random_demo(cls, demo1, demo2) -> str:
         """示例方法 参数：demo1， demo2"""
@@ -95,6 +63,38 @@ class ObtainTestData(DataProcessor):
         except IOError as e:
             traceback.print_exc()
             raise ToolsError(*ERROR_MSG_0024, value=(file_name,))
+
+    def get_cache(self, key: str) -> Any:
+        """优先读取数据工厂缓存，再读取普通缓存。"""
+        if key.startswith(self.DATA_FACTORY_PREFIX):
+            return self._data_factory_cache.get(key.removeprefix(self.DATA_FACTORY_PREFIX))
+        if key in self._data_factory_cache:
+            return self._data_factory_cache.get(key)
+        return super().get_cache(key)
+
+    def set_data_factory_cache(self, key: str, value: Any) -> None:
+        """设置数据工厂专用缓存，不写入普通缓存页签。"""
+        if not key:
+            return
+        key = key.removeprefix(self.DATA_FACTORY_PREFIX)
+        self._data_factory_cache[key] = value
+
+    def get_data_factory_all(self) -> dict[str, Any]:
+        """获取全部数据工厂缓存数据。"""
+        return {key: self.to_frontend_safe_value(value) for key, value in self._data_factory_cache.items()}
+
+    @classmethod
+    def to_frontend_safe_value(cls, value: Any) -> Any:
+        """前端 JSON 解析会丢失超大整数精度，展示数据转字符串更安全。"""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, int) and not cls.JS_SAFE_INTEGER_MIN <= value <= cls.JS_SAFE_INTEGER_MAX:
+            return str(value)
+        if isinstance(value, dict):
+            return {key: cls.to_frontend_safe_value(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [cls.to_frontend_safe_value(item) for item in value]
+        return value
 
 
 if __name__ == '__main__':

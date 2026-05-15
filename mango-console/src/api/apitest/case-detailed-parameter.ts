@@ -1,6 +1,10 @@
 import { deleted, get, post, put } from '@/api/http'
+import type {
+  ApiCaseParameterPayload,
+  ApiCaseParameterQuery,
+} from '@/types/api-test/case-parameter'
 
-export function getApiCaseDetailedParameter(data: object) {
+export function getApiCaseDetailedParameter(data: ApiCaseParameterQuery) {
   return get({
     url: '/api/case/detailed/parameter',
     data: () => {
@@ -9,7 +13,7 @@ export function getApiCaseDetailedParameter(data: object) {
   })
 }
 
-export function postApiCaseDetailedParameter(data: object) {
+export function postApiCaseDetailedParameter(data: ApiCaseParameterPayload) {
   // @ts-ignore
   return post({
     url: '/api/case/detailed/parameter',
@@ -19,7 +23,7 @@ export function postApiCaseDetailedParameter(data: object) {
   })
 }
 
-export function postApiCaseDetailedParameterCopy(data: object) {
+export function postApiCaseDetailedParameterCopy(data: ApiCaseParameterPayload & { id: number | null }) {
   return post({
     url: '/api/case/detailed/parameter/copy',
     data: () => {
@@ -28,7 +32,7 @@ export function postApiCaseDetailedParameterCopy(data: object) {
   })
 }
 
-export function putApiCaseDetailedParameter(data: object) {
+export function putApiCaseDetailedParameter(data: ApiCaseParameterPayload) {
   // @ts-ignore
   return put({
     url: '/api/case/detailed/parameter',
@@ -52,8 +56,8 @@ export function deleteApiCaseDetailedParameter(id: number | string[] | number[])
 
 export function postCaseDetailedParameterTestExtractResponseAfter(
   type: string,
-  expression: object,
-  response: object | string
+  expression: Record<string, unknown> | string,
+  response: Record<string, unknown> | string
 ) {
   return post({
     url: '/api/case/detailed/parameter/test/extract/response/after',

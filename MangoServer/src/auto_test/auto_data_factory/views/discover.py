@@ -5,6 +5,7 @@
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from django.core.cache import cache
 
 from src.auto_test.auto_data_factory.service.datasource import (
     DataFactoryDatasource,
@@ -19,6 +20,8 @@ from src.tools.view.response_msg import RESPONSE_MSG_0001
 
 
 class DataFactoryDiscoverViews(ViewSet):
+    TABLES_CACHE_TIMEOUT = 30 * 60
+
     @staticmethod
     def _get_param(request: Request, key: str):
         data = request.data.get(key)
@@ -49,6 +52,16 @@ class DataFactoryDiscoverViews(ViewSet):
         database_id = DataFactoryDiscoverViews._get_param(request, 'database_id')
         return Database.objects.get(id=database_id)
 
+    @staticmethod
+    def _is_refresh(request: Request) -> bool:
+        value = request.data.get('refresh', request.query_params.get('refresh'))
+        return value in [True, 'true', 'True', '1', 1]
+
+    @staticmethod
+    def _tables_cache_key(database: Database) -> str:
+        version = database.update_time.strftime('%Y%m%d%H%M%S') if database.update_time else '0'
+        return f'data_factory:discover:tables:{database.id}:{version}'
+
     @action(methods=['post'], detail=False)
     @error_response('system')
     def test_connection(self, request: Request):
@@ -59,7 +72,14 @@ class DataFactoryDiscoverViews(ViewSet):
     @error_response('system')
     def tables(self, request: Request):
         database = self._get_database(request)
-        return ResponseData.success(RESPONSE_MSG_0001, DataFactoryDiscover.get_tables(database))
+        cache_key = self._tables_cache_key(database)
+        if self._is_refresh(request):
+            cache.delete(cache_key)
+        tables = cache.get(cache_key)
+        if tables is None:
+            tables = DataFactoryDiscover.get_tables(database)
+            cache.set(cache_key, tables, self.TABLES_CACHE_TIMEOUT)
+        return ResponseData.success(RESPONSE_MSG_0001, tables)
 
     @action(methods=['post'], detail=False)
     @error_response('system')

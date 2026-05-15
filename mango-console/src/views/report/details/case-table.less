@@ -1,0 +1,77 @@
+.case-summary-table {
+  width: 100%;
+  background: #fff;
+
+  :deep(.arco-table-container) {
+    border: 0;
+  }
+
+  :deep(.arco-table-th) {
+    background: var(--color-fill-2);
+    color: var(--color-text-2);
+    font-weight: 600;
+    border-right: 0;
+  }
+
+  :deep(.arco-table-td) {
+    color: var(--color-text-1);
+    border-right: 0;
+    transition: background-color 0.2s ease;
+  }
+
+  :deep(.arco-table-tr:hover .arco-table-td) {
+    background: var(--color-fill-2);
+  }
+
+  :deep(.arco-table-cell) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :deep(.arco-table-cell .arco-space) {
+    flex-wrap: nowrap;
+  }
+
+  :deep(.arco-table-td:first-child),
+  :deep(.arco-table-td:nth-child(2)),
+  :deep(.arco-table-td:nth-child(3)),
+  :deep(.arco-table-td:nth-child(4)) {
+    vertical-align: middle;
+  }
+}
+
+.action-cell {
+  display: grid;
+  grid-template-columns: 88px 40px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-cell :deep(.arco-btn) {
+  justify-self: center;
+}
+
+.action-placeholder {
+  visibility: hidden;
+  justify-self: center;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.case-id-cell {
+  color: var(--color-text-1);
+}
+
+.case-count {
+  width: max-content;
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-fill-2);
+  color: var(--color-text-2);
+  font-size: 12px;
+  white-space: nowrap;
+}

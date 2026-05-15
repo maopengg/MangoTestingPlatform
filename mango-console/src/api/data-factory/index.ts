@@ -108,6 +108,10 @@ export function putDataFactoryTemplateStatus(data: object) {
   return put({ url: '/data-factory/template/status', data: () => data })
 }
 
+export function postDataFactoryTemplateSyncFields(data: object) {
+  return post({ url: '/data-factory/template/sync-fields', data: () => data })
+}
+
 export function postDataFactoryTemplateDebugRun(data: object) {
   return post({ url: '/data-factory/template/debug-run', data: () => data })
 }

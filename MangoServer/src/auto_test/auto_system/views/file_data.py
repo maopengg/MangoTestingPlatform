@@ -8,6 +8,7 @@ import socket
 
 import minio
 import urllib3
+from django.core.files.storage import default_storage
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -27,6 +28,8 @@ from src.tools.view.response_msg import *
 class FileDataSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    test_file = serializers.FileField(use_url=False, allow_null=True, required=False)
+    failed_screenshot = serializers.ImageField(use_url=False, allow_null=True, required=False)
 
     class Meta:
         model = FileData
@@ -37,6 +40,8 @@ class FileDataSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
+    test_file = serializers.FileField(use_url=False, allow_null=True, required=False)
+    failed_screenshot = serializers.ImageField(use_url=False, allow_null=True, required=False)
 
     class Meta:
         model = FileData
@@ -44,7 +49,7 @@ class FileDataSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset
+        return queryset.order_by('-id')
 
 
 class FileDataCRUD(ModelCRUD):
@@ -75,13 +80,33 @@ class FileDataCRUD(ModelCRUD):
                     return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
             except (
                     urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError,
-                    minio.error.S3Error):
+                    minio.error.S3Error) as error:
+                log.system.error(f'文件上传到MinIO失败，请检查对象存储配置：{error}')
                 return ResponseData.fail(RESPONSE_MSG_0026)
 
 
 class FileDataViews(ViewSet):
     model = FileData
     serializer_class = FileDataSerializers
+
+    @error_response('system')
+    @action(methods=['GET'], detail=False)
+    def download_url(self, request: Request):
+        file_id = request.query_params.get('id')
+        if not file_id:
+            return ResponseData.fail(RESPONSE_MSG_0029)
+        try:
+            file_data = FileData.objects.get(id=file_id)
+            if not file_data.test_file:
+                return ResponseData.fail(RESPONSE_MSG_0030)
+            return ResponseData.success(RESPONSE_MSG_0001, default_storage.url(file_data.test_file.name))
+        except FileData.DoesNotExist:
+            return ResponseData.fail(RESPONSE_MSG_0029)
+        except (
+                urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError,
+                minio.error.S3Error) as error:
+            log.system.error(f'生成MinIO下载地址失败，请检查对象存储配置：{error}')
+            return ResponseData.fail(RESPONSE_MSG_0026)
 
     @error_response('system')
     @action(methods=['POST'], detail=False)

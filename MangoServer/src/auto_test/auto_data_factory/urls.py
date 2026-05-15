@@ -36,6 +36,7 @@ urlpatterns = [
     path("template", DataFactoryTemplateCRUD.as_view()),
     path("template/copy", DataFactoryTemplateViews.as_view({'post': 'copy'})),
     path("template/status", DataFactoryTemplateViews.as_view({'put': 'status'})),
+    path("template/sync-fields", DataFactoryTemplateViews.as_view({'post': 'sync_fields'})),
     path("template/preview", DataFactoryTemplateViews.as_view({'post': 'preview'})),
     path("template/debug-run", DataFactoryTemplateViews.as_view({'post': 'debug_run'})),
     path("template/debug-cleanup", DataFactoryTemplateViews.as_view({'post': 'debug_cleanup'})),

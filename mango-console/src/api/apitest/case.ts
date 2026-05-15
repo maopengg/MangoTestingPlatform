@@ -1,6 +1,11 @@
 import { deleted, get, post, put } from '@/api/http'
+import type {
+  ApiCaseDataFactoryPayload,
+  ApiCasePayload,
+  ApiCaseQuery,
+} from '@/types/api-test/case'
 
-export function postApiImportUrl(data: object) {
+export function postApiImportUrl(data: Record<string, unknown>) {
   return post({
     url: '/api/import/api',
     data: () => {
@@ -9,7 +14,7 @@ export function postApiImportUrl(data: object) {
   })
 }
 
-export function getApiCase(data: object) {
+export function getApiCase(data: ApiCaseQuery) {
   return get({
     url: '/api/case',
     data: () => {
@@ -18,7 +23,7 @@ export function getApiCase(data: object) {
   })
 }
 
-export function postApiCase(data: object) {
+export function postApiCase(data: ApiCasePayload) {
   return post({
     url: '/api/case',
     data: () => {
@@ -27,7 +32,7 @@ export function postApiCase(data: object) {
   })
 }
 
-export function putApiCase(data: object) {
+export function putApiCase(data: ApiCasePayload) {
   return put({
     url: '/api/case',
     data: () => {
@@ -47,7 +52,11 @@ export function deleteApiCase(id: number | string[] | number[]) {
   })
 }
 
-export function getApiCaseRun(caseId: any, test_env: any, caseSort: any) {
+export function getApiCaseRun(
+  caseId: number | string,
+  test_env: number | string,
+  caseSort: number | string | null
+) {
   return get({
     url: '/api/case/test',
     data: () => {
@@ -60,7 +69,7 @@ export function getApiCaseRun(caseId: any, test_env: any, caseSort: any) {
   })
 }
 
-export function postApiCaseBatchRun(caseIdList: string[], test_env: any) {
+export function postApiCaseBatchRun(caseIdList: Array<string | number>, test_env: number | string) {
   return post({
     url: '/api/case/batch',
     data: () => {
@@ -83,7 +92,7 @@ export function postApiCaseCody(caseId: number) {
   })
 }
 
-export function getApiCaseName(moduleId: any) {
+export function getApiCaseName(moduleId: number | string) {
   return get({
     url: '/api/case/name',
     data: () => {
@@ -94,28 +103,28 @@ export function getApiCaseName(moduleId: any) {
   })
 }
 
-export function getApiCaseDataFactory(data: object) {
+export function getApiCaseDataFactory(data: Record<string, unknown>) {
   return get({
     url: '/api/case/data-factory',
     data: () => data,
   })
 }
 
-export function postApiCaseDataFactory(data: object) {
+export function postApiCaseDataFactory(data: ApiCaseDataFactoryPayload) {
   return post({
     url: '/api/case/data-factory',
     data: () => data,
   })
 }
 
-export function putApiCaseDataFactory(data: object) {
+export function putApiCaseDataFactory(data: ApiCaseDataFactoryPayload) {
   return put({
     url: '/api/case/data-factory',
     data: () => data,
   })
 }
 
-export function putApiCaseDataFactorySort(data: object) {
+export function putApiCaseDataFactorySort(data: { case_sort_list: Array<{ id: number; sort: number }> }) {
   return put({
     url: '/api/case/data-factory/sort',
     data: () => data,
@@ -129,7 +138,7 @@ export function deleteApiCaseDataFactory(id: number | string[] | number[]) {
   })
 }
 
-export function postApiCaseDataFactoryPreview(data: object) {
+export function postApiCaseDataFactoryPreview(data: ApiCaseDataFactoryPayload) {
   return post({
     url: '/api/case/data-factory/preview',
     data: () => data,

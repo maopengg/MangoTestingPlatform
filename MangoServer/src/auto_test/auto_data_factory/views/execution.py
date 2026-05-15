@@ -12,7 +12,6 @@ from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
 from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateSerializerC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializersC
-from src.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -45,7 +44,6 @@ class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
     source_display = serializers.SerializerMethodField(read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
     module = ProductModuleSerializersC(read_only=True)
-    test_object = TestObjectSerializersC(read_only=True)
     template = DataFactoryTemplateSerializerC(read_only=True)
 
     class Meta:
@@ -66,9 +64,6 @@ class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
             'project_product',
             'project_product__project',
             'module',
-            'test_object',
-            'test_object__project_product',
-            'test_object__executor_name',
             'template',
             'template__project_product',
             'template__project_product__project',
@@ -96,7 +91,6 @@ class DataFactoryExecutionViews(ViewSet):
         execution = DataFactoryExecution.objects.select_related(
             'project_product',
             'module',
-            'test_object',
             'template',
         ).get(id=request.query_params.get('execution_id'))
         items = DataFactoryExecutionItemSerializerC.setup_eager_loading(

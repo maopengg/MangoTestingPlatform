@@ -89,6 +89,8 @@
             :align="item.align"
             :data-index="item.key"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
             :title="item.title"
             :width="item.width"
           >
@@ -225,6 +227,8 @@
           :key="item.key"
           :align="item.align"
           :data-index="item.key"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
           :title="item.title"
           :width="item.width"
         >
@@ -300,15 +304,24 @@
         </a-grid-item>
         <a-grid-item>
           <a-form-item label="表名" required>
-            <a-select
-              v-model="entityForm.table_name"
-              :loading="entityTableLoading"
-              :options="entityTableOptions"
-              allow-clear
-              allow-search
-              placeholder="选择逻辑源和环境后自动读取表"
-              @change="onEntityTableChange"
-            />
+            <a-input-group class="entity-table-select-group">
+              <a-select
+                v-model="entityForm.table_name"
+                :loading="entityTableLoading"
+                :options="entityTableOptions"
+                allow-clear
+                allow-search
+                placeholder="选择逻辑源和环境后自动读取表"
+                class="entity-table-select"
+                @change="onEntityTableChange"
+              />
+              <a-button
+                :loading="entityTableRefreshLoading"
+                class="entity-table-refresh"
+                @click="refreshEntityTables"
+                >清理缓存重试</a-button
+              >
+            </a-input-group>
           </a-form-item>
         </a-grid-item>
         <a-grid-item
@@ -360,6 +373,8 @@
           :align="item.align"
           :data-index="item.key"
           :fixed="item.fixed"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
           :title="item.title"
           :width="item.width"
         >
@@ -372,18 +387,23 @@
             </a-tooltip>
           </template>
           <template v-else-if="item.key === 'nullable'" #cell="{ record }">
-            <a-tag :color="record.nullable ? 'gray' : 'orange'">
+            <a-tag :color="enumStore.colors[record.nullable]" size="small">
               {{ record.nullable ? '可空' : '必填' }}
             </a-tag>
           </template>
           <template v-else-if="item.key === 'primary_key'" #cell="{ record }">
-            <a-tag :color="record.primary_key ? 'arcoblue' : 'gray'">
+            <a-tag :color="enumStore.colors[record.primary_key]" size="small">
               {{ record.primary_key ? '主键' : '普通' }}
             </a-tag>
           </template>
           <template v-else-if="item.key === 'autoincrement'" #cell="{ record }">
-            <a-tag :color="record.autoincrement ? 'green' : 'gray'">
+            <a-tag :color="enumStore.colors[record.autoincrement]" size="small">
               {{ record.autoincrement ? '自增' : '非自增' }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'platform_type'" #cell="{ record }">
+            <a-tag :color="enumStore.colors[record.platform_type]" size="small">
+              {{ record.platform_type }}
             </a-tag>
           </template>
           <template v-else-if="item.key === 'generator_type'" #cell="{ record }">
@@ -537,6 +557,7 @@
   const entityTableOptions = ref<any[]>([])
   const entityDiscoveredColumns = ref<any[]>([])
   const entityTableLoading = ref(false)
+  const entityTableRefreshLoading = ref(false)
   const syncFieldsAfterSave = ref(true)
   const replaceFields = ref(true)
   const entityVisible = ref(false)
@@ -804,9 +825,9 @@
     }
   }
 
-  function loadEntityTables(datasourceAliasId: any) {
+  function loadEntityTables(datasourceAliasId: any, refresh = false) {
     if (!ensureSelectedEnvironment()) {
-      return
+      return Promise.resolve()
     }
     const projectProduct =
       entityForm.project_product ||
@@ -814,19 +835,35 @@
       currentEntity.value?.project_product
     if (!projectProduct) {
       Message.error('请先选择产品')
-      return
+      return Promise.resolve()
     }
     entityTableLoading.value = true
-    postDataFactoryDiscoverTables({
+    return postDataFactoryDiscoverTables({
       datasource_alias_id: getOptionId(datasourceAliasId),
       project_product: getOptionId(projectProduct),
       test_env: userStore.selected_environment,
+      refresh,
     })
       .then((res) => {
         entityTableOptions.value = (res.data || []).map(normalizeTableOption)
       })
       .finally(() => {
         entityTableLoading.value = false
+      })
+  }
+
+  function refreshEntityTables() {
+    if (!entityForm.datasource_alias) {
+      Message.error('请先选择逻辑数据源')
+      return
+    }
+    entityTableRefreshLoading.value = true
+    loadEntityTables(entityForm.datasource_alias, true)
+      .then(() => {
+        Message.success('表名缓存已清理并重新加载')
+      })
+      .finally(() => {
+        entityTableRefreshLoading.value = false
       })
   }
 
@@ -1158,12 +1195,19 @@
   }
 
   function previewFieldValues() {
+    if (!ensureSelectedEnvironment()) {
+      return
+    }
     const fields = buildFieldPayload()
     if (!fields) {
       return
     }
     fieldPreviewLoading.value = true
-    postDataFactoryFieldPreviewValues({ fields })
+    postDataFactoryFieldPreviewValues({
+      entity_id: currentEntity.value?.id,
+      fields,
+      test_env: userStore.selected_environment,
+    })
       .then((res) => {
         const previewMap = new Map((res.data?.fields || []).map((it: any) => [it.name, it]))
         fieldRows.value = fieldRows.value.map((row) => {
@@ -1470,6 +1514,20 @@
 </script>
 
 <style scoped>
+  .entity-table-select-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .entity-table-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .entity-table-refresh {
+    flex: 0 0 112px;
+  }
+
   .field-rule-db-type {
     display: inline-block;
     max-width: 100%;

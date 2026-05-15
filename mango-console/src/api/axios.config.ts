@@ -1,9 +1,17 @@
 import Axios, { AxiosResponse } from 'axios'
 import qs from 'qs'
 
-export const baseURL = import.meta.env.VITE_APP_BASE_URL
+function currentWebSocketURL(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/web/socket?`
+}
+
+export const baseURL = import.meta.env.VITE_APP_BASE_URL || ''
 export const minioURL = import.meta.env.VITE_APP_MINIO_URL
-export const webSocketURL = import.meta.env.VITE_APP_SOCKET_URL
+export const webSocketURL = import.meta.env.VITE_APP_SOCKET_URL || currentWebSocketURL()
 
 export const CONTENT_TYPE = 'Content-Type'
 

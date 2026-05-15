@@ -6,6 +6,8 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from copy import deepcopy
+
 from pydantic import ValidationError
 
 from src.auto_test.auto_data_factory.models import DataFactoryTemplate
@@ -148,10 +150,26 @@ class DataFactoryTemplateViews(ViewSet):
 
     @action(methods=['post'], detail=False)
     @error_response('system')
+    def sync_fields(self, request: Request):
+        template = DataFactoryTemplate.objects.select_related('entity').get(id=request.data.get('id'))
+        fields = template.entity.datafactoryfield_set.all().order_by('sort', 'id')
+        template.field_overrides = {
+            field.name: {
+                "generator_type": field.generator_type,
+                "generator_config": deepcopy(field.generator_config or {}),
+            }
+            for field in fields
+        }
+        template.save(update_fields=['field_overrides', 'update_time'])
+        return ResponseData.success(RESPONSE_MSG_0001, DataFactoryTemplateSerializer(template).data)
+
+    @action(methods=['post'], detail=False)
+    @error_response('system')
     def preview(self, request: Request):
         result = DataFactoryRunner.preview_template(
             template_id=request.data.get('template_id'),
             overrides=request.data.get('overrides') or {},
+            output_config=request.data.get('output_config'),
             context=request.data.get('context') or {},
             test_object_id=request.data.get('test_object_id'),
             test_env=request.data.get('test_env'),

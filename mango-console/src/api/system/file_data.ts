@@ -40,3 +40,14 @@ export function deleteUserFile(id: number | string[] | number[]) {
     },
   })
 }
+
+export function getUserFileDownloadUrl(id: number | string) {
+  return get({
+    url: '/system/file/download/url',
+    data: () => {
+      return {
+        id,
+      }
+    },
+  })
+}

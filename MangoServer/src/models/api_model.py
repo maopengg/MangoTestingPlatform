@@ -95,6 +95,7 @@ class ApiCaseStepsResultModel(BaseModel):
     error_message: str | None = None
     test_time: str | None = None
     api_info_id: int
+    api_info_name: str
     ass: list[AssResultModel] | None = None
     request: RequestModel
     response: ResponseModel | None = None

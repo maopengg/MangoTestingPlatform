@@ -49,11 +49,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-upload
-                :before-upload="beforeUpload"
-                :show-file-list="false"
-                @before-upload="beforeUpload"
-              />
+              <a-button type="primary" @click="onOpenUploadModal">上传</a-button>
             </div>
           </a-space>
         </template>
@@ -141,6 +137,36 @@
       </a-form>
     </template>
   </ModalDialog>
+  <a-modal
+    v-model:visible="uploadModalVisible"
+    title="上传文件"
+    @cancel="onCancelUpload"
+  >
+    <a-form :model="uploadForm">
+      <a-form-item label="文件" required>
+        <a-upload
+          v-model:file-list="uploadFileList"
+          :auto-upload="false"
+          :limit="1"
+          @change="onUploadFileChange"
+          @before-remove="onRemoveUploadFile"
+        />
+      </a-form-item>
+      <a-form-item label="项目/产品" required>
+        <a-cascader
+          v-model="uploadForm.project_product"
+          :placeholder="'请选择项目产品'"
+          :options="projectInfo.projectProduct"
+          allow-search
+          allow-clear
+        />
+      </a-form-item>
+    </a-form>
+    <template #footer>
+      <a-button @click="onCloseUploadModal">取消</a-button>
+      <a-button type="primary" :loading="uploadLoading" @click="onUploadFile">上传</a-button>
+    </template>
+  </a-modal>
 </template>
 
 <script lang="ts" setup>
@@ -148,8 +174,13 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { tableColumns, conditionItems, formItems } from './config'
-  import { deleteUserFile, getUserFile, postUserFile, putUserFile } from '@/api/system/file_data'
-  import { minioURL } from '@/api/axios.config'
+  import {
+    deleteUserFile,
+    getUserFile,
+    getUserFileDownloadUrl,
+    postUserFile,
+    putUserFile,
+  } from '@/api/system/file_data'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
@@ -162,6 +193,13 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const uploadModalVisible = ref(false)
+  const uploadLoading = ref(false)
+  const uploadFile = ref<File | null>(null)
+  const uploadFileList = ref<any[]>([])
+  const uploadForm = reactive({
+    project_product: '' as string | number,
+  })
   const data = reactive({
     updateId: 0,
   })
@@ -241,61 +279,90 @@
     }
   }
 
-  const beforeUpload = (file: any) => {
-    return new Promise((resolve, reject) => {
-      Modal.confirm({
-        title: '上传文件',
-        content: `确认上传：${file.name}`,
-        onOk: () => {
-          const formData = new FormData()
-          formData.append('test_file', file)
-          formData.append('type', '0')
-          formData.append('name', file.name)
-          postUserFile(formData)
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-              // resolve(true)
-            })
-            .catch(console.log)
-        },
-        onCancel: () => reject('cancel'),
-      })
-    })
+  function onOpenUploadModal() {
+    uploadFile.value = null
+    uploadFileList.value = []
+    uploadForm.project_product = ''
+    uploadModalVisible.value = true
   }
 
-  function onDownload(record: any) {
-    let file_path = record.test_file
+  function onUploadFileChange(fileList: any[], fileItem: any) {
+    uploadFileList.value = fileList.slice(-1)
+    uploadFile.value = fileItem?.file || uploadFileList.value[0]?.file || null
+  }
 
-    if (file_path.startsWith('http://') || file_path.startsWith('https://')) {
-      try {
-        const urlObj = new URL(file_path)
-        file_path = urlObj.pathname
-      } catch (e) {
-        console.error('URL解析失败:', e)
-        Message.error('文件路径格式错误')
-        return
-      }
-    } else if (!file_path.startsWith('/')) {
-      file_path = '/' + file_path
+  function onRemoveUploadFile() {
+    uploadFile.value = null
+    uploadFileList.value = []
+    return true
+  }
+
+  async function onUploadFile() {
+    if (!uploadFile.value) {
+      Message.error('请选择上传文件')
+      return
     }
-    file_path = minioURL + file_path
+    if (!uploadForm.project_product && uploadForm.project_product !== '0') {
+      Message.error('请选择项目产品')
+      return
+    }
+
+    uploadLoading.value = true
+    const formData = new FormData()
+    formData.append('test_file', uploadFile.value)
+    formData.append('type', '0')
+    formData.append('name', uploadFile.value.name)
+    formData.append('project_product', String(uploadForm.project_product))
+    try {
+      const res = await postUserFile(formData)
+      Message.success(res.msg)
+      uploadModalVisible.value = false
+      uploadFile.value = null
+      uploadFileList.value = []
+      uploadForm.project_product = ''
+      doRefresh()
+    } catch (error) {
+      console.log(error)
+    } finally {
+      uploadLoading.value = false
+    }
+  }
+
+  function onCancelUpload() {
+    uploadFile.value = null
+    uploadFileList.value = []
+    uploadForm.project_product = ''
+  }
+
+  function onCloseUploadModal() {
+    uploadModalVisible.value = false
+    onCancelUpload()
+  }
+
+  async function onDownload(record: any) {
     const file_name = record.name
-    if (file_name.includes('jpg') || file_name.includes('png')) {
-      window.open(file_path, '_blank')
-    } else {
-      let aLink = document.createElement('a')
-      aLink.href = file_path
-      aLink.download = file_name
-      Message.loading('文件下载中，请到下载中心查看~')
-      document.body.appendChild(aLink)
-      aLink.click()
-      document.body.removeChild(aLink)
+    try {
+      const res = await getUserFileDownloadUrl(record.id)
+      const file_path = res.data
+      if (file_name.includes('jpg') || file_name.includes('png')) {
+        window.open(file_path, '_blank')
+      } else {
+        let aLink = document.createElement('a')
+        aLink.href = file_path
+        aLink.download = file_name
+        Message.loading('文件下载中，请到下载中心查看~')
+        document.body.appendChild(aLink)
+        aLink.click()
+        document.body.removeChild(aLink)
+      }
+    } catch (error) {
+      console.log(error)
     }
   }
 
   onMounted(() => {
     nextTick(async () => {
+      projectInfo.projectProductName()
       doRefresh()
     })
   })

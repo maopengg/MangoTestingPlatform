@@ -67,6 +67,8 @@
             :align="item.align"
             :data-index="item.key"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
             :title="item.title"
             :width="item.width"
           >
@@ -77,15 +79,13 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'db_type'" #cell="{ record }">
-              {{ enumTitle(enumStore.database_type, record.db_type) }}
+              <a-tag :color="enumStore.colors[record.db_type]" size="small">
+                {{ enumTitle(enumStore.database_type, record.db_type) }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="openAlias(record)"
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="openAlias(record)"
                   >编辑</a-button
                 >
                 <a-button
@@ -172,6 +172,8 @@
           :key="item.key"
           :align="item.align"
           :data-index="item.key"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
           :title="item.title"
           :width="item.width"
         >
@@ -179,7 +181,9 @@
             {{ record.id }}
           </template>
           <template v-else-if="item.key === 'test_object'" #cell="{ record }">
-            {{ displayName(record.test_object) }}
+            <a-tag :color="enumStore.colors[record.cleanup_strategy]" size="small">
+              {{ displayName(record.test_object) }}
+            </a-tag>
           </template>
           <template v-else-if="item.key === 'database'" #cell="{ record }">
             {{ displayDatabase(record.database) }}

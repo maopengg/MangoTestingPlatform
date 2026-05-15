@@ -13,7 +13,17 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_api.models import ApiInfo, ApiCaseDetailedParameter
+from src.auto_test.auto_api.models import ApiInfo, ApiCaseDetailed, ApiCaseDetailedParameter
+from src.auto_test.auto_api.schemas.case_schema import (
+    ApiGeneralAssertionItem,
+    ApiJsonPathAssertionItem,
+    ApiKeyValueItem,
+    ApiSqlAssertionItem,
+    validate_file_payload,
+    validate_int_list,
+    validate_json_object,
+    validate_model_list,
+)
 from src.exceptions import ApiError, ERROR_MSG_0017
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -34,12 +44,59 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         return queryset
 
+    def validate_headers(self, value):
+        return validate_int_list(value, '请求头')
+
+    def validate_file(self, value):
+        return validate_file_payload(value, 'file')
+
+    def validate_front_sql(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '前置sql')
+
+    def validate_ass_general(self, value):
+        return validate_model_list(value, ApiGeneralAssertionItem, '通用断言')
+
+    def validate_ass_sql(self, value):
+        return validate_model_list(value, ApiSqlAssertionItem, 'SQL断言')
+
+    def validate_ass_json_all(self, value):
+        return validate_json_object(value, '响应JSON全匹配断言', allow_list=True)
+
+    def validate_ass_jsonpath(self, value):
+        return validate_model_list(value, ApiJsonPathAssertionItem, '响应jsonpath断言')
+
+    def validate_ass_schema(self, value):
+        return validate_json_object(value, 'schema配置')
+
+    def validate_posterior_sql(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '后置sql')
+
+    def validate_posterior_response(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '后置响应处理')
+
+    def validate_posterior_response_text(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '后置响应文本处理')
+
+    def validate_posterior_file(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '文件下载', allow_none=True, allow_empty_dict=True)
+
+    def validate_result_data(self, value):
+        return validate_json_object(value, '最近一次执行结果')
+
 
 class ApiCaseDetailedParameterCRUD(ModelCRUD):
     model = ApiCaseDetailedParameter
     queryset = ApiCaseDetailedParameter.objects.all()
     serializer_class = ApiCaseDetailedParameterSerializers
     serializer = ApiCaseDetailedParameterSerializers
+
+    @staticmethod
+    def refresh_case_flow(case_detailed_id):
+        case_detailed = ApiCaseDetailed.objects.filter(id=case_detailed_id).first()
+        if not case_detailed:
+            return
+        from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
+        ApiCaseDetailedCRUD().callback(case_detailed.case_id)
 
     @error_response('api')
     def post(self, request: Request):
@@ -51,7 +108,34 @@ class ApiCaseDetailedParameterCRUD(ModelCRUD):
         data['json'] = api_info_obj.json
         data['file'] = api_info_obj.file
         return_data = self.inside_post(data)
+        self.refresh_case_flow(return_data.get('case_detailed'))
         return ResponseData.success(RESPONSE_MSG_0024, return_data)
+
+    @error_response('api')
+    def put(self, request: Request):
+        parameter = self.model.objects.get(id=request.data.get('id'))
+        case_detailed_id = parameter.case_detailed_id
+        response = super().put(request)
+        self.refresh_case_flow(case_detailed_id)
+        return response
+
+    @error_response('api')
+    def delete(self, request: Request):
+        _id = request.query_params.get('id')
+        id_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
+        case_detailed_ids = set()
+        if _id:
+            parameter = self.model.objects.filter(id=_id).first()
+            if parameter:
+                case_detailed_ids.add(parameter.case_detailed_id)
+        if id_list:
+            case_detailed_ids.update(
+                self.model.objects.filter(id__in=id_list).values_list('case_detailed_id', flat=True)
+            )
+        response = super().delete(request)
+        for case_detailed_id in case_detailed_ids:
+            self.refresh_case_flow(case_detailed_id)
+        return response
 
 
 class ApiCaseDetailedParameterViews(ViewSet):
@@ -124,4 +208,5 @@ class ApiCaseDetailedParameterViews(ViewSet):
             data_factory['source_id'] = new_parameter.get('id')
             DataFactoryCaseConfigCRUD.inside_post(data_factory)
 
+        ApiCaseDetailedParameterCRUD.refresh_case_flow(source.case_detailed_id)
         return ResponseData.success(RESPONSE_MSG_0009, new_parameter)

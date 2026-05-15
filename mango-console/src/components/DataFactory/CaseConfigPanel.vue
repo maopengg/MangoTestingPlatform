@@ -19,6 +19,8 @@
           v-for="item of columns"
           :key="item.key"
           :data-index="item.key"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
           :title="item.title"
           :width="item.width"
           :align="item.align"
@@ -29,8 +31,18 @@
           <template v-else-if="item.key === 'entity'" #cell="{ record }">
             {{ record.template?.entity?.name }}
           </template>
+          <template v-else-if="item.key === 'table_name'" #cell="{ record }">
+            {{ record.template?.entity?.table_name }}
+          </template>
           <template v-else-if="item.key === 'cleanup_strategy'" #cell="{ record }">
-            {{ enumTitle(enumStore.data_factory_cleanup_strategy, record.cleanup_strategy || record.template?.cleanup_strategy) }}
+            <a-tag :color="enumStore.colors[record.cleanup_strategy]" size="small">
+              {{
+                enumTitle(
+                  enumStore.data_factory_cleanup_strategy,
+                  record.cleanup_strategy || record.template?.cleanup_strategy
+                )
+              }}
+            </a-tag>
           </template>
           <template v-else-if="item.key === 'status'" #cell="{ record }">
             <a-switch
@@ -49,7 +61,9 @@
               >
                 预览
               </a-button>
-              <a-button size="mini" status="danger" type="text" @click="deleteConfig(record)">删除</a-button>
+              <a-button size="mini" status="danger" type="text" @click="deleteConfig(record)"
+                >删除</a-button
+              >
             </a-space>
           </template>
         </a-table-column>
@@ -67,13 +81,41 @@
     <a-form :model="form" layout="vertical">
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
+          <a-form-item label="项目/产品" required>
+            <a-cascader
+              v-model="form.project_product"
+              :options="projectInfo.projectProduct"
+              allow-clear
+              allow-search
+              value-key="key"
+              @change="onProjectProductChange"
+            />
+          </a-form-item>
+        </a-grid-item>
+        <a-grid-item>
+          <a-form-item label="模块" required>
+            <a-select
+              v-model="form.module"
+              :field-names="enumFieldNames"
+              :options="productModule.data"
+              allow-clear
+              allow-search
+              value-key="key"
+              @change="onModuleChange"
+            />
+          </a-form-item>
+        </a-grid-item>
+        <a-grid-item>
           <a-form-item label="状态模板" required>
             <a-select
               v-model="form.template"
               :options="templateList"
               :field-names="{ value: 'id', label: 'name' }"
+              :disabled="!form.project_product || !form.module"
+              :loading="templateLoading"
               allow-clear
               allow-search
+              placeholder="请先选择项目/产品和模块"
               @change="onTemplateChange"
             />
           </a-form-item>
@@ -126,16 +168,93 @@
     </template>
   </a-modal>
 
-  <DataFactoryPreviewModal v-model:visible="previewVisible" :result="previewResult" />
+  <a-modal v-model:visible="previewVisible" title="生成数据预览" width="920px">
+    <a-space class="data-factory-case-preview-content" direction="vertical">
+      <a-alert v-if="previewResult.missing_fields?.length" type="warning">
+        当前还有 {{ previewResult.missing_fields.length }} 个字段需要配置，建议补齐后再运行用例。
+      </a-alert>
+      <a-alert v-else-if="previewResult.payload" type="success"
+        >当前模板字段已能生成 payload。</a-alert
+      >
+      <a-textarea
+        v-if="Object.keys(previewResult.output || {}).length"
+        :model-value="JSON.stringify(previewResult.output, null, 2)"
+        :auto-size="{ minRows: 3, maxRows: 8 }"
+        readonly
+      />
+      <a-table
+        v-if="flattenDependencyTree(previewResult.dependency_tree).length"
+        :columns="dependencyTreeColumns"
+        :data="flattenDependencyTree(previewResult.dependency_tree)"
+        :pagination="false"
+        :row-key="'path'"
+        :scroll="{ x: 900, y: 220 }"
+        size="small"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of dependencyTreeColumns"
+            :key="item.key"
+            :data-index="item.key"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'node'" #cell="{ record }">
+              <span :style="{ paddingLeft: `${record.level * 18}px` }">{{
+                record.template_name
+              }}</span>
+              <a-tag
+                v-if="record.level === 0"
+                size="small"
+                color="arcoblue"
+                style="margin-left: 8px"
+                >根节点</a-tag
+              >
+              <a-tag v-else-if="record.reused" size="small" color="green" style="margin-left: 8px"
+                >复用</a-tag
+              >
+              <a-tag v-else size="small" color="orange" style="margin-left: 8px">创建</a-tag>
+            </template>
+            <template v-else-if="item.key === 'action'" #cell="{ record }">
+              <a-tag :color="getDependencyActionColor(record.action)" size="small">{{
+                getDependencyActionText(record.action)
+              }}</a-tag>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+      <TemplateFieldConfigEditor
+        v-if="previewResult.fields?.length"
+        :fields="previewResult.fields || []"
+        :field-overrides="{}"
+        :output-config="[]"
+        :generator-options="enumStore.data_factory_generator_type"
+        :preview-fields="previewResult.fields || []"
+        readonly
+        :show-config="false"
+        :show-output="false"
+        show-preview
+      />
+    </a-space>
+    <template #footer>
+      <a-space class="data-factory-case-preview-footer">
+        <a-button @click="previewVisible = false">关闭</a-button>
+      </a-space>
+    </template>
+  </a-modal>
 </template>
 
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
+  import { useTableColumn } from '@/hooks/table'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
+  import { useProject } from '@/store/modules/get-project'
+  import { useProductModule } from '@/store/modules/project_module'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
-  import DataFactoryPreviewModal from '@/components/DataFactory/PreviewModal.vue'
   import {
     deleteDataFactoryCaseConfig,
     getDataFactoryCaseConfig,
@@ -168,11 +287,47 @@
 
   const enumStore = useEnum()
   const userStore = useUserStore()
+  const projectInfo = useProject()
+  const productModule = useProductModule()
+  const enumFieldNames = { value: 'key', label: 'title' }
 
   const columns = [
-    { title: '数据名称', key: 'name', dataIndex: 'name', width: 150 },
-    { title: '状态模板', key: 'template', dataIndex: 'template', width: 160 },
-    { title: '基础实体', key: 'entity', dataIndex: 'entity', width: 120 },
+    {
+      title: '数据名称',
+      key: 'name',
+      dataIndex: 'name',
+      width: 200,
+      align: 'left',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      title: '状态模板',
+      key: 'template',
+      dataIndex: 'template',
+      width: 200,
+      align: 'left',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      title: '基础实体',
+      key: 'entity',
+      dataIndex: 'entity',
+      width: 100,
+      align: 'left',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      title: '表名',
+      key: 'table_name',
+      dataIndex: 'table_name',
+      width: 100,
+      align: 'left',
+      ellipsis: true,
+      tooltip: true,
+    },
     { title: '清理策略', key: 'cleanup_strategy', dataIndex: 'cleanup_strategy', width: 120 },
     { title: '状态', key: 'status', dataIndex: 'status', width: 90, align: 'center' },
     { title: '操作', key: 'actions', dataIndex: 'actions', width: 180, align: 'center' },
@@ -183,17 +338,20 @@
   const fieldRows = ref<DataFactoryFieldRule[]>([])
   const templateOutputConfig = ref<DataFactoryOutputConfig>([])
   const loading = ref(false)
+  const templateLoading = ref(false)
   const fieldLoading = ref(false)
   const saving = ref(false)
   const visible = ref(false)
   const previewVisible = ref(false)
   const previewLoading = ref<any>(null)
-  const previewResult = ref({})
+  const previewResult = ref<any>({})
 
   const form = reactive<{
     id: number | null
     source_type: number
     source_id: string | number | null
+    project_product: string | number | null
+    module: string | number | null
     template: number | null
     name: string
     sort: number
@@ -205,6 +363,8 @@
     id: null,
     source_type: props.sourceType,
     source_id: props.caseId,
+    project_product: props.projectProductId,
+    module: null,
     template: null,
     name: '',
     sort: 0,
@@ -218,9 +378,21 @@
     { key: null, title: '使用模板默认策略' },
     ...(enumStore.data_factory_cleanup_strategy || []),
   ])
+  const dependencyTreeColumns = useTableColumn([
+    { title: '依赖节点', key: 'node', dataIndex: 'node', width: 260 },
+    { title: '来源字段', key: 'field', dataIndex: 'field', width: 140 },
+    { title: '取值字段', key: 'target_field', dataIndex: 'target_field', width: 100 },
+    { title: '策略', key: 'strategy', dataIndex: 'strategy', width: 140 },
+    { title: '动作', key: 'action', dataIndex: 'action', width: 100 },
+    { title: '说明', key: 'message', dataIndex: 'message' },
+  ])
 
   function enumTitle(options: any[] = [], value: any) {
     return options.find((item) => item.key === value)?.title || value || '-'
+  }
+
+  function getOptionId(value: any) {
+    return value?.id ?? value
   }
 
   function refresh() {
@@ -259,23 +431,37 @@
   }
 
   function loadTemplates() {
+    const projectProduct = getOptionId(form.project_product || props.projectProductId)
+    const module = getOptionId(form.module)
+    if (!projectProduct || !module) {
+      templateList.value = []
+      return Promise.resolve()
+    }
     const query: any = {
       page: 1,
-      pageSize: 10000,
+      pageSize: 9999,
+      project_product: projectProduct,
+      module,
     }
-    if (props.projectProductId) {
-      query.project_product = props.projectProductId
-    }
-    getDataFactoryTemplate(query).then((res) => {
-      templateList.value = res.data || []
-    })
+    templateLoading.value = true
+    return getDataFactoryTemplate(query)
+      .then((res) => {
+        templateList.value = res.data || []
+      })
+      .finally(() => {
+        templateLoading.value = false
+      })
   }
 
   function resetForm(record: any = null) {
+    const template = record?.template || {}
     form.id = record?.id || null
     form.source_type = props.sourceType
     form.source_id = props.caseId
-    form.template = record?.template?.id || record?.template || null
+    form.project_product =
+      template?.project_product?.id || template?.project_product || props.projectProductId || null
+    form.module = template?.module?.id || template?.module || null
+    form.template = template?.id || record?.template || null
     form.name = record?.name || ''
     form.sort = record?.sort ?? caseConfigList.value.length
     form.field_overrides = record?.field_overrides || {}
@@ -289,9 +475,38 @@
   function open(record: any = null) {
     resetForm(record)
     visible.value = true
-    if (form.template) {
-      loadFields()
+    if (form.project_product) {
+      productModule.getProjectModule(getOptionId(form.project_product))
     }
+    if (form.project_product && form.module) {
+      loadTemplates().then(() => {
+        if (form.template) {
+          loadFields()
+        }
+      })
+    } else {
+      templateList.value = []
+    }
+  }
+
+  function onProjectProductChange() {
+    form.module = null
+    form.template = null
+    form.field_overrides = {}
+    templateOutputConfig.value = []
+    templateList.value = []
+    fieldRows.value = []
+    if (form.project_product) {
+      productModule.getProjectModule(getOptionId(form.project_product))
+    }
+  }
+
+  function onModuleChange() {
+    form.template = null
+    form.field_overrides = {}
+    templateOutputConfig.value = []
+    fieldRows.value = []
+    loadTemplates()
   }
 
   function onTemplateChange() {
@@ -336,10 +551,16 @@
     }
     saving.value = true
     const payload = {
-      ...form,
+      id: form.id,
       source_type: props.sourceType,
       source_id: props.caseId,
+      template: form.template,
+      name: form.name,
+      sort: form.sort,
+      field_overrides: form.field_overrides,
       cleanup_strategy: (form.cleanup_strategy as any) === '' ? null : form.cleanup_strategy,
+      status: form.status,
+      stage: form.stage,
     }
     try {
       const res = payload.id
@@ -422,6 +643,41 @@
       })
   }
 
+  function flattenDependencyTree(tree: any, level = 0, path = '0'): any[] {
+    if (!tree) {
+      return []
+    }
+    const current = {
+      ...tree,
+      level,
+      path,
+      node: tree.template_name,
+      message: tree.message || (tree.reused ? '复用上下文已有数据' : ''),
+    }
+    const children = (tree.children || []).flatMap((child: any, index: number) =>
+      flattenDependencyTree(child, level + 1, `${path}-${index}`)
+    )
+    return [current, ...children]
+  }
+
+  function getDependencyActionText(action: string) {
+    const map: Record<string, string> = {
+      root: '根节点',
+      create: '创建',
+      reuse: '复用',
+    }
+    return map[action] || action || '-'
+  }
+
+  function getDependencyActionColor(action: string) {
+    const map: Record<string, string> = {
+      root: 'arcoblue',
+      create: 'orange',
+      reuse: 'green',
+    }
+    return map[action] || 'gray'
+  }
+
   watch(
     () => [props.caseId, props.sourceType],
     () => {
@@ -432,13 +688,18 @@
   watch(
     () => props.projectProductId,
     () => {
-      loadTemplates()
+      if (!visible.value) {
+        return
+      }
+      form.project_product = props.projectProductId || null
+      onProjectProductChange()
     }
   )
 
   onMounted(() => {
+    projectInfo.projectProductName()
+    productModule.getProjectModule()
     refresh()
-    loadTemplates()
   })
 
   defineExpose({
@@ -458,5 +719,17 @@
     background: var(--color-fill-1);
     border: 1px dashed var(--color-border-2);
     border-radius: 4px;
+  }
+
+  .data-factory-case-preview-content {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 8px;
+    width: 100%;
+  }
+
+  .data-factory-case-preview-footer {
+    justify-content: flex-end;
+    width: 100%;
   }
 </style>

@@ -25,6 +25,17 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
+    key: 'test_env',
+    label: '环境',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择环境',
+    optionItems: [],
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
     key: 'name',
     label: '参数名称',
     type: 'input',
@@ -69,6 +80,22 @@ export const formItems: FormItem[] = reactive([
     type: 'select',
     required: true,
     placeholder: '请选择对应类型，注意不同类型的加载顺序',
+    validator: function () {
+      // @ts-ignore
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '环境',
+    key: 'test_env',
+    value: ref(''),
+    type: 'select',
+    required: true,
+    placeholder: '请选择绑定环境',
     validator: function () {
       // @ts-ignore
       if (!this.value && this.value !== 0) {
@@ -134,6 +161,12 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+  },
+  {
+    title: '环境',
+    key: 'test_env',
+    dataIndex: 'test_env',
+    width: 120,
   },
   {
     title: '类型',

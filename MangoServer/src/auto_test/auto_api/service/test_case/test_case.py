@@ -114,7 +114,7 @@ class TestCase:
                       case_sort: int | None,
                       parametrize: dict | None = None
                       ) -> tuple[int, str] | None:
-        if case_sort:
+        if case_sort is not None and str(case_sort) != '':
             case_detailed_list = ApiCaseDetailed \
                 .objects \
                 .filter(case=case_id, case_sort__lte=case_sort) \
@@ -168,6 +168,7 @@ class TestCase:
                 res_model = ApiCaseStepsResultModel(
                     id=case_detailed.id,
                     api_info_id=case_detailed.api_info.id,
+                    api_info_name=case_detailed.api_info.name,
                     name=parameter.name,
                     status=StatusEnum.FAIL.value,
                     request=request_model,

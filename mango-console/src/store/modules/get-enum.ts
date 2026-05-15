@@ -75,7 +75,6 @@ export const useEnum = defineStore('get-enum', {
     data_factory_execution_status: [],
     data_factory_cleanup_status: [],
     colors: [
-      'magenta',
       'cyan',
       'orangered',
       'orange',
@@ -89,6 +88,7 @@ export const useEnum = defineStore('get-enum', {
       'purple',
       'pinkpurple',
       'gray',
+      'magenta',
     ],
     status_colors: ['red', 'green', 'gold', 'gray'],
   }),

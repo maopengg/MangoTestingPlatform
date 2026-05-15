@@ -10,6 +10,8 @@ from src.exceptions import ToolsError
 
 
 class DataFactoryTypeCast:
+    JS_MAX_SAFE_INTEGER = 9007199254740991
+
     @classmethod
     def cast(cls, value, platform_type: str):
         if value is None:
@@ -49,6 +51,10 @@ class DataFactoryTypeCast:
             return float(value)
         if isinstance(value, (datetime, date)):
             return value.isoformat()
+        if isinstance(value, int) and not isinstance(value, bool):
+            if abs(value) > cls.JS_MAX_SAFE_INTEGER:
+                return str(value)
+            return value
         if isinstance(value, dict):
             return {key: cls.to_jsonable(item) for key, item in value.items()}
         if isinstance(value, list):

@@ -84,6 +84,26 @@ def _data_factory_result_with_cache_keys(result: dict, template: DataFactoryTemp
     return data
 
 
+def _normalize_output_config(output_config: list | None) -> list:
+    """Accept MCP-friendly shorthand and convert it to DataFactoryOutputConfigItem shape."""
+    if not output_config:
+        return []
+    normalized = []
+    for item in output_config:
+        if isinstance(item, str):
+            value = item.strip()
+            if value:
+                normalized.append({"field": value, "key": value})
+            continue
+        if not isinstance(item, dict):
+            continue
+        field = item.get("field") or item.get("name")
+        key = item.get("key") or field
+        if field and key:
+            normalized.append({"field": field, "key": key})
+    return normalized
+
+
 def _template_summary(item: DataFactoryTemplate, name: str | None = None) -> dict:
     return {
         "id": item.id,
@@ -147,7 +167,6 @@ def _execution_summary(item: DataFactoryExecution) -> dict:
         "template_name": item.template.name if item.template_id else None,
         "project_product_id": item.project_product_id,
         "module_id": item.module_id,
-        "test_object_id": item.test_object_id,
         "stage": item.stage,
         "status": item.status,
         "cleanup_status": item.cleanup_status,
@@ -158,7 +177,7 @@ def _execution_summary(item: DataFactoryExecution) -> dict:
 
 
 def _execution_detail(execution_id: int) -> dict:
-    execution = DataFactoryExecution.objects.select_related("template", "project_product", "module", "test_object").get(id=execution_id)
+    execution = DataFactoryExecution.objects.select_related("template", "project_product", "module").get(id=execution_id)
     items = []
     for item in DataFactoryExecutionItem.objects.select_related("template", "database").filter(execution_id=execution_id).order_by("cleanup_order", "id"):
         items.append(
@@ -544,7 +563,7 @@ def register_data_factory_tools(mcp):
                 "name": name,
                 "description": description,
                 "field_overrides": field_overrides or {},
-                "output_config": output_config or [],
+                "output_config": _normalize_output_config(output_config),
                 "cleanup_strategy": cleanup_strategy,
                 "status": status,
             }
@@ -574,7 +593,7 @@ def register_data_factory_tools(mcp):
             "name": name,
             "description": description,
             "field_overrides": field_overrides,
-            "output_config": output_config,
+            "output_config": _normalize_output_config(output_config) if output_config is not None else None,
             "cleanup_strategy": cleanup_strategy,
             "status": status,
         }.items():
@@ -780,7 +799,7 @@ def register_data_factory_tools(mcp):
         page_size: int = 20,
     ) -> dict:
         """查询数据工厂执行记录。"""
-        queryset = DataFactoryExecution.objects.select_related("template", "project_product", "module", "test_object").all()
+        queryset = DataFactoryExecution.objects.select_related("template", "project_product", "module").all()
         if project_product_id is not None:
             queryset = queryset.filter(project_product_id=project_product_id)
         if module_id is not None:
@@ -851,7 +870,7 @@ def register_data_factory_tools(mcp):
                     "field_overrides": {
                         "category_name": {
                             "generator_type": 13,
-                            "generator_config": {"value": "AUTO_${{str_random_string()}}"},
+                            "generator_config": {"value": "AUTO${{str_random_string()}}"},
                         }
                     },
                     "case_body": {

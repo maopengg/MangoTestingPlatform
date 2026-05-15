@@ -38,10 +38,12 @@
       .then((res) => {
         userStore.selected_project = res.data.selected_project
         setTitle(key)
-        productModule.getProjectModule()
+        return productModule.getProjectModule()
+      })
+      .then(() => {
+        debouncedFn()
       })
       .catch(console.log)
-    debouncedFn()
   }
 
   const debouncedFn = useDebounceFn(() => {

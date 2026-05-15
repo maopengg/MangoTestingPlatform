@@ -9,7 +9,8 @@ from django.db import transaction
 from django.forms import model_to_dict
 from genson import SchemaBuilder
 
-from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter, ApiHeaders, ApiInfo
+from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter, ApiHeaders, ApiInfo, ApiPublic
+from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_api.service.test_case.test_api_info import TestApiInfo
 from src.auto_test.auto_api.service.test_case.test_case import TestCase
 from src.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseSerializersC
@@ -17,8 +18,10 @@ from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
 from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
 from src.auto_test.auto_api.views.api_headers import ApiHeadersCRUD
 from src.auto_test.auto_api.views.api_info import ApiInfoCRUD
+from src.auto_test.auto_api.views.api_pulic import ApiPublicCRUD
 from src.auto_test.auto_user.models import User
-from src.enums.api_enum import MethodEnum
+from src.enums.api_enum import ApiPublicTypeEnum, MethodEnum
+from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.mcp_server.common import current_user, fail, ok
 
@@ -31,8 +34,74 @@ def _json_string(value: Any) -> str | None:
     return jsonlib.dumps(value, ensure_ascii=False, indent=4)
 
 
+def _is_empty_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() == ""
+    if isinstance(value, (list, tuple, set)):
+        return all(_is_empty_value(item) for item in value)
+    if isinstance(value, dict):
+        return all(_is_empty_value(item) for item in value.values())
+    return False
+
+
+def _clean_list_rows(value: Any) -> list:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if not _is_empty_value(item)]
+
+
+def _normalize_scenario_payload(payload: dict) -> dict:
+    normalized = dict(payload)
+    for key in ("params", "data", "json"):
+        if key in normalized:
+            normalized[key] = _json_string(normalized[key])
+    for key in (
+        "headers",
+        "front_sql",
+        "posterior_response",
+        "posterior_response_text",
+        "posterior_sql",
+    ):
+        if key in normalized:
+            normalized[key] = _clean_list_rows(normalized[key])
+    if "ass_general" in normalized:
+        normalized["ass_general"] = _normalize_ass_general(normalized["ass_general"])
+    if "ass_jsonpath" in normalized:
+        normalized["ass_jsonpath"] = _normalize_ass_jsonpath(normalized["ass_jsonpath"])
+    return normalized
+
+
+def _normalize_ass_general(assertions: list | None) -> list:
+    """Keep general assertion parameter values UI-friendly.
+
+    The frontend renders each parameter value in a textarea, while the SQL
+    assertion executor already converts JSON strings back to dict/list values.
+    Store dict/list parameter values as JSON strings so MCP-created assertions
+    match the normal page-editing shape.
+    """
+    normalized = _clean_list_rows(assertions)
+    for assertion in normalized:
+        if not isinstance(assertion, dict):
+            continue
+        value = assertion.get("value")
+        if not isinstance(value, dict):
+            continue
+        parameters = value.get("parameter")
+        if not isinstance(parameters, list):
+            continue
+        for parameter in parameters:
+            if not isinstance(parameter, dict):
+                continue
+            parameter_value = parameter.get("v")
+            if isinstance(parameter_value, (dict, list)):
+                parameter["v"] = jsonlib.dumps(parameter_value, ensure_ascii=False)
+    return normalized
+
+
 def _normalize_ass_jsonpath(assertions: list | None) -> list:
-    """Normalize assertion aliases to the executor's actual/method/expect shape."""
+    """Normalize JSONPath assertion field names to the executor's actual/method/expect shape."""
     if not assertions:
         return []
     normalized = []
@@ -42,7 +111,7 @@ def _normalize_ass_jsonpath(assertions: list | None) -> list:
         actual = item.get("actual", item.get("path"))
         method = item.get("method", item.get("operator"))
         expect = item.get("expect", item.get("value"))
-        if actual is None and method is None and expect is None:
+        if _is_empty_value({"actual": actual, "method": method, "expect": expect}):
             continue
         normalized.append(
             {
@@ -52,6 +121,77 @@ def _normalize_ass_jsonpath(assertions: list | None) -> list:
             }
         )
     return normalized
+
+
+def _api_assertion_method_groups() -> list[dict]:
+    cache_data = CacheData.objects.get(key=CacheDataKey2Enum.ASS_SELECT_VALUE.value)
+    return jsonlib.loads(cache_data.value)
+
+
+def _flatten_assertion_methods(groups: list[dict]) -> list[dict]:
+    methods = []
+
+    def walk(items: list[dict], parents: list[str]) -> None:
+        for item in items or []:
+            children = item.get("children") or []
+            label = item.get("label") or item.get("value")
+            if children:
+                walk(children, [*parents, label])
+                continue
+            value = item.get("value")
+            if not value:
+                continue
+            methods.append(
+                {
+                    "value": value,
+                    "label": label,
+                    "path": " / ".join([*parents, label]),
+                    "parameter": item.get("parameter") or [],
+                }
+            )
+
+    walk(groups, [])
+    return methods
+
+
+def _content_assertion_methods(groups: list[dict]) -> list[dict]:
+    for group in groups:
+        if group.get("value") == "内容断言":
+            return group.get("children") or []
+    return []
+
+
+def _general_assertion_template(method_value: str, actual: Any = "", expect: Any = "") -> dict:
+    methods = _flatten_assertion_methods(_api_assertion_method_groups())
+    method = next((item for item in methods if item["value"] == method_value), None)
+    if method is None:
+        raise ValueError(f"断言方法不存在: {method_value}")
+    value = {
+        "value": method["value"],
+        "label": method["label"],
+        "parameter": method["parameter"],
+    }
+    for parameter in value["parameter"]:
+        if parameter.get("f") == "actual":
+            parameter["v"] = actual
+        elif parameter.get("f") == "expect":
+            parameter["v"] = expect
+    return {"method": method["path"], "value": value}
+
+
+def _case_owner_required() -> dict:
+    return fail(
+        "创建 API case 需要指定负责人 case_people_id。请先调用 list_case_owners 查询可选负责人，并询问用户选择绑定给谁。",
+        "CASE_OWNER_REQUIRED",
+        {
+            "required_field": "case_people_id",
+            "next_actions": [
+                "调用 list_case_owners 查询可选负责人",
+                "向用户展示负责人列表并询问 case 要绑定给谁",
+                "用户选择后再次调用 create_api_case 或 create_complete_api_case",
+            ],
+        },
+    )
 
 
 def _case_tree(case_id: int, include_result_data: bool = True) -> dict:
@@ -199,6 +339,95 @@ def register_api_automation_tools(mcp):
         return ok({"header_id": data["id"], **data}, "公共请求头更新成功")
 
     @mcp.tool()
+    def list_api_public_variables(
+        project_product_id: int,
+        enabled_only: bool = False,
+        type: int | None = None,
+        keyword: str | None = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> dict:
+        """查询 API 全局变量。type: 0=自定义, 1=SQL, 2=登录。"""
+        queryset = ApiPublic.objects.select_related("project_product").filter(project_product_id=project_product_id)
+        if enabled_only:
+            queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
+        if type is not None:
+            queryset = queryset.filter(type=type)
+        if keyword:
+            queryset = (
+                queryset.filter(name__contains=keyword)
+                | queryset.filter(key__contains=keyword)
+                | queryset.filter(value__contains=keyword)
+            )
+        count = queryset.count()
+        offset = max(page - 1, 0) * page_size
+        items = [
+            {
+                "id": item.id,
+                "project_product_id": item.project_product_id,
+                "type": item.type,
+                "type_title": ApiPublicTypeEnum.get_value(item.type),
+                "name": item.name,
+                "key": item.key,
+                "value": item.value,
+                "status": item.status,
+            }
+            for item in queryset.order_by("type", "-id")[offset : offset + page_size]
+        ]
+        return ok({"items": items, "count": count, "page": page, "page_size": page_size})
+
+    @mcp.tool()
+    def create_api_public_variable(
+        project_product_id: int,
+        type: int,
+        name: str,
+        key: str,
+        value: str,
+        status: int = 0,
+    ) -> dict:
+        """创建 API 全局变量。type: 0=自定义, 1=SQL, 2=登录。"""
+        data = ApiPublicCRUD.inside_post(
+            {
+                "project_product": project_product_id,
+                "type": type,
+                "name": name,
+                "key": key,
+                "value": value,
+                "status": status,
+            }
+        )
+        return ok({"public_variable_id": data["id"], **data}, "API 全局变量创建成功")
+
+    @mcp.tool()
+    def update_api_public_variable(
+        public_variable_id: int,
+        type: int | None = None,
+        name: str | None = None,
+        key: str | None = None,
+        value: str | None = None,
+        status: int | None = None,
+    ) -> dict:
+        """更新 API 全局变量。"""
+        payload: dict[str, Any] = {"id": public_variable_id}
+        for field, field_value in {
+            "type": type,
+            "name": name,
+            "key": key,
+            "value": value,
+            "status": status,
+        }.items():
+            if field_value is not None:
+                payload[field] = field_value
+        data = ApiPublicCRUD.inside_put(public_variable_id, payload)
+        return ok({"public_variable_id": data["id"], **data}, "API 全局变量更新成功")
+
+    @mcp.tool()
+    def set_api_public_variable_status(public_variable_id: int, status: int) -> dict:
+        """启用或停用 API 全局变量。status 通常 1=启用, 0=停用。"""
+        data = ApiPublicCRUD.inside_put(public_variable_id, {"id": public_variable_id, "status": status})
+        return ok({"public_variable_id": data["id"], "status": data["status"]}, "API 全局变量状态更新成功")
+
+    @mcp.tool()
     def search_api_infos(
         project_product_id: int | None = None,
         module_id: int | None = None,
@@ -246,14 +475,13 @@ def register_api_automation_tools(mcp):
         name: str,
         url: str,
         method: int,
-        headers: dict | None = None,
         params: str | dict | list | None = None,
         data: str | dict | list | None = None,
         json_body: str | dict | list | None = None,
         file: dict | list | None = None,
         type: int = 1,
     ) -> dict:
-        """创建 API 接口定义。params/data/json_body 请传 JSON 字符串或对象。"""
+        """创建 API 接口定义。params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。"""
         if method not in MethodEnum.get_key_list():
             return fail("请求方法不存在", "METHOD_NOT_FOUND", {"method": method})
         data_obj = ApiInfoCRUD.inside_post(
@@ -263,7 +491,7 @@ def register_api_automation_tools(mcp):
                 "name": name,
                 "url": url,
                 "method": method,
-                "headers": headers,
+                "headers": None,
                 "params": _json_string(params),
                 "data": _json_string(data),
                 "json": _json_string(json_body),
@@ -293,7 +521,7 @@ def register_api_automation_tools(mcp):
             "name": name,
             "url": path,
             "method": MethodEnum.get_key(parsed.method),
-            "headers": dict(parsed.header),
+            "headers": None,
             "type": type,
         }
         query_params = parse_qs(url_components.query)
@@ -315,7 +543,6 @@ def register_api_automation_tools(mcp):
         name: str | None = None,
         url: str | None = None,
         method: int | None = None,
-        headers: dict | None = None,
         params: str | dict | list | None = None,
         data: str | dict | list | None = None,
         json_body: str | dict | list | None = None,
@@ -327,7 +554,6 @@ def register_api_automation_tools(mcp):
             "name": name,
             "url": url,
             "method": method,
-            "headers": headers,
             "params": _json_string(params),
             "data": _json_string(data),
             "json": _json_string(json_body),
@@ -393,14 +619,16 @@ def register_api_automation_tools(mcp):
         project_product_id: int,
         module_id: int,
         name: str,
-        case_people_id: int,
+        case_people_id: int | None = None,
         level: int = 1,
         front_custom: list | None = None,
         front_sql: list | None = None,
         front_headers: list[int] | None = None,
         posterior_sql: list | None = None,
     ) -> dict:
-        """创建 API case 主体。"""
+        """创建 API case 主体。未提供 case_people_id 时应先查询负责人并询问用户选择。"""
+        if case_people_id is None:
+            return _case_owner_required()
         data_obj = ApiCaseCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -545,6 +773,7 @@ def register_api_automation_tools(mcp):
             "posterior_sleep": posterior_sleep,
             "posterior_func": posterior_func,
         }
+        payload = _normalize_scenario_payload(payload)
         data_obj = ApiCaseDetailedParameterCRUD.inside_post(payload)
         return ok({"scenario_id": data_obj["id"], **data_obj}, "场景参数创建成功")
 
@@ -552,11 +781,7 @@ def register_api_automation_tools(mcp):
     def update_api_case_scenario(scenario_id: int, fields: dict) -> dict:
         """更新场景参数。fields 使用 ApiCaseDetailedParameter 字段名。"""
         payload = {"id": scenario_id, **fields}
-        for key in ("params", "data", "json"):
-            if key in payload:
-                payload[key] = _json_string(payload[key])
-        if "ass_jsonpath" in payload:
-            payload["ass_jsonpath"] = _normalize_ass_jsonpath(payload["ass_jsonpath"])
+        payload = _normalize_scenario_payload(payload)
         data_obj = ApiCaseDetailedParameterCRUD.inside_put(scenario_id, payload)
         return ok({"scenario_id": data_obj["id"], **data_obj}, "场景参数更新成功")
 
@@ -604,7 +829,7 @@ def register_api_automation_tools(mcp):
                     result["ass_jsonpath"].append(
                         {
                             "actual": path,
-                            "method": "eq",
+                            "method": "p_is_equal_to",
                             "expect": "" if value is None else str(value),
                         }
                     )
@@ -672,17 +897,19 @@ def register_api_automation_tools(mcp):
     def create_complete_api_case(
         project_product_id: int,
         module_id: int,
-        case_people_id: int,
         case_name: str,
         api: dict,
         scenarios: list[dict],
+        case_people_id: int | None = None,
         headers: list[dict] | None = None,
         case_front_headers: list[int] | None = None,
         run_after_create: bool = False,
         test_env_id: int | None = None,
         user_id: int | None = None,
     ) -> dict:
-        """一键创建公共请求头、接口定义、API case、步骤、场景，并可选立即执行。"""
+        """一键创建公共请求头、接口定义、API case、步骤、场景，并可选立即执行。未提供 case_people_id 时应先查询负责人并询问用户选择。"""
+        if case_people_id is None:
+            return _case_owner_required()
         try:
             with transaction.atomic():
                 header_ids: list[int] = []
@@ -703,7 +930,7 @@ def register_api_automation_tools(mcp):
                     "name": api["name"],
                     "url": api["url"],
                     "method": api["method"],
-                    "headers": api.get("headers"),
+                    "headers": None,
                     "params": _json_string(api.get("params")),
                     "data": _json_string(api.get("data")),
                     "json": _json_string(api.get("json") or api.get("json_body")),
@@ -731,8 +958,7 @@ def register_api_automation_tools(mcp):
                     first = scenarios[0]
                     update_payload = {"name": first.get("name", api["name"])}
                     update_payload.update({k: v for k, v in first.items() if k != "name"})
-                    if "ass_jsonpath" in update_payload:
-                        update_payload["ass_jsonpath"] = _normalize_ass_jsonpath(update_payload["ass_jsonpath"])
+                    update_payload = _normalize_scenario_payload(update_payload)
                     ApiCaseDetailedParameterCRUD.inside_put(default_parameter_id, update_payload)
                     scenario_ids.append(default_parameter_id)
                     for scenario in scenarios[1:]:
@@ -741,11 +967,7 @@ def register_api_automation_tools(mcp):
                             "name": scenario.get("name", api["name"]),
                             **{k: v for k, v in scenario.items() if k != "name"},
                         }
-                        for key in ("params", "data", "json"):
-                            if key in scenario_payload:
-                                scenario_payload[key] = _json_string(scenario_payload[key])
-                        if "ass_jsonpath" in scenario_payload:
-                            scenario_payload["ass_jsonpath"] = _normalize_ass_jsonpath(scenario_payload["ass_jsonpath"])
+                        scenario_payload = _normalize_scenario_payload(scenario_payload)
                         created_scenario = ApiCaseDetailedParameterCRUD.inside_post(scenario_payload)
                         scenario_ids.append(created_scenario["id"])
                 run_result = None
@@ -874,15 +1096,50 @@ def register_api_automation_tools(mcp):
         return ok(MethodEnum.obj())
 
     @mcp.tool()
-    def get_api_assertion_schema() -> dict:
-        """返回 API 场景断言字段格式。"""
+    def get_api_assertion_methods() -> dict:
+        """查询 API 断言方法选项，来源同前端 system/cache/data/key/value?key=ass_select_value。"""
+        groups = _api_assertion_method_groups()
+        content_methods = _content_assertion_methods(groups)
         return ok(
             {
-                "ass_jsonpath": [{"actual": "$.code", "method": "eq", "expect": "0"}],
-                "ass_general": [{"method": "", "value": {}}],
-                "ass_json_all": {},
+                "source": "cache_data.ass_select_value",
+                "groups": groups,
+                "jsonpath_methods": content_methods,
+                "flat_methods": _flatten_assertion_methods(groups),
+                "recommended": {
+                    "jsonpath_equal": "p_is_equal_to",
+                    "jsonpath_contains": "p_contains",
+                    "jsonpath_not_null": "p_is_not_none",
+                    "general_equal": "p_is_equal_to",
+                },
+                "notes": [
+                    "jsonpath断言的 method 必须使用 jsonpath_methods 中叶子节点的 value，例如 p_is_equal_to，不能使用 eq。",
+                    "通用断言保存的是前端级联选项对象，建议先用 get_api_assertion_schema 查看结构。",
+                ],
+            }
+        )
+
+    @mcp.tool()
+    def get_api_assertion_schema() -> dict:
+        """返回 API 场景断言字段格式。"""
+        try:
+            general_equal = _general_assertion_template("p_is_equal_to", "${{实际值}}", "预期值")
+        except Exception:
+            general_equal = {"method": "内容断言 / 值等于什么 / 等于expect", "value": {}}
+        return ok(
+            {
+                "assertion_types": {
+                    "ass_json_all": "JSON一致断言。保存期望 JSON 对象或 JSON 字符串，后端用 p_in_dict 判断响应 JSON 是否匹配期望 JSON。",
+                    "ass_jsonpath": "JSONPath断言。actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value，expect 是预期值。",
+                    "ass_text_all": "文本一致断言。保存完整预期响应文本，后端用 response.text.strip() == expect.strip()。",
+                    "ass_general": "通用断言。外层 value 保存前端级联选中的完整对象；parameter[].v 面向 textarea 保存，dict/list 应保存为 JSON 字符串，执行 SQL 断言时会自动反序列化。",
+                    "ass_schema": "结构化断言。保存 JSON Schema 对象；也可调用 auto_generate_api_case_scenario_schema 自动生成。",
+                },
+                "ass_jsonpath": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                "ass_general": [general_equal],
+                "ass_json_all": {"code": 0},
                 "ass_text_all": "完整响应文本",
-                "ass_schema": {"type": "object", "properties": {}},
+                "ass_schema": {"type": "object", "properties": {"code": {"type": "integer"}}},
             }
         )
 
@@ -901,7 +1158,7 @@ def register_api_automation_tools(mcp):
         """返回 API case、步骤和场景参数的核心字段说明。"""
         return ok(
             {
-                "api_info": ["project_product", "module", "name", "url", "method", "headers", "params", "data", "json", "file"],
+                "api_info": ["project_product", "module", "name", "url", "method", "params", "data", "json", "file"],
                 "api_case": ["project_product", "module", "name", "case_people", "level", "front_headers", "front_custom", "front_sql", "posterior_sql"],
                 "api_case_detailed": ["case", "api_info", "case_sort"],
                 "api_case_detailed_parameter": [

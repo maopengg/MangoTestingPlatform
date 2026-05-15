@@ -4,6 +4,7 @@ from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from src.auto_test.auto_data_factory.models import DataFactoryField
+from src.auto_test.auto_data_factory.service.discover import DataFactoryDiscover
 from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGenerator
 from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
 from src.auto_test.auto_data_factory.views.field import DataFactoryFieldSerializer
@@ -78,9 +79,54 @@ class DataFactoryFieldSerializerTests(SimpleTestCase):
 
         with self.assertRaises(serializers.ValidationError):
             serializer.validate({
-            "name": "amount",
-            "db_type": "decimal",
-            "platform_type": "decimal",
-            "generator_type": DataFactoryGeneratorTypeEnum.RANDOM_DECIMAL.value,
-            "generator_config": {"min": 20, "max": 10},
-        })
+                "name": "amount",
+                "db_type": "decimal",
+                "platform_type": "decimal",
+                "generator_type": DataFactoryGeneratorTypeEnum.RANDOM_DECIMAL.value,
+                "generator_config": {"min": 20, "max": 10},
+            })
+
+
+class DataFactoryDiscoverTests(SimpleTestCase):
+    def test_extract_comment_enum_options(self):
+        options = DataFactoryDiscover.extract_comment_enum_options("是否有效，1 有效，0 无效", "integer")
+
+        self.assertEqual(options, [
+            {"label": "有效", "value": 1},
+            {"label": "无效", "value": 0},
+        ])
+
+    def test_extract_comment_enum_options_with_compact_separators(self):
+        self.assertEqual(
+            DataFactoryDiscover.extract_comment_enum_options("合同类型状态 0.禁用状态 1.启用状态", "integer"),
+            [
+                {"label": "禁用状态", "value": 0},
+                {"label": "启用状态", "value": 1},
+            ],
+        )
+        self.assertEqual(
+            DataFactoryDiscover.extract_comment_enum_options("是否签约倒签 0.不是 1.是 2.未知", "integer"),
+            [
+                {"label": "不是", "value": 0},
+                {"label": "是", "value": 1},
+                {"label": "未知", "value": 2},
+            ],
+        )
+
+    def test_comment_enum_options_drive_enum_generator_config(self):
+        column = {
+            "name": "valid",
+            "type": "TINYINT",
+            "comment": "是否有效，1 有效，0 无效",
+            "nullable": False,
+            "autoincrement": False,
+        }
+
+        result = DataFactoryDiscover._normalize_column(column, [], set(), 0)
+
+        self.assertEqual(result["generator_type"], DataFactoryGeneratorTypeEnum.ENUM.value)
+        self.assertEqual(result["enum_values"], [1, 0])
+        self.assertEqual(result["generator_config"]["options"], [
+            {"label": "有效", "value": 1},
+            {"label": "无效", "value": 0},
+        ])

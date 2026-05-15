@@ -105,14 +105,14 @@ class DataFactoryExecutionStageEnum(BaseEnum):
 
 class DataFactoryExecutionStatusEnum(BaseEnum):
     """执行状态"""
-    PENDING = 1
-    SUCCESS = 2
-    FAIL = 3
-    PROCEED = 4
+    FAIL = 0
+    SUCCESS = 1
+    PENDING = 2
+    PROCEED = 3
 
     @classmethod
     def obj(cls):
-        return {1: "待执行", 2: "成功", 3: "失败", 4: "进行中"}
+        return {0: "失败", 1: "通过", 2: "待开始", 3: "进行中"}
 
 
 class DataFactoryCleanupStatusEnum(BaseEnum):
