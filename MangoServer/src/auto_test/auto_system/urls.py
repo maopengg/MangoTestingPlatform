@@ -35,6 +35,7 @@ urlpatterns = [
     #
     path('file', FileDataCRUD.as_view()),
     path('file/upload', FileDataViews.as_view({'post': 'post_upload'})),
+    path('file/download/url', FileDataViews.as_view({'get': 'download_url'})),
     #
     path('time', TimeTasksCRUD.as_view()),
     path('time/name', TimeTasksViews.as_view({'get': 'get_time_obj_name'})),

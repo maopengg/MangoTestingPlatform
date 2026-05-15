@@ -2,7 +2,25 @@ from __future__ import annotations
 
 import os
 import logging
+from datetime import datetime
 
+
+MCP_HTTP_PATH = "/mcp"
+MCP_FALLBACK_HTTP_PATH = "/system/mcp"
+DEFAULT_ALLOWED_HOSTS = [
+    "127.0.0.1:*",
+    "localhost:*",
+    "[::1]:*",
+    "qfei-auto-platform-dev.internal.qtech.cn",
+    "qfei-auto-platform-test.internal.qtech.cn",
+]
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:*",
+    "http://localhost:*",
+    "http://[::1]:*",
+    "https://qfei-auto-platform-dev.internal.qtech.cn",
+    "https://qfei-auto-platform-test.internal.qtech.cn",
+]
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
@@ -12,12 +30,78 @@ os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 logging.getLogger("mcp.server.streamable_http").setLevel(logging.CRITICAL)
 
 
+def _mcp_server_info() -> dict:
+    from django.conf import settings
+
+    from src.mcp_server.common import get_http_headers
+
+    headers = get_http_headers()
+    host = headers.get("host") or headers.get("Host")
+    forwarded_proto = headers.get("x-forwarded-proto") or headers.get("X-Forwarded-Proto")
+    proto = forwarded_proto.split(",", 1)[0].strip() if forwarded_proto else None
+    if not proto:
+        proto = "https" if headers.get("x-forwarded-ssl") == "on" else "http"
+    base_url = f"{proto}://{host}" if host else None
+    django_env = os.environ.get("DJANGO_ENV", "master")
+    now = datetime.now()
+    return {
+        "name": "MangoTestingPlatform",
+        "mcp_name": "MangoTestingPlatform",
+        "environment": django_env,
+        "django_env": django_env,
+        "settings_module": os.environ.get("DJANGO_SETTINGS_MODULE"),
+        "debug": getattr(settings, "DEBUG", None),
+        "base_url": base_url,
+        "mcp_url": f"{base_url}{MCP_HTTP_PATH}" if base_url else None,
+        "mcp_path": MCP_HTTP_PATH,
+        "fallback_mcp_url": f"{base_url}{MCP_FALLBACK_HTTP_PATH}" if base_url else None,
+        "fallback_mcp_path": MCP_FALLBACK_HTTP_PATH,
+        "allowed_hosts": _split_env_list("MANGO_MCP_ALLOWED_HOSTS", DEFAULT_ALLOWED_HOSTS),
+        "server_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "server_timestamp": int(now.timestamp()),
+        "timezone": getattr(settings, "TIME_ZONE", None),
+    }
+
+
+def _split_env_list(name: str, default: list[str]) -> list[str]:
+    value = os.environ.get(name)
+    if not value:
+        return default
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _env_bool(name: str, default: bool = True) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _transport_security_settings():
+    from mcp.server.transport_security import TransportSecuritySettings
+
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=_env_bool("MANGO_MCP_ENABLE_DNS_REBINDING_PROTECTION", True),
+        allowed_hosts=_split_env_list("MANGO_MCP_ALLOWED_HOSTS", DEFAULT_ALLOWED_HOSTS),
+        allowed_origins=_split_env_list("MANGO_MCP_ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS),
+    )
+
+
 def _platform_capabilities() -> dict:
     return {
         "success": True,
         "message": "操作成功",
         "data": {
+            "server": _mcp_server_info(),
             "capabilities": [
+                {
+                    "name": "server_info",
+                    "description": "MCP 服务自身信息、环境和地址",
+                    "tools": [
+                        "get_mcp_server_info",
+                        "get_platform_capabilities",
+                    ],
+                },
                 {
                     "name": "project_context",
                     "description": "项目、用户、测试环境上下文",
@@ -37,10 +121,15 @@ def _platform_capabilities() -> dict:
                     "description": "API 接口、请求头、用例、场景、执行和结果分析",
                     "tools": [
                         "create_api_header",
+                        "list_api_public_variables",
+                        "create_api_public_variable",
+                        "update_api_public_variable",
+                        "set_api_public_variable_status",
                         "create_api_info",
                         "create_api_case",
                         "add_api_case_step",
                         "update_api_case_scenario",
+                        "get_api_assertion_methods",
                         "create_complete_api_case",
                         "run_api_case",
                         "get_api_case_run_result",
@@ -95,6 +184,7 @@ def mcp_asgi_app():
             stateless_http=True,
             json_response=True,
             streamable_http_path="/",
+            transport_security=_transport_security_settings(),
         )
     except TypeError:
         mcp = FastMCP(
@@ -102,6 +192,16 @@ def mcp_asgi_app():
             stateless_http=True,
             json_response=True,
         )
+
+    @mcp.tool()
+    def get_mcp_server_info() -> dict:
+        """查询 Mango MCP 服务自身信息，包括环境、地址和服务时间。"""
+        return {
+            "success": True,
+            "message": "操作成功",
+            "data": _mcp_server_info(),
+            "warnings": [],
+        }
 
     @mcp.tool()
     def get_platform_capabilities() -> dict:

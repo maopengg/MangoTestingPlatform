@@ -41,6 +41,7 @@ export const datasourceAliasColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
+    align: 'left',
     width: 180,
     ellipsis: true,
     tooltip: true,
@@ -49,11 +50,13 @@ export const datasourceAliasColumns = useTableColumn([
     title: '名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
   },
   {
     title: '编码',
     key: 'code',
     dataIndex: 'code',
+    align: 'left',
   },
   {
     title: '类型',
@@ -65,6 +68,7 @@ export const datasourceAliasColumns = useTableColumn([
     title: '描述',
     key: 'description',
     dataIndex: 'description',
+    align: 'left',
   },
   {
     title: '操作',

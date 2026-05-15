@@ -13,9 +13,10 @@ export const useProductModule = defineStore('product-module', {
   // 封装业务逻辑，修改state
   actions: {
     getProjectModule(projectProductId: number | string | null = null) {
-      getUserModuleName(projectProductId)
+      return getUserModuleName(projectProductId)
         .then((res) => {
           this.data = res.data
+          return res
         })
         .catch(console.log)
     },

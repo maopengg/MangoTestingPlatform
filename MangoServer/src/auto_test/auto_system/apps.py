@@ -12,7 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
 from django.db import transaction
 from django.utils import timezone
-from mangotools.decorator import func_info
+from src.tools.obtain_assertion import func_info
 from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum, TestSuiteNoticeEnum

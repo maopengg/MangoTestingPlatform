@@ -98,7 +98,7 @@ export const formParameterItems: FormItem[] = reactive([
     },
   },
   {
-    label: '失败间隔',
+    label: '重试间隔',
     key: 'retry_interval',
     value: ref(''),
     type: 'input',

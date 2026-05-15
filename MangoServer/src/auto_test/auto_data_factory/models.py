@@ -241,8 +241,6 @@ class DataFactoryExecution(models.Model):
     template = models.ForeignKey(to=DataFactoryTemplate, to_field="id", on_delete=models.SET_NULL, null=True, blank=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
-    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
-
     stage = models.SmallIntegerField(
         verbose_name="执行阶段",
         choices=DataFactoryExecutionStageEnum.choices(),

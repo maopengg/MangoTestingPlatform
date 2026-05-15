@@ -15,8 +15,8 @@ from mangoautomation.enums import ElementOperationEnum
 from mangoautomation.exceptions import MangoAutomationError
 from mangoautomation.models import ElementModel
 from mangoautomation.models import ElementResultModel
-from mangoautomation.uidrive import AsyncElement
-from mangoautomation.uidrive import BaseData, DriverObject
+from mangoautomation.uidrives import AsyncElement
+from mangoautomation.uidrives import BaseData, DriverObject
 from mangotools.exceptions import MangoToolsError
 from mangotools.models import MethodModel
 from playwright._impl._errors import TargetClosedError

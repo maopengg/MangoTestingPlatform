@@ -7,7 +7,7 @@ import asyncio
 import traceback
 
 from mangoautomation.exceptions import MangoAutomationError
-from mangoautomation.uidrive import DriverObject, BaseData
+from mangoautomation.uidrives import DriverObject, BaseData
 from mangotools.decorator import singleton
 from mangotools.exceptions import MangoToolsError
 

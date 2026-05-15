@@ -97,6 +97,8 @@
             :align="item.align"
             :data-index="item.key"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
             :title="item.title"
             :width="item.width"
           >
@@ -111,16 +113,17 @@
               }}{{ record?.module?.name }}
             </template>
             <template v-else-if="item.key === 'stage'" #cell="{ record }">
-              {{ enumTitle(enumStore.data_factory_execution_stage, record.stage) }}
+              <a-tag :color="enumStore.colors[record.stage]" size="small">
+                {{ enumTitle(enumStore.data_factory_execution_stage, record.stage) }}</a-tag
+              >
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag
-                :color="record.status === 2 ? 'green' : record.status === 3 ? 'red' : 'orange'"
-                >{{ enumTitle(enumStore.data_factory_execution_status, record.status) }}</a-tag
+              <a-tag :color="enumStore.status_colors[record.status]" size="small">
+                {{ enumTitle(enumStore.data_factory_execution_status, record.status) }}</a-tag
               >
             </template>
             <template v-else-if="item.key === 'cleanup_status'" #cell="{ record }">
-              <a-tag>{{
+              <a-tag :color="enumStore.colors[record.cleanup_status]" size="small">{{
                 enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status)
               }}</a-tag>
             </template>
@@ -175,6 +178,8 @@
               :key="item.key"
               :align="item.align"
               :data-index="item.key"
+              :ellipsis="item.ellipsis"
+              :tooltip="item.tooltip"
               :title="item.title"
               :width="item.width"
             >

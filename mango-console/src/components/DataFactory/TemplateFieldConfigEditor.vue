@@ -12,17 +12,22 @@
         v-for="item of columns"
         :key="item.key"
         :data-index="item.key"
+        :ellipsis="item.ellipsis"
+        :tooltip="item.tooltip"
         :title="item.title"
         :width="item.width"
       >
         <template v-if="item.key === 'default_generator_type'" #cell="{ record }">
-          {{ enumTitle(record.generator_type) }}
+          <a-tag :color="enumStore.colors[record.generator_type]" size="small">
+            {{ enumTitle(record.generator_type) }}
+          </a-tag>
         </template>
         <template v-else-if="item.key === 'override_generator_type'" #cell="{ record }">
           <a-select
             :model-value="getOverrideType(record)"
             :options="overrideTypeOptions"
             :field-names="{ value: 'key', label: 'title' }"
+            :disabled="readonly"
             allow-clear
             placeholder="不覆盖"
             @change="(value) => changeOverrideType(record, value)"
@@ -33,13 +38,14 @@
             v-if="isEnumConfig(record)"
             :model-value="getEffectiveEnumValue(record)"
             :options="getEnumSelectOptions(record)"
+            :disabled="readonly"
             allow-clear
             placeholder="请选择枚举值"
             @change="(value) => changeEnumOverrideValue(record, value)"
           />
           <a-input
             v-else
-            :disabled="isDisabledConfig(record)"
+            :disabled="readonly || isDisabledConfig(record)"
             :model-value="getConfigInputValue(record)"
             :placeholder="getConfigPlaceholder(record)"
             allow-clear
@@ -49,18 +55,30 @@
         <template v-else-if="item.key === 'output_enabled'" #cell="{ record }">
           <a-switch
             :model-value="isOutputEnabled(record)"
+            :disabled="readonly"
             size="small"
             @change="(value) => changeOutputEnabled(record, value)"
           />
         </template>
         <template v-else-if="item.key === 'output_key'" #cell="{ record }">
           <a-input
-            :disabled="!isOutputEnabled(record)"
+            :disabled="readonly || !isOutputEnabled(record)"
             :model-value="getOutputKey(record)"
             allow-clear
             placeholder="输出名称"
             @input="(value) => changeOutputKey(record, value)"
           />
+        </template>
+        <template v-else-if="item.key === 'preview_value'" #cell="{ record }">
+          {{ formatPreviewValue(getPreviewItem(record)?.value) }}
+        </template>
+        <template v-else-if="item.key === 'preview_valid'" #cell="{ record }">
+          <a-tag :color="getPreviewItem(record)?.valid ? 'green' : 'red'">
+            {{ getPreviewItem(record)?.valid ? '正常' : '需配置' }}
+          </a-tag>
+        </template>
+        <template v-else-if="item.key === 'preview_message'" #cell="{ record }">
+          {{ getPreviewItem(record)?.message || '-' }}
         </template>
       </a-table-column>
     </template>
@@ -75,19 +93,33 @@
     DataFactoryOutputConfig,
   } from '@/types/data-factory'
   import { computed } from 'vue'
+  import { useEnum } from '@/store/modules/get-enum'
 
   interface EnumOption {
     key: number | null
     title: string
   }
 
-  const props = defineProps<{
-    fields: DataFactoryFieldRule[]
-    fieldOverrides: DataFactoryFieldOverrides
-    outputConfig: DataFactoryOutputConfig
-    generatorOptions: EnumOption[]
-    showOutput?: boolean
-  }>()
+  const props = withDefaults(
+    defineProps<{
+      fields: DataFactoryFieldRule[]
+      fieldOverrides: DataFactoryFieldOverrides
+      outputConfig: DataFactoryOutputConfig
+      generatorOptions: EnumOption[]
+      previewFields?: any[]
+      readonly?: boolean
+      showConfig?: boolean
+      showOutput?: boolean
+      showPreview?: boolean
+    }>(),
+    {
+      previewFields: () => [],
+      readonly: false,
+      showConfig: true,
+      showOutput: true,
+      showPreview: false,
+    }
+  )
 
   const emit = defineEmits<{
     (event: 'update:fieldOverrides', value: DataFactoryFieldOverrides): void
@@ -106,16 +138,105 @@
   const GENERATOR_TYPE_DEPENDENCY_FIELD = 11
   const GENERATOR_TYPE_FUNCTION = 13
   const REMOVED_GENERATOR_TYPES = [8, 10, 12]
+  const enumStore = useEnum()
 
-  const columns = computed(() => [
-    { title: '字段', key: 'name', dataIndex: 'name', width: 140 },
-    { title: '说明', key: 'label', dataIndex: 'label', width: 160 },
-    { title: '默认生成方式', key: 'default_generator_type', dataIndex: 'default_generator_type', width: 130 },
-    { title: '模板生成方式', key: 'override_generator_type', dataIndex: 'override_generator_type', width: 170 },
-    { title: '生成配置', key: 'override_config', dataIndex: 'override_config', width: 260 },
-    { title: '输出', key: 'output_enabled', dataIndex: 'output_enabled', width: 80 },
-    { title: '输出名称', key: 'output_key', dataIndex: 'output_key', width: 180 },
-  ].filter((item) => props.showOutput !== false || !['output_enabled', 'output_key'].includes(item.key)))
+  const columns = computed(() =>
+    [
+      {
+        title: '字段',
+        key: 'name',
+        dataIndex: 'name',
+        width: 200,
+        align: 'left',
+        ellipsis: true,
+        tooltip: true,
+        group: 'base',
+      },
+      {
+        title: '说明',
+        key: 'label',
+        dataIndex: 'label',
+        width: 160,
+        align: 'left',
+        ellipsis: true,
+        tooltip: true,
+        group: 'base',
+      },
+      {
+        title: '默认生成方式',
+        key: 'default_generator_type',
+        dataIndex: 'default_generator_type',
+        width: 150,
+        group: 'config',
+      },
+      {
+        title: '模板生成方式',
+        key: 'override_generator_type',
+        dataIndex: 'override_generator_type',
+        width: 170,
+        group: 'config',
+      },
+      {
+        title: '生成配置',
+        key: 'override_config',
+        dataIndex: 'override_config',
+        width: 260,
+        group: 'config',
+      },
+      {
+        title: '输出',
+        key: 'output_enabled',
+        dataIndex: 'output_enabled',
+        width: 80,
+        group: 'output',
+      },
+      {
+        title: '输出名称',
+        key: 'output_key',
+        dataIndex: 'output_key',
+        width: 180,
+        group: 'output',
+      },
+      {
+        title: '生成值（模拟）',
+        key: 'preview_value',
+        dataIndex: 'preview_value',
+        width: 180,
+        align: 'left',
+        ellipsis: true,
+        tooltip: true,
+        group: 'preview',
+      },
+      {
+        title: '状态',
+        key: 'preview_valid',
+        dataIndex: 'preview_valid',
+        width: 110,
+        group: 'preview',
+      },
+      {
+        title: '结果说明',
+        key: 'preview_message',
+        dataIndex: 'preview_message',
+        width: 180,
+        align: 'left',
+        ellipsis: true,
+        tooltip: true,
+        group: 'preview',
+      },
+    ].filter((item) => {
+      if (item.group === 'config' && !props.showConfig) {
+        return false
+      }
+      if (item.group === 'output' && !props.showOutput) {
+        return false
+      }
+      if (item.group === 'preview' && !props.showPreview) {
+        return false
+      }
+      return true
+    })
+  )
 
   const rows = computed(() => props.fields || [])
   const generatorOptions = computed(() =>
@@ -132,7 +253,9 @@
   ])
 
   function enumTitle(value: any) {
-    const title = generatorOptions.value.find((it) => Number(it.key) === normalizeGeneratorType(value))?.title
+    const title = generatorOptions.value.find(
+      (it) => Number(it.key) === normalizeGeneratorType(value)
+    )?.title
     return title || (value ?? '-')
   }
 
@@ -151,7 +274,9 @@
 
   function getOverrideType(row: DataFactoryFieldRule) {
     const generatorType = getOverrideRule(row)?.generator_type
-    return generatorType === undefined || generatorType === null ? null : normalizeGeneratorType(generatorType)
+    return generatorType === undefined || generatorType === null
+      ? null
+      : normalizeGeneratorType(generatorType)
   }
 
   function updateOverride(row: DataFactoryFieldRule, rule?: DataFactoryFieldOverrideRule) {
@@ -202,7 +327,9 @@
 
   function getEnumOptionRows(row: DataFactoryFieldRule) {
     const overrideConfig = getOverrideRule(row)?.generator_config || {}
-    const sourceConfig = Object.keys(overrideConfig).length ? overrideConfig : row.generator_config || {}
+    const sourceConfig = Object.keys(overrideConfig).length
+      ? overrideConfig
+      : row.generator_config || {}
     const optionRows = Array.isArray(sourceConfig.options) ? sourceConfig.options : []
     if (optionRows.length) {
       return optionRows.map((option: any) => ({
@@ -227,7 +354,11 @@
   function buildEnumGeneratorConfig(row: DataFactoryFieldRule, value?: any) {
     const options = getEnumOptionRows(row)
     const values = options.map((option: any) => option.value)
-    const defaultValue = value ?? getOverrideRule(row)?.generator_config?.value ?? row.generator_config?.value ?? values[0]
+    const defaultValue =
+      value ??
+      getOverrideRule(row)?.generator_config?.value ??
+      row.generator_config?.value ??
+      values[0]
     return {
       ...(row.generator_config || {}),
       values,
@@ -270,6 +401,17 @@
     return String(value)
   }
 
+  function formatPreviewValue(value: any) {
+    if (value === null || value === undefined || value === '') {
+      return '空'
+    }
+    return formatValue(value)
+  }
+
+  function getPreviewItem(row: DataFactoryFieldRule) {
+    return (props.previewFields || []).find((item: any) => item.name === row.name) || row
+  }
+
   function isDisabledConfig(row: DataFactoryFieldRule) {
     const generatorType = getOverrideType(row)
     return [
@@ -305,7 +447,9 @@
     if (generatorType === GENERATOR_TYPE_ENUM) {
       if (config.value !== undefined && config.value !== null) {
         const option = getEnumOptionRows(row).find((item: any) => item.value === config.value)
-        return option ? `${option.label}（${formatValue(option.value)}）` : formatValue(config.value)
+        return option
+          ? `${option.label}（${formatValue(option.value)}）`
+          : formatValue(config.value)
       }
       return ''
     }
@@ -330,8 +474,11 @@
 
   function getConfigPlaceholder(row: DataFactoryFieldRule) {
     const generatorType = getOverrideType(row)
+    if (generatorType === null) {
+      return getDefaultConfigDisplayValue(row) || enumTitle(row.generator_type)
+    }
     if (isDisabledConfig(row)) {
-      return generatorType === null ? '默认规则' : '自动生成'
+      return '自动生成'
     }
     if (generatorType === GENERATOR_TYPE_FIXED) {
       return '输入值'

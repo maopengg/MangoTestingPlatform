@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_data_factory.models import DataFactoryEntity, DataFactoryField
 from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGenerator
+from src.auto_test.auto_data_factory.service.runtime_cache import DataFactoryRuntimeCache
 from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
 from src.auto_test.auto_data_factory.views.entity import DataFactoryEntitySerializerC
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
@@ -192,8 +193,17 @@ class DataFactoryFieldViews(ViewSet):
     def preview_values(self, request: Request):
         fields = request.data.get('fields') or []
         context = request.data.get('context') or {}
+        entity_id = request.data.get('entity_id')
         if not isinstance(fields, list):
             raise ToolsError(300, "fields 必须是列表")
+
+        test_data = None
+        if entity_id:
+            entity = DataFactoryEntity.objects.select_related('project_product').get(id=entity_id)
+            test_data = DataFactoryRuntimeCache.build_test_data(
+                entity.project_product_id,
+                request.data.get('test_env'),
+            )
 
         payload = {}
         rows = []
@@ -231,7 +241,7 @@ class DataFactoryFieldViews(ViewSet):
                         continue
 
                 value = DataFactoryValueGenerator.generate(field, payload, context)
-                value = DataFactoryValueGenerator.replace_value(value)
+                value = DataFactoryValueGenerator.replace_value(value, test_data)
                 value = DataFactoryTypeCast.cast(value, field.platform_type)
                 DataFactoryValueGenerator.validate(field, value)
                 payload[field.name] = value

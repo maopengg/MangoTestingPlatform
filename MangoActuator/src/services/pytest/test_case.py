@@ -71,6 +71,8 @@ class TestCase:
 
     async def result_data(self, result_data: list[dict]):
         status = TaskEnum.SUCCESS.value
+        if not result_data:
+            status = TaskEnum.FAIL.value
         for i in result_data:
             if i.get('status') != AllureStatusEnum.SUCCESS.value:
                 i['status'] = TaskEnum.FAIL.value

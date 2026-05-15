@@ -11,6 +11,12 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCase
+from src.auto_test.auto_api.schemas.case_schema import (
+    ApiKeyValueItem,
+    ApiParametrizeSuite,
+    validate_int_list,
+    validate_model_list,
+)
 from src.auto_test.auto_api.service.test_case.test_case import TestCase
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
@@ -32,6 +38,21 @@ class ApiCaseSerializers(serializers.ModelSerializer):
     class Meta:
         model = ApiCase
         fields = '__all__'
+
+    def validate_parametrize(self, value):
+        return validate_model_list(value, ApiParametrizeSuite, '参数化')
+
+    def validate_front_custom(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '前置方法')
+
+    def validate_front_sql(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '前置sql')
+
+    def validate_front_headers(self, value):
+        return validate_int_list(value, '前置请求头')
+
+    def validate_posterior_sql(self, value):
+        return validate_model_list(value, ApiKeyValueItem, '后置sql')
 
 
 class ApiCaseSerializersC(serializers.ModelSerializer):

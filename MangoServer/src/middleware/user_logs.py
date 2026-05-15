@@ -125,8 +125,11 @@ class UserLogsMiddleWare(MiddlewareMixin):
         try:
             # 确保在数据库操作前后关闭连接
             close_old_connections()
+            user_id = log_entry.get("user")
+            if user_id and not User.objects.filter(id=user_id).exists():
+                log_entry["user"] = None
             UserLogsCRUD.inside_post(log_entry)
             close_old_connections()
         except Exception as e:
             close_old_connections()
-            print(e)
+            pass

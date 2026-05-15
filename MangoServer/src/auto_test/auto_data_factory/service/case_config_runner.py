@@ -62,6 +62,7 @@ class DataFactoryCaseConfigRunner:
                 overrides=overrides,
                 context=self.context,
                 cleanup_strategy_override=config.cleanup_strategy,
+                test_data=self.test_data,
             )
             self.execution_ids.append(result["execution_id"])
             cleanup_strategy = config.cleanup_strategy

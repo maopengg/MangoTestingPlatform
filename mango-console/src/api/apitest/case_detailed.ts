@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+import type { ApiCaseDetailedPayload } from '@/types/api-test/case'
 
 export function getApiCaseDetailed(caseId: any) {
   return get({
@@ -11,7 +12,7 @@ export function getApiCaseDetailed(caseId: any) {
   })
 }
 
-export function postApiCaseDetailed(data: object, parent_id: any) {
+export function postApiCaseDetailed(data: ApiCaseDetailedPayload, parent_id: any) {
   // @ts-ignore
   data['parent_id'] = parent_id
   return post({
@@ -22,7 +23,7 @@ export function postApiCaseDetailed(data: object, parent_id: any) {
   })
 }
 
-export function putApiCaseDetailed(data: object, parent_id: any) {
+export function putApiCaseDetailed(data: ApiCaseDetailedPayload, parent_id: any) {
   // @ts-ignore
   data['parent_id'] = parent_id
   return put({
@@ -48,7 +49,7 @@ export function deleteApiCaseDetailed(id: number | string[] | number[], parentId
   })
 }
 
-export function putApiPutCaseSort(data: object) {
+export function putApiPutCaseSort(data: Array<{ id: number; case_sort: number }>) {
   return put({
     url: '/api/case/detailed/sort',
     data: () => {

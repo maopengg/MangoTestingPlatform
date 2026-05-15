@@ -435,8 +435,12 @@ class WebSocketClient:
             log.debug(f"接收数据：{json.dumps(out, ensure_ascii=False)}")
             socket_data = SocketDataModel(**out)
             if settings.IS_DEBUG:
+                os.makedirs('tests', exist_ok=True)
                 with open('tests/test.json', 'w', encoding='utf-8') as f:
-                    f.write(socket_data.data.model_dump_json(indent=2))
+                    if socket_data.data is None:
+                        f.write(socket_data.model_dump_json(indent=2))
+                    else:
+                        f.write(socket_data.data.model_dump_json(indent=2))
             return socket_data
 
         except Exception:

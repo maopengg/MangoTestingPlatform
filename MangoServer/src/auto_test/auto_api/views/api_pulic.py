@@ -49,6 +49,7 @@ class ApiPublicCRUD(ModelCRUD):
     queryset = ApiPublic.objects.all()
     serializer_class = ApiPublicSerializersC
     serializer = ApiPublicSerializers
+    not_matching_str = ModelCRUD.not_matching_str + ['test_env']
 
 
 class ApiPublicViews(ViewSet):

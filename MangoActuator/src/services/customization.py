@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2025-04-29 14:06
 # @Author : 毛鹏
-from mangoautomation.uidrive import AsyncWebCustomization
+from mangoautomation.uidrives import AsyncWebCustomization
 from mangotools.decorator import *
 from mangotools.models import MethodModel
 from playwright.async_api import Locator

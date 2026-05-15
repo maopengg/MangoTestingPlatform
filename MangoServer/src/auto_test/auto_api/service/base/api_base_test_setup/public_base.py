@@ -7,7 +7,6 @@ import mimetypes
 from typing import Optional
 
 from mangotools.database import MysqlConnect
-
 from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
 from src.auto_test.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
@@ -38,6 +37,7 @@ class PublicBase(BaseRequest):
         if self.is_headers == project_product_id:
             return
         self.is_headers = project_product_id
+        self.headers = {}
         if self.headers != {}:
             return self.headers
         api_headers = {}
@@ -49,9 +49,11 @@ class PublicBase(BaseRequest):
         return self.headers
 
     def init_test_object(self, project_product_id, test_env: int):
-        if self.is_test_object == project_product_id:
+        scope_key = (project_product_id, test_env)
+        if self.is_test_object == scope_key:
             return
-        self.is_test_object = project_product_id
+        self.is_test_object = scope_key
+        self.mysql_connect = None
         self.test_object = func_test_object_value(test_env,
                                                   project_product_id,
                                                   AutoTypeEnum.API.value)
@@ -66,13 +68,15 @@ class PublicBase(BaseRequest):
             )
 
     def init_public(self, project_product_id, test_env):
-        if self.is_public == project_product_id:
+        scope_key = (project_product_id, test_env)
+        if self.is_public == scope_key:
             return
-        self.is_public = project_product_id
+        self.is_public = scope_key
         api_public = ApiPublic.objects.filter(
             status=StatusEnum.SUCCESS.value,
-            project_product=project_product_id) \
-            .order_by('type')
+            project_product=project_product_id,
+            test_env=test_env,
+        ).order_by('type', 'test_env', 'id')
         log.api.debug(f'开始初始化全局变量！')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:

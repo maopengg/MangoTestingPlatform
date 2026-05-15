@@ -19,9 +19,8 @@
   <div class="json-display-content">
     <vue-json-pretty
       v-if="isObjectOrArray && showComponent"
-      :key="`json-${isExpanded}-${forceRerender}`"
       :data="parsedData"
-      :deep="isExpanded ? undefined : 1"
+      :deep="jsonTreeDeep"
       :show-length="true"
       :show-icon="true"
     />
@@ -29,9 +28,9 @@
     <pre v-else-if="isString && !isValidJson">{{ parsedData }}</pre>
     <vue-json-pretty
       v-else-if="isString && isValidJson && showComponent"
-      :key="`json-string-${isExpanded}-${forceRerender}`"
       :data="jsonFromString"
-      :deep="isExpanded ? undefined : 1"
+      :deep="jsonTreeDeep"
+      :show-length="true"
       :show-icon="true"
     />
 
@@ -53,9 +52,8 @@
       <div class="json-drawer-content">
         <vue-json-pretty
           v-if="showDrawerComponent"
-          :key="`drawer-json-${drawerExpanded}-${forceRerender}`"
           :data="drawerJsonData"
-          :deep="drawerExpanded ? undefined : 1"
+          :deep="drawerJsonTreeDeep"
           :show-length="true"
           :show-icon="true"
         />
@@ -86,13 +84,13 @@
   const jsonpathInput = ref('')
   // 控制展开/收起状态，默认为收起状态
   const isExpanded = ref(false)
-  // 强制重新渲染的标记
-  const forceRerender = ref(0)
   // 控制是否显示组件
   const showComponent = ref(false)
   const jsonDrawerVisible = ref(false)
   const drawerExpanded = ref(false)
   const showDrawerComponent = ref(false)
+  const collapsedDeep = 0
+  const expandedDeep = Number.MAX_SAFE_INTEGER
 
   /**
    * 判断是否是对象或数组
@@ -200,6 +198,14 @@
     return parsedData.value
   })
 
+  const jsonTreeDeep = computed(() => {
+    return isExpanded.value ? expandedDeep : collapsedDeep
+  })
+
+  const drawerJsonTreeDeep = computed(() => {
+    return drawerExpanded.value ? expandedDeep : collapsedDeep
+  })
+
   const formatCopyValue = (value) => {
     if (typeof value === 'object' && value !== null) {
       try {
@@ -266,26 +272,20 @@
       .catch(console.log)
   }
 
-  const toggleExpand = async () => {
+  const toggleExpand = () => {
     isExpanded.value = !isExpanded.value
-    // 强制重新渲染组件
-    forceRerender.value++
-    await nextTick()
   }
 
   const openJsonDrawer = async () => {
     jsonDrawerVisible.value = true
-    drawerExpanded.value = true
+    drawerExpanded.value = false
     showDrawerComponent.value = false
     await nextTick()
     showDrawerComponent.value = true
   }
 
-  const toggleDrawerExpand = async () => {
+  const toggleDrawerExpand = () => {
     drawerExpanded.value = !drawerExpanded.value
-    showDrawerComponent.value = false
-    await nextTick()
-    showDrawerComponent.value = true
   }
 
   // 监听数据变化，确保组件正确渲染
@@ -297,26 +297,14 @@
       await nextTick()
       showComponent.value = true
       showDrawerComponent.value = jsonDrawerVisible.value
-      forceRerender.value++
     }
     // 去掉 immediate: true，首次渲染由 onMounted 处理，避免挂载时触发两次重建
-  )
-
-  // 监听展开状态变化
-  watch(
-    () => isExpanded.value,
-    async () => {
-      await nextTick()
-      forceRerender.value++
-    }
   )
 
   // 组件挂载后确保正确显示
   onMounted(async () => {
     await nextTick()
     showComponent.value = true
-    // 确保初始状态正确
-    forceRerender.value++
   })
 </script>
 

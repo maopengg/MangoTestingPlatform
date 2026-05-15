@@ -91,9 +91,11 @@ class DataFactoryDiscover:
             sort: int,
     ) -> dict[str, Any]:
         name = column["name"]
+        label = column.get("comment") or name
         db_type = str(column["type"])
         platform_type = cls.normalize_type(db_type)
-        enum_values = cls.extract_enum_values(db_type)
+        enum_options = cls.extract_enum_options(db_type, label, platform_type)
+        enum_values = [item["value"] for item in enum_options]
         autoincrement = bool(column.get("autoincrement"))
         primary_key = name in pk_columns
 
@@ -108,13 +110,14 @@ class DataFactoryDiscover:
             name=name,
             platform_type=platform_type,
             enum_values=enum_values,
+            enum_options=enum_options,
             primary_key=primary_key,
             autoincrement=autoincrement,
         )
 
         return {
             "name": name,
-            "label": column.get("comment") or name,
+            "label": label,
             "db_type": db_type,
             "platform_type": platform_type,
             "nullable": bool(column.get("nullable")),
@@ -169,13 +172,55 @@ class DataFactoryDiscover:
         return [item.strip().strip("'").strip('"') for item in match.group(1).split(",")]
 
     @classmethod
+    def extract_enum_options(cls, db_type: str, label: str, platform_type: str) -> list[dict[str, Any]]:
+        db_enum_values = cls.extract_enum_values(db_type)
+        if db_enum_values:
+            return [{"label": str(value), "value": cls.cast_enum_value(value, platform_type)} for value in db_enum_values]
+        return cls.extract_comment_enum_options(label, platform_type)
+
+    @classmethod
+    def extract_comment_enum_options(cls, label: str, platform_type: str) -> list[dict[str, Any]]:
+        """Extract options from comments like "是否有效，1 有效，0 无效"."""
+        if not label:
+            return []
+
+        text = re.sub(r"\s+", " ", str(label)).strip()
+        pattern = re.compile(
+            r"(?<![\d.])(?P<value>-?\d+(?:\.\d+)?)\s*[：:、，,.]?"
+            r"(?=\s*[\u4e00-\u9fa5A-Za-z])"
+        )
+        matches = list(pattern.finditer(text))
+        options = []
+        for index, match in enumerate(matches):
+            next_start = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+            option_label = text[match.end():next_start].strip(" ：:、，,；;。.")
+            if not option_label or re.fullmatch(r"-?\d+(?:\.\d+)?", option_label):
+                continue
+            value = cls.cast_enum_value(match.group("value"), platform_type)
+            if any(item["value"] == value for item in options):
+                continue
+            options.append({"label": option_label, "value": value})
+
+        return options if len(options) >= 2 else []
+
+    @staticmethod
+    def cast_enum_value(value: Any, platform_type: str) -> Any:
+        if platform_type == "integer":
+            return int(float(value))
+        if platform_type == "decimal":
+            return float(value)
+        if platform_type == "boolean":
+            return str(value).lower() in ["true", "1", "yes", "y"]
+        return str(value)
+
+    @classmethod
     def recommend_generator_type(
             cls,
             name: str,
             platform_type: str,
             primary_key: bool,
             autoincrement: bool,
-            enum_values: list[str],
+            enum_values: list[Any],
     ) -> int:
         if primary_key and autoincrement:
             return DataFactoryGeneratorTypeEnum.SKIP.value
@@ -199,7 +244,8 @@ class DataFactoryDiscover:
     def recommend_generator_config(
             name: str,
             platform_type: str,
-            enum_values: list[str],
+            enum_values: list[Any],
+            enum_options: list[dict[str, Any]] | None = None,
             primary_key: bool = False,
             autoincrement: bool = False,
     ) -> dict[str, Any]:
@@ -212,12 +258,17 @@ class DataFactoryDiscover:
             return {"value": method_value}
         if name.endswith("_id"):
             return {"template_id": None, "field": "id", "strategy": "reuse_or_create"}
+        if enum_values:
+            return {
+                "values": enum_values,
+                "options": enum_options or [{"label": str(value), "value": value} for value in enum_values],
+                "mode": "fixed",
+                "value": enum_values[0] if enum_values else None,
+            }
         if platform_type == "integer":
             return {}
         if platform_type == "decimal":
             return {}
-        if enum_values:
-            return {"values": enum_values, "mode": "fixed", "value": enum_values[0] if enum_values else None}
         return {}
 
     @staticmethod

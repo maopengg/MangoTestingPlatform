@@ -8,7 +8,7 @@ import asyncio
 import time
 import traceback
 
-from mangoautomation.uidrive import DriverObject
+from mangoautomation.uidrives import DriverObject
 
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.system_model import GetTaskModel

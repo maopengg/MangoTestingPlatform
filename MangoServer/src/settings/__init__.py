@@ -15,7 +15,7 @@ def set_env():
             del sys.argv[i]
             break
 set_env()
-VERSION = '5.9.3'
+VERSION = '6.0.3'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -59,7 +59,7 @@ if not IS_MINIO:
     MEDIA_URL = '/mango-file/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'mango-file')
 else:
-    DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
+    DEFAULT_FILE_STORAGE = 'src.tools.storage.MangoMinioMediaStorage'
 
 # **********************************************************************************************************************
 
@@ -342,6 +342,16 @@ LOGGING = {
         'django.request': {  # Django请求错误
             'handlers': ['django'],
             'level': 'ERROR',
+            'propagate': False,
+        },
+        'apscheduler': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'apscheduler.executors.default': {
+            'handlers': ['console'],
+            'level': 'WARNING',
             'propagate': False,
         }
     }

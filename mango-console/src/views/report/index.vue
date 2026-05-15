@@ -199,8 +199,9 @@
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
+    window.sessionStorage.setItem('reportDetailsSystemAccessId', String(record.id))
     router.push({
-      path: '/report/details',
+      path: '/report/system/details',
       query: {
         id: record.id,
       },

@@ -110,7 +110,7 @@ class ApiCaseFlow:
                 test_suite=case_model.test_suite,
                 test_suite_details=case_model.test_suite_details,
             )
-            result = test_case.test_case()
+            result = test_case.test_case(parametrize=case_model.parametrize)
 
             return result
 

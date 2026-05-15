@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import os
 import threading
+import traceback
 
 import time
 from django.apps import AppConfig
@@ -87,5 +88,8 @@ class AutoUserConfig(AppConfig):
         text = requests.get('https://gitee.com/mao-peng/MangoTestingPlatform', proxies={'http': None, 'https': None}).text
         match = re.search(r'VERSION\s*=\s*([\d.]+)', text)
         if not (match and match.group(1) == VERSION):
-            raise Exception(
-                f'当前版本与最新不一致，请执行git pull 升级到最新版本！最新版本：{match.group(1)}，当前版本：{VERSION}')
+            try:
+                raise Exception(
+                    f'警告（不影响运行）：当前版本与最新不一致，请执行git pull 升级到最新版本！最新版本：{match.group(1)}，当前版本：{VERSION}')
+            except Exception as error:
+                traceback.print_exc()

@@ -8,7 +8,7 @@ import os
 import sys
 
 # os.environ["DJANGO_ENV"] = os.environ.get("DJANGO_ENV", "dev")
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
 
 import django
 import uvicorn

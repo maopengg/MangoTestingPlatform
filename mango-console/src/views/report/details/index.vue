@@ -1,1193 +1,1074 @@
 <template>
-  <div class="test-report-container">
-    <a-row :gutter="15" class="summary-cards">
-      <a-col v-for="(item, index) in summaryCards" :key="index" class="summary-col">
-        <a-card :class="['summary-card', item.class]">
-          <template #title>
-            <a-space>
-              <component :is="item.icon" />
-              <span>{{ item.title }}</span>
-            </a-space>
-          </template>
-          <div class="card-content">
-            <span class="number">{{ item.value }}</span>
-            <span class="label">个</span>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
-    <a-row :gutter="15" class="chart-section">
-      <a-col :span="8" class="chart-col">
-        <div class="chart-card-wrapper">
-          <a-card title="测试套基础信息" class="info-card">
-            <div class="chart-container">
-              <a-space direction="vertical" style="width: 100%">
-                <div class="info-item">
-                  <span class="info-label">测试套ID：</span>
-                  <span class="info-value">{{ pageData.record.id }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">任务名称：</span>
-                  <span class="info-value">{{ pageData.record.tasks?.name }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">执行时间：</span>
-                  <span class="info-value">{{ pageData.record.create_time }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">测试环境：</span>
-                  <span class="info-value">{{
-                    enumStore.environment_type[pageData.record.test_env]?.title
-                  }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">执行人：</span>
-                  <span class="info-value">{{ pageData.record.user?.name }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">通知状态：</span>
-                  <span class="info-value">{{
-                    pageData.record.is_notice === 1 ? '已发送' : '未发送'
-                  }}</span>
-                </div>
-              </a-space>
-            </div>
-          </a-card>
+  <div class="report-lab" :class="{ 'standalone-report-container': isShareReportRoute }">
+    <section class="report-head">
+      <div class="head-main">
+        <div class="report-title">
+          <p class="eyebrow">TEST REPORT WORKBENCH</p>
+          <h1>{{ reportInfo.tasks?.name || `测试报告 #${reportId}` }}</h1>
+          <p class="report-subtitle">
+            <span>{{ currentTypeLabel }}</span>
+            <i></i>
+            <span>{{ currentStatusLabel }}</span>
+            <i></i>
+            <span>通过率 {{ passRate }}%</span>
+          </p>
         </div>
-      </a-col>
 
-      <a-col :span="8" class="chart-col">
-        <div class="chart-card-wrapper">
-          <a-card title="用例执行进度" class="progress-card">
-            <div class="chart-container">
-              <div class="progress-items-wrapper">
-                <div v-if="data.summary.api_count > 0" class="progress-item">
-                  <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
-                  <a-progress
-                    :percent="
-                      data.summary.api_count > 0
-                        ? Number(
-                            (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
-                          )
-                        : 0
-                    "
-                    :style="{ width: '80%' }"
-                    :color="{
-                      '0%': 'rgb(var(--primary-6))',
-                      '100%': 'rgb(var(--success-6))',
-                    }"
-                    :stroke-width="8"
-                  />
-                </div>
-                <div v-if="data.summary.ui_count > 0" class="progress-item">
-                  <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
-                  <a-progress
-                    :percent="
-                      data.summary.ui_count > 0
-                        ? Number(
-                            (data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2)
-                          )
-                        : 0
-                    "
-                    :style="{ width: '80%' }"
-                    :color="{
-                      '0%': 'rgb(var(--primary-6))',
-                      '100%': 'rgb(var(--success-6))',
-                    }"
-                    :stroke-width="8"
-                  />
-                </div>
-                <div v-if="data.summary.pytest_count > 0" class="progress-item">
-                  <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
-                  <a-progress
-                    :percent="
-                      data.summary.pytest_count > 0
-                        ? Number(
-                            (
-                              data.summary.pytest_in_progress_count / data.summary.pytest_count
-                            ).toFixed(2)
-                          )
-                        : 0
-                    "
-                    :style="{ width: '80%' }"
-                    :color="{
-                      '0%': 'rgb(var(--primary-6))',
-                      '100%': 'rgb(var(--success-6))',
-                    }"
-                    :stroke-width="8"
-                  />
-                </div>
+        <div class="status-console">
+          <a-tag :color="statusColor(reportInfo.status)" size="large">
+            {{ statusText(reportInfo.status) }}
+          </a-tag>
+          <strong>{{ passRate }}%</strong>
+          <span>SUCCESS RATE</span>
+        </div>
+      </div>
+
+      <dl class="meta-strip" :class="{ 'has-task-name': hasTaskName }">
+        <div v-if="hasTaskName" class="meta-item wide">
+          <dt>任务名称</dt>
+          <dd>{{ reportInfo.tasks?.name || '-' }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>报告ID</dt>
+          <dd>{{ reportInfo.id || reportId }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>测试环境</dt>
+          <dd>{{ envText(reportInfo.test_env) }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>执行人</dt>
+          <dd>{{ reportInfo.user?.name || '-' }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>通知状态</dt>
+          <dd>
+            <a-tag :color="noticeColor(reportInfo.is_notice)" size="small">
+              {{ noticeText(reportInfo.is_notice) }}
+            </a-tag>
+          </dd>
+        </div>
+        <div class="meta-item">
+          <dt>执行时间</dt>
+          <dd>{{ reportInfo.create_time || '-' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="metric-strip">
+      <div v-for="item in metrics" :key="item.key" class="metric-item" :class="item.key">
+        <i class="metric-mark"></i>
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+      </div>
+    </section>
+
+    <section class="overview-grid">
+      <div class="overview-panel result-panel">
+        <div class="panel-title">
+          <div>
+            <span>结果分布</span>
+            <p>按执行结果聚合当前测试报告</p>
+          </div>
+          <strong>{{ passRate }}%</strong>
+        </div>
+        <div class="ratio-bar">
+          <i class="success" :style="{ width: `${successRatio}%` }"></i>
+          <i class="fail" :style="{ width: `${failRatio}%` }"></i>
+          <i class="running" :style="{ width: `${runningRatio}%` }"></i>
+        </div>
+        <div class="legend-row">
+          <span><i class="dot success"></i>成功 {{ summary.success_count || 0 }}</span>
+          <span><i class="dot fail"></i>失败 {{ summary.fail_count || 0 }}</span>
+          <span><i class="dot running"></i>未完成 {{ unfinishedCount }}</span>
+        </div>
+      </div>
+
+      <div class="overview-panel type-panel">
+        <div class="panel-title">
+          <div>
+            <span>类型进度</span>
+            <p>UI / API / Pytest 执行覆盖</p>
+          </div>
+          <em v-if="summaryLoading">更新中</em>
+        </div>
+        <div v-for="item in typeProgress" :key="item.key" class="type-progress">
+          <div class="type-row">
+            <span>{{ item.label }}</span>
+            <em>{{ item.done }}/{{ item.total }}</em>
+          </div>
+          <a-progress :percent="item.percent" :show-text="false" :stroke-width="8" />
+        </div>
+      </div>
+    </section>
+
+    <section class="case-section">
+      <div class="case-main">
+          <div class="case-toolbar">
+            <div class="case-toolbar-main">
+              <div class="case-toolbar-copy">
+              <h2>测试套用例列表</h2>
+              <p>
+                <span>{{ currentTypeLabel }}</span>
+                <i></i>
+                <span>{{ currentStatusLabel }}</span>
+                <i></i>
+                <span>已加载 {{ cases.length }} / {{ pagination.total || '未知' }}</span>
+              </p>
+              </div>
+              <div v-if="visibleTypeTabs.length > 0" class="type-switch">
+                <button
+                  v-for="item in visibleTypeTabs"
+                  :key="item.key"
+                  type="button"
+                  class="type-switch-item"
+                  :class="{ active: activeType === item.key }"
+                  @click="selectType(item.key)"
+                >
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.total }}</strong>
+                </button>
               </div>
             </div>
-          </a-card>
-        </div>
-      </a-col>
-      <a-col :span="8" class="chart-col">
-        <div class="chart-card-wrapper">
-          <a-card title="测试结果分布图" class="result-card">
-            <div class="chart-container">
-              <StatusChart
-                :success="data.summary.success_count"
-                :fail="data.summary.fail_count"
-                :pending="data.summary.proceed_count"
-                :todo="data.summary.stay_begin_count"
-              />
+            <div class="toolbar-actions">
+              <a-radio-group v-model="caseStatus" type="button" size="small" @change="reloadCases">
+                <a-radio :value="null">全部</a-radio>
+                <a-radio :value="0">失败</a-radio>
+                <a-radio :value="1">成功</a-radio>
+                <a-radio :value="3">进行中</a-radio>
+                <a-radio :value="2">待开始</a-radio>
+              </a-radio-group>
             </div>
-          </a-card>
-        </div>
-      </a-col>
-    </a-row>
+          </div>
 
-    <a-card class="test-details" :body-style="{ padding: '0 15px 30px 15px' }">
-      <template #title>
-        <icon-unordered-list />
-        <span>测试套用例列表</span>
-      </template>
-      <a-tabs v-model:active-key="currentActiveTab" @tab-click="(key) => onTabChange(key)">
-        <template #extra>
-          <a-space>
-            <a-button type="primary" size="small" :loading="caseRunning" @click="doCaseStatus(null)"
-              >全部
-            </a-button>
-            <a-button status="danger" size="small" :loading="caseRunning" @click="doCaseStatus(0)"
-              >只看失败
-            </a-button>
-            <a-button status="success" size="small" :loading="caseRunning" @click="doCaseStatus(1)"
-              >只看成功
-            </a-button>
-            <a-button status="warning" size="small" :loading="caseRunning" @click="doCaseStatus(3)"
-              >只看进行中
-            </a-button>
-            <a-button status="normal" size="small" :loading="caseRunning" @click="doCaseStatus(2)"
-              >只看待开始
-            </a-button>
-          </a-space>
-        </template>
-        <a-tab-pane
-          key="0"
-          :title="'UI测试（' + data.summary.ui_count + '）'"
-          :disabled="tabLoading && currentActiveTab !== '0'"
-          v-if="data.summary.ui_count > 0"
-        >
-          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px">
-            <a-collapse :default-active-key="[1]" :bordered="false" accordion destroy-on-hide>
-              <a-collapse-item v-for="item of data.dataList" :key="item.id">
-                <template #header>
-                  <div class="custom-header">
-                    <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
-                      >{{ item.case_id }}-{{ item.case_name }}</span
-                    >
-                    <span style="width: 20px"></span>
-                    <a-tag :color="enumStore.status_colors[item.status]"
-                      >{{ enumStore.task_status[item.status].title }}
-                    </a-tag>
-                    <span
-                      v-if="item.error_message"
-                      class="error-message"
-                      :title="item.error_message"
-                    >
-                      失败提示：{{ item.error_message }}
-                    </span>
-                  </div>
-                </template>
-                <template #extra>
-                  <a-button v-if="canRetry" type="text" size="mini" @click.stop="onRetry(item.id)"
-                    >重试</a-button
-                  >
-                </template>
-                <a-table
-                  :bordered="false"
-                  :columns="uiColumns"
-                  :data="item.children"
-                  :pagination="false"
-                >
-                  <template #columns>
-                    <a-table-column
-                      v-for="itemRow of uiColumns"
-                      :key="itemRow.key"
-                      :align="itemRow.align ? itemRow.align : 'center'"
-                      :data-index="itemRow.dataIndex"
-                      :fixed="itemRow.fixed"
-                      :title="itemRow.title"
-                      :width="itemRow.width"
-                      :ellipsis="itemRow.ellipsis"
-                      :tooltip="itemRow.tooltip"
-                    >
-                      <template v-if="itemRow.key === 'id'" #cell="{ record }">
-                        <span>{{ record.id }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                          >{{ enumStore.task_status[record.status].title }}
-                        </a-tag>
-                      </template>
-                      <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-                        <a-space>
-                          <a-button
-                            v-if="!record.children"
-                            type="text"
-                            size="mini"
-                            @click="showDetails(record)"
-                            >查看详细报告
-                          </a-button>
-                        </a-space>
-                      </template>
-                    </a-table-column>
-                  </template>
-                </a-table>
-              </a-collapse-item>
-            </a-collapse>
+          <a-spin :loading="caseLoading && cases.length === 0" class="case-spin">
+            <div v-if="cases.length === 0 && !caseLoading" class="empty-state">暂无用例结果</div>
+            <UiCaseTable
+              v-else-if="activeType === '0'"
+              :cases="cases"
+              :enum-store="enumStore"
+              :can-retry="canRetry"
+              @show-details="showDetails"
+              @retry="onRetry"
+            />
+            <ApiCaseTable
+              v-else-if="activeType === '1'"
+              :cases="cases"
+              :enum-store="enumStore"
+              :can-retry="canRetry"
+              @show-details="showDetails"
+              @retry="onRetry"
+            />
+            <PytestCaseTable
+              v-else-if="activeType === '2'"
+              :cases="cases"
+              :enum-store="enumStore"
+              :can-retry="canRetry"
+              @show-details="showDetails"
+              @retry="onRetry"
+            />
           </a-spin>
-        </a-tab-pane>
-        <a-tab-pane
-          key="1"
-          :title="'API测试（' + data.summary.api_count + '）'"
-          :disabled="tabLoading && currentActiveTab !== '1'"
-          v-if="data.summary.api_count > 0"
-        >
-          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px">
-            <a-collapse
-              :default-active-key="[1]"
-              :bordered="false"
-              v-for="item of data.dataList"
-              :key="item.id"
-              accordion
-              destroy-on-hide
-              style="padding: 0 0 0 0"
-            >
-              <a-collapse-item :header="item.case_name" key="1">
-                <template #header>
-                  <div class="custom-header">
-                    <span :title="`${item.case_id}-${item.case_name}`" class="case-name"
-                      >{{ item.case_id }}-{{ item.case_name }}</span
-                    >
-                    <span style="width: 20px"></span>
-                    <a-tag :color="enumStore.status_colors[item.status]"
-                      >{{ enumStore.task_status[item.status].title }}
-                    </a-tag>
-                    <span
-                      v-if="item.error_message"
-                      class="error-message"
-                      :title="item.error_message"
-                    >
-                      失败提示：{{ item.error_message }}
-                    </span>
-                  </div>
-                </template>
-                <template #extra>
-                  <a-button v-if="canRetry" type="text" size="mini" @click.stop="onRetry(item.id)"
-                    >重试</a-button
-                  >
-                </template>
-                <a-table
-                  :bordered="false"
-                  :columns="apiColumns"
-                  :data="item.children"
-                  :pagination="false"
-                >
-                  <template #columns>
-                    <a-table-column
-                      v-for="itemRow of apiColumns"
-                      :key="itemRow.key"
-                      :align="itemRow.align ? itemRow.align : 'center'"
-                      :data-index="itemRow.dataIndex"
-                      :fixed="itemRow.fixed"
-                      :title="itemRow.title"
-                      :width="itemRow.width"
-                      :ellipsis="itemRow.ellipsis"
-                      :tooltip="itemRow.tooltip"
-                    >
-                      <template v-if="itemRow.key === 'id'" #cell="{ record }">
-                        <span>{{ record.api_info_id }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                          >{{ enumStore.task_status[record.status].title }}
-                        </a-tag>
-                      </template>
-                      <template v-else-if="itemRow.key === 'request_url'" #cell="{ record }">
-                        <span>{{ record?.request?.url }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'response_time'" #cell="{ record }">
-                        <span>{{ record?.response?.time }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-                        <a-space>
-                          <a-button
-                            v-if="!record.children"
-                            type="text"
-                            size="mini"
-                            @click="showDetails(record)"
-                            >查看详细报告
-                          </a-button>
-                        </a-space>
-                      </template>
-                    </a-table-column>
-                  </template>
-                </a-table>
-              </a-collapse-item>
-            </a-collapse>
-          </a-spin>
-        </a-tab-pane>
-        <a-tab-pane
-          key="2"
-          :title="'Pytest测试（' + data.summary.pytest_count + '）'"
-          :disabled="tabLoading && currentActiveTab !== '2'"
-          v-if="data.summary.pytest_count > 0"
-        >
-          <a-spin :loading="tabLoading" style="width: 100%; min-height: 200px">
-            <a-collapse
-              :default-active-key="[1]"
-              :bordered="false"
-              v-for="item of data.dataList"
-              :key="item.id"
-              accordion
-              destroy-on-hide
-              style="padding: 0 0 0 0"
-            >
-              <a-collapse-item :header="item.case_name" key="1">
-                <template #header>
-                  <div class="custom-header">
-                    <span :title="item.case_name" class="case-name">{{ item.case_name }}</span>
-                    <span style="width: 20px"></span>
-                    <a-tag :color="enumStore.status_colors[item.status]"
-                      >{{ enumStore.task_status[item.status].title }}
-                    </a-tag>
-                    <span
-                      v-if="item.error_message"
-                      class="error-message"
-                      :title="item.error_message"
-                    >
-                      失败提示：{{ item.error_message }}
-                    </span>
-                  </div>
-                </template>
-                <template #extra>
-                  <a-button v-if="canRetry" type="text" size="mini" @click.stop="onRetry(item.id)"
-                    >重试</a-button
-                  >
-                </template>
-                <a-table
-                  :bordered="false"
-                  :columns="pytestColumns"
-                  :data="item.children"
-                  :pagination="false"
-                >
-                  <template #columns>
-                    <a-table-column
-                      v-for="itemRow of pytestColumns"
-                      :key="itemRow.key"
-                      :align="itemRow.align ? itemRow.align : 'center'"
-                      :data-index="itemRow.dataIndex"
-                      :fixed="itemRow.fixed"
-                      :title="itemRow.title"
-                      :width="itemRow.width"
-                      :ellipsis="itemRow.ellipsis"
-                      :tooltip="itemRow.tooltip"
-                    >
-                      <template v-if="itemRow.key === 'id'" #cell="{ record }">
-                        <span>{{ record.id }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                          >{{ enumStore.task_status[record.status].title }}
-                        </a-tag>
-                      </template>
-                      <template v-else-if="itemRow.key === 'start'" #cell="{ record }">
-                        <span>{{ formatDateTime(record.start) }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
-                        <span>{{ formatDateTime(record.stop) }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'error_message'" #cell="{ record }">
-                        <span>{{ record?.statusDetails?.message }}</span>
-                      </template>
-                      <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-                        <a-space>
-                          <a-button
-                            v-if="!record.children"
-                            type="text"
-                            size="mini"
-                            @click="showDetails(record)"
-                            >查看详细报告
-                          </a-button>
-                        </a-space>
-                      </template>
-                    </a-table-column>
-                  </template>
-                </a-table>
-              </a-collapse-item>
-            </a-collapse>
-          </a-spin>
-        </a-tab-pane>
-      </a-tabs>
-    </a-card>
 
-    <!-- 测试详情抽屉 -->
-    <a-drawer
-      v-model:visible="drawerVisible"
-      :width="1000"
-      title="测试用例详情"
-      class="custom-drawer"
-    >
-      <template v-if="data.selectedCase">
-        <div>
-          <div v-if="data.selectedCase.case_type === 0">
-            <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
-              <ElementTestReport :resultData="data?.selectedCase" />
-            </a-card>
+          <div ref="loadMoreRef" class="load-more">
+            <a-spin v-if="caseLoading && cases.length > 0" size="small" />
+            <span v-else-if="pagination.finished && cases.length > 0">没有更多了</span>
           </div>
-          <div v-else-if="data.selectedCase.case_type === 1">
-            <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
-              <ApiTestReport :resultData="data?.selectedCase" />
-            </a-card>
-          </div>
-          <div v-else-if="data.selectedCase.case_type === 2">
-            <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
-              <PytestTestReport :resultData="data?.selectedCase">pytest</PytestTestReport>
-            </a-card>
-          </div>
-        </div>
-      </template>
+      </div>
+    </section>
+
+    <a-drawer v-model:visible="drawerVisible" :width="1000" title="测试用例详情">
+      <a-card v-if="selectedCase.case_type === 0" :title="selectedCase?.name" :bordered="false">
+        <ElementTestReport :resultData="selectedCase" />
+      </a-card>
+      <a-card v-else-if="selectedCase.case_type === 1" :title="selectedCase?.name" :bordered="false">
+        <ApiTestReport :resultData="selectedCase" />
+      </a-card>
+      <a-card v-else-if="selectedCase.case_type === 2" :title="selectedCase?.name" :bordered="false">
+        <PytestTestReport :resultData="selectedCase" />
+      </a-card>
     </a-drawer>
   </div>
 </template>
+
 <script lang="ts" setup>
-  import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
-  import { usePageData } from '@/store/page-data'
+  import { Message, Modal } from '@arco-design/web-vue'
   import {
-    getSystemTestSuiteDetailsShare,
     getSystemTestSuiteDetailsRetry,
+    getSystemTestSuiteDetailsShare,
     getSystemTestSuiteDetailsSummaryShare,
   } from '@/api/system/test_sute_details'
   import { getSystemTestSuiteShare } from '@/api/system/test_suite'
+  import { useEnum } from '@/store/modules/get-enum'
+  import { usePageData } from '@/store/page-data'
+  import { useUserStoreContext } from '@/store/modules/user'
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import ApiTestReport from '@/components/ApiTestReport.vue'
-  import { useEnum } from '@/store/modules/get-enum'
   import PytestTestReport from '@/components/PytestTestReport.vue'
-  import {
-    IconApps,
-    IconCheckCircle,
-    IconCloseCircle,
-    IconHistory,
-    IconSync,
-    IconUnorderedList,
-  } from '@arco-design/web-vue/es/icon'
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { apiColumns, pytestColumns, uiColumns } from '@/views/report/details/config'
-  import { useUserStoreContext } from '@/store/modules/user'
+  import UiCaseTable from './UiCaseTable.vue'
+  import ApiCaseTable from './ApiCaseTable.vue'
+  import PytestCaseTable from './PytestCaseTable.vue'
 
+  const route = useRoute()
+  const enumStore = useEnum()
   const pageData: any = usePageData()
+  const userStore = useUserStoreContext()
+  const canRetry = computed(() => !!userStore.token)
+  const isShareReportRoute = computed(() => route.path === '/report/details')
+
   if (!pageData.record) {
     pageData.setRecord({})
   }
+
+  const reportInfo = ref<any>({})
+  const summary = ref<any>({})
+  const cases = ref<any[]>([])
+  const activeType = ref('0')
+  const caseStatus = ref<number | null>(null)
+  const summaryLoading = ref(false)
+  const caseLoading = ref(false)
   const drawerVisible = ref(false)
-  const enumStore = useEnum()
-  const route = useRoute()
-  const userStore = useUserStoreContext()
-  const canRetry = computed(() => !!userStore.token)
-
-  const data: any = reactive({
-    dataList: [],
-    summary: {},
-    selectedCase: {},
-    caseStatus: null,
-    caseType: null,
-  })
-  const caseRunning = ref(false)
-  const tabLoading = ref(false)
-  const currentActiveTab = ref('0')
-  // 添加轮询相关的响应式变量
-  const pollingTimer = ref(null)
+  const selectedCase = ref<any>({})
+  const loadMoreRef = ref<HTMLElement | null>(null)
   const isPolling = ref(false)
+  const pollingTimer = ref<ReturnType<typeof setInterval> | null>(null)
+  let observer: IntersectionObserver | null = null
 
-  const summaryCards = computed(() => [
-    {
-      title: '总用例数',
-      value: data.summary.count,
-      icon: IconApps,
-      class: '',
-    },
-    {
-      title: '待开始',
-      value: data.summary.stay_begin_count,
-      icon: IconHistory,
-      class: 'wait',
-    },
-    {
-      title: '进行中',
-      value: data.summary.proceed_count,
-      icon: IconSync,
-      class: 'running',
-    },
-    {
-      title: '成功用例',
-      value: data.summary.success_count,
-      icon: IconCheckCircle,
-      class: 'success',
-    },
-    {
-      title: '失败用例',
-      value: data.summary.fail_count,
-      icon: IconCloseCircle,
-      class: 'error',
-    },
+  const pagination = reactive({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    finished: false,
+  })
+
+  const reportId = computed(() => String(route.query.id || pageData.record?.id || reportInfo.value?.id || ''))
+  const unfinishedCount = computed(
+    () => (summary.value.stay_begin_count || 0) + (summary.value.proceed_count || 0)
+  )
+  const totalCount = computed(() => summary.value.count || 0)
+  const successRatio = computed(() => ratio(summary.value.success_count, totalCount.value))
+  const failRatio = computed(() => ratio(summary.value.fail_count, totalCount.value))
+  const runningRatio = computed(() => ratio(unfinishedCount.value, totalCount.value))
+  const passRate = computed(() => ratio(summary.value.success_count, totalCount.value))
+  const hasTaskName = computed(() => !!reportInfo.value.tasks?.name)
+
+  const metrics = computed(() => [
+    { key: 'total', label: '总用例', value: summary.value.count || 0 },
+    { key: 'success', label: '成功', value: summary.value.success_count || 0 },
+    { key: 'fail', label: '失败', value: summary.value.fail_count || 0 },
+    { key: 'running', label: '进行中', value: summary.value.proceed_count || 0 },
+    { key: 'wait', label: '待开始', value: summary.value.stay_begin_count || 0 },
   ])
 
-  function formatDateTime(timestamp) {
-    if (!timestamp) return ''
-    const date = new Date(timestamp)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
+  const typeProgress = computed(() =>
+    [
+      {
+        key: 'ui',
+        type: '0',
+        label: 'UI 自动化',
+        tabLabel: 'UI',
+        total: summary.value.ui_count || 0,
+        done: summary.value.ui_in_progress_count || 0,
+        percent: ratio(summary.value.ui_in_progress_count, summary.value.ui_count) / 100,
+      },
+      {
+        key: 'api',
+        type: '1',
+        label: 'API 自动化',
+        tabLabel: 'API',
+        total: summary.value.api_count || 0,
+        done: summary.value.api_in_progress_count || 0,
+        percent: ratio(summary.value.api_in_progress_count, summary.value.api_count) / 100,
+      },
+      {
+        key: 'pytest',
+        type: '2',
+        label: 'Pytest',
+        tabLabel: 'Pytest',
+        total: summary.value.pytest_count || 0,
+        done: summary.value.pytest_in_progress_count || 0,
+        percent: ratio(summary.value.pytest_in_progress_count, summary.value.pytest_count) / 100,
+      },
+    ].filter((item) => item.total > 0)
+  )
+  const visibleTypeTabs = computed(() =>
+    typeProgress.value.map((item) => ({
+      key: item.type,
+      label: item.tabLabel,
+      total: item.total,
+    }))
+  )
+  const currentTypeLabel = computed(() => {
+    if (activeType.value === '1') return 'API 自动化'
+    if (activeType.value === '2') return 'Pytest'
+    return 'UI 自动化'
+  })
+  const currentStatusLabel = computed(() => {
+    const map: Record<number, string> = {
+      0: '只看失败',
+      1: '只看成功',
+      2: '只看待开始',
+      3: '只看进行中',
+    }
+    return caseStatus.value === null ? '全部结果' : map[caseStatus.value] || '全部结果'
+  })
 
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  function ratio(value = 0, total = 0) {
+    if (!total) return 0
+    return Math.round((Number(value || 0) / Number(total)) * 100)
   }
 
-  const showDetails = (record: any) => {
-    data.selectedCase = record
+  function statusColor(status: number) {
+    return enumStore.status_colors?.[status] || 'gray'
+  }
+
+  function statusText(status: number) {
+    return enumStore.task_status?.[status]?.title || '未知'
+  }
+
+  function envText(env: number) {
+    return enumStore.environment_type?.[env]?.title || '-'
+  }
+
+  function noticeText(status: number) {
+    return enumStore.test_suite_notice?.[status]?.title || '-'
+  }
+
+  function noticeColor(status: number) {
+    return enumStore.colors?.[status] || 'gray'
+  }
+
+  function getTotal(res: any) {
+    return Number(res?.totalSize || res?.total || res?.count || 0)
+  }
+
+  function showDetails(record: any) {
+    selectedCase.value = {
+      ...record,
+      case_type: record?.case_type ?? Number(activeType.value),
+    }
     drawerVisible.value = true
   }
-  // 修改doCaseStatus函数
-  const doCaseStatus = async (key) => {
-    if (caseRunning.value) return
-    caseRunning.value = true
-    try {
-      data.caseStatus = key
-      await doRefresh(data.caseType) // 添加await等待异步操作完成
-    } catch (e) {
-      Message.error(e?.msg || e?.message || '用例执行失败')
-    } finally {
-      caseRunning.value = false
+
+  function buildCaseQuery() {
+    const data: any = {
+      test_suite_id: reportId.value,
+      type: activeType.value,
+      page: pagination.page,
+      pageSize: pagination.pageSize,
     }
+    if (caseStatus.value !== null) {
+      data.status = caseStatus.value
+    }
+    return data
   }
 
-  // 修改doRefresh函数，让它返回Promise
-  function doRefresh(type = null) {
-    data.caseType = type
-    let value = { test_suite_id: pageData.record.id }
-    if (data.caseStatus !== null) {
-      value['status'] = data.caseStatus
-    }
-    if (data.caseType !== null) {
-      value['type'] = data.caseType
-    } else if (data.summary?.ui_count > 0) {
-      value['type'] = 0
-    } else if (data.summary.api_count > 0) {
-      value['type'] = 1
-    } else if (data.summary.pytest_count > 0) {
-      value['type'] = 2
-    }
-    value['page'] = 1
-    value['pageSize'] = 10000
-
-    // 返回Promise
-    return new Promise((resolve, reject) => {
-      getSystemTestSuiteDetailsShare(value)
-        .then((res) => {
-          data.dataList = res.data
-          resolve(res)
-        })
-        .catch((error) => {
-          reject(error)
-        })
-    })
-  }
-
-  // 新增tab切换处理函数
-  function onTabChange(key) {
-    // 如果正在加载中，阻止切换
-    if (tabLoading.value) {
+  async function loadReportInfo() {
+    if (!reportId.value) return
+    if (pageData.record?.id?.toString() === reportId.value) {
+      reportInfo.value = pageData.record || {}
       return
     }
-
-    currentActiveTab.value = key
-    tabLoading.value = true
-    doRefresh(key)
-      .then(() => {
-        // 数据加载完成
-      })
-      .catch((error) => {
-        Message.error(error?.msg || '加载失败')
-      })
-      .finally(() => {
-        tabLoading.value = false
-      })
+    const res = await getSystemTestSuiteShare(reportId.value)
+    reportInfo.value = res.data || {}
+    pageData.setRecord(reportInfo.value)
   }
 
-  function doRefreshSummary() {
-    getSystemTestSuiteDetailsSummaryShare(pageData.record.id)
-      .then((res) => {
-        data.summary = res.data
-        // 初始化当前激活的tab
-        if (data.summary?.ui_count > 0) {
-          currentActiveTab.value = '0'
-        } else if (data.summary.api_count > 0) {
-          currentActiveTab.value = '1'
-        } else if (data.summary.pytest_count > 0) {
-          currentActiveTab.value = '2'
-        }
-        doRefresh(data.caseType)
-
-        // 检查是否有正在进行的测试
-        const hasInProgress = res.data.stay_begin_count > 0 || res.data.proceed_count > 0
-
-        // 如果有正在进行的测试且未启动轮询，则启动轮询
-        if (hasInProgress && !isPolling.value) {
-          isPolling.value = true
-          startPolling()
-        }
-        // 如果没有正在进行的测试但已启动轮询，则停止轮询
-        else if (!hasInProgress && isPolling.value) {
-          stopPolling()
-        }
-      })
-      .catch(console.log)
+  async function loadSummary() {
+    if (!reportId.value) return
+    summaryLoading.value = true
+    try {
+      const res = await getSystemTestSuiteDetailsSummaryShare(reportId.value)
+      summary.value = res.data || {}
+      const [firstVisibleType] = visibleTypeTabs.value
+      if (firstVisibleType && !visibleTypeTabs.value.some((item) => item.key === activeType.value)) {
+        activeType.value = firstVisibleType.key
+      }
+      handlePolling()
+    } finally {
+      summaryLoading.value = false
+    }
   }
 
-  // 启动轮询
-  function startPolling() {
-    // 先清除可能存在的定时器
-    if (pollingTimer.value) {
-      clearInterval(pollingTimer.value)
+  async function loadCases(reset = false) {
+    if (!reportId.value || caseLoading.value) return
+    if (!reset && pagination.finished) return
+    if (reset) {
+      cases.value = []
+      pagination.page = 1
+      pagination.total = 0
+      pagination.finished = false
     }
 
-    // 设置5秒轮询
-    pollingTimer.value = setInterval(() => {
-      doRefreshSummary()
+    caseLoading.value = true
+    try {
+      const res = await getSystemTestSuiteDetailsShare(buildCaseQuery())
+      const list = Array.isArray(res.data) ? res.data : []
+      cases.value = reset ? list : cases.value.concat(list)
+      pagination.total = getTotal(res)
+      pagination.finished =
+        list.length < pagination.pageSize ||
+        (pagination.total > 0 && cases.value.length >= pagination.total)
+      if (!pagination.finished) {
+        pagination.page += 1
+      }
+    } catch (error: any) {
+      Message.error(error?.msg || '加载报告失败')
+    } finally {
+      caseLoading.value = false
+    }
+  }
+
+  function reloadCases() {
+    loadCases(true)
+  }
+
+  function selectType(type: string) {
+    if (activeType.value === type) return
+    activeType.value = type
+    reloadCases()
+  }
+
+  async function refreshLoadedCases() {
+    if (!reportId.value || caseLoading.value) return
+    const loadedPageSize = Math.max(cases.value.length, pagination.pageSize)
+    const currentPage = pagination.page
+    const wasFinished = pagination.finished
+    caseLoading.value = true
+    try {
+      const query = buildCaseQuery()
+      query.page = 1
+      query.pageSize = loadedPageSize
+      const res = await getSystemTestSuiteDetailsShare(query)
+      const list = Array.isArray(res.data) ? res.data : []
+      cases.value = list
+      pagination.total = getTotal(res)
+      pagination.finished =
+        list.length < loadedPageSize ||
+        (pagination.total > 0 && list.length >= pagination.total)
+      pagination.page = pagination.finished
+        ? currentPage
+        : Math.floor(list.length / pagination.pageSize) + 1
+    } catch (error) {
+      pagination.page = currentPage
+      pagination.finished = wasFinished
+      throw error
+    } finally {
+      caseLoading.value = false
+    }
+  }
+
+  function handlePolling() {
+    const hasInProgress = (summary.value.stay_begin_count || 0) > 0 || (summary.value.proceed_count || 0) > 0
+    if (hasInProgress && !isPolling.value) {
+      startPolling()
+    } else if (!hasInProgress && isPolling.value) {
+      stopPolling()
+    }
+  }
+
+  function startPolling() {
+    stopPolling()
+    isPolling.value = true
+    pollingTimer.value = setInterval(async () => {
+      await loadSummary()
+      await refreshLoadedCases()
     }, 5000)
   }
 
-  // 停止轮询
   function stopPolling() {
     if (pollingTimer.value) {
       clearInterval(pollingTimer.value)
       pollingTimer.value = null
-      isPolling.value = false
+    }
+    isPolling.value = false
+  }
+
+  function initObserver() {
+    observer?.disconnect()
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadCases()
+        }
+      },
+      { root: null, rootMargin: '260px 0px', threshold: 0 }
+    )
+    if (loadMoreRef.value) {
+      observer.observe(loadMoreRef.value)
     }
   }
 
-  function onRetry(_id: any) {
+  function onRetry(id: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要重试这个测试任务？',
       cancelText: '取消',
       okText: '重试',
       onOk: () => {
-        getSystemTestSuiteDetailsRetry(_id)
+        getSystemTestSuiteDetailsRetry(id)
           .then((res) => {
             Message.success(res.msg)
-            doRefreshSummary()
+            loadSummary()
+            reloadCases()
           })
           .catch(console.log)
       },
     })
   }
 
-  // 组件挂载时刷新数据
-  onMounted(() => {
+  onMounted(async () => {
     if (!enumStore.task_status?.length) {
       enumStore.getEnumShare()
     }
-    const reportId = route.query.id as string
-    if (reportId && pageData.record?.id?.toString() !== reportId) {
-      getSystemTestSuiteShare(reportId)
-        .then((res) => {
-          pageData.setRecord(res.data)
-          doRefreshSummary()
-        })
-        .catch(console.log)
-      return
+    await loadReportInfo()
+    await loadSummary()
+    const [firstVisibleType] = visibleTypeTabs.value
+    if (firstVisibleType) {
+      activeType.value = firstVisibleType.key
     }
-    if (pageData.record?.id) {
-      doRefreshSummary()
-    }
+    await loadCases(true)
+    nextTick(initObserver)
   })
 
-  // 添加 onUnmounted 钩子来清理定时器
   onUnmounted(() => {
     stopPolling()
+    observer?.disconnect()
+    observer = null
   })
 </script>
-<style lang="less" scoped>
-  .summary-cards {
-    display: flex;
-    justify-content: space-between;
+
+<style scoped lang="less">
+  .report-lab {
+    height: 100%;
+    overflow-y: auto;
+    padding: 14px;
+    background:
+      linear-gradient(180deg, rgba(22, 93, 255, 0.1), rgba(245, 247, 251, 0) 320px),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+      #f5f7fb;
+    background-size:
+      auto,
+      24px 24px,
+      auto;
+    color: #0f172a;
   }
 
-  .summary-col {
-    flex: 1;
-    margin: 0 8px; /* 调整间距 */
+  .standalone-report-container {
+    height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
-  .summary-col:first-child {
-    margin-left: 0;
+  .report-head,
+  .overview-panel,
+  .case-section {
+    background: #fff;
+    border: 1px solid #dde5f2;
+    border-radius: 8px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
   }
 
-  .summary-col:last-child {
-    margin-right: 0;
-  }
-
-  .test-report-container {
-    padding: 15px;
-    min-height: 100vh;
-  }
-
-  // 卡片通用样式 - 与首页保持一致
-  :deep(.arco-card) {
-    border-radius: 8px; /* 与首页保持一致 */
-    box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15); /* 与首页保持一致 */
-    transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1); /* 与首页保持一致 */
-    border: none;
+  .report-head {
+    position: relative;
     overflow: hidden;
-    background: var(--color-bg-2); /* 与首页保持一致 */
-
-    .arco-card-header {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      padding: 12px 15px; /* 与首页保持一致 */
-      font-weight: 600;
-      font-size: 16px;
-    }
-
-    .arco-card-body {
-      padding: 15px; /* 与首页保持一致 */
-    }
+    padding: 16px 18px;
   }
 
-  // 摘要卡片
-  .summary-cards {
-    margin-bottom: 15px; /* 与首页间距保持一致 */
+  .report-head::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: linear-gradient(180deg, #165dff, #00b42a 56%, #ff7d00);
+    content: '';
   }
 
-  .summary-card {
-    height: 100%;
-
-    :deep(.arco-card-header) {
-      background: var(--color-fill-1); /* 与首页保持一致 */
-      border-radius: 8px 8px 0 0;
-    }
+  .head-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    gap: 16px;
+    align-items: stretch;
   }
 
-  .card-content {
-    text-align: center;
-    padding: 8px 0; /* 调整内边距 */
+  .report-title {
+    min-width: 0;
+    padding-left: 2px;
   }
 
-  .number {
-    font-size: 32px; /* 稍微减小字体大小 */
-    font-weight: bold;
-    margin-right: 6px; /* 调整右边距 */
-    background: linear-gradient(45deg, #1890ff, #52c41a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .eyebrow {
+    margin: 0 0 4px;
+    color: #165dff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
   }
 
-  .label {
-    font-size: 14px; /* 稍稍微小字体大小 */
-    color: #86909c;
+  h1,
+  h2,
+  p,
+  dl,
+  dt,
+  dd {
+    margin: 0;
   }
 
-  .success {
-    :deep(.arco-card-header) {
-      color: #52c41a;
-      background: rgba(82, 196, 26, 0.1);
-    }
-
-    .number {
-      background: linear-gradient(45deg, #52c41a, #95de64);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+  h1 {
+    max-width: 920px;
+    overflow: hidden;
+    font-size: 21px;
+    line-height: 28px;
+    color: #0f172a;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .running {
-    :deep(.arco-card-header) {
-      color: #d46b08;
-      background: rgba(255, 247, 232, 3);
-    }
-
-    .number {
-      background: linear-gradient(45deg, #d46b08, #ffa940);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-  }
-
-  .error {
-    :deep(.arco-card-header) {
-      color: #f5222d;
-      background: rgba(245, 34, 45, 0.1);
-    }
-
-    .number {
-      background: linear-gradient(45deg, #f5222d, #ff7875);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-  }
-
-  .wait {
-    :deep(.arco-card-header) {
-      color: #1890ff;
-      background: #e5e5e5;
-    }
-
-    .number {
-      background: linear-gradient(45deg, #1890ff, #69c0ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-  }
-
-  .chart-section {
-    margin-bottom: 15px;
-
-    :deep(.arco-row) {
-      display: flex;
-      align-items: stretch;
-    }
-
-    :deep(.arco-col) {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-  }
-
-  // 添加包装器确保卡片高度一致
-  .chart-card-wrapper {
-    height: 100%;
+  .report-subtitle {
     display: flex;
-    flex-direction: column;
-    flex: 1;
-  }
-
-  // 确保卡片高度一致 - 使用固定高度
-  .info-card,
-  .progress-card,
-  .result-card {
-    height: 360px; // 固定高度
-    display: flex;
-    flex-direction: column;
-
-    :deep(.arco-card) {
-      height: 360px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    :deep(.arco-card-body) {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 15px;
-    }
-  }
-
-  // 图表容器样式
-  .chart-container {
-    flex: 1;
-    height: 280px; // 固定高度
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 10px;
-    width: 100%;
+    gap: 8px;
+    margin-top: 7px;
+    color: #5b6b85;
+    font-size: 13px;
   }
 
-  // 确保三个卡片高度一致的额外样式
-  .chart-col {
-    display: flex;
-    flex-direction: column;
-    height: 360px;
+  .report-subtitle i,
+  .case-toolbar p i {
+    width: 4px;
+    height: 4px;
+    display: inline-block;
+    border-radius: 50%;
+    background: #c7d1e0;
   }
 
-  // 进度条卡片
-  .progress-card {
-    :deep(.arco-card-body) {
-      display: flex;
-      flex-direction: column;
-
-      .chart-container {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        width: 100%;
-        height: 280px;
-        padding-top: 24px;
-
-        .progress-items-wrapper {
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
-          flex: 1;
-        }
-      }
-    }
+  .status-console {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    min-height: 92px;
+    padding: 12px;
+    background:
+      linear-gradient(135deg, rgba(22, 93, 255, 0.12), rgba(22, 93, 255, 0.03)),
+      #f8fbff;
+    border: 1px solid #cfe0ff;
+    border-radius: 8px;
   }
 
-  .progress-item {
-    margin-bottom: 24px;
-    width: 100%;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
+  .status-console strong {
+    margin-top: 8px;
+    color: #165dff;
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 750;
   }
 
-  .progress-label {
-    margin-bottom: 12px;
+  .status-console span {
+    color: #6b778c;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .meta-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    margin-top: 14px;
+    overflow: hidden;
+    border: 1px solid #e5ebf5;
+    border-radius: 8px;
+  }
+
+  .meta-strip.has-task-name {
+    grid-template-columns: minmax(180px, 1.6fr) repeat(5, minmax(0, 1fr));
+  }
+
+  .meta-item {
+    min-width: 0;
+    padding: 8px 12px;
+    background: #fbfcff;
+  }
+
+  .meta-item + .meta-item {
+    border-left: 1px solid #e5ebf5;
+  }
+
+  .meta-item dt,
+  .metric-item span {
+    display: block;
+    color: #6b778c;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .meta-item dd {
+    overflow: hidden;
+    color: #0f172a;
     font-size: 14px;
     font-weight: 600;
-    color: #1d2129;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  :deep(.arco-progress) {
+  .metric-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .metric-item {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-areas:
+      'mark label'
+      'mark value';
+    column-gap: 10px;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dde5f2;
     border-radius: 8px;
-    overflow: hidden;
-
-    .arco-progress-line-path {
-      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .arco-progress-line-text {
-      font-weight: 600;
-    }
+    padding: 10px 12px;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
 
-  // 信息卡片
-  .info-card {
-    .chart-container {
-      align-items: flex-start;
-      justify-content: center;
-      height: 280px;
-    }
-
-    :deep(.arco-card-body) {
-      display: flex;
-      flex-direction: column;
-
-      .chart-container {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        width: 100%;
-      }
-    }
+  .metric-item:hover {
+    border-color: #9fc3ff;
+    box-shadow: 0 12px 24px rgba(22, 93, 255, 0.1);
+    transform: translateY(-1px);
   }
 
-  .info-item {
-    margin-bottom: 8px;
+  .metric-mark {
+    grid-area: mark;
+    width: 4px;
+    height: 32px;
+    display: block;
+    border-radius: 999px;
+    background: #86909c;
+  }
+
+  .metric-item span {
+    grid-area: label;
+    margin-bottom: 2px;
+  }
+
+  .metric-item strong {
+    grid-area: value;
+    font-size: 22px;
+    line-height: 26px;
+    color: #0f172a;
+  }
+
+  .metric-item.success .metric-mark {
+    background: #00b42a;
+  }
+
+  .metric-item.fail .metric-mark {
+    background: #f53f3f;
+  }
+
+  .metric-item.running .metric-mark {
+    background: #ff7d00;
+  }
+
+  .metric-item.wait .metric-mark {
+    background: #165dff;
+  }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .overview-panel {
+    padding: 12px 14px;
+  }
+
+  .panel-title,
+  .case-toolbar,
+  .type-row,
+  .legend-row {
     display: flex;
     align-items: center;
-    padding: 4px 8px;
+  }
+
+  .panel-title,
+  .case-toolbar {
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .panel-title span {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .panel-title p {
+    margin-top: 2px;
+    color: #86909c;
+    font-size: 12px;
+  }
+
+  .panel-title strong {
+    font-size: 26px;
+    color: #165dff;
+  }
+
+  .ratio-bar {
+    display: flex;
+    height: 10px;
+    overflow: hidden;
     border-radius: 4px;
-    background: rgba(0, 0, 0, 0.02);
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.04);
-      transform: translateX(5px);
-    }
+    background: #edf1f7;
+    margin: 14px 0 10px;
   }
 
-  .info-value {
-    color: #4e5969;
+  .ratio-bar i {
+    display: block;
+    min-width: 2px;
   }
 
-  // 结果卡片
-  .result-card {
-    :deep(.arco-card-body) {
-      display: flex;
-      flex-direction: column;
-
-      .chart-container {
-        flex: 1;
-        width: 100%;
-        height: 280px;
-        padding: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-  }
-  .result-card {
-    :deep(.arco-progress-circle) {
-      .arco-progress-circle-path {
-        stroke-linecap: round;
-        transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-    }
+  .ratio-bar .success,
+  .dot.success {
+    background: #00b42a;
   }
 
-  .circle-progress-text {
-    text-align: center;
-
-    .progress-title {
-      font-size: 16px;
-      color: #86909c;
-      margin-bottom: 4px;
-    }
-
-    .progress-value {
-      font-size: 24px;
-      font-weight: bold;
-      color: #52c41a;
-    }
+  .ratio-bar .fail,
+  .dot.fail {
+    background: #f53f3f;
   }
 
-  // 抽屉样式
-  .custom-drawer {
-    :deep(.arco-drawer-header) {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      padding: 16px 24px;
-    }
-
-    :deep(.arco-drawer-body) {
-      padding: 24px;
-    }
+  .ratio-bar .running,
+  .dot.running {
+    background: #ff7d00;
   }
 
-  .custom-descriptions {
-    margin-bottom: 24px;
-
-    :deep(.arco-descriptions-item-label) {
-      background-color: rgba(var(--primary-1), 0.3);
-      font-weight: 600;
-    }
-
-    :deep(.arco-descriptions-item-value) {
-      padding: 8px 12px;
-    }
+  .legend-row {
+    gap: 18px;
+    flex-wrap: wrap;
+    color: #475569;
+    font-size: 13px;
   }
 
-  .report-cards {
-    margin-top: 8px;
+  .dot {
+    width: 8px;
+    height: 8px;
+    display: inline-block;
+    border-radius: 50%;
+    margin-right: 6px;
   }
 
-  .report-card {
-    margin-bottom: 12px;
+  .type-progress + .type-progress {
+    margin-top: 10px;
   }
 
-  .custom-header {
+  .type-row {
+    justify-content: space-between;
+    margin-bottom: 6px;
+    color: #475569;
+  }
+
+  .type-row em {
+    font-style: normal;
+    color: #64748b;
+  }
+
+  .case-section {
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .case-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
     align-items: center;
-    gap: 12px; /* 控制标签间距 */
-    font-size: 14px;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 14px;
+    background: rgba(251, 252, 255, 0.97);
+    border-bottom: 1px solid #e2e8f0;
+    backdrop-filter: blur(8px);
+  }
+
+  .case-toolbar-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .case-toolbar-copy {
+    min-width: 0;
+  }
+
+  .case-toolbar h2 {
+    font-size: 16px;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+
+  .case-toolbar p {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #475569;
+    font-size: 13px;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .type-switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    padding: 3px;
+    border: 1px solid #e5ebf5;
+    border-radius: 8px;
+    background: #f7f9fc;
+  }
+
+  .type-switch-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 28px;
+    padding: 4px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    line-height: 18px;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .type-switch-item:hover {
+    background: #eef5ff;
+    color: #165dff;
+  }
+
+  .type-switch-item.active {
+    background: #fff;
+    color: #165dff;
+    box-shadow: 0 2px 8px rgba(22, 93, 255, 0.12);
+  }
+
+  .type-switch-item span {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .type-switch-item strong {
+    min-width: 18px;
+    padding: 0 5px;
+    border: 1px solid #e5ebf5;
+    border-radius: 999px;
+    background: #f8fafc;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .case-main {
+    min-width: 0;
+  }
+
+  .case-spin {
     width: 100%;
+    min-height: 220px;
   }
 
-  .custom-header > .case-name {
-    flex: 0 0 400px; /* 固定400px宽度 */
-    min-width: 400px;
-    max-width: 400px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .empty-state,
+  .load-more {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
   }
 
-  .custom-header > span:nth-child(2) {
-    flex: 0 0 20px; /* 固定20px宽度 */
-  }
-
-  .custom-header > .arco-tag {
-    flex: 0 0 auto; /* 不伸缩，保持标签自然宽度 */
-  }
-
-  .custom-header > .error-message {
-    flex: 1; /* 占据剩余所有空间 */
-    min-width: 0; /* 允许收缩到0，配合省略号显示 */
-    max-width: 1000px; /* 限制最大宽度为700px，确保重试按钮有足够的空间 */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  :deep(.arco-collapse-item-content),
-  :deep(.arco-collapse-item-content-expend) {
-    background: var(--color-bg-1);
-  }
-
-  // 测试详情卡片 - 与首页保持一致
-  .test-details {
-    :deep(.arco-card-header) {
-      border-radius: 8px 8px 0 0; /* 与首页保持一致 */
-      padding: 12px 15px; /* 与首页保持一致 */
+  @media (max-width: 1100px) {
+    .head-main {
+      grid-template-columns: minmax(0, 1fr) 140px;
     }
 
-    :deep(.arco-card-body) {
-      padding: 15px; /* 与首页保持一致 */
-    }
-  }
-
-  // 按钮样式优化 - 与首页保持一致
-  :deep(.arco-btn) {
-    border-radius: 6px; /* 与首页保持一致 */
-    transition: all 0.2s ease; /* 与首页保持一致 */
-  }
-
-  :deep(.arco-btn:hover) {
-    transform: translateY(-1px); /* 与首页保持一致 */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 与首页保持一致 */
-  }
-
-  // 标签样式优化
-  :deep(.arco-tag) {
-    border-radius: 4px; /* 与首页保持一致 */
-    font-size: 12px; /* 稍稍微小字体大小 */
-  }
-
-  // 响应式设计 - 与首页保持一致
-  @media (max-width: 1200px) {
-    .test-report-container {
-      padding: 10px; /* 与首页保持一致 */
+    .meta-strip,
+    .metric-strip,
+    .overview-grid {
+      grid-template-columns: 1fr 1fr;
     }
 
-    .summary-col {
-      margin: 0 5px; /* 与首页保持一致 */
+    .case-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
     }
 
-    .summary-cards,
-    .chart-section {
-      margin-bottom: 10px; /* 与首页保持一致 */
-    }
-
-    // 在中等屏幕下调整列布局
-    .chart-section {
-      :deep(.arco-col) {
-        margin-bottom: 10px;
-      }
+    .case-toolbar-main {
+      align-items: flex-start;
+      flex-direction: column;
+      width: 100%;
     }
   }
 
   @media (max-width: 768px) {
-    .test-report-container {
-      padding: 10px; /* 与首页保持一致 */
+    .report-lab {
+      padding: 8px;
     }
 
-    .summary-col {
-      margin-bottom: 10px; /* 与首页保持一致 */
+    .report-head {
+      padding: 14px;
     }
 
-    .summary-cards {
-      flex-direction: column;
+    .head-main {
+      grid-template-columns: 1fr;
+      gap: 10px;
     }
 
-    // 在小屏幕下调整为单列布局
-    .chart-section {
-      :deep(.arco-col) {
-        width: 100%;
-        margin-bottom: 10px;
-      }
+    .status-console {
+      min-height: 72px;
+      padding: 10px 12px;
+    }
+
+    .status-console strong {
+      font-size: 24px;
+      line-height: 28px;
+    }
+
+    .meta-strip,
+    .metric-strip,
+    .overview-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .type-switch {
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 18px;
+      line-height: 25px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .metric-item {
+      transition: none;
     }
   }
 </style>

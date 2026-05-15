@@ -110,14 +110,19 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         @param _id: 用例ID
         @return:
         """
-        data = {'id': _id, 'case_flow': ''}
-        run = self.model.objects.filter(case=_id).order_by('case_sort')
-        for i in run:
-            data['case_flow'] += '->'
-            if i.api_info:
-                data['case_flow'] += i.api_info.name
-        if data['case_flow'] == '':
-            data['case_flow'] = None
+        case_flow = []
+        run = self.model.objects.filter(case=_id).select_related('api_info').order_by('case_sort', 'id')
+        for item in run:
+            parameters = ApiCaseDetailedParameter.objects.filter(case_detailed=item).order_by('id')
+            parameter_names = [parameter.name for parameter in parameters if parameter.name]
+            if parameter_names:
+                case_flow.extend(parameter_names)
+            elif item.api_info:
+                case_flow.append(item.api_info.name)
+        data = {
+            'id': _id,
+            'case_flow': f"->{'->'.join(case_flow)}" if case_flow else None
+        }
         from src.auto_test.auto_api.views.api_case import ApiCaseCRUD
         ApiCaseCRUD.inside_put(ApiCase.objects.get(id=_id).id, data)
 

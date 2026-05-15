@@ -178,6 +178,7 @@ class ApiPublic(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    test_env = models.SmallIntegerField(verbose_name="测试环境", null=True, blank=True, default=None)
     # 0等于自定义，1等于sql，2等于登录
     type = models.SmallIntegerField(verbose_name="自定义变量类型", default=0, db_index=True)
     name = models.CharField(verbose_name="名称", max_length=64)

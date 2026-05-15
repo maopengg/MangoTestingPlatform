@@ -79,7 +79,8 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'details',
+        path: 'system/details',
+        name: 'ReportDetails',
         component: () => import('@/views/report/details/index.vue'),
         meta: {
           title: '测试报告详情',

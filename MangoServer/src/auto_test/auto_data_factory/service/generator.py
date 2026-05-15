@@ -22,9 +22,11 @@ class DataFactoryValueGenerator:
             fields: list[DataFactoryField],
             overrides: dict | None = None,
             context: dict | None = None,
+            test_data: ObtainTestData | None = None,
     ) -> dict:
         overrides = overrides or {}
         context = context or {}
+        test_data = test_data or ObtainTestData()
         payload = {}
 
         for field in fields:
@@ -35,7 +37,7 @@ class DataFactoryValueGenerator:
             else:
                 value = cls.generate(field, payload, context)
 
-            value = cls.replace_value(value)
+            value = cls.replace_value(value, test_data)
             value = DataFactoryTypeCast.cast(value, field.platform_type)
             cls.validate(field, value)
             payload[field.name] = value
@@ -112,13 +114,14 @@ class DataFactoryValueGenerator:
         return None
 
     @classmethod
-    def replace_value(cls, value):
+    def replace_value(cls, value, test_data: ObtainTestData | None = None):
+        test_data = test_data or ObtainTestData()
         if isinstance(value, str):
-            return ObtainTestData().replace(value)
+            return test_data.replace(value)
         if isinstance(value, list):
-            return [cls.replace_value(item) for item in value]
+            return [cls.replace_value(item, test_data) for item in value]
         if isinstance(value, dict):
-            return {key: cls.replace_value(item) for key, item in value.items()}
+            return {key: cls.replace_value(item, test_data) for key, item in value.items()}
         return value
 
     @staticmethod

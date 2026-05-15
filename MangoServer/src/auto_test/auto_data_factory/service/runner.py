@@ -30,28 +30,49 @@ from src.models.data_factory_model import (
 
 from .datasource import DataFactoryDatasource, DataFactoryDatasourceResolver, is_missing_value
 from .generator import DataFactoryValueGenerator
+from .runtime_cache import DataFactoryRuntimeCache
 from .type_cast import DataFactoryTypeCast
 
 
 class DataFactoryRunner:
+    @staticmethod
+    def get_template(template_id: int | str | None) -> DataFactoryTemplate:
+        if not template_id:
+            raise ToolsError(300, "状态模板ID不能为空")
+        try:
+            return DataFactoryTemplate.objects.select_related(
+                'entity',
+                'entity__datasource_alias',
+                'project_product',
+            ).get(id=template_id)
+        except DataFactoryTemplate.DoesNotExist as error:
+            raise ToolsError(300, "状态模板不存在或已被删除，请刷新列表后重试") from error
+
     @classmethod
     def preview_template(
             cls,
             template_id: int,
             overrides: dict | None = None,
+            output_config: list | None = None,
             context: dict | None = None,
             test_object_id: int | None = None,
             test_env: int | None = None,
+            test_data=None,
     ) -> dict:
-        template = DataFactoryTemplate.objects.select_related(
-            'entity',
-            'entity__datasource_alias',
-            'project_product',
-        ).get(id=template_id)
+        template = cls.get_template(template_id)
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
+        test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
         runtime_context = context or {}
-        return cls.preview_by_template(template, overrides or {}, runtime_context, test_object_id, set())
+        return cls.preview_by_template(
+            template,
+            overrides or {},
+            runtime_context,
+            test_object_id,
+            set(),
+            output_config=output_config,
+            test_data=test_data,
+        )
 
     @classmethod
     def preview_by_template(
@@ -62,13 +83,24 @@ class DataFactoryRunner:
             test_object_id: int | None,
             visiting: set[int],
             alias_override: str | None = None,
+            output_config: list | None = None,
+            test_data=None,
     ) -> dict:
         if template.id in visiting:
             raise ToolsError(300, f"检测到数据工厂循环依赖：{template.name}")
         visiting.add(template.id)
 
         try:
-            return cls._preview_by_template(template, overrides, context, test_object_id, visiting, alias_override)
+            return cls._preview_by_template(
+                template,
+                overrides,
+                context,
+                test_object_id,
+                visiting,
+                alias_override,
+                output_config,
+                test_data,
+            )
         finally:
             visiting.remove(template.id)
 
@@ -81,7 +113,10 @@ class DataFactoryRunner:
             test_object_id: int | None,
             visiting: set[int],
             alias_override: str | None,
+            output_config: list | None,
+            test_data,
     ) -> dict:
+        test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, None)
         entity = template.entity
         if not entity.table_name:
             raise ToolsError(300, f"实体 {entity.name} 未配置表名")
@@ -111,6 +146,7 @@ class DataFactoryRunner:
                     visiting=visiting,
                     dependencies=dependencies,
                     dependency_nodes=dependency_nodes,
+                    test_data=test_data,
                 )
                 payload[field.name] = DataFactoryTypeCast.to_jsonable(value)
                 if value is None and not field.nullable and not field.primary_key:
@@ -132,7 +168,7 @@ class DataFactoryRunner:
             action="root",
             children=dependency_nodes,
         )
-        output = cls.build_output(template.output_config, payload)
+        output = cls.build_output(output_config if output_config is not None else template.output_config, payload)
         return {
             "template": {
                 "id": template.id,
@@ -173,9 +209,11 @@ class DataFactoryRunner:
             visiting: set[int],
             dependencies: list,
             dependency_nodes: list,
+            test_data=None,
     ):
         if field.generator_type != DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
-            return DataFactoryValueGenerator.generate(field, payload, context)
+            value = DataFactoryValueGenerator.generate(field, payload, context)
+            return DataFactoryValueGenerator.replace_value(value, test_data)
 
         config = field.generator_config or {}
         target_field = config.get("field", "id")
@@ -245,6 +283,7 @@ class DataFactoryRunner:
             test_object_id,
             visiting,
             alias_override=dependency_alias,
+            test_data=test_data,
         )
         dependency_preview["dependency_tree"]["field"] = field.name
         dependency_preview["dependency_tree"]["target_field"] = target_field
@@ -354,14 +393,12 @@ class DataFactoryRunner:
             context: dict | None = None,
             test_object_id: int | None = None,
             test_env: int | None = None,
+            test_data=None,
     ) -> dict:
-        template = DataFactoryTemplate.objects.select_related(
-            'entity',
-            'entity__datasource_alias',
-            'project_product',
-        ).get(id=template_id)
+        template = cls.get_template(template_id)
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
+        test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
         execution = DataFactoryExecution.objects.create(
             execution_no=cls.build_execution_no(),
             source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
@@ -369,7 +406,6 @@ class DataFactoryRunner:
             template=template,
             project_product=template.project_product,
             module=template.module or template.entity.module,
-            test_object_id=test_object_id,
             stage=DataFactoryExecutionStageEnum.DEBUG.value,
             status=DataFactoryExecutionStatusEnum.PROCEED.value,
             context=context or {},
@@ -377,7 +413,14 @@ class DataFactoryRunner:
 
         try:
             runtime_context = context or {}
-            data = cls.create_by_template(template, execution, overrides or {}, runtime_context)
+            data = cls.create_by_template(
+                template,
+                execution,
+                overrides or {},
+                runtime_context,
+                test_object_id,
+                test_data=test_data,
+            )
             output = cls.build_output(template.output_config, data)
             execution.context = runtime_context
             execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
@@ -409,21 +452,18 @@ class DataFactoryRunner:
             test_env: int | None = None,
             alias_override: str | None = None,
             cleanup_strategy_override: int | None = None,
+            test_data=None,
     ) -> dict:
-        template = DataFactoryTemplate.objects.select_related(
-            'entity',
-            'entity__datasource_alias',
-            'project_product',
-        ).get(id=template_id)
+        template = cls.get_template(template_id)
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
+        test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
         execution = DataFactoryExecution.objects.create(
             execution_no=cls.build_execution_no(),
             source_type=source_type,
             source_id=source_id,
             template=template,
             project_product=template.project_product,
-            test_object_id=test_object_id,
             stage=stage,
             status=DataFactoryExecutionStatusEnum.PROCEED.value,
             context=context or {},
@@ -436,8 +476,10 @@ class DataFactoryRunner:
                 execution,
                 overrides or {},
                 runtime_context,
+                test_object_id,
                 alias_override=alias_override,
                 cleanup_strategy_override=cleanup_strategy_override,
+                test_data=test_data,
             )
             output = cls.build_output(template.output_config, data)
             execution.context = runtime_context
@@ -463,9 +505,11 @@ class DataFactoryRunner:
             execution: DataFactoryExecution,
             overrides: dict,
             context: dict,
+            test_object_id: int | None,
             alias_override: str | None = None,
             visiting: set[int] | None = None,
             cleanup_strategy_override: int | None = None,
+            test_data=None,
     ) -> dict:
         visiting = visiting or set()
         if template.id in visiting:
@@ -478,9 +522,11 @@ class DataFactoryRunner:
                 execution,
                 overrides,
                 context,
+                test_object_id,
                 alias_override,
                 visiting,
                 cleanup_strategy_override,
+                test_data,
             )
         finally:
             visiting.remove(template.id)
@@ -492,22 +538,25 @@ class DataFactoryRunner:
             execution: DataFactoryExecution,
             overrides: dict,
             context: dict,
+            test_object_id: int | None,
             alias_override: str | None,
             visiting: set[int],
             cleanup_strategy_override: int | None,
+            test_data,
     ) -> dict:
+        test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, None)
         entity = template.entity
         if entity.create_type != DataFactoryOperationTypeEnum.SQL.value:
             raise ToolsError(300, "当前阶段仅支持 SQL 创建方式")
         if not entity.table_name:
             raise ToolsError(300, f"实体 {entity.name} 未配置表名")
-        database = DataFactoryDatasourceResolver.resolve(entity, execution.test_object_id)
+        database = DataFactoryDatasourceResolver.resolve(entity, test_object_id)
 
         fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
         merged_overrides = {**(template.field_overrides or {}), **overrides}
         fields = cls.build_effective_fields(fields, merged_overrides)
-        cls.resolve_dependencies(fields, execution, context, visiting)
-        payload = DataFactoryValueGenerator.build_payload(fields, None, context)
+        cls.resolve_dependencies(fields, execution, context, test_object_id, visiting, test_data)
+        payload = DataFactoryValueGenerator.build_payload(fields, None, context, test_data)
         created = cls.insert(entity, database, payload)
         jsonable_payload = DataFactoryTypeCast.to_jsonable({**payload, **created})
         alias = alias_override or template.name
@@ -533,7 +582,9 @@ class DataFactoryRunner:
             fields: list,
             execution: DataFactoryExecution,
             context: dict,
+            test_object_id: int | None,
             visiting: set[int],
+            test_data=None,
     ) -> None:
         for field in fields:
             if field.generator_type != DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
@@ -570,8 +621,10 @@ class DataFactoryRunner:
                 execution,
                 dependency_overrides,
                 context,
+                test_object_id,
                 alias_override=dependency_alias,
                 visiting=visiting,
+                test_data=test_data,
             )
 
     @classmethod

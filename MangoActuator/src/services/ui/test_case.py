@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 
 from mangoautomation.exceptions import MangoAutomationError
-from mangoautomation.uidrive import DriverObject, BaseData
+from mangoautomation.uidrives import DriverObject, BaseData
 from mangotools.data_processor import RandomTimeData
 from mangotools.exceptions import MangoToolsError
 
