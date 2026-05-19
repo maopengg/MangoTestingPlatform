@@ -21,7 +21,7 @@ class ApiParametrizeSuite(StrictSchema):
 class ApiJsonPathAssertionItem(StrictSchema):
     actual: str = ''
     method: str = ''
-    expect: str = ''
+    expect: str | None = ''
 
 
 class ApiSqlAssertionItem(StrictSchema):

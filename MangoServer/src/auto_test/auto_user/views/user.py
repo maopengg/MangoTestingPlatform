@@ -68,8 +68,16 @@ class UserCRUD(ModelCRUD):
             serializer.save()
             user = self.model.objects.get(id=serializer.data.get('id'))
             user.password = EncryptionTool.md5_32_small(data['password'])
+            if not user.api_key:
+                user.api_key = self.model.unique_api_key()
             user.save()
-            return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0002, self.serializer(instance=user).data)
+
+    @classmethod
+    def inside_post(cls, data: dict) -> dict:
+        data = dict(data)
+        data.setdefault('api_key', cls.model.unique_api_key())
+        return super().inside_post(data)
 
 
 class UserViews(ViewSet):
@@ -130,6 +138,14 @@ class UserViews(ViewSet):
         obj.password = new_password
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0040)
+
+    @action(methods=['put'], detail=False)
+    @error_response('user')
+    def reset_api_key(self, request: Request):
+        user = self.model.objects.get(id=request.data.get('id'))
+        user.api_key = self.model.unique_api_key()
+        user.save(update_fields=['api_key'])
+        return ResponseData.success(RESPONSE_MSG_0082, model_to_dict(user, exclude=['password']))
 
 
 class LoginViews(ViewSet):

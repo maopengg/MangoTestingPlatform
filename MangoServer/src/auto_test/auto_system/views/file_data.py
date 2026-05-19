@@ -28,7 +28,7 @@ from src.tools.view.response_msg import *
 class FileDataSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    test_file = serializers.FileField(use_url=False, allow_null=True, required=False)
+    test_file = serializers.FileField(use_url=False, allow_null=True, required=False, allow_empty_file=True)
     failed_screenshot = serializers.ImageField(use_url=False, allow_null=True, required=False)
 
     class Meta:
@@ -40,7 +40,7 @@ class FileDataSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    test_file = serializers.FileField(use_url=False, allow_null=True, required=False)
+    test_file = serializers.FileField(use_url=False, allow_null=True, required=False, allow_empty_file=True)
     failed_screenshot = serializers.ImageField(use_url=False, allow_null=True, required=False)
 
     class Meta:

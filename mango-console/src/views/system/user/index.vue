@@ -83,10 +83,28 @@
             <template v-else-if="item.key === 'role'" #cell="{ record }">
               {{ record.role === null ? '-' : record.role.name }}
             </template>
+            <template v-else-if="item.key === 'api_key'" #cell="{ record }">
+              <a-typography-paragraph
+                v-if="record.api_key"
+                class="api-key-cell"
+                copyable
+                :ellipsis="{ rows: 1 }"
+              >
+                {{ record.api_key }}
+              </a-typography-paragraph>
+              <span v-else>-</span>
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
                   >编辑
+                </a-button>
+                <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="onResetApiKey(record)"
+                  >重置APIKey
                 </a-button>
                 <a-button
                   status="danger"
@@ -154,7 +172,7 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
-  import { deleteUserInfo, getUserInfo, postUserInfo, putUserInfo } from '@/api/user/user'
+  import { deleteUserInfo, getUserInfo, postUserInfo, putUserApiKey, putUserInfo } from '@/api/user/user'
   import { getUserAllRole } from '@/api/user/role'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -230,6 +248,23 @@
     })
   }
 
+  function onResetApiKey(record: any) {
+    Modal.confirm({
+      title: '重置 MCP APIKey',
+      content: `重置后用户「${record.name}」旧的 MCP APIKey 将立即失效，是否继续？`,
+      cancelText: '取消',
+      okText: '重置',
+      onOk: () => {
+        putUserApiKey({ id: record.id })
+          .then((res) => {
+            Message.success(`${res.msg}，请复制新的 APIKey 更新 MCP 客户端配置`)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+
   function onUpdate(item: any) {
     userData.actionTitle = '编辑'
     userData.isAdd = false
@@ -297,3 +332,9 @@
     })
   })
 </script>
+
+<style scoped>
+  .api-key-cell {
+    margin-bottom: 0;
+  }
+</style>

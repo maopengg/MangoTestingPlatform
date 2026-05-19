@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import logging
+from functools import wraps
 from datetime import datetime
 
 
@@ -77,6 +78,29 @@ def _env_bool(name: str, default: bool = True) -> bool:
     return value.strip().lower() not in {"0", "false", "no", "off"}
 
 
+def _authenticated_tool_method(mcp):
+    original_tool = mcp.tool
+
+    def authenticated_tool(*tool_args, **tool_kwargs):
+        decorator = original_tool(*tool_args, **tool_kwargs)
+
+        def decorate(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                from src.mcp_server.common import require_mcp_user
+
+                auth_error = require_mcp_user()
+                if auth_error:
+                    return auth_error
+                return func(*args, **kwargs)
+
+            return decorator(wrapper)
+
+        return decorate
+
+    return authenticated_tool
+
+
 def _transport_security_settings():
     from mcp.server.transport_security import TransportSecuritySettings
 
@@ -93,6 +117,13 @@ def _platform_capabilities() -> dict:
         "message": "操作成功",
         "data": {
             "server": _mcp_server_info(),
+            "authentication": {
+                "required_for_business_tools": True,
+                "header": "Authorization: Bearer <MCP APIKey>",
+                "api_key_prefix": "mango_",
+                "setup_hint": "请到「系统管理 - 用户管理」复制或生成 MCP APIKey，并配置到 MCP 客户端 Authorization 请求头。",
+                "public_tools": ["get_mcp_server_info", "get_platform_capabilities"],
+            },
             "capabilities": [
                 {
                     "name": "server_info",
@@ -113,12 +144,13 @@ def _platform_capabilities() -> dict:
                         "list_project_test_objects",
                         "list_project_products",
                         "list_product_modules",
+                        "create_product_module",
                         "list_case_owners",
                     ],
                 },
                 {
                     "name": "api_automation",
-                    "description": "API 接口、请求头、用例、场景、执行和结果分析",
+                    "description": "API 接口、请求头、用例、场景、文件参数引用、执行和结果分析",
                     "tools": [
                         "create_api_header",
                         "list_api_public_variables",
@@ -161,6 +193,15 @@ def _platform_capabilities() -> dict:
                         "evaluate_test_data_expression",
                     ],
                 },
+                {
+                    "name": "system_file",
+                    "description": "系统文件上传、查询和下载地址获取",
+                    "tools": [
+                        "list_system_files",
+                        "upload_system_file",
+                        "get_system_file_download_url",
+                    ],
+                },
             ]
         },
         "warnings": [],
@@ -176,6 +217,7 @@ def mcp_asgi_app():
     from src.mcp_server.tools.api_automation import register_api_automation_tools
     from src.mcp_server.tools.data_factory import register_data_factory_tools
     from src.mcp_server.tools.project_context import register_project_context_tools
+    from src.mcp_server.tools.system_file import register_system_file_tools
     from src.mcp_server.tools.system_variable import register_system_variable_tools
 
     try:
@@ -207,6 +249,8 @@ def mcp_asgi_app():
     def get_platform_capabilities() -> dict:
         """查询 Mango MCP 当前开放的能力分组。"""
         return _platform_capabilities()
+
+    mcp.tool = _authenticated_tool_method(mcp)
 
     @mcp.resource("mango://project-product/{project_product_id}")
     def get_project_product_resource(project_product_id: str) -> dict:
@@ -336,6 +380,7 @@ def mcp_asgi_app():
     register_api_automation_tools(mcp)
     register_data_factory_tools(mcp)
     register_system_variable_tools(mcp)
+    register_system_file_tools(mcp)
     return mcp.streamable_http_app()
 
 

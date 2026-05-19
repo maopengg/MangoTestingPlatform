@@ -149,6 +149,15 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: 'MCP APIKey',
+    key: 'api_key',
+    dataIndex: 'api_key',
+    align: 'left',
+    width: 260,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '登录IP',
     key: 'ip',
     dataIndex: 'ip',
@@ -166,6 +175,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 110,
+    width: 210,
   },
 ])

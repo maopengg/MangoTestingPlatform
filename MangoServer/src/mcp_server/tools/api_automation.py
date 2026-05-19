@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 from curlparser import parse
 from django.db import transaction
+from django.db.models import Q
 from django.forms import model_to_dict
 from genson import SchemaBuilder
 
@@ -22,8 +23,30 @@ from src.auto_test.auto_api.views.api_pulic import ApiPublicCRUD
 from src.auto_test.auto_user.models import User
 from src.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from src.enums.system_enum import CacheDataKey2Enum
-from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
+from src.enums.tools_enum import (
+    ApiCaseScenarioTagEnum,
+    ApiCaseScenarioTypeEnum,
+    CaseLevelEnum,
+    StatusEnum,
+    TestCaseTypeEnum,
+)
 from src.mcp_server.common import current_user, fail, ok
+
+
+FILE_UPLOAD_USAGE = {
+    "description": "API 接口定义和 API case 场景参数中的 file 字段用于描述 multipart/form-data 文件参数。",
+    "workflow": [
+        "先调用 system_file 分组的 upload_system_file 上传真实文件，记录返回的 file.name 或上传时传入的 name。",
+        "在 api_info.file 或 api_case_detailed_parameter.file 中使用 ${{get_file(文件名)}} 引用已上传文件。",
+        "get_file 是系统自定义随机/变量方法，执行时会按文件名查找上传文件并转换成实际请求文件。",
+    ],
+    "example": [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}],
+    "notes": [
+        "示例中的 file 是请求参数名；如果接口字段名叫 upload_file，则写成 [{'upload_file': '${{get_file(数据订阅新增模板.xlsx)}}'}]。",
+        "括号内必须是实际上传文件名，建议先用 list_system_files 查询确认。",
+        "不要把本地文件路径直接写入 file 字段；远程 MCP 服务通常无法读取调用者本机路径。",
+    ],
+}
 
 
 def _json_string(value: Any) -> str | None:
@@ -113,14 +136,33 @@ def _normalize_ass_jsonpath(assertions: list | None) -> list:
         expect = item.get("expect", item.get("value"))
         if _is_empty_value({"actual": actual, "method": method, "expect": expect}):
             continue
+        if _jsonpath_method_uses_expect(method):
+            normalized_expect = "" if expect is None else str(expect)
+        else:
+            normalized_expect = None
         normalized.append(
             {
                 "actual": actual,
                 "method": method,
-                "expect": "" if expect is None else str(expect),
+                "expect": normalized_expect,
             }
         )
     return normalized
+
+
+def _jsonpath_method_uses_expect(method_value: str | None) -> bool:
+    if not method_value:
+        return True
+    method = _find_assertion_method(method_value)
+    if method is None:
+        return True
+    parameters = method.get("parameter") or []
+    return any(parameter.get("f") == "expect" for parameter in parameters)
+
+
+def _find_assertion_method(method_value: str) -> dict | None:
+    methods = _flatten_assertion_methods(_api_assertion_method_groups())
+    return next((item for item in methods if item["value"] == method_value), None)
 
 
 def _api_assertion_method_groups() -> list[dict]:
@@ -181,11 +223,12 @@ def _general_assertion_template(method_value: str, actual: Any = "", expect: Any
 
 def _case_owner_required() -> dict:
     return fail(
-        "创建 API case 需要指定负责人 case_people_id。请先调用 list_case_owners 查询可选负责人，并询问用户选择绑定给谁。",
+        "创建 API case 需要指定负责人 case_people_id，或通过 MCP APIKey/JWT 识别当前用户作为默认负责人。",
         "CASE_OWNER_REQUIRED",
         {
             "required_field": "case_people_id",
             "next_actions": [
+                "在 MCP 客户端 Authorization 中配置当前用户 APIKey",
                 "调用 list_case_owners 查询可选负责人",
                 "向用户展示负责人列表并询问 case 要绑定给谁",
                 "用户选择后再次调用 create_api_case 或 create_complete_api_case",
@@ -343,6 +386,7 @@ def register_api_automation_tools(mcp):
         project_product_id: int,
         enabled_only: bool = False,
         type: int | None = None,
+        test_env_id: int | None = None,
         keyword: str | None = None,
         page: int = 1,
         page_size: int = 50,
@@ -353,6 +397,8 @@ def register_api_automation_tools(mcp):
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
         if type is not None:
             queryset = queryset.filter(type=type)
+        if test_env_id is not None:
+            queryset = queryset.filter(test_env=test_env_id)
         if keyword:
             queryset = (
                 queryset.filter(name__contains=keyword)
@@ -365,6 +411,7 @@ def register_api_automation_tools(mcp):
             {
                 "id": item.id,
                 "project_product_id": item.project_product_id,
+                "test_env": item.test_env,
                 "type": item.type,
                 "type_title": ApiPublicTypeEnum.get_value(item.type),
                 "name": item.name,
@@ -372,23 +419,25 @@ def register_api_automation_tools(mcp):
                 "value": item.value,
                 "status": item.status,
             }
-            for item in queryset.order_by("type", "-id")[offset : offset + page_size]
+            for item in queryset.order_by("test_env", "type", "-id")[offset : offset + page_size]
         ]
         return ok({"items": items, "count": count, "page": page, "page_size": page_size})
 
     @mcp.tool()
     def create_api_public_variable(
         project_product_id: int,
+        test_env_id: int,
         type: int,
         name: str,
         key: str,
         value: str,
         status: int = 0,
     ) -> dict:
-        """创建 API 全局变量。type: 0=自定义, 1=SQL, 2=登录。"""
+        """创建 API 全局变量。test_env_id 必填；创建前可调用 list_test_environments 查询可用环境。type: 0=自定义, 1=SQL, 2=登录。"""
         data = ApiPublicCRUD.inside_post(
             {
                 "project_product": project_product_id,
+                "test_env": test_env_id,
                 "type": type,
                 "name": name,
                 "key": key,
@@ -402,6 +451,7 @@ def register_api_automation_tools(mcp):
     def update_api_public_variable(
         public_variable_id: int,
         type: int | None = None,
+        test_env_id: int | None = None,
         name: str | None = None,
         key: str | None = None,
         value: str | None = None,
@@ -411,6 +461,7 @@ def register_api_automation_tools(mcp):
         payload: dict[str, Any] = {"id": public_variable_id}
         for field, field_value in {
             "type": type,
+            "test_env": test_env_id,
             "name": name,
             "key": key,
             "value": value,
@@ -481,7 +532,11 @@ def register_api_automation_tools(mcp):
         file: dict | list | None = None,
         type: int = 1,
     ) -> dict:
-        """创建 API 接口定义。params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。"""
+        """创建 API 接口定义。params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
+
+        文件上传接口的 file 字段请先调用 upload_system_file 上传真实文件，再使用
+        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        """
         if method not in MethodEnum.get_key_list():
             return fail("请求方法不存在", "METHOD_NOT_FOUND", {"method": method})
         data_obj = ApiInfoCRUD.inside_post(
@@ -548,7 +603,11 @@ def register_api_automation_tools(mcp):
         json_body: str | dict | list | None = None,
         file: dict | list | None = None,
     ) -> dict:
-        """更新 API 接口定义。"""
+        """更新 API 接口定义。
+
+        文件上传接口的 file 字段请先调用 upload_system_file 上传真实文件，再使用
+        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        """
         payload: dict[str, Any] = {"id": api_info_id}
         for key, value in {
             "name": name,
@@ -582,6 +641,8 @@ def register_api_automation_tools(mcp):
         keyword: str | None = None,
         case_people_id: int | None = None,
         level: int | None = None,
+        scenario_type: int | None = None,
+        scenario_tags: list[int] | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> dict:
@@ -595,6 +656,13 @@ def register_api_automation_tools(mcp):
             queryset = queryset.filter(case_people_id=case_people_id)
         if level is not None:
             queryset = queryset.filter(level=level)
+        if scenario_type is not None:
+            queryset = queryset.filter(scenario_type=scenario_type)
+        if scenario_tags:
+            tag_query = Q()
+            for tag in scenario_tags:
+                tag_query |= Q(scenario_tags__contains=[tag])
+            queryset = queryset.filter(tag_query)
         if keyword:
             queryset = queryset.filter(name__contains=keyword)
         count = queryset.count()
@@ -608,6 +676,9 @@ def register_api_automation_tools(mcp):
                 "case_people_id": item.case_people_id,
                 "case_flow": item.case_flow,
                 "level": item.level,
+                "scenario_type": item.scenario_type,
+                "scenario_tags": item.scenario_tags,
+                "scenario_description": item.scenario_description,
                 "status": item.status,
             }
             for item in queryset.order_by("-id")[offset : offset + page_size]
@@ -621,14 +692,22 @@ def register_api_automation_tools(mcp):
         name: str,
         case_people_id: int | None = None,
         level: int = 1,
+        scenario_type: int = 0,
+        scenario_tags: list[int] | None = None,
+        scenario_description: str | None = None,
         front_custom: list | None = None,
         front_sql: list | None = None,
         front_headers: list[int] | None = None,
         posterior_sql: list | None = None,
     ) -> dict:
-        """创建 API case 主体。未提供 case_people_id 时应先查询负责人并询问用户选择。"""
+        """创建 API case 主体。
+
+        复杂字段格式见 get_api_case_schema.api_case_fields。front_headers 只传 ApiHeaders.id 数组，
+        表示用例级默认请求头；如果某个场景参数 headers 非空，执行时会完全覆盖 front_headers，不会合并。
+        未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
+        """
         if case_people_id is None:
-            return _case_owner_required()
+            case_people_id = current_user().id
         data_obj = ApiCaseCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -636,29 +715,38 @@ def register_api_automation_tools(mcp):
                 "name": name,
                 "case_people": case_people_id,
                 "level": level,
+                "scenario_type": scenario_type,
+                "scenario_tags": scenario_tags or [],
+                "scenario_description": scenario_description,
                 "front_custom": front_custom or [],
                 "front_sql": front_sql or [],
                 "front_headers": front_headers or [],
                 "posterior_sql": posterior_sql or [],
             }
         )
-        return ok({"case_id": data_obj["id"], **data_obj}, "API case 创建成功")
+        return ok({"case_id": data_obj["id"], "current_user_id": current_user().id, **data_obj}, "API case 创建成功")
 
     @mcp.tool()
     def update_api_case(
         case_id: int,
         name: str | None = None,
         level: int | None = None,
+        scenario_type: int | None = None,
+        scenario_tags: list[int] | None = None,
+        scenario_description: str | None = None,
         front_custom: list | None = None,
         front_sql: list | None = None,
         front_headers: list[int] | None = None,
         posterior_sql: list | None = None,
     ) -> dict:
-        """更新 API case 主体配置。"""
+        """更新 API case 主体配置。复杂字段格式见 get_api_case_schema.api_case_fields。"""
         payload: dict[str, Any] = {"id": case_id}
         for key, value in {
             "name": name,
             "level": level,
+            "scenario_type": scenario_type,
+            "scenario_tags": scenario_tags,
+            "scenario_description": scenario_description,
             "front_custom": front_custom,
             "front_sql": front_sql,
             "front_headers": front_headers,
@@ -749,7 +837,14 @@ def register_api_automation_tools(mcp):
         posterior_sleep: int | None = None,
         posterior_func: str | None = None,
     ) -> dict:
-        """给步骤创建一个场景参数。"""
+        """给步骤创建一个场景参数。
+
+        复杂字段格式见 get_api_case_schema.api_case_scenario_fields。
+        headers 只传 ApiHeaders.id 数组；只要 headers 非空，就会完全覆盖 API case 的 front_headers，不会合并。
+        ass_jsonpath 中 actual 是 JSONPath；method 使用 get_api_assertion_methods 返回的叶子 value。
+        如果 method 的参数只有 actual、没有 expect，例如 p_is_none/p_is_true/p_is_false，expect 传 null。
+        文件上传参数 file 请使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件。
+        """
         payload = {
             "case_detailed": step_id,
             "name": name,
@@ -779,7 +874,12 @@ def register_api_automation_tools(mcp):
 
     @mcp.tool()
     def update_api_case_scenario(scenario_id: int, fields: dict) -> dict:
-        """更新场景参数。fields 使用 ApiCaseDetailedParameter 字段名。"""
+        """更新场景参数。fields 使用 ApiCaseDetailedParameter 字段名。
+
+        字段格式见 get_api_case_schema.api_case_scenario_fields。fields.headers 非空时会覆盖 API case 的 front_headers。
+        fields.ass_jsonpath 的规则同 create_api_case_scenario：单参数断言方法 expect 传 null。
+        fields.file 如需上传文件，请使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件。
+        """
         payload = {"id": scenario_id, **fields}
         payload = _normalize_scenario_payload(payload)
         data_obj = ApiCaseDetailedParameterCRUD.inside_put(scenario_id, payload)
@@ -826,11 +926,23 @@ def register_api_automation_tools(mcp):
         if assertion_style in ("jsonpath", "full") and isinstance(sample, (dict, list)):
             for path, value in _find_json_paths(sample):
                 if isinstance(value, (str, int, float, bool)) or value is None:
+                    if value is None:
+                        method = "p_is_none"
+                        expect = None
+                    elif value is True:
+                        method = "p_is_true"
+                        expect = None
+                    elif value is False:
+                        method = "p_is_false"
+                        expect = None
+                    else:
+                        method = "p_is_equal_to"
+                        expect = str(value)
                     result["ass_jsonpath"].append(
                         {
                             "actual": path,
-                            "method": "p_is_equal_to",
-                            "expect": "" if value is None else str(value),
+                            "method": method,
+                            "expect": expect,
                         }
                     )
         if assertion_style in ("schema", "full") and isinstance(sample, (dict, list)):
@@ -901,16 +1013,27 @@ def register_api_automation_tools(mcp):
         api: dict,
         scenarios: list[dict],
         case_people_id: int | None = None,
+        scenario_type: int = 0,
+        scenario_tags: list[int] | None = None,
+        scenario_description: str | None = None,
         headers: list[dict] | None = None,
         case_front_headers: list[int] | None = None,
         run_after_create: bool = False,
         test_env_id: int | None = None,
         user_id: int | None = None,
     ) -> dict:
-        """一键创建公共请求头、接口定义、API case、步骤、场景，并可选立即执行。未提供 case_people_id 时应先查询负责人并询问用户选择。"""
+        """一键创建公共请求头、接口定义、API case、步骤、场景，并可选立即执行。
+
+        未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
+        headers 会创建 ApiHeaders 记录；case_front_headers 为空时默认把本次创建的 headers 全部绑定为 case.front_headers。
+        如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
+        api.file 和 scenarios[].file 如需上传文件，请先调用 upload_system_file 上传真实文件，再使用
+        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        """
         if case_people_id is None:
-            return _case_owner_required()
+            case_people_id = current_user(user_id).id
         try:
+            caller_user = current_user(user_id)
             with transaction.atomic():
                 header_ids: list[int] = []
                 for header in headers or []:
@@ -945,6 +1068,9 @@ def register_api_automation_tools(mcp):
                         "name": case_name,
                         "case_people": case_people_id,
                         "level": api.get("level", 1),
+                        "scenario_type": scenario_type,
+                        "scenario_tags": scenario_tags or [],
+                        "scenario_description": scenario_description,
                         "front_headers": case_front_headers or header_ids,
                         "front_custom": [],
                         "front_sql": [],
@@ -975,20 +1101,21 @@ def register_api_automation_tools(mcp):
                     user = current_user(user_id)
                     env_id = _selected_env(user.id, test_env_id)
                     run_result = TestCase(user_id=user.id, test_env=env_id, case_id=api_case["id"]).test_case().model_dump()
+                return ok(
+                    {
+                        "current_user_id": caller_user.id,
+                        "case_people_id": case_people_id,
+                        "api_info_id": api_info["id"],
+                        "case_id": api_case["id"],
+                        "step_id": step["step_id"],
+                        "header_ids": header_ids,
+                        "scenario_ids": scenario_ids,
+                        "run_result": run_result,
+                    },
+                    "完整 API case 创建成功",
+                )
         except Exception as exc:
             return fail(str(exc), "CREATE_COMPLETE_API_CASE_FAILED")
-
-        return ok(
-            {
-                "api_info_id": api_info["id"],
-                "case_id": api_case["id"],
-                "step_id": step["step_id"],
-                "header_ids": header_ids,
-                "scenario_ids": scenario_ids,
-                "run_result": run_result,
-            },
-            "完整 API case 创建成功",
-        )
 
     @mcp.tool()
     def run_api_case(
@@ -1109,11 +1236,18 @@ def register_api_automation_tools(mcp):
                 "recommended": {
                     "jsonpath_equal": "p_is_equal_to",
                     "jsonpath_contains": "p_contains",
+                    "jsonpath_null": "p_is_none",
                     "jsonpath_not_null": "p_is_not_none",
+                    "jsonpath_true": "p_is_true",
+                    "jsonpath_false": "p_is_false",
                     "general_equal": "p_is_equal_to",
                 },
                 "notes": [
                     "jsonpath断言的 method 必须使用 jsonpath_methods 中叶子节点的 value，例如 p_is_equal_to，不能使用 eq。",
+                    "判断 ass_jsonpath.expect 如何传值必须看所选 method 在 jsonpath_methods/flat_methods 中的 parameter 定义。",
+                    "如果 method.parameter 里包含 {f:\"expect\"}，expect 传预期值；如果 parameter 只有 {f:\"actual\"} 或不包含 expect，expect 必须传 null。",
+                    "如果响应字段值是 JSON null，不要使用 p_is_equal_to + expect:null，应使用 p_is_none + expect:null。",
+                    "如果响应字段值是空字符串，使用 p_is_equal_to + expect:\"\" 或 p_is_empty，不能按 null 处理。",
                     "通用断言保存的是前端级联选项对象，建议先用 get_api_assertion_schema 查看结构。",
                 ],
             }
@@ -1130,12 +1264,16 @@ def register_api_automation_tools(mcp):
             {
                 "assertion_types": {
                     "ass_json_all": "JSON一致断言。保存期望 JSON 对象或 JSON 字符串，后端用 p_in_dict 判断响应 JSON 是否匹配期望 JSON。",
-                    "ass_jsonpath": "JSONPath断言。actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value，expect 是预期值。",
+                    "ass_jsonpath": "JSONPath断言。actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value；expect 是否需要传值取决于该 method 的 parameter，包含 f=expect 时传预期值，不包含 f=expect 时传 null。",
                     "ass_text_all": "文本一致断言。保存完整预期响应文本，后端用 response.text.strip() == expect.strip()。",
                     "ass_general": "通用断言。外层 value 保存前端级联选中的完整对象；parameter[].v 面向 textarea 保存，dict/list 应保存为 JSON 字符串，执行 SQL 断言时会自动反序列化。",
                     "ass_schema": "结构化断言。保存 JSON Schema 对象；也可调用 auto_generate_api_case_scenario_schema 自动生成。",
                 },
-                "ass_jsonpath": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                "ass_jsonpath": [
+                    {"actual": "$.code", "method": "p_is_equal_to", "expect": "0"},
+                    {"actual": "$.timestamp", "method": "p_is_none", "expect": None},
+                    {"actual": "$.success", "method": "p_is_true", "expect": None},
+                ],
                 "ass_general": [general_equal],
                 "ass_json_all": {"code": 0},
                 "ass_text_all": "完整响应文本",
@@ -1156,14 +1294,44 @@ def register_api_automation_tools(mcp):
     @mcp.tool()
     def get_api_case_schema() -> dict:
         """返回 API case、步骤和场景参数的核心字段说明。"""
+        key_value_schema = {
+            "type": "list[object]",
+            "format": [{"key": "缓存key或名称", "value": "值、SQL、JSONPath、正则或表达式"}],
+            "variable_support": "value 通常支持 ${{变量}}、${{随机方法()}}、${{数据工厂.字段}} 等表达式，执行前由测试数据引擎替换。",
+        }
+        file_example = [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}]
         return ok(
             {
                 "api_info": ["project_product", "module", "name", "url", "method", "params", "data", "json", "file"],
-                "api_case": ["project_product", "module", "name", "case_people", "level", "front_headers", "front_custom", "front_sql", "posterior_sql"],
+                "api_public": [
+                    "project_product",
+                    "test_env",
+                    "type",
+                    "name",
+                    "key",
+                    "value",
+                    "status",
+                ],
+                "api_case": [
+                    "project_product",
+                    "module",
+                    "name",
+                    "case_people",
+                    "level",
+                    "scenario_type",
+                    "scenario_tags",
+                    "scenario_description",
+                    "front_headers",
+                    "front_custom",
+                    "front_sql",
+                    "posterior_sql",
+                ],
                 "api_case_detailed": ["case", "api_info", "case_sort"],
                 "api_case_detailed_parameter": [
                     "case_detailed",
                     "name",
+                    "error_retry",
+                    "retry_interval",
                     "headers",
                     "params",
                     "data",
@@ -1180,7 +1348,283 @@ def register_api_automation_tools(mcp):
                     "posterior_response_text",
                     "posterior_sql",
                     "posterior_sleep",
+                    "posterior_file",
                     "posterior_func",
+                ],
+                "api_case_fields": {
+                    "project_product_id": {
+                        "type": "int",
+                        "required": True,
+                        "description": "项目产品 ID，对应 ApiCase.project_product。",
+                    },
+                    "module_id": {
+                        "type": "int",
+                        "required": True,
+                        "description": "模块 ID，对应 ApiCase.module。",
+                    },
+                    "name": {
+                        "type": "str",
+                        "required": True,
+                        "description": "API case 名称。",
+                    },
+                    "case_people_id": {
+                        "type": "int | null",
+                        "default": "当前 MCP APIKey/JWT 对应用户",
+                        "description": "用例负责人。未传时 MCP 使用当前调用用户；显式传值时绑定指定负责人。",
+                    },
+                    "level": {
+                        "type": "int",
+                        "default": 1,
+                        "enum_source": "CaseLevelEnum",
+                        "enum": CaseLevelEnum.obj(),
+                        "description": "用例级别。0=高(P0)，1=中(P1)，2=低(P2)，3=极低(P3)。",
+                    },
+                    "scenario_type": {
+                        "type": "int",
+                        "default": 0,
+                        "enum_source": "ApiCaseScenarioTypeEnum",
+                        "enum": ApiCaseScenarioTypeEnum.obj(),
+                    },
+                    "scenario_tags": {
+                        "type": "list[int]",
+                        "default": [],
+                        "enum_source": "ApiCaseScenarioTagEnum",
+                        "enum": ApiCaseScenarioTagEnum.obj(),
+                    },
+                    "scenario_description": {
+                        "type": "str | null",
+                        "default": None,
+                        "description": "场景描述，展示在 API case 列表和详情头部。",
+                    },
+                    "front_custom": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "用例执行前写入普通缓存。key 是缓存名；value 执行前会做变量替换。",
+                        "example": [{"key": "tenant_id", "value": "896684654038353011"}],
+                    },
+                    "front_sql": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "用例执行前执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
+                        "example": [{"key": "user", "value": "SELECT id,name FROM user WHERE id=${{user_id}}"}],
+                    },
+                    "front_headers": {
+                        "type": "list[int]",
+                        "default": [],
+                        "description": "用例级默认请求头，只保存 ApiHeaders.id。只勾选当前 case 必须的公共请求头。",
+                        "execution": "场景 headers 为空时使用；场景 headers 非空时被场景 headers 完全覆盖，不合并。",
+                        "example": [1, 2, 3],
+                    },
+                    "posterior_sql": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "整个 API case 执行结束后执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
+                        "example": [{"key": "order", "value": "SELECT id,status FROM orders WHERE id=${{order_id}}"}],
+                    },
+                    "parametrize": {
+                        "type": "list[object]",
+                        "default": [],
+                        "description": "用例参数化。每组执行前把 parametrize 数组中的 key/value 写入缓存。",
+                        "example": [{"name": "正常数据", "parametrize": [{"key": "name", "value": "AUTO_${{random_str(6)}}"}]}],
+                    },
+                },
+                "api_case_scenario_fields": {
+                    "step_id": {
+                        "type": "int",
+                        "required": True,
+                        "description": "API case 步骤 ID，对应 ApiCaseDetailed.id；创建场景时内部保存为 case_detailed。",
+                    },
+                    "name": {
+                        "type": "str",
+                        "required": True,
+                        "description": "场景参数名称。",
+                    },
+                    "error_retry": {
+                        "type": "int | null",
+                        "default": None,
+                        "description": "失败重试次数；为空时执行 1 次。注意当前执行代码在捕获请求异常时会立即返回失败。",
+                    },
+                    "retry_interval": {
+                        "type": "int | null",
+                        "default": None,
+                        "description": "每次失败后等待秒数。",
+                    },
+                    "headers": {
+                        "type": "list[int]",
+                        "default": [],
+                        "description": "场景级请求头，只保存 ApiHeaders.id。",
+                        "execution": "只要 headers 非空，就完全覆盖 api_case.front_headers，不会合并；headers=[] 时使用用例级 front_headers。",
+                        "example": [4, 5],
+                    },
+                    "params": {
+                        "type": "str | dict | list | null",
+                        "saved_as": "TextField JSON 字符串或原字符串",
+                        "description": "URL query 参数。MCP 传对象/数组会序列化为 JSON 字符串；执行前做变量替换。",
+                        "example": {"page": 1, "name": "${{name}}"},
+                    },
+                    "data": {
+                        "type": "str | dict | list | null",
+                        "saved_as": "TextField JSON 字符串或原字符串",
+                        "description": "表单/body data。MCP 传对象/数组会序列化为 JSON 字符串；执行前做变量替换。",
+                        "example": {"username": "${{username}}", "password": "${{password}}"},
+                    },
+                    "json_body": {
+                        "type": "str | dict | list | null",
+                        "model_field": "json",
+                        "saved_as": "TextField JSON 字符串或原字符串",
+                        "description": "JSON 请求体。工具入参叫 json_body，后端模型字段叫 json；执行前做变量替换。",
+                        "example": {"categoryName": "AUTO_${{random_str(8)}}", "enabled": True},
+                    },
+                    "file": {
+                        "type": "list[object] | dict | null",
+                        "description": "multipart/form-data 文件参数。推荐先用 upload_system_file 上传，再用 get_file 引用文件名。",
+                        "example": file_example,
+                    },
+                    "front_sql": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "场景请求前执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
+                    },
+                    "front_func": {
+                        "type": "str | null",
+                        "default": None,
+                        "description": "场景请求前 Python 函数字符串，默认函数名 func，入参为 (self, request)，返回 RequestModel。",
+                    },
+                    "ass_jsonpath": {
+                        "type": "list[object]",
+                        "default": [],
+                        "format": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                        "description": "JSONPath 断言。actual 是响应 JSONPath；method 必须来自 get_api_assertion_methods 的叶子 value，不能写 eq。",
+                        "expect_rule": "所选 method 的 parameter 包含 f=expect 时传预期值；不包含 expect 时传 null。",
+                    },
+                    "ass_general": {
+                        "type": "list[object]",
+                        "default": [],
+                        "description": "通用断言。value 必须保存前端级联选中的完整对象；parameter[].v 是实际输入值。",
+                        "format": [{"method": "内容断言 / 值等于什么 / 等于expect", "value": {"label": "等于expect", "value": "p_is_equal_to", "parameter": [{"f": "actual", "v": "${{actual}}"}, {"f": "expect", "v": "0"}]}}],
+                    },
+                    "ass_json_all": {
+                        "type": "dict | list | null",
+                        "default": None,
+                        "description": "JSON 一致断言，使用 p_in_dict 判断响应 JSON 是否包含/匹配期望结构。",
+                        "example": {"code": 0},
+                    },
+                    "ass_text_all": {
+                        "type": "str | null",
+                        "default": None,
+                        "description": "文本一致断言，使用 response.text.strip() == expect.strip()。",
+                    },
+                    "ass_schema": {
+                        "type": "dict | null",
+                        "default": None,
+                        "description": "JSON Schema 结构化断言；场景中填写后会覆盖 ApiInfo 开启的默认 schema。",
+                    },
+                    "posterior_response": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "响应 JSON 提取。value 是 JSONPath，提取到的值写入普通缓存 key。",
+                        "example": [{"key": "token", "value": "$.data.token"}],
+                    },
+                    "posterior_response_text": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "响应文本提取。value 是正则表达式，匹配结果写入普通缓存 key。",
+                        "example": [{"key": "order_id", "value": "orderId=(\\d+)"}],
+                    },
+                    "posterior_sql": {
+                        **key_value_schema,
+                        "default": [],
+                        "description": "响应后执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
+                    },
+                    "posterior_sleep": {
+                        "type": "int | null",
+                        "default": None,
+                        "description": "响应后强制等待秒数。",
+                    },
+                    "posterior_file": {
+                        **key_value_schema,
+                        "default": {},
+                        "description": "文件下载配置。value 是下载 URL，下载后把本地文件路径写入缓存 key；可通过 update_api_case_scenario 的 fields 设置。",
+                        "example": [{"key": "download_file", "value": "${{download_url}}"}],
+                    },
+                    "posterior_func": {
+                        "type": "str | null",
+                        "default": None,
+                        "description": "响应后 Python 函数字符串，默认函数名 func，入参为 (self, response)，返回 ResponseModel。",
+                    },
+                },
+                "execution_rules": {
+                    "headers": [
+                        "api_case.front_headers 是用例级默认请求头，只保存 ApiHeaders.id 数组。",
+                        "api_case_scenario.headers 也是 ApiHeaders.id 数组；只要场景 headers 非空，就会完全覆盖 api_case.front_headers，不会合并。",
+                        "如果场景 headers=[]，执行时使用用例级 front_headers。",
+                        "如果用例级 front_headers=[]，则 API case 请求头为空。",
+                        "ApiInfo.headers 在 MCP 创建/更新接口定义时默认保持 null，不作为 API case 的请求头来源。",
+                        "ApiHeaders.status=1 的全局默认请求头主要用于直接执行 ApiInfo 或接口层初始化 headers；API case 执行主要依赖 case/scene 选择的 headers。",
+                    ],
+                    "execution_order": [
+                        "初始化测试对象和 API 全局变量。",
+                        "执行 api_case.front_custom，写入缓存。",
+                        "执行 API case 级数据工厂前置。",
+                        "执行 api_case.front_sql。",
+                        "加载 api_case.front_headers 为用例级 headers。",
+                        "按 case_sort 执行每个 ApiCaseDetailed 步骤。",
+                        "每个步骤下按 id 执行所有 ApiCaseDetailedParameter 场景。",
+                        "每个场景执行数据工厂前置、front_sql、front_func、请求、后置提取/SQL/sleep/function/file、断言。",
+                        "API case 全部结束后执行 api_case.posterior_sql，并清理 case 级数据工厂。",
+                    ],
+                    "request_payload": [
+                        "params/data/json_body/file 都以场景参数为准；添加步骤时默认从 ApiInfo 同步一份到默认场景。",
+                        "refresh_api_case_step_from_api_info 会把 ApiInfo 的 params/data/json/file 同步到该步骤下所有场景。",
+                        "params/data/json_body 传对象或数组时 MCP 会保存为 JSON 字符串；执行时再做变量替换和请求序列化。",
+                    ],
+                    "assertions": [
+                        "ass_jsonpath.method 必须使用 get_api_assertion_methods 返回的叶子 value，例如 p_is_equal_to，不能使用 eq。",
+                        "通用断言 ass_general 保存前端级联选项对象；更详细格式请调用 get_api_assertion_schema。",
+                    ],
+                },
+                "examples": {
+                    "api_case": {
+                        "project_product_id": 7,
+                        "module_id": 12,
+                        "name": "编辑合同类型",
+                        "case_people_id": None,
+                        "level": 1,
+                        "scenario_type": 0,
+                        "scenario_tags": [0, 1],
+                        "scenario_description": "验证编辑合同类型成功",
+                        "front_custom": [{"key": "tenant_id", "value": "896684654038353011"}],
+                        "front_sql": [{"key": "category", "value": "SELECT id FROM contract_category WHERE valid=1 LIMIT 1"}],
+                        "front_headers": [10, 11],
+                        "posterior_sql": [],
+                    },
+                    "api_case_scenario": {
+                        "step_id": 18,
+                        "name": "编辑成功",
+                        "headers": [],
+                        "params": None,
+                        "data": None,
+                        "json_body": {"categoryId": "${{category.id}}", "categoryName": "AUTO_${{random_str(8)}}"},
+                        "file": file_example,
+                        "ass_jsonpath": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                        "posterior_response": [{"key": "category_id", "value": "$.data.id"}],
+                    },
+                    "headers_override": {
+                        "case_front_headers": [1, 2],
+                        "scenario_headers_empty": "headers=[] 时执行请求使用 [1,2]",
+                        "scenario_headers_non_empty": "headers=[3] 时执行请求只使用 [3]，不会再带 [1,2]",
+                    },
+                },
+                "enums": {
+                    "scenario_type": ApiCaseScenarioTypeEnum.obj(),
+                    "scenario_tags": ApiCaseScenarioTagEnum.obj(),
+                },
+                "file_upload_usage": FILE_UPLOAD_USAGE,
+                "notes": [
+                    "创建 API 全局变量时 test_env_id 必填，对应 api_public.test_env。",
+                    "API case 的 scenario_type 默认 0=正常场景；scenario_tags 保存整数数组；scenario_description 可为空。",
+                    "API 文件上传参数不要直接传本地路径；先用 upload_system_file 上传，再在 file 字段中通过 ${{get_file(文件名)}} 引用。",
+                    "创建或编辑复杂场景前，建议先调用 get_api_assertion_schema 和 get_api_assertion_methods 获取断言格式和可选 method。",
                 ],
             }
         )

@@ -63,6 +63,9 @@ class ApiCase(models.Model):
 
     parametrize = models.JSONField(verbose_name="参数化", default=list)
     level = models.SmallIntegerField(verbose_name="用例级别", default=1)
+    scenario_type = models.SmallIntegerField(verbose_name="场景类型", default=0)
+    scenario_tags = models.JSONField(verbose_name="场景标签", default=list)
+    scenario_description = models.TextField(verbose_name="场景描述", null=True, blank=True)
     front_custom = models.JSONField(verbose_name="前置方法", default=list)
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
     front_headers = models.JSONField(verbose_name="前置请求头", default=list)

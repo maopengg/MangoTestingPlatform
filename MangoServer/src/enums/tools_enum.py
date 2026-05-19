@@ -123,3 +123,47 @@ class CaseLevelEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "高", 1: "中", 2: "低", 3: "极低"}
+
+
+class ApiCaseScenarioTypeEnum(BaseEnum):
+    """API 用例场景类型"""
+    NORMAL = 0
+    EXCEPTION = 1
+    BOUNDARY = 2
+    PERMISSION = 3
+    DATA = 4
+    FLOW = 5
+
+    @classmethod
+    def obj(cls):
+        return {
+            0: "正常场景",
+            1: "异常场景",
+            2: "边界场景",
+            3: "权限场景",
+            4: "数据场景",
+            5: "流程场景",
+        }
+
+
+class ApiCaseScenarioTagEnum(BaseEnum):
+    """API 用例场景标签"""
+    SMOKE = 0
+    REGRESSION = 1
+    MAIN_FLOW = 2
+    CORE_LINK = 3
+    HIGH_FREQUENCY = 4
+    BLOCKING = 5
+    ONLINE_INSPECTION = 6
+
+    @classmethod
+    def obj(cls):
+        return {
+            0: "冒烟",
+            1: "回归",
+            2: "主流程",
+            3: "核心链路",
+            4: "高频",
+            5: "阻塞",
+            6: "线上巡检",
+        }

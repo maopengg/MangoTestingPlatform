@@ -17,6 +17,8 @@ interface EnumState {
   ui_public: StateValueType
   element_ope: StateValueType
   api_parameter_type: StateValueType
+  api_case_scenario_type: StateValueType
+  api_case_scenario_tag: StateValueType
   product_type: StateValueType
   auto_type: StateValueType
   task_status: StateValueType
@@ -55,6 +57,8 @@ export const useEnum = defineStore('get-enum', {
     ui_public: [],
     element_ope: [],
     api_parameter_type: [],
+    api_case_scenario_type: [],
+    api_case_scenario_tag: [],
     product_type: [],
     auto_type: [],
     task_status: [],
@@ -108,6 +112,8 @@ export const useEnum = defineStore('get-enum', {
       this.ui_public = data.ui_public
       this.element_ope = data.element_ope
       this.api_parameter_type = data.api_parameter_type
+      this.api_case_scenario_type = data.api_case_scenario_type
+      this.api_case_scenario_tag = data.api_case_scenario_tag
       this.product_type = data.product_type
       this.auto_type = data.auto_type
       this.task_status = data.task_status

@@ -24,6 +24,7 @@ urlpatterns = [
     path("info/project", UserViews.as_view({'put': 'put_project'})),
     path("info/environment", UserViews.as_view({'put': 'put_environment'})),
     path("info/password", UserViews.as_view({'put': 'put_password'})),
+    path("info/api-key", UserViews.as_view({'put': 'reset_api_key'})),
     # path("info/project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),
     #
     # path("files/test", ProjectFileViews.as_view({'get': 'test'})),

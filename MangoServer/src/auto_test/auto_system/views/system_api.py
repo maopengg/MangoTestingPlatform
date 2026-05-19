@@ -45,6 +45,8 @@ class SystemViews(ViewSet):
             'ui_public': UiPublicTypeEnum.get_option(),
             'element_ope': ElementOperationEnum.get_option(),
             'api_parameter_type': ApiParameterTypeEnum.get_option(),
+            'api_case_scenario_type': ApiCaseScenarioTypeEnum.get_option(),
+            'api_case_scenario_tag': ApiCaseScenarioTagEnum.get_option(),
             'product_type': ProductTypeEnum.get_option(),
             'auto_type': AutoTypeEnum.get_option(),
             'database_type': DatabaseTypeEnum.get_option(),

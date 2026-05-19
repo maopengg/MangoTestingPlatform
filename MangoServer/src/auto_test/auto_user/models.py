@@ -1,3 +1,5 @@
+import secrets
+
 from django.db import models
 
 from src.exceptions import ToolsError
@@ -39,6 +41,7 @@ class User(models.Model):
     selected_environment = models.SmallIntegerField(verbose_name="选中的环境ID", null=True)
     last_login_time = models.DateTimeField(verbose_name="修改时间", null=True)
     config = models.JSONField(verbose_name="用户配置", default=dict)
+    api_key = models.CharField(verbose_name="MCP APIKey", max_length=128, unique=True, null=True, blank=True)
 
     class Meta:
         db_table = 'user'
@@ -61,6 +64,17 @@ class User(models.Model):
         if UserLogs.objects.filter(user=self).exists():
             UserLogs.objects.filter(user=self).delete()
         super().delete(*args, **kwargs)
+
+    @staticmethod
+    def generate_api_key() -> str:
+        return f"mango_{secrets.token_urlsafe(32)}"
+
+    @classmethod
+    def unique_api_key(cls) -> str:
+        api_key = cls.generate_api_key()
+        while cls.objects.filter(api_key=api_key).exists():
+            api_key = cls.generate_api_key()
+        return api_key
 
 
 class UserLogs(models.Model):

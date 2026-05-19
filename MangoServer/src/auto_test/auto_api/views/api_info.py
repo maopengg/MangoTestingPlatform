@@ -55,11 +55,35 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
         return queryset
 
 
+class ApiInfoListSerializersC(ApiInfoSerializersC):
+    class Meta:
+        model = ApiInfo
+        exclude = ('result_data', 'data', 'json', 'headers', 'params')
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data.pop('result_data', None)
+        return data
+
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.select_related(
+            'project_product',
+            'module').defer('result_data')
+        return queryset
+
+
 class ApiInfoCRUD(ModelCRUD):
     model = ApiInfo
     queryset = ApiInfo.objects.all()
     serializer_class = ApiInfoSerializersC
     serializer = ApiInfoSerializers
+
+    def get_serializer_class(self):
+        params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
+        if params and not params.get('id'):
+            return ApiInfoListSerializersC
+        return super().get_serializer_class()
 
 
 class ApiInfoViews(ViewSet):

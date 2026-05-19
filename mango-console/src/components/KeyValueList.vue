@@ -3,7 +3,11 @@
     <div v-for="(item, index) in dataList" :key="index" class="key-value-item">
       <div class="key-value-row">
         <!-- 支持多个字段的展示 -->
-        <div v-for="(field, fieldIndex) in fieldConfig" :key="fieldIndex" class="key-value-field">
+        <div
+          v-for="(field, fieldIndex) in getVisibleFields(item)"
+          :key="fieldIndex"
+          class="key-value-field"
+        >
           <span class="field-label">{{ field.label }}:</span>
           <!-- 支持级联选择器 -->
           <a-cascader
@@ -72,6 +76,7 @@
     valueKey?: string // 选项值的键名
     onChange?: (value: any, item: any, index: number) => void // 值改变时的回调
     autoSize?: { minRows: number; maxRows: number } // 文本域自动调整大小
+    visible?: (item: any) => boolean // 控制字段是否展示
   }
 
   // 定义组件属性
@@ -92,6 +97,10 @@
   const props = withDefaults(defineProps<Props>(), {
     emptyText: '暂无数据，点击上方"增加"按钮添加',
   })
+
+  const getVisibleFields = (item: any) => {
+    return props.fieldConfig.filter((field) => !field.visible || field.visible(item))
+  }
 
   // 删除项
   const onDelete = (index: number) => {

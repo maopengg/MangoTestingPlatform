@@ -26,7 +26,7 @@
           <a-space direction="vertical" style="width: 50%">
             <span>用例名称：{{ pageData.record.name }}</span>
             <span>用例负责人：{{ pageData.record.case_people?.name }}</span>
-            <span>执行顺序：{{ pageData.record.case_flow }}</span>
+            <span>场景描述：{{ pageData.record.scenario_description || pageData.record.case_flow || '-' }}</span>
           </a-space>
         </div>
       </a-card>
@@ -778,6 +778,7 @@
                                         field: 'expect',
                                         label: '预期值',
                                         placeholder: '请输入预期值',
+                                        visible: shouldShowJsonpathExpect,
                                       },
                                     ]"
                                     :on-delete-item="
@@ -1271,7 +1272,7 @@
     if ('10' === data.tabsKey) {
       item['front_sql'].push({ key: '', value: '' })
     } else if ('31' === data.tabsKey) {
-      item['ass_jsonpath'].push({ actual: '', method: '', expect: '' })
+      item['ass_jsonpath'].push({ actual: '', method: '', expect: null })
     } else if ('32' === data.tabsKey) {
       item['ass_general'].push({ method: '', value: {} })
     } else if ('40' === data.tabsKey) {
@@ -1542,6 +1543,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
             data.ass.push(item)
           }
           if (item.value === '内容断言') {
+            data.textAss.push(...item.children)
+          }
+          if (item.value === '自定义断言') {
             data.textAss.push(...item.children)
           }
         })
@@ -1860,7 +1864,27 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function handleJsonpathMethodChange(value: any, item: any, index: number, item1) {
+    const inputItem = findItemByValue(data.textAss, value)
+    if (inputItem && !jsonpathMethodUsesExpect(inputItem)) {
+      item[index].expect = null
+    }
     blurSave('ass_jsonpath', item, item1.id)
+  }
+
+  function shouldShowJsonpathExpect(item: any) {
+    if (!item?.method) {
+      return true
+    }
+    const inputItem = findItemByValue(data.textAss, item?.method)
+    if (!inputItem) {
+      return true
+    }
+    return jsonpathMethodUsesExpect(inputItem)
+  }
+
+  function jsonpathMethodUsesExpect(methodItem: any) {
+    const parameters = Array.isArray(methodItem?.parameter) ? methodItem.parameter : []
+    return parameters.some((param: any) => param.f === 'expect')
   }
 
   function handleGeneralMethodChange(

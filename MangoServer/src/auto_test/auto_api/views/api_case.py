@@ -5,12 +5,14 @@
 # @Author : 毛鹏
 from django.db import transaction
 from django.forms import model_to_dict
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCase
+from src.auto_test.auto_system.models import ProjectProduct
 from src.auto_test.auto_api.schemas.case_schema import (
     ApiKeyValueItem,
     ApiParametrizeSuite,
@@ -80,6 +82,61 @@ class ApiCaseCRUD(ModelCRUD):
     queryset = ApiCase.objects.all()
     serializer_class = ApiCaseSerializersC
     serializer = ApiCaseSerializers
+
+    @error_response('system')
+    def get(self, request: Request):
+        query_dict = {}
+        scenario_tags = request.query_params.getlist('scenario_tags[]')
+        scenario_tags.extend(request.query_params.getlist('scenario_tags'))
+        scenario_tags = [
+            int(item)
+            for item in scenario_tags
+            if str(item).strip() not in ['', 'null', 'undefined']
+        ]
+
+        for key, value_list in dict(request.query_params.lists()).items():
+            if key in ['scenario_tags', 'scenario_tags[]', 'page', 'pageSize']:
+                continue
+            value = value_list[0]
+            if value in [None, '', 'null', 'undefined']:
+                continue
+            if key in self.not_matching_str or key in ['level', 'scenario_type']:
+                query_dict[key] = value
+            elif 'id' not in key:
+                query_dict[f'{key}__contains'] = value
+            else:
+                query_dict[key] = value
+
+        project_id = request.headers.get('Project', None)
+        if query_dict.get('project_product') is None and project_id:
+            query_dict['project_product_id__in'] = ProjectProduct.objects.filter(
+                project_id=project_id
+            ).values_list('id', flat=True)
+
+        queryset = ApiCase.objects.filter(**query_dict)
+        if scenario_tags:
+            tag_query = Q()
+            for tag in scenario_tags:
+                tag_query |= Q(scenario_tags__contains=[tag])
+            queryset = queryset.filter(tag_query)
+
+        paging = request.query_params.get("pageSize") and request.query_params.get("page")
+        if paging:
+            data_list, count = self.paging_list(
+                request.query_params.get("pageSize"),
+                request.query_params.get("page"),
+                queryset,
+                self.get_serializer_class()
+            )
+            return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
+
+        serializer = self.get_serializer_class()
+        queryset = serializer.setup_eager_loading(queryset)
+        return ResponseData.success(
+            RESPONSE_MSG_0001,
+            serializer(instance=queryset, many=True).data,
+            queryset.count()
+        )
 
 
 class ApiCaseViews(ViewSet):

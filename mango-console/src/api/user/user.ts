@@ -36,6 +36,15 @@ export function putUserInfo(data: object) {
   })
 }
 
+export function putUserApiKey(data: object) {
+  return put({
+    url: '/user/info/api-key',
+    data: () => {
+      return data
+    },
+  })
+}
+
 export function deleteUserInfo(id: number | string[] | number[]) {
   return deleted({
     url: '/user/info',

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from src.auto_test.auto_system.models import ProductModule, ProjectProduct, TestObject
+from src.auto_test.auto_system.views.product_module import ProductModuleCRUD
 from src.auto_test.auto_user.models import User
 from src.enums.tools_enum import EnvironmentEnum
 from src.mcp_server.common import current_user, environment_title, fail, ok
@@ -177,6 +178,80 @@ def register_project_context_tools(mcp):
             for item in queryset
         ]
         return ok({"items": items, "tree": items if tree else None})
+
+    @mcp.tool()
+    def create_product_module(
+        project_product_id: int,
+        name: str,
+        superior_module_1: str | None = None,
+        superior_module_2: str | None = None,
+        reason: str | None = None,
+        confirm_create: bool = False,
+    ) -> dict:
+        """
+        谨慎创建项目产品模块。
+
+        该工具会真实写入系统模块数据，后续 API、UI、数据工厂等资源都会引用模块。
+        调用前必须先使用 list_project_products 和 list_product_modules 确认项目产品与现有模块，
+        只有用户明确要求新增且确认没有合适模块时才允许调用；不要为了临时测试随意创建。
+        reason 需说明创建原因，confirm_create 必须为 true。
+        """
+        if not confirm_create:
+            return fail(
+                "创建模块属于写入型操作，请先查询现有模块并让用户确认后，再传 confirm_create=true 调用。",
+                "MODULE_CREATE_CONFIRM_REQUIRED",
+                {"next_actions": ["list_project_products", "list_product_modules"]},
+            )
+        if not reason or not reason.strip():
+            return fail("请提供创建模块的原因 reason，避免随意创建模块。", "MODULE_CREATE_REASON_REQUIRED")
+        name = name.strip()
+        if not name:
+            return fail("模块名称不能为空", "MODULE_NAME_REQUIRED")
+        if not ProjectProduct.objects.filter(id=project_product_id).exists():
+            return fail("项目产品不存在", "PROJECT_PRODUCT_NOT_FOUND", {"project_product_id": project_product_id})
+
+        superior_module_1 = superior_module_1.strip() if superior_module_1 else None
+        superior_module_2 = superior_module_2.strip() if superior_module_2 else None
+        duplicate = ProductModule.objects.filter(
+            project_product_id=project_product_id,
+            name=name,
+            superior_module_1=superior_module_1,
+            superior_module_2=superior_module_2,
+        ).first()
+        if duplicate:
+            return ok(
+                {
+                    "created": False,
+                    "module": {
+                        "id": duplicate.id,
+                        "name": duplicate.name,
+                        "project_product_id": duplicate.project_product_id,
+                        "superior_module_1": duplicate.superior_module_1,
+                        "superior_module_2": duplicate.superior_module_2,
+                    },
+                    "message": "已存在相同模块，未重复创建。",
+                },
+                "模块已存在",
+                warnings=["已存在相同模块，建议直接复用。"],
+            )
+
+        data = ProductModuleCRUD.inside_post(
+            {
+                "project_product": project_product_id,
+                "name": name,
+                "superior_module_1": superior_module_1,
+                "superior_module_2": superior_module_2,
+            }
+        )
+        return ok(
+            {
+                "created": True,
+                "module": data,
+                "reason": reason.strip(),
+                "usage_note": "模块已创建。后续创建 API、API case、数据工厂实体或模板时可使用该模块 id。",
+            },
+            "模块创建成功",
+        )
 
     @mcp.tool()
     def list_case_owners(keyword: str | None = None) -> dict:

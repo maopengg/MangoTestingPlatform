@@ -259,8 +259,6 @@ class CaseParameter:
             actual=ass_dict['actual'],
             expect=ass_dict['expect'],
         )
-        if ass_dict['expect'] == '':
-            ass_dict['expect'] = None
         log.api.debug(f'用例详情断言-1->{ass_dict}')
         try:
             ass_result.ass_msg = mango_assertion.ass(**ass_dict)
