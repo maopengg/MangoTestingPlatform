@@ -35,7 +35,11 @@
                 "
               />
             </a-space>
-            <a-space v-for="(items, index1) in item.parametrize" :key="index1">
+            <a-space
+              v-for="(items, index1) in item.parametrize"
+              :key="index1"
+              class="parametrize-row"
+            >
               <span>key：</span>
               <a-input
                 :model-value="items.key"
@@ -48,16 +52,29 @@
                 "
               />
               <span>value：</span>
-              <a-input
-                :model-value="items.value"
-                placeholder="请输入value"
-                @update:model-value="
-                  (val) => {
-                    items.value = val
-                    handleParamChange()
-                  }
-                "
-              />
+              <div class="value-editor">
+                <a-input
+                  :model-value="items.value === null ? '' : items.value"
+                  :disabled="items.value === null"
+                  :placeholder="items.value === null ? '当前保存为 null' : '请输入value'"
+                  @update:model-value="
+                    (val) => {
+                      items.value = val
+                      handleParamChange()
+                    }
+                  "
+                />
+                <a-radio-group
+                  :model-value="items.value === null ? 'null' : 'string'"
+                  type="button"
+                  size="small"
+                  class="value-type-switch"
+                  @change="(value) => changeValueType(items, value)"
+                >
+                  <a-radio value="string">字符串</a-radio>
+                  <a-radio value="null">Null</a-radio>
+                </a-radio-group>
+              </div>
               <a-button
                 size="small"
                 status="danger"
@@ -122,6 +139,11 @@
     item.parametrize.splice(index, 1)
   }
 
+  const changeValueType = (item, value) => {
+    item.value = value === 'null' ? null : ''
+    handleParamChange()
+  }
+
   const handleNameChange = () => {
     parametrizeData.value = [...parametrizeData.value]
     emit('update:initialData', JSON.parse(JSON.stringify(parametrizeData.value)))
@@ -132,11 +154,13 @@
     emit('update:initialData', JSON.parse(JSON.stringify(parametrizeData.value)))
   }
 
+  const hasParamValue = (param) => Boolean(param.key)
+
   const handleOk = () => {
     let hasValidData = false
 
     for (const suite of parametrizeData.value) {
-      if (suite.name || suite.parametrize.some((param) => param.key || param.value)) {
+      if (suite.name || suite.parametrize.some(hasParamValue)) {
         hasValidData = true
         break
       }
@@ -159,4 +183,22 @@
   }
 </script>
 
-<style scoped></style>
+<style scoped>
+  .parametrize-row {
+    align-items: flex-start;
+  }
+
+  .value-editor {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .value-editor :deep(.arco-input-wrapper) {
+    width: 260px;
+  }
+
+  .value-type-switch {
+    flex-shrink: 0;
+  }
+</style>

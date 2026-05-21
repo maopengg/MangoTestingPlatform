@@ -3,7 +3,7 @@
     :bordered="false"
     :data="flatRows"
     :pagination="false"
-    :scroll="{ x: 1180 }"
+    :scroll="{ x: 1280 }"
     :span-method="spanMethod"
     class="case-summary-table"
     row-key="__rowKey"

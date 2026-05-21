@@ -91,6 +91,7 @@
   const showDrawerComponent = ref(false)
   const collapsedDeep = 0
   const expandedDeep = Number.MAX_SAFE_INTEGER
+  const defaultExpandLimit = 10
 
   /**
    * 判断是否是对象或数组
@@ -198,6 +199,17 @@
     return parsedData.value
   })
 
+  const shouldExpandByDefault = computed(() => {
+    const data = drawerJsonData.value
+    if (Array.isArray(data)) {
+      return data.length <= defaultExpandLimit
+    }
+    if (data && typeof data === 'object' && !(data instanceof Date)) {
+      return Object.keys(data).length <= defaultExpandLimit
+    }
+    return false
+  })
+
   const jsonTreeDeep = computed(() => {
     return isExpanded.value ? expandedDeep : collapsedDeep
   })
@@ -278,7 +290,7 @@
 
   const openJsonDrawer = async () => {
     jsonDrawerVisible.value = true
-    drawerExpanded.value = false
+    drawerExpanded.value = shouldExpandByDefault.value
     showDrawerComponent.value = false
     await nextTick()
     showDrawerComponent.value = true
@@ -294,6 +306,8 @@
     async () => {
       showComponent.value = false
       showDrawerComponent.value = false
+      isExpanded.value = shouldExpandByDefault.value
+      drawerExpanded.value = shouldExpandByDefault.value
       await nextTick()
       showComponent.value = true
       showDrawerComponent.value = jsonDrawerVisible.value
@@ -303,6 +317,8 @@
 
   // 组件挂载后确保正确显示
   onMounted(async () => {
+    isExpanded.value = shouldExpandByDefault.value
+    drawerExpanded.value = shouldExpandByDefault.value
     await nextTick()
     showComponent.value = true
   })

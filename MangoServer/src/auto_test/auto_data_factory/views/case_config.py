@@ -6,12 +6,14 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from pydantic import ValidationError
 
 from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
 from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
 from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateSerializerC
 from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 from src.exceptions import ToolsError
+from src.models.data_factory_model import DataFactoryFieldOverrideRules
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -42,6 +44,11 @@ class DataFactoryCaseConfigSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("用例ID不能为空")
         if attrs.get('cleanup_strategy') == "":
             attrs['cleanup_strategy'] = None
+        field_overrides = attrs.get('field_overrides', self.instance.field_overrides if self.instance else {})
+        try:
+            attrs['field_overrides'] = DataFactoryFieldOverrideRules.model_validate(field_overrides or {}).model_dump()
+        except ValidationError as error:
+            raise serializers.ValidationError(f"字段覆盖规则格式错误：{error}") from error
         return attrs
 
 

@@ -10,6 +10,7 @@ from src.auto_test.auto_api.views.api_case_data_factory import ApiCaseDataFactor
 from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD, \
     ApiCaseDetailedParameterViews
+from src.auto_test.auto_api.views.api_auth_config import ApiAuthConfigCRUD, ApiAuthConfigViews
 from src.auto_test.auto_api.views.api_headers import ApiHeadersCRUD
 from src.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
 from src.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
@@ -46,6 +47,12 @@ urlpatterns = [
     #
     path("public", ApiPublicCRUD.as_view()),
     path("public/status", ApiPublicViews.as_view({'put': 'put_status'})),
+    #
+    path("auth/config", ApiAuthConfigCRUD.as_view()),
+    path("auth/config/status", ApiAuthConfigViews.as_view({'put': 'put_status'})),
+    path("auth/config/refresh", ApiAuthConfigViews.as_view({'post': 'refresh'})),
+    path("auth/config/clear", ApiAuthConfigViews.as_view({'post': 'clear'})),
+    path("auth/config/cache", ApiAuthConfigViews.as_view({'get': 'cache'})),
     #
     path("headers", ApiHeadersCRUD.as_view()),
     # path("public/status", ApiHeadersViews.as_view({'put': 'put_status'})),

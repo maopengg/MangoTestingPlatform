@@ -25,7 +25,7 @@
         <template v-else-if="item.key === 'override_generator_type'" #cell="{ record }">
           <a-select
             :model-value="getOverrideType(record)"
-            :options="overrideTypeOptions"
+            :options="getOverrideTypeOptions(record)"
             :field-names="{ value: 'key', label: 'title' }"
             :disabled="readonly"
             allow-clear
@@ -43,6 +43,27 @@
             placeholder="请选择枚举值"
             @change="(value) => changeEnumOverrideValue(record, value)"
           />
+          <a-space
+            v-else-if="isDependencyConfig(record)"
+            direction="vertical"
+            fill
+          >
+            <a-input
+              :model-value="getDependencyEntityDisplay(record)"
+              disabled
+              placeholder="请先在工厂实体字段规则中选择依赖实体"
+            />
+            <a-select
+              :model-value="getDependencyTemplateId(record)"
+              :options="getDependencyTemplateOptions(record)"
+              :disabled="readonly || !getDependencyEntityId(record) || isDependencyTemplateSelectDisabled(record)"
+              allow-clear
+              allow-search
+              :placeholder="getDependencyTemplatePlaceholder(record)"
+              @popup-visible-change="(visible) => visible && loadDependencyTemplateOptions?.(record)"
+              @change="(value) => changeDependencyTemplateValue(record, value)"
+            />
+          </a-space>
           <a-input
             v-else
             :disabled="readonly || isDisabledConfig(record)"
@@ -106,6 +127,8 @@
       fieldOverrides: DataFactoryFieldOverrides
       outputConfig: DataFactoryOutputConfig
       generatorOptions: EnumOption[]
+      dependencyTemplateOptions?: Record<string, any[]>
+      loadDependencyTemplateOptions?: (row: DataFactoryFieldRule) => void
       previewFields?: any[]
       readonly?: boolean
       showConfig?: boolean
@@ -113,10 +136,12 @@
       showPreview?: boolean
     }>(),
     {
+      dependencyTemplateOptions: () => ({}),
+      loadDependencyTemplateOptions: undefined,
       previewFields: () => [],
       readonly: false,
       showConfig: true,
-      showOutput: true,
+      showOutput: false,
       showPreview: false,
     }
   )
@@ -138,6 +163,19 @@
   const GENERATOR_TYPE_DEPENDENCY_FIELD = 11
   const GENERATOR_TYPE_FUNCTION = 13
   const REMOVED_GENERATOR_TYPES = [8, 10, 12]
+  const GENERATOR_TYPE_ORDER = [
+    GENERATOR_TYPE_SKIP,
+    GENERATOR_TYPE_FIXED,
+    GENERATOR_TYPE_FUNCTION,
+    GENERATOR_TYPE_RANDOM_STRING,
+    GENERATOR_TYPE_RANDOM_INTEGER,
+    GENERATOR_TYPE_RANDOM_DECIMAL,
+    GENERATOR_TYPE_NOW,
+    GENERATOR_TYPE_RELATIVE_TIME,
+    GENERATOR_TYPE_UUID,
+    GENERATOR_TYPE_ENUM,
+    GENERATOR_TYPE_DEPENDENCY_FIELD,
+  ]
   const enumStore = useEnum()
 
   const columns = computed(() =>
@@ -246,17 +284,32 @@
         ...item,
         title: getGeneratorTypeTitle(item),
       }))
+      .sort((left, right) => getGeneratorTypeOrder(left.key) - getGeneratorTypeOrder(right.key))
   )
   const overrideTypeOptions = computed(() => [
     { key: null, title: '不覆盖' },
     ...generatorOptions.value,
   ])
 
+  function getOverrideTypeOptions(row: DataFactoryFieldRule) {
+    if (normalizeGeneratorType(row.generator_type) === GENERATOR_TYPE_DEPENDENCY_FIELD) {
+      return overrideTypeOptions.value
+    }
+    return overrideTypeOptions.value.filter(
+      (item) => Number(item.key) !== GENERATOR_TYPE_DEPENDENCY_FIELD
+    )
+  }
+
   function enumTitle(value: any) {
     const title = generatorOptions.value.find(
       (it) => Number(it.key) === normalizeGeneratorType(value)
     )?.title
     return title || (value ?? '-')
+  }
+
+  function getGeneratorTypeOrder(value: any) {
+    const index = GENERATOR_TYPE_ORDER.indexOf(Number(value))
+    return index === -1 ? GENERATOR_TYPE_ORDER.length + Number(value) : index
   }
 
   function getGeneratorTypeTitle(option: EnumOption) {
@@ -306,7 +359,12 @@
       return { reason: '模板跳过' }
     }
     if (normalizedType === GENERATOR_TYPE_DEPENDENCY_FIELD) {
-      return { template_id: null, field: 'id', strategy: 'reuse_or_create' }
+      return {
+        ...(row.generator_config || {}),
+        template_id: null,
+        field: row.generator_config?.field || 'id',
+        strategy: row.generator_config?.strategy || 'reuse_or_create',
+      }
     }
     if (normalizedType === GENERATOR_TYPE_FIXED) {
       return { value: '' }
@@ -314,7 +372,34 @@
     if (normalizedType === GENERATOR_TYPE_ENUM) {
       return buildEnumGeneratorConfig(row)
     }
-    return { ...(row.generator_config || {}) }
+    if (normalizedType === GENERATOR_TYPE_RANDOM_STRING) {
+      return pickGeneratorConfig(row.generator_config || {}, ['prefix', 'length'])
+    }
+    if (normalizedType === GENERATOR_TYPE_RANDOM_INTEGER) {
+      return pickGeneratorConfig(row.generator_config || {}, ['min', 'max'])
+    }
+    if (normalizedType === GENERATOR_TYPE_RANDOM_DECIMAL) {
+      return pickGeneratorConfig(row.generator_config || {}, ['min', 'max', 'precision'])
+    }
+    if (normalizedType === GENERATOR_TYPE_RELATIVE_TIME) {
+      return pickGeneratorConfig(row.generator_config || {}, ['days', 'hours', 'minutes'])
+    }
+    if (normalizedType === GENERATOR_TYPE_UUID) {
+      return pickGeneratorConfig(row.generator_config || {}, ['dash'])
+    }
+    if (normalizedType === GENERATOR_TYPE_FUNCTION) {
+      return { value: '' }
+    }
+    return {}
+  }
+
+  function pickGeneratorConfig(config: Record<string, any>, keys: string[]) {
+    return keys.reduce((result: Record<string, any>, key) => {
+      if (config[key] !== undefined && config[key] !== null && config[key] !== '') {
+        result[key] = config[key]
+      }
+      return result
+    }, {})
   }
 
   function normalizeGeneratorType(value: any) {
@@ -372,6 +457,14 @@
     return overrideType === GENERATOR_TYPE_ENUM
   }
 
+  function isDependencyConfig(row: DataFactoryFieldRule) {
+    const overrideType = getOverrideType(row)
+    return (
+      overrideType === GENERATOR_TYPE_DEPENDENCY_FIELD ||
+      (overrideType === null && normalizeGeneratorType(row.generator_type) === GENERATOR_TYPE_DEPENDENCY_FIELD)
+    )
+  }
+
   function getEffectiveEnumValue(row: DataFactoryFieldRule) {
     const override = getOverrideRule(row)
     if (override) {
@@ -388,6 +481,79 @@
     updateOverride(row, {
       generator_type: GENERATOR_TYPE_ENUM,
       generator_config: buildEnumGeneratorConfig(row, value),
+    })
+  }
+
+  function getDependencyBaseConfig(row: DataFactoryFieldRule) {
+    return row.generator_config || {}
+  }
+
+  function getDependencyEffectiveConfig(row: DataFactoryFieldRule) {
+    return {
+      ...getDependencyBaseConfig(row),
+      ...(getOverrideRule(row)?.generator_config || {}),
+    }
+  }
+
+  function getDependencyEntityId(row: DataFactoryFieldRule) {
+    return getDependencyBaseConfig(row).dependency_entity_id
+  }
+
+  function getDependencyEntityDisplay(row: DataFactoryFieldRule) {
+    const config = getDependencyBaseConfig(row)
+    const dependencyEntityId = config.dependency_entity_id
+    const targetField = config.field || 'id'
+    if (!dependencyEntityId) {
+      return ''
+    }
+    return `依赖实体 ID ${dependencyEntityId}，取 ${targetField} 字段`
+  }
+
+  function getDependencyTemplateId(row: DataFactoryFieldRule) {
+    if (getOverrideType(row) === null) {
+      return null
+    }
+    return getDependencyEffectiveConfig(row).template_id || null
+  }
+
+  function isDependencyTemplateSelectDisabled(row: DataFactoryFieldRule) {
+    return getOverrideType(row) === null
+  }
+
+  function getDependencyTemplatePlaceholder(row: DataFactoryFieldRule) {
+    if (!getDependencyEntityId(row)) {
+      return '请先在工厂实体字段规则中选择依赖实体'
+    }
+    if (isDependencyTemplateSelectDisabled(row)) {
+      return '使用工厂实体默认模板'
+    }
+    return '请选择依赖状态模板'
+  }
+
+  function getDependencyTemplateOptions(row: DataFactoryFieldRule) {
+    const dependencyEntityId = getDependencyEntityId(row)
+    if (!dependencyEntityId) {
+      return []
+    }
+    return props.dependencyTemplateOptions?.[String(dependencyEntityId)] || []
+  }
+
+  function changeDependencyTemplateValue(row: DataFactoryFieldRule, value: any) {
+    const dependencyEntityId = getDependencyEntityId(row)
+    if (!dependencyEntityId || value === null || value === undefined || value === '') {
+      updateOverride(row)
+      return
+    }
+    updateOverride(row, {
+      generator_type: GENERATOR_TYPE_DEPENDENCY_FIELD,
+      generator_config: {
+        ...getDependencyBaseConfig(row),
+        ...(getOverrideRule(row)?.generator_config || {}),
+        dependency_entity_id: Number(dependencyEntityId),
+        template_id: Number(value),
+        field: getDependencyBaseConfig(row).field || 'id',
+        strategy: getDependencyEffectiveConfig(row).strategy || 'reuse_or_create',
+      },
     })
   }
 
@@ -467,7 +633,10 @@
       if (config.template_id) {
         return `template:${config.template_id}.${targetField}`
       }
-      return `依赖模板.${targetField}`
+      if (config.dependency_entity_id) {
+        return `entity:${config.dependency_entity_id}.${targetField}（默认模板）`
+      }
+      return `未配置依赖实体.${targetField}`
     }
     return ''
   }
@@ -502,10 +671,7 @@
     }
     updateOverride(row, {
       ...rule,
-      generator_config: {
-        ...(rule.generator_config || {}),
-        value,
-      },
+      generator_config: { value },
     })
   }
 

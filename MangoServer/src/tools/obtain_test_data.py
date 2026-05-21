@@ -4,11 +4,16 @@
 # @Time   : 2024-11-19 11:36
 # @Author : 毛鹏
 import os
+import re
 import traceback
 import uuid
 from typing import Any
 
 from mangotools.data_processor import DataProcessor
+from mangotools.decorator import data_method
+from mangotools.exceptions import MangoToolsError
+from mangotools.exceptions.error_msg import ERROR_MSG_0002 as MANGO_ERROR_MSG_0002
+from mangotools.models import MethodModel
 
 from src.auto_test.auto_system.models import FileData
 from src.exceptions import ERROR_MSG_0024, ToolsError, ERROR_MSG_0019
@@ -28,22 +33,30 @@ class ObtainTestData(DataProcessor):
         self._data_factory_cache: dict[str, Any] = {}
 
     @classmethod
+    @data_method('data', '自定义测试数据', '自定义测试数据示例', [
+        MethodModel(f='demo1', n='示例参数1', p='请输入示例参数1', d=True, v='demo1'),
+        MethodModel(f='demo2', n='示例参数2', p='请输入示例参数2', d=True, v='demo2'),
+    ], sort=0)
     def random_demo(cls, demo1, demo2) -> str:
-        """示例方法 参数：demo1， demo2"""
-        # 1.必须写在这个类下面，如果需要给UI自动化使用，则执行器也需要写
-        # 2.必须要写 """示例方法""" 这种注释
-        # 3.函数名称必须是唯一，跟我已使用的不可重复
-        # 4.函数必须要返回一个值，返回值就是你需要的随机数据
-        # 5.函数如果要接受传值，则直接接收参数，传入进来的参数默认是字符串类型
+        """自定义测试数据示例，参数：demo1，demo2"""
+        # 自定义测试数据方法需要写在 ObtainTestData 类中。
+        # 方法名必须全局唯一，不能和已有测试数据方法重复。
+        # 方法必须返回一个值，返回值会作为 ${{方法名()}} 的替换结果。
+        # 参数会按字符串传入；需要其他类型时，在方法内部自行转换。
+        # 如需给 UI 自动化执行器使用，执行器侧也需要同步增加同名方法。
         print(demo1, demo2)
         return str(uuid.uuid4())
 
     @classmethod
+    @data_method('data', '自定义测试数据', '雪花算法ID', sort=1)
     def number_snowflake_id(cls) -> str:
         """雪花算法ID"""
         return str(Snowflake.snowflake_id())
 
     @classmethod
+    @data_method('data', '自定义测试数据', '获取上传文件', [
+        MethodModel(f='file_name', n='文件名称', p='请输入已上传的文件名称', d=True, v='文件名称'),
+    ], sort=2)
     def get_file(cls, file_name) -> str:
         """传入文件名称，返回文件对象，参数file_name"""
         file_path = os.path.join(project_dir.upload(), file_name)

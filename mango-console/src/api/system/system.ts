@@ -36,6 +36,26 @@ export function getSystemRandomData(name: string) {
   })
 }
 
+export function getSystemAssertionList() {
+  return get({
+    url: '/system/assertion/list',
+    data: () => {
+      return {}
+    },
+  })
+}
+
+export function postSystemAssertionTest(data: {
+  method: string
+  actual?: string | number | boolean | null
+  expect?: string | number | boolean | null
+}) {
+  return post({
+    url: '/system/assertion/test',
+    data: () => data,
+  })
+}
+
 export function postSystemSetDebugLog(is_debug: any) {
   return post({
     url: '/system/set/debug/log',

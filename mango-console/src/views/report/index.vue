@@ -34,13 +34,13 @@
 
     <template #default>
       <a-space direction="vertical" fill>
-        <div style="margin-bottom: 10px">
-          <a-card style="float: left; width: 30%" :bordered="false">
+        <div class="report-chart-grid">
+          <a-card class="report-chart-card status-card" :bordered="false">
             <Title title="测试用例占比" />
             <StatusChart :success="data.successSum" :fail="data.failSum" />
           </a-card>
 
-          <a-card style="float: right; width: 70%" :bordered="false">
+          <a-card class="report-chart-card trend-card" :bordered="false">
             <Title title="近三个月执行用例趋势图" />
             <BarChart :success="data.weekSuccessData" :fail="data.weekFailData" />
           </a-card>
@@ -199,7 +199,6 @@
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
-    window.sessionStorage.setItem('reportDetailsSystemAccessId', String(record.id))
     router.push({
       path: '/report/system/details',
       query: {
@@ -242,3 +241,38 @@
     clearPollingTimer()
   })
 </script>
+
+<style lang="less" scoped>
+  .report-chart-grid {
+    display: grid;
+    min-height: 280px;
+    margin-bottom: 12px;
+    grid-template-columns: minmax(360px, 0.8fr) minmax(520px, 1.2fr);
+    gap: 12px;
+  }
+
+  .report-chart-card {
+    min-height: 0;
+    border-radius: 8px;
+    box-shadow: 0px 8px 16px 0px rgba(162, 173, 200, 0.14);
+
+    :deep(.arco-card-body) {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+      flex-direction: column;
+      padding: 12px;
+    }
+  }
+
+  .status-card :deep(.status-chart),
+  .trend-card :deep(.report-trend-chart) {
+    flex: 1;
+  }
+
+  @media (max-width: 1280px) {
+    .report-chart-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

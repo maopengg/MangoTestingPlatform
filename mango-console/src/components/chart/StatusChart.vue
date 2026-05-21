@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { ref, onMounted, watch } from 'vue'
+  import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
   import * as echarts from 'echarts'
 
   // 定义 props
@@ -12,6 +12,28 @@
 
   const pieChart = ref<HTMLElement | null>(null)
   let myChart: echarts.ECharts | null = null
+  const palette = ['#22c55e', '#ef4444', '#f59e0b', '#64748b']
+
+  const chartItems = computed(() => {
+    const items = [
+      { name: '通过', value: Number(props.success || 0), color: palette[0] },
+      { name: '失败', value: Number(props.fail || 0), color: palette[1] },
+    ]
+    if (props.pending !== undefined) {
+      items.push({ name: '进行中', value: Number(props.pending || 0), color: palette[2] })
+    }
+    if (props.todo !== undefined) {
+      items.push({ name: '待开始', value: Number(props.todo || 0), color: palette[3] })
+    }
+    const total = items.reduce((sum, item) => sum + item.value, 0)
+    return items.map((item) => ({
+      ...item,
+      percent: total ? (item.value / total) * 100 : 0,
+      percentText: total ? `${((item.value / total) * 100).toFixed(2)}%` : '0.00%',
+    }))
+  })
+
+  const total = computed(() => chartItems.value.reduce((sum, item) => sum + item.value, 0))
 
   // 初始化饼状图
   const initPieChart = () => {
@@ -23,46 +45,13 @@
 
   // 动态生成饼状图数据
   const getChartData = () => {
-    const data = [
-      {
-        value: props.success,
-        name: '通过',
-        itemStyle: {
-          color: '#91cc75', // 与主页面一致的绿色
-        },
+    return chartItems.value.map((item) => ({
+      value: item.value,
+      name: item.name,
+      itemStyle: {
+        color: item.color,
       },
-      {
-        value: props.fail,
-        name: '失败',
-        itemStyle: {
-          color: '#d34141', // 红色
-        },
-      },
-    ]
-
-    // 如果传入了 pending，添加到数据中
-    if (props.pending !== undefined) {
-      data.push({
-        value: props.pending,
-        name: '进行中',
-        itemStyle: {
-          color: '#FF7D00', // 与主页面一致的蓝色
-        },
-      })
-    }
-
-    // 如果传入了 todo，添加到数据中
-    if (props.todo !== undefined) {
-      data.push({
-        value: props.todo,
-        name: '待开始',
-        itemStyle: {
-          color: '#566070', // 灰色
-        },
-      })
-    }
-
-    return data
+    }))
   }
 
   // 更新饼状图数据
@@ -72,35 +61,25 @@
     myChart.setOption({
       tooltip: {
         trigger: 'item',
-      },
-      legend: {
-        top: '5%',
-        left: 'center',
-        textStyle: {
-          color: 'var(--color-text-2)', // 与主页面一致的文本颜色
-        },
+        formatter: '{b}<br />{d}% | {c}',
       },
       series: [
         {
-          name: 'Access From',
+          name: '测试状态',
           type: 'pie',
-          radius: ['40%', '70%'],
+          radius: ['58%', '78%'],
+          center: ['50%', '50%'],
           avoidLabelOverlap: false,
           itemStyle: {
-            borderRadius: 10,
+            borderRadius: 6,
             borderColor: '#fff',
-            borderWidth: 2,
+            borderWidth: 4,
           },
           label: {
-            show: true,
-            position: 'center',
+            show: false,
           },
           emphasis: {
-            label: {
-              show: true,
-              fontSize: 40,
-              fontWeight: 'bold',
-            },
+            scaleSize: 4,
           },
           labelLine: {
             show: false,
@@ -123,8 +102,160 @@
   onMounted(() => {
     initPieChart()
   })
+
+  onBeforeUnmount(() => {
+    myChart?.dispose()
+  })
 </script>
 
 <template>
-  <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
+  <div class="status-chart">
+    <div class="status-donut">
+      <div ref="pieChart" class="chart"></div>
+      <div class="status-total">
+        <span>总数</span>
+        <strong>{{ total }}</strong>
+      </div>
+    </div>
+    <div class="status-list">
+      <div v-for="item in chartItems" :key="item.name" class="status-item">
+        <span class="status-dot" :style="{ backgroundColor: item.color }"></span>
+        <div class="status-main">
+          <span>{{ item.name }}</span>
+          <div class="status-bar">
+            <i :style="{ width: `${item.percent}%`, backgroundColor: item.color }"></i>
+          </div>
+        </div>
+        <div class="status-value">
+          <strong>{{ item.percentText }}</strong>
+          <span>{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
+
+<style lang="less" scoped>
+  .status-chart {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: 42% minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-donut {
+    position: relative;
+    height: 100%;
+    min-height: 180px;
+  }
+
+  .chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  .status-total {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    width: 78px;
+    height: 78px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+
+    span {
+      color: var(--color-text-3);
+      font-size: 11px;
+    }
+
+    strong {
+      max-width: 74px;
+      overflow: hidden;
+      color: var(--color-text-1);
+      font-size: 20px;
+      line-height: 24px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .status-list {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .status-item {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 10px minmax(0, 1fr) 72px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .status-main {
+    min-width: 0;
+
+    span {
+      display: block;
+      overflow: hidden;
+      color: var(--color-text-2);
+      font-size: 12px;
+      line-height: 18px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .status-bar {
+    height: 4px;
+    margin-top: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-fill-2);
+
+    i {
+      display: block;
+      height: 100%;
+      min-width: 2px;
+      border-radius: inherit;
+    }
+  }
+
+  .status-value {
+    text-align: right;
+
+    strong,
+    span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    strong {
+      color: rgb(var(--primary-6));
+      font-size: 12px;
+      line-height: 17px;
+    }
+
+    span {
+      color: var(--color-text-3);
+      font-size: 11px;
+      line-height: 16px;
+    }
+  }
+</style>

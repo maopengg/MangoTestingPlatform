@@ -46,6 +46,7 @@ def reinit_client():
     _client = BaseHttpClient(
         base_url=SetConfig.get_host() or '',
         headers=auth_manager.get_headers(),
+        proxy=SetConfig.get_proxy_url(),
         logger=log
     )
 

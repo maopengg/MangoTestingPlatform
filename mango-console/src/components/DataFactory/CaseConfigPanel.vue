@@ -153,6 +153,8 @@
             v-model:output-config="templateOutputConfig"
             :fields="fieldRows"
             :generator-options="enumStore.data_factory_generator_type"
+            :dependency-template-options="dependencyTemplateOptions"
+            :load-dependency-template-options="loadDependencyTemplateOptions"
             :show-output="false"
           />
           <a-empty v-else class="field-empty" description="请先选择状态模板" />
@@ -336,6 +338,7 @@
   const caseConfigList = ref<any[]>([])
   const templateList = ref<any[]>([])
   const fieldRows = ref<DataFactoryFieldRule[]>([])
+  const dependencyTemplateOptions = ref<Record<string, any[]>>({})
   const templateOutputConfig = ref<DataFactoryOutputConfig>([])
   const loading = ref(false)
   const templateLoading = ref(false)
@@ -530,10 +533,43 @@
     getDataFactoryField({ entity: entityId })
       .then((res) => {
         fieldRows.value = res.data || []
+        preloadDependencyTemplateOptions()
       })
       .finally(() => {
         fieldLoading.value = false
       })
+  }
+
+  function loadDependencyTemplateOptions(row: DataFactoryFieldRule) {
+    const dependencyEntityId = row.generator_config?.dependency_entity_id
+    const projectProduct = getOptionId(form.project_product || props.projectProductId)
+    if (!dependencyEntityId || !projectProduct) {
+      return
+    }
+    const cacheKey = String(dependencyEntityId)
+    if (dependencyTemplateOptions.value[cacheKey]) {
+      return
+    }
+    getDataFactoryTemplate({
+      project_product: projectProduct,
+      entity: dependencyEntityId,
+      page: 1,
+      pageSize: 9999,
+    }).then((res) => {
+      dependencyTemplateOptions.value = {
+        ...dependencyTemplateOptions.value,
+        [cacheKey]: (res.data || []).map((template: any) => ({
+          label: template.name,
+          value: template.id,
+        })),
+      }
+    })
+  }
+
+  function preloadDependencyTemplateOptions() {
+    fieldRows.value
+      .filter((row: any) => row.generator_config?.dependency_entity_id)
+      .forEach((row) => loadDependencyTemplateOptions(row))
   }
 
   async function save() {

@@ -15,6 +15,7 @@ from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCas
 from src.auto_test.auto_data_factory.views.entity import DataFactoryEntitySerializerC
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
 from src.exceptions import ToolsError
+from src.models.data_factory_model import validate_data_factory_generator_config
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -44,20 +45,15 @@ class DataFactoryFieldSerializer(serializers.ModelSerializer):
         ) or []
 
         try:
-            if generator_type == DataFactoryGeneratorTypeEnum.RANDOM_STRING.value:
-                if int(generator_config.get("length", 8)) <= 0:
-                    raise serializers.ValidationError("随机字符串 length 必须大于 0")
-
-            if generator_type in [
-                DataFactoryGeneratorTypeEnum.RANDOM_INTEGER.value,
-                DataFactoryGeneratorTypeEnum.RANDOM_DECIMAL.value,
-            ]:
-                min_value = float(generator_config.get("min", 1))
-                max_value = float(generator_config.get("max", 100))
-                if min_value > max_value:
-                    raise serializers.ValidationError("随机数 min 不能大于 max")
+            attrs["generator_config"] = validate_data_factory_generator_config(
+                generator_type,
+                generator_config,
+                allow_dependency_template=False,
+            )
         except (TypeError, ValueError) as error:
-            raise serializers.ValidationError("随机生成器的数值配置必须是合法数字") from error
+            raise serializers.ValidationError(f"生成配置格式错误：{error}") from error
+
+        generator_config = attrs["generator_config"]
 
         if generator_type == DataFactoryGeneratorTypeEnum.ENUM.value:
             values = generator_config.get("values") or enum_values
@@ -65,16 +61,6 @@ class DataFactoryFieldSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("枚举生成器必须配置 values 或字段 enum_values")
             if "value" in generator_config and generator_config["value"] not in values:
                 raise serializers.ValidationError("枚举固定值必须在 values 范围内")
-
-        if generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
-            value = generator_config.get("value")
-            if not value:
-                raise serializers.ValidationError("测试数据方法必须配置 value，例如 ${{character_email()}}")
-
-        if generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
-            strategy = generator_config.get("strategy", "reuse_or_create")
-            if strategy not in ["reuse_or_create", "must_exist", "create_always"]:
-                raise serializers.ValidationError("依赖字段 strategy 只能是 reuse_or_create、must_exist、create_always")
 
         return attrs
 
@@ -87,6 +73,13 @@ class DataFactoryFieldSerializerC(serializers.ModelSerializer):
     class Meta:
         model = DataFactoryField
         fields = '__all__'
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get("generator_type") == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
+            config = data.get("generator_config") or {}
+            data["generator_config"] = DataFactoryFieldViews.normalize_dependency_config(config)
+        return data
 
     @staticmethod
     def setup_eager_loading(queryset):
@@ -277,6 +270,21 @@ class DataFactoryFieldViews(ViewSet):
         if generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
             value = generator_config.get("value")
             field_data["generator_config"] = {"value": value or ""}
+        if generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
+            field_data["generator_config"] = validate_data_factory_generator_config(
+                DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
+                DataFactoryFieldViews.normalize_dependency_config(generator_config),
+                allow_dependency_template=False,
+            )
+
+    @staticmethod
+    def normalize_dependency_config(generator_config: dict) -> dict:
+        config = dict(generator_config or {})
+        normalized = {
+            "dependency_entity_id": config.get("dependency_entity_id"),
+            "field": config.get("field") or "id",
+        }
+        return {key: value for key, value in normalized.items() if value not in [None, ""]}
 
     @staticmethod
     def preview_dependency_field(field: DataFactoryField, context: dict):
@@ -288,14 +296,20 @@ class DataFactoryFieldViews(ViewSet):
 
         if alias:
             value = f"${{{{{alias}.{target_field}}}}}"
-        elif config.get("template_id"):
-            value = f"${{{{template:{config.get('template_id')}.{target_field}}}}}"
+            message = "依赖字段，当前复用上下文占位值"
+            valid = True
+        elif config.get("dependency_entity_id"):
+            value = f"${{{{依赖实体:{config.get('dependency_entity_id')}.{target_field}}}}}"
+            message = "依赖实体字段，状态模板/API中需选择依赖状态模板"
+            valid = True
         else:
-            value = "${{依赖模板.id}}"
+            value = None
+            message = "依赖字段未配置依赖实体"
+            valid = False
 
         return {
             "name": field.name,
             "value": value,
-            "valid": True,
-            "message": "依赖字段，当前仅展示关联占位值",
+            "valid": valid,
+            "message": message,
         }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import logging
+import inspect
 from functools import wraps
 from datetime import datetime
 
@@ -87,18 +88,69 @@ def _authenticated_tool_method(mcp):
         def decorate(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                from src.mcp_server.common import require_mcp_user
+                from src.mcp_server.common import log_mcp_tool_call_async, require_mcp_user, user_from_auth_token
 
+                try:
+                    bound_arguments = inspect.signature(func).bind_partial(*args, **kwargs)
+                    tool_arguments = dict(bound_arguments.arguments)
+                except Exception:
+                    tool_arguments = {"args": args, "kwargs": kwargs}
                 auth_error = require_mcp_user()
                 if auth_error:
+                    log_mcp_tool_call_async(func.__name__, tool_arguments, auth_error, status_code=401)
                     return auth_error
-                return func(*args, **kwargs)
+                user = user_from_auth_token()
+                try:
+                    result = func(*args, **kwargs)
+                except Exception as exc:
+                    log_mcp_tool_call_async(
+                        func.__name__,
+                        tool_arguments,
+                        {"success": False, "message": str(exc), "error_code": "MCP_TOOL_EXCEPTION"},
+                        status_code=500,
+                        user=user,
+                    )
+                    raise
+                log_mcp_tool_call_async(func.__name__, tool_arguments, result, status_code=200, user=user)
+                return result
 
             return decorator(wrapper)
 
         return decorate
 
     return authenticated_tool
+
+
+def _logged_public_tool(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        from src.mcp_server.common import log_mcp_tool_call_async, user_from_auth_token
+
+        try:
+            bound_arguments = inspect.signature(func).bind_partial(*args, **kwargs)
+            tool_arguments = dict(bound_arguments.arguments)
+        except Exception:
+            tool_arguments = {"args": args, "kwargs": kwargs}
+        user = None
+        try:
+            user = user_from_auth_token()
+        except Exception:
+            pass
+        try:
+            result = func(*args, **kwargs)
+        except Exception as exc:
+            log_mcp_tool_call_async(
+                func.__name__,
+                tool_arguments,
+                {"success": False, "message": str(exc), "error_code": "MCP_TOOL_EXCEPTION"},
+                status_code=500,
+                user=user,
+            )
+            raise
+        log_mcp_tool_call_async(func.__name__, tool_arguments, result, status_code=200, user=user)
+        return result
+
+    return wrapper
 
 
 def _transport_security_settings():
@@ -168,6 +220,25 @@ def _platform_capabilities() -> dict:
                     ],
                 },
                 {
+                    "name": "api_auth_config",
+                    "description": "API Token 授权配置、缓存查看、立即刷新和清理",
+                    "tools": [
+                        "get_api_auth_config_schema",
+                        "list_api_auth_configs",
+                        "get_api_auth_config_detail",
+                        "create_api_auth_config",
+                        "update_api_auth_config",
+                        "set_api_auth_config_status",
+                        "refresh_api_auth_config",
+                        "preview_clear_api_auth_config_cache_impact",
+                        "clear_api_auth_config_cache",
+                        "get_api_auth_config_cache",
+                        "preview_delete_api_auth_config_impact",
+                        "delete_api_auth_config",
+                        "list_api_auth_time_tasks",
+                    ],
+                },
+                {
                     "name": "data_factory",
                     "description": "数据工厂实体、字段、模板、执行、清理和用例绑定",
                     "tools": [
@@ -182,6 +253,7 @@ def _platform_capabilities() -> dict:
                         "bind_data_factory_to_api_case",
                         "list_data_factory_executions",
                         "get_data_factory_execution_detail",
+                        "preview_cleanup_data_factory_execution_impact",
                         "cleanup_data_factory_execution",
                     ],
                 },
@@ -202,6 +274,23 @@ def _platform_capabilities() -> dict:
                         "get_system_file_download_url",
                     ],
                 },
+                {
+                    "name": "test_report",
+                    "description": "测试报告查询、筛选、失败分析和安全重试",
+                    "tools": [
+                        "get_test_report_schema",
+                        "list_test_reports",
+                        "get_test_report_detail",
+                        "get_test_report_summary",
+                        "list_test_report_cases",
+                        "get_test_report_trend",
+                        "analyze_test_report_failures",
+                        "preview_retry_test_report_case_impact",
+                        "retry_test_report_case",
+                        "preview_retry_test_report_impact",
+                        "retry_test_report",
+                    ],
+                },
             ]
         },
         "warnings": [],
@@ -215,10 +304,12 @@ def mcp_asgi_app():
         return _missing_dependency_app
 
     from src.mcp_server.tools.api_automation import register_api_automation_tools
+    from src.mcp_server.tools.api_auth_config import register_api_auth_config_tools
     from src.mcp_server.tools.data_factory import register_data_factory_tools
     from src.mcp_server.tools.project_context import register_project_context_tools
     from src.mcp_server.tools.system_file import register_system_file_tools
     from src.mcp_server.tools.system_variable import register_system_variable_tools
+    from src.mcp_server.tools.test_report import register_test_report_tools
 
     try:
         mcp = FastMCP(
@@ -236,6 +327,7 @@ def mcp_asgi_app():
         )
 
     @mcp.tool()
+    @_logged_public_tool
     def get_mcp_server_info() -> dict:
         """查询 Mango MCP 服务自身信息，包括环境、地址和服务时间。"""
         return {
@@ -246,6 +338,7 @@ def mcp_asgi_app():
         }
 
     @mcp.tool()
+    @_logged_public_tool
     def get_platform_capabilities() -> dict:
         """查询 Mango MCP 当前开放的能力分组。"""
         return _platform_capabilities()
@@ -378,9 +471,11 @@ def mcp_asgi_app():
 
     register_project_context_tools(mcp)
     register_api_automation_tools(mcp)
+    register_api_auth_config_tools(mcp)
     register_data_factory_tools(mcp)
     register_system_variable_tools(mcp)
     register_system_file_tools(mcp)
+    register_test_report_tools(mcp)
     return mcp.streamable_http_app()
 
 

@@ -17,6 +17,20 @@ class ObtainAssertion(MangoAssertion):
     """自定义方法"""
 
     @staticmethod
+    def p_is_equal_to(actual, expect):
+        """等于expect"""
+        if actual is None:
+            raise AssertionError("实际值不能为 None ，可能是在获取实际值的时候就失败了！")
+
+        actual_text = str(actual)
+        expect_text = str(expect)
+        try:
+            assert_that(actual_text).is_equal_to(expect_text)
+        except AssertionError as e:
+            raise AssertionError(f'实际={actual_text}, 预期={expect}') from e
+        return f'实际={actual_text}, 预期={expect}'
+
+    @staticmethod
     @sync_method_callback('自定义断言', '长度断言', 0, [
         MethodModel(n='实际值', f='actual', d=True),
         MethodModel(n='期望长度', f='expect', d=True)])

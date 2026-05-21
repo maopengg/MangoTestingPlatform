@@ -599,7 +599,7 @@
     data.drawerVisible = false
 
     const hasValidData = paramData.some(
-      (suite: any) => suite.name || suite.parametrize.some((param: any) => param.key || param.value)
+      (suite: any) => suite.name || suite.parametrize.some((param: any) => param.key)
     )
 
     let value = {

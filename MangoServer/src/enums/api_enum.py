@@ -37,11 +37,10 @@ class ApiPublicTypeEnum(BaseEnum):
     """全局变量类型"""
     CUSTOM = 0
     SQL = 1
-    LOGIN = 2
 
     @classmethod
     def obj(cls):
-        return {0: "自定义-第一加载", 1: "SQL-第二加载", 2: "登录-第三加载", }
+        return {0: "自定义-第一加载", 1: "SQL-第二加载"}
 
 
 class ApiTypeEnum(BaseEnum):
@@ -65,3 +64,35 @@ class ApiParameterTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "参数", 1: "表单", 2: "json", 3: "文件"}
+
+
+class ApiAuthTypeEnum(BaseEnum):
+    """API授权方式"""
+    API = 0
+    CUSTOM = 1
+
+    @classmethod
+    def obj(cls):
+        return {0: "接口登录", 1: "自定义代码"}
+
+
+class ApiAuthRefreshModeEnum(BaseEnum):
+    """API授权刷新方式"""
+    PASSIVE = 0
+    TIMING = 1
+    BOTH = 2
+
+    @classmethod
+    def obj(cls):
+        return {0: "执行时检测刷新", 1: "定时刷新", 2: "执行时检测+定时刷新"}
+
+
+class ApiAuthRefreshStatusEnum(BaseEnum):
+    """API授权刷新状态"""
+    INIT = 0
+    SUCCESS = 1
+    FAIL = 2
+
+    @classmethod
+    def obj(cls):
+        return {0: "未刷新", 1: "刷新成功", 2: "刷新失败"}

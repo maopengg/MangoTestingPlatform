@@ -178,6 +178,7 @@ class DataFactoryTemplate(models.Model):
         choices=DataFactoryCleanupStrategyEnum.choices(),
         default=DataFactoryCleanupStrategyEnum.MANUAL.value,
     )
+    is_default = models.BooleanField(verbose_name="是否默认模板", default=False, db_index=True)
     status = models.SmallIntegerField(
         verbose_name="状态",
         choices=StatusEnum.choices(),

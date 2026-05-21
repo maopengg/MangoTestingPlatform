@@ -229,7 +229,7 @@ class DataFactoryDiscover:
                 return DataFactoryGeneratorTypeEnum.FIXED.value
             return DataFactoryGeneratorTypeEnum.FUNCTION.value
         if name.endswith("_id"):
-            return DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value
+            return DataFactoryGeneratorTypeEnum.RANDOM_INTEGER.value
         if name in ["created_at", "updated_at", "create_time", "update_time"]:
             return DataFactoryGeneratorTypeEnum.NOW.value
         if enum_values:
@@ -257,7 +257,7 @@ class DataFactoryDiscover:
                 return {"value": "123456"}
             return {"value": method_value}
         if name.endswith("_id"):
-            return {"template_id": None, "field": "id", "strategy": "reuse_or_create"}
+            return {}
         if enum_values:
             return {
                 "values": enum_values,

@@ -9,6 +9,7 @@ from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGe
 from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
 from src.auto_test.auto_data_factory.views.field import DataFactoryFieldSerializer
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
+from src.models.data_factory_model import DataFactoryFieldOverrideRules
 
 
 class DataFactoryTypeCastTests(SimpleTestCase):
@@ -70,9 +71,37 @@ class DataFactoryFieldSerializerTests(SimpleTestCase):
             "db_type": "bigint",
             "platform_type": "integer",
             "generator_type": DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
-            "generator_config": {"alias": "用户", "field": "id"},
+            "generator_config": {"dependency_entity_id": 12, "field": "id"},
         })
+        self.assertEqual(result["generator_config"]["dependency_entity_id"], 12)
         self.assertEqual(result["generator_config"]["field"], "id")
+
+    def test_dependency_field_rejects_template_id_in_entity_rule(self):
+        serializer = DataFactoryFieldSerializer()
+
+        with self.assertRaises(serializers.ValidationError):
+            serializer.validate({
+                "name": "user_id",
+                "db_type": "bigint",
+                "platform_type": "integer",
+                "generator_type": DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
+                "generator_config": {"dependency_entity_id": 12, "field": "id", "template_id": 99},
+            })
+
+    def test_dependency_override_accepts_template_id(self):
+        result = DataFactoryFieldOverrideRules.model_validate({
+            "user_id": {
+                "generator_type": DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
+                "generator_config": {
+                    "dependency_entity_id": 12,
+                    "field": "id",
+                    "template_id": 99,
+                    "strategy": "reuse_or_create",
+                },
+            }
+        }).model_dump()
+
+        self.assertEqual(result["user_id"]["generator_config"]["template_id"], 99)
 
     def test_random_range_must_be_valid(self):
         serializer = DataFactoryFieldSerializer()

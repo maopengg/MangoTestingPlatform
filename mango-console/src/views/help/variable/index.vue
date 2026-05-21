@@ -34,33 +34,41 @@
             <div class="section-tip">
               随机数据方法可直接生成测试数据；平台自定义方法属于扩展能力，部分方法会依赖上传文件或运行环境。
             </div>
-            <div v-if="methodGroups.length" class="method-layout">
+            <div v-if="classGroups.length" class="method-layout">
               <div class="category-panel">
                 <div class="category-title">方法分类</div>
                 <div class="category-list">
-                  <button
-                    v-for="item of methodGroups"
-                    :key="item.value"
-                    class="category-item"
-                    :class="{ active: currentMethodGroup?.value === item.value }"
-                    type="button"
-                    @click="activeGroupValue = item.value"
-                  >
-                    <span>{{ item.label }}</span>
-                    <span class="category-count">{{ item.children.length }}</span>
-                  </button>
+                  <div v-for="section of menuSections" :key="section.value" class="category-section">
+                    <div class="category-section-title">{{ section.title }}</div>
+                    <button
+                      v-for="item of section.children"
+                      :key="item.menuKey"
+                      class="category-item"
+                      :class="{ active: currentClassGroup?.menuKey === item.menuKey }"
+                      type="button"
+                      @click="activeGroupValue = item.menuKey"
+                    >
+                      <span class="category-label">
+                        <span>{{ item.label }}</span>
+                        <span v-if="getMenuRemark(item)" class="category-remark">
+                          {{ getMenuRemark(item) }}
+                        </span>
+                      </span>
+                      <span class="category-count">{{ item.children.length }}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div class="method-content">
-                <method-group-card
-                  v-if="currentMethodGroup"
-                  :key="currentMethodGroup.value"
-                  :group="currentMethodGroup"
+                <method-class-card
+                  v-if="currentClassGroup"
+                  :key="currentClassGroup.menuKey"
+                  :group="currentClassGroup"
                   @test="obtain"
                 />
               </div>
             </div>
-            <a-empty v-if="!methodGroups.length" description="暂无方法数据" />
+            <a-empty v-if="!classGroups.length" description="暂无方法数据" />
           </a-space>
         </a-space>
       </a-card>
@@ -76,57 +84,75 @@
   type MethodItem = {
     label: string
     value: string
-    parameter?: Record<string, string | null>
+    parameter?: Array<{
+      f: string
+      n?: string | null
+      p?: string | null
+      d?: boolean
+      v?: string | number | boolean | null
+    }> | Record<string, string | null>
   }
 
-  type MethodGroup = {
+  type MethodClassGroup = {
     label: string
     value: string
+    menuKey?: string
+    typeValue?: string
+    typeLabel?: string
     children: MethodItem[]
   }
 
-  const hiddenCustomMethods = new Set([
-    'get_cache()',
-    'set_data_factory_cache()',
-    'get_data_factory_all()',
-    'to_frontend_safe_value()',
-  ])
+  type MethodTypeGroup = {
+    label: string
+    value: string
+    children: MethodClassGroup[]
+  }
 
-  const randomList = ref<MethodGroup[]>([])
-  const input = ref(wrapExpression('这里输入函数名称'))
+  const randomList = ref<MethodTypeGroup[]>([])
+  const input = ref(wrapExpression('这里输入函数名称，注意加上英文括号()'))
   const activeGroupValue = ref('')
 
-  const customGroups = computed(() =>
-    randomList.value
-      .filter((item) => item.value === 'ObtainTestData')
-      .map((item) => ({
-        ...item,
-        label: '平台自定义方法',
-        children: item.children.filter((child) => !hiddenCustomMethods.has(child.label)),
-      }))
-      .filter((item) => item.children.length)
+  const classGroups = computed(() =>
+    randomList.value.flatMap((typeGroup) =>
+      (typeGroup.children || [])
+        .filter((classGroup) => classGroup.children?.length)
+        .map((classGroup) => ({
+          ...classGroup,
+          menuKey: `${typeGroup.value}:${classGroup.value}`,
+          typeValue: typeGroup.value,
+          typeLabel: typeGroup.label,
+        }))
+    )
   )
 
-  const randomGroups = computed(() =>
-    randomList.value.filter((item) => item.value !== 'ObtainTestData')
-  )
+  const menuSections = computed(() => {
+    const testData = classGroups.value.filter((item) => item.typeValue === 'data')
+    const tools = classGroups.value.filter((item) => item.typeValue !== 'data')
+    return [
+      { title: '测试数据', value: 'data', children: testData },
+      { title: '工具', value: 'tools', children: tools },
+    ].filter((item) => item.children.length)
+  })
 
-  const methodGroups = computed(() => [...randomGroups.value, ...customGroups.value])
-
-  const currentMethodGroup = computed(
+  const currentClassGroup = computed(
     () =>
-      methodGroups.value.find((item) => item.value === activeGroupValue.value) ||
-      methodGroups.value[0]
+      classGroups.value.find((item) => item.menuKey === activeGroupValue.value) ||
+      classGroups.value[0]
   )
 
   onMounted(() => {
     getSystemRandomList()
       .then((res) => {
         randomList.value = res.data
-        activeGroupValue.value = methodGroups.value[0]?.value || ''
+        activeGroupValue.value = getDefaultGroupKey()
       })
       .catch(console.log)
   })
+
+  function getDefaultGroupKey() {
+    const defaultGroup = classGroups.value.find((item) => item.value === '人物信息测试数据')
+    return defaultGroup?.menuKey || classGroups.value[0]?.menuKey || ''
+  }
 
   function normalizeExpression(value: string) {
     return value.replace(/^\$\{\{/, '').replace(/\}\}$/, '').trim()
@@ -149,11 +175,13 @@
   }
 
   function buildExample(record: MethodItem) {
-    const parameter = record.parameter || {}
-    const params = Object.keys(parameter)
-      .map((key) => parameter[key] || getExampleParameterValue(key))
-      .join(',')
-    return record.label.replace('()', `(${params})`)
+    const parameter = record.parameter || []
+    const params = Array.isArray(parameter)
+      ? parameter.map((item) => item.v ?? getExampleParameterValue(item.f)).join(', ')
+      : Object.keys(parameter)
+          .map((key) => parameter[key] ?? getExampleParameterValue(key))
+          .join(', ')
+    return `${record.value}(${params})`
   }
 
   function getExampleParameterValue(key: string) {
@@ -180,15 +208,19 @@
     return exampleValueMap[key] || key
   }
 
+  function getMenuRemark(item: MethodClassGroup) {
+    return ['cache', 'json'].includes(item.typeValue || '') ? '不要使用，只做说明' : ''
+  }
+
   function wrapExpression(expression: string) {
     return '${{' + expression + '}}'
   }
 
-  const MethodGroupCard = defineComponent({
-    name: 'MethodGroupCard',
+  const MethodClassCard = defineComponent({
+    name: 'MethodClassCard',
     props: {
       group: {
-        type: Object as () => MethodGroup,
+        type: Object as () => MethodClassGroup,
         required: true,
       },
     },
@@ -197,14 +229,14 @@
       const columns = [
         {
           title: '方法',
-          dataIndex: 'label',
-          width: 240,
+          dataIndex: 'value',
+          width: 180,
           render: ({ record }: { record: MethodItem }) =>
-            h('span', { class: 'method-name' }, record.label),
+            h('span', { class: 'method-name' }, record.value),
         },
         {
           title: '说明',
-          dataIndex: 'value',
+          dataIndex: 'label',
           ellipsis: true,
           tooltip: true,
         },
@@ -213,7 +245,10 @@
           dataIndex: 'parameter',
           width: 220,
           render: ({ record }: { record: MethodItem }) => {
-            const keys = Object.keys(record.parameter || {})
+            const parameter = record.parameter || []
+            const keys = Array.isArray(parameter)
+              ? parameter.map((item) => item.n || item.f)
+              : Object.keys(parameter)
             if (!keys.length) {
               return h('span', { class: 'empty-text' }, '无')
             }
@@ -257,7 +292,7 @@
               data: props.group.children,
               pagination: false,
               bordered: false,
-              rowKey: 'label',
+              rowKey: 'value',
             }),
           ]
         )
@@ -351,7 +386,20 @@
     display: flex;
     flex-direction: column;
     padding: 8px;
+    gap: 12px;
+  }
+
+  .category-section {
+    display: flex;
+    flex-direction: column;
     gap: 4px;
+  }
+
+  .category-section-title {
+    padding: 4px 8px;
+    color: var(--color-text-3);
+    font-size: 12px;
+    font-weight: 600;
   }
 
   .category-item {
@@ -392,6 +440,20 @@
     border-radius: 2px;
     background: var(--color-text-2);
     content: '';
+  }
+
+  .category-label {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .category-remark {
+    color: var(--color-text-3);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
   }
 
   .category-count {

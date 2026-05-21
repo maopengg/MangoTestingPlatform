@@ -141,6 +141,11 @@ class RunTasks:
     def timing(cls, timing_strategy_id):
         try:
             log.system.debug(f'触发定时器：{timing_strategy_id}')
+            try:
+                from src.auto_test.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
+                ApiAuthManager.refresh_by_time_task(timing_strategy_id)
+            except Exception as error:
+                log.system.error(f'执行API授权Token定时刷新异常: {error}')
             scheduled_tasks_obj = Tasks.objects.filter(timing_strategy=timing_strategy_id,
                                                        status=StatusEnum.SUCCESS.value)
             for scheduled_tasks in scheduled_tasks_obj:

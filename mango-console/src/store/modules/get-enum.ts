@@ -7,6 +7,9 @@ interface EnumState {
   cline_type: StateValueType
   method: StateValueType
   api_public_type: StateValueType
+  api_auth_type: StateValueType
+  api_auth_refresh_mode: StateValueType
+  api_auth_refresh_status: StateValueType
   api_client: StateValueType
   notice: StateValueType
   status: StateValueType
@@ -47,6 +50,9 @@ export const useEnum = defineStore('get-enum', {
     cline_type: [],
     method: [],
     api_public_type: [],
+    api_auth_type: [],
+    api_auth_refresh_mode: [],
+    api_auth_refresh_status: [],
     api_client: [],
     notice: [],
     status: [],
@@ -102,6 +108,9 @@ export const useEnum = defineStore('get-enum', {
       this.cline_type = data.cline_type
       this.method = data.method
       this.api_public_type = data.api_public_type
+      this.api_auth_type = data.api_auth_type
+      this.api_auth_refresh_mode = data.api_auth_refresh_mode
+      this.api_auth_refresh_status = data.api_auth_refresh_status
       this.api_client = data.api_client
       this.notice = data.notice
       this.status = data.status

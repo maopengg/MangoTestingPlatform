@@ -414,23 +414,20 @@
             />
           </template>
           <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
-            <a-space
-              v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD"
-              direction="vertical"
-              fill
-            >
-              <a-select
-                v-model="record.generator_config.template_id"
-                :options="getDependencyTemplateOptions(record)"
+              <a-space
+                v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD"
+                direction="vertical"
+                fill
+              >
+              <a-cascader
+                :model-value="getDependencyCascaderValue(record)"
+                :options="dependencyCascaderOptions"
+                :load-more="loadDependencyCascaderMore"
                 allow-clear
                 allow-search
-                placeholder="请选择依赖模板"
-                @change="refreshDependencyConfigValue(record)"
-              />
-              <a-input
-                v-model="record.generator_config.field"
-                placeholder="取值字段，例如 id"
-                @input="refreshDependencyConfigValue(record)"
+                path-mode
+                placeholder="请选择模块/实体/字段"
+                @change="(value) => changeDependencyCascader(record, value)"
               />
             </a-space>
             <a-space
@@ -519,7 +516,6 @@
     getDataFactoryDatasourceAlias,
     getDataFactoryEntity,
     getDataFactoryField,
-    getDataFactoryTemplate,
     postDataFactoryDiscoverTable,
     postDataFactoryDiscoverTables,
     postDataFactoryEntity,
@@ -552,8 +548,7 @@
   const userStore = useUserStore()
   const enumFieldNames = { value: 'key', label: 'title' }
   const datasourceAliasOptions = ref<any[]>([])
-  const dependencyTemplateOptions = ref<any[]>([])
-  const entityNameMap = ref<Record<string, string>>({})
+  const dependencyCascaderOptions = ref<any[]>([])
   const entityTableOptions = ref<any[]>([])
   const entityDiscoveredColumns = ref<any[]>([])
   const entityTableLoading = ref(false)
@@ -599,6 +594,19 @@
   const GENERATOR_TYPE_DEPENDENCY_FIELD = 11
   const GENERATOR_TYPE_FUNCTION = 13
   const REMOVED_GENERATOR_TYPES = [8, 10, 12]
+  const GENERATOR_TYPE_ORDER = [
+    GENERATOR_TYPE_SKIP,
+    GENERATOR_TYPE_FIXED,
+    GENERATOR_TYPE_FUNCTION,
+    GENERATOR_TYPE_RANDOM_STRING,
+    GENERATOR_TYPE_RANDOM_INTEGER,
+    GENERATOR_TYPE_RANDOM_DECIMAL,
+    GENERATOR_TYPE_NOW,
+    GENERATOR_TYPE_RELATIVE_TIME,
+    GENERATOR_TYPE_UUID,
+    GENERATOR_TYPE_ENUM,
+    GENERATOR_TYPE_DEPENDENCY_FIELD,
+  ]
   const statusOptions = [
     { key: 1, title: '启用' },
     { key: 0, title: '禁用' },
@@ -613,7 +621,13 @@
         ...item,
         title: getGeneratorTypeTitle(item),
       }))
+      .sort((left: any, right: any) => getGeneratorTypeOrder(left.key) - getGeneratorTypeOrder(right.key))
   )
+
+  function getGeneratorTypeOrder(value: any) {
+    const index = GENERATOR_TYPE_ORDER.indexOf(Number(value))
+    return index === -1 ? GENERATOR_TYPE_ORDER.length + Number(value) : index
+  }
 
   function getOptionId(value: any) {
     return value?.id ?? value
@@ -701,38 +715,19 @@
   function loadDependencyTemplates(record?: any) {
     const projectProduct =
       record?.project_product?.id || record?.project_product || entityForm.project_product
-    const module = record?.module?.id || record?.module || entityForm.module
     if (!projectProduct) {
-      dependencyTemplateOptions.value = []
-      entityNameMap.value = {}
+      dependencyCascaderOptions.value = []
       return Promise.resolve()
     }
-    const query: any = { project_product: getOptionId(projectProduct), page: 1, pageSize: 9999 }
-    if (module) {
-      query.module = getOptionId(module)
-    }
-    return Promise.all([getDataFactoryEntity(query), getDataFactoryTemplate(query)]).then(
-      ([entityRes, templateRes]) => {
-        entityNameMap.value = Object.fromEntries(
-          (entityRes.data || []).map((entity: any) => [
-            String(entity.id),
-            entity.name || entity.table_name || entity.id,
-          ])
-        )
-        dependencyTemplateOptions.value = (templateRes.data || []).map((it: any) => {
-          const entityId = it.entity?.id || it.entity
-          const entityName =
-            it.entity?.name || entityNameMap.value[String(entityId)] || entityId || '未知实体'
-          return {
-            label: `${entityName} / ${it.name}`,
-            value: it.id,
-            entity_id: entityId,
-            table_name: it.entity?.table_name,
-            template: it,
-          }
-        })
-      }
-    )
+    return productModule.getProjectModule(getOptionId(projectProduct)).then(() => {
+      dependencyCascaderOptions.value = (productModule.data || []).map((module: any) => ({
+        label: getModuleDisplayName(module),
+        value: `module:${module.key ?? module.id}`,
+        raw_id: module.key ?? module.id,
+        level: 'module',
+        isLeaf: false,
+      }))
+    })
   }
 
   function openEntity(record?: any) {
@@ -1136,6 +1131,7 @@
         fieldRows.value = (res.data || []).map((it: any) => normalizeFieldRow(it))
       }),
     ])
+      .then(() => preloadDependencyCascaderPaths())
       .then(() => {
         fieldVisible.value = true
       })
@@ -1283,13 +1279,34 @@
   }
 
   function buildFieldPayloadItem(row: any) {
-    const generatorConfig = { ...(row.generator_config || {}) }
+    let generatorConfig = { ...(row.generator_config || {}) }
     if (row.generator_type === GENERATOR_TYPE_ENUM) {
       normalizeEnumFieldForSave(row, generatorConfig)
+    } else if (row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD) {
+      generatorConfig = {
+        dependency_entity_id: generatorConfig.dependency_entity_id,
+        field: generatorConfig.field || 'id',
+      }
+    } else if (row.generator_type === GENERATOR_TYPE_SKIP) {
+      generatorConfig = generatorConfig.reason ? { reason: generatorConfig.reason } : {}
+    } else if (row.generator_type === GENERATOR_TYPE_RANDOM_STRING) {
+      generatorConfig = pickGeneratorConfig(generatorConfig, ['prefix', 'length'])
+    } else if (row.generator_type === GENERATOR_TYPE_RANDOM_INTEGER) {
+      generatorConfig = pickGeneratorConfig(generatorConfig, ['min', 'max'])
+    } else if (row.generator_type === GENERATOR_TYPE_RANDOM_DECIMAL) {
+      generatorConfig = pickGeneratorConfig(generatorConfig, ['min', 'max', 'precision'])
+    } else if (row.generator_type === GENERATOR_TYPE_NOW) {
+      generatorConfig = {}
+    } else if (row.generator_type === GENERATOR_TYPE_RELATIVE_TIME) {
+      generatorConfig = pickGeneratorConfig(generatorConfig, ['days', 'hours', 'minutes'])
+    } else if (row.generator_type === GENERATOR_TYPE_UUID) {
+      generatorConfig = pickGeneratorConfig(generatorConfig, ['dash'])
     } else if (!isReadonlyGeneratorConfig(row)) {
       const value = row.generator_config_value ?? ''
       if (row.generator_type === GENERATOR_TYPE_FIXED) {
         generatorConfig.value = value
+      } else if (row.generator_type === GENERATOR_TYPE_FUNCTION) {
+        generatorConfig = { value }
       } else if (value === '') {
         delete generatorConfig.value
       } else {
@@ -1300,6 +1317,15 @@
       ...row,
       generator_config: generatorConfig,
     }
+  }
+
+  function pickGeneratorConfig(config: Record<string, any>, keys: string[]) {
+    return keys.reduce((result: Record<string, any>, key) => {
+      if (config[key] !== undefined && config[key] !== null && config[key] !== '') {
+        result[key] = config[key]
+      }
+      return result
+    }, {})
   }
 
   function getEnumOptionRows(row: any) {
@@ -1441,10 +1467,10 @@
       if (config.alias) {
         return `${config.alias}.${targetField}`
       }
-      if (config.template_id) {
-        return `template:${config.template_id}.${targetField}`
+      if (config.dependency_entity_id) {
+        return `entity:${config.dependency_entity_id}.${targetField}`
       }
-      return `请选择依赖模板.${targetField}`
+      return `请选择依赖实体.${targetField}`
     }
     if (row.generator_type === GENERATOR_TYPE_ENUM) {
       if (config.value !== undefined && config.value !== null) {
@@ -1455,10 +1481,196 @@
     return ''
   }
 
-  function getDependencyTemplateOptions(row: any) {
-    return dependencyTemplateOptions.value.filter(
-      (item) => item.entity_id !== currentEntity.value?.id
+  function getModuleDisplayName(module: any) {
+    if (!module) {
+      return '未分配模块'
+    }
+    const name = module.name || module.title || module.id || module
+    return module.superior_module ? `${module.superior_module}/${name}` : String(name)
+  }
+
+  function getDependencyCascaderValue(row: any) {
+    const config = row.generator_config || {}
+    if (!config.dependency_entity_id) {
+      return []
+    }
+    return findDependencyEntityFieldPath(
+      dependencyCascaderOptions.value,
+      `entity:${config.dependency_entity_id}`,
+      `field:${config.field || 'id'}`
     )
+  }
+
+  function findDependencyEntityFieldPath(
+    options: any[],
+    entityValue: string,
+    fieldValue: string,
+    parents: any[] = []
+  ): any[] {
+    for (const option of options || []) {
+      const path = [...parents, option.value]
+      if (option.value === entityValue) {
+        const field = (option.children || []).find((item: any) => item.value === fieldValue)
+        return field ? [...path, field.value] : path
+      }
+      if (option.children?.length) {
+        const childPath = findDependencyEntityFieldPath(
+          option.children,
+          entityValue,
+          fieldValue,
+          path
+        )
+        if (childPath.length) {
+          return childPath
+        }
+      }
+    }
+    return []
+  }
+
+  function loadDependencyCascaderMore(option: any, done: (children?: any[]) => void) {
+    const projectProduct = getOptionId(entityForm.project_product || currentEntity.value?.project_product)
+    if (!projectProduct) {
+      done([])
+      return
+    }
+    if (option.level === 'module') {
+      loadDependencyEntities(option.raw_id).then((children) => {
+        const moduleOption = findDependencyOption(`module:${option.raw_id}`)
+        if (moduleOption) {
+          moduleOption.children = children
+          dependencyCascaderOptions.value = [...dependencyCascaderOptions.value]
+        }
+        done(children)
+      })
+      return
+    }
+    if (option.level === 'entity') {
+      loadDependencyFields(option.raw_id).then((children) => {
+        const entityOption = findDependencyOption(`entity:${option.raw_id}`)
+        if (entityOption) {
+          entityOption.children = children
+          dependencyCascaderOptions.value = [...dependencyCascaderOptions.value]
+        }
+        done(children)
+      })
+      return
+    }
+    done([])
+  }
+
+  function findDependencyOption(value: string, options = dependencyCascaderOptions.value): any {
+    for (const option of options || []) {
+      if (option.value === value) {
+        return option
+      }
+      const child = findDependencyOption(value, option.children || [])
+      if (child) {
+        return child
+      }
+    }
+    return null
+  }
+
+  function loadDependencyEntities(moduleId: any) {
+    const projectProduct = getOptionId(entityForm.project_product || currentEntity.value?.project_product)
+    if (!projectProduct || !moduleId) {
+      return Promise.resolve([])
+    }
+    return getDataFactoryEntity({
+      project_product: projectProduct,
+      module: moduleId,
+      page: 1,
+      pageSize: 9999,
+    }).then((res) =>
+      (res.data || [])
+        .filter((entity: any) => entity.id !== currentEntity.value?.id)
+        .map((entity: any) => ({
+          label: `${entity.name || entity.id}${entity.table_name ? ` / ${entity.table_name}` : ''}`,
+          value: `entity:${entity.id}`,
+          raw_id: entity.id,
+          level: 'entity',
+          isLeaf: false,
+        }))
+    )
+  }
+
+  function loadDependencyFields(entityId: any) {
+    if (!entityId) {
+      return Promise.resolve([])
+    }
+    return getDataFactoryField({ entity: entityId }).then((res) =>
+      (res.data || []).map((field: any) => ({
+        label: `${field.label || field.name} / ${field.name}`,
+        value: `field:${field.name}`,
+        raw_id: field.name,
+        level: 'field',
+        isLeaf: true,
+      }))
+    )
+  }
+
+  async function preloadDependencyCascaderPaths() {
+    const dependencyEntityIds = Array.from(
+      new Set(
+        fieldRows.value
+          .map((row) => row.generator_config?.dependency_entity_id)
+          .filter((value) => value !== undefined && value !== null && value !== '')
+      )
+    )
+    for (const dependencyEntityId of dependencyEntityIds) {
+      await preloadDependencyCascaderPath(dependencyEntityId)
+    }
+  }
+
+  async function preloadDependencyCascaderPath(dependencyEntityId: any) {
+    const projectProduct = getOptionId(entityForm.project_product || currentEntity.value?.project_product)
+    if (!projectProduct || !dependencyEntityId) {
+      return
+    }
+    const entityRes = await getDataFactoryEntity({
+      id: dependencyEntityId,
+      project_product: projectProduct,
+      page: 1,
+      pageSize: 1,
+    })
+    const entity = (entityRes.data || [])[0]
+    const moduleId = entity?.module?.id || entity?.module
+    if (!moduleId) {
+      return
+    }
+    const moduleOption = dependencyCascaderOptions.value.find(
+      (option: any) => String(option.raw_id) === String(moduleId)
+    )
+    if (!moduleOption) {
+      return
+    }
+    if (!moduleOption.children?.length) {
+      moduleOption.children = await loadDependencyEntities(moduleId)
+    }
+    const entityOption = (moduleOption.children || []).find(
+      (option: any) => String(option.raw_id) === String(dependencyEntityId)
+    )
+    if (entityOption && !entityOption.children?.length) {
+      entityOption.children = await loadDependencyFields(dependencyEntityId)
+    }
+    dependencyCascaderOptions.value = [...dependencyCascaderOptions.value]
+  }
+
+  function changeDependencyCascader(row: any, value: any) {
+    const path = Array.isArray(value) ? value : []
+    const entityValue = path.find((item: string) => String(item).startsWith('entity:'))
+    const fieldValue = path.find((item: string) => String(item).startsWith('field:'))
+    if (!entityValue) {
+      row.generator_config = {}
+      refreshDependencyConfigValue(row)
+      return
+    }
+    row.generator_config = {
+      dependency_entity_id: entityValue ? Number(String(entityValue).replace('entity:', '')) : null,
+      field: fieldValue ? String(fieldValue).replace('field:', '') : 'id',
+    }
+    refreshDependencyConfigValue(row)
   }
 
   function refreshDependencyConfigValue(row: any) {
@@ -1558,5 +1770,4 @@
     line-height: 18px;
     white-space: nowrap;
   }
-
 </style>

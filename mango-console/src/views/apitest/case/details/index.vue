@@ -281,7 +281,7 @@
                           <a-tab-pane key="0" title="请求配置">
                             <a-tabs
                               :active-key="data.tabsKey"
-                              @tab-click="(key) => tabsChange(key)"
+                              @tab-click="(key) => tabsChange(key, item)"
                             >
                               <a-tab-pane key="00" title="请求头">
                                 <div class="m-2" style="height: 220px; overflow-y: auto">
@@ -354,7 +354,7 @@
                           <a-tab-pane key="1" title="前置处理">
                             <a-tabs
                               :active-key="data.tabsKey"
-                              @tab-click="(key) => tabsChange(key)"
+                              @tab-click="(key) => tabsChange(key, item)"
                             >
                               <template #extra>
                                 <a-space v-if="data.assClickAdd">
@@ -401,12 +401,13 @@
                               </a-tab-pane>
                               <a-tab-pane key="11" title="前置函数">
                                 <div class="m-2">
-                                  <a-textarea
+                                  <CodeEditor
                                     v-model="item.front_func"
-                                    :auto-size="{ minRows: 10, maxRows: 10 }"
-                                    allow-clear
+                                    :line-height="280"
+                                    :code-style="{ width: '100%' }"
                                     placeholder="根据帮助文档，输入自定义前置函数"
-                                    @blur="blurSave('front_func', item.front_func, item.id)"
+                                    @focus="recordCodeSnapshot('front_func', item.front_func, item.id)"
+                                    @blur="saveCodeIfChanged('front_func', item.front_func, item.id)"
                                   />
                                 </div>
                               </a-tab-pane>
@@ -426,7 +427,7 @@
                           <a-tab-pane key="2" title="响应结果">
                             <a-tabs
                               :active-key="data.tabsKey"
-                              @tab-click="(key) => tabsChange(key)"
+                              @tab-click="(key) => tabsChange(key, item)"
                             >
                               <a-tab-pane key="20" title="基础信息">
                                 <div class="m-2">
@@ -511,7 +512,7 @@
                           <a-tab-pane key="4" title="后置处理">
                             <a-tabs
                               :active-key="data.tabsKey"
-                              @tab-click="(key) => tabsChange(key)"
+                              @tab-click="(key) => tabsChange(key, item)"
                             >
                               <template #extra>
                                 <a-space v-if="data.assClickAdd">
@@ -708,12 +709,25 @@
                               </a-tab-pane>
                               <a-tab-pane key="43" title="后置函数">
                                 <div class="m-2">
-                                  <a-textarea
+                                  <CodeEditor
                                     v-model="item.posterior_func"
-                                    :auto-size="{ minRows: 10, maxRows: 10 }"
-                                    allow-clear
+                                    :line-height="280"
+                                    :code-style="{ width: '100%' }"
                                     placeholder="根据帮助文档，输入自定义后置函数"
-                                    @blur="blurSave('posterior_func', item.posterior_func, item.id)"
+                                    @focus="
+                                      recordCodeSnapshot(
+                                        'posterior_func',
+                                        item.posterior_func,
+                                        item.id
+                                      )
+                                    "
+                                    @blur="
+                                      saveCodeIfChanged(
+                                        'posterior_func',
+                                        item.posterior_func,
+                                        item.id
+                                      )
+                                    "
                                   />
                                 </div>
                               </a-tab-pane>
@@ -1056,9 +1070,32 @@
   import AssertionResult from '@/components/AssertionResult.vue'
   import TipMessage from '@/components/TipMessage.vue' // 引入断言结果组件
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
+  import CodeEditor from '@/components/CodeEditor.vue'
   import { getDataFactoryCaseConfig } from '@/api/data-factory'
 
   const userStore = useUserStore()
+  const FRONT_FUNC_TEMPLATE = `def func(self, request):
+    print(request.model_dump_json())
+    # 可以从request中获取值，然后修改完成之后重新赋值给request，最后进行返回
+    method = request.method  # 获取请求方法
+    url = request.url  # 获取请求的url
+    headers = request.headers  # 获取headers
+    params = request.params  # 获取参数
+    data = request.data  # 获取表单
+    json = request.json  # 获取json
+    file = request.file  # 获取file
+    return request`
+
+  const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
+    print(response.model_dump_json())
+    # 可以从response中获取值，然后修改完成之后重新赋值给response，最后进行返回
+    code = response.code  # 获取响应code码
+    time = response.time  # 获取响应时间
+    headers = response.headers  # 获取响应头
+    print(response.headers.get('Set-Cookie'))
+    json = response.json  # 获取响应的json
+    text = response.text  # 获取响应的文本
+    return response`
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const modalDialogRefParameter = ref<ModalDialogType | null>(null)
@@ -1105,6 +1142,30 @@
   const caseRunning = ref(false)
   const showCaseAddButton = computed(() => !(data.apiType === '1' && data.apiSonType === '13'))
   const dataFactoryConfigCache = new Map<number, boolean>()
+  const codeEditorSnapshots = new Map<string, string>()
+
+  function codeSnapshotKey(id: number, key: string) {
+    return `${id}:${key}`
+  }
+
+  function normalizeCodeValue(value: string | null | undefined) {
+    return value || ''
+  }
+
+  function recordCodeSnapshot(key: string, value: string | null | undefined, id: number) {
+    codeEditorSnapshots.set(codeSnapshotKey(id, key), normalizeCodeValue(value))
+  }
+
+  function saveCodeIfChanged(key: string, value: string | null | undefined, id: number) {
+    const snapshotKey = codeSnapshotKey(id, key)
+    const currentValue = normalizeCodeValue(value)
+    const previousValue = codeEditorSnapshots.get(snapshotKey) ?? currentValue
+    if (currentValue === previousValue) {
+      return
+    }
+    codeEditorSnapshots.set(snapshotKey, currentValue)
+    blurSave(key, value || null, id)
+  }
 
   function isActiveCollapseItem(index: number) {
     return data.activeCollapseKey.some((key: string | number) => String(key) === String(index))
@@ -1257,8 +1318,20 @@
     data.apiSonType = key
   }
 
-  function tabsChange(key: string | number) {
+  function fillDefaultFunc(item: any, key: string | number) {
+    if (!item) return
+    if (key === '11' && !item.front_func) {
+      item.front_func = FRONT_FUNC_TEMPLATE
+      recordCodeSnapshot('front_func', item.front_func, item.id)
+    } else if (key === '43' && !item.posterior_func) {
+      item.posterior_func = POSTERIOR_FUNC_TEMPLATE
+      recordCodeSnapshot('posterior_func', item.posterior_func, item.id)
+    }
+  }
+
+  function tabsChange(key: string | number, item: any = null) {
     data.tabsKey = key
+    fillDefaultFunc(item, key)
     data.assClickAdd = !(
       key === '30' ||
       key === '42' ||

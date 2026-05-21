@@ -27,14 +27,16 @@ class LoginLogic(LoginWindow):
         self.form_data = [FormDataModel(**i) for i in form_data]
 
         self.setWindowTitle('登录')
-        self.setFixedSize(280, 350)
+        self.setFixedSize(320, 410)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
         self.main_window = None
 
         host = SetConfig.get_host()  # type: ignore
+        proxy_url = SetConfig.get_proxy_url()  # type: ignore
         username = SetConfig.get_username()  # type: ignore
         password = SetConfig.get_password()  # type: ignore
         self.ip_edit.setText(host if host else '')
+        self.proxy_edit.setText(proxy_url if proxy_url and proxy_url != 'None' else '')
         self.username_edit.setText(username if username else '')
         self.password_edit.setText(password if password else '')
 
@@ -53,6 +55,10 @@ class LoginLogic(LoginWindow):
 
         SetConfig.set_ws(ws_url)  # type: ignore
         SetConfig.set_host(http_url)  # type: ignore
+
+        proxy_url = str(self.proxy_edit.text()).strip()
+        SetConfig.set_proxy_url(proxy_url if proxy_url else None)  # type: ignore
+        HTTP.refresh()
 
         if not self.username_edit.text() or not self.password_edit.text():
             show_failed_message('请输入账号或密码后再进行登录')

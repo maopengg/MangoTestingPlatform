@@ -36,6 +36,8 @@ class RequestModel(BaseModel):
         for field in ['data', 'json', 'params']:
             field_value = getattr(self, field)
             if field_value is not None:
+                if isinstance(field_value, (dict, list)):
+                    continue
                 try:
                     parsed = json.loads(field_value, strict=False)
                     if not isinstance(parsed, (dict, list)):

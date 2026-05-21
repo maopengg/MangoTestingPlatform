@@ -139,12 +139,13 @@
             />
           </a-tab-pane>
           <a-tab-pane key="7" title="后置函数">
-            <a-textarea
+            <CodeEditor
               v-model="data.api_info.posterior_func"
-              :auto-size="data.textareaAutoSize"
-              allow-clear
+              :line-height="360"
+              :code-style="{ width: '100%' }"
               placeholder="根据帮助文档，输入自定义后置函数"
-              @blur="upDate('posterior_func', data.api_info.posterior_func)"
+              @focus="recordPosteriorFuncSnapshot"
+              @blur="savePosteriorFuncIfChanged"
             />
           </a-tab-pane>
           <a-tab-pane key="9" title="文件保存">
@@ -300,10 +301,22 @@
   import useUserStore from '@/store/modules/user'
   import KeyValueList from '@/components/KeyValueList.vue'
   import TipMessage from '@/components/TipMessage.vue'
+  import CodeEditor from '@/components/CodeEditor.vue'
 
   const enumStore = useEnum()
   const userStore = useUserStore()
   const caseRunning = ref(false)
+  const posteriorFuncSnapshot = ref('')
+  const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
+    print(response.model_dump_json())
+    # 可以从response中获取值，然后修改完成之后重新赋值给response，最后进行返回
+    code = response.code  # 获取响应code码
+    time = response.time  # 获取响应时间
+    headers = response.headers  # 获取响应头
+    print(response.headers.get('Set-Cookie'))
+    json = response.json  # 获取响应的json
+    text = response.text  # 获取响应的文本
+    return response`
 
   const pageData: any = usePageData()
   const data: any = reactive({
@@ -326,11 +339,32 @@
 
   function switchType(key: any) {
     data.pageType = key
+    if (key === '7' && !data.api_info.posterior_func) {
+      data.api_info.posterior_func = POSTERIOR_FUNC_TEMPLATE
+      recordPosteriorFuncSnapshot()
+    }
     if (data.pageType === '5' || data.pageType === '6') {
       data.addButton = true
     } else {
       data.addButton = false
     }
+  }
+
+  function normalizeCodeValue(value: string | null | undefined) {
+    return value || ''
+  }
+
+  function recordPosteriorFuncSnapshot() {
+    posteriorFuncSnapshot.value = normalizeCodeValue(data.api_info.posterior_func)
+  }
+
+  function savePosteriorFuncIfChanged() {
+    const currentValue = normalizeCodeValue(data.api_info.posterior_func)
+    if (currentValue === posteriorFuncSnapshot.value) {
+      return
+    }
+    posteriorFuncSnapshot.value = currentValue
+    upDate('posterior_func', data.api_info.posterior_func)
   }
 
   function addData() {

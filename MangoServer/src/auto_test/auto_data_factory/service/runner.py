@@ -49,6 +49,37 @@ class DataFactoryRunner:
             raise ToolsError(300, "状态模板不存在或已被删除，请刷新列表后重试") from error
 
     @classmethod
+    def get_dependency_template(cls, field, config: dict) -> DataFactoryTemplate:
+        template_id = config.get("template_id")
+        dependency_entity_id = config.get("dependency_entity_id")
+        if not dependency_entity_id:
+            raise ToolsError(300, f"字段 {field.name} 未配置依赖实体 dependency_entity_id")
+        if template_id:
+            try:
+                dependency_template = DataFactoryTemplate.objects.select_related(
+                    'entity',
+                    'project_product',
+                    'entity__datasource_alias',
+                ).get(id=template_id)
+            except DataFactoryTemplate.DoesNotExist as error:
+                raise ToolsError(300, f"字段 {field.name} 配置的依赖状态模板不存在或已被删除") from error
+        else:
+            dependency_template = DataFactoryTemplate.objects.select_related(
+                'entity',
+                'project_product',
+                'entity__datasource_alias',
+            ).filter(
+                entity_id=dependency_entity_id,
+                is_default=True,
+                status=1,
+            ).first()
+            if not dependency_template:
+                raise ToolsError(300, f"字段 {field.name} 依赖实体未配置默认状态模板")
+        if str(dependency_template.entity_id) != str(dependency_entity_id):
+            raise ToolsError(300, f"字段 {field.name} 的依赖状态模板不属于已选择的依赖实体")
+        return dependency_template
+
+    @classmethod
     def preview_template(
             cls,
             template_id: int,
@@ -219,7 +250,6 @@ class DataFactoryRunner:
         target_field = config.get("field", "id")
         alias = config.get("alias")
         strategy = config.get("strategy", "reuse_or_create")
-        template_id = config.get("template_id")
         if alias and alias in context:
             dependency_nodes.append(cls.build_dependency_tree(
                 template=None,
@@ -233,14 +263,8 @@ class DataFactoryRunner:
                 message="复用上下文已有数据",
             ))
             return context[alias].get(target_field)
-        if not template_id:
-            raise ToolsError(300, "依赖字段未配置依赖模板 template_id")
 
-        dependency_template = DataFactoryTemplate.objects.select_related(
-            'entity',
-            'project_product',
-            'entity__datasource_alias',
-        ).get(id=template_id)
+        dependency_template = cls.get_dependency_template(field, config)
         dependency_alias = alias or dependency_template.name
         if strategy != "create_always" and dependency_alias in context:
             dependency_value = context.get(dependency_alias, {}).get(target_field)
@@ -327,7 +351,13 @@ class DataFactoryRunner:
 
             effective_field = copy.copy(field)
             effective_field.generator_type = rule.generator_type
-            effective_field.generator_config = rule.generator_config or {}
+            if rule.generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
+                effective_field.generator_config = {
+                    **(field.generator_config or {}),
+                    **(rule.generator_config or {}),
+                }
+            else:
+                effective_field.generator_config = rule.generator_config or {}
             effective_fields.append(effective_field)
         return effective_fields
 
@@ -598,15 +628,7 @@ class DataFactoryRunner:
             if strategy == "must_exist":
                 raise ToolsError(300, f"字段 {field.name} 依赖上下文不存在：{alias}")
 
-            template_id = config.get("template_id")
-            if not template_id:
-                raise ToolsError(300, f"字段 {field.name} 未配置依赖模板 template_id")
-
-            dependency_template = DataFactoryTemplate.objects.select_related(
-                'entity',
-                'project_product',
-                'entity__datasource_alias',
-            ).get(id=template_id)
+            dependency_template = cls.get_dependency_template(field, config)
             dependency_alias = alias or dependency_template.name
             if strategy != "create_always" and dependency_alias in context:
                 config["alias"] = dependency_alias

@@ -36,14 +36,15 @@ class CaseBase:
 
     def case_parametrize(self, parametrize: dict):
         if parametrize:
-            for i in parametrize.get('parametrize'):
+            for i in parametrize.get('parametrize') or []:
                 key = i.get('key', None)
                 value = i.get('value', None)
-                if not key or not value:
+                if not key:
                     raise ApiError(*ERROR_MSG_0032)
-                value = self.test_setup.test_data.replace(i.get('value'))
+                if value is not None:
+                    value = self.test_setup.test_data.replace(value)
                 log.api.debug(f'用例参数化->key:{i.get("key")}，value：{value}')
-                self.test_setup.test_data.set_cache(i.get('key'), value)
+                self.test_setup.test_data.set_cache(key, value)
 
     def __front_custom(self, front_custom):
         for custom in front_custom:
@@ -63,7 +64,7 @@ class CaseBase:
                     raise ApiError(*ERROR_MSG_0036)
                 res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
                 log.api.debug(f'用例前置sql-1->key:{key}，value:{value}，查询结果：{res}')
-                if  isinstance(res, list) and len(res) < 0:
+                if isinstance(res, list) and len(res) < 0:
                     raise ApiError(*ERROR_MSG_0048, value=(value, res))
                 if isinstance(res, list) and len(res) > 0 and key:
                     self.test_setup.test_data.set_sql_cache(key, res[0])

@@ -163,6 +163,7 @@ class CacheKeyEnum(BaseEnum):
     """参数"""
     HOST = 'host'
     WS = 'ws'
+    PROXY_URL = 'proxy_url'
     MINIO_URL = 'minio_url'
     IS_MINIO = 'is_minio'
 

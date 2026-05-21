@@ -13,9 +13,14 @@ class ApiKeyValueItem(StrictSchema):
     value: str = ''
 
 
+class ApiParametrizeItem(StrictSchema):
+    key: str = ''
+    value: Any = None
+
+
 class ApiParametrizeSuite(StrictSchema):
     name: str = ''
-    parametrize: list[ApiKeyValueItem] = Field(default_factory=list)
+    parametrize: list[ApiParametrizeItem] = Field(default_factory=list)
 
 
 class ApiJsonPathAssertionItem(StrictSchema):

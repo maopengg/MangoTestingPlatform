@@ -1,12 +1,21 @@
 <template>
   <div class="chart-item-container">
+    <div class="trend-summary">
+      <div v-for="item in seriesSummary" :key="item.name" class="summary-item">
+        <span class="summary-dot" :style="{ backgroundColor: item.color }"></span>
+        <div>
+          <span>{{ item.name }}</span>
+          <strong>{{ item.total }}</strong>
+        </div>
+      </div>
+    </div>
     <div ref="fullYearSalesChart" class="chart-item"></div>
   </div>
 </template>
 <script lang="ts">
   import useEcharts from '@/hooks/useEcharts'
   import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-  import { dispose, graphic } from 'echarts/core'
+  import { dispose } from 'echarts/core'
   import { getSystemCaseResultWeekSum } from '@/api/system'
 
   const months = [
@@ -28,6 +37,11 @@
     setup() {
       const loading = ref(true)
       const fullYearSalesChart = ref<HTMLDivElement | null>(null)
+      const seriesSummary = ref([
+        { name: '接口用例', total: 0, color: '#5b7cfa' },
+        { name: '界面用例', total: 0, color: '#22c55e' },
+        { name: '单元用例', total: 0, color: '#f6c143' },
+      ])
       let interval: any = null
       let data: any = reactive([])
 
@@ -35,6 +49,23 @@
         getSystemCaseResultWeekSum()
           .then((res) => {
             data = res.data
+            seriesSummary.value = [
+              {
+                name: '接口用例',
+                total: (data.api_count || []).reduce((sum: number, item: number) => sum + Number(item || 0), 0),
+                color: '#5b7cfa',
+              },
+              {
+                name: '界面用例',
+                total: (data.ui_count || []).reduce((sum: number, item: number) => sum + Number(item || 0), 0),
+                color: '#22c55e',
+              },
+              {
+                name: '单元用例',
+                total: (data.pytest_count || []).reduce((sum: number, item: number) => sum + Number(item || 0), 0),
+                color: '#f6c143',
+              },
+            ]
             init()
           })
           .catch(console.log)
@@ -42,16 +73,21 @@
 
       const init = () => {
         const option = {
-          color: ['rgba(64, 58, 255)'],
+          color: ['#5b7cfa', '#22c55e', '#f6c143'],
           grid: {
-            top: '5%',
-            left: '2%',
-            right: '2%',
-            bottom: '4%',
+            top: 20,
+            left: 8,
+            right: 12,
+            bottom: 8,
             containLabel: true,
           },
           tooltip: {
             trigger: 'axis',
+            backgroundColor: 'rgba(255, 255, 255, 0.96)',
+            borderColor: '#e5e6eb',
+            textStyle: {
+              color: '#1d2129',
+            },
           },
           xAxis: {
             type: 'category',
@@ -67,69 +103,79 @@
             axisTick: {
               show: false,
             },
+            axisLabel: {
+              color: '#86909c',
+            },
           },
           yAxis: {
             type: 'value',
-            splitLine: { show: false },
-            axisLine: {
+            splitLine: {
               show: true,
               lineStyle: {
-                color: '#98A3B2',
-                width: 0,
-                type: 'solid',
+                color: '#eef0f5',
+                type: 'dashed',
               },
+            },
+            axisLine: {
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            },
+            axisLabel: {
+              color: '#86909c',
             },
           },
           series: [
             {
               type: 'line',
-              name: '接口用例执行数',
-              stack: '总量',
+              name: '接口用例',
               data: data.api_count,
-              symbolSize: 0,
+              symbol: 'circle',
+              symbolSize: 6,
               smooth: true,
               lineStyle: {
-                width: 5,
-                shadowColor: '#999', //设置折线阴影
-                shadowBlur: 10,
-                shadowOffsetY: 5,
+                width: 3,
+              },
+              areaStyle: {
+                opacity: 0.12,
               },
               itemStyle: {
-                color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#91cc75' }]),
+                color: '#5b7cfa',
               },
             },
             {
               type: 'line',
-              name: '前端用例执行数',
-              stack: '总量2',
+              name: '界面用例',
               data: data.ui_count,
-              symbolSize: 0,
+              symbol: 'circle',
+              symbolSize: 6,
               smooth: true,
               lineStyle: {
-                width: 5,
-                shadowColor: '#999', //设置折线阴影
-                shadowBlur: 10,
-                shadowOffsetY: 5,
+                width: 3,
+              },
+              areaStyle: {
+                opacity: 0.1,
               },
               itemStyle: {
-                color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#5470c6' }]),
+                color: '#22c55e',
               },
             },
             {
               type: 'line',
-              name: '单元用例执行数',
-              stack: '总量',
+              name: '单元用例',
               data: data.pytest_count,
-              symbolSize: 0,
+              symbol: 'circle',
+              symbolSize: 6,
               smooth: true,
               lineStyle: {
-                width: 5,
-                shadowColor: '#999', //设置折线阴影
-                shadowBlur: 10,
-                shadowOffsetY: 5,
+                width: 3,
+              },
+              areaStyle: {
+                opacity: 0.12,
               },
               itemStyle: {
-                color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#FAC858' }]),
+                color: '#f6c143',
               },
             },
           ],
@@ -160,6 +206,7 @@
       return {
         loading,
         fullYearSalesChart,
+        seriesSummary,
         updateChart,
       }
     },
@@ -168,10 +215,64 @@
 
 <style lang="less" scoped>
   .chart-item-container {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
     width: 100%;
+  }
 
-    .chart-item {
-      height: 31vh;
+  .trend-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 8px 6px 2px;
+  }
+
+  .summary-item {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-neutral-3);
+    border-radius: 8px;
+    background: var(--color-fill-1);
+
+    div {
+      min-width: 0;
     }
+
+    span,
+    strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      color: var(--color-text-3);
+      font-size: 12px;
+    }
+
+    strong {
+      margin-top: 2px;
+      color: var(--color-text-1);
+      font-size: 18px;
+      line-height: 22px;
+    }
+  }
+
+  .summary-dot {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+  }
+
+  .chart-item {
+    flex: 1;
+    min-height: 0;
   }
 </style>

@@ -9,7 +9,6 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiPublic
-from src.auto_test.auto_system.models import Database
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.api_enum import ApiPublicTypeEnum
 from src.enums.tools_enum import StatusEnum
@@ -26,6 +25,11 @@ class ApiPublicSerializers(serializers.ModelSerializer):
     class Meta:
         model = ApiPublic
         fields = '__all__'
+
+    def validate_type(self, value):
+        if value not in ApiPublicTypeEnum.get_key_list():
+            raise serializers.ValidationError('公共变量类型只支持自定义和SQL')
+        return value
 
 
 class ApiPublicSerializersC(serializers.ModelSerializer):
@@ -46,7 +50,7 @@ class ApiPublicSerializersC(serializers.ModelSerializer):
 
 class ApiPublicCRUD(ModelCRUD):
     model = ApiPublic
-    queryset = ApiPublic.objects.all()
+    queryset = ApiPublic.objects.filter(type__in=ApiPublicTypeEnum.get_key_list())
     serializer_class = ApiPublicSerializersC
     serializer = ApiPublicSerializers
     not_matching_str = ModelCRUD.not_matching_str + ['test_env']
@@ -69,4 +73,3 @@ class ApiPublicViews(ViewSet):
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0104, )
-

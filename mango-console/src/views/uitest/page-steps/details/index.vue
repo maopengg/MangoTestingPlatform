@@ -197,8 +197,9 @@
                             <template v-else-if="item.type === 'code'">
                               <CodeEditor
                                 v-model="item.value"
+                                :line-height="360"
+                                :code-style="{ width: '100%' }"
                                 :placeholder="item.placeholder"
-                                style="height: 360px"
                               />
                             </template>
                           </a-form-item>
@@ -275,6 +276,9 @@
 
   const route = useRoute()
   const formModel = ref({})
+  const PYTHON_CODE_TEMPLATE = `def func(self):
+  key = self.test_data.get_cache("key")
+  print(key)`
 
   // 节点类型定义
   const nodeTypes = [
@@ -317,6 +321,7 @@
 
   const saveFlow = () => {
     if (!checkNodeConnections()) return
+    if (!checkNodeConfigSaved()) return
     const value = {}
     value['id'] = pageData.record?.id || route.query.id
     value['parent_id'] = pageData.record?.id || route.query.id
@@ -432,6 +437,8 @@
       Message.error('请先选择用例执行的环境')
       return
     }
+    if (!checkNodeConnections()) return
+    if (!checkNodeConfigSaved()) return
     if (caseRunning.value) return
     caseRunning.value = true
     try {
@@ -505,6 +512,7 @@
       }
     }
     formFeedback()
+    fillDefaultPythonCode()
   }
 
   function changeStatus(event: number) {
@@ -547,6 +555,14 @@
       data.formItems.push(...formItemsElement4)
     } else if (event === 5) {
       data.formItems.push(...formItemsElementCode)
+    }
+  }
+
+  function fillDefaultPythonCode() {
+    if (data.type !== 5) return
+    const codeItem = data.formItems.find((item: any) => item.key === 'func')
+    if (codeItem && !codeItem.value) {
+      codeItem.value = PYTHON_CODE_TEMPLATE
     }
   }
 
@@ -663,6 +679,19 @@
       }
     }
 
+    return true
+  }
+
+  const checkNodeConfigSaved = (): boolean => {
+    const invalidNodes = flowData.value.nodes.filter((node) => !node.config?.id)
+    if (invalidNodes.length) {
+      const nodeNames = invalidNodes
+        .map((node) => node.label || node.id)
+        .filter(Boolean)
+        .join('、')
+      Message.warning(`存在未保存配置的节点：${nodeNames}，请先点击节点并保存配置后再操作！`)
+      return false
+    }
     return true
   }
 

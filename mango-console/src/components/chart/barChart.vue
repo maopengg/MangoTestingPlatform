@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-  import { ref, onMounted, watch } from 'vue'
+  import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
   import * as echarts from 'echarts'
-  import { graphic } from 'echarts/core'
 
   // 定义 props
   const props = defineProps<{
@@ -11,11 +10,25 @@
 
   const barChart = ref<HTMLElement | null>(null)
   let myChart: echarts.ECharts | null = null
+  const successTotal = computed(() => props.success.reduce((sum, item) => sum + Number(item || 0), 0))
+  const failTotal = computed(() => props.fail.reduce((sum, item) => sum + Number(item || 0), 0))
 
   // ECharts 配置
   const chartOptions: echarts.EChartsOption = {
     tooltip: {
       trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: '#e5e6eb',
+      textStyle: {
+        color: '#1d2129',
+      },
+    },
+    grid: {
+      top: 18,
+      left: 8,
+      right: 12,
+      bottom: 8,
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
@@ -31,23 +44,27 @@
       axisTick: {
         show: false,
       },
-    },
-    legend: {
-      data: ['成功', '失败'],
-      textStyle: {
-        color: 'var(--color-text-2)', // 与主页面一致的文本颜色
+      axisLabel: {
+        color: '#86909c',
       },
     },
     yAxis: {
       type: 'value',
-      splitLine: { show: false },
-      axisLine: {
+      splitLine: {
         show: true,
         lineStyle: {
-          color: '#98A3B2',
-          width: 0,
-          type: 'solid',
+          color: '#eef0f5',
+          type: 'dashed',
         },
+      },
+      axisLine: {
+        show: false,
+      },
+      axisTick: {
+        show: false,
+      },
+      axisLabel: {
+        color: '#86909c',
       },
     },
     series: [
@@ -55,32 +72,38 @@
         name: '成功',
         type: 'line',
         data: [], // 将在 updateChart 中动态设置
-        symbolSize: 0,
+        symbol: 'circle',
+        symbolSize: 6,
         smooth: true,
         lineStyle: {
-          width: 5,
-          shadowColor: '#999', // 设置折线阴影
-          shadowBlur: 10,
-          shadowOffsetY: 5,
+          width: 3,
+          color: '#22c55e',
+        },
+        areaStyle: {
+          opacity: 0.12,
+          color: '#22c55e',
         },
         itemStyle: {
-          color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#91cc75' }]), // 与主页面一致的绿色
+          color: '#22c55e',
         },
       },
       {
         name: '失败',
         type: 'line',
         data: [], // 将在 updateChart 中动态设置
-        symbolSize: 0,
+        symbol: 'circle',
+        symbolSize: 6,
         smooth: true,
         lineStyle: {
-          width: 5,
-          shadowColor: '#999', // 设置折线阴影
-          shadowBlur: 10,
-          shadowOffsetY: 5,
+          width: 3,
+          color: '#ef4444',
+        },
+        areaStyle: {
+          opacity: 0.1,
+          color: '#ef4444',
         },
         itemStyle: {
-          color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#d34141' }]), // 红色
+          color: '#ef4444',
         },
       },
     ],
@@ -127,8 +150,90 @@
   onMounted(() => {
     initBarChart()
   })
+
+  onBeforeUnmount(() => {
+    myChart?.dispose()
+  })
 </script>
 
 <template>
-  <div ref="barChart" :style="{ width: '100%', height: '250px' }"></div>
+  <div class="report-trend-chart">
+    <div class="trend-stat-row">
+      <div class="trend-stat success">
+        <span></span>
+        <div>
+          <strong>{{ successTotal }}</strong>
+          <p>成功</p>
+        </div>
+      </div>
+      <div class="trend-stat fail">
+        <span></span>
+        <div>
+          <strong>{{ failTotal }}</strong>
+          <p>失败</p>
+        </div>
+      </div>
+    </div>
+    <div ref="barChart" class="chart"></div>
+  </div>
 </template>
+
+<style lang="less" scoped>
+  .report-trend-chart {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .trend-stat-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 8px 4px 2px;
+  }
+
+  .trend-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-neutral-3);
+    border-radius: 8px;
+    background: var(--color-fill-1);
+
+    > span {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+    }
+
+    strong {
+      color: var(--color-text-1);
+      font-size: 18px;
+      line-height: 22px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--color-text-3);
+      font-size: 12px;
+      line-height: 17px;
+    }
+  }
+
+  .trend-stat.success > span {
+    background: #22c55e;
+  }
+
+  .trend-stat.fail > span {
+    background: #ef4444;
+  }
+
+  .chart {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+  }
+</style>

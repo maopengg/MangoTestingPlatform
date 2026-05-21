@@ -12,6 +12,10 @@
         type: String,
         default: '30vh',
       },
+      width: {
+        type: [String, Number],
+        default: undefined,
+      },
       showContinuousSubmit: {
         type: Boolean,
         default: false,
@@ -136,6 +140,7 @@
   <a-modal
     v-model:visible="showModal"
     :title="title"
+    :width="width"
     class="modal-dialog-wrapper"
     @keydown="handleKeyDown"
   >

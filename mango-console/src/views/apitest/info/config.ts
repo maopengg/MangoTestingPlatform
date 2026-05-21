@@ -226,6 +226,7 @@ export const tableColumns = useTableColumn([
     key: 'project_product',
     dataIndex: 'project_product',
     align: 'left',
+    width: 150,
     ellipsis: true,
     tooltip: true,
   },
@@ -234,7 +235,9 @@ export const tableColumns = useTableColumn([
     key: 'module',
     dataIndex: 'module',
     align: 'left',
-    width: 180,
+    width: 150,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '接口名称',
@@ -246,18 +249,18 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '端类型',
-    key: 'client',
-    dataIndex: 'client',
-    width: 80,
-  },
-  {
     title: 'url',
     key: 'url',
     dataIndex: 'url',
     align: 'left',
     ellipsis: true,
     tooltip: true,
+  },
+  {
+    title: '端类型',
+    key: 'client',
+    dataIndex: 'client',
+    width: 80,
   },
   {
     title: '方法',

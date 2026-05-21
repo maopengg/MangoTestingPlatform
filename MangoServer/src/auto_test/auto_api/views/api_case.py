@@ -83,7 +83,7 @@ class ApiCaseCRUD(ModelCRUD):
     serializer_class = ApiCaseSerializersC
     serializer = ApiCaseSerializers
 
-    @error_response('system')
+    @error_response('api')
     def get(self, request: Request):
         query_dict = {}
         scenario_tags = request.query_params.getlist('scenario_tags[]')

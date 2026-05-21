@@ -1,6 +1,6 @@
 <template>
   <div class="chart-item-container">
-    <div ref="hotProdChart" class="chart-item"></div>
+    <div ref="hotProdChart" class="chart-item" :style="{ height: `${chartHeight}px` }"></div>
   </div>
 </template>
 <script lang="ts">
@@ -14,6 +14,7 @@
     setup() {
       const loading = ref(true)
       const hotProdChart = ref<HTMLDivElement | null>(null)
+      const chartHeight = ref(220)
       let interval: any = null
       let data: any = reactive([])
 
@@ -21,6 +22,7 @@
         getSystemActivityLevel()
           .then((res) => {
             data = res.data
+            chartHeight.value = Math.max(220, ((data.name || []).length || 0) * 28 + 44)
             init()
           })
           .catch(console.log)
@@ -109,6 +111,7 @@
       return {
         loading,
         hotProdChart,
+        chartHeight,
         updateChart,
       }
     },
@@ -117,10 +120,23 @@
 
 <style lang="less" scoped>
   .chart-item-container {
+    flex: 1;
     width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 6px;
+      background: var(--color-neutral-4);
+    }
 
     .chart-item {
-      height: 100%;
+      min-height: 100%;
     }
   }
 </style>

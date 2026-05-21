@@ -1,7 +1,74 @@
-export interface DataFactoryGeneratorConfig {
-  value?: string | number | boolean | null
-  [key: string]: any
+export interface DataFactorySkipGeneratorConfig {
+  reason?: string | null
 }
+
+export interface DataFactoryFixedGeneratorConfig {
+  value?: string | number | boolean | null
+}
+
+export interface DataFactoryRandomStringGeneratorConfig {
+  prefix?: string
+  length?: number
+}
+
+export interface DataFactoryRandomNumberGeneratorConfig {
+  min?: number
+  max?: number
+}
+
+export interface DataFactoryRandomDecimalGeneratorConfig extends DataFactoryRandomNumberGeneratorConfig {
+  precision?: number
+}
+
+export interface DataFactoryRelativeTimeGeneratorConfig {
+  days?: number
+  hours?: number
+  minutes?: number
+}
+
+export interface DataFactoryUuidGeneratorConfig {
+  dash?: boolean
+}
+
+export interface DataFactoryEnumOption {
+  label?: string | number | boolean | null
+  value: any
+}
+
+export interface DataFactoryEnumGeneratorConfig {
+  values?: any[]
+  options?: DataFactoryEnumOption[]
+  mode?: 'fixed' | 'random'
+  value?: any
+}
+
+export interface DataFactoryEntityDependencyGeneratorConfig {
+  dependency_entity_id: number
+  field: string
+}
+
+export interface DataFactoryOverrideDependencyGeneratorConfig
+  extends DataFactoryEntityDependencyGeneratorConfig {
+  template_id?: number | null
+  strategy?: 'reuse_or_create' | 'must_exist' | 'create_always'
+}
+
+export interface DataFactoryFunctionGeneratorConfig {
+  value: string
+}
+
+export type DataFactoryGeneratorConfig =
+  | DataFactorySkipGeneratorConfig
+  | DataFactoryFixedGeneratorConfig
+  | DataFactoryRandomStringGeneratorConfig
+  | DataFactoryRandomNumberGeneratorConfig
+  | DataFactoryRandomDecimalGeneratorConfig
+  | DataFactoryRelativeTimeGeneratorConfig
+  | DataFactoryUuidGeneratorConfig
+  | DataFactoryEnumGeneratorConfig
+  | DataFactoryEntityDependencyGeneratorConfig
+  | DataFactoryOverrideDependencyGeneratorConfig
+  | DataFactoryFunctionGeneratorConfig
 
 export interface DataFactoryFieldOverrideRule {
   generator_type: number

@@ -28,11 +28,18 @@ from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateCR
 from src.auto_test.auto_system.models import Database, ProductModule
 from src.enums.data_factory_enum import (
     DataFactoryCaseSourceTypeEnum,
+    DataFactoryCleanupStatusEnum,
     DataFactoryCleanupStrategyEnum,
     DataFactoryExecutionSourceEnum,
 )
 from src.enums.tools_enum import StatusEnum
-from src.mcp_server.common import current_user, fail, ok
+from src.mcp_server.common import (
+    create_dangerous_action_preview,
+    current_user,
+    fail,
+    ok,
+    validate_dangerous_action_confirmation,
+)
 
 
 def _selected_test_env(user_id: int | None = None, test_env: int | None = None) -> int | None:
@@ -116,6 +123,7 @@ def _template_summary(item: DataFactoryTemplate, name: str | None = None) -> dic
         "field_overrides": item.field_overrides,
         "output_config": item.output_config,
         "cleanup_strategy": item.cleanup_strategy,
+        "is_default": item.is_default,
         "status": item.status,
         "cache_prefix": _template_cache_prefix(item, name),
         "cache_keys": _cache_keys_for_template(item, name),
@@ -490,7 +498,11 @@ def register_data_factory_tools(mcp):
 
     @mcp.tool()
     def batch_save_data_factory_fields(entity_id: int, fields: list[dict], replace: bool = False) -> dict:
-        """批量保存数据工厂字段规则。"""
+        """批量保存数据工厂字段规则。
+
+        字符串类字段优先使用 generator_type=13 测试数据方法生成，
+        可先调用 list_test_data_methods 查询可用方法和表达式示例。
+        """
         entity = DataFactoryEntity.objects.get(id=entity_id)
         with transaction.atomic():
             saved = DataFactoryFieldViews.save_schema_fields(entity, fields, replace)
@@ -498,7 +510,11 @@ def register_data_factory_tools(mcp):
 
     @mcp.tool()
     def preview_data_factory_field_values(fields: list[dict], context: dict | None = None) -> dict:
-        """预览字段规则生成值，不落库。"""
+        """预览字段规则生成值，不落库。
+
+        generator_type=13 的 generator_config.value 支持 ${{方法名(...)}} 表达式；
+        可用方法通过 list_test_data_methods 查询，也可用 evaluate_test_data_expression 试算。
+        """
         class _Request:
             data = {"fields": fields, "context": context or {}}
 
@@ -552,9 +568,14 @@ def register_data_factory_tools(mcp):
         field_overrides: dict | None = None,
         output_config: list | None = None,
         cleanup_strategy: int = DataFactoryCleanupStrategyEnum.MANUAL.value,
+        is_default: bool = False,
         status: int = StatusEnum.SUCCESS.value,
     ) -> dict:
-        """创建数据工厂状态模板。"""
+        """创建数据工厂状态模板。
+
+        is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
+        字符串类字段覆盖优先使用 generator_type=13 测试数据方法；调用 list_test_data_methods 获取可用类型。
+        """
         data = DataFactoryTemplateCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -565,6 +586,7 @@ def register_data_factory_tools(mcp):
                 "field_overrides": field_overrides or {},
                 "output_config": _normalize_output_config(output_config),
                 "cleanup_strategy": cleanup_strategy,
+                "is_default": is_default,
                 "status": status,
             }
         )
@@ -582,9 +604,14 @@ def register_data_factory_tools(mcp):
         field_overrides: dict | None = None,
         output_config: list | None = None,
         cleanup_strategy: int | None = None,
+        is_default: bool | None = None,
         status: int | None = None,
     ) -> dict:
-        """更新数据工厂状态模板。"""
+        """更新数据工厂状态模板。
+
+        is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
+        字符串类字段覆盖优先使用 generator_type=13 测试数据方法；调用 list_test_data_methods 获取可用类型。
+        """
         payload: dict[str, Any] = {"id": template_id}
         for key, value in {
             "project_product": project_product_id,
@@ -595,6 +622,7 @@ def register_data_factory_tools(mcp):
             "field_overrides": field_overrides,
             "output_config": _normalize_output_config(output_config) if output_config is not None else None,
             "cleanup_strategy": cleanup_strategy,
+            "is_default": is_default,
             "status": status,
         }.items():
             if value is not None:
@@ -837,10 +865,58 @@ def register_data_factory_tools(mcp):
         return ok({"execution_id": execution.id, "execution_no": execution.execution_no, "context": execution.context})
 
     @mcp.tool()
-    def cleanup_data_factory_execution(execution_id: int, confirm: bool = False) -> dict:
-        """清理某次数据工厂执行记录创建的数据。confirm 必须为 true。"""
-        if not confirm:
-            return fail("清理数据属于高风险操作，请传 confirm=true 后再执行", "DATA_FACTORY_CLEANUP_NOT_CONFIRMED")
+    def preview_cleanup_data_factory_execution_impact(execution_id: int) -> dict:
+        """预览清理某次数据工厂执行记录创建数据的影响，并生成二次确认 token。"""
+        detail = _execution_detail(execution_id)
+        items = detail["items"]
+        pending_items = [
+            item
+            for item in items
+            if item.get("cleanup_status") != DataFactoryCleanupStatusEnum.SUCCESS.value
+        ]
+        impact = {
+            "execution": detail["execution"],
+            "will_cleanup_item_count": len(pending_items),
+            "total_item_count": len(items),
+            "items": [
+                {
+                    "id": item.get("id"),
+                    "template_id": item.get("template_id"),
+                    "template_name": item.get("template_name"),
+                    "database_id": item.get("database_id"),
+                    "database_name": item.get("database_name"),
+                    "alias": item.get("alias"),
+                    "primary_value": item.get("primary_value"),
+                    "cleanup_strategy": item.get("cleanup_strategy"),
+                    "cleanup_order": item.get("cleanup_order"),
+                    "cleanup_status": item.get("cleanup_status"),
+                }
+                for item in pending_items
+            ],
+            "risk": "清理会按执行明细记录的数据库、表、主键删除真实测试数据；部分明细可能因策略为不清理而跳过。",
+        }
+        execution_no = detail["execution"].get("execution_no")
+        confirm_text = f"CLEANUP_DATA_FACTORY_EXECUTION:{execution_id}:{execution_no}"
+        return ok(
+            create_dangerous_action_preview("cleanup_data_factory_execution", execution_id, confirm_text, impact),
+            "已生成数据工厂清理影响预览",
+        )
+
+    @mcp.tool()
+    def cleanup_data_factory_execution(
+        execution_id: int,
+        preview_token: str | None = None,
+        confirm_text: str | None = None,
+    ) -> dict:
+        """清理某次数据工厂执行记录创建的数据。必须先调用 preview_cleanup_data_factory_execution_impact。"""
+        confirm_error = validate_dangerous_action_confirmation(
+            "cleanup_data_factory_execution",
+            execution_id,
+            preview_token,
+            confirm_text,
+        )
+        if confirm_error:
+            return confirm_error
         result = DataFactoryCleanup.cleanup_execution(execution_id)
         return ok(result, result.get("message") or "数据工厂执行记录清理完成")
 
@@ -866,11 +942,85 @@ def register_data_factory_tools(mcp):
                 "case_source_type": {1: "API用例", 2: "UI用例", 3: "API接口场景"},
                 "execution_source": {1: "模板调试", 2: "手动执行", 3: "系统调用", 4: "API用例", 5: "API接口场景"},
                 "cache_variable_pattern": "${{配置名.字段名}}",
+                "generator_config_rule": {
+                    "priority": [
+                        "字符串/文本/名称/编号/邮箱/手机号/地址等字符串类字段，优先使用 generator_type=13 测试数据方法。",
+                        "测试数据方法不合适时，再使用 generator_type=2 随机字符串或 generator_type=1 固定值。",
+                        "数值、时间、枚举、依赖字段按字段语义分别使用整数/小数/时间/枚举/依赖实体字段。",
+                    ],
+                    "string_field_recommendation": {
+                        "generator_type": 13,
+                        "generator_config": {"value": "${{测试数据方法(...)}}"},
+                        "how_to_discover_methods": "调用 MCP 工具 list_test_data_methods(keyword=None, include_hidden=False) 获取测试数据方法类型、分组、参数、expression_template 和 example。",
+                        "how_to_preview_expression": "调用 MCP 工具 evaluate_test_data_expression(expression='${{方法名(...)}}') 试算表达式。",
+                        "method_result_cast": "生成值会按字段 platform_type 转换后保存；字符串字段通常直接保存表达式计算结果。",
+                    },
+                    "test_data_method_tool": {
+                        "tool": "list_test_data_methods",
+                        "purpose": "查询随机测试数据/平台变量方法。只返回测试数据分类下的方法。",
+                        "arguments": {
+                            "keyword": "可选，用字段含义筛选，例如 email、phone、name、address、id",
+                            "include_hidden": "默认 false，不返回内部隐藏方法",
+                        },
+                        "returns": {
+                            "items": "按 type_group -> class_group -> method 分组",
+                            "method.expression_template": "参数名模板，例如 ${{character_email()}}",
+                            "method.example": "带示例参数的可直接试算表达式",
+                            "method.parameter": "方法参数定义",
+                        },
+                    },
+                    "common_generator_config": {
+                        0: "跳过，无 generator_config 要求",
+                        1: {"value": "固定值"},
+                        2: {"prefix": "可选前缀", "length": "随机字符串长度，默认 8"},
+                        3: {"min": "最小整数，默认 1", "max": "最大整数，默认 100"},
+                        4: {"min": "最小小数，默认 1", "max": "最大小数，默认 100", "precision": "小数位，默认 2"},
+                        5: "当前时间，无 generator_config 要求",
+                        6: {"days": "相对天数", "hours": "相对小时", "minutes": "相对分钟"},
+                        7: {"dash": "是否保留 UUID 横线，默认 false"},
+                        9: {"values": "枚举数组", "mode": "random 时随机，否则取 value 或第一个枚举", "value": "可选指定枚举值"},
+                        11: {"dependency_entity_id": "依赖实体ID", "field": "取值字段，通常为 id"},
+                        13: {"value": "测试数据方法表达式，例如 ${{character_email()}}"},
+                    },
+                    "string_examples": {
+                        "email": {"generator_type": 13, "generator_config": {"value": "${{character_email()}}"}},
+                        "phone": {"generator_type": 13, "generator_config": {"value": "${{character_phone()}}"}},
+                        "name": {"generator_type": 13, "generator_config": {"value": "${{character_male_name()}}"}},
+                        "address": {"generator_type": 13, "generator_config": {"value": "${{character_address()}}"}},
+                        "fallback_random_code": {"generator_type": 13, "generator_config": {"value": "AUTO${{str_lowercase(10)}}"}},
+                    },
+                },
+                "dependency_field_rule": {
+                    "entity_field_config": {
+                        "generator_type": 11,
+                        "generator_config": {
+                            "dependency_entity_id": "依赖实体ID",
+                            "field": "取值字段，通常为 id",
+                        },
+                    },
+                    "template_or_case_override": {
+                        "generator_type": 11,
+                        "generator_config": {
+                            "dependency_entity_id": "继承工厂实体字段规则中的依赖实体ID",
+                            "field": "继承工厂实体字段规则中的取值字段",
+                            "template_id": "可选；指定依赖实体下的状态模板。不传时使用依赖实体的默认启用模板。",
+                            "strategy": "reuse_or_create",
+                        },
+                    },
+                    "default_template": "状态模板 is_default=True 时为该实体默认模板；同一实体只保留一个默认模板。",
+                },
                 "examples": {
                     "field_overrides": {
                         "category_name": {
                             "generator_type": 13,
-                            "generator_config": {"value": "AUTO${{str_random_string()}}"},
+                            "generator_config": {"value": "AUTO${{str_lowercase(10)}}"},
+                        },
+                        "category_id": {
+                            "generator_type": 11,
+                            "generator_config": {
+                                "dependency_entity_id": 12,
+                                "field": "id",
+                            },
                         }
                     },
                     "case_body": {

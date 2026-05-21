@@ -11,7 +11,6 @@ import jsonschema
 import requests
 import time
 from jsonschema import validate
-from src.tools.obtain_assertion import ObtainAssertion
 from mangotools.exceptions import MangoToolsError
 
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
@@ -19,6 +18,7 @@ from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.tools import project_dir
+from src.tools.obtain_assertion import ObtainAssertion
 from ...models import ApiCaseDetailedParameter, ApiHeaders, ApiInfo
 
 

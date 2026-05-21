@@ -50,6 +50,8 @@ urlpatterns = [
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
+    path("assertion/list", SystemViews.as_view({'get': 'assertion_list'})),
+    path("assertion/test", SystemViews.as_view({'post': 'assertion_test'})),
     path("enum", SystemViews.as_view({'get': 'enum_api'})),
     path("enum/share", SystemShareViews.as_view({'get': 'enum_api'})),
     path("set/debug/log", SystemViews.as_view({'post': 'set_debug_log'})),

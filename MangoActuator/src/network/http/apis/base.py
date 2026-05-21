@@ -17,17 +17,30 @@ class BaseHttpClient:
             base_url: str = "",
             headers: dict | None = None,
             timeout: int = 15,
+            proxy: str | None = None,
             logger=None
     ):
 
         self.base_url = base_url
         self.log = logger
+        self.proxy = self._normalize_proxy(proxy)
 
         self.client = httpx.AsyncClient(
             base_url=base_url,
             headers=headers or {},
-            timeout=httpx.Timeout(timeout)
+            timeout=httpx.Timeout(timeout),
+            proxy=self.proxy,
+            trust_env=False
         )
+
+    @staticmethod
+    def _normalize_proxy(proxy: str | None) -> str | None:
+        if proxy is None:
+            return None
+        proxy = str(proxy).strip()
+        if not proxy or proxy == 'None':
+            return None
+        return proxy
 
     def _log(self, msg):
 
@@ -119,7 +132,9 @@ class BaseHttpClient:
         self._log(f"[HTTP RAW] {method} {url} params={params} json={json}")
         try:
             async with httpx.AsyncClient(
-                    timeout=httpx.Timeout(timeout or self.client.timeout.read or 15)
+                    timeout=httpx.Timeout(timeout or self.client.timeout.read or 15),
+                    proxy=self.proxy,
+                    trust_env=False
             ) as raw:
                 r = await raw.request(
                     method=method,

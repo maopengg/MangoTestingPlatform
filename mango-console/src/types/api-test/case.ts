@@ -9,9 +9,14 @@ export interface ApiKeyValueItem {
   value: string
 }
 
+export interface ApiParametrizeItem {
+  key: string
+  value: string | null
+}
+
 export interface ApiParametrizeSuite {
   name: string
-  parametrize: ApiKeyValueItem[]
+  parametrize: ApiParametrizeItem[]
 }
 
 export interface ApiCasePayload {

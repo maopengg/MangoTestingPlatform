@@ -35,6 +35,13 @@ class LoginWindow(QWidget):
         self.horizontalLayout_5.addLayout(self.verticalLayout_3)
         self.layout.addLayout(self.horizontalLayout_5)
 
+        self.proxyLayout = MangoVBoxLayout()
+        self.proxy_label = MangoLabel('代理', self)
+        self.proxyLayout.addWidget(self.proxy_label)
+        self.proxy_edit = MangoLineEdit("可选，如：http://127.0.0.1:7890；留空则禁用代理", "", )
+        self.proxyLayout.addWidget(self.proxy_edit)
+        self.layout.addLayout(self.proxyLayout)
+
         self.horizontalLayout = MangoHBoxLayout()
         self.label_3 = MangoLabel('账号', self)
         self.horizontalLayout.addWidget(self.label_3)

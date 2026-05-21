@@ -75,13 +75,18 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/headers/index",
-                    "menuName": "请求头管理",
+                    "menuUrl": "/apitest/public/index",
+                    "menuName": "全局变量",
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/public/index",
-                    "menuName": "全局变量",
+                    "menuUrl": "/apitest/auth-config/index",
+                    "menuName": "授权管理",
+                },
+                {
+                    "parentPath": "/apitest",
+                    "menuUrl": "/apitest/headers/index",
+                    "menuName": "请求头管理",
                 },
             ],
         },
@@ -282,12 +287,12 @@ def ad_routes():
                 {
                     "parentPath": "/help",
                     "menuUrl": "/help/variable/index",
-                    "menuName": "随机数据",
+                    "menuName": "测试数据方法",
                 },
                 {
                     "parentPath": "/help",
                     "menuUrl": "/help/assertion/index",
-                    "menuName": "断言方法",
+                    "menuName": "用例断言方法",
                 },
                 {
                     "parentPath": "/help",

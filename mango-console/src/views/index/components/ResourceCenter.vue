@@ -1,5 +1,5 @@
 <template>
-  <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px">
+  <div class="resource-grid">
     <a-card class="resource-card" hoverable>
       <div class="resource-item" @click="handleDownloadExecutor">
         <icon-download class="resource-icon" />
@@ -65,29 +65,40 @@
 </script>
 
 <style lang="less" scoped>
-  // 资源中心卡片样式
+  .resource-grid {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 8px;
+  }
+
   .resource-card {
     border: 1px solid var(--color-neutral-3);
     border-radius: 8px;
-    transition: all 0.3s ease;
     cursor: pointer;
-    height: 50px;
+    min-height: 0;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
 
-    // 移除悬浮效果
     &:hover {
       border-color: rgb(var(--primary-6));
-      // 移除阴影和位移效果
+      background: var(--color-fill-1);
     }
 
     :deep(.arco-card-body) {
+      height: 100%;
       padding: 8px;
     }
   }
 
   .resource-item {
     display: flex;
+    height: 100%;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   .resource-icon {
@@ -96,18 +107,25 @@
   }
 
   .resource-info {
+    min-width: 0;
     flex: 1;
   }
 
   .resource-title {
+    overflow: hidden;
     font-size: 12px;
     font-weight: 500;
     color: var(--color-text-1);
     margin-bottom: 0px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .resource-desc {
+    overflow: hidden;
     font-size: 10px;
     color: var(--color-text-3);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

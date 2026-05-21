@@ -1,11 +1,32 @@
 <template>
   <div class="chart-item-container">
-    <div ref="chartRef" class="chart-item"></div>
+    <div class="donut-wrap">
+      <div ref="chartRef" class="chart-item"></div>
+      <div class="donut-total">
+        <span>总数</span>
+        <strong>{{ total }}</strong>
+      </div>
+    </div>
+    <div class="legend-list">
+      <div v-for="(item, index) in normalizedData" :key="item.name" class="legend-item">
+        <span class="legend-dot" :style="{ backgroundColor: palette[index % palette.length] }"></span>
+        <div class="legend-main">
+          <span class="legend-name">{{ item.name }}</span>
+          <div class="legend-bar">
+            <span :style="{ width: `${item.percent}%`, backgroundColor: palette[index % palette.length] }"></span>
+          </div>
+        </div>
+        <div class="legend-value">
+          <strong>{{ item.percentText }}</strong>
+          <span>{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+  import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
   import { dispose } from 'echarts/core'
   import useEcharts from '@/hooks/useEcharts'
 
@@ -18,64 +39,45 @@
   })
 
   const chartRef = ref<HTMLDivElement | null>(null)
+  const palette = ['#5b7cfa', '#7bcf65', '#f6c143', '#38bdf8', '#a78bfa', '#fb7185']
+
+  const total = computed(() =>
+    props.chartData.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0)
+  )
+
+  const normalizedData = computed(() =>
+    props.chartData.map((item: any) => {
+      const value = Number(item.value || 0)
+      const percent = total.value ? (value / total.value) * 100 : 0
+      return {
+        ...item,
+        value,
+        percent,
+        percentText: `${percent.toFixed(2)}%`,
+      }
+    })
+  )
 
   const initChart = () => {
     if (!chartRef.value) return
 
     const option = {
-      legend: {
-        right: '10%',
-        y: 'center',
-        icon: 'circle',
-        orient: 'vertical',
-        formatter: function (name: string) {
-          let total = 0
-          let target = 0
-          for (let i = 0; i < props.chartData.length; i++) {
-            total += props.chartData[i].value
-            if (props.chartData[i].name === name) {
-              target = props.chartData[i].value
-            }
-          }
-          const arr = [
-            '{a|' + name + '}',
-            '{b|' +
-              ((target / total) * 100).toFixed(2) +
-              '%' +
-              '}' +
-              '{a|' +
-              '  |  ' +
-              '}' +
-              '{b|' +
-              target +
-              '}',
-          ]
-          return arr.join('  ')
-        },
-        textStyle: {
-          rich: {
-            a: {
-              fontSize: 12,
-              color: 'var(--color-text-2)',
-            },
-            b: {
-              fontSize: 12,
-              color: 'rgb(var(--primary-1))',
-              fontWeight: 'bold',
-            },
-          },
-        },
+      color: palette,
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}<br />{d}% | {c}',
       },
       series: [
         {
           name: '访问来源',
           type: 'pie',
-          center: ['30%', '50%'],
-          radius: ['50%', '70%'],
+          center: ['50%', '50%'],
+          radius: ['56%', '76%'],
           avoidLabelOverlap: false,
           itemStyle: {
             borderColor: '#fff',
-            borderWidth: 2,
+            borderWidth: 4,
+            borderRadius: 6,
           },
           emphasis: {
             label: {
@@ -91,7 +93,7 @@
           labelLine: {
             show: false,
           },
-          data: props.chartData,
+          data: normalizedData.value,
         },
       ],
     }
@@ -127,10 +129,127 @@
 
 <style lang="less" scoped>
   .chart-item-container {
+    display: grid;
+    height: 100%;
     width: 100%;
+    min-height: 0;
+    grid-template-columns: 44% minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+  }
+
+  .donut-wrap {
+    position: relative;
+    height: 100%;
+    min-height: 0;
 
     .chart-item {
       height: 100%;
+    }
+  }
+
+  .donut-total {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    width: 78px;
+    height: 78px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+
+    span {
+      color: var(--color-text-3);
+      font-size: 11px;
+      line-height: 16px;
+    }
+
+    strong {
+      max-width: 76px;
+      overflow: hidden;
+      color: var(--color-text-1);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 24px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .legend-list {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .legend-item {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 10px minmax(0, 1fr) 74px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .legend-main {
+    min-width: 0;
+  }
+
+  .legend-name {
+    display: block;
+    overflow: hidden;
+    color: var(--color-text-2);
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .legend-bar {
+    height: 4px;
+    margin-top: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-fill-2);
+
+    span {
+      display: block;
+      height: 100%;
+      min-width: 2px;
+      border-radius: inherit;
+    }
+  }
+
+  .legend-value {
+    text-align: right;
+
+    strong,
+    span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    strong {
+      color: rgb(var(--primary-6));
+      font-size: 12px;
+      line-height: 17px;
+    }
+
+    span {
+      color: var(--color-text-3);
+      font-size: 11px;
+      line-height: 16px;
     }
   }
 </style>

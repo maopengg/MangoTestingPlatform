@@ -5,10 +5,8 @@
 # @Author : 毛鹏
 import re
 
-from mangotools.data_processor import ObtainRandomData
+from mangotools.decorator import get_data_method_info
 from mangotools.enums import NoticeEnum
-from mangotools.method import class_methods, class_own_methods
-from mangotools.models import ClassMethodModel
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
@@ -23,11 +21,21 @@ from src.enums.tools_enum import *
 from src.enums.ui_enum import *
 from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
+from src.tools.obtain_assertion import ObtainAssertion, func_info as assertion_func_info
 from src.tools.obtain_test_data import ObtainTestData
 from src.tools.view import *
 
 
 class SystemViews(ViewSet):
+    @staticmethod
+    def _find_assertion_method(method_name: str):
+        for type_group in assertion_func_info:
+            for class_group in type_group.get('children') or []:
+                for method in class_group.get('children') or []:
+                    if method.get('value') == method_name:
+                        return method
+        return None
+
     @action(methods=['get'], detail=False)
     @error_response('system')
     def enum_api(self, request: Request):
@@ -35,6 +43,9 @@ class SystemViews(ViewSet):
             'cline_type': ClientTypeEnum.get_option(),
             'method': MethodEnum.get_option(),
             'api_public_type': ApiPublicTypeEnum.get_option(),
+            'api_auth_type': ApiAuthTypeEnum.get_option(),
+            'api_auth_refresh_mode': ApiAuthRefreshModeEnum.get_option(),
+            'api_auth_refresh_status': ApiAuthRefreshStatusEnum.get_option(),
             'api_client': ApiClientEnum.get_option(),
             'notice': NoticeEnum.get_option(),
             'status': StatusEnum.get_option(),
@@ -76,19 +87,7 @@ class SystemViews(ViewSet):
         @param request:
         @return:
         """
-        list_ = []
-        for i in class_own_methods(ObtainTestData):
-            if i.label:
-                i.label += '()'
-            list_.append(i.model_dump())
-        list1 = [ClassMethodModel(
-            value=ObtainTestData.__name__,
-            label=ObtainTestData.__doc__,
-            children=list_,
-        ).model_dump()]
-        list2 = [i.model_dump() for i in class_methods(ObtainRandomData)]
-        combined_list = list1 + list2
-        return ResponseData.success(RESPONSE_MSG_0061, combined_list)
+        return ResponseData.success(RESPONSE_MSG_0061, get_data_method_info())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
@@ -107,6 +106,39 @@ class SystemViews(ViewSet):
             except MangoServerError as error:
                 return ResponseData.fail((error.code, error.msg), )
         return ResponseData.fail(RESPONSE_MSG_0060)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def assertion_list(self, request: Request):
+        """
+        返回断言方法页
+        @param request:
+        @return:
+        """
+        return ResponseData.success((200, '获取断言方法成功'), assertion_func_info)
+
+    @action(methods=['post'], detail=False)
+    @error_response('system')
+    def assertion_test(self, request: Request):
+        method = (request.data.get('method') or '').strip()
+        if not method:
+            return ResponseData.fail((300, '请先选择断言方法'))
+        if not self._find_assertion_method(method):
+            return ResponseData.fail(RESPONSE_MSG_0060)
+
+        actual = request.data.get('actual')
+        expect = request.data.get('expect')
+        try:
+            message = ObtainAssertion().ass(method=method, actual=actual, expect=expect)
+            return ResponseData.success((200, '断言执行完成'), {
+                'status': True,
+                'message': message or '断言通过',
+            })
+        except Exception as error:
+            return ResponseData.success((200, '断言执行完成'), {
+                'status': False,
+                'message': str(error),
+            })
 
     @action(methods=['post'], detail=False)
     @error_response('system')

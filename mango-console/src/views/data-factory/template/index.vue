@@ -126,6 +126,11 @@
                 {{ enumTitle(enumStore.data_factory_cleanup_strategy, record.cleanup_strategy) }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'is_default'" #cell="{ record }">
+              <a-tag :color="record.is_default ? 'green' : 'gray'" size="small">
+                {{ record.is_default ? '默认' : '普通' }}
+              </a-tag>
+            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
                 :beforeChange="(newValue) => switchTemplateStatus(newValue, record.id)"
@@ -248,6 +253,11 @@
           /></a-form-item>
         </a-grid-item>
         <a-grid-item>
+          <a-form-item label="默认模板">
+            <a-switch v-model="templateForm.is_default" />
+          </a-form-item>
+        </a-grid-item>
+        <a-grid-item>
           <a-form-item label="描述"
             ><a-textarea v-model="templateForm.description" :auto-size="{ minRows: 1, maxRows: 4 }"
           /></a-form-item>
@@ -283,6 +293,8 @@
           v-model:field-overrides="fieldConfigForm.field_overrides"
           v-model:output-config="fieldConfigForm.output_config"
           :generator-options="enumStore.data_factory_generator_type"
+          :dependency-template-options="dependencyTemplateOptions"
+          :load-dependency-template-options="loadDependencyTemplateOptions"
         />
       </a-spin>
     </a-space>
@@ -433,6 +445,7 @@
   const userStore = useUserStore()
   const enumFieldNames = { value: 'key', label: 'title' }
   const entityOptions = ref<any[]>([])
+  const dependencyTemplateOptions = ref<Record<string, any[]>>({})
   const templateVisible = ref(false)
   const debugVisible = ref(false)
   const previewVisible = ref(false)
@@ -522,6 +535,7 @@
       field_overrides: (record?.field_overrides || {}) as DataFactoryFieldOverrides,
       output_config: (record?.output_config || []) as DataFactoryOutputConfig,
       cleanup_strategy: record?.cleanup_strategy || 2,
+      is_default: record?.is_default || false,
       status: record?.status || 1,
     })
     resettingTemplateForm.value = false
@@ -600,10 +614,43 @@
     return getDataFactoryField({ entity: entityId })
       .then((res) => {
         fieldOverrideRows.value = res.data || []
+        preloadDependencyTemplateOptions()
       })
       .finally(() => {
         fieldOverrideLoading.value = false
       })
+  }
+
+  function loadDependencyTemplateOptions(row: DataFactoryFieldRule) {
+    const dependencyEntityId = row.generator_config?.dependency_entity_id
+    const projectProduct = getOptionId(fieldConfigForm.project_product || templateForm.project_product)
+    if (!dependencyEntityId || !projectProduct) {
+      return
+    }
+    const cacheKey = String(dependencyEntityId)
+    if (dependencyTemplateOptions.value[cacheKey]) {
+      return
+    }
+    getDataFactoryTemplate({
+      project_product: projectProduct,
+      entity: dependencyEntityId,
+      page: 1,
+      pageSize: 9999,
+    }).then((res) => {
+      dependencyTemplateOptions.value = {
+        ...dependencyTemplateOptions.value,
+        [cacheKey]: (res.data || []).map((template: any) => ({
+          label: template.name,
+          value: template.id,
+        })),
+      }
+    })
+  }
+
+  function preloadDependencyTemplateOptions() {
+    fieldOverrideRows.value
+      .filter((row: any) => row.generator_config?.dependency_entity_id)
+      .forEach((row) => loadDependencyTemplateOptions(row))
   }
 
   function openTemplate(record?: any) {

@@ -157,6 +157,7 @@ export const apiColumns: any = reactive([
     dataIndex: 'error_message',
     key: 'error_message',
     align: 'left',
+    width: 360,
     ellipsis: true,
     tooltip: true,
   },

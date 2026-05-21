@@ -391,11 +391,13 @@ def register_api_automation_tools(mcp):
         page: int = 1,
         page_size: int = 50,
     ) -> dict:
-        """查询 API 全局变量。type: 0=自定义, 1=SQL, 2=登录。"""
+        """查询 API 全局变量。type: 0=自定义, 1=SQL。"""
         queryset = ApiPublic.objects.select_related("project_product").filter(project_product_id=project_product_id)
         if enabled_only:
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
         if type is not None:
+            if type not in ApiPublicTypeEnum.get_key_list():
+                return fail("API 全局变量类型只支持 0=自定义、1=SQL。", "API_PUBLIC_TYPE_INVALID")
             queryset = queryset.filter(type=type)
         if test_env_id is not None:
             queryset = queryset.filter(test_env=test_env_id)
@@ -433,7 +435,9 @@ def register_api_automation_tools(mcp):
         value: str,
         status: int = 0,
     ) -> dict:
-        """创建 API 全局变量。test_env_id 必填；创建前可调用 list_test_environments 查询可用环境。type: 0=自定义, 1=SQL, 2=登录。"""
+        """创建 API 全局变量。test_env_id 必填；创建前可调用 list_test_environments 查询可用环境。type: 0=自定义, 1=SQL。"""
+        if type not in ApiPublicTypeEnum.get_key_list():
+            return fail("API 全局变量类型只支持 0=自定义、1=SQL。", "API_PUBLIC_TYPE_INVALID")
         data = ApiPublicCRUD.inside_post(
             {
                 "project_product": project_product_id,

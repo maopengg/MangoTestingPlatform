@@ -42,7 +42,7 @@ export const datasourceAliasColumns = useTableColumn([
     key: 'project_product',
     dataIndex: 'project_product',
     align: 'left',
-    width: 180,
+    width: 150,
     ellipsis: true,
     tooltip: true,
   },

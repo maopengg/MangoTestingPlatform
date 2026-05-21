@@ -65,7 +65,7 @@ class TestCase:
                     raise UiError(*ERROR_MSG_0026)
             for i in case.parametrize:
                 for e in i.get('parametrize'):
-                    if not e.get('key') or not e.get('value'):
+                    if not e.get('key'):
                         raise UiError(*ERROR_MSG_0032)
             case_model = CaseModel(
                 send_user=send_case_user if send_case_user else self.send_user,
@@ -146,6 +146,7 @@ class TestCase:
         page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id)
         if not page_steps_element:
             raise UiError(*ERROR_MSG_0041)
+        self.__validate_flow_data(page_steps.flow_data)
         page_steps.status = TaskEnum.PROCEED.value
         page_steps.save()
         page_steps_model = PageStepsModel(
@@ -173,6 +174,19 @@ class TestCase:
                 raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
         page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model
+
+    @classmethod
+    def __validate_flow_data(cls, flow_data: dict):
+        nodes = flow_data.get('nodes') if isinstance(flow_data, dict) else None
+        if not nodes:
+            raise UiError(*ERROR_MSG_0041)
+        invalid_nodes = [
+            node.get('label') or node.get('id') or '未命名节点'
+            for node in nodes
+            if not isinstance(node.get('config'), dict) or not node.get('config', {}).get('id')
+        ]
+        if invalid_nodes:
+            raise UiError(1041, f'页面步骤中存在未保存配置的节点：{"、".join(invalid_nodes)}，请先点击节点保存配置后再执行')
 
     @classmethod
     def element_model(cls,

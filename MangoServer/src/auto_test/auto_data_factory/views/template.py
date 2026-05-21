@@ -9,6 +9,7 @@ from rest_framework.viewsets import ViewSet
 from copy import deepcopy
 
 from pydantic import ValidationError
+from django.db import transaction
 
 from src.auto_test.auto_data_factory.models import DataFactoryTemplate
 from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
@@ -54,15 +55,36 @@ class DataFactoryTemplateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"当前实体下已存在模板名称：{name}")
         field_overrides = attrs.get('field_overrides', self.instance.field_overrides if self.instance else {})
         try:
-            DataFactoryFieldOverrideRules.model_validate(field_overrides or {})
+            attrs['field_overrides'] = DataFactoryFieldOverrideRules.model_validate(field_overrides or {}).model_dump()
         except ValidationError as error:
             raise serializers.ValidationError(f"字段覆盖规则格式错误：{error}") from error
         output_config = attrs.get('output_config', self.instance.output_config if self.instance else [])
         try:
-            DataFactoryOutputConfig.model_validate(output_config or [])
+            attrs['output_config'] = DataFactoryOutputConfig.model_validate(output_config or []).model_dump()
         except ValidationError as error:
             raise serializers.ValidationError(f"输出配置格式错误：{error}") from error
         return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        self.reset_entity_default_template(instance)
+        return instance
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        self.reset_entity_default_template(instance)
+        return instance
+
+    @staticmethod
+    def reset_entity_default_template(instance: DataFactoryTemplate):
+        if not instance.is_default:
+            return
+        DataFactoryTemplate.objects.filter(
+            entity_id=instance.entity_id,
+            is_default=True,
+        ).exclude(id=instance.id).update(is_default=False)
 
 
 class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
@@ -95,6 +117,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
     queryset = DataFactoryTemplate.objects.all()
     serializer_class = DataFactoryTemplateSerializerC
     serializer = DataFactoryTemplateSerializer
+    not_matching_str = ModelCRUD.not_matching_str + ['entity']
 
     def post(self, request: Request):
         duplicated = self.get_duplicated_template(request.data)
@@ -134,6 +157,7 @@ class DataFactoryTemplateViews(ViewSet):
             field_overrides=source.field_overrides,
             output_config=source.output_config,
             cleanup_strategy=source.cleanup_strategy,
+            is_default=False,
             status=source.status,
         )
         return ResponseData.success(RESPONSE_MSG_0001, DataFactoryTemplateSerializer(target).data)

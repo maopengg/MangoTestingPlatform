@@ -28,6 +28,7 @@ class PublicBase(BaseRequest):
         super().__init__(self.test_data)
         self.test_object: Optional[None | TestObject] = None
         self.mysql_connect: Optional[None | MysqlConnect] = None
+        self.skip_auth_load = False
         self.headers: dict = {}
         self.is_headers = None
         self.is_test_object = None
@@ -81,10 +82,11 @@ class PublicBase(BaseRequest):
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
-            elif i.type == ApiPublicTypeEnum.LOGIN.value:
-                self.api_request(i.value, test_env)
             elif i.type == ApiPublicTypeEnum.CUSTOM.value:
                 self.__custom(i)
+        if not self.skip_auth_load:
+            from src.auto_test.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
+            ApiAuthManager.load(project_product_id, test_env, self)
 
     def __custom(self, api_public_obj: ApiPublic):
         log.api.debug(f'全局变量-1->key：{api_public_obj.key}，value：{api_public_obj.value}')

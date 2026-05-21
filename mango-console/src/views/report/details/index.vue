@@ -15,11 +15,19 @@
         </div>
 
         <div class="status-console">
-          <a-tag :color="statusColor(reportInfo.status)" size="large">
-            {{ statusText(reportInfo.status) }}
-          </a-tag>
-          <strong>{{ passRate }}%</strong>
-          <span>SUCCESS RATE</span>
+          <div class="status-line">
+            <span>报告状态</span>
+            <a-tag :color="statusColor(reportInfo.status)" size="small">
+              {{ statusText(reportInfo.status) }}
+            </a-tag>
+          </div>
+          <div class="success-rate">
+            <span>成功率</span>
+            <strong>{{ passRate }}%</strong>
+          </div>
+          <div class="success-rate-bar">
+            <i :style="{ width: `${passRate}%` }"></i>
+          </div>
         </div>
       </div>
 
@@ -55,49 +63,91 @@
       </dl>
     </section>
 
-    <section class="metric-strip">
-      <div v-for="item in metrics" :key="item.key" class="metric-item" :class="item.key">
-        <i class="metric-mark"></i>
-        <span>{{ item.label }}</span>
-        <strong>{{ item.value }}</strong>
-      </div>
-    </section>
-
     <section class="overview-grid">
-      <div class="overview-panel result-panel">
+      <div class="result-stack">
+        <div class="overview-panel result-panel">
+          <div class="panel-title">
+            <div>
+              <span>执行结果占比</span>
+              <p>总用例 {{ totalCount }}，按当前报告状态分布</p>
+            </div>
+            <strong>{{ passRate }}%</strong>
+          </div>
+          <StatusChart
+            :success="summary.success_count || 0"
+            :fail="summary.fail_count || 0"
+            :pending="summary.proceed_count || 0"
+            :todo="summary.stay_begin_count || 0"
+          />
+        </div>
+
+        <div class="overview-panel failure-panel">
+          <div class="panel-title">
+            <div>
+              <span>失败聚焦</span>
+              <p>快速收敛到需要排查的用例</p>
+            </div>
+            <strong>{{ failRatio }}%</strong>
+          </div>
+          <div class="failure-body">
+            <div>
+              <span>失败用例</span>
+              <strong>{{ summary.fail_count || 0 }}</strong>
+            </div>
+            <button type="button" @click="focusFailed">只看失败</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-panel failure-reason-panel">
         <div class="panel-title">
           <div>
-            <span>结果分布</span>
-            <p>按执行结果聚合当前测试报告</p>
+            <span>失败原因 Top</span>
+            <p>基于当前已加载失败明细聚合</p>
           </div>
-          <strong>{{ passRate }}%</strong>
+          <em>{{ failureReasons.length }} 类</em>
         </div>
-        <div class="ratio-bar">
-          <i class="success" :style="{ width: `${successRatio}%` }"></i>
-          <i class="fail" :style="{ width: `${failRatio}%` }"></i>
-          <i class="running" :style="{ width: `${runningRatio}%` }"></i>
+        <div v-if="failureReasons.length === 0" class="reason-empty">
+          当前已加载数据中暂无失败原因
         </div>
-        <div class="legend-row">
-          <span><i class="dot success"></i>成功 {{ summary.success_count || 0 }}</span>
-          <span><i class="dot fail"></i>失败 {{ summary.fail_count || 0 }}</span>
-          <span><i class="dot running"></i>未完成 {{ unfinishedCount }}</span>
+        <div v-else class="reason-list">
+          <div
+            v-for="item in failureReasons"
+            :key="item.message"
+            class="reason-item"
+            :title="item.message"
+          >
+            <div class="reason-main">
+              <span>{{ item.message }}</span>
+              <i>
+                <b :style="{ width: `${item.percent}%` }"></b>
+              </i>
+            </div>
+            <strong>{{ item.count }}</strong>
+          </div>
         </div>
       </div>
 
       <div class="overview-panel type-panel">
         <div class="panel-title">
           <div>
-            <span>类型进度</span>
-            <p>UI / API / Pytest 执行覆盖</p>
+            <span>执行覆盖进度</span>
+            <p>各自动化类型已执行 / 总用例</p>
           </div>
           <em v-if="summaryLoading">更新中</em>
         </div>
         <div v-for="item in typeProgress" :key="item.key" class="type-progress">
           <div class="type-row">
-            <span>{{ item.label }}</span>
+            <div>
+              <span>{{ item.label }}</span>
+              <small>{{ item.done >= item.total ? '已执行完成' : '执行中' }}</small>
+            </div>
             <em>{{ item.done }}/{{ item.total }}</em>
           </div>
-          <a-progress :percent="item.percent" :show-text="false" :stroke-width="8" />
+          <div class="execution-progress">
+            <a-progress :percent="item.percent" :show-text="false" :stroke-width="10" />
+            <strong>{{ Math.round(item.percent * 100) }}%</strong>
+          </div>
         </div>
       </div>
     </section>
@@ -209,6 +259,7 @@
   import UiCaseTable from './UiCaseTable.vue'
   import ApiCaseTable from './ApiCaseTable.vue'
   import PytestCaseTable from './PytestCaseTable.vue'
+  import StatusChart from '@/components/chart/StatusChart.vue'
 
   const route = useRoute()
   const enumStore = useEnum()
@@ -243,23 +294,32 @@
   })
 
   const reportId = computed(() => String(route.query.id || pageData.record?.id || reportInfo.value?.id || ''))
-  const unfinishedCount = computed(
-    () => (summary.value.stay_begin_count || 0) + (summary.value.proceed_count || 0)
-  )
   const totalCount = computed(() => summary.value.count || 0)
-  const successRatio = computed(() => ratio(summary.value.success_count, totalCount.value))
   const failRatio = computed(() => ratio(summary.value.fail_count, totalCount.value))
-  const runningRatio = computed(() => ratio(unfinishedCount.value, totalCount.value))
   const passRate = computed(() => ratio(summary.value.success_count, totalCount.value))
   const hasTaskName = computed(() => !!reportInfo.value.tasks?.name)
-
-  const metrics = computed(() => [
-    { key: 'total', label: '总用例', value: summary.value.count || 0 },
-    { key: 'success', label: '成功', value: summary.value.success_count || 0 },
-    { key: 'fail', label: '失败', value: summary.value.fail_count || 0 },
-    { key: 'running', label: '进行中', value: summary.value.proceed_count || 0 },
-    { key: 'wait', label: '待开始', value: summary.value.stay_begin_count || 0 },
-  ])
+  const failureReasons = computed(() => {
+    const counter = new Map<string, number>()
+    ;(cases.value || []).forEach((item: any) => {
+      const rows = Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+      rows.forEach((row: any) => {
+        if (Number(row?.status) !== 0) return
+        const rawMessage =
+          row?.error_message || row?.statusDetails?.message || row?.response?.error || row?.message || '未返回失败原因'
+        const message = String(rawMessage).replace(/\s+/g, ' ').trim() || '未返回失败原因'
+        counter.set(message, (counter.get(message) || 0) + 1)
+      })
+    })
+    const max = Math.max(...Array.from(counter.values()), 1)
+    return Array.from(counter.entries())
+      .map(([message, count]) => ({
+        message,
+        count,
+        percent: Math.round((count / max) * 100),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  })
 
   const typeProgress = computed(() =>
     [
@@ -424,6 +484,11 @@
     loadCases(true)
   }
 
+  function focusFailed() {
+    caseStatus.value = 0
+    reloadCases()
+  }
+
   function selectType(type: string) {
     if (activeType.value === type) return
     activeType.value = type
@@ -544,14 +609,7 @@
     height: 100%;
     overflow-y: auto;
     padding: 14px;
-    background:
-      linear-gradient(180deg, rgba(22, 93, 255, 0.1), rgba(245, 247, 251, 0) 320px),
-      linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
-      #f5f7fb;
-    background-size:
-      auto,
-      24px 24px,
-      auto;
+    background: #f3f6fb;
     color: #0f172a;
   }
 
@@ -565,28 +623,28 @@
   .overview-panel,
   .case-section {
     background: #fff;
-    border: 1px solid #dde5f2;
+    border: 1px solid #e6edf6;
     border-radius: 8px;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
   }
 
   .report-head {
     position: relative;
     overflow: hidden;
-    padding: 16px 18px;
+    padding: 14px 16px 12px;
   }
 
   .report-head::before {
     position: absolute;
     inset: 0 auto 0 0;
-    width: 5px;
-    background: linear-gradient(180deg, #165dff, #00b42a 56%, #ff7d00);
+    width: 3px;
+    background: linear-gradient(180deg, #165dff, #00b42a);
     content: '';
   }
 
   .head-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 150px;
+    grid-template-columns: minmax(0, 1fr) 156px;
     gap: 16px;
     align-items: stretch;
   }
@@ -597,9 +655,9 @@
   }
 
   .eyebrow {
-    margin: 0 0 4px;
-    color: #165dff;
-    font-size: 12px;
+    margin: 0 0 5px;
+    color: #64748b;
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0;
   }
@@ -616,8 +674,8 @@
   h1 {
     max-width: 920px;
     overflow: hidden;
-    font-size: 21px;
-    line-height: 28px;
+    font-size: 22px;
+    line-height: 30px;
     color: #0f172a;
     font-weight: 700;
     text-overflow: ellipsis;
@@ -628,7 +686,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 7px;
+    margin-top: 8px;
     color: #5b6b85;
     font-size: 13px;
   }
@@ -643,39 +701,64 @@
   }
 
   .status-console {
-    display: grid;
-    align-content: center;
-    justify-items: start;
-    min-height: 92px;
-    padding: 12px;
-    background:
-      linear-gradient(135deg, rgba(22, 93, 255, 0.12), rgba(22, 93, 255, 0.03)),
-      #f8fbff;
-    border: 1px solid #cfe0ff;
+    display: flex;
+    min-height: 88px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 12px;
+    background: #f8fbff;
+    border: 1px solid #d8e7ff;
     border-radius: 8px;
   }
 
-  .status-console strong {
-    margin-top: 8px;
-    color: #165dff;
-    font-size: 28px;
-    line-height: 32px;
-    font-weight: 750;
+  .status-line,
+  .status-console .success-rate {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
 
-  .status-console span {
+  .status-line span,
+  .status-console .success-rate span {
     color: #6b778c;
     font-size: 12px;
     font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-console .success-rate strong {
+    color: #165dff;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    white-space: nowrap;
+  }
+
+  .success-rate-bar {
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e8eef7;
+  }
+
+  .success-rate-bar i {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #165dff, #00b42a);
   }
 
   .meta-strip {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0;
-    margin-top: 14px;
+    margin-top: 13px;
     overflow: hidden;
-    border: 1px solid #e5ebf5;
+    border: 1px solid #e8eef7;
     border-radius: 8px;
   }
 
@@ -686,15 +769,14 @@
   .meta-item {
     min-width: 0;
     padding: 8px 12px;
-    background: #fbfcff;
+    background: #fbfdff;
   }
 
   .meta-item + .meta-item {
     border-left: 1px solid #e5ebf5;
   }
 
-  .meta-item dt,
-  .metric-item span {
+  .meta-item dt {
     display: block;
     color: #6b778c;
     font-size: 12px;
@@ -710,89 +792,137 @@
     white-space: nowrap;
   }
 
-  .metric-strip {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
-    margin: 10px 0;
-  }
-
-  .metric-item {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    grid-template-areas:
-      'mark label'
-      'mark value';
-    column-gap: 10px;
-    align-items: center;
-    background: #fff;
-    border: 1px solid #dde5f2;
-    border-radius: 8px;
-    padding: 10px 12px;
-    transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .metric-item:hover {
-    border-color: #9fc3ff;
-    box-shadow: 0 12px 24px rgba(22, 93, 255, 0.1);
-    transform: translateY(-1px);
-  }
-
-  .metric-mark {
-    grid-area: mark;
-    width: 4px;
-    height: 32px;
-    display: block;
-    border-radius: 999px;
-    background: #86909c;
-  }
-
-  .metric-item span {
-    grid-area: label;
-    margin-bottom: 2px;
-  }
-
-  .metric-item strong {
-    grid-area: value;
-    font-size: 22px;
-    line-height: 26px;
-    color: #0f172a;
-  }
-
-  .metric-item.success .metric-mark {
-    background: #00b42a;
-  }
-
-  .metric-item.fail .metric-mark {
-    background: #f53f3f;
-  }
-
-  .metric-item.running .metric-mark {
-    background: #ff7d00;
-  }
-
-  .metric-item.wait .metric-mark {
-    background: #165dff;
-  }
-
   .overview-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
-    gap: 10px;
-    margin-bottom: 10px;
+    grid-template-columns: 480px minmax(640px, 780px) minmax(420px, 1fr);
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 12px;
+    margin-top: 12px;
   }
 
   .overview-panel {
-    padding: 12px 14px;
+    height: 100%;
+    min-height: 0;
+    padding: 11px 13px;
+  }
+
+  .result-stack {
+    display: grid;
+    height: 100%;
+    min-width: 0;
+    grid-template-rows: minmax(0, 1fr) 126px;
+    gap: 12px;
+  }
+
+  .result-panel {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .result-panel :deep(.status-chart) {
+    height: 168px;
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  .failure-reason-panel {
+    display: flex;
+    height: 100%;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .failure-reason-panel .panel-title em {
+    color: #64748b;
+    font-style: normal;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .reason-empty {
+    display: flex;
+    min-height: 112px;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #d8e1ef;
+    border-radius: 8px;
+    color: #86909c;
+    font-size: 13px;
+  }
+
+  .reason-list {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 4px 0;
+  }
+
+  .reason-item {
+    display: grid;
+    width: 100%;
+    min-height: 34px;
+    grid-template-columns: minmax(0, 1fr) 36px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 9px;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    text-align: left;
+  }
+
+  .reason-main {
+    min-width: 0;
+  }
+
+  .reason-main span {
+    display: block;
+    overflow: hidden;
+    color: #334155;
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reason-main i {
+    display: block;
+    height: 4px;
+    margin-top: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eef2f7;
+  }
+
+  .reason-main b {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+    border-radius: inherit;
+    background: #fca5a5;
+  }
+
+  .reason-item strong {
+    color: #ef4444;
+    font-size: 16px;
+    text-align: right;
+  }
+
+  .type-panel,
+  .failure-panel {
+    min-height: 0;
   }
 
   .panel-title,
   .case-toolbar,
-  .type-row,
-  .legend-row {
+  .type-row {
     display: flex;
     align-items: center;
   }
@@ -815,56 +945,12 @@
   }
 
   .panel-title strong {
-    font-size: 26px;
+    font-size: 24px;
     color: #165dff;
   }
 
-  .ratio-bar {
-    display: flex;
-    height: 10px;
-    overflow: hidden;
-    border-radius: 4px;
-    background: #edf1f7;
-    margin: 14px 0 10px;
-  }
-
-  .ratio-bar i {
-    display: block;
-    min-width: 2px;
-  }
-
-  .ratio-bar .success,
-  .dot.success {
-    background: #00b42a;
-  }
-
-  .ratio-bar .fail,
-  .dot.fail {
-    background: #f53f3f;
-  }
-
-  .ratio-bar .running,
-  .dot.running {
-    background: #ff7d00;
-  }
-
-  .legend-row {
-    gap: 18px;
-    flex-wrap: wrap;
-    color: #475569;
-    font-size: 13px;
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    display: inline-block;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-
   .type-progress + .type-progress {
-    margin-top: 10px;
+    margin-top: 11px;
   }
 
   .type-row {
@@ -873,9 +959,47 @@
     color: #475569;
   }
 
+  .type-row div {
+    min-width: 0;
+  }
+
+  .type-row span,
+  .type-row small {
+    display: block;
+  }
+
+  .type-row span {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .type-row small {
+    margin-top: 2px;
+    color: #86909c;
+    font-size: 12px;
+  }
+
   .type-row em {
     font-style: normal;
-    color: #64748b;
+    color: #165dff;
+    font-weight: 700;
+  }
+
+  .execution-progress {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .execution-progress strong {
+    color: #165dff;
+    font-size: 13px;
+    text-align: right;
   }
 
   .case-section {
@@ -891,7 +1015,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 11px 14px;
+    padding: 12px 14px;
     background: rgba(251, 252, 255, 0.97);
     border-bottom: 1px solid #e2e8f0;
     backdrop-filter: blur(8px);
@@ -938,6 +1062,56 @@
     border: 1px solid #e5ebf5;
     border-radius: 8px;
     background: #f7f9fc;
+  }
+
+  .failure-panel {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .failure-panel .panel-title strong {
+    color: #f53f3f;
+  }
+
+  .failure-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 92px;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .failure-body span {
+    display: block;
+    color: #86909c;
+    font-size: 12px;
+  }
+
+  .failure-body strong {
+    color: #0f172a;
+    font-size: 28px;
+    line-height: 32px;
+  }
+
+  .failure-body button {
+    width: 100%;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #ffd0d0;
+    border-radius: 6px;
+    background: #fff7f7;
+    color: #f53f3f;
+    cursor: pointer;
+    font-size: 13px;
+    transition:
+      border-color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .failure-body button:hover {
+    border-color: #f53f3f;
+    background: #fff1f1;
   }
 
   .type-switch-item {
@@ -1009,7 +1183,6 @@
     }
 
     .meta-strip,
-    .metric-strip,
     .overview-grid {
       grid-template-columns: 1fr 1fr;
     }
@@ -1051,10 +1224,10 @@
     }
 
     .meta-strip,
-    .metric-strip,
     .overview-grid {
       grid-template-columns: 1fr;
     }
+
 
     .type-switch {
       flex-wrap: wrap;
@@ -1066,9 +1239,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .metric-item {
-      transition: none;
-    }
-  }
 </style>

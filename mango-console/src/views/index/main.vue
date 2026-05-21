@@ -15,28 +15,26 @@
         <AutomationStats />
       </div>
     </div>
-    <div class="center">
-      <div style="display: flex; flex-direction: column; height: 100%">
-        <a-space direction="vertical" style="height: 100%; display: flex; flex-direction: column">
-          <a-card style="flex: 1; overflow: hidden">
-            <div style="display: flex; flex-direction: column; height: 100%">
-              <Title title="近3个月执行趋势图" />
-              <FullYearSalesChart ref="fullYearSalesChart" />
-            </div>
-          </a-card>
-          <a-card style="flex: 1; overflow: hidden; display: flex; flex-direction: column">
-            <div style="flex: 0 0 auto">
-              <Title title="正在准备执行的自动化任务" />
-            </div>
-            <div>
-              <PendingTasks />
-            </div>
-          </a-card>
-        </a-space>
+    <div class="center-workspace">
+      <div class="trend-panel panel">
+        <Title title="近3个月执行趋势图" />
+        <FullYearSalesChart ref="fullYearSalesChart" />
+      </div>
+      <div class="center-bottom">
+        <div class="pending-panel panel compact-panel">
+          <Title title="待执行自动化任务" />
+          <div class="pending-card-body">
+            <PendingTasks />
+          </div>
+        </div>
+        <div class="activity-panel panel compact-panel">
+          <Title title="活跃度" />
+          <HotProductChart ref="hotProductChart" />
+        </div>
       </div>
     </div>
-    <div class="right">
-      <div class="item">
+    <div class="right-rail">
+      <div class="resource-panel panel compact-panel">
         <Title title="资源中心" />
         <ResourceCenter
           @download-executor="downloadExecutor"
@@ -45,9 +43,9 @@
           @contact-author="contactAuthor"
         />
       </div>
-      <div class="item">
-        <Title title="活跃度" />
-        <HotProductChart ref="hotProductChart" />
+      <div class="mcp-panel panel feature-panel">
+        <Title title="MCP智能接入" />
+        <McpWorkbench />
       </div>
     </div>
   </div>
@@ -67,6 +65,7 @@
   import AutomationStats from './components/AutomationStats.vue'
   import PendingTasks from './components/PendingTasks.vue'
   import ResourceCenter from './components/ResourceCenter.vue'
+  import McpWorkbench from './components/McpWorkbench.vue'
 
   const contactVisible = ref(false)
 
@@ -153,15 +152,38 @@
   }
 
   .main-container {
-    display: flex;
+    display: grid;
     height: 100%;
-    overflow: hidden;
+    min-height: 0;
+    grid-template-columns: 420px minmax(0, 1fr) minmax(420px, 460px);
     gap: 15px;
+    overflow: hidden;
     padding: 15px;
 
-    .left {
-      width: 25%;
+    .panel {
       display: flex;
+      min-height: 0;
+      flex-direction: column;
+      position: relative;
+      border-radius: 8px;
+      background: var(--color-bg-2);
+      box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
+      padding: 10px 12px 12px;
+      transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
+    }
+
+    .compact-panel {
+      padding: 8px 10px 10px;
+    }
+
+    .feature-panel {
+      padding: 10px 12px;
+    }
+
+    .left {
+      display: flex;
+      min-width: 0;
+      min-height: 0;
       flex-direction: column;
       gap: 15px;
 
@@ -169,7 +191,7 @@
         border-radius: 8px;
         display: flex;
         flex-direction: column;
-        height: 100%;
+        min-height: 0;
         position: relative;
         background: var(--color-bg-2);
         transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
@@ -181,72 +203,69 @@
         }
       }
 
+      .item:nth-child(1),
+      .item:nth-child(2) {
+        flex: 0.86;
+      }
+
+      .item:nth-child(3) {
+        flex: 1.28;
+      }
+
       .item + .item {
         margin-top: 0;
       }
     }
 
-    .center {
-      flex: 1;
-      overflow: hidden;
-
-      :deep(.arco-space) {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-      }
-
-      :deep(.arco-card) {
-        border-radius: 8px;
-        flex: 1;
-      }
-
-      :deep(.arco-card:first-child) {
-        margin-bottom: 20px;
-      }
-
-      // 移除额外的margin-bottom
-      :deep(.arco-card:last-child) {
-        margin-bottom: 6px;
-      }
-    }
-
-    .right {
-      width: 25%;
-      display: flex;
-      height: 100%;
-      overflow: hidden;
-      flex-direction: column;
+    .center-workspace {
+      display: grid;
+      min-width: 0;
+      min-height: 0;
+      grid-template-rows: 360px minmax(0, 1fr);
       gap: 15px;
+    }
 
-      & > div:nth-child(1) {
-        flex: 0.5;
-      }
+    .trend-panel {
+      overflow: hidden;
+    }
 
-      & > div:nth-child(2) {
-        flex: 2.5;
-        overflow: hidden;
-      }
+    .center-bottom {
+      display: grid;
+      min-height: 0;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 15px;
+    }
 
-      .item {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        position: relative;
-        background: var(--color-bg-2);
-        border-radius: 8px;
-        transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
-        box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
-        padding: 10px;
+    .pending-panel {
+      overflow: hidden;
+    }
 
-        & > div:nth-child(2) {
-          flex: 1;
-        }
-      }
+    .pending-card-body {
+      flex: 1;
+      min-height: 0;
+      padding-top: 8px;
+    }
 
-      .item + .item {
-        margin-top: 0;
-      }
+    .right-rail {
+      display: grid;
+      min-width: 0;
+      min-height: 0;
+      grid-template-rows: 190px minmax(0, 1fr);
+      gap: 15px;
+    }
+
+    .resource-panel,
+    .mcp-panel {
+      overflow: hidden;
+    }
+
+    .activity-panel {
+      overflow: hidden;
+    }
+
+    .activity-panel :deep(.chart-item-container) {
+      flex: 1;
+      min-height: 0;
     }
   }
 
@@ -276,21 +295,43 @@
   // 响应式设计
   @media (max-width: 1200px) {
     .main-container {
-      flex-direction: column;
+      height: auto;
+      min-height: 100%;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      overflow: auto;
 
       .left,
-      .center,
-      .right {
-        width: 100%;
+      .center-workspace,
+      .trend-panel,
+      .pending-panel,
+      .mcp-panel,
+      .right-rail {
+        grid-column: 1;
+        grid-row: auto;
       }
 
-      .left,
-      .right {
+      .left {
         flex-direction: row;
 
         .item {
           flex: 1;
+          min-height: 260px;
         }
+      }
+
+      .trend-panel {
+        min-height: 420px;
+      }
+
+      .pending-panel,
+      .mcp-panel {
+        min-height: 260px;
+      }
+
+      .center-workspace,
+      .right-rail {
+        grid-template-rows: auto;
       }
     }
   }
@@ -300,8 +341,7 @@
       padding: 10px;
       gap: 10px;
 
-      .left,
-      .right {
+      .left {
         flex-direction: column;
 
         .item {
@@ -309,10 +349,8 @@
         }
       }
 
-      .center {
-        :deep(.arco-card:first-child) {
-          margin-bottom: 10px;
-        }
+      .center-bottom {
+        grid-template-columns: 1fr;
       }
     }
   }
