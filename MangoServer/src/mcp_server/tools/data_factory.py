@@ -434,27 +434,73 @@ def register_data_factory_tools(mcp):
         cleanup_order: int = 100,
         description: str | None = None,
         status: int = StatusEnum.SUCCESS.value,
+        test_env: int | None = None,
+        sync_fields: bool = False,
+        fields: list[dict] | None = None,
+        replace_fields: bool = True,
     ) -> dict:
-        """创建数据工厂实体。"""
+        """创建数据工厂实体。
+
+        默认只创建实体定义。需要同时生成字段规则时：
+        1. 推荐传 sync_fields=True 和 test_env，MCP 会按表结构同步字段规则；
+        2. 或传 fields 手工保存字段规则；
+        3. 已有实体可调用 batch_save_data_factory_fields 维护字段规则。
+
+        fields 项格式与 batch_save_data_factory_fields 一致，常用字段包括：
+        name、label、db_type、platform_type、nullable、primary_key、autoincrement、
+        max_length、enum_values、generator_type、generator_config、sort。
+        """
         if not ProductModule.objects.filter(id=module_id, project_product_id=project_product_id).exists():
             return fail("模块不属于当前项目/产品", "DATA_FACTORY_MODULE_MISMATCH")
-        data = DataFactoryEntityCRUD.inside_post(
+        if fields is not None and not isinstance(fields, list):
+            return fail("fields 必须是列表", "DATA_FACTORY_FIELDS_INVALID")
+        if sync_fields and not fields and is_missing_value(test_env):
+            return fail("sync_fields=True 时必须传 test_env，用于解析逻辑数据源对应的测试环境", "DATA_FACTORY_TEST_ENV_REQUIRED")
+
+        with transaction.atomic():
+            data = DataFactoryEntityCRUD.inside_post(
+                {
+                    "project_product": project_product_id,
+                    "module": module_id,
+                    "datasource_alias": datasource_alias_id,
+                    "name": name,
+                    "description": description,
+                    "table_name": table_name,
+                    "primary_key": primary_key,
+                    "unique_key": unique_key,
+                    "create_type": create_type,
+                    "delete_type": delete_type,
+                    "cleanup_order": cleanup_order,
+                    "status": status,
+                }
+            )
+            entity = DataFactoryEntity.objects.get(id=data["id"])
+            saved_fields = []
+            field_sync_source = "none"
+            if fields:
+                saved_fields = DataFactoryFieldViews.save_schema_fields(entity, fields, replace_fields)
+                field_sync_source = "manual"
+            elif sync_fields:
+                database = _database_from_args(
+                    datasource_alias_id=datasource_alias_id,
+                    project_product_id=project_product_id,
+                    test_env=test_env,
+                )
+                schema = DataFactoryDiscover.get_table_schema(database, table_name)
+                saved_fields = DataFactoryFieldViews.save_schema_fields(entity, schema.get("columns") or [], replace=True)
+                field_sync_source = "table_schema"
+
+        return ok(
             {
-                "project_product": project_product_id,
-                "module": module_id,
-                "datasource_alias": datasource_alias_id,
-                "name": name,
-                "description": description,
-                "table_name": table_name,
-                "primary_key": primary_key,
-                "unique_key": unique_key,
-                "create_type": create_type,
-                "delete_type": delete_type,
-                "cleanup_order": cleanup_order,
-                "status": status,
-            }
+                "entity_id": data["id"],
+                **data,
+                "fields_synced": bool(saved_fields),
+                "field_sync_source": field_sync_source,
+                "field_count": len(saved_fields),
+                "fields": saved_fields,
+            },
+            "数据工厂实体创建成功",
         )
-        return ok({"entity_id": data["id"], **data}, "数据工厂实体创建成功")
 
     @mcp.tool()
     def batch_generate_data_factory_entities(
@@ -500,6 +546,11 @@ def register_data_factory_tools(mcp):
     def batch_save_data_factory_fields(entity_id: int, fields: list[dict], replace: bool = False) -> dict:
         """批量保存数据工厂字段规则。
 
+        字段规则是工厂实体生成数据的核心配置，不是状态模板 field_overrides。
+        replace=True 会删除该实体下未出现在本次 fields 中的字段，请谨慎使用。
+
+        fields 项常用字段：name、label、db_type、platform_type、nullable、primary_key、
+        autoincrement、max_length、enum_values、generator_type、generator_config、sort。
         字符串类字段优先使用 generator_type=13 测试数据方法生成，
         可先调用 list_test_data_methods 查询可用方法和表达式示例。
         """
@@ -942,7 +993,174 @@ def register_data_factory_tools(mcp):
                 "case_source_type": {1: "API用例", 2: "UI用例", 3: "API接口场景"},
                 "execution_source": {1: "模板调试", 2: "手动执行", 3: "系统调用", 4: "API用例", 5: "API接口场景"},
                 "cache_variable_pattern": "${{配置名.字段名}}",
+                "entity_field_rule_workflow": {
+                    "important": "数据工厂实体必须同时有字段规则才能生成完整测试数据。create_data_factory_entity 默认只建实体壳；字段规则需要同步表结构或单独保存。",
+                    "recommended_paths": [
+                        "批量按表创建：先 list_data_factory_database_tables / get_data_factory_table_schema，再调用 batch_generate_data_factory_entities(sync_fields=True)。",
+                        "单表创建并同步字段：调用 create_data_factory_entity(sync_fields=True, test_env=测试环境)。",
+                        "手工维护字段：先 create_data_factory_entity，再调用 batch_save_data_factory_fields(entity_id, fields)。",
+                    ],
+                    "verification": "创建后调用 get_data_factory_entity_detail 或 list_data_factory_fields，确认 fields 不为空并且 generator_type/generator_config 符合业务字段含义。",
+                    "template_overrides_scope": "DataFactoryTemplate.field_overrides 和 case 绑定里的 field_overrides 只是在执行模板时覆盖实体字段规则，不能替代实体字段规则本身。",
+                    "tools": {
+                        "discover_tables": "list_data_factory_database_tables",
+                        "discover_schema": "get_data_factory_table_schema",
+                        "create_entity_with_schema_fields": "create_data_factory_entity(sync_fields=True, test_env=...)",
+                        "batch_create_entities_with_schema_fields": "batch_generate_data_factory_entities(sync_fields=True)",
+                        "save_fields": "batch_save_data_factory_fields",
+                        "preview_fields": "preview_data_factory_field_values",
+                    },
+                },
+                "field_rule_payload": {
+                    "required": ["name"],
+                    "common_fields": {
+                        "name": "数据库字段名，必填",
+                        "label": "字段展示名/注释，不传时通常使用 name",
+                        "db_type": "数据库原始类型，例如 BIGINT、VARCHAR(64)",
+                        "platform_type": "平台类型：string/integer/decimal/datetime/date/boolean/json/enum",
+                        "nullable": "是否允许为空",
+                        "primary_key": "是否主键",
+                        "autoincrement": "是否自增",
+                        "max_length": "最大长度",
+                        "enum_values": "枚举值数组",
+                        "generator_type": "生成器类型，见 generator_type",
+                        "generator_config": "生成器配置，见 generator_config_rule.common_generator_config",
+                        "sort": "字段排序",
+                    },
+                    "examples": {
+                        "tenant_id": {
+                            "name": "tenant_id",
+                            "label": "租户ID",
+                            "db_type": "BIGINT",
+                            "platform_type": "integer",
+                            "nullable": False,
+                            "generator_type": 13,
+                            "generator_config": {"value": "${{tenant_id}}"},
+                            "sort": 1,
+                        },
+                        "business_name": {
+                            "name": "name",
+                            "label": "名称",
+                            "db_type": "VARCHAR(128)",
+                            "platform_type": "string",
+                            "nullable": False,
+                            "generator_type": 13,
+                            "generator_config": {"value": "AUTO${{str_lowercase(10)}}"},
+                            "sort": 2,
+                        },
+                        "dependency_id": {
+                            "name": "category_id",
+                            "label": "分类ID",
+                            "db_type": "BIGINT",
+                            "platform_type": "integer",
+                            "nullable": False,
+                            "generator_type": 11,
+                            "generator_config": {"dependency_entity_id": 12, "field": "id"},
+                            "sort": 3,
+                        },
+                    },
+                },
                 "generator_config_rule": {
+                    "how_to_choose": [
+                        "主键自增字段通常使用 generator_type=0 跳过，让数据库生成。",
+                        "tenant_id、valid、固定业务状态等确定值使用 generator_type=1 固定值，或 generator_type=13 写 ${{tenant_id}} 这类测试数据表达式。",
+                        "名称、编号、手机号、邮箱、地址等业务字符串优先使用 generator_type=13 测试数据方法。",
+                        "普通随机字符串可用 generator_type=2；普通数值范围可用 3/4；时间字段可用 5/6。",
+                        "枚举字段使用 generator_type=9；外键或前置数据依赖使用 generator_type=11。",
+                    ],
+                    "generator_type_usage": {
+                        0: {
+                            "name": "跳过",
+                            "use_for": "数据库自增主键、数据库默认值、创建时不需要写入的字段。",
+                            "generator_config": {"reason": "可选，说明为什么跳过"},
+                            "example": {"generator_type": 0, "generator_config": {"reason": "数据库自增主键"}},
+                            "result": "该字段不会进入插入 payload。",
+                        },
+                        1: {
+                            "name": "固定值",
+                            "use_for": "固定状态、固定租户、固定开关值，或需要明确写死的字段。",
+                            "generator_config": {"value": "任意 JSON 值，可为字符串/数字/布尔/null/对象/数组"},
+                            "example": {"generator_type": 1, "generator_config": {"value": 1}},
+                            "result": "直接返回 value，并按字段 platform_type 做类型转换。",
+                        },
+                        2: {
+                            "name": "随机字符串",
+                            "use_for": "不强调语义的随机编码。",
+                            "generator_config": {"prefix": "可选前缀，默认空字符串", "length": "随机部分长度，默认 8，必须大于 0"},
+                            "example": {"generator_type": 2, "generator_config": {"prefix": "AUTO_", "length": 10}},
+                            "result": "prefix + uuid hex 前 length 位。",
+                        },
+                        3: {
+                            "name": "随机整数",
+                            "use_for": "数量、排序、范围内整数。",
+                            "generator_config": {"min": "最小值，默认 1", "max": "最大值，默认 100，min 不能大于 max"},
+                            "example": {"generator_type": 3, "generator_config": {"min": 1, "max": 999}},
+                            "result": "闭区间随机整数。",
+                        },
+                        4: {
+                            "name": "随机小数",
+                            "use_for": "金额、比例、带小数的数值。",
+                            "generator_config": {"min": "最小值，默认 1", "max": "最大值，默认 100", "precision": "小数位，默认 2，不能小于 0"},
+                            "example": {"generator_type": 4, "generator_config": {"min": 10, "max": 99, "precision": 2}},
+                            "result": "范围内随机 Decimal，并按 precision 保留小数。",
+                        },
+                        5: {
+                            "name": "当前时间",
+                            "use_for": "create_time、update_time、生效时间等当前时间字段。",
+                            "generator_config": {},
+                            "example": {"generator_type": 5, "generator_config": {}},
+                            "result": "datetime.now()，再按字段 platform_type 转换。",
+                        },
+                        6: {
+                            "name": "相对时间",
+                            "use_for": "过期时间、未来/过去时间。",
+                            "generator_config": {"days": "相对天数，默认 0", "hours": "相对小时，默认 0", "minutes": "相对分钟，默认 0"},
+                            "example": {"generator_type": 6, "generator_config": {"days": 7, "hours": 0, "minutes": 0}},
+                            "result": "datetime.now() + timedelta(days/hours/minutes)。",
+                        },
+                        7: {
+                            "name": "UUID",
+                            "use_for": "唯一追踪号、外部唯一编码。",
+                            "generator_config": {"dash": "是否保留 UUID 横线，默认 false"},
+                            "example": {"generator_type": 7, "generator_config": {"dash": False}},
+                            "result": "dash=false 返回 32 位 hex；dash=true 返回标准 UUID。",
+                        },
+                        9: {
+                            "name": "枚举值",
+                            "use_for": "状态、类型、开关等有限选项字段。",
+                            "generator_config": {
+                                "values": "枚举值数组；也可使用字段 enum_values",
+                                "options": "可选展示项数组，格式 [{label,value}]",
+                                "mode": "fixed 或 random，默认 fixed",
+                                "value": "mode=fixed 时的固定值；不传则取第一个 values",
+                            },
+                            "example": {"generator_type": 9, "generator_config": {"values": [0, 1], "mode": "fixed", "value": 1}},
+                            "result": "random 随机取 values；fixed 返回 value 或第一个 values。",
+                        },
+                        11: {
+                            "name": "依赖实体字段",
+                            "use_for": "外键字段、需要先创建前置数据再引用其 id/code/name 的字段。",
+                            "entity_field_generator_config": {
+                                "dependency_entity_id": "依赖的数据工厂实体 ID，必填",
+                                "field": "读取依赖实体输出字段，默认 id",
+                            },
+                            "template_or_case_override_generator_config": {
+                                "dependency_entity_id": "依赖的数据工厂实体 ID，必填",
+                                "field": "读取依赖实体输出字段，默认 id",
+                                "template_id": "可选，指定依赖实体使用哪个状态模板；不传则使用依赖实体默认启用模板",
+                                "strategy": "reuse_or_create / must_exist / create_always，默认 reuse_or_create",
+                            },
+                            "example": {"generator_type": 11, "generator_config": {"dependency_entity_id": 12, "field": "id"}},
+                            "result": "执行时先准备依赖实体数据，再把依赖数据中的 field 值写入当前字段。",
+                        },
+                        13: {
+                            "name": "测试数据方法",
+                            "use_for": "手机号、邮箱、姓名、地址、身份证、业务编号、缓存变量、编码处理等表达式生成值。MCP 只推荐使用测试数据分类的方法。",
+                            "generator_config": {"value": "测试数据表达式字符串，例如 ${{character_email()}} 或 AUTO${{str_lowercase(10)}}"},
+                            "example": {"generator_type": 13, "generator_config": {"value": "AUTO${{str_lowercase(10)}}"}},
+                            "result": "先返回 value 字符串，再通过测试数据引擎替换 ${{...}} 表达式，最后按 platform_type 转换。",
+                        },
+                    },
                     "priority": [
                         "字符串/文本/名称/编号/邮箱/手机号/地址等字符串类字段，优先使用 generator_type=13 测试数据方法。",
                         "测试数据方法不合适时，再使用 generator_type=2 随机字符串或 generator_type=1 固定值。",
@@ -954,6 +1172,19 @@ def register_data_factory_tools(mcp):
                         "how_to_discover_methods": "调用 MCP 工具 list_test_data_methods(keyword=None, include_hidden=False) 获取测试数据方法类型、分组、参数、expression_template 和 example。",
                         "how_to_preview_expression": "调用 MCP 工具 evaluate_test_data_expression(expression='${{方法名(...)}}') 试算表达式。",
                         "method_result_cast": "生成值会按字段 platform_type 转换后保存；字符串字段通常直接保存表达式计算结果。",
+                        "usage_steps": [
+                            "调用 list_test_data_methods(keyword='name/phone/email/id 等') 查询可用测试数据方法。",
+                            "从返回的 method.expression_template 或 method.example 拿到表达式。",
+                            "把表达式写入字段规则 generator_config.value。",
+                            "调用 preview_data_factory_field_values(fields=[...]) 或 preview_data_factory_template(template_id=...) 预览生成结果。",
+                        ],
+                        "expression_examples": [
+                            "${{character_email()}}",
+                            "${{character_phone()}}",
+                            "${{character_male_name()}}",
+                            "AUTO${{str_lowercase(10)}}",
+                            "${{tenant_id}}",
+                        ],
                     },
                     "test_data_method_tool": {
                         "tool": "list_test_data_methods",

@@ -8,6 +8,7 @@
       <a-pagination
         v-model:current="pagination.page"
         v-model:pageSize="pagination.pageSize"
+        :page-size-options="pagination.pageSizes"
         :show-page-size="pagination.showSizePicker"
         :total="pagination?.pageCount || 0"
         show-total
