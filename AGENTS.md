@@ -1,114 +1,88 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+本文件是 `qfei-auto-platform` 仓库的总开发约束。子项目更细规范见：
 
-## Project Overview
+- `MangoServer/AGENTS.md`
+- `mango-console/AGENTS.md`
 
-芒果测试平台 (MangoTestingPlatform) — a low-code test automation platform supporting UI, API, and Pytest-based testing, consisting of three main components.
+## 项目结构
 
-## Repository Structure
-
+```text
+MangoServer/       # Django REST 后端
+MangoActuator/     # 桌面执行器
+mango-console/     # Vue 3 + TypeScript 前端
 ```
-MangoServer/       # Django REST backend (Python)
-MangoActuator/     # Desktop test executor (Python + PySide6/Qt)
-mango-console/     # Vue 3 + TypeScript web frontend
-```
 
-## Common Commands
+芒果测试平台是面向 UI、API、性能、监控等测试场景的低代码自动化平台。开发时优先保证稳定、可维护、可排查，不做无关重构。
 
-### MangoServer (Django backend)
+## 通用原则
+
+1. 修改前先读现有实现，优先沿用项目已有模式。
+2. 不回滚用户已有改动，不修改无关文件。
+3. 手工编辑优先使用 `apply_patch`。
+4. 搜索文件和文本优先使用 `rg`。
+5. 注释只写复杂业务原因，不写显而易见的代码翻译。
+6. 不输出敏感 token、Authorization、密码到日志或文档。
+7. 最终说明改了哪些文件、是否需要迁移、跑了哪些验证。
+
+## 后端 MangoServer
+
+常用命令：
 
 ```bash
 cd MangoServer
-# Start dev server (Uvicorn + ASGI)
 python start_server.py
-# Django management commands
-python manage.py migrate
-python manage.py createsuperuser
-# Run Django dev server (alternative)
 python manage.py runserver --env=dev 0.0.0.0:8000
 ```
 
-### MangoActuator (desktop executor)
+后端开发约束：
 
-```bash
-cd MangoActuator
-python main.py            # Windows GUI entry
-python linux_main.py      # Linux entry
-# Build standalone .exe (see PyInstaller comment in main.py)
-```
+1. 业务逻辑尽量放在 `service/`，ViewSet 只负责入参、权限、序列化和响应。
+2. 返回结构沿用 `ResponseData.success/error`。
+3. 业务异常优先使用现有 `ToolsError` 或模块异常。
+4. 模型改动要同步检查 serializer、service、MCP、前端返回字段。
+5. `JSONField` 必须有明确结构约定，不随意存任意 JSON。
+6. 列表接口注意 `select_related`、`prefetch_related`，避免 N+1。
+7. 枚举统一放在 `src/enums/` 或模块既有枚举位置。
+8. Service 中尽量引用枚举，不要散落数字魔法值。
+9. 开发过程中不允许执行生成迁移脚本命令。
+10. 开发过程中不允许执行迁移命令。
+11. 迁移脚本由用户自己生成和执行。
+12. 如模型发生变化，只说明需要迁移，不要运行 `makemigrations` 或 `migrate`。
 
-### mango-console (Vue frontend)
+## 前端 mango-console
+
+常用命令：
 
 ```bash
 cd mango-console
-npm run dev        # Vite dev server (dev env)
-npm run test       # Test env
-npm run master     # Master env
-npm run build:dev  # Build for dev
-npm run tsc        # Type-check
+npm run dev
+npm run build:dev
+npm run tsc
+npm run theme:audit
 ```
 
-### Docker (full stack)
+前端开发约束：
 
-```bash
-docker compose up -d    # Starts MySQL, MinIO, mango_server, mango-console, mango_actuator
-```
+1. Vue 3 + TypeScript + Vite + Arco Design + Pinia。
+2. 后台测试平台优先服务扫描、排查、配置和连续操作。
+3. 风格要求：企业级、数据密集、紧凑、干净统一。
+4. 未明确要求时，不启动或占用 `5173`。
+5. 样式优先使用 `--m-*` token。
+6. 不新增硬编码颜色、`--color-*`、`--primary-*`。
+7. 全局自定义 class 必须使用 `mango-` 前缀。
+8. 列表页优先使用 `TableBody + TableHeader + TableFooter`。
+9. 表格操作列优先使用 `MangoTableActions`，删除/移除/清理必须 `danger: true`。
+10. 宽内容只允许在表格、代码面板、画布内部滚动。
+11. JSON 大编辑优先使用 `MangoJsonEditDrawer` 或现有公共组件。
+12. 流程图节点颜色必须有清晰含义，避免误导用户。
+13. 所有接口请求、异步保存/删除/执行、组件懒加载和耗时渲染都必须有 loading 状态。
+14. loading 状态要绑定到对应按钮、表格、面板或局部区域，不用全页遮罩替代局部反馈。
 
-## Architecture
+## 验证
 
-### MangoServer — Django Backend
-
-- **Entry point**: `start_server.py` runs `uvicorn src.asgi:application` after calling `migrate` and `createcachetable`
-- **ASGI app**: `src/asgi.py` — ProtocolTypeRouter dispatching HTTP (Django) and WebSocket (Channels)
-- **Settings**: `DJANGO_ENV` environment variable selects `src/settings/{dev,test,prod,master}.py`; defaults to `master`
-- **Database**: MySQL by default (`IS_SQLITE = False`); connection config in `src/settings/database.json` or directly in the env-specific setting file
-
-**Django apps** under `src/auto_test/`:
-
-| App | Purpose |
-|-----|---------|
-| `auto_api` | API test cases, case sets, parameterization, assertions |
-| `auto_ui` | UI test page elements, case steps, case sets |
-| `auto_pytest` | Pytest case orchestration and result reporting |
-| `auto_perf` | Performance test script management |
-| `auto_system` | System config (projects, products, notifications, scheduled tasks) + WebSocket consumer |
-| `auto_user` | Users, roles, permissions |
-| `monitoring` | Monitoring tasks with script upload/editing, real-time logs, alert reports |
-
-- **URL routing**: `src/urls.py` — REST endpoints; `src/routing.py` — WebSocket routes
-- **WebSocket**: `ChatConsumer` in `auto_system/consumers.py` handles both web (`/web/socket`) and client executor (`/client/socket`) connections
-- **Authentication**: JWT-based via `src/middleware/auth.py`; demo mode restrictions in `src/middleware/is_delete.py`
-- **File storage**: MinIO when `IS_MINIO = True`, otherwise local filesystem to `mango-file/`
-- **Exception hierarchy**: `MangoServerError` base in `src/exceptions/` with subclasses (`UiError`, `ApiError`, `PytestError`, etc.)
-- **Logging**: Per-app rotating file handlers under `logs/auto_{api,ui,system,perf,pytest}/` + console output
-
-### MangoActuator — Desktop Executor
-
-- **GUI framework**: PySide6 with `QApplication` + custom async event loop
-- **Communication**: WebSocket to MangoServer for receiving test tasks; HTTP for auth and result upload
-- **Architecture**: Three concurrent asyncio tasks in `src/__init__.py`:
-  1. `WebSocketClient.client_run()` — maintain persistent connection
-  2. `SocketConsumer.process_tasks()` — handle incoming messages/commands
-  3. `CaseFlow.process_tasks()` / `PytestCaseFlow.process_tasks()` — execute test cases
-- **Key dirs under `src/`**: `pages/` (GUI windows), `consumer/` (server message handlers), `services/` (execution logic for api/ui/pytest), `network/` (HTTP + WebSocket clients)
-- **Packaging**: PyInstaller with `芒果执行器.spec` or inline config in `main.py`
-
-### mango-console — Vue Frontend
-
-- **Framework**: Vue 3 + TypeScript + Vite + Arco Design + Pinia
-- **Routing**: Hash-based (`createWebHashHistory`), routes defined in `src/router/routes/constants.ts` + `extraRoutes` in `src/router/index.ts`
-- **API layer**: Axios with per-module API files under `src/api/{apitest,uitest,pytest,system,monitoring,user}/`; interceptors handle auth tokens
-- **State**: Pinia stores in `src/store/`
-- **Environment**: `.env.{dev,test,prod,master}` files control API base URL and build output
-
-### mango_pytest (within MangoServer)
-
-External test framework code pulled in from a separate repository — not part of the MangoTestingPlatform itself. It represents the test content that users write and execute through the platform's pytest functionality, not a platform feature.
-
-## Key Patterns
-
-- **View layer**: Django REST Framework ViewSets in each app's `views/` directory, with service logic in `service/`
-- **Async execution**: APScheduler for scheduled tasks in `auto_system`
-- **Enum-driven config**: `src/enums/` contains shared enum definitions used across apps
-- **Message protocol**: Server and actuator communicate via a JSON-based protocol (models defined in `src/models/socket_model.py`)
+1. 后端改动优先跑最小相关测试或 compile 检查。
+2. 模块级业务规则以对应子目录 `AGENTS.md` 或模块文档为准。
+3. 前端样式/组件改造后优先跑 `npm run theme:audit`。
+4. 阶段验收或构建风险时跑 `npm run build:dev`。
+5. `npm run tsc` 可能有历史全量类型问题，需区分是否由本次改动引入。

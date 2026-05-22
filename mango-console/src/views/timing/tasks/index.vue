@@ -55,6 +55,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -119,43 +120,14 @@
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  :loading="data.triggerLoading"
-                  @click="onTrigger(record)"
-                  >触发
-                </a-button>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
-                  >添加用例
-                </a-button>
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onUpdate(record)"
-                        >编辑
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        status="danger"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onDelete(record)"
-                        >删除
-                      </a-button>
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '触发', loading: data.triggerLoading, onClick: () => onTrigger(record) },
+                  { label: '添加用例', onClick: () => onClick(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -171,7 +143,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input' && item.key === 'trigger_type'">
@@ -335,8 +307,8 @@
       content: '是否要删除此定时任务？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteSystemTasks(record.id)
+      onBeforeOk: () => {
+        return deleteSystemTasks(record.id)
           .then((res) => {
             Message.success(res.msg)
           })

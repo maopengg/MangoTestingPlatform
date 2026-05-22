@@ -1,7 +1,7 @@
 import useUserStore from '@/store/modules/user'
 import usePermissionStore from '@/store/modules/permission'
 import router from '..'
-import { connectWebSocket } from '@/utils/socket'
+import { connectWebSocket, hasWebSocketLoginSession } from '@/utils/socket'
 
 const whiteRoutes: string[] = ['/login', '/404', '/403', '/500', '/report/details']
 
@@ -19,7 +19,7 @@ function usePermissionGuard() {
     }
 
     // 用户已登录，确保 WebSocket 已连接（处理页面刷新的情况）
-    if (userStore.userName && userStore.password) {
+    if (hasWebSocketLoginSession() && userStore.userName && userStore.password) {
       connectWebSocket(userStore.userName, userStore.password)
     }
 

@@ -19,7 +19,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -37,7 +36,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -50,7 +48,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -63,7 +60,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -76,7 +72,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -135,6 +130,7 @@
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
+        :scroll="{ x: 1260 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -173,60 +169,16 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  :loading="caseRunning"
-                  @click="onCaseRun(record.id)"
-                  >执行
-                </a-button>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
-                  >步骤
-                </a-button>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="clickSuite(record)"
-                  >套件
-                </a-button>
-
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onUpdate(record)"
-                        >编辑
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="caseCody(record)"
-                        >复制
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        status="danger"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onDelete(record)"
-                        >删除
-                      </a-button>
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '执行', loading: caseRunning, onClick: () => onCaseRun(record.id) },
+                  { label: '步骤', onClick: () => onClick(record) },
+                  { label: '套件', onClick: () => clickSuite(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '复制', onClick: () => caseCody(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -248,7 +200,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -427,8 +379,8 @@
       content: '是否要删除此用例？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUiCase(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteUiCase(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -492,8 +444,8 @@
       content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',
       cancelText: '取消',
       okText: '执行',
-      onOk: () => {
-        postUiRunCaseBatch(selectedRowKeys.value, userStore.selected_environment)
+      onBeforeOk: () => {
+        return postUiRunCaseBatch(selectedRowKeys.value, userStore.selected_environment)
           .then((res) => {
             Message.success(res.msg)
             selectedRowKeys.value = []

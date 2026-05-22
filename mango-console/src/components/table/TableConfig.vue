@@ -1,6 +1,6 @@
 <template>
   <a-space align="center">
-    <a-tooltip class="item" content="开启/关闭表格边框" placement="top" trigger="hover">
+    <a-tooltip class="mango-table-config-item" content="开启/关闭表格边框" placement="top" trigger="hover">
       <a-button
         :status="border ? 'success' : 'normal'"
         shape="circle"
@@ -10,7 +10,7 @@
         B
       </a-button>
     </a-tooltip>
-    <a-tooltip class="item" content="开启/关闭斑马纹" placement="top" trigger="hover">
+    <a-tooltip class="mango-table-config-item" content="开启/关闭斑马纹" placement="top" trigger="hover">
       <a-button
         :status="striped ? 'success' : 'normal'"
         shape="circle"
@@ -20,7 +20,7 @@
         S
       </a-button>
     </a-tooltip>
-    <a-tooltip class="item" content="刷新页面" placement="top" trigger="hover">
+    <a-tooltip class="mango-table-config-item" content="刷新页面" placement="top" trigger="hover">
       <a-button shape="circle" size="small" @click="doRefresh">
         <template #icon>
           <icon-refresh />

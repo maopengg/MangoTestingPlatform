@@ -141,14 +141,14 @@
     v-model:visible="showModal"
     :title="title"
     :width="width"
-    class="modal-dialog-wrapper"
+    class="mango-modal-dialog-wrapper"
     @keydown="handleKeyDown"
   >
-    <Scrollbar wrap-class="modal-dialog__wrap">
+    <Scrollbar wrap-class="mango-modal-dialog__wrap">
       <slot name="content"></slot>
     </Scrollbar>
     <template #footer>
-      <a-space>
+      <a-space class="mango-modal-dialog-footer-actions">
         <a-button @click="onCancel">取消</a-button>
         <a-button
           v-if="showContinuousSubmit"
@@ -164,7 +164,13 @@
 </template>
 
 <style scoped>
-  .modal-dialog__wrap {
+  .mango-modal-dialog__wrap {
     max-height: 80vh;
+  }
+
+  :deep(.mango-modal-dialog-footer-actions) {
+    display: flex !important;
+    width: 100%;
+    justify-content: flex-end !important;
   }
 </style>

@@ -1,20 +1,25 @@
 <template>
-  <div :style="{ 'background-color': bgColor }" class="logo-wrapper">
-    <img v-if="showLogo" class="logo-img" src="../../assets/logo.png" />
+  <button
+    :style="{ 'background-color': bgColor }"
+    class="mango-logo-wrapper"
+    type="button"
+    @click="goHome"
+  >
+    <img v-if="showLogo" class="mango-logo-img" src="../../assets/logo.png" />
     <div
       v-if="showTitle"
-      :class="[!appStore.isCollapse || alwaysShow ? 'show-title' : 'close-title']"
+      :class="[!appStore.isCollapse || alwaysShow ? 'mango-show-title' : 'mango-close-title']"
     >
-      <span class="logo-title">{{ projectName }}</span>
+      <span class="mango-logo-title">{{ projectName }}</span>
     </div>
-  </div>
+  </button>
 </template>
 
 <script lang="ts">
   import { computed, defineComponent } from 'vue'
+  import { useRouter } from 'vue-router'
   import { projectName } from '../../setting'
   import useAppConfigStore from '@/store/modules/app-config'
-  import { SideTheme, ThemeMode } from '@/store/types'
 
   export default defineComponent({
     name: 'Logo',
@@ -34,57 +39,54 @@
     },
     setup() {
       const appStore = useAppConfigStore()
+      const router = useRouter()
       const bgColor = computed(() => {
-        if (appStore.layoutMode !== 'ttb') {
-          if (appStore.sideTheme === SideTheme.DARK) {
-            return 'var(--color-menu-dark-bg)'
-          }
-          if (appStore.sideTheme === SideTheme.WHITE) {
-            return appStore.sideTheme === SideTheme.WHITE
-              ? 'var(--color-white)'
-              : appStore.sideTheme === SideTheme.DARK
-              ? 'var(--color-menu-dark-bg)'
-              : 'transparent'
-          }
-          return 'transparent'
-        } else {
-          return appStore.theme === ThemeMode.DARK
-            ? 'var(--color-menu-dark-bg)'
-            : 'var(--color-white)'
-        }
+        return 'var(--m-layout-logo-bg)'
       })
+      function goHome() {
+        router.push('/index/home')
+      }
       return {
         appStore,
         projectName,
         bgColor,
+        goHome,
       }
     },
   })
 </script>
 <style lang="less" scoped>
-  .logo-wrapper {
+  .mango-logo-wrapper {
     height: @logoHeight;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: var(--color-text-1);
-    border-bottom: 1px dashed var(--color-border);
+    color: var(--m-layout-logo-text);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px dashed var(--m-layout-header-border);
+    cursor: pointer;
 
-    .logo-img {
+    &:hover {
+      color: var(--m-primary);
+    }
+
+    .mango-logo-img {
       width: 30px;
     }
 
-    .logo-title {
+    .mango-logo-title {
       font-weight: bold;
     }
 
-    .show-title {
+    .mango-show-title {
       transform: scale(1);
       width: auto;
       transition: transform 0.2s ease-in;
     }
 
-    .close-title {
+    .mango-close-title {
       transform: scale(0);
       width: 0;
     }

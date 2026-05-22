@@ -8,22 +8,32 @@
     fail: number // 失败数据
     pending?: number // 进行中（可选）
     todo?: number // 待开始（可选）
+    loading?: boolean
   }>()
 
   const pieChart = ref<HTMLElement | null>(null)
   let myChart: echarts.ECharts | null = null
-  const palette = ['#22c55e', '#ef4444', '#f59e0b', '#64748b']
+
+  const token = (name: string, fallback: string) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+
+  const getPalette = () => [
+    token('--m-success', '#22c55e'),
+    token('--m-danger', '#ef4444'),
+    token('--m-warning', '#f59e0b'),
+    token('--m-muted', '#64748b'),
+  ]
 
   const chartItems = computed(() => {
     const items = [
-      { name: '通过', value: Number(props.success || 0), color: palette[0] },
-      { name: '失败', value: Number(props.fail || 0), color: palette[1] },
+      { name: '通过', value: Number(props.success || 0), color: getPalette()[0] },
+      { name: '失败', value: Number(props.fail || 0), color: getPalette()[1] },
     ]
     if (props.pending !== undefined) {
-      items.push({ name: '进行中', value: Number(props.pending || 0), color: palette[2] })
+      items.push({ name: '进行中', value: Number(props.pending || 0), color: getPalette()[2] })
     }
     if (props.todo !== undefined) {
-      items.push({ name: '待开始', value: Number(props.todo || 0), color: palette[3] })
+      items.push({ name: '待开始', value: Number(props.todo || 0), color: getPalette()[3] })
     }
     const total = items.reduce((sum, item) => sum + item.value, 0)
     return items.map((item) => ({
@@ -72,7 +82,7 @@
           avoidLabelOverlap: false,
           itemStyle: {
             borderRadius: 6,
-            borderColor: '#fff',
+            borderColor: token('--m-surface', '#fff'),
             borderWidth: 4,
           },
           label: {
@@ -101,42 +111,60 @@
 
   onMounted(() => {
     initPieChart()
+    window.addEventListener('mango-theme-change', updateChart)
   })
 
   onBeforeUnmount(() => {
+    window.removeEventListener('mango-theme-change', updateChart)
     myChart?.dispose()
   })
 </script>
 
 <template>
-  <div class="status-chart">
-    <div class="status-donut">
-      <div ref="pieChart" class="chart"></div>
-      <div class="status-total">
-        <span>总数</span>
-        <strong>{{ total }}</strong>
-      </div>
-    </div>
-    <div class="status-list">
-      <div v-for="item in chartItems" :key="item.name" class="status-item">
-        <span class="status-dot" :style="{ backgroundColor: item.color }"></span>
-        <div class="status-main">
-          <span>{{ item.name }}</span>
-          <div class="status-bar">
-            <i :style="{ width: `${item.percent}%`, backgroundColor: item.color }"></i>
+  <div class="mango-status-chart">
+    <a-spin :loading="props.loading" class="mango-chart-spin">
+      <div class="mango-status-chart__content">
+        <div class="mango-status-donut">
+          <div ref="pieChart" class="mango-chart"></div>
+          <div class="mango-status-total">
+            <span>总数</span>
+            <strong>{{ total }}</strong>
           </div>
         </div>
-        <div class="status-value">
-          <strong>{{ item.percentText }}</strong>
-          <span>{{ item.value }}</span>
+        <div class="mango-status-list">
+          <div v-for="item in chartItems" :key="item.name" class="mango-status-item">
+            <span class="mango-status-dot" :style="{ backgroundColor: item.color }"></span>
+            <div class="mango-status-main">
+              <span>{{ item.name }}</span>
+              <div class="mango-status-bar">
+                <i :style="{ width: `${item.percent}%`, backgroundColor: item.color }"></i>
+              </div>
+            </div>
+            <div class="mango-status-value">
+              <strong>{{ item.percentText }}</strong>
+              <span>{{ item.value }}</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </a-spin>
   </div>
 </template>
 
 <style lang="less" scoped>
-  .status-chart {
+  .mango-status-chart {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mango-chart-spin,
+  :deep(.mango-chart-spin .arco-spin-children) {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mango-status-chart__content {
     display: grid;
     height: 100%;
     min-height: 0;
@@ -145,18 +173,18 @@
     gap: 12px;
   }
 
-  .status-donut {
+  .mango-status-donut {
     position: relative;
     height: 100%;
     min-height: 180px;
   }
 
-  .chart {
+  .mango-chart {
     width: 100%;
     height: 100%;
   }
 
-  .status-total {
+  .mango-status-total {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -170,14 +198,14 @@
     pointer-events: none;
 
     span {
-      color: var(--color-text-3);
+      color: var(--m-muted);
       font-size: 11px;
     }
 
     strong {
       max-width: 74px;
       overflow: hidden;
-      color: var(--color-text-1);
+      color: var(--m-text);
       font-size: 20px;
       line-height: 24px;
       text-overflow: ellipsis;
@@ -185,14 +213,14 @@
     }
   }
 
-  .status-list {
+  .mango-status-list {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 10px;
   }
 
-  .status-item {
+  .mango-status-item {
     display: grid;
     min-width: 0;
     grid-template-columns: 10px minmax(0, 1fr) 72px;
@@ -200,19 +228,19 @@
     gap: 8px;
   }
 
-  .status-dot {
+  .mango-status-dot {
     width: 9px;
     height: 9px;
     border-radius: 50%;
   }
 
-  .status-main {
+  .mango-status-main {
     min-width: 0;
 
     span {
       display: block;
       overflow: hidden;
-      color: var(--color-text-2);
+      color: var(--m-text-2);
       font-size: 12px;
       line-height: 18px;
       text-overflow: ellipsis;
@@ -220,12 +248,12 @@
     }
   }
 
-  .status-bar {
+  .mango-status-bar {
     height: 4px;
     margin-top: 4px;
     overflow: hidden;
     border-radius: 999px;
-    background: var(--color-fill-2);
+    background: var(--m-border);
 
     i {
       display: block;
@@ -235,7 +263,7 @@
     }
   }
 
-  .status-value {
+  .mango-status-value {
     text-align: right;
 
     strong,
@@ -247,13 +275,13 @@
     }
 
     strong {
-      color: rgb(var(--primary-6));
+      color: var(--m-primary);
       font-size: 12px;
       line-height: 17px;
     }
 
     span {
-      color: var(--color-text-3);
+      color: var(--m-muted);
       font-size: 11px;
       line-height: 16px;
     }

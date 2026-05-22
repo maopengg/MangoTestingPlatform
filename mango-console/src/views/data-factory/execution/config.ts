@@ -124,7 +124,7 @@ export const executionTableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 120,
+    width: 170,
   },
 ])
 
@@ -155,8 +155,31 @@ export const executionItemColumns = useTableColumn([
     width: 120,
   },
   {
-    title: '数据',
+    title: '清理SQL',
+    key: 'cleanup_sql',
+    dataIndex: 'cleanup_sql',
+    width: 320,
+    align: 'left',
+  },
+  {
+    title: '插入SQL',
+    key: 'insert_sql',
+    dataIndex: 'insert_sql',
+    width: 320,
+    align: 'left',
+  },
+  {
+    title: '插入数据',
+    key: 'insert_data',
+    dataIndex: 'insert_data',
+    width: 260,
+    align: 'left',
+  },
+  {
+    title: '创建数据',
     key: 'data',
     dataIndex: 'data',
+    width: 260,
+    align: 'left',
   },
 ])

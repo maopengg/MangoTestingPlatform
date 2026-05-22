@@ -1,8 +1,8 @@
 <template>
   <div
-    :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]"
+    :class="[!appStore.isCollapse ? 'mango-open-status' : 'mango-close-status', bgColor]"
     :style="{ borderRadius: '0px', marginTop: appStore.layoutMode === 'ttb' ? '48px' : 0 }"
-    class="vaw-side-bar-wrapper"
+    class="mango-side-bar-wrapper"
   >
     <transition name="logo">
       <Logo v-if="showLogo" />
@@ -51,8 +51,8 @@
     background-image: url('../../assets/bg_img.webp') !important;
     background-size: cover;
 
-    :deep(.logo-wrapper .logo-title) {
-      color: #fff !important;
+    :deep(.mango-logo-wrapper .mango-logo-title) {
+      color: var(--m-layout-logo-text) !important;
     }
 
     :deep(.arco-menu) {
@@ -72,10 +72,10 @@
     }
 
     :deep(.arco-menu-dark .arco-menu-item.arco-menu-selected) {
-      color: rgb(var(--primary-6));
+      color: var(--m-layout-sidebar-active-text);
 
       & .arco-menu-icon {
-        color: rgb(var(--primary-6)) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -89,10 +89,10 @@
         .arco-menu-dark .arco-menu-pop-header:hover,
         .arco-menu-dark .arco-menu-inline-header:hover
       ) {
-      color: rgb(var(--primary-6)) !important;
+      color: var(--m-layout-sidebar-active-text) !important;
 
       & .arco-menu-icon {
-        color: rgb(var(--primary-6)) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -101,10 +101,10 @@
     }
 
     :deep(.arco-menu-dark .arco-menu-inline-header:hover) {
-      color: rgb(var(--primary-6)) !important;
+      color: var(--m-layout-sidebar-active-text) !important;
 
       & .arco-menu-icon {
-        color: rgb(var(--primary-6)) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -113,10 +113,10 @@
     }
 
     :deep(.arco-menu-dark .arco-menu-pop-header:hover) {
-      color: rgb(var(--primary-6)) !important;
+      color: var(--m-layout-sidebar-active-text) !important;
 
       & .arco-menu-icon {
-        color: rgb(var(--primary-6)) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -126,18 +126,18 @@
   }
 
   .sidebar-bg-dark {
-    background-color: var(--color-menu-dark-bg);
+    background-color: var(--m-layout-sidebar-bg);
 
-    :deep(.logo-wrapper .logo-title) {
-      color: #fff !important;
+    :deep(.mango-logo-wrapper .mango-logo-title) {
+      color: var(--m-layout-logo-text) !important;
     }
 
     :deep(.arco-menu-dark .arco-menu-item.arco-menu-selected) {
-      color: var(--color-white);
-      background-color: rgba(var(--primary-6), 0.3);
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-active-bg);
 
       & .arco-menu-icon {
-        color: var(--color-white) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -151,10 +151,11 @@
         .arco-menu-dark .arco-menu-pop-header:hover,
         .arco-menu-dark .arco-menu-inline-header:hover
       ) {
-      color: var(--color-white) !important;
+      color: var(--m-layout-sidebar-active-text) !important;
+      background-color: var(--m-layout-sidebar-hover-bg);
 
       & .arco-menu-icon {
-        color: var(--color-white) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -163,10 +164,10 @@
     }
 
     :deep(.arco-menu-dark .arco-menu-inline-header:hover) {
-      color: rgb(var(--primary-6)) !important;
+      color: var(--m-layout-sidebar-active-text) !important;
 
       & .arco-menu-icon {
-        color: rgb(var(--primary-6)) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -175,10 +176,10 @@
     }
 
     :deep(.arco-menu-dark .arco-menu-pop-header:hover) {
-      color: rgb(var(--primary-6)) !important;
+      color: var(--m-layout-sidebar-active-text) !important;
 
       & .arco-menu-icon {
-        color: rgb(var(--primary-6)) !important;
+        color: var(--m-layout-sidebar-active-text) !important;
 
         & .arco-icon {
           color: currentColor !important;
@@ -188,10 +189,23 @@
   }
 
   .sidebar-bg-light {
-    background-color: #fff;
+    background-color: var(--m-layout-sidebar-bg);
+
+    :deep(.arco-menu) {
+      color: var(--m-layout-sidebar-text);
+      background-color: transparent;
+    }
+
+    :deep(.arco-menu-light .arco-menu-item:hover),
+    :deep(.arco-menu-light .arco-menu-inline-header:hover) {
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-hover-bg);
+    }
 
     :deep(.arco-menu-light .arco-menu-item.arco-menu-selected) {
       position: relative;
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-active-bg);
 
       &::after {
         position: absolute;
@@ -202,24 +216,24 @@
         border-radius: 3px;
         width: 3px;
         height: 100%;
-        background-color: rgb(var(--primary-6));
+        background-color: var(--m-primary);
       }
     }
   }
 
-  .open-status {
+  .mango-open-status {
     width: @menuWidth;
-    box-shadow: 2px 5px 10px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--m-shadow);
     transition: all @transitionTime;
   }
 
-  .close-status {
+  .mango-close-status {
     width: @minMenuWidth;
     box-shadow: none;
     transition: all @transitionTime;
   }
 
-  .vaw-side-bar-wrapper {
+  .mango-side-bar-wrapper {
     position: fixed;
     top: 0;
     left: 0;
@@ -228,20 +242,20 @@
     box-sizing: border-box;
     z-index: 999;
 
-    .vaw-menu-wrapper {
+    .mango-menu-wrapper {
       overflow-x: hidden;
-      color: white;
+      color: var(--m-layout-sidebar-text);
     }
   }
 
-  .is-mobile {
-    .open-status {
+  .mango-is-mobile {
+    .mango-open-status {
       width: @menuWidth;
       transform: translateX(0);
       transition: transform @transitionTime;
     }
 
-    .close-status {
+    .mango-close-status {
       width: @menuWidth;
       @negativeMenuWidth: calc(@menuWidth * -1);
       transform: translateX(@negativeMenuWidth);

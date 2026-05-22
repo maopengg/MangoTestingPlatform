@@ -1,14 +1,14 @@
 <template>
-  <div class="key-value-container">
-    <div v-for="(item, index) in dataList" :key="index" class="key-value-item">
-      <div class="key-value-row">
+  <div class="mango-key-value-container">
+    <div v-for="(item, index) in dataList" :key="index" class="mango-key-value-item">
+      <div class="mango-key-value-row">
         <!-- 支持多个字段的展示 -->
         <div
           v-for="(field, fieldIndex) in getVisibleFields(item)"
           :key="fieldIndex"
-          class="key-value-field"
+          class="mango-key-value-field"
         >
-          <span class="field-label">{{ field.label }}:</span>
+          <span class="mango-field-label">{{ field.label }}:</span>
           <!-- 支持级联选择器 -->
           <a-cascader
             v-if="field.type === 'cascader'"
@@ -18,7 +18,7 @@
             :expand-trigger="field.expandTrigger || 'hover'"
             :value-key="field.valueKey || 'key'"
             @change="(value) => field.onChange && field.onChange(value, dataList, index)"
-            :class="field.className || 'key-cascader'"
+            :class="field.className || 'mango-key-cascader'"
           />
           <!-- 支持文本域 -->
           <a-textarea
@@ -27,7 +27,7 @@
             :placeholder="field.placeholder || `请输入${field.label}`"
             :auto-size="field.autoSize || { minRows: 1, maxRows: 3 }"
             @blur="onBlur"
-            :class="field.className || 'key-input'"
+            :class="field.className || 'mango-key-input'"
           />
           <!-- 支持数组直接绑定的情况 -->
           <a-textarea
@@ -37,11 +37,11 @@
             :auto-size="field.autoSize || { minRows: 1, maxRows: 3 }"
             @blur="(event) => onItemBlur(event, index)"
             @update:model-value="(value) => onItemUpdate(value, index, item)"
-            :class="field.className || 'key-input'"
+            :class="field.className || 'mango-key-input'"
           />
         </div>
         <!-- 按钮容器，确保按钮在同一行 -->
-        <div class="button-container">
+        <div class="mango-button-container">
           <!-- 插槽支持额外操作按钮 -->
           <slot name="extra" :index="index" :item="item"></slot>
           <a-button
@@ -49,14 +49,14 @@
             status="danger"
             type="text"
             @click="onDelete(index)"
-            class="remove-btn"
+            class="mango-remove-btn"
           >
             移除
           </a-button>
         </div>
       </div>
     </div>
-    <div v-if="!dataList || dataList.length === 0" class="empty-placeholder">
+    <div v-if="!dataList || dataList.length === 0" class="mango-empty-placeholder">
       {{ emptyText }}
     </div>
   </div>
@@ -130,19 +130,26 @@
 
 <style scoped>
   /* Key-Value 样式 */
-  .key-value-container {
+  .mango-key-value-container {
     padding: 10px 0;
   }
 
-  .key-value-item {
+  .mango-key-value-item {
     margin-bottom: 12px;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
     padding: 12px;
-    background-color: #fafafa;
+    background-color: var(--m-surface);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
   }
 
-  .key-value-row {
+  .mango-key-value-item:hover {
+    background-color: var(--m-surface-2);
+    border-color: var(--m-primary-border);
+    box-shadow: var(--m-shadow-soft);
+  }
+
+  .mango-key-value-row {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -152,7 +159,7 @@
     overflow-x: hidden; /* 防止水平滚动 */
   }
 
-  .key-value-field {
+  .mango-key-value-field {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -161,7 +168,7 @@
     overflow: hidden; /* 防止内容溢出 */
   }
 
-  .button-container {
+  .mango-button-container {
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -170,68 +177,69 @@
     min-width: fit-content; /* 确保按钮容器不会收缩 */
   }
 
-  .field-label {
+  .mango-field-label {
     font-size: 12px;
-    color: #666;
+    color: var(--m-muted);
     font-weight: 500;
     flex-shrink: 0; /* 防止标签被压缩 */
   }
 
-  .key-input,
+  .mango-key-input,
   .value-input,
   .sql-input,
-  .key-cascader {
+  .mango-key-cascader {
     width: 100%;
     min-width: 0; /* 允许输入框收缩 */
   }
 
-  .remove-btn {
+  .mango-remove-btn {
     align-self: flex-start;
     margin-top: 18px;
     flex-shrink: 0; /* 防止按钮被压缩 */
   }
 
   /* 确保插槽中的按钮也正确对齐 */
-  :deep(.button-container .arco-btn) {
+  :deep(.mango-button-container .arco-btn) {
     align-self: flex-start;
     margin-top: 18px;
     flex-shrink: 0; /* 防止按钮被压缩 */
     min-width: fit-content; /* 确保按钮不会收缩 */
   }
 
-  .empty-placeholder {
+  .mango-empty-placeholder {
     text-align: center;
-    color: #999;
+    color: var(--m-muted);
     font-size: 14px;
     padding: 20px;
-    border: 1px dashed #e5e5e5;
-    border-radius: 4px;
+    border: 1px dashed var(--m-border);
+    border-radius: var(--m-radius-md);
     margin-top: 10px;
+    background: var(--m-surface-soft);
   }
 
   /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
   @media (max-width: 768px) {
-    .key-value-row {
+    .mango-key-value-row {
       flex-wrap: wrap;
     }
 
-    .key-value-field {
+    .mango-key-value-field {
       min-width: 120px;
     }
 
-    .button-container {
+    .mango-button-container {
       width: 100%;
       justify-content: flex-end;
       margin-top: 8px;
     }
 
-    .remove-btn {
+    .mango-remove-btn {
       margin-top: 0;
       align-self: center;
     }
 
     /* 确保插槽中的按钮在小屏幕上也正确对齐 */
-    :deep(.button-container .arco-btn) {
+    :deep(.mango-button-container .arco-btn) {
       margin-top: 0;
       align-self: center;
     }

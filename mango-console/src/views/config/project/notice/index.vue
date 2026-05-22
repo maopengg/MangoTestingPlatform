@@ -1,13 +1,15 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" class="mango-detail-workbench-page">
     <template #header>
-      <a-card title="通知组配置" :bordered="false">
-        <template #extra>
-          <a-space>
-            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
-          </a-space>
-        </template>
-      </a-card>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ noticeDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护项目通知接收人、邮箱和消息测试配置</div>
+        </div>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
+      </div>
     </template>
 
     <template #default>
@@ -21,6 +23,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -48,22 +51,13 @@
               {{ Array.isArray(record.mail) ? record.mail.join(', ') : record.mail }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onTest(record)"
-                  >测试
-                </a-button>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑
-                </a-button>
-                <a-button
-                  size="mini"
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '测试', onClick: () => onTest(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -79,7 +73,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -117,7 +111,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { computed, onMounted, ref, nextTick, reactive } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { formItems, tableColumns } from './config'
   import {
@@ -129,8 +123,15 @@
   } from '@/api/system/notice_group'
   import { getUserName } from '@/api/user/user'
   import { useRoute } from 'vue-router'
+  import { usePageData } from '@/store/page-data'
 
   const route = useRoute()
+  const pageData = usePageData()
+  const noticeDetailTitle = computed(() => {
+    const id = pageData.record?.id || route.query.id || '-'
+    const name = pageData.record?.name || route.query.name || '-'
+    return `通知组配置 / ${id} / ${name}`
+  })
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -187,8 +188,8 @@
       content: '是否要删除此配置？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteSystemNotice(record.id)
+      onBeforeOk: () => {
+        return deleteSystemNotice(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -322,5 +323,8 @@
   /* 确保父容器不产生横向滚动 */
   .arco-table-wrapper {
     overflow-x: hidden;
+  }
+
+  @media (max-width: 768px) {
   }
 </style>

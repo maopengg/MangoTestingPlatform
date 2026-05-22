@@ -30,6 +30,14 @@ export enum ThemeMode {
   DARK = 'dark',
 }
 
+export type ThemePresetId =
+  | 'mango-blue'
+  | 'tech-cyan'
+  | 'graphite-dark'
+  | 'dopamine-pop'
+  | 'royal-purple'
+  | 'morandi'
+
 export enum SideTheme {
   DARK = 'dark',
   WHITE = 'white',
@@ -49,6 +57,7 @@ export interface AppConfigState {
   theme: ThemeMode
   sideTheme: SideTheme
   themeColor: string
+  themePreset: ThemePresetId
   layoutMode: LayoutMode
   deviceType: DeviceType
   sideWidth: number

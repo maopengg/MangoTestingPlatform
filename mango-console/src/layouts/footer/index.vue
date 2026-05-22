@@ -1,5 +1,5 @@
 <template>
-  <a-card :bordered="false" class="footer-container">
+  <a-card :bordered="false" class="mango-footer-container">
     Copyright © 芒果味 2022-至今 Version：{{ version }}</a-card
   >
   <!--  禁止修改作者署名-->
@@ -11,7 +11,7 @@
 </script>
 
 <style lang="less" scoped>
-  .footer-container {
+  .mango-footer-container {
     height: @footerHeight;
     display: flex;
     justify-content: center;

@@ -1,50 +1,42 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" class="mango-detail-workbench-page">
     <template #header>
-      <a-card :bordered="false" title="用例详情">
-        <template #extra>
-          <a-space>
-            <a-button size="small" status="success" :loading="caseRunning" @click="onCaseRun"
-              >执行
-            </a-button>
-            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
-          </a-space>
-        </template>
-        <div class="container">
-          <a-space direction="vertical" style="width: 25%">
-            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
-            <span>所属模块：{{ pageData.record.module?.name }}</span>
-            <span>用例负责人：{{ pageData.record.case_people?.name }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 25%">
-            <span>用例ID：{{ pageData.record.id }}</span>
-            <span>用例名称：{{ pageData.record.name }}</span>
-            <span>测试结果：{{ enumStore.task_status[pageData.record.status].title }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 50%">
-            <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
-          </a-space>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ uiCaseDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护用例前后置、步骤编排、断言和执行结果</div>
         </div>
-      </a-card>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button size="small" status="success" :loading="caseRunning" @click="onCaseRun">
+            执行
+          </a-button>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
+      </div>
     </template>
     <template #default>
-      <a-card :bordered="false">
-        <div class="main_box">
-          <div class="left">
+      <div
+        class="ui-case-workbench mango-detail-workbench mango-detail-workbench--fill mango-detail-workbench--flex"
+      >
+        <section class="ui-case-panel">
+          <div class="ui-case-panel-head">
+            <div>
+              <div class="ui-case-panel-title">步骤编排</div>
+              <div class="ui-case-panel-subtitle">维护前置参数、用例步骤和后置处理</div>
+            </div>
+            <a-space wrap>
+              <a-button
+                size="small"
+                type="primary"
+                :loading="syncAllLoading"
+                @click="addSynchronous"
+                >全部同步</a-button
+              >
+              <a-button size="small" type="primary" @click="addData">增加步骤</a-button>
+            </a-space>
+          </div>
+          <div class="ui-case-panel-body">
             <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
-              <template #extra>
-                <a-space>
-                  <div>
-                    <a-button size="small" type="primary" @click="addSynchronous"
-                      >全部同步
-                    </a-button>
-                  </div>
-                  <div>
-                    <a-button size="small" type="primary" @click="addData">增加步骤</a-button>
-                  </div>
-                </a-space>
-              </template>
               <a-tab-pane key="1" title="用例前置">
                 <a-tabs
                   :default-active-key="data.uiSonType"
@@ -95,8 +87,10 @@
                   :key="tableKey"
                   :columns="columns"
                   :data="data.data"
+                  :loading="stepTableLoading"
                   :draggable="{ type: 'handle', width: 40 }"
                   :pagination="false"
+                  :scroll="{ x: 1020 }"
                   @change="handleChange"
                   @row-click="select"
                 >
@@ -123,6 +117,12 @@
                           >{{ enumStore.task_status[record.status].title }}
                         </a-tag>
                       </template>
+                      <template v-else-if="item.dataIndex === 'error_message'" #cell="{ record }">
+                        <a-tooltip v-if="record.error_message" :content="record.error_message">
+                          <span class="case-error-text">{{ record.error_message }}</span>
+                        </a-tooltip>
+                        <span v-else class="case-error-empty">-</span>
+                      </template>
                       <template v-else-if="item.key === 'switch_step_open_url'" #cell="{ record }">
                         <a-switch
                           :beforeChange="
@@ -132,47 +132,18 @@
                         />
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                        <a-button
-                          size="mini"
-                          type="text"
-                          class="custom-mini-btn"
-                          :loading="caseRunning"
-                          @click="onPageStep(record)"
-                          >单步执行
-                        </a-button>
-                        <a-dropdown trigger="hover">
-                          <a-button size="mini" type="text">···</a-button>
-                          <template #content>
-                            <a-doption>
-                              <a-button
-                                size="mini"
-                                type="text"
-                                class="custom-mini-btn"
-                                @click="oeFreshSteps(record)"
-                                >同步数据
-                              </a-button>
-                            </a-doption>
-                            <a-doption>
-                              <a-button
-                                size="mini"
-                                type="text"
-                                class="custom-mini-btn"
-                                @click="onUpdate1(record)"
-                                >编辑
-                              </a-button>
-                            </a-doption>
-                            <a-doption>
-                              <a-button
-                                size="mini"
-                                status="danger"
-                                type="text"
-                                class="custom-mini-btn"
-                                @click="onDelete(record)"
-                                >删除
-                              </a-button>
-                            </a-doption>
-                          </template>
-                        </a-dropdown>
+                        <MangoTableActions
+                          :actions="[
+                            {
+                              label: '单步执行',
+                              loading: caseRunning,
+                              onClick: () => onPageStep(record),
+                            },
+                            { label: '同步数据', onClick: () => oeFreshSteps(record) },
+                            { label: '编辑', onClick: () => onUpdate1(record) },
+                            { label: '删除', danger: true, onClick: () => onDelete(record) },
+                          ]"
+                        />
                       </template>
                     </a-table-column>
                   </template>
@@ -196,7 +167,24 @@
               </a-tab-pane>
             </a-tabs>
           </div>
-          <div class="right">
+        </section>
+        <section class="ui-case-panel">
+          <div class="ui-case-panel-head">
+            <div>
+              <div class="ui-case-panel-title">执行详情</div>
+              <div class="ui-case-panel-subtitle">
+                {{ data.selectData?.page_step?.name || '选择左侧步骤后查看执行顺序和结果' }}
+              </div>
+            </div>
+            <a-tag
+              v-if="data.selectData?.status !== undefined"
+              :color="enumStore.status_colors[data.selectData.status]"
+              size="small"
+            >
+              {{ enumStore.task_status[data.selectData.status]?.title }}
+            </a-tag>
+          </div>
+          <div class="ui-case-panel-body">
             <a-tabs default-active-key="1">
               <a-tab-pane key="1" title="预估步骤执行顺序">
                 <a-list :bordered="false" :split="false" class="step-execution-list">
@@ -324,7 +312,11 @@
                                 placeholder="请输入python代码"
                                 class="code-editor"
                               />
-                              <a-button type="primary" class="save-btn" @click="onUpdate"
+                              <a-button
+                                type="primary"
+                                class="save-btn"
+                                :loading="detailSaving"
+                                @click="onUpdate"
                                 >保存
                               </a-button>
                             </div>
@@ -345,8 +337,8 @@
               </a-tab-pane>
             </a-tabs>
           </div>
-        </div>
-      </a-card>
+        </section>
+      </div>
     </template>
   </TableBody>
 
@@ -356,7 +348,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -404,14 +396,14 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
 
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import ModalDialog from '@/components/ModalDialog.vue'
+  import ModalDialog from '@/components/overlays/ModalDialog.vue'
   import { usePageData } from '@/store/page-data'
   import { columns, formItems } from './config'
   import {
@@ -428,10 +420,10 @@
   import { getUiPageName } from '@/api/uitest/page'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import ElementTestReport from '@/components/ElementTestReport.vue'
+  import ElementTestReport from '@/components/reports/ElementTestReport.vue'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
-  import CodeEditor from '@/components/CodeEditor.vue'
-  import KeyValueList from '@/components/KeyValueList.vue'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import KeyValueList from '@/components/forms/KeyValueList.vue'
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
 
   const userStore = useUserStore()
@@ -458,6 +450,14 @@
   const useSelectValue = useSelectValueStore()
 
   const caseRunning = ref(false)
+  const stepTableLoading = ref(false)
+  const syncAllLoading = ref(false)
+  const detailSaving = ref(false)
+  const uiCaseDetailTitle = computed(() => {
+    const id = pageData.record?.id || route.query.id || '-'
+    const name = pageData.record?.name || '-'
+    return `界面用例配置 / ${id} / ${name}`
+  })
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
 
   function clearPollingTimer() {
@@ -535,8 +535,8 @@
       content: '是否要删除此步骤？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUiCaseStepsDetailed(record.id, record.case.id)
+      onBeforeOk: () => {
+        return deleteUiCaseStepsDetailed(record.id, record.case.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -616,6 +616,7 @@
 
   function doRefresh() {
     clearPollingTimer()
+    stepTableLoading.value = true
 
     getUiCaseStepsDetailed(route.query.id)
       .then((res) => {
@@ -641,6 +642,9 @@
         }
       })
       .catch(console.log)
+      .finally(() => {
+        stepTableLoading.value = false
+      })
   }
 
   function oeFreshSteps(record: any) {
@@ -649,8 +653,8 @@
       content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
       cancelText: '取消',
       okText: '刷新',
-      onOk: () => {
-        getUiCaseStepsRefreshCacheData(record.id)
+      onBeforeOk: () => {
+        return getUiCaseStepsRefreshCacheData(record.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -666,13 +670,17 @@
       content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
       cancelText: '取消',
       okText: '同步',
-      onOk: () => {
-        getUiCaseStepsRefreshCacheData(null, route.query.id)
+      onBeforeOk: () => {
+        syncAllLoading.value = true
+        return getUiCaseStepsRefreshCacheData(null, route.query.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            syncAllLoading.value = false
+          })
       },
     })
   }
@@ -746,6 +754,8 @@
   }
 
   function onUpdate() {
+    if (detailSaving.value) return
+    detailSaving.value = true
     putUiCaseStepsDetailed(
       {
         id: data.selectData.id,
@@ -757,6 +767,9 @@
         Message.success(res.msg)
       })
       .catch(console.log)
+      .finally(() => {
+        detailSaving.value = false
+      })
   }
 
   const onPageStep = async (record) => {
@@ -814,40 +827,88 @@
 </script>
 
 <style scoped>
-  .container .a-space span {
-    font-size: 14px !important;
-    display: block;
-    max-width: 100%;
+  .ui-case-workbench {
+    min-height: 0;
+  }
+
+  .ui-case-panel {
+    display: flex;
     overflow: hidden;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface);
+  }
+
+  .ui-case-panel-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 58px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--m-border);
+    background: var(--m-surface);
+  }
+
+  .ui-case-panel-title {
+    color: var(--m-text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 22px;
+  }
+
+  .ui-case-panel-subtitle {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .ui-case-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px;
+  }
+
+  .ui-case-panel-body :deep(.arco-tabs),
+  .ui-case-panel-body :deep(.arco-tabs-content),
+  .ui-case-panel-body :deep(.arco-tabs-content-list),
+  .ui-case-panel-body :deep(.arco-tabs-pane) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ui-case-panel-body :deep(.arco-tabs-content) {
+    padding-top: 10px;
+  }
+
+  .case-error-text {
+    display: block;
+    overflow: hidden;
+    max-width: 100%;
+    color: var(--m-danger);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .main_box {
-    width: 100%;
-    margin: 0 auto;
-    padding: 5px;
-    box-sizing: border-box;
-    display: flex;
-
-    .left {
-      padding: 5px;
-      width: 50%;
-    }
-
-    .right {
-      padding: 5px;
-      width: 50%;
-    }
+  .case-error-empty {
+    color: var(--m-muted);
   }
 
-  /* 步骤执行列表样式 */
-  .step-execution-list {
-    .step-header {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1d2129;
-    }
+  .step-execution-list .step-header {
+    color: var(--m-text);
+    font-size: 16px;
+    font-weight: 600;
   }
 
   /* 强制覆盖 Arco Design 组件的边框样式 */
@@ -870,17 +931,17 @@
 
   .step-list-item {
     padding: 8px 8px !important;
-    border: 1px solid #e5e6eb !important;
+    border: 1px solid var(--m-border) !important;
     border-radius: 8px !important;
     margin-bottom: 5px !important;
-    background-color: #ffffff;
+    background-color: var(--m-surface);
     transition: all 0.2s ease;
+  }
 
-    &:hover {
-      background-color: #f7f8fa;
-      border-color: #c9cdd4;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
+  .step-list-item:hover {
+    border-color: var(--m-border-strong);
+    background-color: var(--m-surface-soft);
+    box-shadow: var(--m-shadow);
   }
 
   .step-container {
@@ -893,7 +954,7 @@
     align-items: center;
     gap: 16px;
     padding: 8px;
-    background-color: #f2f3f5;
+    background-color: var(--m-surface-soft);
     border-radius: 6px;
     flex-wrap: wrap;
   }
@@ -912,13 +973,13 @@
   .operation-label,
   .element-label {
     font-weight: 500;
-    color: #4e5969;
+    color: var(--m-muted);
     margin-right: 4px;
   }
 
   .operation-value,
   .element-value {
-    color: #1d2129;
+    color: var(--m-text);
     font-weight: 500;
   }
 
@@ -932,7 +993,7 @@
     display: inline-block;
     min-width: 80px;
     font-weight: 500;
-    color: #4e5969;
+    color: var(--m-muted);
     margin-right: 8px;
   }
 
@@ -947,7 +1008,7 @@
     align-items: flex-start;
     margin-bottom: 12px;
     padding: 8px;
-    background-color: #fff7e6;
+    background-color: color-mix(in srgb, var(--m-warning) 12%, var(--m-surface));
     border-radius: 4px;
   }
 
@@ -1011,7 +1072,7 @@
   }
 
   /* 确保KeyValueList中的所有元素都在一行 */
-  :deep(.key-value-row) {
+  :deep(.mango-key-value-row) {
     flex-wrap: nowrap;
     align-items: flex-start;
     width: 100%;
@@ -1019,13 +1080,13 @@
     overflow-x: hidden; /* 防止水平滚动 */
   }
 
-  :deep(.key-value-field) {
+  :deep(.mango-key-value-field) {
     flex: 1;
     min-width: 100px; /* 减小最小宽度 */
     overflow: hidden; /* 防止内容溢出 */
   }
 
-  :deep(.button-container) {
+  :deep(.mango-button-container) {
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -1034,7 +1095,7 @@
     min-width: fit-content; /* 确保按钮容器不会收缩 */
   }
 
-  :deep(.remove-btn) {
+  :deep(.mango-remove-btn) {
     flex-shrink: 0;
     margin-top: 18px;
     min-width: fit-content; /* 确保按钮不会收缩 */
@@ -1042,21 +1103,21 @@
 
   /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
   @media (max-width: 768px) {
-    :deep(.key-value-row) {
+    :deep(.mango-key-value-row) {
       flex-wrap: wrap;
     }
 
-    :deep(.key-value-field) {
+    :deep(.mango-key-value-field) {
       min-width: 120px;
     }
 
-    :deep(.button-container) {
+    :deep(.mango-button-container) {
       width: 100%;
       justify-content: flex-end;
       margin-top: 8px;
     }
 
-    :deep(.remove-btn) {
+    :deep(.mango-remove-btn) {
       margin-top: 0;
       align-self: center;
     }
@@ -1064,10 +1125,10 @@
 
   .drag-handle {
     cursor: move;
-    color: #999;
+    color: var(--m-muted);
   }
 
   .drag-handle:hover {
-    color: #165dff;
+    color: var(--m-primary);
   }
 </style>

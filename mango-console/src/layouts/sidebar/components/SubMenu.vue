@@ -1,7 +1,7 @@
 <template>
   <a-sub-menu :key="menuInfo.key">
     <template #title>
-      <span class="sub-menu-lable">{{ menuInfo.label }}</span>
+      <span class="mango-sub-menu-label">{{ menuInfo.label }}</span>
     </template>
     <template #icon>
       <component
@@ -39,7 +39,7 @@
   })
 </script>
 <style scoped>
-  .sub-menu-lable {
+  .mango-sub-menu-label {
     flex: 1;
     margin-left: 3px;
   }

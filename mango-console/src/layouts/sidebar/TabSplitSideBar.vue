@@ -1,27 +1,27 @@
 <template>
   <div
-    :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]"
-    class="vaw-tab-split-side-bar-wrapper"
+    :class="[!appStore.isCollapse ? 'mango-open-status' : 'mango-close-status', bgColor]"
+    class="mango-tab-split-side-bar-wrapper"
   >
-    <div class="tab-split-tab-wrapper">
-      <Logo :show-title="false" class="tab-split-logo-wrapper" />
-      <Scrollbar class="tab-split-slidebar__wrapper">
-        <div class="tab-split-content-wrapper">
+    <div class="mango-tab-split-tab-wrapper">
+      <Logo :show-title="false" class="mango-tab-split-logo-wrapper" />
+      <Scrollbar class="mango-tab-split-scrollbar-wrapper">
+        <div class="mango-tab-split-content-wrapper">
           <div
             v-for="item of tabs"
             :key="item.fullPath"
-            :class="{ 'vaw-tab-split-item-is-active': item.checked.value }"
-            class="label-item-wrapper"
+            :class="{ 'mango-tab-split-item-is-active': item.checked.value }"
+            class="mango-label-item-wrapper"
             @click="changeTab(item)"
           >
             <component :is="item.icon || 'icon-menu'" style="font-size: 18px" />
-            <span class="title">{{ item.label }}</span>
+            <span class="mango-tab-split-title">{{ item.label }}</span>
           </div>
         </div>
       </Scrollbar>
     </div>
-    <div class="tab-split-menu-wrapper">
-      <Logo :show-logo="false" class="tab-split-logo-wrapper" />
+    <div class="mango-tab-split-menu-wrapper">
+      <Logo :show-logo="false" class="mango-tab-split-logo-wrapper" />
       <ScrollerMenu :routes="routes" />
     </div>
   </div>
@@ -142,14 +142,12 @@
 </script>
 
 <style>
-  .tab-split-slidebar__wrapper {
+  .mango-tab-split-scrollbar-wrapper {
     height: calc(100% - 48px) !important;
   }
 </style>
 
 <style lang="less" scoped>
-  @--primary-color: #1890ff;
-  @--dark-color: #000c16;
   .sidebar-bg-img {
     background-image: url('../../assets/bg_img.webp') !important;
     background-size: cover;
@@ -158,49 +156,49 @@
       background: transparent !important;
     }
 
-    :deep(.logo-wrapper .logo-title) {
-      color: #fff !important;
+    :deep(.mango-logo-wrapper .mango-logo-title) {
+      color: var(--m-layout-logo-text) !important;
     }
 
-    .tab-split-tab-wrapper {
-      .label-item-wrapper {
-        color: #fff;
+    .mango-tab-split-tab-wrapper {
+      .mango-label-item-wrapper {
+        color: var(--m-layout-sidebar-text);
       }
     }
   }
 
   .sidebar-bg-dark {
-    :deep(.logo-wrapper .logo-title) {
-      color: #fff !important;
+    :deep(.mango-logo-wrapper .mango-logo-title) {
+      color: var(--m-layout-logo-text) !important;
     }
 
-    .tab-split-tab-wrapper {
-      background-color: @--dark-color;
+    .mango-tab-split-tab-wrapper {
+      background-color: var(--m-layout-sidebar-bg);
 
-      .label-item-wrapper {
-        color: #fff;
+      .mango-label-item-wrapper {
+        color: var(--m-layout-sidebar-text);
       }
     }
   }
 
   .sidebar-bg-light {
-    background-color: #fff;
+    background-color: var(--m-layout-sidebar-bg);
 
-    .tab-split-tab-wrapper {
-      background-color: #f5f5f5;
+    .mango-tab-split-tab-wrapper {
+      background-color: var(--m-layout-sidebar-bg);
 
-      .label-item-wrapper {
-        color: #333;
+      .mango-label-item-wrapper {
+        color: var(--m-layout-sidebar-text);
       }
 
-      .vaw-tab-split-item-is-active {
-        color: #fff;
+      .mango-tab-split-item-is-active {
+        color: var(--m-layout-sidebar-active-text);
       }
     }
   }
 
   .light .sidebar-bg-dark {
-    background-color: @--dark-color;
+    background-color: var(--m-layout-sidebar-bg);
   }
 
   .dark .sidebar-bg-dark {
@@ -209,19 +207,19 @@
     }
   }
 
-  .open-status {
+  .mango-open-status {
     width: @menuWidth;
-    box-shadow: 2px 5px 10px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--m-shadow);
     transition: all @transitionTime;
   }
 
-  .close-status {
+  .mango-close-status {
     width: @minMenuWidth;
     box-shadow: none;
     transition: all @transitionTime;
   }
 
-  .vaw-tab-split-side-bar-wrapper {
+  .mango-tab-split-side-bar-wrapper {
     position: fixed;
     top: 0;
     left: 0;
@@ -230,7 +228,7 @@
     box-sizing: border-box;
     z-index: 999;
 
-    .tab-split-tab-wrapper {
+    .mango-tab-split-tab-wrapper {
       position: relative;
       top: 0;
       left: 0;
@@ -241,12 +239,12 @@
       height: 100vh;
       box-sizing: border-box;
 
-      .tab-split-logo-wrapper {
+      .mango-tab-split-logo-wrapper {
         max-width: @tabSplitMenuWidth;
         min-width: @tabSplitMenuWidth;
       }
 
-      .tab-split-content-wrapper {
+      .mango-tab-split-content-wrapper {
         position: relative;
 
         .after {
@@ -260,7 +258,7 @@
           z-index: -1;
         }
 
-        .label-item-wrapper {
+        .mango-label-item-wrapper {
           position: relative;
           min-height: @logoHeight * 1.2;
           padding: 10px 0;
@@ -272,7 +270,7 @@
           box-sizing: border-box;
           z-index: 1;
 
-          .title {
+          .mango-tab-split-title {
             display: inline-block;
             width: 80%;
             margin: 0 auto;
@@ -293,18 +291,18 @@
           }
         }
 
-        .label-item-wrapper:hover::after {
-          background-color: @--primary-color;
+        .mango-label-item-wrapper:hover::after {
+          background-color: var(--m-layout-sidebar-hover-bg);
         }
 
-        .vaw-tab-split-item-is-active::after {
-          background-color: @--primary-color;
+        .mango-tab-split-item-is-active::after {
+          background-color: var(--m-layout-sidebar-active-bg);
           .after;
         }
       }
     }
 
-    .tab-split-menu-wrapper {
+    .mango-tab-split-menu-wrapper {
       position: absolute;
       top: 0;
       right: 0;
@@ -313,20 +311,20 @@
       overflow-x: hidden;
     }
 
-    .vaw-menu-wrapper {
+    .mango-menu-wrapper {
       overflow-x: hidden;
-      color: white;
+      color: var(--m-layout-sidebar-text);
     }
   }
 
-  .is-mobile {
-    .open-status {
+  .mango-is-mobile {
+    .mango-open-status {
       width: @menuWidth;
       transform: translateX(0);
       transition: transform @transitionTime;
     }
 
-    .close-status {
+    .mango-close-status {
       width: @menuWidth;
       transform: translateX(calc(@menuWidth * -1));
       transition: transform @transitionTime;

@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -33,7 +32,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -53,6 +51,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -92,19 +91,12 @@
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑
-                </a-button>
-                <a-button
-                  size="mini"
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -120,7 +112,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -255,8 +247,8 @@
       content: '是否要删除此参数？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUiPublic(record.id)
+      onBeforeOk: () => {
+        return deleteUiPublic(record.id)
           .then((res) => {
             Message.success(res.msg)
           })

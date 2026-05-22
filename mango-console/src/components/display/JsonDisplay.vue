@@ -1,22 +1,22 @@
 <template>
-  <a-space class="m-2">
-    <a-space v-if="showJsonpathButton">
+  <div class="mango-json-display-toolbar">
+    <a-space v-if="showJsonpathButton" class="mango-json-display-toolbar__path">
       <a-input v-model="jsonpathInput" placeholder="请输入jsonpath语法，如: $.name" />
-      <a-button type="dashed" status="warning" @click="jsonpathTest">提取</a-button>
+      <a-button type="outline" status="warning" @click="jsonpathTest">提取</a-button>
     </a-space>
-    <a-space>
-      <a-button type="dashed" status="success" @click="copyToClipboard">复制</a-button>
+    <a-space class="mango-json-display-toolbar__actions">
+      <a-button type="outline" status="success" @click="copyToClipboard">复制</a-button>
       <a-button
         v-if="isObjectOrArray || (isString && isValidJson)"
-        type="dashed"
+        type="outline"
         @click="toggleExpand"
       >
         {{ isExpanded ? '收起' : '展开' }}
       </a-button>
-      <a-button v-if="canPreviewJson" type="dashed" @click="openJsonDrawer">查看JSON</a-button>
+      <a-button v-if="canPreviewJson" type="outline" @click="openJsonDrawer">查看JSON</a-button>
     </a-space>
-  </a-space>
-  <div class="json-display-content">
+  </div>
+  <div class="mango-json-display-content mango-code-panel">
     <vue-json-pretty
       v-if="isObjectOrArray && showComponent"
       :data="parsedData"
@@ -43,13 +43,13 @@
     :footer="false"
     unmount-on-close
   >
-    <div class="json-drawer">
-      <div class="json-drawer-toolbar">
+    <div class="mango-json-drawer">
+      <div class="mango-json-drawer-toolbar mango-section-actions">
         <a-button type="primary" size="small" @click="toggleDrawerExpand">
           {{ drawerExpanded ? '收起' : '展开' }}
         </a-button>
       </div>
-      <div class="json-drawer-content">
+      <div class="mango-json-drawer-content mango-code-panel">
         <vue-json-pretty
           v-if="showDrawerComponent"
           :data="drawerJsonData"
@@ -78,11 +78,15 @@
       type: Boolean,
       default: false,
     },
+    defaultExpanded: {
+      type: [Boolean, String],
+      default: 'auto',
+    },
   })
 
   // JSONPath输入框的值
   const jsonpathInput = ref('')
-  // 控制展开/收起状态，默认为收起状态
+  // 控制是否完全展开；默认只展示 JSON 第一层级
   const isExpanded = ref(false)
   // 控制是否显示组件
   const showComponent = ref(false)
@@ -90,8 +94,8 @@
   const drawerExpanded = ref(false)
   const showDrawerComponent = ref(false)
   const collapsedDeep = 0
+  const previewDeep = 1
   const expandedDeep = Number.MAX_SAFE_INTEGER
-  const defaultExpandLimit = 10
 
   /**
    * 判断是否是对象或数组
@@ -199,23 +203,23 @@
     return parsedData.value
   })
 
-  const shouldExpandByDefault = computed(() => {
-    const data = drawerJsonData.value
-    if (Array.isArray(data)) {
-      return data.length <= defaultExpandLimit
+  const shouldExpandFullyByDefault = computed(() => {
+    return props.defaultExpanded === true || props.defaultExpanded === 'true'
+  })
+
+  const defaultJsonTreeDeep = computed(() => {
+    if (props.defaultExpanded === false || props.defaultExpanded === 'false') {
+      return collapsedDeep
     }
-    if (data && typeof data === 'object' && !(data instanceof Date)) {
-      return Object.keys(data).length <= defaultExpandLimit
-    }
-    return false
+    return previewDeep
   })
 
   const jsonTreeDeep = computed(() => {
-    return isExpanded.value ? expandedDeep : collapsedDeep
+    return isExpanded.value ? expandedDeep : defaultJsonTreeDeep.value
   })
 
   const drawerJsonTreeDeep = computed(() => {
-    return drawerExpanded.value ? expandedDeep : collapsedDeep
+    return drawerExpanded.value ? expandedDeep : defaultJsonTreeDeep.value
   })
 
   const formatCopyValue = (value) => {
@@ -290,7 +294,7 @@
 
   const openJsonDrawer = async () => {
     jsonDrawerVisible.value = true
-    drawerExpanded.value = shouldExpandByDefault.value
+    drawerExpanded.value = shouldExpandFullyByDefault.value
     showDrawerComponent.value = false
     await nextTick()
     showDrawerComponent.value = true
@@ -306,8 +310,8 @@
     async () => {
       showComponent.value = false
       showDrawerComponent.value = false
-      isExpanded.value = shouldExpandByDefault.value
-      drawerExpanded.value = shouldExpandByDefault.value
+      isExpanded.value = shouldExpandFullyByDefault.value
+      drawerExpanded.value = shouldExpandFullyByDefault.value
       await nextTick()
       showComponent.value = true
       showDrawerComponent.value = jsonDrawerVisible.value
@@ -317,26 +321,53 @@
 
   // 组件挂载后确保正确显示
   onMounted(async () => {
-    isExpanded.value = shouldExpandByDefault.value
-    drawerExpanded.value = shouldExpandByDefault.value
+    isExpanded.value = shouldExpandFullyByDefault.value
+    drawerExpanded.value = shouldExpandFullyByDefault.value
     await nextTick()
     showComponent.value = true
   })
 </script>
 
 <style scoped lang="less">
-  .json-display-content {
-    position: relative;
-    padding: 8px 10px;
-    background: #f7f8fa;
-    border: 1px solid #e5e6eb;
-    border-radius: 4px;
+  .mango-json-display-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0;
   }
 
-  .json-display-content,
-  .json-drawer-content {
+  .mango-json-display-toolbar__path {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .mango-json-display-toolbar__actions {
+    flex: none;
+  }
+
+  .mango-json-display-content {
+    position: relative;
+    padding: 8px 10px;
+    overflow: auto;
+  }
+
+  .mango-json-display-content pre,
+  .mango-json-display-content span {
+    margin: 0;
+    color: var(--m-code-text);
+    font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, Menlo, monospace;
+    font-size: 13px;
+    line-height: 21px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .mango-json-display-content,
+  .mango-json-drawer-content {
     :deep(.vjs-tree) {
-      color: #2b2d30;
+      color: var(--m-code-text);
       font-size: 13px;
       line-height: 21px;
       font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, Menlo, monospace;
@@ -349,53 +380,53 @@
 
     :deep(.vjs-tree-node:hover),
     :deep(.vjs-tree-node.is-highlight) {
-      background-color: #edf3ff;
+      background-color: var(--m-code-line-hover);
     }
 
     :deep(.vjs-key) {
-      color: #871094;
+      color: var(--m-code-key);
       font-weight: 500;
     }
 
     :deep(.vjs-colon) {
-      color: #6c707e;
+      color: var(--m-muted);
     }
 
     :deep(.vjs-value-string) {
-      color: #067d17;
+      color: var(--m-code-string);
     }
 
     :deep(.vjs-value-number) {
-      color: #1750eb;
+      color: var(--m-code-number);
     }
 
     :deep(.vjs-value-boolean) {
-      color: #0033b3;
+      color: var(--m-code-boolean);
       font-weight: 500;
     }
 
     :deep(.vjs-value-null),
     :deep(.vjs-value-undefined) {
-      color: #9f6700;
+      color: var(--m-code-null);
       font-style: italic;
     }
 
     :deep(.vjs-comment) {
-      color: #8c8c8c;
+      color: var(--m-muted);
     }
 
     :deep(.vjs-tree-brackets),
     :deep(.vjs-carets) {
-      color: #2b2d30;
+      color: var(--m-code-text);
     }
 
     :deep(.vjs-tree-brackets:hover),
     :deep(.vjs-carets:hover) {
-      color: #0b6fcb;
+      color: var(--m-primary);
     }
 
     :deep(.vjs-indent-unit.has-line) {
-      border-left-color: #dcdfe6;
+      border-left-color: var(--m-code-border);
     }
   }
 
@@ -418,27 +449,24 @@
     align-items: center;
   }
 
-  .json-drawer {
+  .mango-json-drawer {
     height: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  .json-drawer-toolbar {
+  .mango-json-drawer-toolbar {
     display: flex;
     justify-content: flex-end;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--color-border-2);
+    border-bottom: 1px solid var(--m-border);
   }
 
-  .json-drawer-content {
+  .mango-json-drawer-content {
     flex: 1;
     min-height: 0;
     overflow: auto;
     margin-top: 12px;
     padding: 12px 14px;
-    background: #f7f8fa;
-    border: 1px solid #e5e6eb;
-    border-radius: 4px;
   }
 </style>

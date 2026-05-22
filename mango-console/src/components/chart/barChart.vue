@@ -6,21 +6,26 @@
   const props = defineProps<{
     success: number[] // 成功数据
     fail: number[] // 失败数据
+    loading?: boolean
   }>()
 
   const barChart = ref<HTMLElement | null>(null)
   let myChart: echarts.ECharts | null = null
-  const successTotal = computed(() => props.success.reduce((sum, item) => sum + Number(item || 0), 0))
+  const token = (name: string, fallback: string) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+  const successTotal = computed(() =>
+    props.success.reduce((sum, item) => sum + Number(item || 0), 0)
+  )
   const failTotal = computed(() => props.fail.reduce((sum, item) => sum + Number(item || 0), 0))
 
   // ECharts 配置
   const chartOptions: echarts.EChartsOption = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.96)',
-      borderColor: '#e5e6eb',
+      backgroundColor: token('--m-surface', '#fff'),
+      borderColor: token('--m-border', '#e5e6eb'),
       textStyle: {
-        color: '#1d2129',
+        color: token('--m-text', '#1d2129'),
       },
     },
     grid: {
@@ -36,7 +41,7 @@
       axisLine: {
         show: true,
         lineStyle: {
-          color: '#98A3B2',
+          color: token('--m-border-strong', '#98A3B2'),
           width: 0,
           type: 'solid',
         },
@@ -45,7 +50,7 @@
         show: false,
       },
       axisLabel: {
-        color: '#86909c',
+        color: token('--m-muted', '#86909c'),
       },
     },
     yAxis: {
@@ -53,7 +58,7 @@
       splitLine: {
         show: true,
         lineStyle: {
-          color: '#eef0f5',
+          color: token('--m-border', '#eef0f5'),
           type: 'dashed',
         },
       },
@@ -64,7 +69,7 @@
         show: false,
       },
       axisLabel: {
-        color: '#86909c',
+        color: token('--m-muted', '#86909c'),
       },
     },
     series: [
@@ -77,14 +82,14 @@
         smooth: true,
         lineStyle: {
           width: 3,
-          color: '#22c55e',
+          color: token('--m-success', '#22c55e'),
         },
         areaStyle: {
           opacity: 0.12,
-          color: '#22c55e',
+          color: token('--m-success', '#22c55e'),
         },
         itemStyle: {
-          color: '#22c55e',
+          color: token('--m-success', '#22c55e'),
         },
       },
       {
@@ -96,14 +101,14 @@
         smooth: true,
         lineStyle: {
           width: 3,
-          color: '#ef4444',
+          color: token('--m-danger', '#ef4444'),
         },
         areaStyle: {
           opacity: 0.1,
-          color: '#ef4444',
+          color: token('--m-danger', '#ef4444'),
         },
         itemStyle: {
-          color: '#ef4444',
+          color: token('--m-danger', '#ef4444'),
         },
       },
     ],
@@ -124,14 +129,47 @@
     // 更新 series 数据
     const options = {
       ...chartOptions,
+      tooltip: {
+        ...(chartOptions.tooltip as object),
+        backgroundColor: token('--m-surface', '#fff'),
+        borderColor: token('--m-border', '#e5e6eb'),
+        textStyle: {
+          color: token('--m-text', '#1d2129'),
+        },
+      },
+      xAxis: {
+        ...(chartOptions.xAxis as object),
+        axisLabel: {
+          color: token('--m-muted', '#86909c'),
+        },
+      },
+      yAxis: {
+        ...(chartOptions.yAxis as object),
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: token('--m-border', '#eef0f5'),
+            type: 'dashed',
+          },
+        },
+        axisLabel: {
+          color: token('--m-muted', '#86909c'),
+        },
+      },
       series: [
         {
           ...chartOptions.series![0],
           data: props.success, // 使用 success 数据
+          lineStyle: { width: 3, color: token('--m-success', '#22c55e') },
+          areaStyle: { opacity: 0.12, color: token('--m-success', '#22c55e') },
+          itemStyle: { color: token('--m-success', '#22c55e') },
         },
         {
           ...chartOptions.series![1],
           data: props.fail,
+          lineStyle: { width: 3, color: token('--m-danger', '#ef4444') },
+          areaStyle: { opacity: 0.1, color: token('--m-danger', '#ef4444') },
+          itemStyle: { color: token('--m-danger', '#ef4444') },
         },
       ],
     }
@@ -149,58 +187,77 @@
 
   onMounted(() => {
     initBarChart()
+    window.addEventListener('mango-theme-change', updateChart)
   })
 
   onBeforeUnmount(() => {
+    window.removeEventListener('mango-theme-change', updateChart)
     myChart?.dispose()
   })
 </script>
 
 <template>
-  <div class="report-trend-chart">
-    <div class="trend-stat-row">
-      <div class="trend-stat success">
-        <span></span>
-        <div>
-          <strong>{{ successTotal }}</strong>
-          <p>成功</p>
+  <div class="mango-report-trend-chart">
+    <a-spin :loading="props.loading" class="mango-chart-spin">
+      <div class="mango-report-trend-chart__content">
+        <div class="mango-trend-stat-row">
+          <div class="mango-trend-stat mango-trend-stat-success">
+            <span></span>
+            <div>
+              <strong>{{ successTotal }}</strong>
+              <p>成功</p>
+            </div>
+          </div>
+          <div class="mango-trend-stat mango-trend-stat-fail">
+            <span></span>
+            <div>
+              <strong>{{ failTotal }}</strong>
+              <p>失败</p>
+            </div>
+          </div>
         </div>
+        <div ref="barChart" class="mango-chart"></div>
       </div>
-      <div class="trend-stat fail">
-        <span></span>
-        <div>
-          <strong>{{ failTotal }}</strong>
-          <p>失败</p>
-        </div>
-      </div>
-    </div>
-    <div ref="barChart" class="chart"></div>
+    </a-spin>
   </div>
 </template>
 
 <style lang="less" scoped>
-  .report-trend-chart {
+  .mango-report-trend-chart {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mango-chart-spin,
+  :deep(.mango-chart-spin .arco-spin-children) {
     display: flex;
     height: 100%;
     min-height: 0;
     flex-direction: column;
   }
 
-  .trend-stat-row {
+  .mango-report-trend-chart__content {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .mango-trend-stat-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     padding: 8px 4px 2px;
   }
 
-  .trend-stat {
+  .mango-trend-stat {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
-    border: 1px solid var(--color-neutral-3);
-    border-radius: 8px;
-    background: var(--color-fill-1);
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface-soft);
 
     > span {
       width: 9px;
@@ -210,28 +267,28 @@
     }
 
     strong {
-      color: var(--color-text-1);
+      color: var(--m-text);
       font-size: 18px;
       line-height: 22px;
     }
 
     p {
       margin: 0;
-      color: var(--color-text-3);
+      color: var(--m-muted);
       font-size: 12px;
       line-height: 17px;
     }
   }
 
-  .trend-stat.success > span {
-    background: #22c55e;
+  .mango-trend-stat.mango-trend-stat-success > span {
+    background: var(--m-success);
   }
 
-  .trend-stat.fail > span {
-    background: #ef4444;
+  .mango-trend-stat.mango-trend-stat-fail > span {
+    background: var(--m-danger);
   }
 
-  .chart {
+  .mango-chart {
     flex: 1;
     width: 100%;
     min-height: 0;

@@ -1,27 +1,15 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" class="mango-detail-workbench-page">
     <template #header>
-      <a-card title="页面元素详情" :bordered="false">
-        <template #extra>
-          <a-space>
-            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
-          </a-space>
-        </template>
-        <div class="container">
-          <a-space direction="vertical" style="width: 25%">
-            <p>页面ID：{{ pageData.record.id }}</p>
-            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
-            <span>所属模块：{{ pageData.record.module?.name }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 75%">
-            <span>页面名称：{{ pageData.record.name }}</span>
-            <span>页面地址：{{ pageData.record.url }}</span>
-            <span>元素个数：{{ data.totalSize }}</span>
-            <span>页面类型：{{ pageData.record.type }}</span>
-          </a-space>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ pageElementDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护页面元素定位、操作配置和批量导入数据</div>
         </div>
-      </a-card>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
+      </div>
     </template>
     <template #default>
       <a-tabs>
@@ -102,20 +90,13 @@
               />
             </template>
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" class="custom-mini-btn" @click="onDebug(record)"
-                >调试
-              </a-button>
-              <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑
-              </a-button>
-              <a-button
-                status="danger"
-                type="text"
-                size="mini"
-                class="custom-mini-btn"
-                @click="onDelete(record)"
-                >删除
-              </a-button>
+              <MangoTableActions
+                :actions="[
+                  { label: '调试', onClick: () => onDebug(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -135,7 +116,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems"
           :key="item.key"
@@ -162,7 +143,7 @@
     <template #content>
       <a-form :model="formModel1">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems1"
           :key="item.key"
@@ -191,7 +172,7 @@
                   )
                 "
                 value-key="key"
-                style="width: 380px"
+                class="operation-select"
                 allow-search
                 allow-clear
               />
@@ -227,7 +208,7 @@
                   )
                 "
                 value-key="key"
-                style="width: 380px"
+                class="operation-select"
                 allow-search
                 allow-clear
               />
@@ -246,7 +227,7 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { formItems1, tableColumns, formItems } from './config'
   import { ModalDialogType } from '@/types/components'
@@ -284,6 +265,11 @@
   const pageData: any = usePageData()
 
   const route = useRoute()
+  const pageElementDetailTitle = computed(() => {
+    const id = pageData.record?.id || route.query.id || '-'
+    const name = pageData.record?.name || '-'
+    return `页面元素配置 / ${id} / ${name}`
+  })
 
   const formModel = ref({})
   const formModel1 = ref({})
@@ -325,12 +311,12 @@
       Modal.confirm({
         title: '上传文件',
         content: `确认上传：${file.name}`,
-        onOk: () => {
+        onBeforeOk: () => {
           const formData = new FormData()
           formData.append('file', file)
           formData.append('page_id', route.query.id)
           formData.append('name', file.name)
-          getUiElementUpload(formData)
+          return getUiElementUpload(formData)
             .then((res) => {
               Message.success(res.msg)
               doRefresh()
@@ -356,8 +342,8 @@
       content: '是否要删除此元素？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUiElement(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteUiElement(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -692,13 +678,8 @@
   })
 </script>
 <style scoped>
-  .container .a-space span {
-    font-size: 14px !important;
-    display: block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .operation-select {
+    width: 380px;
   }
 
   .custom-upload :deep(.arco-btn) {
@@ -712,5 +693,8 @@
     width: 88px;
 
     line-height: 28px;
+  }
+
+  @media (max-width: 768px) {
   }
 </style>

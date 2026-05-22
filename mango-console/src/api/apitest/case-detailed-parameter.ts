@@ -23,7 +23,9 @@ export function postApiCaseDetailedParameter(data: ApiCaseParameterPayload) {
   })
 }
 
-export function postApiCaseDetailedParameterCopy(data: ApiCaseParameterPayload & { id: number | null }) {
+export function postApiCaseDetailedParameterCopy(
+  data: ApiCaseParameterPayload & { id: number | null }
+) {
   return post({
     url: '/api/case/detailed/parameter/copy',
     data: () => {

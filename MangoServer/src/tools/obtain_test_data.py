@@ -4,15 +4,12 @@
 # @Time   : 2024-11-19 11:36
 # @Author : 毛鹏
 import os
-import re
 import traceback
 import uuid
 from typing import Any
 
 from mangotools.data_processor import DataProcessor
 from mangotools.decorator import data_method
-from mangotools.exceptions import MangoToolsError
-from mangotools.exceptions.error_msg import ERROR_MSG_0002 as MANGO_ERROR_MSG_0002
 from mangotools.models import MethodModel
 
 from src.auto_test.auto_system.models import FileData

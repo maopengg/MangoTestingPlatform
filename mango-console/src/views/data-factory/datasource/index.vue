@@ -19,7 +19,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -32,7 +31,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -54,6 +52,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :columns="datasourceAliasColumns"
         :data="aliasTable.dataList"
         :loading="aliasTable.tableLoading.value"
@@ -84,35 +83,22 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="openAlias(record)"
-                  >编辑</a-button
-                >
-                <a-button
-                  :loading="actionLoading === `binding-${record.id}`"
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="openBinding(record)"
-                  >环境绑定</a-button
-                >
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text" class="custom-mini-btn">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        :loading="actionLoading === `alias-delete-${record.id}`"
-                        size="mini"
-                        status="danger"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="removeAlias(record)"
-                        >删除</a-button
-                      >
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => openAlias(record) },
+                  {
+                    label: '环境绑定',
+                    loading: actionLoading === `binding-${record.id}`,
+                    onClick: () => openBinding(record),
+                  },
+                  {
+                    label: '删除',
+                    danger: true,
+                    loading: actionLoading === `alias-delete-${record.id}`,
+                    onClick: () => removeAlias(record),
+                  },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -155,11 +141,12 @@
     :title="`${currentAlias?.name || ''} / 环境绑定`"
     width="900px"
   >
-    <a-space style="margin-bottom: 12px">
+    <a-space class="datasource-toolbar">
       <a-button type="primary" @click="openBindingForm()">新增绑定</a-button>
       <a-button :loading="bindingLoading" @click="loadBindings">刷新</a-button>
     </a-space>
     <a-table
+      :scroll="{ x: 1100 }"
       :columns="datasourceBindingColumns"
       :data="bindingRows"
       :loading="bindingLoading"
@@ -189,24 +176,17 @@
             {{ displayDatabase(record.database) }}
           </template>
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
-            <a-space>
-              <a-button
-                size="mini"
-                type="text"
-                class="custom-mini-btn"
-                @click="openBindingForm(record)"
-                >编辑</a-button
-              >
-              <a-button
-                :loading="actionLoading === `binding-delete-${record.id}`"
-                size="mini"
-                status="danger"
-                type="text"
-                class="custom-mini-btn"
-                @click="removeBinding(record)"
-                >删除</a-button
-              >
-            </a-space>
+            <MangoTableActions
+              :actions="[
+                { label: '编辑', onClick: () => openBindingForm(record) },
+                {
+                  label: '删除',
+                  danger: true,
+                  loading: actionLoading === `binding-delete-${record.id}`,
+                  onClick: () => removeBinding(record),
+                },
+              ]"
+            />
           </template>
         </a-table-column>
       </template>
@@ -356,7 +336,7 @@
     Modal.confirm({
       title: '删除逻辑源',
       content: `确认删除 ${record.name}？`,
-      onOk: () => {
+      onBeforeOk: () => {
         actionLoading.value = `alias-delete-${record.id}`
         return deleteDataFactoryDatasourceAlias(record.id)
           .then(doRefresh)
@@ -421,7 +401,7 @@
     Modal.confirm({
       title: '删除绑定',
       content: '确认删除该环境绑定？',
-      onOk: () => {
+      onBeforeOk: () => {
         actionLoading.value = `binding-delete-${record.id}`
         return deleteDataFactoryDatasourceBinding(record.id)
           .then(loadBindings)
@@ -439,3 +419,8 @@
     doRefresh()
   })
 </script>
+<style scoped>
+  .datasource-toolbar {
+    margin-bottom: 12px;
+  }
+</style>

@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -33,7 +32,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -46,7 +44,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -59,7 +56,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -72,7 +68,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -85,7 +80,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -99,7 +93,6 @@
                   allow-clear
                   allow-search
                   multiple
-                  style="width: 180px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -153,6 +146,7 @@
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
+        :scroll="{ x: 1520 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -215,59 +209,16 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  :loading="caseRunning"
-                  @click="caseRun(record)"
-                  >执行
-                </a-button>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
-                  >步骤
-                </a-button>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="clickSuite(record)"
-                  >套件
-                </a-button>
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onUpdate(record)"
-                        >编辑
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="pageStepsCody(record)"
-                        >复制
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        status="danger"
-                        class="custom-mini-btn"
-                        type="text"
-                        @click="onDelete(record)"
-                        >删除
-                      </a-button>
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '执行', loading: caseRunning, onClick: () => caseRun(record) },
+                  { label: '步骤', onClick: () => onStep(record) },
+                  { label: '套件', onClick: () => clickSuite(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '复制', onClick: () => pageStepsCody(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -289,7 +240,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -362,7 +313,11 @@
             />
           </template>
           <template v-else-if="item.type === 'textarea'">
-            <a-textarea v-model="item.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
+            <a-textarea
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :auto-size="{ minRows: 3, maxRows: 5 }"
+            />
           </template>
         </a-form-item>
       </a-form>
@@ -513,8 +468,8 @@
       content: '是否要删除此用例？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteApiCase(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteApiCase(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })

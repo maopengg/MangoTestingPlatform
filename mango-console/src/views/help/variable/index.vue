@@ -2,9 +2,15 @@
   <TableBody ref="tableBody">
     <template #header></template>
     <template #default>
-      <a-card :bordered="false" title="公共变量">
+      <section class="mango-section-card variable-shell">
+        <div class="mango-section-title">
+          <div>
+            <h2>公共变量</h2>
+            <p>调试随机数据、缓存变量和扩展变量表达式</p>
+          </div>
+        </div>
         <a-space class="variable-page" direction="vertical" fill :size="16">
-          <a-card class="try-card" :bordered="false">
+          <div class="try-card mango-soft-panel">
             <a-space direction="vertical" fill :size="12">
               <div class="try-title">测试变量表达式</div>
               <a-input-search
@@ -28,7 +34,7 @@
                 </div>
               </div>
             </a-space>
-          </a-card>
+          </div>
 
           <a-space direction="vertical" fill :size="12">
             <div class="section-tip">
@@ -38,7 +44,11 @@
               <div class="category-panel">
                 <div class="category-title">方法分类</div>
                 <div class="category-list">
-                  <div v-for="section of menuSections" :key="section.value" class="category-section">
+                  <div
+                    v-for="section of menuSections"
+                    :key="section.value"
+                    class="category-section"
+                  >
                     <div class="category-section-title">{{ section.title }}</div>
                     <button
                       v-for="item of section.children"
@@ -68,10 +78,10 @@
                 />
               </div>
             </div>
-            <a-empty v-if="!classGroups.length" description="暂无方法数据" />
+            <div v-if="!classGroups.length" class="mango-empty-state">暂无方法数据</div>
           </a-space>
         </a-space>
-      </a-card>
+      </section>
     </template>
   </TableBody>
 </template>
@@ -84,13 +94,15 @@
   type MethodItem = {
     label: string
     value: string
-    parameter?: Array<{
-      f: string
-      n?: string | null
-      p?: string | null
-      d?: boolean
-      v?: string | number | boolean | null
-    }> | Record<string, string | null>
+    parameter?:
+      | Array<{
+          f: string
+          n?: string | null
+          p?: string | null
+          d?: boolean
+          v?: string | number | boolean | null
+        }>
+      | Record<string, string | null>
   }
 
   type MethodClassGroup = {
@@ -155,7 +167,10 @@
   }
 
   function normalizeExpression(value: string) {
-    return value.replace(/^\$\{\{/, '').replace(/\}\}$/, '').trim()
+    return value
+      .replace(/^\$\{\{/, '')
+      .replace(/\}\}$/, '')
+      .trim()
   }
 
   function obtain(value?: string) {
@@ -283,19 +298,15 @@
       ]
 
       return () =>
-        h(
-          'div',
-          { class: 'method-group-card' },
-          [
-            h(Table, {
-              columns,
-              data: props.group.children,
-              pagination: false,
-              bordered: false,
-              rowKey: 'value',
-            }),
-          ]
-        )
+        h('div', { class: 'method-group-card' }, [
+          h(Table, {
+            columns,
+            data: props.group.children,
+            pagination: false,
+            bordered: false,
+            rowKey: 'value',
+          }),
+        ])
     },
   })
 </script>
@@ -304,14 +315,20 @@
     width: 100%;
   }
 
+  .variable-shell {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+  }
+
   .try-card {
-    background: var(--color-fill-1);
+    padding: 12px;
   }
 
   .try-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .usage-panel {
@@ -319,9 +336,9 @@
     gap: 18px;
     align-items: flex-start;
     padding: 12px 14px;
-    border: 1px solid var(--color-border-2);
+    border: 1px solid var(--m-border);
     border-radius: 6px;
-    background: var(--color-bg-2);
+    background: var(--m-surface);
   }
 
   .usage-title {
@@ -329,7 +346,7 @@
     padding-top: 2px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .usage-list {
@@ -348,15 +365,15 @@
 
   .usage-label {
     width: 72px;
-    color: var(--color-text-2);
+    color: var(--m-text-2);
   }
 
   .section-tip {
     padding: 10px 12px;
-    border-left: 3px solid rgb(var(--success-6));
+    border-left: 3px solid var(--m-success);
     border-radius: 4px;
-    background: rgb(var(--success-1));
-    color: var(--color-text-2);
+    background: color-mix(in srgb, var(--m-success) 12%, transparent);
+    color: var(--m-text-2);
   }
 
   .method-layout {
@@ -370,16 +387,16 @@
     position: sticky;
     top: 12px;
     overflow: hidden;
-    border: 1px solid var(--color-border-2);
+    border: 1px solid var(--m-border);
     border-radius: 6px;
-    background: var(--color-bg-2);
+    background: var(--m-surface);
   }
 
   .category-title {
     padding: 12px 14px;
-    border-bottom: 1px solid var(--color-border-2);
+    border-bottom: 1px solid var(--m-border);
     font-weight: 600;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .category-list {
@@ -397,7 +414,7 @@
 
   .category-section-title {
     padding: 4px 8px;
-    color: var(--color-text-3);
+    color: var(--m-muted);
     font-size: 12px;
     font-weight: 600;
   }
@@ -414,20 +431,20 @@
     border: 0;
     border-radius: 4px;
     background: transparent;
-    color: var(--color-text-2);
+    color: var(--m-text-2);
     text-align: left;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
 
   .category-item:hover {
-    background: var(--color-fill-2);
-    color: var(--color-text-1);
+    background: var(--m-hover);
+    color: var(--m-text);
   }
 
   .category-item.active {
-    background: var(--color-fill-2);
-    color: var(--color-text-1);
+    background: var(--m-hover);
+    color: var(--m-text);
     font-weight: 600;
   }
 
@@ -438,7 +455,7 @@
     left: 0;
     width: 3px;
     border-radius: 2px;
-    background: var(--color-text-2);
+    background: var(--m-primary);
     content: '';
   }
 
@@ -450,7 +467,7 @@
   }
 
   .category-remark {
-    color: var(--color-text-3);
+    color: var(--m-muted);
     font-size: 12px;
     font-weight: 400;
     line-height: 16px;
@@ -461,8 +478,8 @@
     min-width: 24px;
     padding: 0 6px;
     border-radius: 10px;
-    background: var(--color-fill-2);
-    color: var(--color-text-2);
+    background: var(--m-primary-soft);
+    color: var(--m-primary);
     text-align: center;
     font-size: 12px;
     line-height: 18px;
@@ -477,9 +494,9 @@
 
   .method-group-card {
     overflow: hidden;
-    border: 1px solid var(--color-border-2);
+    border: 1px solid var(--m-border);
     border-radius: 6px;
-    background: var(--color-bg-2);
+    background: var(--m-surface);
   }
 
   .method-name,
@@ -489,15 +506,15 @@
   }
 
   .expression {
-    color: rgb(var(--primary-6));
+    color: var(--m-primary);
   }
 
   .inline-code {
     padding: 2px 7px;
     border-radius: 4px;
-    border: 1px solid var(--color-border-2);
-    background: var(--color-fill-1);
-    color: #0f5cad;
+    border: 1px solid var(--m-border);
+    background: var(--m-surface-soft);
+    color: var(--m-primary);
   }
 
   .parameter-tags {
@@ -507,7 +524,7 @@
   }
 
   .empty-text {
-    color: var(--color-text-3);
+    color: var(--m-muted);
   }
 
   @media (max-width: 900px) {

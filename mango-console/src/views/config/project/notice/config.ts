@@ -116,6 +116,6 @@ export const tableColumns = useTableColumn([
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
-    width: 150,
+    width: 170,
   },
 ])

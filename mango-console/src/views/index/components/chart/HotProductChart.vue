@@ -1,142 +1,137 @@
 <template>
-  <div class="chart-item-container">
-    <div ref="hotProdChart" class="chart-item" :style="{ height: `${chartHeight}px` }"></div>
+  <div class="mango-activity-rank">
+    <a-spin :loading="loading" class="mango-activity-rank__spin">
+      <div v-if="rankItems.length" class="mango-activity-rank__list mango-custom-scrollbar">
+        <div v-for="item in rankItems" :key="item.name" class="mango-activity-rank__row">
+          <span class="mango-activity-rank__name" :title="item.name">{{ item.name }}</span>
+          <div class="mango-activity-rank__track">
+            <i class="mango-activity-rank__bar" :style="{ width: `${item.percent}%` }"></i>
+          </div>
+          <em class="mango-activity-rank__count">{{ item.count }}</em>
+        </div>
+      </div>
+      <div v-else-if="!loading" class="mango-empty-state mango-activity-rank__empty">
+        暂无活跃度数据
+      </div>
+    </a-spin>
   </div>
 </template>
-<script lang="ts">
-  import useEcharts from '@/hooks/useEcharts'
-  import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-  import { dispose } from 'echarts/core'
+
+<script lang="ts" setup>
+  import { computed, onMounted, ref } from 'vue'
   import { getSystemActivityLevel } from '@/api/system'
 
-  export default defineComponent({
-    name: 'HotProdChart',
-    setup() {
-      const loading = ref(true)
-      const hotProdChart = ref<HTMLDivElement | null>(null)
-      const chartHeight = ref(220)
-      let interval: any = null
-      let data: any = reactive([])
+  interface ActivityRankItem {
+    name: string
+    count: number
+    percent: number
+  }
 
-      function activityLevel() {
-        getSystemActivityLevel()
-          .then((res) => {
-            data = res.data
-            chartHeight.value = Math.max(220, ((data.name || []).length || 0) * 28 + 44)
-            init()
-          })
-          .catch(console.log)
-      }
+  const loading = ref(false)
+  const rawNames = ref<string[]>([])
+  const rawCounts = ref<number[]>([])
 
-      const init = () => {
-        const option = {
-          grid: {
-            top: '2%',
-            left: '5%',
-            right: '8%',
-            bottom: '2%',
-            containLabel: true,
-          },
-          tooltip: {
-            trigger: 'axis',
-          },
-          yAxis: {
-            type: 'category',
-            data: data.name,
-            axisLine: {
-              show: false,
-            },
-            axisTick: {
-              show: false,
-            },
-            axisLabel: {
-              textStyle: {
-                fontSize: 10,
-                color: '#98A3B2',
-              },
-            },
-          },
-          xAxis: {
-            show: false,
-          },
-          series: [
-            {
-              type: 'pictorialBar',
-              name: '访问次数',
-              stack: '指数',
-              data: data.total_logins,
-              smooth: true,
-              symbol: 'rect',
-              symbolRepeat: true,
-              symbolSize: [2, 10],
-              symbolMargin: 1,
-              label: {
-                show: true, //开启数值显示
-                position: 'right', //在上方显示
-                textStyle: {
-                  //数值样式
-                  color: 'rgb(var(--primary-1))',
-                  fontSize: 12,
-                },
-              },
-              itemStyle: {
-                color: 'rgb(var(--primary-1))',
-              },
-            },
-          ],
+  const rankItems = computed<ActivityRankItem[]>(() => {
+    const max = Math.max(...rawCounts.value, 0)
+    return rawNames.value
+      .map((name, index) => {
+        const count = Number(rawCounts.value[index] || 0)
+        return {
+          name,
+          count,
+          percent: max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 0,
         }
-        setTimeout(() => {
-          loading.value = false
-          setTimeout(() => {
-            nextTick(() => {
-              if (hotProdChart.value) {
-                useEcharts(hotProdChart.value as HTMLDivElement).setOption(option)
-              }
-            })
-          }, 100)
-        }, 1000)
-      }
-      const updateChart = () => {
-        useEcharts(hotProdChart.value as HTMLDivElement).resize()
-      }
-      onMounted(() => {
-        nextTick(async () => {
-          await activityLevel()
-        })
       })
-      onBeforeUnmount(() => {
-        dispose(hotProdChart.value as HTMLDivElement)
-        clearInterval(interval)
+      .sort((prev, next) => next.count - prev.count)
+  })
+
+  function normalizeActivityData(payload: any) {
+    const names = Array.isArray(payload?.name) ? payload.name : []
+    const counts = Array.isArray(payload?.total_logins) ? payload.total_logins : []
+    rawNames.value = names.map((item: any) => String(item || '-'))
+    rawCounts.value = counts.map((item: any) => Number(item || 0))
+  }
+
+  function activityLevel() {
+    loading.value = true
+    getSystemActivityLevel()
+      .then((res) => {
+        normalizeActivityData(res.data)
       })
-      return {
-        loading,
-        hotProdChart,
-        chartHeight,
-        updateChart,
-      }
-    },
+      .catch(console.log)
+      .finally(() => {
+        loading.value = false
+      })
+  }
+
+  onMounted(() => {
+    activityLevel()
   })
 </script>
 
 <style lang="less" scoped>
-  .chart-item-container {
+  .mango-activity-rank {
     flex: 1;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .mango-activity-rank__spin,
+  :deep(.mango-activity-rank__spin .arco-spin-children) {
+    display: flex;
     width: 100%;
     height: 100%;
     min-height: 0;
+    flex-direction: column;
+  }
+
+  .mango-activity-rank__list {
+    display: grid;
+    gap: 12px;
+    min-height: 0;
+    padding: 12px 2px 4px;
     overflow-y: auto;
+  }
 
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
+  .mango-activity-rank__row {
+    display: grid;
+    grid-template-columns: minmax(64px, 82px) minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 8px;
+    color: var(--m-text-2);
+    font-size: 12px;
+  }
 
-    &::-webkit-scrollbar-thumb {
-      border-radius: 6px;
-      background: var(--color-neutral-4);
-    }
+  .mango-activity-rank__name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--m-text-2);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-    .chart-item {
-      min-height: 100%;
-    }
+  .mango-activity-rank__track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--m-border);
+  }
+
+  .mango-activity-rank__bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--m-primary-border), var(--m-primary));
+  }
+
+  .mango-activity-rank__count {
+    color: var(--m-muted);
+    font-style: normal;
+    text-align: right;
+  }
+
+  .mango-activity-rank__empty {
+    flex: 1;
+    min-height: 120px;
   }
 </style>

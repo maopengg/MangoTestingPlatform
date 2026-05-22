@@ -75,7 +75,7 @@ export const datasourceAliasColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 190,
+    width: 170,
   },
 ])
 
@@ -101,6 +101,6 @@ export const datasourceBindingColumns = useTableColumn([
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
-    width: 120,
+    width: 170,
   },
 ])

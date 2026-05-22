@@ -1,9 +1,9 @@
 <template>
-  <div :class="{ 'circle-tip': checked }" class="style-example-container">
-    <div :style="{ background: leftBg, backgroundSize: 'cover' }" class="left"></div>
-    <div class="right">
-      <div :style="{ backgroundColor: rightTopBg }" class="right-top"></div>
-      <div :style="{ backgroundColor: rightBottomBg }" class="right-bottom"></div>
+  <div :class="{ 'mango-circle-tip': checked }" class="mango-style-example-container">
+    <div :style="{ background: leftBg, backgroundSize: 'cover' }" class="mango-style-left"></div>
+    <div class="mango-style-right">
+      <div :style="{ backgroundColor: rightTopBg }" class="mango-style-right-top"></div>
+      <div :style="{ backgroundColor: rightBottomBg }" class="mango-style-right-bottom"></div>
     </div>
     <div v-if="tipText" style="font-size: 12px; text-align: center">
       {{ tipText }}
@@ -19,15 +19,15 @@
     props: {
       leftBg: {
         type: String,
-        default: '#000000',
+        default: 'var(--m-layout-sidebar-bg)',
       },
       rightTopBg: {
         type: String,
-        default: '#ff0000',
+        default: 'var(--m-layout-header-bg)',
       },
       rightBottomBg: {
         type: String,
-        default: '#f5f5f5',
+        default: 'var(--m-bg)',
       },
       checked: {
         type: Boolean,
@@ -43,15 +43,15 @@
 
 <style lang="less" scoped>
   @border-radius: 4px;
-  .style-example-container {
+  .mango-style-example-container {
     width: 50px;
     height: 40px;
     margin: 0 auto;
     border-radius: @border-radius;
     background-color: transparent;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--m-shadow);
 
-    .left {
+    .mango-style-left {
       border-top-left-radius: @border-radius;
       border-bottom-left-radius: @border-radius;
       display: inline-block;
@@ -59,26 +59,26 @@
       height: 100%;
     }
 
-    .right {
+    .mango-style-right {
       border-top-right-radius: @border-radius;
       border-bottom-right-radius: @border-radius;
       display: inline-block;
       width: 70%;
       height: 100%;
 
-      .right-top {
+      .mango-style-right-top {
         height: 20%;
         border-top-right-radius: @border-radius;
       }
 
-      .right-bottom {
+      .mango-style-right-bottom {
         height: 80%;
         border-bottom-right-radius: @border-radius;
       }
     }
   }
 
-  .circle-tip::after {
+  .mango-circle-tip::after {
     content: '';
     display: block;
     margin: 0 auto;
@@ -86,38 +86,38 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: rgb(3, 190, 50);
+    background-color: var(--m-success);
     text-align: center;
   }
 
   .extra-class {
-    .right {
+    .mango-style-right {
       width: 100%;
 
-      .right-top {
+      .mango-style-right-top {
         border-top-left-radius: @border-radius;
         border-top-right-radius: @border-radius;
       }
 
-      .right-bottom {
+      .mango-style-right-bottom {
         border-bottom-left-radius: @border-radius;
         border-bottom-right-radius: @border-radius;
       }
     }
 
-    .left {
+    .mango-style-left {
       width: 0;
     }
   }
 
   .extra-class-1 {
-    .left {
+    .mango-style-left {
       width: 30%;
     }
 
-    .left::after {
+    .mango-style-left::after {
       position: relative;
-      background-color: #828282;
+      background-color: var(--m-border-strong);
       top: 0;
       left: 5px;
       content: '';

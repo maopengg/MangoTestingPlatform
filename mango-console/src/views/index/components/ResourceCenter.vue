@@ -1,6 +1,6 @@
 <template>
   <div class="resource-grid">
-    <a-card class="resource-card" hoverable>
+    <section class="resource-card mango-soft-panel">
       <div class="resource-item" @click="handleDownloadExecutor">
         <icon-download class="resource-icon" />
         <div class="resource-info">
@@ -8,9 +8,9 @@
           <div class="resource-desc">下载最新版本的执行器</div>
         </div>
       </div>
-    </a-card>
+    </section>
 
-    <a-card class="resource-card" hoverable>
+    <section class="resource-card mango-soft-panel">
       <div class="resource-item" @click="handleDownloadPlugin">
         <icon-download class="resource-icon" />
         <div class="resource-info">
@@ -18,9 +18,9 @@
           <div class="resource-desc">获取元素定位插件</div>
         </div>
       </div>
-    </a-card>
+    </section>
 
-    <a-card class="resource-card" hoverable>
+    <section class="resource-card mango-soft-panel">
       <div class="resource-item" @click="handleViewHelp">
         <icon-book class="resource-icon" />
         <div class="resource-info">
@@ -28,9 +28,9 @@
           <div class="resource-desc">查看详细的使用说明</div>
         </div>
       </div>
-    </a-card>
+    </section>
 
-    <a-card class="resource-card" hoverable>
+    <section class="resource-card mango-soft-panel">
       <div class="resource-item" @click="handleContactAuthor">
         <icon-user class="resource-icon" />
         <div class="resource-info">
@@ -38,7 +38,7 @@
           <div class="resource-desc">获取技术支持和反馈</div>
         </div>
       </div>
-    </a-card>
+    </section>
   </div>
 </template>
 
@@ -76,20 +76,14 @@
   }
 
   .resource-card {
-    border: 1px solid var(--color-neutral-3);
-    border-radius: 8px;
     cursor: pointer;
     min-height: 0;
+    padding: 8px;
     transition: border-color 0.2s ease, background-color 0.2s ease;
 
     &:hover {
-      border-color: rgb(var(--primary-6));
-      background: var(--color-fill-1);
-    }
-
-    :deep(.arco-card-body) {
-      height: 100%;
-      padding: 8px;
+      border-color: var(--m-primary);
+      background: var(--m-primary-soft);
     }
   }
 
@@ -103,7 +97,7 @@
 
   .resource-icon {
     font-size: 16px;
-    color: rgb(var(--primary-6));
+    color: var(--m-primary);
   }
 
   .resource-info {
@@ -115,7 +109,7 @@
     overflow: hidden;
     font-size: 12px;
     font-weight: 500;
-    color: var(--color-text-1);
+    color: var(--m-text);
     margin-bottom: 0px;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -124,7 +118,7 @@
   .resource-desc {
     overflow: hidden;
     font-size: 10px;
-    color: var(--color-text-3);
+    color: var(--m-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
   }

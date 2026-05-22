@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="enumStore.monitoring_log_status"
@@ -28,7 +27,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 200px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -48,6 +46,7 @@
       <a-space direction="vertical" fill>
         <!-- 报告表格 -->
         <a-table
+          :scroll="{ x: 1100 }"
           :scrollbar="true"
           :bordered="false"
           :loading="table.tableLoading.value"
@@ -69,7 +68,7 @@
               :tooltip="item.tooltip"
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
-                <span style="width: 80px; display: inline-block">{{ record.id }}</span>
+                <span class="report-id-cell">{{ record.id }}</span>
               </template>
               <template v-else-if="item.key === 'task_name'" #cell="{ record }">
                 {{ record.task_name }}
@@ -91,14 +90,9 @@
                 {{ record.task_notice_group?.name || '-' }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  @click="onViewDetail(record)"
-                >
-                  查看详情
-                </a-button>
+                <MangoTableActions
+                  :actions="[{ label: '查看详情', onClick: () => onViewDetail(record) }]"
+                />
               </template>
             </a-table-column>
           </template>
@@ -134,12 +128,12 @@
         <a-tag color="blue">{{ detailDrawer.data.task_notice_group.name }}</a-tag>
       </a-descriptions-item>
       <a-descriptions-item label="消息内容">
-        <div style="max-height: 200px; overflow-y: auto; white-space: pre-wrap">
+        <div class="drawer-pre-wrap drawer-pre-wrap--sm">
           {{ detailDrawer.data.msg }}
         </div>
       </a-descriptions-item>
       <a-descriptions-item label="详细信息" v-if="detailDrawer.data.send_text">
-        <div style="max-height: 300px; overflow-y: auto; white-space: pre-wrap">
+        <div class="drawer-pre-wrap">
           {{ detailDrawer.data.send_text }}
         </div>
       </a-descriptions-item>
@@ -203,5 +197,20 @@
 <style scoped lang="less">
   :deep(.arco-card-body) {
     padding: 16px;
+  }
+
+  .report-id-cell {
+    display: inline-block;
+    width: 80px;
+  }
+
+  .drawer-pre-wrap {
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .drawer-pre-wrap--sm {
+    max-height: 200px;
   }
 </style>

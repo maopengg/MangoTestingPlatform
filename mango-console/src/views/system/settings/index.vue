@@ -115,9 +115,7 @@
             </div>
             <div class="card-content empty-content">
               <!-- 留空，后续添加设置项 -->
-              <div class="empty-placeholder">
-                <a-empty description="暂无配置项" />
-              </div>
+              <div class="mango-empty-state empty-placeholder">暂无配置项</div>
             </div>
           </div>
         </div>
@@ -267,7 +265,7 @@
 <style scoped>
   .settings-container {
     padding: 20px;
-    background-color: var(--color-bg-1);
+    background-color: var(--m-bg);
     border-radius: 8px;
   }
 
@@ -287,15 +285,15 @@
 
   .settings-card {
     flex: 1;
-    background-color: var(--color-bg-2);
+    background-color: var(--m-surface);
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--m-shadow);
     overflow: hidden;
     transition: all 0.3s ease;
   }
 
   .settings-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--m-shadow);
     transform: translateY(-2px);
   }
 
@@ -304,15 +302,15 @@
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    background-color: var(--color-fill-1);
-    border-bottom: 1px solid var(--color-border);
+    background-color: var(--m-surface-soft);
+    border-bottom: 1px solid var(--m-border);
   }
 
   .card-title {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .edit-btn {
@@ -335,7 +333,7 @@
   .empty-placeholder {
     width: 100%;
     text-align: center;
-    color: var(--color-text-3);
+    color: var(--m-muted);
   }
 
   .debug-setting {
@@ -343,7 +341,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 0;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--m-border);
   }
 
   .setting-item {
@@ -362,7 +360,7 @@
 
   .setting-label {
     font-size: 14px;
-    color: var(--color-text-1);
+    color: var(--m-text);
     font-weight: 500;
   }
 
@@ -377,10 +375,10 @@
   .setting-value {
     display: block;
     padding: 6px 12px;
-    background-color: var(--color-fill-1);
+    background-color: var(--m-surface-soft);
     border-radius: 4px;
     font-size: 14px;
-    color: var(--color-text-2);
+    color: var(--m-text-2);
     min-height: 32px;
     line-height: 1.5;
   }

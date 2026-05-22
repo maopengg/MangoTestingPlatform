@@ -1,6 +1,6 @@
 <template>
   <a-space direction="vertical" fill>
-    <div v-if="showAddButton" class="data-factory-case-config__toolbar">
+    <div v-if="showAddButton" class="mango-data-factory-case-config__toolbar">
       <a-button size="small" type="primary" @click="open()">增加</a-button>
     </div>
     <a-table
@@ -61,7 +61,12 @@
               >
                 预览
               </a-button>
-              <a-button size="mini" status="danger" type="text" @click="deleteConfig(record)"
+              <a-button
+                size="mini"
+                status="danger"
+                type="text"
+                :loading="deleteLoading === record.id"
+                @click="deleteConfig(record)"
                 >删除</a-button
               >
             </a-space>
@@ -106,7 +111,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="状态模板" required>
+          <a-form-item label="场景模板" required>
             <a-select
               v-model="form.template"
               :options="templateList"
@@ -146,18 +151,53 @@
         </a-grid-item>
       </a-grid>
       <a-form-item label="字段覆盖">
-        <a-spin :loading="fieldLoading" style="width: 100%">
-          <TemplateFieldConfigEditor
-            v-if="form.template"
-            v-model:field-overrides="form.field_overrides"
-            v-model:output-config="templateOutputConfig"
-            :fields="fieldRows"
-            :generator-options="enumStore.data_factory_generator_type"
-            :dependency-template-options="dependencyTemplateOptions"
-            :load-dependency-template-options="loadDependencyTemplateOptions"
-            :show-output="false"
-          />
-          <a-empty v-else class="field-empty" description="请先选择状态模板" />
+        <a-spin :loading="fieldLoading" class="full-width">
+          <a-space v-if="form.template" direction="vertical" fill>
+            <section class="mango-section-card mango-case-config-field-card">
+              <div class="mango-section-title">
+                <div>
+                  <h2>主模板字段</h2>
+                  <p>配置主模板字段生成规则和输出字段</p>
+                </div>
+              </div>
+              <TemplateFieldConfigEditor
+                :field-overrides="mainCaseOverrides"
+                :output-config="templateOutputConfig"
+                :fields="fieldRows"
+                :generator-options="enumStore.data_factory_generator_type"
+                :dependency-template-options="dependencyTemplateOptions"
+                :load-dependency-template-options="loadDependencyTemplateOptions"
+                :loading="fieldLoading"
+                :show-output="false"
+                @update:field-overrides="updateMainCaseOverrides"
+                @update:output-config="updateTemplateOutputConfig"
+              />
+            </section>
+            <section
+              v-for="item in selectedTemplateItems"
+              :key="item.id"
+              class="mango-section-card mango-case-config-field-card"
+            >
+              <div class="mango-section-title">
+                <div>
+                  <h2>关联模板</h2>
+                  <p>{{ item.name || item.child_template_detail?.name || item.child_template }}</p>
+                </div>
+              </div>
+              <TemplateFieldConfigEditor
+                :field-overrides="getItemCaseOverrides(item)"
+                :output-config="[]"
+                :fields="itemFieldsMap[String(item.id)] || []"
+                :generator-options="enumStore.data_factory_generator_type"
+                :dependency-template-options="dependencyTemplateOptions"
+                :load-dependency-template-options="loadDependencyTemplateOptions"
+                :loading="fieldLoading"
+                :show-output="false"
+                @update:field-overrides="(value) => updateItemCaseOverrides(item, value)"
+              />
+            </section>
+          </a-space>
+          <div v-else class="mango-empty-state mango-field-empty">请先选择场景模板</div>
         </a-spin>
       </a-form-item>
     </a-form>
@@ -171,12 +211,12 @@
   </a-modal>
 
   <a-modal v-model:visible="previewVisible" title="生成数据预览" width="920px">
-    <a-space class="data-factory-case-preview-content" direction="vertical">
+    <a-space class="mango-data-factory-case-preview-content" direction="vertical">
       <a-alert v-if="previewResult.missing_fields?.length" type="warning">
         当前还有 {{ previewResult.missing_fields.length }} 个字段需要配置，建议补齐后再运行用例。
       </a-alert>
       <a-alert v-else-if="previewResult.payload" type="success"
-        >当前模板字段已能生成 payload。</a-alert
+        >当前场景模板字段已能生成 payload。</a-alert
       >
       <a-textarea
         v-if="Object.keys(previewResult.output || {}).length"
@@ -188,6 +228,7 @@
         v-if="flattenDependencyTree(previewResult.dependency_tree).length"
         :columns="dependencyTreeColumns"
         :data="flattenDependencyTree(previewResult.dependency_tree)"
+        :loading="previewLoading === 'form'"
         :pagination="false"
         :row-key="'path'"
         :scroll="{ x: 900, y: 220 }"
@@ -204,20 +245,26 @@
             :width="item.width"
           >
             <template v-if="item.key === 'node'" #cell="{ record }">
-              <span :style="{ paddingLeft: `${record.level * 18}px` }">{{
-                record.template_name
-              }}</span>
+              <span
+                class="mango-dependency-node-name"
+                :style="{ '--dependency-indent': `${record.level * 18}px` }"
+                >{{ record.template_name }}</span
+              >
               <a-tag
                 v-if="record.level === 0"
                 size="small"
                 color="arcoblue"
-                style="margin-left: 8px"
+                class="mango-dependency-node-tag"
                 >根节点</a-tag
               >
-              <a-tag v-else-if="record.reused" size="small" color="green" style="margin-left: 8px"
+              <a-tag
+                v-else-if="record.reused"
+                size="small"
+                color="green"
+                class="mango-dependency-node-tag"
                 >复用</a-tag
               >
-              <a-tag v-else size="small" color="orange" style="margin-left: 8px">创建</a-tag>
+              <a-tag v-else size="small" color="orange" class="mango-dependency-node-tag">创建</a-tag>
             </template>
             <template v-else-if="item.key === 'action'" #cell="{ record }">
               <a-tag :color="getDependencyActionColor(record.action)" size="small">{{
@@ -234,6 +281,7 @@
         :output-config="[]"
         :generator-options="enumStore.data_factory_generator_type"
         :preview-fields="previewResult.fields || []"
+        :loading="previewLoading === 'form'"
         readonly
         :show-config="false"
         :show-output="false"
@@ -241,7 +289,7 @@
       />
     </a-space>
     <template #footer>
-      <a-space class="data-factory-case-preview-footer">
+      <a-space class="mango-data-factory-case-preview-footer">
         <a-button @click="previewVisible = false">关闭</a-button>
       </a-space>
     </template>
@@ -304,7 +352,7 @@
       tooltip: true,
     },
     {
-      title: '状态模板',
+      title: '场景模板',
       key: 'template',
       dataIndex: 'template',
       width: 200,
@@ -332,12 +380,13 @@
     },
     { title: '清理策略', key: 'cleanup_strategy', dataIndex: 'cleanup_strategy', width: 120 },
     { title: '状态', key: 'status', dataIndex: 'status', width: 90, align: 'center' },
-    { title: '操作', key: 'actions', dataIndex: 'actions', width: 180, align: 'center' },
+    { title: '操作', key: 'actions', dataIndex: 'actions', width: 170, align: 'center' },
   ]
 
   const caseConfigList = ref<any[]>([])
   const templateList = ref<any[]>([])
   const fieldRows = ref<DataFactoryFieldRule[]>([])
+  const itemFieldsMap = ref<Record<string, DataFactoryFieldRule[]>>({})
   const dependencyTemplateOptions = ref<Record<string, any[]>>({})
   const templateOutputConfig = ref<DataFactoryOutputConfig>([])
   const loading = ref(false)
@@ -347,6 +396,7 @@
   const visible = ref(false)
   const previewVisible = ref(false)
   const previewLoading = ref<any>(null)
+  const deleteLoading = ref<number | null>(null)
   const previewResult = ref<any>({})
 
   const form = reactive<{
@@ -381,6 +431,18 @@
     { key: null, title: '使用模板默认策略' },
     ...(enumStore.data_factory_cleanup_strategy || []),
   ])
+  const currentTemplate = computed(() =>
+    templateList.value.find((item) => String(item.id) === String(form.template))
+  )
+  const selectedTemplateItems = computed(() => currentTemplate.value?.items || [])
+  const isSceneOverrideShape = computed(
+    () =>
+      Object.prototype.hasOwnProperty.call(form.field_overrides || {}, '__main__') ||
+      Object.prototype.hasOwnProperty.call(form.field_overrides || {}, '__items__')
+  )
+  const mainCaseOverrides = computed(() =>
+    isSceneOverrideShape.value ? form.field_overrides?.__main__ || {} : form.field_overrides || {}
+  )
   const dependencyTreeColumns = useTableColumn([
     { title: '依赖节点', key: 'node', dataIndex: 'node', width: 260 },
     { title: '来源字段', key: 'field', dataIndex: 'field', width: 140 },
@@ -473,6 +535,7 @@
     form.stage = record?.stage || 1
     templateOutputConfig.value = record?.template?.output_config || []
     fieldRows.value = []
+    itemFieldsMap.value = {}
   }
 
   function open(record: any = null) {
@@ -518,7 +581,7 @@
       form.name = template.name
     }
     templateOutputConfig.value = template?.output_config || []
-    form.field_overrides = template?.field_overrides || {}
+    form.field_overrides = normalizeSceneOverrides(template?.field_overrides || {})
     loadFields()
   }
 
@@ -534,6 +597,7 @@
       .then((res) => {
         fieldRows.value = res.data || []
         preloadDependencyTemplateOptions()
+        loadItemFields()
       })
       .finally(() => {
         fieldLoading.value = false
@@ -572,9 +636,70 @@
       .forEach((row) => loadDependencyTemplateOptions(row))
   }
 
+  function normalizeSceneOverrides(overrides: any) {
+    if (
+      Object.prototype.hasOwnProperty.call(overrides || {}, '__main__') ||
+      Object.prototype.hasOwnProperty.call(overrides || {}, '__items__')
+    ) {
+      return {
+        __main__: overrides.__main__ || {},
+        __items__: overrides.__items__ || {},
+      }
+    }
+    return {
+      __main__: overrides || {},
+      __items__: {},
+    }
+  }
+
+  function updateMainCaseOverrides(value: DataFactoryFieldOverrides) {
+    form.field_overrides = {
+      __main__: value,
+      __items__: form.field_overrides?.__items__ || {},
+    }
+  }
+
+  function updateTemplateOutputConfig(value: DataFactoryOutputConfig) {
+    templateOutputConfig.value = value
+  }
+
+  function getItemCaseKey(item: any) {
+    return String(item.id || item.name || item.child_template)
+  }
+
+  function getItemCaseOverrides(item: any) {
+    return form.field_overrides?.__items__?.[getItemCaseKey(item)] || {}
+  }
+
+  function updateItemCaseOverrides(item: any, value: DataFactoryFieldOverrides) {
+    form.field_overrides = {
+      __main__: mainCaseOverrides.value,
+      __items__: {
+        ...(form.field_overrides?.__items__ || {}),
+        [getItemCaseKey(item)]: value,
+      },
+    }
+  }
+
+  function loadItemFields() {
+    const tasks = selectedTemplateItems.value.map((item: any) => {
+      const entityId = item.child_template_detail?.entity?.id || item.child_template_detail?.entity
+      if (!entityId) {
+        return Promise.resolve()
+      }
+      return getDataFactoryField({ entity: entityId }).then((res) => {
+        itemFieldsMap.value = {
+          ...itemFieldsMap.value,
+          [String(item.id)]: res.data || [],
+        }
+      })
+    })
+    return Promise.all(tasks)
+  }
+
   async function save() {
     if (!form.template) {
-      Message.error('请选择状态模板')
+      Message.error('请选择场景模板')
       return false
     }
     if (!form.name) {
@@ -642,11 +767,16 @@
       content: '确定要删除这个数据工厂配置吗？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteDataFactoryCaseConfig(record.id).then((res) => {
-          Message.success(res.msg)
-          refresh()
-        })
+      onBeforeOk: () => {
+        deleteLoading.value = record.id
+        return deleteDataFactoryCaseConfig(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+            refresh()
+          })
+          .finally(() => {
+            deleteLoading.value = null
+          })
       },
     })
   }
@@ -655,7 +785,7 @@
     const target = record || form
     const templateId = target?.template?.id || target?.template
     if (!templateId) {
-      Message.error('请选择状态模板')
+      Message.error('请选择场景模板')
       return
     }
     if (userStore.selected_environment == null) {
@@ -745,26 +875,39 @@
 </script>
 
 <style scoped>
-  .data-factory-case-config__toolbar {
+  .mango-data-factory-case-config__toolbar {
     display: flex;
     justify-content: flex-end;
   }
 
-  .field-empty {
-    padding: 24px 0;
-    background: var(--color-fill-1);
-    border: 1px dashed var(--color-border-2);
-    border-radius: 4px;
+  .full-width {
+    width: 100%;
   }
 
-  .data-factory-case-preview-content {
+  .mango-dependency-node-name {
+    padding-left: var(--dependency-indent);
+  }
+
+  .mango-dependency-node-tag {
+    margin-left: 8px;
+  }
+
+  .mango-case-config-field-card {
+    box-shadow: none;
+  }
+
+  .mango-field-empty {
+    min-height: 96px;
+  }
+
+  .mango-data-factory-case-preview-content {
     max-height: 70vh;
     overflow-y: auto;
     padding-right: 8px;
     width: 100%;
   }
 
-  .data-factory-case-preview-footer {
+  .mango-data-factory-case-preview-footer {
     justify-content: flex-end;
     width: 100%;
   }

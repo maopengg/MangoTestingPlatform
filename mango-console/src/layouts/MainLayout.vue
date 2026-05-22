@@ -9,7 +9,7 @@
           // ? 'main-layout_padding-top__all'
           'main-layout_padding-top__logo',
     ]"
-    class="vaw-main-layout-container scrollbar"
+    class="mango-main-layout-container mango-scrollbar"
   >
     <section
       :class="[
@@ -27,21 +27,21 @@
     </section>
     <component
       :is="appStore.isFixedNavBar ? 'Scrollbar' : 'div'"
-      :class="[appStore.theme === 'light' ? 'main-base-light-theme' : 'main-base-dark-theme']"
-      class="main-base-style"
+      :class="[appStore.theme === 'light' ? 'mango-main-base-light-theme' : 'mango-main-base-dark-theme']"
+      class="mango-main-base-style"
     >
       <section
         :class="[appStore.flexMainHeight ? 'flex-height' : 'min-height']"
-        class="main-section"
+        class="mango-main-section"
       >
         <Main />
       </section>
-      <section class="footer-wrapper">
+      <section class="mango-footer-wrapper">
         <Footer />
       </section>
-      <a-back-top target-container=".main-base-style" />
+      <a-back-top target-container=".mango-main-base-style" />
     </component>
-    <a-back-top target-container=".vaw-main-layout-container" />
+    <a-back-top target-container=".mango-main-layout-container" />
   </div>
 </template>
 
@@ -69,7 +69,7 @@
         useTitle(projectName + ' | ' + (route.meta.title as string))
       })
       onMounted(() => {
-        const mainEl = document.querySelector('.main-section') as HTMLDivElement
+        const mainEl = document.querySelector('.mango-main-section') as HTMLDivElement
         appStore.setMainHeight(mainEl.clientHeight || mainEl.offsetHeight)
       })
       return {
@@ -81,7 +81,7 @@
 </script>
 
 <style lang="less" scoped>
-  .scrollbar::-webkit-scrollbar {
+  .mango-scrollbar::-webkit-scrollbar {
     width: 0;
   }
 
@@ -105,7 +105,7 @@
     width: 100%;
   }
 
-  :deep(.main-base-style .scrollbar__view) {
+  :deep(.mango-main-base-style .mango-scrollbar__view) {
     height: 100%;
   }
 
@@ -116,7 +116,7 @@
   .main-layout_fixed-nav-bar {
     overflow-y: hidden;
 
-    .main-base-style {
+    .mango-main-base-style {
       overflow-y: auto;
     }
   }
@@ -133,27 +133,26 @@
     padding-top: @logoHeight;
   }
 
-  .vaw-main-layout-container {
+  .mango-main-layout-container {
     height: 100%;
     box-sizing: border-box;
     transition: margin-left @transitionTime;
 
-    .main-base-style {
+    .mango-main-base-style {
       height: 100%;
       box-sizing: border-box;
-      padding: 5px;
+      padding: 6px 8px 8px;
     }
 
-    .main-base-light-theme {
-      // background-color: #f0f2f5;
-      background-image: linear-gradient(#f0f2f5, rgba(var(--primary-1), 0.05), #f0f2f5);
+    .mango-main-base-light-theme {
+      background: linear-gradient(180deg, var(--m-primary-soft), transparent 260px), var(--m-bg);
     }
 
-    .main-base-dark-theme {
-      background-color: #333333;
+    .mango-main-base-dark-theme {
+      background-color: var(--m-bg);
     }
 
-    .main-section {
+    .mango-main-section {
       overflow-x: hidden;
     }
 
@@ -177,7 +176,7 @@
     }
   }
 
-  .footer-wrapper {
+  .mango-footer-wrapper {
     margin-top: 6px;
     position: fixed;
     left: 215px;
@@ -185,7 +184,7 @@
     bottom: 5px;
   }
 
-  .is-mobile {
+  .mango-is-mobile {
     .main-layout-open-status,
     .main-layout-close-status {
       margin-left: 0;

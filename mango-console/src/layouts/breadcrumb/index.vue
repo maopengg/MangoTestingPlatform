@@ -1,21 +1,32 @@
 <template>
-  <a-breadcrumb>
-    <a-breadcrumb-item v-for="item of breadcrumbs" :key="item.key">
-      {{ item.label }}
+  <a-breadcrumb class="mango-breadcrumb">
+    <a-breadcrumb-item v-for="(item, index) of breadcrumbs" :key="item.key">
+      <button
+        v-if="item.path && index < breadcrumbs.length - 1"
+        class="mango-breadcrumb-link"
+        type="button"
+        @click="handleSelect(item.path)"
+      >
+        {{ item.label }}
+      </button>
+      <span v-else class="mango-breadcrumb-text">{{ item.label }}</span>
     </a-breadcrumb-item>
   </a-breadcrumb>
 </template>
 
 <script lang="ts">
-  import usePermissionStore from '@/store/modules/permission'
-  import { isExternal } from '@/utils'
   import { defineComponent, onMounted, reactive, watch } from 'vue'
-  import { RouteRecordRaw, useRoute, useRouter } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
 
   interface DropItem {
     label: string
     key: string
-    children?: DropItem[]
+    path?: string
+  }
+
+  interface BreadcrumbMetaItem {
+    title: string
+    path?: string
   }
 
   export default defineComponent({
@@ -24,80 +35,53 @@
       const breadcrumbs = reactive<Array<DropItem>>([])
       const route = useRoute()
       const router = useRouter()
-      const permissionStore = usePermissionStore()
-
-      function handlePath(path: string) {
-        return path.split('/').reduce((pre: string[], cur: string) => {
-          if (cur) {
-            const lastItem = pre[pre.length - 1]
-            if (lastItem) {
-              pre.push(lastItem + '/' + cur)
-            } else {
-              pre.push('/' + cur)
-            }
-          }
-          return pre
-        }, [])
-      }
-
-      function generatorDropdown(routes: Array<RouteRecordRaw> | undefined, parentPath = '/') {
-        if (!routes) return
-        const tempArray: DropItem[] = []
-        routes.forEach((it) => {
-          if (it && it.meta) {
-            const tempItem: DropItem = {
-              label: it.meta?.title as string,
-              key: isExternal(it.path)
-                ? it.path
-                : it.path.startsWith('/')
-                ? it.path
-                : parentPath + '/' + it.path,
-              children: [],
-            }
-            if (it.children && it.children.length > 0) {
-              tempItem.children = generatorDropdown(it.children, tempItem.key)
-            } else {
-              delete tempItem.children
-            }
-            tempArray.push(tempItem)
-          }
-        })
-        return tempArray
-      }
-
-      function findRoute(paths: string[]) {
-        const selectRoutes: Array<RouteRecordRaw> = []
-        let tempOrigin = permissionStore.permissionRoutes
-        paths.forEach((it) => {
-          const selectRoute = tempOrigin.find((pIt) => pIt.path === it)
-          if (selectRoute) {
-            tempOrigin = selectRoute.children as []
-            selectRoutes.push(selectRoute as RouteRecordRaw)
-          }
-        })
-        return selectRoutes
-      }
 
       function generatorBreadcrumb() {
         breadcrumbs.length = 0
-        const matchedPath = route.matched.map((it) => {
-          return {
-            label: (it.meta ? it.meta.title || '' : '') as string,
+        const matchedPath: DropItem[] = []
+        route.matched.forEach((it, index) => {
+          const label = (it.meta ? it.meta.title || '' : '') as string
+          if (!label) return
+          const isLastMatched = index === route.matched.length - 1
+          matchedPath.push({
+            label,
             key: it.path,
-          }
+          })
         })
-        breadcrumbs.push(...matchedPath)
+        const currentRoute = route.matched[route.matched.length - 1]
+        const extraBreadcrumb = (currentRoute?.meta?.breadcrumb || []) as BreadcrumbMetaItem[]
+        const lastItem = matchedPath.pop()
+        extraBreadcrumb.forEach((item) => {
+          if (!item.title) return
+          matchedPath.push({
+            label: item.title,
+            key: item.path || item.title,
+            path: item.path,
+          })
+        })
+        if (lastItem) {
+          matchedPath.push({
+            ...lastItem,
+            path: undefined,
+          })
+        }
+        breadcrumbs.push(
+          ...matchedPath.filter((item, index, array) => {
+            return item.label && array.findIndex((it) => it.key === item.key) === index
+          })
+        )
       }
 
-      function handleSelect(key: string) {
-        router.push(key)
+      function handleSelect(path: string) {
+        if (!path || path === route.path) return
+        router.push(path)
       }
 
       onMounted(() => {
         generatorBreadcrumb()
       })
       watch(
-        () => route.path,
+        () => route.fullPath,
         () => {
           if (
             route.path.startsWith('/redirect') ||
@@ -114,3 +98,28 @@
     },
   })
 </script>
+
+<style lang="less" scoped>
+  .mango-breadcrumb {
+    display: flex;
+    align-items: center;
+  }
+
+  .mango-breadcrumb-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--m-muted);
+    cursor: pointer;
+    font: inherit;
+    line-height: inherit;
+  }
+
+  .mango-breadcrumb-link:hover {
+    color: var(--m-primary);
+  }
+
+  .mango-breadcrumb-text {
+    color: var(--m-text);
+  }
+</style>

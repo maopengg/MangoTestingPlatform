@@ -83,18 +83,19 @@ class TasksDetailsCRUD(ModelCRUD):
                     defaults={'type': _type}
                 )
         else:
-            model = PytestCase.objects.get(id=request.data.get('pytest_case'))
-            if not model.project_product or not model.project_product.project_product:
-                return ResponseData.fail(RESPONSE_MSG_0120)
             pytest_case_ids = request.data.get('pytest_case')
+            pytest_cases = PytestCase.objects.filter(id__in=pytest_case_ids)
+            if pytest_cases.count() != len(pytest_case_ids):
+                return ResponseData.fail(RESPONSE_MSG_0120)
+            for model in pytest_cases:
+                if not model.project_product or not model.project_product.project_product:
+                    return ResponseData.fail(RESPONSE_MSG_0120)
             for pytest_case_id in pytest_case_ids:
-                model = PytestCase.objects.get(id=pytest_case_id)
-                if model.project_product and model.project_product.project_product:
-                    TasksDetails.objects.get_or_create(
-                        task_id=task_id,
-                        pytest_case_id=pytest_case_id,
-                        defaults={'type': _type}
-                    )
+                TasksDetails.objects.get_or_create(
+                    task_id=task_id,
+                    pytest_case_id=pytest_case_id,
+                    defaults={'type': _type}
+                )
 
         return ResponseData.success(RESPONSE_MSG_0002)
 

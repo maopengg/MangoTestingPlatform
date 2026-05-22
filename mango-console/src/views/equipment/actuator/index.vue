@@ -3,13 +3,11 @@
     <template #header></template>
 
     <template #default>
-      <!-- 卡片列表替代表格 -->
       <div class="cards-container">
-        <!-- 添加容器 -->
-        <a-spin :loading="tableLoading" style="width: 100%">
+        <a-spin :loading="tableLoading" class="full-width mango-panel-loading">
           <a-row :gutter="[16, 16]">
             <a-col v-for="record in dataList" :key="record.id" :span="24" :md="12" :lg="8" :xl="6">
-              <a-card class="executor-card" :bordered="true" hoverable>
+              <a-card class="executor-card mango-section-card" :bordered="false" hoverable>
                 <template #title>
                   <div class="card-header">
                     <a-avatar :size="24" class="avatar">
@@ -76,9 +74,8 @@
               </a-card>
             </a-col>
 
-            <!-- 空状态 -->
             <a-col v-if="dataList.length === 0" :span="24">
-              <a-empty description="暂无在线执行器" />
+              <div class="mango-empty-state">暂无在线执行器</div>
             </a-col>
           </a-row>
         </a-spin>
@@ -144,7 +141,7 @@
       content: '是否要下线此执行器？',
       cancelText: '取消',
       okText: '下线',
-      onOk: () => {
+      onBeforeOk: () => {
         // 这里应该调用实际的下线接口，但由于按钮是禁用的，这里只是示例
         Message.info('此功能暂未开放')
       },
@@ -197,25 +194,26 @@
 </script>
 
 <style lang="less" scoped>
+  .full-width {
+    width: 100%;
+  }
+
   .cards-container {
-    margin-top: 20px; // 添加与标题的距离
+    margin-top: 8px;
   }
 
   .executor-card {
-    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
     &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transform: translateY(-2px);
+      border-color: var(--m-primary-border);
+      box-shadow: var(--m-shadow);
     }
 
     :deep(.arco-card-header) {
       padding: 12px 16px;
-      border-bottom: 1px solid var(--color-neutral-3);
-      border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid var(--m-border);
     }
 
     :deep(.arco-card-body) {
@@ -223,9 +221,8 @@
     }
 
     :deep(.arco-card-footer) {
-      border-top: 1px solid var(--color-neutral-3);
+      border-top: 1px solid var(--m-border);
       padding: 4px 16px;
-      border-radius: 0 0 12px 12px;
     }
 
     .card-header {
@@ -233,7 +230,7 @@
       align-items: center;
 
       .avatar {
-        background-color: var(--color-primary-light-1);
+        background-color: var(--m-primary-soft);
         margin-right: 12px;
       }
 
@@ -245,7 +242,7 @@
         .owner-name {
           font-size: 16px;
           font-weight: 500;
-          color: var(--color-text-1);
+          color: var(--m-text);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -256,8 +253,8 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background-color: var(--color-success-light-4);
-        border: 2px solid var(--color-success-light-2);
+        background-color: color-mix(in srgb, var(--m-success) 24%, var(--m-surface));
+        border: 2px solid color-mix(in srgb, var(--m-success) 34%, transparent);
         margin-left: 12px;
         flex-shrink: 0;
       }
@@ -278,20 +275,20 @@
         .status-icon {
           font-size: 16px;
           margin-right: 8px;
-          color: var(--color-text-3);
+          color: var(--m-muted);
         }
 
         .info-label,
         .status-label {
           font-size: 14px;
-          color: var(--color-text-2);
+          color: var(--m-text-2);
           margin-right: 8px;
           flex-shrink: 0;
         }
 
         .info-value {
           font-size: 14px;
-          color: var(--color-text-1);
+          color: var(--m-text);
           flex: 1;
           text-align: right;
 
@@ -303,23 +300,23 @@
             font-weight: 500;
 
             &.type-pytest {
-              background-color: var(--color-purple-1);
-              color: var(--color-purple-6);
+              background-color: color-mix(in srgb, var(--m-chart-5) 16%, var(--m-surface));
+              color: var(--m-chart-5);
             }
 
             &.type-pytest-web {
-              background-color: var(--color-blue-1);
-              color: var(--color-blue-6);
+              background-color: var(--m-primary-soft);
+              color: var(--m-primary);
             }
 
             &.type-web-ui {
-              background-color: var(--color-green-1);
-              color: var(--color-green-6);
+              background-color: color-mix(in srgb, var(--m-success) 16%, var(--m-surface));
+              color: var(--m-success);
             }
 
             &.type-android-ui {
-              background-color: var(--color-red-1);
-              color: var(--color-red-6);
+              background-color: color-mix(in srgb, var(--m-danger) 14%, var(--m-surface));
+              color: var(--m-danger);
             }
           }
         }
@@ -332,7 +329,7 @@
 
       .status-item {
         .status-icon {
-          color: var(--color-primary-light-4);
+          color: var(--m-primary);
         }
       }
     }
@@ -347,7 +344,7 @@
   // 响应式调整
   @media (max-width: 768px) {
     .cards-container {
-      margin-top: 16px; // 在小屏幕上稍微减少距离
+      margin-top: 8px;
     }
 
     :deep(.arco-col) {

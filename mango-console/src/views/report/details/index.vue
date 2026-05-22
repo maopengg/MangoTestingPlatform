@@ -32,23 +32,23 @@
       </div>
 
       <dl class="meta-strip" :class="{ 'has-task-name': hasTaskName }">
-        <div v-if="hasTaskName" class="meta-item wide">
+        <div v-if="hasTaskName" class="report-meta-item wide">
           <dt>任务名称</dt>
           <dd>{{ reportInfo.tasks?.name || '-' }}</dd>
         </div>
-        <div class="meta-item">
+        <div class="report-meta-item">
           <dt>报告ID</dt>
           <dd>{{ reportInfo.id || reportId }}</dd>
         </div>
-        <div class="meta-item">
+        <div class="report-meta-item">
           <dt>测试环境</dt>
           <dd>{{ envText(reportInfo.test_env) }}</dd>
         </div>
-        <div class="meta-item">
+        <div class="report-meta-item">
           <dt>执行人</dt>
           <dd>{{ reportInfo.user?.name || '-' }}</dd>
         </div>
-        <div class="meta-item">
+        <div class="report-meta-item">
           <dt>通知状态</dt>
           <dd>
             <a-tag :color="noticeColor(reportInfo.is_notice)" size="small">
@@ -56,7 +56,7 @@
             </a-tag>
           </dd>
         </div>
-        <div class="meta-item">
+        <div class="report-meta-item">
           <dt>执行时间</dt>
           <dd>{{ reportInfo.create_time || '-' }}</dd>
         </div>
@@ -154,9 +154,9 @@
 
     <section class="case-section">
       <div class="case-main">
-          <div class="case-toolbar">
-            <div class="case-toolbar-main">
-              <div class="case-toolbar-copy">
+        <div class="case-toolbar">
+          <div class="case-toolbar-main">
+            <div class="case-toolbar-copy">
               <h2>测试套用例列表</h2>
               <p>
                 <span>{{ currentTypeLabel }}</span>
@@ -165,77 +165,109 @@
                 <i></i>
                 <span>已加载 {{ cases.length }} / {{ pagination.total || '未知' }}</span>
               </p>
-              </div>
-              <div v-if="visibleTypeTabs.length > 0" class="type-switch">
-                <button
-                  v-for="item in visibleTypeTabs"
-                  :key="item.key"
-                  type="button"
-                  class="type-switch-item"
-                  :class="{ active: activeType === item.key }"
-                  @click="selectType(item.key)"
-                >
-                  <span>{{ item.label }}</span>
-                  <strong>{{ item.total }}</strong>
-                </button>
-              </div>
             </div>
-            <div class="toolbar-actions">
-              <a-radio-group v-model="caseStatus" type="button" size="small" @change="reloadCases">
-                <a-radio :value="null">全部</a-radio>
-                <a-radio :value="0">失败</a-radio>
-                <a-radio :value="1">成功</a-radio>
-                <a-radio :value="3">进行中</a-radio>
-                <a-radio :value="2">待开始</a-radio>
-              </a-radio-group>
+            <div v-if="visibleTypeTabs.length > 0" class="type-switch">
+              <button
+                v-for="item in visibleTypeTabs"
+                :key="item.key"
+                type="button"
+                class="type-switch-item"
+                :class="{ active: activeType === item.key }"
+                @click="selectType(item.key)"
+              >
+                <span>{{ item.label }}</span>
+                <strong>{{ item.total }}</strong>
+              </button>
             </div>
           </div>
-
-          <a-spin :loading="caseLoading && cases.length === 0" class="case-spin">
-            <div v-if="cases.length === 0 && !caseLoading" class="empty-state">暂无用例结果</div>
-            <UiCaseTable
-              v-else-if="activeType === '0'"
-              :cases="cases"
-              :enum-store="enumStore"
-              :can-retry="canRetry"
-              @show-details="showDetails"
-              @retry="onRetry"
-            />
-            <ApiCaseTable
-              v-else-if="activeType === '1'"
-              :cases="cases"
-              :enum-store="enumStore"
-              :can-retry="canRetry"
-              @show-details="showDetails"
-              @retry="onRetry"
-            />
-            <PytestCaseTable
-              v-else-if="activeType === '2'"
-              :cases="cases"
-              :enum-store="enumStore"
-              :can-retry="canRetry"
-              @show-details="showDetails"
-              @retry="onRetry"
-            />
-          </a-spin>
-
-          <div ref="loadMoreRef" class="load-more">
-            <a-spin v-if="caseLoading && cases.length > 0" size="small" />
-            <span v-else-if="pagination.finished && cases.length > 0">没有更多了</span>
+          <div class="toolbar-actions">
+            <a-radio-group v-model="caseStatus" type="button" size="small" @change="reloadCases">
+              <a-radio :value="null">全部</a-radio>
+              <a-radio :value="0">失败</a-radio>
+              <a-radio :value="1">成功</a-radio>
+              <a-radio :value="3">进行中</a-radio>
+              <a-radio :value="2">待开始</a-radio>
+            </a-radio-group>
           </div>
+        </div>
+
+        <a-spin :loading="caseLoading && cases.length === 0" class="case-spin">
+          <div v-if="cases.length === 0" class="empty-state">
+            {{ caseLoading ? '正在加载用例结果' : '暂无用例结果' }}
+          </div>
+          <UiCaseTable
+            v-else-if="activeType === '0'"
+            :cases="cases"
+            :enum-store="enumStore"
+            :can-retry="canRetry"
+            :loading="false"
+            @show-details="showDetails"
+            @retry="onRetry"
+          />
+          <ApiCaseTable
+            v-else-if="activeType === '1'"
+            :cases="cases"
+            :enum-store="enumStore"
+            :can-retry="canRetry"
+            :loading="false"
+            @show-details="showDetails"
+            @retry="onRetry"
+          />
+          <PytestCaseTable
+            v-else-if="activeType === '2'"
+            :cases="cases"
+            :enum-store="enumStore"
+            :can-retry="canRetry"
+            :loading="false"
+            @show-details="showDetails"
+            @retry="onRetry"
+          />
+        </a-spin>
+
+        <div ref="loadMoreRef" class="load-more">
+          <a-spin v-if="caseLoading && cases.length > 0" size="small" />
+          <span v-else-if="pagination.finished && cases.length > 0">没有更多了</span>
+        </div>
       </div>
     </section>
 
     <a-drawer v-model:visible="drawerVisible" :width="1000" title="测试用例详情">
-      <a-card v-if="selectedCase.case_type === 0" :title="selectedCase?.name" :bordered="false">
+      <section
+        v-if="selectedCase.case_type === 0"
+        class="mango-section-card report-detail-drawer-card"
+      >
+        <div class="mango-section-title">
+          <div>
+            <h2>{{ selectedCase?.name }}</h2>
+            <p>UI 自动化执行明细</p>
+          </div>
+        </div>
         <ElementTestReport :resultData="selectedCase" />
-      </a-card>
-      <a-card v-else-if="selectedCase.case_type === 1" :title="selectedCase?.name" :bordered="false">
+      </section>
+      <section
+        v-else-if="selectedCase.case_type === 1"
+        class="mango-section-card report-detail-drawer-card"
+      >
+        <div class="mango-section-title">
+          <div>
+            <h2>{{ selectedCase?.name }}</h2>
+            <p>API 自动化执行明细</p>
+          </div>
+        </div>
         <ApiTestReport :resultData="selectedCase" />
-      </a-card>
-      <a-card v-else-if="selectedCase.case_type === 2" :title="selectedCase?.name" :bordered="false">
+      </section>
+      <section
+        v-else-if="selectedCase.case_type === 2"
+        class="mango-section-card report-detail-drawer-card"
+      >
+        <div class="mango-section-title">
+          <div>
+            <h2>{{ selectedCase?.name }}</h2>
+            <p>Pytest 执行明细</p>
+          </div>
+        </div>
         <PytestTestReport :resultData="selectedCase" />
-      </a-card>
+      </section>
     </a-drawer>
   </div>
 </template>
@@ -253,9 +285,9 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { usePageData } from '@/store/page-data'
   import { useUserStoreContext } from '@/store/modules/user'
-  import ElementTestReport from '@/components/ElementTestReport.vue'
-  import ApiTestReport from '@/components/ApiTestReport.vue'
-  import PytestTestReport from '@/components/PytestTestReport.vue'
+  import ElementTestReport from '@/components/reports/ElementTestReport.vue'
+  import ApiTestReport from '@/components/reports/ApiTestReport.vue'
+  import PytestTestReport from '@/components/reports/PytestTestReport.vue'
   import UiCaseTable from './UiCaseTable.vue'
   import ApiCaseTable from './ApiCaseTable.vue'
   import PytestCaseTable from './PytestCaseTable.vue'
@@ -293,7 +325,9 @@
     finished: false,
   })
 
-  const reportId = computed(() => String(route.query.id || pageData.record?.id || reportInfo.value?.id || ''))
+  const reportId = computed(() =>
+    String(route.query.id || pageData.record?.id || reportInfo.value?.id || '')
+  )
   const totalCount = computed(() => summary.value.count || 0)
   const failRatio = computed(() => ratio(summary.value.fail_count, totalCount.value))
   const passRate = computed(() => ratio(summary.value.success_count, totalCount.value))
@@ -301,11 +335,16 @@
   const failureReasons = computed(() => {
     const counter = new Map<string, number>()
     ;(cases.value || []).forEach((item: any) => {
-      const rows = Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+      const rows =
+        Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
       rows.forEach((row: any) => {
         if (Number(row?.status) !== 0) return
         const rawMessage =
-          row?.error_message || row?.statusDetails?.message || row?.response?.error || row?.message || '未返回失败原因'
+          row?.error_message ||
+          row?.statusDetails?.message ||
+          row?.response?.error ||
+          row?.message ||
+          '未返回失败原因'
         const message = String(rawMessage).replace(/\s+/g, ' ').trim() || '未返回失败原因'
         counter.set(message, (counter.get(message) || 0) + 1)
       })
@@ -442,7 +481,10 @@
       const res = await getSystemTestSuiteDetailsSummaryShare(reportId.value)
       summary.value = res.data || {}
       const [firstVisibleType] = visibleTypeTabs.value
-      if (firstVisibleType && !visibleTypeTabs.value.some((item) => item.key === activeType.value)) {
+      if (
+        firstVisibleType &&
+        !visibleTypeTabs.value.some((item) => item.key === activeType.value)
+      ) {
         activeType.value = firstVisibleType.key
       }
       handlePolling()
@@ -510,8 +552,7 @@
       cases.value = list
       pagination.total = getTotal(res)
       pagination.finished =
-        list.length < loadedPageSize ||
-        (pagination.total > 0 && list.length >= pagination.total)
+        list.length < loadedPageSize || (pagination.total > 0 && list.length >= pagination.total)
       pagination.page = pagination.finished
         ? currentPage
         : Math.floor(list.length / pagination.pageSize) + 1
@@ -525,7 +566,8 @@
   }
 
   function handlePolling() {
-    const hasInProgress = (summary.value.stay_begin_count || 0) > 0 || (summary.value.proceed_count || 0) > 0
+    const hasInProgress =
+      (summary.value.stay_begin_count || 0) > 0 || (summary.value.proceed_count || 0) > 0
     if (hasInProgress && !isPolling.value) {
       startPolling()
     } else if (!hasInProgress && isPolling.value) {
@@ -571,8 +613,8 @@
       content: '是否要重试这个测试任务？',
       cancelText: '取消',
       okText: '重试',
-      onOk: () => {
-        getSystemTestSuiteDetailsRetry(id)
+      onBeforeOk: () => {
+        return getSystemTestSuiteDetailsRetry(id)
           .then((res) => {
             Message.success(res.msg)
             loadSummary()
@@ -609,8 +651,8 @@
     height: 100%;
     overflow-y: auto;
     padding: 14px;
-    background: #f3f6fb;
-    color: #0f172a;
+    background: var(--m-bg);
+    color: var(--m-text);
   }
 
   .standalone-report-container {
@@ -622,10 +664,10 @@
   .report-head,
   .overview-panel,
   .case-section {
-    background: #fff;
-    border: 1px solid #e6edf6;
-    border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    background: var(--m-surface);
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    box-shadow: var(--m-shadow);
   }
 
   .report-head {
@@ -638,7 +680,7 @@
     position: absolute;
     inset: 0 auto 0 0;
     width: 3px;
-    background: linear-gradient(180deg, #165dff, #00b42a);
+    background: linear-gradient(180deg, var(--m-primary), var(--m-success));
     content: '';
   }
 
@@ -656,7 +698,7 @@
 
   .eyebrow {
     margin: 0 0 5px;
-    color: #64748b;
+    color: var(--m-muted);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0;
@@ -676,7 +718,7 @@
     overflow: hidden;
     font-size: 22px;
     line-height: 30px;
-    color: #0f172a;
+    color: var(--m-text);
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -687,7 +729,7 @@
     align-items: center;
     gap: 8px;
     margin-top: 8px;
-    color: #5b6b85;
+    color: var(--m-muted);
     font-size: 13px;
   }
 
@@ -697,7 +739,7 @@
     height: 4px;
     display: inline-block;
     border-radius: 50%;
-    background: #c7d1e0;
+    background: var(--m-border-strong);
   }
 
   .status-console {
@@ -707,9 +749,9 @@
     justify-content: center;
     gap: 7px;
     padding: 11px 12px;
-    background: #f8fbff;
-    border: 1px solid #d8e7ff;
-    border-radius: 8px;
+    background: var(--m-surface-soft);
+    border: 1px solid var(--m-primary-border);
+    border-radius: var(--m-radius-lg);
   }
 
   .status-line,
@@ -723,14 +765,14 @@
 
   .status-line span,
   .status-console .success-rate span {
-    color: #6b778c;
+    color: var(--m-muted);
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
   }
 
   .status-console .success-rate strong {
-    color: #165dff;
+    color: var(--m-primary);
     font-size: 14px;
     font-weight: 700;
     line-height: 20px;
@@ -741,7 +783,7 @@
     height: 5px;
     overflow: hidden;
     border-radius: 999px;
-    background: #e8eef7;
+    background: var(--m-border);
   }
 
   .success-rate-bar i {
@@ -749,7 +791,7 @@
     height: 100%;
     min-width: 2px;
     border-radius: inherit;
-    background: linear-gradient(90deg, #165dff, #00b42a);
+    background: linear-gradient(90deg, var(--m-primary), var(--m-success));
   }
 
   .meta-strip {
@@ -758,34 +800,34 @@
     gap: 0;
     margin-top: 13px;
     overflow: hidden;
-    border: 1px solid #e8eef7;
-    border-radius: 8px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
   }
 
   .meta-strip.has-task-name {
     grid-template-columns: minmax(180px, 1.6fr) repeat(5, minmax(0, 1fr));
   }
 
-  .meta-item {
+  .report-meta-item {
     min-width: 0;
     padding: 8px 12px;
-    background: #fbfdff;
+    background: var(--m-surface);
   }
 
-  .meta-item + .meta-item {
-    border-left: 1px solid #e5ebf5;
+  .report-meta-item + .report-meta-item {
+    border-left: 1px solid var(--m-border);
   }
 
-  .meta-item dt {
+  .report-meta-item dt {
     display: block;
-    color: #6b778c;
+    color: var(--m-muted);
     font-size: 12px;
     margin-bottom: 4px;
   }
 
-  .meta-item dd {
+  .report-meta-item dd {
     overflow: hidden;
-    color: #0f172a;
+    color: var(--m-text);
     font-size: 14px;
     font-weight: 600;
     text-overflow: ellipsis;
@@ -835,7 +877,7 @@
   }
 
   .failure-reason-panel .panel-title em {
-    color: #64748b;
+    color: var(--m-muted);
     font-style: normal;
     font-size: 12px;
     white-space: nowrap;
@@ -846,9 +888,9 @@
     min-height: 112px;
     align-items: center;
     justify-content: center;
-    border: 1px dashed #d8e1ef;
-    border-radius: 8px;
-    color: #86909c;
+    border: 1px dashed var(--m-border);
+    border-radius: var(--m-radius-lg);
+    color: var(--m-muted);
     font-size: 13px;
   }
 
@@ -871,9 +913,9 @@
     align-items: center;
     gap: 10px;
     padding: 6px 9px;
-    border: 1px solid #eef2f7;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface);
     color: inherit;
     text-align: left;
   }
@@ -885,7 +927,7 @@
   .reason-main span {
     display: block;
     overflow: hidden;
-    color: #334155;
+    color: var(--m-text-2);
     font-size: 12px;
     line-height: 18px;
     text-overflow: ellipsis;
@@ -898,7 +940,7 @@
     margin-top: 5px;
     overflow: hidden;
     border-radius: 999px;
-    background: #eef2f7;
+    background: var(--m-border);
   }
 
   .reason-main b {
@@ -906,11 +948,11 @@
     height: 100%;
     min-width: 2px;
     border-radius: inherit;
-    background: #fca5a5;
+    background: color-mix(in srgb, var(--m-danger) 45%, transparent);
   }
 
   .reason-item strong {
-    color: #ef4444;
+    color: var(--m-danger);
     font-size: 16px;
     text-align: right;
   }
@@ -934,19 +976,19 @@
   }
 
   .panel-title span {
-    color: #0f172a;
+    color: var(--m-text);
     font-weight: 600;
   }
 
   .panel-title p {
     margin-top: 2px;
-    color: #86909c;
+    color: var(--m-muted);
     font-size: 12px;
   }
 
   .panel-title strong {
     font-size: 24px;
-    color: #165dff;
+    color: var(--m-primary);
   }
 
   .type-progress + .type-progress {
@@ -956,7 +998,7 @@
   .type-row {
     justify-content: space-between;
     margin-bottom: 6px;
-    color: #475569;
+    color: var(--m-text-2);
   }
 
   .type-row div {
@@ -969,19 +1011,19 @@
   }
 
   .type-row span {
-    color: #0f172a;
+    color: var(--m-text);
     font-weight: 600;
   }
 
   .type-row small {
     margin-top: 2px;
-    color: #86909c;
+    color: var(--m-muted);
     font-size: 12px;
   }
 
   .type-row em {
     font-style: normal;
-    color: #165dff;
+    color: var(--m-primary);
     font-weight: 700;
   }
 
@@ -991,13 +1033,13 @@
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    border: 1px solid #eef2f7;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface);
   }
 
   .execution-progress strong {
-    color: #165dff;
+    color: var(--m-primary);
     font-size: 13px;
     text-align: right;
   }
@@ -1016,8 +1058,8 @@
     justify-content: space-between;
     gap: 16px;
     padding: 12px 14px;
-    background: rgba(251, 252, 255, 0.97);
-    border-bottom: 1px solid #e2e8f0;
+    background: color-mix(in srgb, var(--m-surface) 94%, transparent);
+    border-bottom: 1px solid var(--m-border);
     backdrop-filter: blur(8px);
   }
 
@@ -1034,7 +1076,7 @@
 
   .case-toolbar h2 {
     font-size: 16px;
-    color: #0f172a;
+    color: var(--m-text);
     margin-bottom: 4px;
   }
 
@@ -1042,7 +1084,7 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    color: #475569;
+    color: var(--m-text-2);
     font-size: 13px;
   }
 
@@ -1059,9 +1101,9 @@
     gap: 6px;
     flex: 0 0 auto;
     padding: 3px;
-    border: 1px solid #e5ebf5;
-    border-radius: 8px;
-    background: #f7f9fc;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface-soft);
   }
 
   .failure-panel {
@@ -1071,7 +1113,7 @@
   }
 
   .failure-panel .panel-title strong {
-    color: #f53f3f;
+    color: var(--m-danger);
   }
 
   .failure-body {
@@ -1084,12 +1126,12 @@
 
   .failure-body span {
     display: block;
-    color: #86909c;
+    color: var(--m-muted);
     font-size: 12px;
   }
 
   .failure-body strong {
-    color: #0f172a;
+    color: var(--m-text);
     font-size: 28px;
     line-height: 32px;
   }
@@ -1098,20 +1140,18 @@
     width: 100%;
     height: 32px;
     padding: 0 12px;
-    border: 1px solid #ffd0d0;
-    border-radius: 6px;
-    background: #fff7f7;
-    color: #f53f3f;
+    border: 1px solid color-mix(in srgb, var(--m-danger) 34%, transparent);
+    border-radius: var(--m-radius-md);
+    background: color-mix(in srgb, var(--m-danger) 10%, var(--m-surface));
+    color: var(--m-danger);
     cursor: pointer;
     font-size: 13px;
-    transition:
-      border-color 0.2s ease,
-      background-color 0.2s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
   }
 
   .failure-body button:hover {
-    border-color: #f53f3f;
-    background: #fff1f1;
+    border-color: var(--m-danger);
+    background: color-mix(in srgb, var(--m-danger) 14%, var(--m-surface));
   }
 
   .type-switch-item {
@@ -1123,24 +1163,21 @@
     border: 0;
     border-radius: 6px;
     background: transparent;
-    color: #475569;
+    color: var(--m-text-2);
     cursor: pointer;
     line-height: 18px;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease,
-      box-shadow 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .type-switch-item:hover {
-    background: #eef5ff;
-    color: #165dff;
+    background: var(--m-primary-soft);
+    color: var(--m-primary);
   }
 
   .type-switch-item.active {
-    background: #fff;
-    color: #165dff;
-    box-shadow: 0 2px 8px rgba(22, 93, 255, 0.12);
+    background: var(--m-surface);
+    color: var(--m-primary);
+    box-shadow: var(--m-shadow);
   }
 
   .type-switch-item span {
@@ -1152,9 +1189,9 @@
   .type-switch-item strong {
     min-width: 18px;
     padding: 0 5px;
-    border: 1px solid #e5ebf5;
+    border: 1px solid var(--m-border);
     border-radius: 999px;
-    background: #f8fafc;
+    background: var(--m-surface-soft);
     font-size: 12px;
     text-align: center;
   }
@@ -1174,7 +1211,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #64748b;
+    color: var(--m-muted);
   }
 
   @media (max-width: 1100px) {
@@ -1228,7 +1265,6 @@
       grid-template-columns: 1fr;
     }
 
-
     .type-switch {
       flex-wrap: wrap;
     }
@@ -1238,5 +1274,4 @@
       line-height: 25px;
     }
   }
-
 </style>

@@ -1,7 +1,12 @@
 <template>
-  <div class="flex justify-between items-center mt-1.5">
-    <span v-for="(item, index) of stronger" :key="index" :class="[item.status]" class="tip"></span>
-    <span class="ml-1 mr-1">{{ tipValue }}</span>
+  <div class="mango-password-strength">
+    <span
+      v-for="(item, index) of stronger"
+      :key="index"
+      :class="[item.status]"
+      class="mango-password-strength__bar"
+    ></span>
+    <span class="mango-password-strength__text">{{ tipValue }}</span>
   </div>
 </template>
 
@@ -68,26 +73,40 @@
   )
 </script>
 <style lang="less" scoped>
-  .tip {
+  .mango-password-strength {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .mango-password-strength__bar {
+    flex: 1;
     height: 10px;
     border-radius: 2px;
-    background-color: #fff;
-    width: 28%;
+    background-color: var(--m-surface);
   }
 
   .normal {
-    background-color: #f3f3f3;
+    background-color: var(--m-border);
   }
 
   .low {
-    background-color: #f00;
+    background-color: var(--m-danger);
   }
 
   .middle {
-    background-color: #dceb0c;
+    background-color: var(--m-warning);
   }
 
   .strong {
-    background-color: #0c94ee;
+    background-color: var(--m-success);
+  }
+
+  .mango-password-strength__text {
+    flex: none;
+    min-width: 18px;
+    color: var(--m-muted);
   }
 </style>

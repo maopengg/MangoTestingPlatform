@@ -1,41 +1,47 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" class="mango-detail-workbench-page">
+    <template #header>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ productModuleDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护当前产品下的模块结构和模块名称</div>
+        </div>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button size="small" type="primary" @click="doAppend">增加</a-button>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
+      </div>
+    </template>
     <template #default>
-      <a-card :bordered="false" :title="'产品名称：' + route.query.name">
-        <template #extra>
-          <a-space>
-            <a-button size="small" type="primary" @click="doAppend">增加</a-button>
-            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
-          </a-space>
+      <a-table
+        :scroll="{ x: 1100 }"
+        :bordered="false"
+        :columns="columns"
+        :data="data.data"
+        :loading="tableLoading"
+        :pagination="false"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of columns"
+            :key="item.key"
+            :align="item.align"
+            :data-index="item.dataIndex"
+            :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.dataIndex === 'actions'" #cell="{ record }">
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
+            </template>
+          </a-table-column>
         </template>
-        <a-table :bordered="false" :columns="columns" :data="data.data" :pagination="false">
-          <template #columns>
-            <a-table-column
-              v-for="item of columns"
-              :key="item.key"
-              :align="item.align"
-              :data-index="item.dataIndex"
-              :fixed="item.fixed"
-              :title="item.title"
-              :width="item.width"
-            >
-              <template v-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑
-                </a-button>
-                <a-button
-                  size="mini"
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-card>
+      </a-table>
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
@@ -44,7 +50,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -56,7 +62,7 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
@@ -71,8 +77,14 @@
   import { useProject } from '@/store/modules/get-project'
   const projectInfo = useProject()
   const route = useRoute()
+  const productModuleDetailTitle = computed(() => {
+    const id = route.query.id || '-'
+    const name = route.query.name || '-'
+    return `产品模块配置 / ${id} / ${name}`
+  })
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const tableLoading = ref(false)
   const data = reactive({
     isAdd: false,
     updateId: 0,
@@ -100,8 +112,8 @@
       content: '是否要删除此模块？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUserModule(record.id)
+      onBeforeOk: () => {
+        return deleteUserModule(record.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -172,6 +184,7 @@
   }
 
   function doRefresh() {
+    tableLoading.value = true
     getUserModule({
       project_product: route.query.id,
     })
@@ -179,6 +192,9 @@
         data.data = res.data
       })
       .catch(console.log)
+      .finally(() => {
+        tableLoading.value = false
+      })
   }
 
   onMounted(() => {
@@ -187,3 +203,7 @@
     })
   })
 </script>
+<style scoped>
+  @media (max-width: 768px) {
+  }
+</style>

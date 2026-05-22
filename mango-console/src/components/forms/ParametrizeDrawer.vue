@@ -38,7 +38,7 @@
             <a-space
               v-for="(items, index1) in item.parametrize"
               :key="index1"
-              class="parametrize-row"
+              class="mango-parametrize-row"
             >
               <span>key：</span>
               <a-input
@@ -52,7 +52,7 @@
                 "
               />
               <span>value：</span>
-              <div class="value-editor">
+              <div class="mango-parametrize-value-editor">
                 <a-input
                   :model-value="items.value === null ? '' : items.value"
                   :disabled="items.value === null"
@@ -68,7 +68,7 @@
                   :model-value="items.value === null ? 'null' : 'string'"
                   type="button"
                   size="small"
-                  class="value-type-switch"
+                  class="mango-parametrize-value-type-switch"
                   @change="(value) => changeValueType(items, value)"
                 >
                   <a-radio value="string">字符串</a-radio>
@@ -184,21 +184,21 @@
 </script>
 
 <style scoped>
-  .parametrize-row {
+  .mango-parametrize-row {
     align-items: flex-start;
   }
 
-  .value-editor {
+  .mango-parametrize-value-editor {
     display: flex;
     gap: 8px;
     align-items: center;
   }
 
-  .value-editor :deep(.arco-input-wrapper) {
+  .mango-parametrize-value-editor :deep(.arco-input-wrapper) {
     width: 260px;
   }
 
-  .value-type-switch {
+  .mango-parametrize-value-type-switch {
     flex-shrink: 0;
   }
 </style>

@@ -1,9 +1,9 @@
 <template>
-  <div class="vaw-avatar-container">
+  <div class="mango-avatar-container">
     <a-dropdown size="large" trigger="hover" @select="handleSelect">
-      <div class="action-wrapper">
-        <span class="nick-name"> {{ userStore.selected_environment_title }} </span>
-        <icon-caret-down class="tip" />
+      <div class="mango-action-wrapper">
+        <span class="mango-nick-name"> {{ userStore.selected_environment_title }} </span>
+        <icon-caret-down class="mango-tip" />
       </div>
       <template #content>
         <a-doption v-for="item of enumStore.environment_type" :key="item.key" :value="item.key">
@@ -56,17 +56,17 @@
 </script>
 
 <style lang="less" scoped>
-  .vaw-avatar-container {
-    .action-wrapper {
+  .mango-avatar-container {
+    .mango-action-wrapper {
       display: flex;
       align-items: center;
 
-      .avatar {
+      .mango-avatar {
         display: flex;
         align-items: center;
 
         & > img {
-          border: 1px solid #f6f6f6;
+          border: 1px solid var(--m-border);
           width: 100%;
           height: 100%;
           object-fit: cover;
@@ -74,10 +74,10 @@
         }
       }
 
-      .nick-name {
+      .mango-nick-name {
         margin: 0 5px;
 
-        .tip {
+        .mango-tip {
           transform: rotate(0);
           transition: transform @transitionTime;
           margin-left: 2px;
@@ -86,11 +86,11 @@
     }
   }
 
-  .vaw-avatar-container:hover {
+  .mango-avatar-container:hover {
     cursor: pointer;
-    color: var(--primary-color);
+    color: var(--m-primary);
 
-    .tip {
+    .mango-tip {
       transform: rotate(180deg);
       transition: transform @transitionTime;
     }

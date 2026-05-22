@@ -10,6 +10,12 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCaseDetailedParameter, ApiInfo, ApiHeaders
+from src.auto_test.auto_data_factory.models import (
+    DataFactoryDatasourceAlias,
+    DataFactoryEntity,
+    DataFactoryExecution,
+    DataFactoryTemplate,
+)
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.models import TestSuiteDetails
 from src.auto_test.auto_ui.models import UiCase, PageElement, Page, PageSteps
@@ -261,4 +267,10 @@ class IndexViews(ViewSet):
                 'caseCount': PytestCase.objects.count(),
                 'toolFiles': 0,
                 'testFiles': 0,
+            },
+            'dataFactoryStats': {
+                'datasourceCount': DataFactoryDatasourceAlias.objects.count(),
+                'entityCount': DataFactoryEntity.objects.count(),
+                'templateCount': DataFactoryTemplate.objects.count(),
+                'executionCount': DataFactoryExecution.objects.count(),
             }})

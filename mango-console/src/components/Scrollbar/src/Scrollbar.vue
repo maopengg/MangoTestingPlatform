@@ -1,12 +1,21 @@
 <template>
-  <div class="scrollbar">
+  <div class="mango-scrollbar">
     <div
       ref="wrap"
-      :class="[wrapClass, 'scrollbar__wrap', native ? '' : 'scrollbar__wrap--hidden-default']"
+      :class="[
+        wrapClass,
+        'mango-scrollbar__wrap',
+        native ? '' : 'mango-scrollbar__wrap--hidden-default',
+      ]"
       :style="style"
       @scroll="handleScroll"
     >
-      <component :is="tag" ref="resize" :class="['scrollbar__view', viewClass]" :style="viewStyle">
+      <component
+        :is="tag"
+        ref="resize"
+        :class="['mango-scrollbar__view', viewClass]"
+        :style="viewStyle"
+      >
         <slot></slot>
       </component>
     </div>
@@ -134,7 +143,7 @@
   })
 </script>
 <style lang="less">
-  .scrollbar {
+  .mango-scrollbar {
     position: relative;
     height: 100%;
     overflow: hidden;
@@ -161,12 +170,12 @@
       width: 0;
       height: 0;
       cursor: pointer;
-      background-color: rgb(144 147 153 / 30%);
+      background-color: var(--m-scrollbar-thumb);
       border-radius: inherit;
       transition: 0.3s background-color;
 
       &:hover {
-        background-color: rgb(144 147 153 / 50%);
+        background-color: var(--m-scrollbar-thumb-hover);
       }
     }
 
@@ -179,7 +188,7 @@
       opacity: 0%;
       transition: opacity 80ms ease;
 
-      &.is-vertical {
+      &.mango-is-vertical {
         top: 2px;
         width: 6px;
 
@@ -188,7 +197,7 @@
         }
       }
 
-      &.is-horizontal {
+      &.mango-is-horizontal {
         left: 2px;
         height: 6px;
 
@@ -199,9 +208,9 @@
     }
   }
 
-  .scrollbar:active > .scrollbar__bar,
-  .scrollbar:focus > .scrollbar__bar,
-  .scrollbar:hover > .scrollbar__bar {
+  .mango-scrollbar:active > .mango-scrollbar__bar,
+  .mango-scrollbar:focus > .mango-scrollbar__bar,
+  .mango-scrollbar:hover > .mango-scrollbar__bar {
     opacity: 100%;
     transition: opacity 340ms ease-out;
   }

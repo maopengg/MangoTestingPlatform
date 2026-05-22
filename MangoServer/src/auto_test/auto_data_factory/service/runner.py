@@ -12,6 +12,7 @@ from src.auto_test.auto_data_factory.models import (
     DataFactoryExecution,
     DataFactoryExecutionItem,
     DataFactoryTemplate,
+    DataFactoryTemplateItem,
 )
 from src.enums.data_factory_enum import (
     DataFactoryCleanupStatusEnum,
@@ -26,6 +27,8 @@ from src.models.data_factory_model import (
     DataFactoryFieldOverrideRule,
     DataFactoryFieldOverrideRules,
     DataFactoryOutputConfig,
+    SCENE_ITEM_OVERRIDES_KEY,
+    SCENE_MAIN_OVERRIDES_KEY,
 )
 
 from .datasource import DataFactoryDatasource, DataFactoryDatasourceResolver, is_missing_value
@@ -95,15 +98,122 @@ class DataFactoryRunner:
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
         runtime_context = context or {}
-        return cls.preview_by_template(
+        main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
+        result = cls.preview_by_template(
             template,
-            overrides or {},
+            main_overrides,
             runtime_context,
             test_object_id,
             set(),
             output_config=output_config,
             test_data=test_data,
         )
+        return cls.preview_template_items(
+            template=template,
+            result=result,
+            item_overrides=item_overrides,
+            context=runtime_context,
+            test_object_id=test_object_id,
+            test_data=test_data,
+        )
+
+    @staticmethod
+    def split_scene_overrides(overrides: dict | None) -> tuple[dict, dict]:
+        overrides = overrides or {}
+        if SCENE_MAIN_OVERRIDES_KEY in overrides or SCENE_ITEM_OVERRIDES_KEY in overrides:
+            return overrides.get(SCENE_MAIN_OVERRIDES_KEY) or {}, overrides.get(SCENE_ITEM_OVERRIDES_KEY) or {}
+        return overrides, {}
+
+    @staticmethod
+    def get_template_items(template: DataFactoryTemplate) -> list[DataFactoryTemplateItem]:
+        return list(
+            template.items.select_related(
+                'child_template',
+                'child_template__entity',
+                'child_template__entity__datasource_alias',
+                'child_template__project_product',
+            ).order_by('sort', 'id')
+        )
+
+    @staticmethod
+    def get_item_override(item: DataFactoryTemplateItem, item_overrides: dict | None) -> dict:
+        item_overrides = item_overrides or {}
+        keys = [
+            str(item.id),
+            item.name,
+            str(item.child_template_id),
+            item.child_template.name if item.child_template_id else "",
+        ]
+        for key in keys:
+            if key and key in item_overrides:
+                return item_overrides.get(key) or {}
+        return {}
+
+    @classmethod
+    def preview_template_items(
+            cls,
+            template: DataFactoryTemplate,
+            result: dict,
+            item_overrides: dict,
+            context: dict,
+            test_object_id: int | None,
+            test_data=None,
+    ) -> dict:
+        items = []
+        items_output = {}
+        can_debug_run = result.get("can_debug_run", False)
+        dependency_tree = result.get("dependency_tree") or {}
+        dependency_tree.setdefault("children", [])
+        all_missing_fields = list(result.get("all_missing_fields") or [])
+
+        for item in cls.get_template_items(template):
+            overrides = {
+                **(item.field_overrides or {}),
+                **cls.get_item_override(item, item_overrides),
+            }
+            item_result = cls.preview_by_template(
+                item.child_template,
+                overrides,
+                context,
+                test_object_id,
+                set(),
+                alias_override=item.name or item.child_template.name,
+                test_data=test_data,
+            )
+            item_result["scene_item"] = {
+                "id": item.id,
+                "name": item.name,
+                "sort": item.sort,
+                "child_template_id": item.child_template_id,
+            }
+            item_tree = item_result.get("dependency_tree") or {}
+            item_tree["scene_item_id"] = item.id
+            item_tree["scene_item_name"] = item.name
+            item_tree["action"] = "create"
+            item_tree["message"] = item_tree.get("message") or "场景关联模板"
+            dependency_tree["children"].append(item_tree)
+            can_debug_run = can_debug_run and item_result.get("can_debug_run", False)
+            all_missing_fields.extend(item_result.get("all_missing_fields") or [])
+            output_key = item.name or item.child_template.name
+            items_output[output_key] = item_result.get("output") or item_result.get("payload") or {}
+            items.append({
+                "id": item.id,
+                "name": item.name,
+                "template": item_result.get("template"),
+                "entity": item_result.get("entity"),
+                "payload": item_result.get("payload"),
+                "output": item_result.get("output"),
+                "fields": item_result.get("fields"),
+                "missing_fields": item_result.get("missing_fields"),
+                "can_debug_run": item_result.get("can_debug_run"),
+            })
+
+        result["items"] = items
+        result["items_output"] = items_output
+        result["all_missing_fields"] = all_missing_fields
+        result["can_debug_run"] = can_debug_run
+        result["dependency_tree"] = dependency_tree
+        return result
 
     @classmethod
     def preview_by_template(
@@ -162,6 +272,11 @@ class DataFactoryRunner:
         dependencies = []
         dependency_nodes = []
         alias = alias_override or template.name
+        if entity.create_type != DataFactoryOperationTypeEnum.SQL.value:
+            missing_fields.append({
+                "field": "__entity_create_type__",
+                "message": "调试运行仅支持 SQL 创建方式，请将工厂实体创建方式调整为 SQL",
+            })
 
         for field in fields:
             if field.generator_type == DataFactoryGeneratorTypeEnum.SKIP.value:
@@ -192,11 +307,27 @@ class DataFactoryRunner:
                 field_items.append(cls.build_preview_field(field, None, False, message))
 
         context[alias] = payload
+        all_missing_fields = cls.collect_preview_missing_fields(
+            template={
+                "id": template.id,
+                "name": template.name,
+                "alias": alias,
+            },
+            entity={
+                "id": entity.id,
+                "name": entity.name,
+                "table_name": entity.table_name,
+            },
+            missing_fields=missing_fields,
+            dependencies=dependencies,
+        )
         dependency_tree = cls.build_dependency_tree(
             template=template,
             entity=entity,
             alias=alias,
             action="root",
+            fields=field_items,
+            missing_fields=missing_fields,
             children=dependency_nodes,
         )
         output = cls.build_output(output_config if output_config is not None else template.output_config, payload)
@@ -224,6 +355,7 @@ class DataFactoryRunner:
             "output": output,
             "fields": field_items,
             "missing_fields": missing_fields,
+            "all_missing_fields": all_missing_fields,
             "dependencies": dependencies,
             "dependency_tree": dependency_tree,
             "context": context,
@@ -261,6 +393,8 @@ class DataFactoryRunner:
                 strategy=strategy,
                 value=context[alias].get(target_field),
                 message="复用上下文已有数据",
+                fields=[],
+                missing_fields=[],
             ))
             return context[alias].get(target_field)
 
@@ -293,6 +427,8 @@ class DataFactoryRunner:
                     strategy=strategy,
                     value=dependency_value,
                     message="复用上下文已有数据",
+                    fields=[],
+                    missing_fields=[],
                 ),
                 "context": context,
                 "can_debug_run": True,
@@ -335,6 +471,39 @@ class DataFactoryRunner:
             "valid": valid,
             "message": message,
         }
+
+    @staticmethod
+    def collect_preview_missing_fields(
+            template: dict,
+            entity: dict,
+            missing_fields: list,
+            dependencies: list,
+            path: str = "",
+    ) -> list:
+        template_name = template.get("name") or template.get("alias") or ""
+        current_path = f"{path} / {template_name}" if path else template_name
+        rows = []
+        for item in missing_fields or []:
+            rows.append({
+                "template_id": template.get("id"),
+                "template_name": template_name,
+                "entity_id": entity.get("id"),
+                "entity_name": entity.get("name"),
+                "table_name": entity.get("table_name"),
+                "alias": template.get("alias"),
+                "field": item.get("field"),
+                "message": item.get("message", ""),
+                "path": current_path,
+            })
+        for dependency in dependencies or []:
+            rows.extend(DataFactoryRunner.collect_preview_missing_fields(
+                template=dependency.get("template") or {},
+                entity=dependency.get("entity") or {},
+                missing_fields=dependency.get("missing_fields") or [],
+                dependencies=dependency.get("dependencies") or [],
+                path=current_path,
+            ))
+        return rows
 
     @classmethod
     def build_effective_fields(cls, fields: list, overrides: dict | None) -> list:
@@ -396,7 +565,15 @@ class DataFactoryRunner:
             strategy: str | None = None,
             value=None,
             message: str = "",
+            fields: list | None = None,
+            missing_fields: list | None = None,
     ) -> dict:
+        fields = fields or []
+        missing_fields = missing_fields or []
+        missing_count = len(missing_fields)
+        status = "warning" if missing_count else "valid"
+        if message and action not in ["root", "create", "reuse"]:
+            status = "error"
         return {
             "template_id": template.id if template else None,
             "template_name": template.name if template else alias,
@@ -411,6 +588,10 @@ class DataFactoryRunner:
             "reused": action == "reuse",
             "value": DataFactoryTypeCast.to_jsonable(value),
             "message": message,
+            "fields": fields,
+            "missing_fields": missing_fields,
+            "missing_count": missing_count,
+            "status": status,
             "children": children or [],
         }
 
@@ -429,6 +610,7 @@ class DataFactoryRunner:
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
+        main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
         execution = DataFactoryExecution.objects.create(
             execution_no=cls.build_execution_no(),
             source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
@@ -446,10 +628,18 @@ class DataFactoryRunner:
             data = cls.create_by_template(
                 template,
                 execution,
-                overrides or {},
+                main_overrides,
                 runtime_context,
                 test_object_id,
                 test_data=test_data,
+            )
+            items = cls.create_template_items(
+                template,
+                execution,
+                item_overrides,
+                runtime_context,
+                test_object_id,
+                test_data,
             )
             output = cls.build_output(template.output_config, data)
             execution.context = runtime_context
@@ -461,6 +651,8 @@ class DataFactoryRunner:
                 "context": execution.context,
                 "data": data,
                 "output": output,
+                "items": items,
+                "items_output": {item["name"]: item.get("output") or item.get("data") for item in items},
             }
         except Exception as error:
             execution.status = DataFactoryExecutionStatusEnum.FAIL.value
@@ -488,6 +680,7 @@ class DataFactoryRunner:
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
+        main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
         execution = DataFactoryExecution.objects.create(
             execution_no=cls.build_execution_no(),
             source_type=source_type,
@@ -504,12 +697,20 @@ class DataFactoryRunner:
             data = cls.create_by_template(
                 template,
                 execution,
-                overrides or {},
+                main_overrides,
                 runtime_context,
                 test_object_id,
                 alias_override=alias_override,
                 cleanup_strategy_override=cleanup_strategy_override,
                 test_data=test_data,
+            )
+            items = cls.create_template_items(
+                template,
+                execution,
+                item_overrides,
+                runtime_context,
+                test_object_id,
+                test_data,
             )
             output = cls.build_output(template.output_config, data)
             execution.context = runtime_context
@@ -521,12 +722,49 @@ class DataFactoryRunner:
                 "context": execution.context,
                 "data": data,
                 "output": output,
+                "items": items,
+                "items_output": {item["name"]: item.get("output") or item.get("data") for item in items},
             }
         except Exception as error:
             execution.status = DataFactoryExecutionStatusEnum.FAIL.value
             execution.error_message = str(error)
             execution.save()
             raise
+
+    @classmethod
+    def create_template_items(
+            cls,
+            template: DataFactoryTemplate,
+            execution: DataFactoryExecution,
+            item_overrides: dict,
+            context: dict,
+            test_object_id: int | None,
+            test_data=None,
+    ) -> list[dict]:
+        results = []
+        for item in cls.get_template_items(template):
+            overrides = {
+                **(item.field_overrides or {}),
+                **cls.get_item_override(item, item_overrides),
+            }
+            data = cls.create_by_template(
+                item.child_template,
+                execution,
+                overrides,
+                context,
+                test_object_id,
+                alias_override=item.name or item.child_template.name,
+                cleanup_strategy_override=template.cleanup_strategy,
+                test_data=test_data,
+            )
+            results.append({
+                "id": item.id,
+                "name": item.name or item.child_template.name,
+                "template_id": item.child_template_id,
+                "data": data,
+                "output": cls.build_output(item.child_template.output_config, data),
+            })
+        return results
 
     @classmethod
     def create_by_template(
@@ -587,7 +825,9 @@ class DataFactoryRunner:
         fields = cls.build_effective_fields(fields, merged_overrides)
         cls.resolve_dependencies(fields, execution, context, test_object_id, visiting, test_data)
         payload = DataFactoryValueGenerator.build_payload(fields, None, context, test_data)
-        created = cls.insert(entity, database, payload)
+        insert_result = cls.insert(entity, database, payload)
+        created = insert_result["created"]
+        jsonable_insert_data = DataFactoryTypeCast.to_jsonable(payload)
         jsonable_payload = DataFactoryTypeCast.to_jsonable({**payload, **created})
         alias = alias_override or template.name
 
@@ -598,6 +838,9 @@ class DataFactoryRunner:
             alias=alias,
             primary_value=str(created.get(entity.primary_key) or ""),
             data=jsonable_payload,
+            insert_data=jsonable_insert_data,
+            insert_sql=insert_result.get("insert_sql"),
+            insert_sql_params=insert_result.get("insert_sql_params") or {},
             cleanup_strategy=cleanup_strategy_override
             if cleanup_strategy_override is not None else template.cleanup_strategy,
             cleanup_order=entity.cleanup_order,
@@ -660,16 +903,27 @@ class DataFactoryRunner:
         try:
             metadata = MetaData()
             table = Table(entity.table_name, metadata, autoload_with=engine)
+            statement = insert(table).values(**payload)
+            insert_sql, insert_sql_params = cls.compile_insert_sql(statement, engine.dialect)
             with engine.begin() as connection:
-                result = connection.execute(insert(table).values(**payload))
+                result = connection.execute(statement)
                 created = dict(payload)
                 if result.inserted_primary_key and entity.primary_key:
                     created[entity.primary_key] = result.inserted_primary_key[0]
-                return created
+                return {
+                    "created": created,
+                    "insert_sql": insert_sql,
+                    "insert_sql_params": insert_sql_params,
+                }
         except Exception as error:
             raise ToolsError(300, f"SQL创建数据失败：{error}") from error
         finally:
             engine.dispose()
+
+    @staticmethod
+    def compile_insert_sql(statement, dialect):
+        compiled = statement.compile(dialect=dialect)
+        return str(compiled), DataFactoryTypeCast.to_jsonable(dict(compiled.params or {}))
 
     @staticmethod
     def build_execution_no() -> str:

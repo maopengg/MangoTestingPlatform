@@ -227,3 +227,33 @@ class DataFactoryOutputConfig(RootModel[list[DataFactoryOutputConfigItem]]):
 
     def to_list(self) -> list[DataFactoryOutputConfigItem]:
         return self.root
+
+
+SCENE_MAIN_OVERRIDES_KEY = "__main__"
+SCENE_ITEM_OVERRIDES_KEY = "__items__"
+
+
+def validate_data_factory_scene_overrides(value: dict[str, Any] | None) -> dict[str, Any]:
+    """校验场景模板/API 覆盖。
+
+    兼容旧格式：普通字段覆盖字典仍表示主模板覆盖。
+    新格式：{"__main__": {...}, "__items__": {"itemId/name": {...}}}。
+    """
+    data = value or {}
+    if not isinstance(data, dict):
+        raise ValueError("字段覆盖规则必须是对象")
+    if SCENE_MAIN_OVERRIDES_KEY not in data and SCENE_ITEM_OVERRIDES_KEY not in data:
+        return DataFactoryFieldOverrideRules.model_validate(data).model_dump()
+
+    main_overrides = data.get(SCENE_MAIN_OVERRIDES_KEY) or {}
+    item_overrides = data.get(SCENE_ITEM_OVERRIDES_KEY) or {}
+    if not isinstance(item_overrides, dict):
+        raise ValueError("__items__ 必须是对象")
+
+    return {
+        SCENE_MAIN_OVERRIDES_KEY: DataFactoryFieldOverrideRules.model_validate(main_overrides).model_dump(),
+        SCENE_ITEM_OVERRIDES_KEY: {
+            str(key): DataFactoryFieldOverrideRules.model_validate(item or {}).model_dump()
+            for key, item in item_overrides.items()
+        },
+    }

@@ -1,17 +1,20 @@
 <template>
-  <a-popover :style="{ width: '200px' }" trigger="click" @popup-visible-change="onPopVisibleChange">
+  <a-popover
+    class="mango-sortable-table-popover"
+    trigger="click"
+    @popup-visible-change="onPopVisibleChange"
+  >
     <template #content>
-      <div class="flex items-center justify-between" style="border-bottom: 1px solid #f5f5f5">
+      <div class="mango-sortable-table-header">
         <a-checkbox v-model="allChecked" @change="onAllChange"> 全选</a-checkbox>
-        <a-button class="text-right" type="text" @click="onReset"> 重置</a-button>
+        <a-button type="text" @click="onReset"> 重置</a-button>
       </div>
-      <div id="sortColumnWrapper" class="pt-2 pb-2">
-        <div v-for="item of innerTableProps" :key="item.key" class="column-item">
+      <div id="sortColumnWrapper" class="mango-sortable-table-list">
+        <div v-for="item of innerTableProps" :key="item.key" class="mango-column-item">
           <a-checkbox v-model="item.checked" :label="item.title" @change="onChange">
             {{ item.title }}
           </a-checkbox>
-          <div class="flex-1"></div>
-          <icon-menu class="handle-icon" />
+          <icon-menu class="mango-handle-icon" />
         </div>
       </div>
     </template>
@@ -87,7 +90,7 @@
         if (visible) {
           nextTick(() => {
             new Sortable(document.getElementById('sortColumnWrapper') as HTMLElement, {
-              handle: '.handle-icon',
+              handle: '.mango-handle-icon',
               animation: 150,
               dataIdAttr: '',
               onEnd({ newIndex, oldIndex }) {
@@ -124,14 +127,43 @@
 </script>
 
 <style lang="less" scoped>
-  .column-item {
+  :deep(.mango-sortable-table-popover) {
+    width: 200px;
+  }
+
+  .mango-sortable-table-header {
     display: flex;
     align-items: center;
-    padding: 8px 0;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--m-border);
+    color: var(--m-text);
+  }
 
-    .handle-icon {
+  .mango-sortable-table-list {
+    padding: 8px 0;
+  }
+
+  .mango-column-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    color: var(--m-text-2);
+    border-radius: var(--m-radius-sm);
+    transition: background-color 0.16s ease;
+
+    &:hover {
+      background: var(--m-table-row-hover);
+    }
+
+    .mango-handle-icon {
+      flex: none;
+      color: var(--m-muted);
+
       &:hover {
         cursor: move;
+        color: var(--m-primary);
       }
     }
   }

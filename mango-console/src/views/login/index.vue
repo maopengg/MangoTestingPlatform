@@ -192,14 +192,16 @@
   import { UserState } from '@/store/types'
   import setting from '../../setting'
   import useAppInfo from '@/hooks/useAppInfo'
+  import useAppConfigStore from '@/store/modules/app-config'
   import useUserStore from '@/store/modules/user'
-  import { connectWebSocket } from '@/utils/socket'
+  import { connectWebSocket, markWebSocketLoginSession } from '@/utils/socket'
 
   const projectName = setting.projectName
   const { version } = useAppInfo()
   const router = useRouter()
   const route = useRoute()
   const userStore = useUserStore()
+  const appStore = useAppConfigStore()
   const baseData: any = reactive({
     name: '',
     username: '',
@@ -239,6 +241,7 @@
         const data = res.data as UserState
         userStore.saveUser(data, md5(baseData.password)).then(() => {
           // 登录成功后立即连接 WebSocket
+          markWebSocketLoginSession()
           connectWebSocket(baseData.username, md5(baseData.password))
 
           router
@@ -302,6 +305,7 @@
   }
 
   onMounted(() => {
+    appStore.applyCurrentThemePreset()
     // 初始化粒子动画
     const particles = document.querySelectorAll('.particle')
     particles.forEach((particle, index) => {
@@ -343,7 +347,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(135deg, #e6f7ff 0%, #f0f8ff 100%);
+      background: radial-gradient(circle at 18% 18%, var(--m-primary-soft) 0%, transparent 28%),
+        linear-gradient(135deg, var(--m-bg) 0%, var(--m-surface-soft) 100%);
       opacity: 0.9;
       z-index: 1;
 
@@ -356,8 +361,8 @@
         height: 200%;
         background: radial-gradient(
           circle,
-          rgba(255, 255, 255, 0.3) 0%,
-          rgba(255, 255, 255, 0) 70%
+          color-mix(in srgb, var(--m-surface) 32%, transparent) 0%,
+          transparent 70%
         );
         animation: rotate 25s linear infinite;
       }
@@ -369,8 +374,16 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 20%),
-          radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.2) 0%, transparent 20%);
+        background: radial-gradient(
+            circle at 10% 20%,
+            color-mix(in srgb, var(--m-primary) 18%, transparent) 0%,
+            transparent 20%
+          ),
+          radial-gradient(
+            circle at 90% 80%,
+            color-mix(in srgb, var(--m-success) 14%, transparent) 0%,
+            transparent 20%
+          );
         animation: pulse 8s ease-in-out infinite;
       }
     }
@@ -386,7 +399,7 @@
 
       .particle {
         position: absolute;
-        background: rgba(173, 216, 230, 0.6);
+        background: color-mix(in srgb, var(--m-primary) 24%, transparent);
         border-radius: 50%;
         animation: float 20s infinite ease-in-out;
       }
@@ -404,7 +417,7 @@
       .floating-element {
         position: absolute;
         border-radius: 50%;
-        background: rgba(176, 224, 230, 0.3);
+        background: color-mix(in srgb, var(--m-primary) 16%, transparent);
         animation: float 20s infinite ease-in-out;
         backdrop-filter: blur(2px);
 
@@ -484,10 +497,10 @@
       bottom: 3%;
       font-size: 15px;
       font-weight: 500;
-      color: rgba(0, 0, 0, 0.7);
+      color: var(--m-muted);
       text-align: center;
       z-index: 10;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      text-shadow: none;
       letter-spacing: 0.5px;
     }
 
@@ -499,22 +512,22 @@
       border-radius: 28px;
       display: flex;
       align-items: center;
-      background-color: #fff;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      background-color: var(--m-surface);
+      box-shadow: var(--m-shadow);
 
       .left {
         position: relative;
         width: 50%;
         height: 100%;
-        background: linear-gradient(135deg, #e6f7ff 0%, #f0f8ff 100%);
+        background: linear-gradient(135deg, var(--m-primary-soft) 0%, var(--m-surface-soft) 100%);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        color: #333;
+        color: var(--m-text);
         padding: 40px;
         text-align: center;
-        border-right: 1px solid #e6f7ff;
+        border-right: 1px solid var(--m-border);
 
         .welcome-content {
           position: relative;
@@ -523,30 +536,30 @@
           .logo-placeholder {
             width: 100px;
             height: 100px;
-            background: rgba(255, 255, 255, 0.6);
+            background: color-mix(in srgb, var(--m-surface) 72%, transparent);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 25px;
             backdrop-filter: blur(8px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--m-shadow);
             animation: logo-pulse 3s infinite ease-in-out;
-            border: 1px solid #e6f7ff;
+            border: 1px solid var(--m-border);
 
             .logo-inner {
               width: 70px;
               height: 70px;
-              background: rgba(255, 255, 255, 0.8);
+              background: color-mix(in srgb, var(--m-surface) 86%, transparent);
               border-radius: 50%;
               display: flex;
               align-items: center;
               justify-content: center;
-              border: 1px solid #e6f7ff;
+              border: 1px solid var(--m-border);
 
               .logo-icon {
                 font-size: 45px;
-                color: #409eff;
+                color: var(--m-primary);
               }
             }
           }
@@ -556,9 +569,9 @@
             font-weight: 800;
             margin-bottom: 12px;
             letter-spacing: 2px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-shadow: none;
             animation: title-appear 1s ease-out;
-            color: #333;
+            color: var(--m-text);
           }
 
           .welcome-subtitle {
@@ -567,7 +580,7 @@
             margin-bottom: 30px;
             opacity: 0.9;
             animation: subtitle-appear 1.2s ease-out;
-            color: #666;
+            color: var(--m-text-2);
           }
 
           .welcome-desc {
@@ -577,7 +590,7 @@
             line-height: 1.8;
             margin-bottom: 35px;
             animation: desc-appear 1.4s ease-out;
-            color: #666;
+            color: var(--m-muted);
           }
 
           .features {
@@ -594,10 +607,10 @@
               font-size: 18px;
               font-weight: 500;
               animation: feature-appear 1.6s ease-out;
-              color: #666;
+              color: var(--m-text-2);
 
               .feature-icon {
-                color: #409eff;
+                color: var(--m-primary);
                 font-size: 24px;
                 flex-shrink: 0; /* 防止图标压缩 */
                 display: flex;
@@ -632,13 +645,13 @@
             font-weight: 800;
             margin-bottom: 10px;
             text-align: center;
-            color: #333;
+            color: var(--m-text);
             letter-spacing: 1px;
           }
 
           .subtitle {
             font-size: 18px;
-            color: #666;
+            color: var(--m-muted);
             text-align: center;
             margin-bottom: 40px;
           }
@@ -651,7 +664,7 @@
 
             :deep(.arco-checkbox) {
               font-size: 16px;
-              color: #666;
+              color: var(--m-text-2);
             }
 
             :deep(.arco-link) {
@@ -664,25 +677,25 @@
           :deep(.arco-input-wrapper) {
             border-radius: 14px;
             height: 55px;
-            border-color: #e6f7ff;
+            border-color: var(--m-form-border);
             transition: all 0.4s cubic-bezier(0.645, 0.045, 0.355, 1);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            background-color: #f8fbfd;
+            box-shadow: none;
+            background-color: var(--m-form-bg);
 
             &:hover {
-              border-color: #409eff;
-              box-shadow: 0 6px 16px rgba(64, 158, 255, 0.2);
+              border-color: var(--m-primary);
+              box-shadow: var(--m-form-focus-shadow);
             }
 
             &.arco-input-focus {
-              border-color: #409eff;
-              box-shadow: 0 0 0 5px rgba(64, 158, 255, 0.15);
-              background-color: #fff;
+              border-color: var(--m-primary);
+              box-shadow: var(--m-form-focus-shadow);
+              background-color: var(--m-surface);
             }
           }
 
           :deep(.arco-input-prefix) {
-            color: #409eff;
+            color: var(--m-primary);
             font-size: 22px;
           }
         }
@@ -693,17 +706,17 @@
           border-radius: 14px;
           font-size: 20px;
           font-weight: 600;
-          background: linear-gradient(135deg, #409eff 0%, #52b0ff 100%);
+          background: linear-gradient(135deg, var(--m-primary) 0%, var(--m-primary-hover) 100%);
           border: none;
-          box-shadow: 0 5px 15px rgba(64, 158, 255, 0.3);
+          box-shadow: var(--m-shadow);
           transition: all 0.3s ease;
           letter-spacing: 2px;
           text-transform: uppercase;
-          color: white;
+          color: var(--m-on-primary);
 
           &:hover {
-            background: linear-gradient(135deg, #52b0ff 0%, #409eff 100%);
-            box-shadow: 0 8px 20px rgba(64, 158, 255, 0.4);
+            background: linear-gradient(135deg, var(--m-primary-hover) 0%, var(--m-primary) 100%);
+            box-shadow: var(--m-shadow);
             transform: translateY(-2px);
           }
 
@@ -719,10 +732,10 @@
             font-size: 18px;
             font-weight: 500;
             transition: all 0.3s ease;
-            color: #409eff;
+            color: var(--m-primary);
 
             &:hover {
-              color: #52b0ff;
+              color: var(--m-primary-hover);
               text-decoration: none;
             }
           }
@@ -796,7 +809,7 @@
           height: 250px;
           padding: 35px;
           border-right: none;
-          border-bottom: 1px solid #e6f7ff;
+          border-bottom: 1px solid var(--m-border);
         }
 
         .form-wrapper {

@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectPytest2"
@@ -27,7 +26,6 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="data.moduleList"
@@ -39,7 +37,6 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'file_status'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="enumStore.file_status"
@@ -58,7 +55,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -71,7 +67,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -129,9 +124,7 @@
             >
               <template #content>
                 <a-form :model="updateForm">
-                  <a-form-item
-                    :class="'form-item__require'"
-                  >
+                  <a-form-item :class="'mango-form-item__require'">
                     <template #label>
                       <span>项目/产品</span>
                     </template>
@@ -157,6 +150,7 @@
         :columns="tableColumns"
         :pagination="false"
         :rowKey="rowKey"
+        :scroll="{ x: 1280 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -212,50 +206,15 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button
-                type="text"
-                size="mini"
-                class="custom-mini-btn"
-                :loading="caseRunning"
-                @click="onRun(record)"
-                >执行
-              </a-button>
-              <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                >文件
-              </a-button>
-              <a-dropdown trigger="hover">
-                <a-button type="text" size="mini">···</a-button>
-                <template #content>
-                  <a-doption>
-                    <a-button
-                      type="text"
-                      size="mini"
-                      class="custom-mini-btn"
-                      @click="onUpdate(record)"
-                      >编辑
-                    </a-button>
-                  </a-doption>
-                  <a-doption>
-                    <a-button
-                      type="text"
-                      size="mini"
-                      class="custom-mini-btn"
-                      @click="onResult(record)"
-                      >结果
-                    </a-button>
-                  </a-doption>
-                  <a-doption>
-                    <a-button
-                      status="danger"
-                      type="text"
-                      size="mini"
-                      class="custom-mini-btn"
-                      @click="onDelete(record)"
-                      >删除
-                    </a-button>
-                  </a-doption>
-                </template>
-              </a-dropdown>
+              <MangoTableActions
+                :actions="[
+                  { label: '执行', loading: caseRunning, onClick: () => onRun(record) },
+                  { label: '文件', onClick: () => onClick(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '结果', onClick: () => onResult(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -277,7 +236,16 @@
       >
         <template #default>
           <div v-if="!data.isResult">
-            <a-tabs v-if="data.hasFeatureFile" :active-key="data.fileType" @change="(key) => { data.fileType = key; onFileTypeChange(); }">
+            <a-tabs
+              v-if="data.hasFeatureFile"
+              :active-key="data.fileType"
+              @change="
+                (key) => {
+                  data.fileType = key
+                  onFileTypeChange()
+                }
+              "
+            >
               <a-tab-pane key="py" title="Python 文件">
                 <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
               </a-tab-pane>
@@ -324,7 +292,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems"
           :key="item.key"
@@ -402,23 +370,23 @@
   import { formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-  deletePytestCase,
-  getPytestCase,
-  getPytestCaseRead,
-  getPytestCaseTest,
-  postPytestCaseUpdate,
-  postPytestCase,
-  postPytestCaseWrite,
-  putPytestCase,
-} from '@/api/pytest/case'
-  import CodeEditor from '@/components/CodeEditor.vue'
+    deletePytestCase,
+    getPytestCase,
+    getPytestCaseRead,
+    getPytestCaseTest,
+    postPytestCaseUpdate,
+    postPytestCase,
+    postPytestCaseWrite,
+    putPytestCase,
+  } from '@/api/pytest/case'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
   import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
   import { getSystemTasksName } from '@/api/system/tasks'
   import useUserStore from '@/store/modules/user'
   import { conditionItems } from '@/views/pytest/case/config'
-  import BaseSidePanel from '@/components/BaseSidePanel.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
 
   const projectInfo = useProject()
 
@@ -498,8 +466,8 @@
       content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deletePytestCase(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deletePytestCase(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -520,10 +488,10 @@
   }
 
   function handleUpdateConfirm() {
-    const projectId = Array.isArray(updateForm.projectId) 
-      ? updateForm.projectId[updateForm.projectId.length - 1] 
+    const projectId = Array.isArray(updateForm.projectId)
+      ? updateForm.projectId[updateForm.projectId.length - 1]
       : updateForm.projectId
-    
+
     if (!projectId) {
       Message.error('请选择项目/产品')
       updateModalRef.value?.setConfirmLoading(false)

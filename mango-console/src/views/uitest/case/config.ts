@@ -183,6 +183,7 @@ export const tableColumns = useTableColumn([
     key: 'case_flow',
     dataIndex: 'case_flow',
     align: 'left',
+    width: 260,
     ellipsis: true,
     tooltip: true,
   },
@@ -209,6 +210,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 190,
+    width: 170,
   },
 ])

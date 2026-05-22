@@ -65,6 +65,7 @@ class SystemViews(ViewSet):
             'data_factory_operation_type': DataFactoryOperationTypeEnum.get_option(),
             'data_factory_generator_type': DataFactoryGeneratorTypeEnum.get_option(),
             'data_factory_cleanup_strategy': DataFactoryCleanupStrategyEnum.get_option(),
+            'data_factory_template_config_status': DataFactoryTemplateConfigStatusEnum.get_option(),
             'data_factory_execution_source': DataFactoryExecutionSourceEnum.get_option(),
             'data_factory_execution_stage': DataFactoryExecutionStageEnum.get_option(),
             'data_factory_execution_status': DataFactoryExecutionStatusEnum.get_option(),

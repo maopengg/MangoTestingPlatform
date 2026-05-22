@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="enumStore.task_status"
@@ -35,15 +34,19 @@
     <template #default>
       <a-space direction="vertical" fill>
         <div class="report-chart-grid">
-          <a-card class="report-chart-card status-card" :bordered="false">
+          <section class="report-chart-card status-card mango-section-card">
             <Title title="测试用例占比" />
-            <StatusChart :success="data.successSum" :fail="data.failSum" />
-          </a-card>
+            <StatusChart :success="data.successSum" :fail="data.failSum" :loading="data.chartLoading" />
+          </section>
 
-          <a-card class="report-chart-card trend-card" :bordered="false">
+          <section class="report-chart-card trend-card mango-section-card">
             <Title title="近三个月执行用例趋势图" />
-            <BarChart :success="data.weekSuccessData" :fail="data.weekFailData" />
-          </a-card>
+            <BarChart
+              :success="data.weekSuccessData"
+              :fail="data.weekFailData"
+              :loading="data.chartLoading"
+            />
+          </section>
         </div>
         <a-table
           :scrollbar="true"
@@ -68,7 +71,7 @@
               :tooltip="item.tooltip"
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
-                <span style="width: 110px; display: inline-block">{{ record.id }}</span>
+                <span class="report-id-cell">{{ record.id }}</span>
               </template>
               <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                 {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
@@ -96,16 +99,12 @@
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-space>
-                  <a-button type="text" size="mini" class="custom-mini-btn" @click="onRetry(record)"
-                    >重试
-                  </a-button>
-                </a-space>
-                <a-space>
-                  <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                    >查看结果
-                  </a-button>
-                </a-space>
+                <MangoTableActions
+                  :actions="[
+                    { label: '重试', onClick: () => onRetry(record) },
+                    { label: '查看结果', onClick: () => onClick(record) },
+                  ]"
+                />
               </template>
             </a-table-column>
           </template>
@@ -149,6 +148,7 @@
     failSum: 0,
     weekSuccessData: [],
     weekFailData: [],
+    chartLoading: false,
   })
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
 
@@ -213,8 +213,8 @@
       content: '是否要重试这个测试套的全部用例？',
       cancelText: '取消',
       okText: '重试',
-      onOk: () => {
-        getSystemTestSuiteDetailsAllRetry(record.id)
+      onBeforeOk: () => {
+        return getSystemTestSuiteDetailsAllRetry(record.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -227,6 +227,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      data.chartLoading = true
       getSystemTestSuiteDetailsReport()
         .then((res) => {
           data.weekFailData = res.data.fail
@@ -235,6 +236,9 @@
           data.successSum = res.data.successSun || 0
         })
         .catch(console.log)
+        .finally(() => {
+          data.chartLoading = false
+        })
     })
   })
   onUnmounted(() => {
@@ -253,16 +257,13 @@
 
   .report-chart-card {
     min-height: 0;
-    border-radius: 8px;
-    box-shadow: 0px 8px 16px 0px rgba(162, 173, 200, 0.14);
+    display: flex;
+    flex-direction: column;
+  }
 
-    :deep(.arco-card-body) {
-      display: flex;
-      height: 100%;
-      min-height: 0;
-      flex-direction: column;
-      padding: 12px;
-    }
+  .report-id-cell {
+    display: inline-block;
+    width: 110px;
   }
 
   .status-card :deep(.status-chart),

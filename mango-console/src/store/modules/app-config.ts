@@ -6,6 +6,7 @@ import { DeviceType, LayoutMode, PageAnim, SideTheme, ThemeMode } from '../types
 import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
 import usePrimaryColor from '@/hooks/usePrimaryColor'
 import useTheme from '@/hooks/useTheme'
+import { applyThemePreset, getThemePreset, ThemePresetId } from '@/theme/presets'
 
 const useAppConfigStore = defineStore('app-config', {
   state: () => {
@@ -36,6 +37,26 @@ const useAppConfigStore = defineStore('app-config', {
     changePrimaryColor(color: string) {
       this.themeColor = color
       usePrimaryColor(color)
+    },
+    changeThemePreset(presetId: ThemePresetId) {
+      const preset = applyThemePreset(presetId)
+      this.themePreset = preset.id
+      this.theme = preset.mode
+      this.themeColor = preset.primary
+      this.sideTheme = preset.mode === ThemeMode.DARK ? SideTheme.DARK : SideTheme.WHITE
+    },
+    applyCurrentThemePreset() {
+      const preset = applyThemePreset(this.themePreset)
+      this.themePreset = preset.id
+      this.theme = preset.mode
+      this.themeColor = preset.primary
+      this.sideTheme = preset.mode === ThemeMode.DARK ? SideTheme.DARK : SideTheme.WHITE
+    },
+    syncThemePresetByColor() {
+      const preset = getThemePreset(this.themePreset)
+      this.themePreset = preset.id
+      this.theme = preset.mode
+      this.themeColor = preset.primary
     },
     changeSideWidth(sideWidth: number) {
       this.sideWidth = sideWidth

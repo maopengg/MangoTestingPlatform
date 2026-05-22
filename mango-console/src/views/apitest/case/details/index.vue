@@ -1,40 +1,36 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" class="mango-detail-workbench-page">
     <template #header>
-      <a-card :bordered="false" title="组合用例场景">
-        <template #extra>
-          <a-space>
-            <a-button
-              size="small"
-              status="success"
-              :loading="caseRunning"
-              :disabled="caseRunning"
-              @click="caseRun(null)"
-            >
-              执行
-            </a-button>
-            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
-          </a-space>
-        </template>
-        <div class="container">
-          <a-space direction="vertical" style="width: 50%">
-            <span>用例ID：{{ pageData.record.id }}</span>
-            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
-            <span>所属模块：{{ pageData.record.module?.name }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 50%">
-            <span>用例名称：{{ pageData.record.name }}</span>
-            <span>用例负责人：{{ pageData.record.case_people?.name }}</span>
-            <span>场景描述：{{ pageData.record.scenario_description || pageData.record.case_flow || '-' }}</span>
-          </a-space>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ apiCaseDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护用例前后置、接口编排、断言和执行结果</div>
         </div>
-      </a-card>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button
+            size="small"
+            status="success"
+            :loading="caseRunning"
+            :disabled="caseRunning"
+            @click="caseRun(null)"
+          >
+            执行
+          </a-button>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
+      </div>
     </template>
     <template #default>
-      <a-card :bordered="false">
-        <div class="main_box">
-          <div class="left">
+      <div class="api-case-workbench mango-detail-workbench">
+        <section class="api-case-panel api-case-left">
+          <div class="api-case-panel-head">
+            <div>
+              <div class="api-case-panel-title">用例编排</div>
+              <div class="api-case-panel-subtitle"> 前置处理、接口步骤和用例后置配置 </div>
+            </div>
+            <a-tag size="small" color="arcoblue">{{ data.data.length || 0 }} 个步骤</a-tag>
+          </div>
+          <div class="api-case-panel-body">
             <a-tabs :active-key="data.apiType" @tab-click="(key) => switchType(key)">
               <template #extra>
                 <a-space v-if="showCaseAddButton">
@@ -104,7 +100,7 @@
                   </a-tab-pane>
                   <a-tab-pane key="13" title="默认请求头">
                     <a-space direction="vertical">
-                      <TipMessage message="此处请求头会应用到所有接口中" />
+                      <TipMessage message="此处请求头会应用到所有场景扩展中" />
                       <a-checkbox-group
                         v-for="item of data.headers_list"
                         :key="item.id"
@@ -123,11 +119,13 @@
 
               <a-tab-pane key="2" title="用例步骤">
                 <a-table
-                  :bordered="true"
+                  :bordered="false"
                   :columns="columns"
                   :data="data.data"
+                  :loading="stepTableLoading"
                   :draggable="{ type: 'handle', width: 40 }"
                   :pagination="false"
+                  :scroll="{ x: 760 }"
                   @change="handleChange"
                   @row-click="select"
                 >
@@ -155,32 +153,17 @@
                         </a-tag>
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                        <a-button
-                          size="mini"
-                          type="text"
-                          :loading="caseRunning"
-                          @click="caseRun(record.case_sort)"
-                          class="custom-mini-btn"
-                        >
-                          执行到这
-                        </a-button>
-                        <a-button
-                          size="mini"
-                          type="text"
-                          @click="refresh(record.id)"
-                          class="custom-mini-btn"
-                        >
-                          同步
-                        </a-button>
-                        <a-button
-                          size="mini"
-                          status="danger"
-                          type="text"
-                          @click="onDelete(record)"
-                          class="custom-mini-btn"
-                        >
-                          删除
-                        </a-button>
+                        <MangoTableActions
+                          :actions="[
+                            {
+                              label: '执行到这',
+                              loading: caseRunning,
+                              onClick: () => caseRun(record.case_sort),
+                            },
+                            { label: '同步', onClick: () => refresh(record.id) },
+                            { label: '删除', danger: true, onClick: () => onDelete(record) },
+                          ]"
+                        />
                       </template>
                     </a-table-column>
                   </template>
@@ -221,13 +204,25 @@
               </a-tab-pane>
             </a-tabs>
           </div>
-          <div class="right">
+        </section>
+        <section class="api-case-panel api-case-right">
+          <div class="api-case-panel-head">
+            <div>
+              <div class="api-case-panel-title">场景扩展</div>
+              <div class="api-case-panel-subtitle">{{ selectedStepSummary }}</div>
+            </div>
+            <a-space wrap>
+              <a-button size="small" type="primary" @click="addParameter">增加场景</a-button>
+            </a-space>
+          </div>
+          <div class="api-case-panel-body">
             <a-space direction="vertical" fill>
-              <a-space style="display: flex; justify-content: flex-end">
-                <a-button size="small" type="primary" @click="addParameter">增加场景</a-button>
-              </a-space>
               <a-space direction="vertical" fill>
-                <a-spin :loading="data.collapseLoading" tip="数据加载中..." style="width: 100%">
+                <a-spin
+                  :loading="data.collapseLoading"
+                  tip="场景数据加载中..."
+                  class="scenario-loading-spin full-width"
+                >
                   <a-collapse
                     :bordered="false"
                     :active-key="data.activeCollapseKey"
@@ -272,85 +267,13 @@
                       <div
                         v-if="isMountedCollapseItem(index)"
                         v-show="isActiveCollapseItem(index)"
+                        class="scenario-expand-body"
                       >
                         <a-tabs
                           :active-key="data.caseDetailsTypeKey"
                           position="left"
                           @tab-click="(key) => switchApiInfoType(key, item)"
                         >
-                          <a-tab-pane key="0" title="请求配置">
-                            <a-tabs
-                              :active-key="data.tabsKey"
-                              @tab-click="(key) => tabsChange(key, item)"
-                            >
-                              <a-tab-pane key="00" title="请求头">
-                                <div class="m-2" style="height: 220px; overflow-y: auto">
-                                  <TipMessage
-                                    message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
-                                  />
-                                  <a-space direction="vertical" style="width: 100%">
-                                    <a-checkbox-group
-                                      v-for="header of data.parameter_headers_list"
-                                      :key="header.id"
-                                      v-model="item.headers"
-                                      direction="vertical"
-                                      @change="
-                                        (selectedValues) => changeHeadersApi(selectedValues, item)
-                                      "
-                                    >
-                                      <a-checkbox :value="header.id">
-                                        {{ header.key + ': ' + header.value }}
-                                      </a-checkbox>
-                                    </a-checkbox-group>
-                                  </a-space>
-                                </div>
-                              </a-tab-pane>
-                              <a-tab-pane key="01" title="参数">
-                                <div class="m-2">
-                                  <a-textarea
-                                    v-model="item.params"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入参数"
-                                    @blur="blurSave('params', item.params, item.id)"
-                                  />
-                                </div>
-                              </a-tab-pane>
-                              <a-tab-pane key="02" title="表单">
-                                <div class="m-2">
-                                  <a-textarea
-                                    v-model="item.data"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入表单"
-                                    @blur="blurSave('data', item.data, item.id)"
-                                  />
-                                </div>
-                              </a-tab-pane>
-                              <a-tab-pane key="03" title="JSON">
-                                <div class="m-2">
-                                  <a-textarea
-                                    v-model="item.json"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入JSON"
-                                    @blur="blurSave('json', item.json, item.id)"
-                                  />
-                                </div>
-                              </a-tab-pane>
-                              <a-tab-pane key="04" title="文件">
-                                <div class="m-2">
-                                  <a-textarea
-                                    v-model="item.file"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入file，json格式数据"
-                                    @blur="blurSave('file', item.file, item.id)"
-                                  />
-                                </div>
-                              </a-tab-pane>
-                            </a-tabs>
-                          </a-tab-pane>
                           <a-tab-pane key="1" title="前置处理">
                             <a-tabs
                               :active-key="data.tabsKey"
@@ -406,8 +329,12 @@
                                     :line-height="280"
                                     :code-style="{ width: '100%' }"
                                     placeholder="根据帮助文档，输入自定义前置函数"
-                                    @focus="recordCodeSnapshot('front_func', item.front_func, item.id)"
-                                    @blur="saveCodeIfChanged('front_func', item.front_func, item.id)"
+                                    @focus="
+                                      recordCodeSnapshot('front_func', item.front_func, item.id)
+                                    "
+                                    @blur="
+                                      saveCodeIfChanged('front_func', item.front_func, item.id)
+                                    "
                                   />
                                 </div>
                               </a-tab-pane>
@@ -419,6 +346,115 @@
                                     :case-id="item.id"
                                     :project-product-id="route.query.project_product as string"
                                     :source-type="3"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                            </a-tabs>
+                          </a-tab-pane>
+                          <a-tab-pane key="0" title="请求配置">
+                            <a-tabs
+                              :active-key="data.tabsKey"
+                              @tab-click="(key) => tabsChange(key, item)"
+                            >
+                              <a-tab-pane key="00" title="请求头">
+                                <div class="request-header-panel">
+                                  <TipMessage
+                                    message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
+                                  />
+                                  <a-space direction="vertical" class="full-width">
+                                    <a-checkbox-group
+                                      v-for="header of data.parameter_headers_list"
+                                      :key="header.id"
+                                      v-model="item.headers"
+                                      direction="vertical"
+                                      @change="
+                                        (selectedValues) => changeHeadersApi(selectedValues, item)
+                                      "
+                                    >
+                                      <a-checkbox :value="header.id">
+                                        {{ header.key + ': ' + header.value }}
+                                      </a-checkbox>
+                                    </a-checkbox-group>
+                                  </a-space>
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="01" title="参数">
+                                <div class="m-2">
+                                  <div class="request-editor-actions">
+                                    <a-button
+                                      size="small"
+                                      type="outline"
+                                      @click="openJsonEditDrawer('params', '参数', item)"
+                                    >
+                                      展开编辑
+                                    </a-button>
+                                  </div>
+                                  <a-textarea
+                                    v-model="item.params"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入参数"
+                                    @blur="blurSave('params', item.params, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="02" title="表单">
+                                <div class="m-2">
+                                  <div class="request-editor-actions">
+                                    <a-button
+                                      size="small"
+                                      type="outline"
+                                      @click="openJsonEditDrawer('data', '表单', item)"
+                                    >
+                                      展开编辑
+                                    </a-button>
+                                  </div>
+                                  <a-textarea
+                                    v-model="item.data"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入表单"
+                                    @blur="blurSave('data', item.data, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="03" title="JSON">
+                                <div class="m-2">
+                                  <div class="request-editor-actions">
+                                    <a-button
+                                      size="small"
+                                      type="outline"
+                                      @click="openJsonEditDrawer('json', 'JSON', item)"
+                                    >
+                                      展开编辑
+                                    </a-button>
+                                  </div>
+                                  <a-textarea
+                                    v-model="item.json"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入JSON"
+                                    @blur="blurSave('json', item.json, item.id)"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="04" title="文件">
+                                <div class="m-2">
+                                  <div class="request-editor-actions">
+                                    <a-button
+                                      size="small"
+                                      type="outline"
+                                      @click="openJsonEditDrawer('file', '文件', item)"
+                                    >
+                                      展开编辑
+                                    </a-button>
+                                  </div>
+                                  <a-textarea
+                                    v-model="item.file"
+                                    allow-clear
+                                    :auto-size="{ minRows: 6 }"
+                                    placeholder="请输入file，json格式数据"
+                                    @blur="blurSave('file', item.file, item.id)"
                                   />
                                 </div>
                               </a-tab-pane>
@@ -487,6 +523,7 @@
                                   <JsonDisplay
                                     v-if="isActiveCaseDetailTab('2', '22')"
                                     :data="item.result_data?.response?.headers"
+                                    :default-expanded="false"
                                   />
                                 </div>
                               </a-tab-pane>
@@ -576,7 +613,7 @@
                                         size="small"
                                         status="success"
                                         @click="testExtractResponseAfter('jsonpath', item, index)"
-                                        class="test-btn"
+                                        class="mango-test-btn"
                                       >
                                         测试
                                       </a-button>
@@ -639,7 +676,7 @@
                                         size="small"
                                         status="success"
                                         @click="testExtractResponseAfter('re', item, index)"
-                                        class="test-btn"
+                                        class="mango-test-btn"
                                       >
                                         测试
                                       </a-button>
@@ -698,7 +735,7 @@
                                       <a-input
                                         v-model="item.posterior_sleep"
                                         placeholder="请输入强制等待时间，单位是秒"
-                                        style="width: 300px"
+                                        class="sleep-input"
                                         @blur="
                                           blurSave('posterior_sleep', item.posterior_sleep, item.id)
                                         "
@@ -917,7 +954,11 @@
                                     <TipMessage
                                       message="如果接口管理中开启了则会默认使用进行断言，如果你输入了则会覆盖"
                                     />
-                                    <a-button size="mini" type="primary" @click="setSchema(item.id)"
+                                    <a-button
+                                      size="mini"
+                                      type="primary"
+                                      :loading="schemaLoadingId === item.id"
+                                      @click="setSchema(item.id)"
                                       >自动生成</a-button
                                     >
                                   </a-space>
@@ -967,17 +1008,25 @@
               </a-space>
             </a-space>
           </div>
-        </div>
-      </a-card>
+        </section>
+      </div>
     </template>
   </TableBody>
+  <MangoJsonEditDrawer
+    v-model:visible="jsonEditDrawer.visible"
+    v-model="jsonEditDrawer.value"
+    :title="jsonEditDrawer.title"
+    :description="`当前编辑内容会保存到所选场景的 ${jsonEditDrawer.label} 配置中。`"
+    :saving="jsonEditSaving"
+    @save="saveJsonEditDrawer"
+  />
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -1018,7 +1067,7 @@
         <a-form-item
           v-for="item of formParameterItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -1040,10 +1089,7 @@
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj } from '@/utils/tools'
   import { columns, formItems, formParameterItems } from './config'
-  import {
-    getApiCaseRun,
-    putApiCase,
-  } from '@/api/apitest/case'
+  import { getApiCaseRun, putApiCase } from '@/api/apitest/case'
   import {
     deleteApiCaseDetailed,
     getApiCaseDetailed,
@@ -1066,11 +1112,11 @@
     putSetSchema,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
-  import KeyValueList from '@/components/KeyValueList.vue' // 引入新组件
-  import AssertionResult from '@/components/AssertionResult.vue'
-  import TipMessage from '@/components/TipMessage.vue' // 引入断言结果组件
+  import KeyValueList from '@/components/forms/KeyValueList.vue' // 引入新组件
+  import AssertionResult from '@/components/feedback/AssertionResult.vue'
+  import TipMessage from '@/components/feedback/TipMessage.vue' // 引入断言结果组件
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
-  import CodeEditor from '@/components/CodeEditor.vue'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
   import { getDataFactoryCaseConfig } from '@/api/data-factory'
 
   const userStore = useUserStore()
@@ -1108,6 +1154,14 @@
   const formParameterModel = ref({})
   const pageData: any = usePageData()
   const enumStore = useEnum()
+  const jsonEditDrawer = reactive({
+    visible: false,
+    field: '',
+    label: '',
+    title: '',
+    value: '',
+    item: null as any,
+  })
 
   const route = useRoute()
   const data: any = reactive({
@@ -1125,7 +1179,7 @@
     caseDetailsHeadersList: [],
     apiType: '2',
     apiSonType: '0',
-    caseDetailsTypeKey: '0',
+    caseDetailsTypeKey: '2',
     tabsKey: '10',
 
     actionParameterTitle: '新增接口场景',
@@ -1140,9 +1194,33 @@
   })
 
   const caseRunning = ref(false)
+  const stepTableLoading = ref(false)
+  const schemaLoadingId = ref<number | null>(null)
+  const jsonEditSaving = ref(false)
   const showCaseAddButton = computed(() => !(data.apiType === '1' && data.apiSonType === '13'))
+  const apiCaseDetailTitle = computed(() => {
+    const id = pageData.record?.id || route.query.case_id || route.query.id || '-'
+    const name = pageData.record?.name || '-'
+    return `组合用例场景配置 / ${id} / ${name}`
+  })
+  const selectedStepSummary = computed(() => {
+    const step = data.tabelJson
+    if (!step?.api_info) {
+      return '从左侧选择接口后，可为同一个接口扩展多组场景参数、断言和执行结果'
+    }
+    const method = formatMethodTitle(step.api_info.method)
+    const url = step.api_info.url || '-'
+    const name = step.api_info.name || '未命名接口'
+    return `${name} / ${method} ${url} / 可扩展多组场景参数、前后置处理、断言和结果`
+  })
   const dataFactoryConfigCache = new Map<number, boolean>()
   const codeEditorSnapshots = new Map<string, string>()
+
+  function formatMethodTitle(method: any) {
+    const methods = Array.isArray(enumStore.method) ? enumStore.method : []
+    const found = methods.find((item: any) => item.key === method)
+    return found?.title || method || '-'
+  }
 
   function codeSnapshotKey(id: number, key: string) {
     return `${id}:${key}`
@@ -1231,19 +1309,32 @@
     data.apiType = key
   }
 
+  function hasConfigValue(value: any) {
+    if (value === undefined || value === null) return false
+    if (typeof value === 'string') {
+      const text = value.trim()
+      return text !== '' && text !== '{}' && text !== '[]'
+    }
+    if (Array.isArray(value)) return value.length > 0
+    if (typeof value === 'object') return Object.keys(value).length > 0
+    return Boolean(value)
+  }
+
   async function switchApiInfoType(key: any, item: any) {
     data.caseDetailsTypeKey = key
     if (key === '0') {
-      if (item?.params) {
+      if (hasConfigValue(item?.headers)) {
+        data.tabsKey = '00'
+      } else if (hasConfigValue(item?.params)) {
         data.tabsKey = '01'
-      } else if (item?.data) {
+      } else if (hasConfigValue(item?.data)) {
         data.tabsKey = '02'
-      } else if (item?.json) {
+      } else if (hasConfigValue(item?.json)) {
         data.tabsKey = '03'
-      } else if (item?.file) {
+      } else if (hasConfigValue(item?.file)) {
         data.tabsKey = '04'
       } else {
-        data.tabsKey = '00'
+        data.tabsKey = '03'
       }
     } else if (key === '1') {
       await switchFrontProcessTab(item)
@@ -1380,12 +1471,17 @@
   }
 
   function setSchema(id: number) {
+    if (schemaLoadingId.value) return
+    schemaLoadingId.value = id
     putSetSchema(id)
       .then((res) => {
         Message.success(res.msg)
         doRefreshParameter(data.tabelJson.id)
       })
       .catch(console.log)
+      .finally(() => {
+        schemaLoadingId.value = null
+      })
   }
 
   function parameterEditing(item: any) {
@@ -1432,8 +1528,8 @@
       content: '确定要删除此数据吗？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteApiCaseDetailedParameter(item.id)
+      onBeforeOk: () => {
+        return deleteApiCaseDetailedParameter(item.id)
           .then((res) => {
             Message.success(res.msg)
             doRefreshParameter(data.tabelJson.id)
@@ -1447,6 +1543,36 @@
     item.splice(index, 1)
 
     upDataCase()
+  }
+
+  function openJsonEditDrawer(field: string, label: string, item: any) {
+    jsonEditDrawer.visible = true
+    jsonEditDrawer.field = field
+    jsonEditDrawer.label = label
+    jsonEditDrawer.title = `${label} JSON 编辑`
+    jsonEditDrawer.item = item
+    jsonEditDrawer.value = item?.[field] || ''
+  }
+
+  function saveJsonEditDrawer(value = jsonEditDrawer.value) {
+    const item = jsonEditDrawer.item
+    const field = jsonEditDrawer.field
+    if (!item || !field) return
+    if (jsonEditSaving.value) return
+    jsonEditSaving.value = true
+    item[field] = value
+    const saveTask = blurSave(field, value, item.id)
+    if (!saveTask) {
+      jsonEditSaving.value = false
+      return
+    }
+    saveTask
+      .then(() => {
+        jsonEditDrawer.visible = false
+      })
+      .finally(() => {
+        jsonEditSaving.value = false
+      })
   }
 
   function changeHeaders(selectedValues: any) {
@@ -1511,7 +1637,7 @@
       }
     } else if (in_serialize.includes(key)) {
       if (formatJsonObj(key, item) === false) {
-        return
+        return null
       } else {
         payload[key] = formatJsonObj(key, item)
       }
@@ -1519,7 +1645,7 @@
       payload[key] = item
     }
 
-    putApiCaseDetailedParameter(payload)
+    return putApiCaseDetailedParameter(payload)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -1627,6 +1753,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function doRefresh() {
+    stepTableLoading.value = true
     data.caseHeadersList = pageData.record.front_headers
     getApiCaseDetailed(route.query.case_id)
       .then((res) => {
@@ -1642,6 +1769,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         }
       })
       .catch(console.log)
+      .finally(() => {
+        stepTableLoading.value = false
+      })
   }
 
   function doRefreshParameter(id: number) {
@@ -1843,8 +1973,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       content: '是否要删除此接口？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteApiCaseDetailed(record.id, route.query.case_id)
+      onBeforeOk: () => {
+        return deleteApiCaseDetailed(record.id, route.query.case_id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -1889,8 +2019,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       content: '是否确实从接口管理中同步接口数据？点击确认后，原始数据会丢失！',
       cancelText: '取消',
       okText: '同步',
-      onOk: () => {
-        putApiPutRefreshApiInfo(id)
+      onBeforeOk: () => {
+        return putApiPutRefreshApiInfo(id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -1985,43 +2115,118 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 </script>
 
 <style scoped>
-  /* ── 顶部信息卡片 ─────────────────────────────────────────────────── */
-  .container {
-    display: flex;
-    gap: 16px;
-    padding: 4px 0;
+  .api-case-workbench {
+    display: grid;
+    grid-template-columns: minmax(430px, 0.95fr) minmax(520px, 1.05fr);
+    gap: 12px;
+    height: calc(100vh - 166px);
+    min-height: 0;
   }
 
-  .container .a-space span {
-    font-size: 13px;
-    display: block;
-    max-width: 100%;
+  .api-case-panel {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
+    flex-direction: column;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface);
+  }
+
+  .api-case-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 58px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--m-border);
+    background: var(--m-surface);
+  }
+
+  .api-case-panel-title {
+    color: var(--m-text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 22px;
+  }
+
+  .api-case-panel-subtitle {
+    overflow: hidden;
+    max-width: 680px;
+    margin-top: 2px;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--color-text-2);
-    line-height: 1.8;
   }
 
-  /* ── 主体布局 ────────────────────────────────────────────────────── */
-  .main_box {
+  .api-case-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px;
+  }
+
+  .api-case-panel-body :deep(.arco-tabs-content) {
+    min-height: 0;
+  }
+
+  .scenario-actions {
+    margin-bottom: 8px;
+  }
+
+  .full-width {
     width: 100%;
+  }
+
+  .scenario-loading-spin {
+    min-height: min(520px, calc(100vh - 300px));
+    border-radius: var(--m-radius-md);
+  }
+
+  .scenario-loading-spin :deep(.arco-spin-children) {
+    min-height: min(520px, calc(100vh - 300px));
+  }
+
+  .scenario-loading-spin :deep(.arco-spin-mask) {
+    border-radius: var(--m-radius-md);
+    background: color-mix(in srgb, var(--m-surface) 82%, transparent);
+  }
+
+  .scenario-loading-spin :deep(.arco-spin) {
+    color: var(--m-primary);
+  }
+
+  .scenario-loading-spin :deep(.arco-spin-tip) {
+    margin-top: 10px;
+    color: var(--m-muted);
+    font-size: 13px;
+  }
+
+  .request-header-panel {
+    height: 220px;
+    margin: 8px;
+    overflow-y: auto;
+  }
+
+  .request-editor-actions {
     display: flex;
-    gap: 12px;
-    box-sizing: border-box;
+    justify-content: flex-end;
+    margin-bottom: 8px;
   }
 
-  .left {
-    width: 45%;
-    min-width: 0;
-    border-right: 1px solid var(--color-border);
-    padding-right: 12px;
+  .scenario-expand-body {
+    max-height: min(620px, calc(100vh - 200px));
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
   }
 
-  .right {
-    width: 55%;
-    min-width: 0;
-    padding-left: 4px;
+  .sleep-input {
+    width: min(300px, 100%);
   }
 
   /* ── Collapse header ─────────────────────────────────────────────── */
@@ -2048,7 +2253,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     white-space: nowrap;
     font-size: 13px;
     font-weight: 500;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .custom-header__tags {
@@ -2079,7 +2284,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   .parameter-label-inline {
     font-size: 12px;
-    color: var(--color-text-3);
+    color: var(--m-muted);
     font-weight: 500;
   }
 
@@ -2088,7 +2293,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   /* ── Deep 样式穿透 ───────────────────────────────────────────────── */
-  :deep(.test-btn) {
+  :deep(.mango-test-btn) {
     flex-shrink: 0;
     margin-top: 18px;
     min-width: fit-content;
@@ -2099,7 +2304,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-text-3);
+    color: var(--m-muted);
   }
 
   :deep(.assertion-parameters-inline) {
@@ -2112,27 +2317,21 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   /* ── 响应式 ──────────────────────────────────────────────────────── */
+  @media (max-width: 1180px) {
+    .api-case-workbench {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+
+    .api-case-panel {
+      min-height: 560px;
+    }
+  }
+
   @media (max-width: 768px) {
-    :deep(.test-btn) {
+    :deep(.mango-test-btn) {
       margin-top: 0;
       align-self: center;
-    }
-
-    .main_box {
-      flex-direction: column;
-    }
-
-    .left {
-      width: 100%;
-      border-right: none;
-      border-bottom: 1px solid var(--color-border);
-      padding-right: 0;
-      padding-bottom: 12px;
-    }
-
-    .right {
-      width: 100%;
-      padding-left: 0;
     }
   }
 </style>

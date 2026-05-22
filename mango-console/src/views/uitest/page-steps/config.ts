@@ -152,6 +152,8 @@ export const tableColumns = useTableColumn([
     dataIndex: 'page',
     align: 'left',
     width: 150,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '步骤名称',
@@ -181,6 +183,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 160,
+    width: 170,
   },
 ])

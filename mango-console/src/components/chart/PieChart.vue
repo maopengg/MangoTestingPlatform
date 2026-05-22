@@ -1,27 +1,39 @@
 <template>
-  <div class="chart-item-container">
-    <div class="donut-wrap">
-      <div ref="chartRef" class="chart-item"></div>
-      <div class="donut-total">
-        <span>总数</span>
-        <strong>{{ total }}</strong>
-      </div>
-    </div>
-    <div class="legend-list">
-      <div v-for="(item, index) in normalizedData" :key="item.name" class="legend-item">
-        <span class="legend-dot" :style="{ backgroundColor: palette[index % palette.length] }"></span>
-        <div class="legend-main">
-          <span class="legend-name">{{ item.name }}</span>
-          <div class="legend-bar">
-            <span :style="{ width: `${item.percent}%`, backgroundColor: palette[index % palette.length] }"></span>
+  <div class="mango-chart-item-container">
+    <a-spin :loading="loading" class="mango-chart-spin">
+      <div class="mango-chart-content">
+        <div class="mango-donut-wrap">
+          <div ref="chartRef" class="mango-chart-item"></div>
+          <div class="mango-donut-total">
+            <span>总数</span>
+            <strong>{{ total }}</strong>
           </div>
         </div>
-        <div class="legend-value">
-          <strong>{{ item.percentText }}</strong>
-          <span>{{ item.value }}</span>
+        <div class="mango-legend-list">
+          <div v-for="(item, index) in normalizedData" :key="item.name" class="mango-legend-item">
+            <span
+              class="mango-legend-dot"
+              :style="{ backgroundColor: palette[index % palette.length] }"
+            ></span>
+            <div class="mango-legend-main">
+              <span class="mango-legend-name">{{ item.name }}</span>
+              <div class="mango-legend-bar">
+                <span
+                  :style="{
+                    width: `${item.percent}%`,
+                    backgroundColor: palette[index % palette.length],
+                  }"
+                ></span>
+              </div>
+            </div>
+            <div class="mango-legend-value">
+              <strong>{{ item.percentText }}</strong>
+              <span>{{ item.value }}</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </a-spin>
   </div>
 </template>
 
@@ -36,10 +48,23 @@
       type: Array,
       required: true,
     },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   })
 
   const chartRef = ref<HTMLDivElement | null>(null)
-  const palette = ['#5b7cfa', '#7bcf65', '#f6c143', '#38bdf8', '#a78bfa', '#fb7185']
+  const token = (name: string, fallback: string) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+  const palette = computed(() => [
+    token('--m-chart-1', '#5b7cfa'),
+    token('--m-chart-2', '#7bcf65'),
+    token('--m-chart-3', '#f6c143'),
+    token('--m-chart-4', '#38bdf8'),
+    token('--m-chart-5', '#a78bfa'),
+    token('--m-primary-border', '#fb7185'),
+  ])
 
   const total = computed(() =>
     props.chartData.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0)
@@ -62,7 +87,7 @@
     if (!chartRef.value) return
 
     const option = {
-      color: palette,
+      color: palette.value,
       tooltip: {
         trigger: 'item',
         formatter: '{b}<br />{d}% | {c}',
@@ -75,7 +100,7 @@
           radius: ['56%', '76%'],
           avoidLabelOverlap: false,
           itemStyle: {
-            borderColor: '#fff',
+            borderColor: token('--m-surface', '#fff'),
             borderWidth: 4,
             borderRadius: 6,
           },
@@ -118,9 +143,11 @@
 
   onMounted(() => {
     initChart()
+    window.addEventListener('mango-theme-change', initChart)
   })
 
   onBeforeUnmount(() => {
+    window.removeEventListener('mango-theme-change', initChart)
     if (chartRef.value) {
       dispose(chartRef.value)
     }
@@ -128,7 +155,21 @@
 </script>
 
 <style lang="less" scoped>
-  .chart-item-container {
+  .mango-chart-item-container {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .mango-chart-spin,
+  :deep(.mango-chart-spin .arco-spin-children) {
+    display: grid;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .mango-chart-content {
     display: grid;
     height: 100%;
     width: 100%;
@@ -138,17 +179,17 @@
     gap: 8px;
   }
 
-  .donut-wrap {
+  .mango-donut-wrap {
     position: relative;
     height: 100%;
     min-height: 0;
 
-    .chart-item {
+    .mango-chart-item {
       height: 100%;
     }
   }
 
-  .donut-total {
+  .mango-donut-total {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -162,7 +203,7 @@
     pointer-events: none;
 
     span {
-      color: var(--color-text-3);
+      color: var(--m-muted);
       font-size: 11px;
       line-height: 16px;
     }
@@ -170,7 +211,7 @@
     strong {
       max-width: 76px;
       overflow: hidden;
-      color: var(--color-text-1);
+      color: var(--m-text);
       font-size: 20px;
       font-weight: 700;
       line-height: 24px;
@@ -179,14 +220,14 @@
     }
   }
 
-  .legend-list {
+  .mango-legend-list {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 10px;
   }
 
-  .legend-item {
+  .mango-legend-item {
     display: grid;
     min-width: 0;
     grid-template-columns: 10px minmax(0, 1fr) 74px;
@@ -194,32 +235,32 @@
     gap: 8px;
   }
 
-  .legend-dot {
+  .mango-legend-dot {
     width: 9px;
     height: 9px;
     border-radius: 50%;
   }
 
-  .legend-main {
+  .mango-legend-main {
     min-width: 0;
   }
 
-  .legend-name {
+  .mango-legend-name {
     display: block;
     overflow: hidden;
-    color: var(--color-text-2);
+    color: var(--m-text-2);
     font-size: 12px;
     line-height: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .legend-bar {
+  .mango-legend-bar {
     height: 4px;
     margin-top: 4px;
     overflow: hidden;
     border-radius: 999px;
-    background: var(--color-fill-2);
+    background: var(--m-border);
 
     span {
       display: block;
@@ -229,7 +270,7 @@
     }
   }
 
-  .legend-value {
+  .mango-legend-value {
     text-align: right;
 
     strong,
@@ -241,13 +282,13 @@
     }
 
     strong {
-      color: rgb(var(--primary-6));
+      color: var(--m-primary);
       font-size: 12px;
       line-height: 17px;
     }
 
     span {
-      color: var(--color-text-3);
+      color: var(--m-muted);
       font-size: 11px;
       line-height: 16px;
     }

@@ -16,7 +16,8 @@ export interface DataFactoryRandomNumberGeneratorConfig {
   max?: number
 }
 
-export interface DataFactoryRandomDecimalGeneratorConfig extends DataFactoryRandomNumberGeneratorConfig {
+export interface DataFactoryRandomDecimalGeneratorConfig
+  extends DataFactoryRandomNumberGeneratorConfig {
   precision?: number
 }
 
@@ -77,6 +78,15 @@ export interface DataFactoryFieldOverrideRule {
 
 export type DataFactoryFieldOverrides = Record<string, DataFactoryFieldOverrideRule>
 
+export interface DataFactorySceneFieldOverrides {
+  __main__?: DataFactoryFieldOverrides
+  __items__?: Record<string, DataFactoryFieldOverrides>
+}
+
+export type DataFactoryAnyFieldOverrides =
+  | DataFactoryFieldOverrides
+  | DataFactorySceneFieldOverrides
+
 export interface DataFactoryOutputConfigItem {
   field: string
   key: string
@@ -96,4 +106,13 @@ export interface DataFactoryFieldRule {
   generator_type?: number
   generator_config?: DataFactoryGeneratorConfig
   enum_values?: any[]
+}
+
+export interface DataFactoryTemplateItem {
+  id?: number | string
+  child_template: number | null
+  child_template_detail?: any
+  name: string
+  sort: number
+  field_overrides: DataFactoryFieldOverrides
 }

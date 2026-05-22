@@ -1,6 +1,6 @@
 .case-summary-table {
   width: 100%;
-  background: #fff;
+  background: var(--m-surface);
 
   :deep(.arco-table-container) {
     border: 0;
@@ -14,23 +14,23 @@
 
   :deep(.arco-table-th) {
     height: 40px;
-    background: #f7f9fc;
-    color: #475569;
+    background: var(--m-table-header-bg);
+    color: var(--m-muted);
     font-weight: 600;
     border-right: 0;
-    border-bottom: 1px solid #e5ebf5;
+    border-bottom: 1px solid var(--m-border);
   }
 
   :deep(.arco-table-td) {
     height: 44px;
-    color: #0f172a;
+    color: var(--m-text);
     border-right: 0;
-    border-bottom: 1px solid #eef2f7;
+    border-bottom: 1px solid var(--m-border);
     transition: background-color 0.2s ease;
   }
 
   :deep(.arco-table-tr:hover .arco-table-td) {
-    background: #f8fbff;
+    background: var(--m-table-row-hover-bg);
   }
 
   :deep(.arco-table-cell) {
@@ -74,7 +74,7 @@
 }
 
 .case-id-cell {
-  color: var(--color-text-1);
+  color: var(--m-text);
 }
 
 .case-count {
@@ -82,8 +82,8 @@
   justify-self: start;
   padding: 2px 9px;
   border-radius: 999px;
-  background: #eef5ff;
-  color: #165dff;
+  background: var(--m-primary-soft);
+  color: var(--m-primary);
   font-size: 12px;
   white-space: nowrap;
 }

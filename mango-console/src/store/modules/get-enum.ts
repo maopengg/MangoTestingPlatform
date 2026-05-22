@@ -37,6 +37,7 @@ interface EnumState {
   data_factory_operation_type: StateValueType
   data_factory_generator_type: StateValueType
   data_factory_cleanup_strategy: StateValueType
+  data_factory_template_config_status: StateValueType
   data_factory_execution_source: StateValueType
   data_factory_execution_stage: StateValueType
   data_factory_execution_status: StateValueType
@@ -80,6 +81,7 @@ export const useEnum = defineStore('get-enum', {
     data_factory_operation_type: [],
     data_factory_generator_type: [],
     data_factory_cleanup_strategy: [],
+    data_factory_template_config_status: [],
     data_factory_execution_source: [],
     data_factory_execution_stage: [],
     data_factory_execution_status: [],
@@ -138,6 +140,7 @@ export const useEnum = defineStore('get-enum', {
       this.data_factory_operation_type = data.data_factory_operation_type
       this.data_factory_generator_type = data.data_factory_generator_type
       this.data_factory_cleanup_strategy = data.data_factory_cleanup_strategy
+      this.data_factory_template_config_status = data.data_factory_template_config_status
       this.data_factory_execution_source = data.data_factory_execution_source
       this.data_factory_execution_stage = data.data_factory_execution_stage
       this.data_factory_execution_status = data.data_factory_execution_status

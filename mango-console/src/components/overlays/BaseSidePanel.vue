@@ -4,33 +4,29 @@
     :width="width"
     :title="title"
     :mask-closable="false"
-    :footer="false"
     unmount-on-close
   >
     <template #title>
-      <div class="side-panel-header">
+      <div class="mango-side-mango-panel-header">
         <span>{{ title }}</span>
-        <div class="side-panel-actions">
+        <div class="mango-side-panel-actions">
           <slot name="header-actions"></slot>
         </div>
       </div>
     </template>
 
-    <!-- 内容区域 -->
-    <div class="side-panel-content">
+    <div class="mango-side-panel-content">
       <slot :data="data"></slot>
     </div>
 
-    <!-- 底部操作栏 -->
-    <div class="side-panel-footer">
-      <a-space>
+    <template #footer>
+      <a-space class="mango-side-panel-footer-actions">
         <slot name="footer-buttons" :data="data">
-          <!-- 默认按钮组 -->
           <slot name="extra-buttons" :data="data"></slot>
-          <a-button @click="handleCancel">取消</a-button>
+          <a-button @click="handleCancel">{{ cancelButtonText }}</a-button>
         </slot>
       </a-space>
-    </div>
+    </template>
   </a-drawer>
 </template>
 
@@ -89,32 +85,33 @@
 </script>
 
 <style scoped>
-  .side-panel-header {
+  .mango-side-mango-panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    color: var(--m-text);
   }
 
-  .side-panel-actions {
+  .mango-side-panel-actions {
     display: flex;
     gap: 8px;
   }
 
-  .side-panel-content {
-    height: calc(100% - 80px); /* 减去底部操作栏的高度 */
-    overflow-y: auto;
+  :deep(.arco-drawer-body) {
+    min-height: 0;
+    padding: 0;
   }
 
-  .side-panel-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+  .mango-side-panel-content {
+    height: 100%;
+    overflow: auto;
     padding: 16px;
-    background-color: var(--color-bg-1);
-    border-top: 1px solid var(--color-border);
-    display: flex;
+    color: var(--m-text-2);
+  }
+
+  .mango-side-panel-footer-actions {
+    width: 100%;
     justify-content: flex-start;
   }
 </style>

@@ -28,7 +28,7 @@ export const columns: any = reactive([
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 180,
+    width: 170,
   },
 ])
 export const formItems: FormItem[] = reactive([

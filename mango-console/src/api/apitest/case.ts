@@ -1,9 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
-import type {
-  ApiCaseDataFactoryPayload,
-  ApiCasePayload,
-  ApiCaseQuery,
-} from '@/types/api-test/case'
+import type { ApiCaseDataFactoryPayload, ApiCasePayload, ApiCaseQuery } from '@/types/api-test/case'
 
 export function postApiImportUrl(data: Record<string, unknown>) {
   return post({
@@ -124,7 +120,9 @@ export function putApiCaseDataFactory(data: ApiCaseDataFactoryPayload) {
   })
 }
 
-export function putApiCaseDataFactorySort(data: { case_sort_list: Array<{ id: number; sort: number }> }) {
+export function putApiCaseDataFactorySort(data: {
+  case_sort_list: Array<{ id: number; sort: number }>
+}) {
   return put({
     url: '/api/case/data-factory/sort',
     data: () => data,

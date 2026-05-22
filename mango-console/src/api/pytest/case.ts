@@ -47,7 +47,7 @@ export function postPytestCaseUpdate(projectId: number) {
   })
 }
 
-export function getPytestCaseRead(id: any, fileType: string = 'py') {
+export function getPytestCaseRead(id: any, fileType = 'py') {
   return get({
     url: 'pytest/case/read',
     data: () => {
@@ -56,7 +56,7 @@ export function getPytestCaseRead(id: any, fileType: string = 'py') {
   })
 }
 
-export function postPytestCaseWrite(id: any, file_content: any, fileType: string = 'py') {
+export function postPytestCaseWrite(id: any, file_content: any, fileType = 'py') {
   return post({
     url: 'pytest/case/write',
     data: () => {

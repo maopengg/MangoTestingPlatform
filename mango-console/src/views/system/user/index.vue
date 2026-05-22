@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="project.data"
@@ -56,6 +55,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :loading="table.tableLoading.value"
@@ -95,26 +95,13 @@
               <span v-else>-</span>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑
-                </a-button>
-                <a-button
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  @click="onResetApiKey(record)"
-                  >重置APIKey
-                </a-button>
-                <a-button
-                  status="danger"
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '重置APIKey', onClick: () => onResetApiKey(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -128,7 +115,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems"
           :key="item.key"
@@ -172,7 +159,13 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
-  import { deleteUserInfo, getUserInfo, postUserInfo, putUserApiKey, putUserInfo } from '@/api/user/user'
+  import {
+    deleteUserInfo,
+    getUserInfo,
+    postUserInfo,
+    putUserApiKey,
+    putUserInfo,
+  } from '@/api/user/user'
   import { getUserAllRole } from '@/api/user/role'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -235,8 +228,8 @@
       content: '是否要删除此用户？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUserInfo(record.id)
+      onBeforeOk: () => {
+        return deleteUserInfo(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -254,8 +247,8 @@
       content: `重置后用户「${record.name}」旧的 MCP APIKey 将立即失效，是否继续？`,
       cancelText: '取消',
       okText: '重置',
-      onOk: () => {
-        putUserApiKey({ id: record.id })
+      onBeforeOk: () => {
+        return putUserApiKey({ id: record.id })
           .then((res) => {
             Message.success(`${res.msg}，请复制新的 APIKey 更新 MCP 客户端配置`)
             doRefresh()

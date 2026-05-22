@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -33,7 +32,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -46,7 +44,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -79,7 +76,13 @@
             <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
               >批量执行
             </a-button>
-            <a-button size="small" status="warning" @click="setCase('设为调试')">设为调试</a-button>
+            <a-button
+              size="small"
+              status="success"
+              :loading="setDebugLoading"
+              @click="setCase('设为调试')"
+              >设为调试</a-button
+            >
             <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
           </a-space>
           <a-space v-else-if="data.apiType === '1'">
@@ -102,6 +105,7 @@
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
+        :scroll="{ x: 1380 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -159,7 +163,7 @@
                     {{ data.caseResult.name ? data.caseResult.name : '' }}接口-测试结果
                   </template>
 
-                  <div style="max-height: 400px; overflow-y: auto">
+                  <div class="case-result-scroll">
                     <a-space direction="vertical">
                       <a-space>
                         <a-tag color="orange">响 应 码</a-tag>
@@ -181,50 +185,15 @@
                   </div>
                 </a-modal>
               </template>
-              <a-button
-                size="mini"
-                type="text"
-                class="custom-mini-btn"
-                :loading="caseRunning"
-                @click="onRunCase(record)"
-                >执行
-              </a-button>
-              <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
-                >详情
-              </a-button>
-              <a-dropdown trigger="hover">
-                <a-button size="mini" type="text">···</a-button>
-                <template #content>
-                  <a-doption>
-                    <a-button
-                      size="mini"
-                      type="text"
-                      class="custom-mini-btn"
-                      @click="onUpdate(record)"
-                      >编辑
-                    </a-button>
-                  </a-doption>
-                  <a-doption>
-                    <a-button
-                      size="mini"
-                      type="text"
-                      class="custom-mini-btn"
-                      @click="apiInfoCopy(record)"
-                      >复制
-                    </a-button>
-                  </a-doption>
-                  <a-doption>
-                    <a-button
-                      size="mini"
-                      status="danger"
-                      type="text"
-                      class="custom-mini-btn"
-                      @click="onDelete(record)"
-                      >删除
-                    </a-button>
-                  </a-doption>
-                </template>
-              </a-dropdown>
+              <MangoTableActions
+                :actions="[
+                  { label: '执行', loading: caseRunning, onClick: () => onRunCase(record) },
+                  { label: '详情', onClick: () => onStep(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '复制', onClick: () => apiInfoCopy(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -238,11 +207,12 @@
   <a-modal
     v-model:visible="batchImportVisible"
     title="批量导入"
+    :ok-loading="batchImportLoading"
     @ok="handleBatchImportOk"
     @cancel="handleBatchImportCancel"
   >
-    <a-space direction="vertical" style="width: 100%">
-      <a-button type="primary" @click="onDownload">下载模板</a-button>
+    <a-space direction="vertical" class="batch-import-content">
+      <a-button type="primary" :loading="downloadLoading" @click="onDownload">下载模板</a-button>
       <a-space>
         <a-switch
           v-model="debugInterface"
@@ -252,14 +222,16 @@
           unchecked-text="批量生成" />
         <TipMessage message="如果需要直接上传到调试接口Tab里面，请点击开关打开"
       /></a-space>
-      <div style="margin-top: 10px">
+      <div class="batch-import-file">
         <a-button type="primary" @click="fileInputRef?.click()">选择文件</a-button>
-        <span v-if="selectedFile" style="margin-left: 10px">已选择: {{ selectedFile.name }}</span>
+        <span v-if="selectedFile" class="batch-import-filename"
+          >已选择: {{ selectedFile.name }}</span
+        >
         <input
           ref="fileInputRef"
           type="file"
           accept=".xlsx,.xls"
-          style="display: none"
+          class="batch-import-input"
           @change="handleFileSelect"
         />
       </div>
@@ -272,7 +244,7 @@
         <a-form-item
           v-for="item of data.formItem"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -352,7 +324,7 @@
   import { strJson } from '@/utils/tools'
   import { getSystemSocketNewBrowser } from '@/api/system/socket_api'
   import { baseURL } from '@/api/axios.config'
-  import TipMessage from '@/components/TipMessage.vue'
+  import TipMessage from '@/components/feedback/TipMessage.vue'
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -379,6 +351,8 @@
     formItem: [],
   })
   const caseRunning = ref(false)
+  const setDebugLoading = ref(false)
+  const downloadLoading = ref(false)
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
 
   function clearPollingTimer() {
@@ -390,6 +364,7 @@
 
   const visible = ref(false)
   const batchImportVisible = ref(false)
+  const batchImportLoading = ref(false)
   const debugInterface = ref(0) // 调试接口开关，默认为0
   const fileInputRef = ref<HTMLInputElement | null>(null)
   const selectedFile = ref<File | null>(null) // 存储选中的文件
@@ -490,6 +465,8 @@
   }
 
   function onDownload() {
+    if (downloadLoading.value) return
+    downloadLoading.value = true
     const file_name = '接口批量上传模版.xlsx'
     const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
     let aLink = document.createElement('a')
@@ -499,6 +476,9 @@
     document.body.appendChild(aLink)
     aLink.click()
     document.body.removeChild(aLink)
+    window.setTimeout(() => {
+      downloadLoading.value = false
+    }, 500)
   }
 
   // 新增的批量导入弹窗功能
@@ -519,6 +499,8 @@
       return
     }
 
+    if (batchImportLoading.value) return
+    batchImportLoading.value = true
     postApiUploadApi(debugInterface.value, selectedFile.value)
       .then((res) => {
         Message.success(res.msg)
@@ -533,6 +515,9 @@
       })
       .catch((error) => {
         Message.error('上传失败')
+      })
+      .finally(() => {
+        batchImportLoading.value = false
       })
   }
 
@@ -584,8 +569,8 @@
         '录制接口只支持web端，开始时会结合执行器启动一个浏览器，用例会自动绑定给所选择的项目，请确认是否已选择项目；使用所选择测试环境的域名进行进行过滤请求，请确认是否准备完成！',
       cancelText: '取消',
       okText: '确定',
-      onOk: () => {
-        getSystemSocketNewBrowser(null, 1)
+      onBeforeOk: () => {
+        return getSystemSocketNewBrowser(null, 1)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -607,8 +592,8 @@
       content: '是否要删除此接口？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteApiInfo(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteApiInfo(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -634,14 +619,18 @@
       content: '确定要把这些设为' + name + '的吗？',
       cancelText: '取消',
       okText: '确定',
-      onOk: () => {
-        putApiPutApiInfoType(selectedRowKeys.value, type)
+      onBeforeOk: () => {
+        setDebugLoading.value = true
+        return putApiPutApiInfoType(selectedRowKeys.value, type)
           .then((res) => {
             Message.success(res.msg)
             selectedRowKeys.value = []
             doRefresh()
           })
           .catch(console.log)
+          .finally(() => {
+            setDebugLoading.value = false
+          })
       },
     })
   }
@@ -807,7 +796,7 @@
     }
 
     .avatar-vip {
-      border: 2px solid #cece1e;
+      border: 2px solid var(--m-warning);
     }
 
     .vip {
@@ -829,8 +818,24 @@
     width: 100px; /* 设置标签的宽度 */
   }
 
-  /* 可选的样式 */
-  .a-modal {
-    position: relative; /* 使模态框相对定位 */
+  .case-result-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .batch-import-content {
+    width: 100%;
+  }
+
+  .batch-import-file {
+    margin-top: 10px;
+  }
+
+  .batch-import-filename {
+    margin-left: 10px;
+  }
+
+  .batch-import-input {
+    display: none;
   }
 </style>

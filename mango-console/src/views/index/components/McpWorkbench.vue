@@ -1,9 +1,9 @@
 <template>
-  <div class="mcp-workbench">
-    <div class="mcp-head">
+  <div class="mango-mcp-workbench">
+    <div class="mango-mcp-head">
       <div>
-        <div class="mcp-title-row">
-          <span class="pulse"></span>
+        <div class="mango-mcp-title-row">
+          <span class="mango-mcp-pulse"></span>
           <strong>MCP 智能接入</strong>
         </div>
         <p>让 AI 直接创建、执行和分析 Mango 测试资产</p>
@@ -13,79 +13,81 @@
       </a-tag>
     </div>
 
-    <div class="endpoint-box">
-      <div class="endpoint-main">
-        <span>MCP 地址</span>
-        <a-typography-paragraph class="endpoint-text" :ellipsis="{ rows: 1 }">
-          {{ mcpUrl }}
-        </a-typography-paragraph>
-      </div>
-      <a-tooltip content="复制 MCP 地址">
-        <a-button size="mini" type="text" @click="copyText(mcpUrl, 'MCP 地址')">
-          <template #icon><icon-copy /></template>
-        </a-button>
-      </a-tooltip>
-    </div>
-
-    <div class="status-grid">
-      <div class="status-item">
-        <span>当前环境</span>
-        <strong>{{ modeText }}</strong>
-      </div>
-      <div class="status-item">
-        <span>调用身份</span>
-        <strong>{{ userStore.nickName || userStore.userName || '-' }}</strong>
-      </div>
-      <div class="status-item">
-        <span>认证方式</span>
-        <strong>Bearer APIKey</strong>
-      </div>
-    </div>
-
-    <div class="api-key-box">
-      <div class="api-key-main">
-        <span>MCP APIKey</span>
-        <a-typography-paragraph class="api-key-text" :ellipsis="{ rows: 1 }">
-          {{ maskedApiKey }}
-        </a-typography-paragraph>
-      </div>
-      <a-space size="mini">
-        <a-tooltip content="复制 Authorization 请求头">
-          <a-button size="mini" type="text" :disabled="!apiKey" @click="copyAuthHeader">
+    <div class="mango-mcp-scroll-area mango-custom-scrollbar">
+      <div class="mango-mcp-endpoint-box">
+        <div class="mango-mcp-endpoint-main">
+          <span>MCP 地址</span>
+          <a-typography-paragraph class="mango-mcp-endpoint-text" :ellipsis="{ rows: 1 }">
+            {{ mcpUrl }}
+          </a-typography-paragraph>
+        </div>
+        <a-tooltip content="复制 MCP 地址">
+          <a-button size="mini" type="text" @click="copyText(mcpUrl, 'MCP 地址')">
             <template #icon><icon-copy /></template>
           </a-button>
         </a-tooltip>
-        <a-tooltip content="重置当前用户 APIKey">
-          <a-button size="mini" type="text" :loading="resetting" @click="resetApiKey">
-            <template #icon><icon-refresh /></template>
-          </a-button>
-        </a-tooltip>
-      </a-space>
-    </div>
+      </div>
 
-    <div class="capability-grid">
-      <div v-for="item in capabilities" :key="item.key" class="capability-item">
-        <component :is="item.icon" class="capability-icon" />
-        <div>
-          <strong>{{ item.title }}</strong>
-          <span>{{ item.desc }}</span>
+      <div class="mango-mcp-status-grid">
+        <div class="mango-mcp-status-item">
+          <span>当前环境</span>
+          <strong>{{ modeText }}</strong>
+        </div>
+        <div class="mango-mcp-status-item">
+          <span>调用身份</span>
+          <strong>{{ userStore.nickName || userStore.userName || '-' }}</strong>
+        </div>
+        <div class="mango-mcp-status-item">
+          <span>认证方式</span>
+          <strong>Bearer APIKey</strong>
         </div>
       </div>
-    </div>
 
-    <div class="prompt-panel">
-      <div class="prompt-head">
-        <span>推荐指令</span>
-        <a-button size="mini" type="text" @click="nextPrompt">
-          <template #icon><icon-swap /></template>
-        </a-button>
+      <div class="mango-mcp-api-key-box">
+        <div class="mango-mcp-api-key-main">
+          <span>MCP APIKey</span>
+          <a-typography-paragraph class="mango-mcp-api-key-text" :ellipsis="{ rows: 1 }">
+            {{ maskedApiKey }}
+          </a-typography-paragraph>
+        </div>
+        <a-space size="mini">
+          <a-tooltip content="复制 Authorization 请求头">
+            <a-button size="mini" type="text" :disabled="!apiKey" @click="copyAuthHeader">
+              <template #icon><icon-copy /></template>
+            </a-button>
+          </a-tooltip>
+          <a-tooltip content="重置当前用户 APIKey">
+            <a-button size="mini" type="text" :loading="resetting" @click="resetApiKey">
+              <template #icon><icon-refresh /></template>
+            </a-button>
+          </a-tooltip>
+        </a-space>
       </div>
-      <button class="prompt-text" type="button" @click="copyText(activePrompt, '推荐指令')">
-        {{ activePrompt }}
-      </button>
+
+      <div class="mango-mcp-capability-grid">
+        <div v-for="item in capabilities" :key="item.key" class="mango-mcp-capability-item">
+          <component :is="item.icon" class="mango-mcp-capability-icon" />
+          <div>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.desc }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mango-mcp-prompt-panel">
+        <div class="mango-mcp-prompt-head">
+          <span>推荐指令</span>
+          <a-button size="mini" type="text" @click="nextPrompt">
+            <template #icon><icon-swap /></template>
+          </a-button>
+        </div>
+        <button class="mango-mcp-prompt-text" type="button" @click="copyText(activePrompt, '推荐指令')">
+          {{ activePrompt }}
+        </button>
+      </div>
     </div>
 
-    <div class="action-row">
+    <div class="mango-mcp-action-row">
       <a-button size="small" type="primary" long :disabled="!apiKey" @click="copyInstallPrompt">
         <template #icon><icon-code /></template>
         复制一键安装说明
@@ -101,10 +103,10 @@
       title="MCP 客户端配置"
       :footer="false"
       width="720px"
-      modal-class="mcp-config-modal"
+      modal-class="mango-mcp-config-modal"
     >
-      <div class="config-section">
-        <div class="config-title">
+      <div class="mango-mcp-config-section">
+        <div class="mango-mcp-config-title">
           <span>一键安装说明</span>
           <a-button
             size="mini"
@@ -118,8 +120,8 @@
         </div>
         <a-textarea :model-value="installPrompt" readonly :auto-size="{ minRows: 6, maxRows: 8 }" />
       </div>
-      <div class="config-section">
-        <div class="config-title">
+      <div class="mango-mcp-config-section">
+        <div class="mango-mcp-config-title">
           <span>Codex 配置</span>
           <a-button size="mini" type="text" @click="copyText(codexConfig, 'Codex 配置')">
             <template #icon><icon-copy /></template>
@@ -128,8 +130,8 @@
         </div>
         <a-textarea :model-value="codexConfig" readonly :auto-size="{ minRows: 6, maxRows: 8 }" />
       </div>
-      <div class="config-section">
-        <div class="config-title">
+      <div class="mango-mcp-config-section">
+        <div class="mango-mcp-config-title">
           <span>Authorization</span>
           <a-button size="mini" type="text" :disabled="!apiKey" @click="copyAuthHeader">
             <template #icon><icon-copy /></template>
@@ -138,9 +140,9 @@
         </div>
         <a-input :model-value="authHeader" readonly />
       </div>
-      <div class="config-note">
-        一键安装说明适合直接发送给支持 MCP 的 AI 工具；手动配置时使用下方 MCP 地址和 Authorization。APIKey
-        代表当前用户身份，创建、执行和上传类操作都会使用该用户权限。
+      <div class="mango-mcp-config-note">
+        一键安装说明适合直接发送给支持 MCP 的 AI 工具；手动配置时使用下方 MCP 地址和
+        Authorization。APIKey 代表当前用户身份，创建、执行和上传类操作都会使用该用户权限。
         <a-link :href="docsUrl" target="_blank">查看使用文档</a-link>
       </div>
     </a-modal>
@@ -198,7 +200,9 @@
     if (apiKey.value.length <= 18) return apiKey.value
     return `${apiKey.value.slice(0, 12)}...${apiKey.value.slice(-8)}`
   })
-  const authHeader = computed(() => (apiKey.value ? `Bearer ${apiKey.value}` : 'Bearer <MCP APIKey>'))
+  const authHeader = computed(() =>
+    apiKey.value ? `Bearer ${apiKey.value}` : 'Bearer <MCP APIKey>'
+  )
   const installPrompt = computed(
     () => `请根据下面的配置帮我安装 Mango MCP 服务，并在安装后查询这个 MCP 服务开放了哪些能力。
 
@@ -293,9 +297,9 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
       content: '重置后旧 APIKey 会立即失效，已配置的 MCP 客户端需要更新。',
       cancelText: '取消',
       okText: '重置',
-      onOk: () => {
+      onBeforeOk: () => {
         resetting.value = true
-        putUserApiKey({ id: userStore.userId })
+        return putUserApiKey({ id: userStore.userId })
           .then((res) => {
             Message.success(`${res.msg}，请复制新的 APIKey 更新 MCP 客户端配置`)
             apiKey.value = res.data?.api_key || ''
@@ -315,17 +319,29 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
 </script>
 
 <style lang="less" scoped>
-  .mcp-workbench {
+  .mango-mcp-workbench {
     display: flex;
     height: 100%;
     min-height: 0;
     flex-direction: column;
-    gap: 10px;
-    padding-top: 8px;
-    color: var(--color-text-1);
+    gap: 8px;
+    overflow: hidden;
+    padding-top: 6px;
+    padding-bottom: 5px;
+    color: var(--m-text);
   }
 
-  .mcp-head {
+  .mango-mcp-scroll-area {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .mango-mcp-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -335,39 +351,39 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
       margin: 4px 0 0;
       font-size: 12px;
       line-height: 18px;
-      color: var(--color-text-3);
+      color: var(--m-muted);
     }
   }
 
-  .mcp-title-row {
+  .mango-mcp-title-row {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 15px;
   }
 
-  .pulse {
+  .mango-mcp-pulse {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14);
+    background: var(--m-success);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--m-success) 18%, transparent);
   }
 
-  .endpoint-box,
-  .api-key-box {
+  .mango-mcp-endpoint-box,
+  .mango-mcp-api-key-box {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     padding: 8px 10px;
-    border: 1px solid var(--color-neutral-3);
-    border-radius: 8px;
-    background: var(--color-fill-1);
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface-soft);
   }
 
-  .endpoint-main,
-  .api-key-main {
+  .mango-mcp-endpoint-main,
+  .mango-mcp-api-key-main {
     min-width: 0;
     flex: 1;
 
@@ -375,28 +391,29 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
       display: block;
       margin-bottom: 2px;
       font-size: 11px;
-      color: var(--color-text-3);
+      color: var(--m-muted);
     }
   }
 
-  .endpoint-text,
-  .api-key-text {
+  .mango-mcp-endpoint-text,
+  .mango-mcp-api-key-text {
     margin: 0;
     font-size: 12px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
 
-  .status-grid {
+  .mango-mcp-status-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 
-  .status-item {
+  .mango-mcp-status-item {
     min-width: 0;
     padding: 8px;
-    border: 1px solid var(--color-neutral-3);
-    border-radius: 8px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface);
 
     span,
     strong {
@@ -408,7 +425,7 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
 
     span {
       font-size: 11px;
-      color: var(--color-text-3);
+      color: var(--m-muted);
     }
 
     strong {
@@ -418,21 +435,21 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     }
   }
 
-  .capability-grid {
+  .mango-mcp-capability-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
-  .capability-item {
+  .mango-mcp-capability-item {
     display: flex;
     align-items: center;
     gap: 8px;
     min-width: 0;
-    padding: 8px;
-    border: 1px solid var(--color-neutral-3);
-    border-radius: 8px;
-    background: var(--color-bg-2);
+    padding: 7px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface);
 
     div {
       min-width: 0;
@@ -454,23 +471,26 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     span {
       margin-top: 2px;
       font-size: 10px;
-      color: var(--color-text-3);
+      color: var(--m-muted);
     }
   }
 
-  .capability-icon {
+  .mango-mcp-capability-icon {
     flex: 0 0 auto;
     font-size: 16px;
-    color: rgb(var(--primary-6));
+    color: var(--m-primary);
   }
 
-  .prompt-panel {
+  .mango-mcp-prompt-panel {
+    flex: 0 0 auto;
+    min-height: 88px;
     padding: 8px;
-    border: 1px solid var(--color-neutral-3);
-    border-radius: 8px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface);
   }
 
-  .prompt-head {
+  .mango-mcp-prompt-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -479,32 +499,35 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     font-weight: 600;
   }
 
-  .prompt-text {
+  .mango-mcp-prompt-text {
     width: 100%;
-    min-height: 48px;
+    min-height: 44px;
     padding: 7px 8px;
+    overflow: auto;
     border: none;
-    border-radius: 6px;
-    background: var(--color-fill-1);
-    color: var(--color-text-2);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface-soft);
+    color: var(--m-text-2);
     cursor: pointer;
     font-size: 12px;
     line-height: 17px;
     text-align: left;
   }
 
-  .action-row {
+  .mango-mcp-action-row {
     display: grid;
+    flex: 0 0 auto;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: auto;
+    margin-top: 0;
+    padding: 4px 0 1px;
   }
 
-  .config-section + .config-section {
+  .mango-mcp-config-section + .mango-mcp-config-section {
     margin-top: 16px;
   }
 
-  .config-title {
+  .mango-mcp-config-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -512,12 +535,12 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     font-weight: 600;
   }
 
-  .config-note {
+  .mango-mcp-config-note {
     margin-top: 12px;
     padding: 10px;
-    border-radius: 8px;
-    background: var(--color-fill-1);
-    color: var(--color-text-2);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-primary-soft);
+    color: var(--m-text-2);
     font-size: 12px;
     line-height: 20px;
   }

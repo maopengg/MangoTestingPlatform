@@ -19,7 +19,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -31,7 +30,6 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="productModule.data"
@@ -69,6 +67,7 @@
         :columns="tableColumns"
         :pagination="false"
         :rowKey="rowKey"
+        :scroll="{ x: 1160 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -99,36 +98,14 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑
-              </a-button>
-              <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                >添加元素
-              </a-button>
-              <a-dropdown trigger="hover">
-                <a-button type="text" size="mini">···</a-button>
-                <template #content>
-                  <a-doption>
-                    <a-button
-                      type="text"
-                      size="mini"
-                      class="custom-mini-btn"
-                      @click="onPageCopy(record.id)"
-                      >复制
-                    </a-button>
-                  </a-doption>
-                  <a-doption>
-                    <a-button
-                      status="danger"
-                      type="text"
-                      size="mini"
-                      class="custom-mini-btn"
-                      @click="onDelete(record)"
-                      >删除
-                    </a-button>
-                  </a-doption>
-                </template>
-              </a-dropdown>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '添加元素', onClick: () => onClick(record) },
+                  { label: '复制', onClick: () => onPageCopy(record.id) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -142,7 +119,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems"
           :key="item.key"
@@ -249,8 +226,8 @@
       content: '是否要删除此页面？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUiPage(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteUiPage(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })

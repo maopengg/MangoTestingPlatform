@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <TableBody>
     <template #header>
       <TableHeader title="数据工厂 / 执行记录" @search="doRefresh" @reset-search="onResetSearch">
@@ -19,7 +19,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="onSearchProjectChange(item.value)"
                 />
@@ -32,7 +31,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -45,7 +43,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 120px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -58,7 +55,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 120px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -71,7 +67,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -128,25 +123,21 @@
               }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button
-                  :loading="actionLoading === `detail-${record.id}`"
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="openDetail(record)"
-                  >详情</a-button
-                >
-                <a-button
-                  :loading="actionLoading === `cleanup-${record.id}`"
-                  size="mini"
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="cleanup(record)"
-                  >清理</a-button
-                >
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  {
+                    label: '详情',
+                    loading: actionLoading === `detail-${record.id}`,
+                    onClick: () => openDetail(record),
+                  },
+                  {
+                    label: '清理',
+                    danger: true,
+                    loading: actionLoading === `cleanup-${record.id}`,
+                    onClick: () => cleanup(record),
+                  },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -159,16 +150,13 @@
   <a-drawer v-model:visible="detailVisible" title="执行详情" width="860px">
     <a-tabs>
       <a-tab-pane key="context" title="上下文">
-        <a-textarea
-          :model-value="JSON.stringify(detail.context || {}, null, 2)"
-          :auto-size="{ minRows: 18, maxRows: 28 }"
-          readonly
-        />
+        <JsonDisplay :data="detail.context || {}" />
       </a-tab-pane>
       <a-tab-pane key="items" title="创建明细">
         <a-table
           :columns="executionItemColumns"
           :data="detail.items || []"
+          :loading="detailLoading"
           :pagination="false"
           :scroll="{ x: 1200 }"
         >
@@ -189,6 +177,35 @@
               <template v-else-if="item.key === 'cleanup_status'" #cell="{ record }">
                 {{ enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status) }}
               </template>
+              <template v-else-if="item.key === 'cleanup_sql'" #cell="{ record }">
+                <a-space v-if="record.cleanup_sql" direction="vertical" fill>
+                  <a-typography-paragraph copyable>{{ record.cleanup_sql }}</a-typography-paragraph>
+                  <a-typography-paragraph
+                    v-if="
+                      record.cleanup_sql_params && Object.keys(record.cleanup_sql_params).length
+                    "
+                    copyable
+                    >{{ JSON.stringify(record.cleanup_sql_params) }}</a-typography-paragraph
+                  >
+                </a-space>
+                <span v-else>-</span>
+              </template>
+              <template v-else-if="item.key === 'insert_sql'" #cell="{ record }">
+                <a-space v-if="record.insert_sql" direction="vertical" fill>
+                  <a-typography-paragraph copyable>{{ record.insert_sql }}</a-typography-paragraph>
+                  <a-typography-paragraph
+                    v-if="record.insert_sql_params && Object.keys(record.insert_sql_params).length"
+                    copyable
+                    >{{ JSON.stringify(record.insert_sql_params) }}</a-typography-paragraph
+                  >
+                </a-space>
+                <span v-else>-</span>
+              </template>
+              <template v-else-if="item.key === 'insert_data'" #cell="{ record }">
+                <a-typography-paragraph copyable>{{
+                  JSON.stringify(record.insert_data || {})
+                }}</a-typography-paragraph>
+              </template>
               <template v-else-if="item.key === 'data'" #cell="{ record }">
                 <a-typography-paragraph copyable>{{
                   JSON.stringify(record.data)
@@ -202,7 +219,7 @@
         <a-alert v-if="detail.execution?.error_message" type="error">{{
           detail.execution.error_message
         }}</a-alert>
-        <a-empty v-else description="暂无错误" />
+        <div v-else class="mango-empty-state execution-empty">暂无错误</div>
       </a-tab-pane>
     </a-tabs>
   </a-drawer>
@@ -219,6 +236,7 @@
   import { useProject } from '@/store/modules/get-project'
   import { useProductModule } from '@/store/modules/project_module'
   import { getFormItems } from '@/utils/datacleaning'
+  import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref } from 'vue'
   import { executionConditionItems, executionItemColumns, executionTableColumns } from './config'
@@ -231,6 +249,7 @@
   const enumFieldNames = { value: 'key', label: 'title' }
   const detailVisible = ref(false)
   const detail = ref<any>({})
+  const detailLoading = ref(false)
   const actionLoading = ref('')
 
   function enumTitle(options: any[] = [], value: any) {
@@ -276,6 +295,7 @@
 
   function openDetail(record: any) {
     actionLoading.value = `detail-${record.id}`
+    detailLoading.value = true
     getDataFactoryExecutionDetail({ execution_id: record.id })
       .then((res) => {
         detail.value = res.data || {}
@@ -283,6 +303,7 @@
       })
       .finally(() => {
         actionLoading.value = ''
+        detailLoading.value = false
       })
   }
 
@@ -294,7 +315,7 @@
     Modal.confirm({
       title: '清理执行数据',
       content: `确认清理 ${record.execution_no} 创建的数据？`,
-      onOk: () => {
+      onBeforeOk: () => {
         actionLoading.value = `cleanup-${record.id}`
         return postDataFactoryExecutionCleanup({ execution_id: record.id })
           .then((res) => {
@@ -315,3 +336,8 @@
     doRefresh()
   })
 </script>
+<style scoped>
+  .execution-empty {
+    min-height: 120px;
+  }
+</style>

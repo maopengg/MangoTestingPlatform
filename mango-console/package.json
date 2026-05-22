@@ -1,6 +1,6 @@
 {
   "name": "mango-console",
-  "version": "6.0.7",
+  "version": "6.1.0",
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",
@@ -12,6 +12,7 @@
     "build:master": "vite build --mode master",
     "staging": "vite build --mode staging",
     "tsc": "vue-tsc --noEmit",
+    "theme:audit": "node scripts/theme-audit.mjs",
     "serve": "vite preview"
   },
   "dependencies": {

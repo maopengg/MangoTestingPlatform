@@ -145,7 +145,7 @@ def ad_routes():
                 {
                     "parentPath": "/data-factory",
                     "menuUrl": "/data-factory/template/index",
-                    "menuName": "状态模板",
+                    "menuName": "场景模板",
                 },
                 {
                     "parentPath": "/data-factory",

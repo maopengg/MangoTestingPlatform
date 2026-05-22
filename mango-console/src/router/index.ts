@@ -11,28 +11,31 @@ export const extraRoutes = [
     name: 'uiTest',
     component: Layout,
     meta: {
-      title: 'Ui自动化',
+      title: '界面自动化',
     },
     children: [
       {
         path: 'page/steps/details',
         component: () => import('@/views/uitest/page-steps/details/index.vue'),
         meta: {
-          title: '页面步骤详情',
+          title: '页面步骤工作台',
+          breadcrumb: [{ title: '页面步骤', path: '/uitest/page/steps' }],
         },
       },
       {
         path: 'page/elements',
         component: () => import('@/views/uitest/page/elements/index.vue'),
         meta: {
-          title: '页面元素详情页',
+          title: '页面元素配置',
+          breadcrumb: [{ title: '页面元素', path: '/uitest/page' }],
         },
       },
       {
         path: 'case/details',
         component: () => import('@/views/uitest/case/details/index.vue'),
         meta: {
-          title: '测试用例详情',
+          title: '界面用例配置',
+          breadcrumb: [{ title: '测试用例', path: '/uitest/case' }],
         },
       },
     ],
@@ -42,21 +45,23 @@ export const extraRoutes = [
     name: 'apiTest',
     component: Layout,
     meta: {
-      title: 'Api自动化',
+      title: '接口自动化',
     },
     children: [
       {
         path: 'info/details',
         component: () => import('@/views/apitest/info/details/index.vue'),
         meta: {
-          title: '接口详情',
+          title: '接口配置工作台',
+          breadcrumb: [{ title: '接口管理', path: '/apitest/info' }],
         },
       },
       {
         path: 'case/details',
         component: () => import('@/views/apitest/case/details/index.vue'),
         meta: {
-          title: '用例详情',
+          title: '接口用例配置',
+          breadcrumb: [{ title: '测试用例', path: '/apitest/case' }],
         },
       },
     ],
@@ -69,6 +74,24 @@ export const extraRoutes = [
       title: 'Pytest',
     },
     children: [],
+  },
+  {
+    path: '/data-factory',
+    name: 'dataFactory',
+    component: Layout,
+    meta: {
+      title: '数据工厂',
+    },
+    children: [
+      {
+        path: 'template/preview',
+        component: () => import('@/views/data-factory/template/preview/index.vue'),
+        meta: {
+          title: '场景模板配置',
+          breadcrumb: [{ title: '场景模板', path: '/data-factory/template' }],
+        },
+      },
+    ],
   },
   {
     path: '/report',
@@ -84,6 +107,7 @@ export const extraRoutes = [
         component: () => import('@/views/report/details/index.vue'),
         meta: {
           title: '测试报告详情',
+          breadcrumb: [{ title: '测试报告', path: '/report/index' }],
         },
       },
     ],
@@ -101,6 +125,7 @@ export const extraRoutes = [
         component: () => import('@/views/timing/tasks/case/index.vue'),
         meta: {
           title: '添加用例',
+          breadcrumb: [{ title: '定时任务', path: '/timing/tasks' }],
         },
       },
     ],
@@ -118,21 +143,24 @@ export const extraRoutes = [
         path: 'product/module',
         component: () => import('@/views/config/product/module/index.vue'),
         meta: {
-          title: '测试项目',
+          title: '产品模块配置',
+          breadcrumb: [{ title: '项目产品', path: '/config/product' }],
         },
       },
       {
         path: 'project/notice',
         component: () => import('@/views/config/project/notice/index.vue'),
         meta: {
-          title: '通知组',
+          title: '通知组配置',
+          breadcrumb: [{ title: '项目配置', path: '/config/project' }],
         },
       },
       {
         path: 'test/object/database',
         component: () => import('@/views/config/test-object/database/index.vue'),
         meta: {
-          title: '数据库',
+          title: '数据库配置',
+          breadcrumb: [{ title: '测试对象', path: '/config/test/object' }],
         },
       },
     ],

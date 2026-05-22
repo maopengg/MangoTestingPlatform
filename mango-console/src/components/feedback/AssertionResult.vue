@@ -1,27 +1,29 @@
 <template>
   <div>
-    <div v-if="!assertionData || assertionData.length === 0" class="empty-placeholder">
+    <div v-if="!assertionData || assertionData.length === 0" class="mango-empty-placeholder">
       暂无断言结果
     </div>
-    <div v-else class="assertion-list">
+    <div v-else class="mango-assertion-list">
       <div
         v-for="(item, index) in assertionData"
         :key="index"
-        class="assertion-item"
-        :class="{ 'assertion-pass': item.status === 1, 'assertion-fail': item.status !== 1 }"
+        class="mango-assertion-item"
+        :class="{ 'mango-assertion-pass': item.status === 1, 'mango-assertion-fail': item.status !== 1 }"
       >
-        <div class="assertion-header">
-          <span class="assertion-method">{{ item.method }}</span>
-          <div class="assertion-actions">
+        <div class="mango-assertion-header">
+          <span class="mango-assertion-method">{{ item.method }}</span>
+          <div class="mango-assertion-actions">
             <span
-              class="assertion-status"
-              :class="{ 'status-pass': item.status === 1, 'status-fail': item.status !== 1 }"
+              class="mango-assertion-status mango-status-badge"
+              :class="
+                item.status === 1 ? 'mango-status-badge--success' : 'mango-status-badge--danger'
+              "
             >
               {{ item.status === 1 ? '通过' : '失败' }}
             </span>
             <a-tooltip content="复制实际值" position="top" mini>
               <a-button
-                class="copy-button"
+                class="mango-copy-button"
                 type="text"
                 size="mini"
                 @click="copyValue(item.actual, '实际值')"
@@ -33,7 +35,7 @@
             </a-tooltip>
             <a-tooltip content="复制期望值" position="top" mini>
               <a-button
-                class="copy-button"
+                class="mango-copy-button"
                 type="text"
                 size="mini"
                 @click="copyValue(item.expect, '期望值')"
@@ -45,17 +47,17 @@
             </a-tooltip>
           </div>
         </div>
-        <div class="assertion-details">
-          <div class="assertion-row">
-            <span class="label">实际值:</span>
-            <span class="value">{{ item.actual }}</span>
+        <div class="mango-assertion-details">
+          <div class="mango-assertion-row">
+            <span class="mango-assertion-label">实际值:</span>
+            <span class="mango-assertion-value">{{ item.actual }}</span>
           </div>
-          <div class="assertion-row">
-            <span class="label">预期值:</span>
-            <span class="value">{{ item.expect }}</span>
+          <div class="mango-assertion-row">
+            <span class="mango-assertion-label">预期值:</span>
+            <span class="mango-assertion-value">{{ item.expect }}</span>
           </div>
           <a-tooltip :content="item.ass_msg" position="top" mini>
-            <div class="assertion-message">
+            <div class="mango-assertion-message">
               {{ item.ass_msg }}
             </div>
           </a-tooltip>
@@ -129,35 +131,38 @@
 </script>
 
 <style scoped>
-  .empty-placeholder {
+  .mango-empty-placeholder {
     text-align: center;
-    color: #999;
+    color: var(--m-muted);
     font-size: 14px;
     padding: 20px;
+    background: var(--m-surface-soft);
+    border: 1px dashed var(--m-border);
+    border-radius: var(--m-radius-md);
   }
 
-  .assertion-item {
-    border-left: 4px solid #e0e0e0;
+  .mango-assertion-item {
+    border-left: 4px solid var(--m-border-strong);
     padding: 8px 10px;
     margin-bottom: 8px;
-    background-color: #fafafa;
-    border-radius: 0 4px 4px 0;
+    background-color: var(--m-surface);
+    border-radius: 0 var(--m-radius-md) var(--m-radius-md) 0;
     transition: all 0.3s;
   }
 
-  .assertion-item:hover {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  .mango-assertion-item:hover {
+    box-shadow: var(--m-shadow);
   }
 
-  .assertion-pass {
-    border-left-color: #52c41a;
+  .mango-assertion-pass {
+    border-left-color: var(--m-success);
   }
 
-  .assertion-fail {
-    border-left-color: #ff4d4f;
+  .mango-assertion-fail {
+    border-left-color: var(--m-danger);
   }
 
-  .assertion-header {
+  .mango-assertion-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -165,10 +170,10 @@
     gap: 8px;
   }
 
-  .assertion-method {
+  .mango-assertion-method {
     font-size: 13px;
     font-weight: 500;
-    color: #333;
+    color: var(--m-text);
     flex: 1;
     margin-right: 10px;
     overflow: hidden;
@@ -176,68 +181,53 @@
     white-space: nowrap;
   }
 
-  .assertion-status {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-weight: 500;
+  .mango-assertion-status {
     flex-shrink: 0;
   }
 
-  .assertion-actions {
+  .mango-assertion-actions {
     display: flex;
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
   }
 
-  .copy-button {
+  .mango-copy-button {
     width: 22px;
     height: 22px;
     padding: 0;
   }
 
-  .status-pass {
-    background-color: #f6ffed;
-    color: #52c41a;
-    border: 1px solid #b7eb8f;
-  }
-
-  .status-fail {
-    background-color: #fff2f0;
-    color: #ff4d4f;
-    border: 1px solid #ffccc7;
-  }
-
-  .assertion-details {
+  .mango-assertion-details {
     font-size: 12px;
   }
 
-  .assertion-row {
+  .mango-assertion-row {
     display: flex;
     margin-bottom: 4px;
     line-height: 1.5;
   }
 
-  .label {
+  .mango-assertion-label {
     font-weight: 500;
-    color: #666;
+    color: var(--m-muted);
     width: 60px;
     flex-shrink: 0;
   }
 
-  .value {
-    color: #333;
+  .mango-assertion-value {
+    color: var(--m-text-2);
     flex: 1;
     word-break: break-all;
   }
 
-  .assertion-message {
+  .mango-assertion-message {
     margin-top: 4px;
     padding: 4px 8px;
-    background-color: #f0f2f5;
-    border-radius: 3px;
-    color: #666;
+    background-color: var(--m-surface);
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-sm);
+    color: var(--m-muted);
     font-size: 11px;
     overflow: hidden;
     text-overflow: ellipsis;

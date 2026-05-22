@@ -3,11 +3,7 @@
     <div class="main-container">
       <div class="box-wrapper">
         <div class="flex">
-          <a-card
-            :body-style="{ padding: '10px' }"
-            :bordered="false"
-            class="card-border-radius personal-box"
-          >
+          <section class="mango-section-card personal-box">
             <div class="info-wrapper">
               <div class="avatar-wrapper">
                 <!--              <div-->
@@ -18,7 +14,7 @@
                 <!--                <img :src="userStore.avatar" />-->
                 <!--              </div>-->
                 <div class="flex items-center justify-center camera-layer" @click="uploadAvatar">
-                  <icon-camera style="color: #fff; font-size: 30px" />
+                  <icon-camera class="camera-icon" />
                 </div>
               </div>
               <div class="text-xl">
@@ -52,7 +48,7 @@
                 <a-button size="mini" type="text" @click="onUpdate">修改密码</a-button>
               </div>
             </div>
-          </a-card>
+          </section>
         </div>
       </div>
     </div>
@@ -63,7 +59,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -234,7 +230,7 @@
               width: 100%;
               height: 100%;
               border-radius: 50%;
-              border: 2px solid rgb(245, 241, 7);
+              border: 2px solid var(--m-primary-border);
             }
           }
 
@@ -252,8 +248,13 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: var(--m-overlay-mask);
             border-radius: 50%;
+          }
+
+          .camera-icon {
+            color: var(--m-surface);
+            font-size: 30px;
           }
         }
 
@@ -290,7 +291,7 @@
     }
 
     .message-wrapper {
-      border-bottom: 1px solid #f5f5f5;
+      border-bottom: 1px solid var(--m-border);
       padding-bottom: 10px;
 
       .notify {
@@ -320,7 +321,7 @@
 
       .wating-item {
         padding: 10px;
-        border-bottom: 1px solid #f5f5f5;
+        border-bottom: 1px solid var(--m-border);
       }
     }
   }

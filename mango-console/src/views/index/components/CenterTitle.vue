@@ -36,7 +36,7 @@
           <div class="center">芒果测试平台</div>
           <div class="right">
             <div>{userSum.value}</div>
-            <div style={{ color: '#333', fontSize: '12px' }}>当前在线人数</div>
+            <div style={{ color: 'var(--m-muted)', fontSize: '12px' }}>当前在线人数</div>
           </div>
         </div>
       )
@@ -57,7 +57,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      color: rgb(var(--primary-1));
+      color: var(--m-primary);
       font-size: 16px;
       font-weight: 500;
     }
@@ -70,9 +70,9 @@
       padding: 5px;
       align-items: center;
       font-weight: bold;
-      background: rgba(var(--primary-1), 0.8);
-      color: #fff;
-      border-radius: 5px;
+      background: var(--m-primary);
+      color: var(--m-surface);
+      border-radius: var(--m-radius-md);
     }
 
     .right {

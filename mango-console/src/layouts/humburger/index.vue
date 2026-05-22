@@ -1,7 +1,7 @@
 <template>
   <span
-    :class="[appStore.isCollapse ? 'fold-open-status' : 'fold-close-status']"
-    class="fold-wrapper"
+    :class="[appStore.isCollapse ? 'mango-fold-open-status' : 'mango-fold-close-status']"
+    class="mango-fold-wrapper"
     @click="toggleFold"
   >
     <MenuFoldOutlined />
@@ -32,15 +32,15 @@
 </script>
 
 <style lang="less" scoped>
-  .fold-open-status {
+  .mango-fold-open-status {
     transform: rotate(180deg);
   }
 
-  .fold-close-status {
+  .mango-fold-close-status {
     transform: rotate(0);
   }
 
-  .fold-wrapper {
+  .mango-fold-wrapper {
     box-sizing: border-box;
     display: inline-flex;
     line-height: @logoHeight;
@@ -50,8 +50,8 @@
     transition: transform @transitionTime;
   }
 
-  .fold-wrapper:hover {
-    color: #999999;
+  .mango-fold-wrapper:hover {
+    color: var(--m-primary);
     cursor: pointer;
   }
 </style>

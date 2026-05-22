@@ -15,7 +15,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="onSearchProjectChange(item.value)"
                 />
@@ -28,7 +27,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 140px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -41,7 +39,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   @change="doRefresh"
                 />
               </template>
@@ -53,7 +50,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 120px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -104,6 +100,11 @@
               {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
               }}{{ record?.module?.name }}
             </template>
+            <template v-else-if="item.key === 'create_type'" #cell="{ record }">
+              <a-tag color="arcoblue" size="small">
+                {{ enumTitle(enumStore.data_factory_operation_type, record.create_type || 2) }}
+              </a-tag>
+            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
                 :beforeChange="(newValue) => switchEntityStatus(newValue, record.id)"
@@ -111,38 +112,22 @@
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="openEntity(record)"
-                  >编辑</a-button
-                >
-                <a-button
-                  :loading="actionLoading === `fields-${record.id}`"
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="openFields(record)"
-                  >字段规则</a-button
-                >
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text" class="custom-mini-btn">···</a-button>
-                  <template #content>
-                    <a-doption @click="removeEntity(record)">
-                      <a-button
-                        :loading="actionLoading === `delete-${record.id}`"
-                        size="mini"
-                        status="danger"
-                        type="text"
-                        class="custom-mini-btn"
-                        >删除</a-button
-                      >
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => openEntity(record) },
+                  {
+                    label: '字段规则',
+                    loading: actionLoading === `fields-${record.id}`,
+                    onClick: () => openFields(record),
+                  },
+                  {
+                    label: '删除',
+                    danger: true,
+                    loading: actionLoading === `delete-${record.id}`,
+                    onClick: () => removeEntity(record),
+                  },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -191,7 +176,7 @@
           </a-form-item>
         </a-grid-item>
       </a-grid>
-      <a-space style="margin-bottom: 12px">
+      <a-space class="entity-toolbar">
         <a-switch
           v-model="batchForm.sync_fields"
           checked-text="同步字段规则"
@@ -208,7 +193,7 @@
         >
       </a-space>
     </a-form>
-    <a-alert style="margin-bottom: 12px" type="info">
+    <a-alert class="entity-alert" type="info">
       当前使用顶部全局测试环境读取表结构。实体名称默认使用表注释，没有表注释时使用表名。
     </a-alert>
     <a-table
@@ -333,9 +318,19 @@
         <a-grid-item
           ><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item
         ></a-grid-item>
+        <a-grid-item>
+          <a-form-item label="创建方式">
+            <a-select
+              v-model="entityForm.create_type"
+              :field-names="enumFieldNames"
+              :options="enumStore.data_factory_operation_type"
+              disabled
+            />
+          </a-form-item>
+        </a-grid-item>
         <a-grid-item
           ><a-form-item label="清理顺序"
-            ><a-input-number v-model="entityForm.cleanup_order" style="width: 100%" /></a-form-item
+            ><a-input-number v-model="entityForm.cleanup_order" class="full-width" /></a-form-item
         ></a-grid-item>
       </a-grid>
       <a-form-item label="同步字段规则">
@@ -352,7 +347,7 @@
     :title="`${currentEntity?.name || ''} 字段规则`"
     width="1180px"
   >
-    <a-space style="margin-bottom: 12px">
+    <a-space class="entity-toolbar">
       <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
       <a-button :loading="fieldSyncLoading" type="primary" @click="syncCurrentEntityFields"
         >同步当前表字段</a-button
@@ -363,6 +358,7 @@
     <a-table
       :columns="fieldRuleColumns"
       :data="fieldRows"
+      :loading="fieldSyncLoading || fieldPreviewLoading"
       :pagination="false"
       :scroll="{ x: 1600, y: 460 }"
     >
@@ -414,11 +410,11 @@
             />
           </template>
           <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
-              <a-space
-                v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD"
-                direction="vertical"
-                fill
-              >
+            <a-space
+              v-if="record.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD"
+              direction="vertical"
+              fill
+            >
               <a-cascader
                 :model-value="getDependencyCascaderValue(record)"
                 :options="dependencyCascaderOptions"
@@ -621,7 +617,10 @@
         ...item,
         title: getGeneratorTypeTitle(item),
       }))
-      .sort((left: any, right: any) => getGeneratorTypeOrder(left.key) - getGeneratorTypeOrder(right.key))
+      .sort(
+        (left: any, right: any) =>
+          getGeneratorTypeOrder(left.key) - getGeneratorTypeOrder(right.key)
+      )
   )
 
   function getGeneratorTypeOrder(value: any) {
@@ -631,6 +630,10 @@
 
   function getOptionId(value: any) {
     return value?.id ?? value
+  }
+
+  function enumTitle(options: any[] = [], value: any) {
+    return options.find((item: any) => Number(item.key) === Number(value))?.title || value
   }
 
   function getSearchItem(key: string) {
@@ -681,7 +684,7 @@
       table_name: record?.table_name || '',
       primary_key: record?.primary_key || 'id',
       unique_key: record?.unique_key || '',
-      create_type: record?.create_type || 2,
+      create_type: 2,
       delete_type: record?.delete_type || 2,
       cleanup_order: record?.cleanup_order || 100,
       status: record?.status || 1,
@@ -781,6 +784,7 @@
       Message.error('请填写实体名称')
       return false
     }
+    entityForm.create_type = 2
     fillEntitySystemFields()
     const request = entityForm.id ? putDataFactoryEntity : postDataFactoryEntity
     entitySaving.value = true
@@ -1099,7 +1103,7 @@
     Modal.confirm({
       title: '删除实体',
       content: `确认删除 ${record.name}？`,
-      onOk: () => {
+      onBeforeOk: () => {
         actionLoading.value = `delete-${record.id}`
         return deleteDataFactoryEntity(record.id)
           .then(() => doRefresh())
@@ -1529,7 +1533,9 @@
   }
 
   function loadDependencyCascaderMore(option: any, done: (children?: any[]) => void) {
-    const projectProduct = getOptionId(entityForm.project_product || currentEntity.value?.project_product)
+    const projectProduct = getOptionId(
+      entityForm.project_product || currentEntity.value?.project_product
+    )
     if (!projectProduct) {
       done([])
       return
@@ -1573,7 +1579,9 @@
   }
 
   function loadDependencyEntities(moduleId: any) {
-    const projectProduct = getOptionId(entityForm.project_product || currentEntity.value?.project_product)
+    const projectProduct = getOptionId(
+      entityForm.project_product || currentEntity.value?.project_product
+    )
     if (!projectProduct || !moduleId) {
       return Promise.resolve([])
     }
@@ -1624,7 +1632,9 @@
   }
 
   async function preloadDependencyCascaderPath(dependencyEntityId: any) {
-    const projectProduct = getOptionId(entityForm.project_product || currentEntity.value?.project_product)
+    const projectProduct = getOptionId(
+      entityForm.project_product || currentEntity.value?.project_product
+    )
     if (!projectProduct || !dependencyEntityId) {
       return
     }
@@ -1749,11 +1759,20 @@
     white-space: nowrap;
   }
 
+  .entity-toolbar,
+  .entity-alert {
+    margin-bottom: 12px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
   .enum-editor-tip {
-    background: #f7f8fa;
-    border-left: 3px solid #c9cdd4;
+    background: var(--m-surface-soft);
+    border-left: 3px solid var(--m-border-strong);
     border-radius: 3px;
-    color: #86909c;
+    color: var(--m-muted);
     font-size: 12px;
     line-height: 20px;
     padding: 6px 10px;
@@ -1764,7 +1783,7 @@
   }
 
   .enum-option-label {
-    color: #4e5969;
+    color: var(--m-text-2);
     display: inline-block;
     font-size: 14px;
     line-height: 18px;

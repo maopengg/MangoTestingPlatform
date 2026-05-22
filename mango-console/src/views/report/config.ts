@@ -41,6 +41,7 @@ export const tableColumns = useTableColumn([
     key: 'tasks',
     dataIndex: 'tasks',
     align: 'left',
+    width: 260,
     ellipsis: true,
     tooltip: true,
   },
@@ -79,6 +80,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 110,
+    width: 170,
   },
 ])

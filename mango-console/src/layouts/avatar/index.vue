@@ -1,16 +1,16 @@
 <template>
-  <div class="vaw-avatar-container">
+  <div class="mango-avatar-container">
     <a-dropdown size="large" trigger="hover" @select="handleSelect">
-      <div class="action-wrapper">
-        <!--        <div class="avatar">-->
+      <div class="mango-action-wrapper">
+        <!--        <div class="mango-avatar">-->
         <!--          <a-avatar :size="30">-->
-        <!--            <img :src="userStore.avatar" />-->
+        <!--            <img :src="userStore.mango-avatar" />-->
         <!--          </a-avatar>-->
         <!--        </div>-->
-        <span class="nick-name">
+        <span class="mango-nick-name">
           {{ userStore.nickName }}
         </span>
-        <icon-caret-down class="tip" />
+        <icon-caret-down class="mango-tip" />
       </div>
       <template #content>
         <a-doption v-for="item of options" :key="item.key" :value="item.key">
@@ -91,17 +91,17 @@
 </script>
 
 <style lang="less" scoped>
-  .vaw-avatar-container {
-    .action-wrapper {
+  .mango-avatar-container {
+    .mango-action-wrapper {
       display: flex;
       align-items: center;
 
-      .avatar {
+      .mango-avatar {
         display: flex;
         align-items: center;
 
         & > img {
-          border: 1px solid #f6f6f6;
+          border: 1px solid var(--m-border);
           width: 100%;
           height: 100%;
           object-fit: cover;
@@ -109,10 +109,10 @@
         }
       }
 
-      .nick-name {
+      .mango-nick-name {
         margin: 0 5px;
 
-        .tip {
+        .mango-tip {
           transform: rotate(0);
           transition: transform @transitionTime;
           margin-left: 2px;
@@ -121,11 +121,11 @@
     }
   }
 
-  .vaw-avatar-container:hover {
+  .mango-avatar-container:hover {
     cursor: pointer;
-    color: var(--primary-color);
+    color: var(--m-primary);
 
-    .tip {
+    .mango-tip {
       transform: rotate(180deg);
       transition: transform @transitionTime;
     }

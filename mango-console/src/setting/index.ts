@@ -1,11 +1,12 @@
 import { DeviceType } from '@/store/types'
 
-export const projectName = '智书测试平台'
+export const projectName = '芒果测试平台'
 
 export default {
   theme: 'light',
   sideTheme: 'white',
   themeColor: '#165dff',
+  themePreset: 'mango-blue',
   projectName,
   layoutMode: 'ltr',
   sideWidth: 210,

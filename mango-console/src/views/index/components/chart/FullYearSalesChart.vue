@@ -1,15 +1,19 @@
 <template>
   <div class="chart-item-container">
-    <div class="trend-summary">
-      <div v-for="item in seriesSummary" :key="item.name" class="summary-item">
-        <span class="summary-dot" :style="{ backgroundColor: item.color }"></span>
-        <div>
-          <span>{{ item.name }}</span>
-          <strong>{{ item.total }}</strong>
+    <a-spin :loading="loading" class="mango-chart-spin">
+      <div class="mango-chart-content">
+        <div class="trend-summary">
+          <div v-for="item in seriesSummary" :key="item.name" class="summary-item">
+            <span class="summary-dot" :style="{ backgroundColor: item.color }"></span>
+            <div>
+              <span>{{ item.name }}</span>
+              <strong>{{ item.total }}</strong>
+            </div>
+          </div>
         </div>
+        <div ref="fullYearSalesChart" class="chart-item"></div>
       </div>
-    </div>
-    <div ref="fullYearSalesChart" class="chart-item"></div>
+    </a-spin>
   </div>
 </template>
 <script lang="ts">
@@ -37,43 +41,63 @@
     setup() {
       const loading = ref(true)
       const fullYearSalesChart = ref<HTMLDivElement | null>(null)
+      const token = (name: string, fallback: string) =>
+        getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+      const chartColors = () => [
+        token('--m-chart-1', '#5b7cfa'),
+        token('--m-chart-2', '#22c55e'),
+        token('--m-chart-3', '#f6c143'),
+      ]
       const seriesSummary = ref([
-        { name: '接口用例', total: 0, color: '#5b7cfa' },
-        { name: '界面用例', total: 0, color: '#22c55e' },
-        { name: '单元用例', total: 0, color: '#f6c143' },
+        { name: '接口用例', total: 0, color: chartColors()[0] },
+        { name: '界面用例', total: 0, color: chartColors()[1] },
+        { name: '单元用例', total: 0, color: chartColors()[2] },
       ])
       let interval: any = null
       let data: any = reactive([])
 
       function caseResultWeekSum() {
+        loading.value = true
         getSystemCaseResultWeekSum()
           .then((res) => {
             data = res.data
             seriesSummary.value = [
               {
                 name: '接口用例',
-                total: (data.api_count || []).reduce((sum: number, item: number) => sum + Number(item || 0), 0),
-                color: '#5b7cfa',
+                total: (data.api_count || []).reduce(
+                  (sum: number, item: number) => sum + Number(item || 0),
+                  0
+                ),
+                color: chartColors()[0],
               },
               {
                 name: '界面用例',
-                total: (data.ui_count || []).reduce((sum: number, item: number) => sum + Number(item || 0), 0),
-                color: '#22c55e',
+                total: (data.ui_count || []).reduce(
+                  (sum: number, item: number) => sum + Number(item || 0),
+                  0
+                ),
+                color: chartColors()[1],
               },
               {
                 name: '单元用例',
-                total: (data.pytest_count || []).reduce((sum: number, item: number) => sum + Number(item || 0), 0),
-                color: '#f6c143',
+                total: (data.pytest_count || []).reduce(
+                  (sum: number, item: number) => sum + Number(item || 0),
+                  0
+                ),
+                color: chartColors()[2],
               },
             ]
             init()
           })
           .catch(console.log)
+          .finally(() => {
+            loading.value = false
+          })
       }
 
       const init = () => {
         const option = {
-          color: ['#5b7cfa', '#22c55e', '#f6c143'],
+          color: chartColors(),
           grid: {
             top: 20,
             left: 8,
@@ -83,10 +107,10 @@
           },
           tooltip: {
             trigger: 'axis',
-            backgroundColor: 'rgba(255, 255, 255, 0.96)',
-            borderColor: '#e5e6eb',
+            backgroundColor: token('--m-surface', '#fff'),
+            borderColor: token('--m-border', '#e5e6eb'),
             textStyle: {
-              color: '#1d2129',
+              color: token('--m-text', '#1d2129'),
             },
           },
           xAxis: {
@@ -95,7 +119,7 @@
             axisLine: {
               show: true,
               lineStyle: {
-                color: '#98A3B2',
+                color: token('--m-border-strong', '#98A3B2'),
                 width: 0,
                 type: 'solid',
               },
@@ -104,7 +128,7 @@
               show: false,
             },
             axisLabel: {
-              color: '#86909c',
+              color: token('--m-muted', '#86909c'),
             },
           },
           yAxis: {
@@ -112,7 +136,7 @@
             splitLine: {
               show: true,
               lineStyle: {
-                color: '#eef0f5',
+                color: token('--m-border', '#eef0f5'),
                 type: 'dashed',
               },
             },
@@ -123,7 +147,7 @@
               show: false,
             },
             axisLabel: {
-              color: '#86909c',
+              color: token('--m-muted', '#86909c'),
             },
           },
           series: [
@@ -141,7 +165,7 @@
                 opacity: 0.12,
               },
               itemStyle: {
-                color: '#5b7cfa',
+                color: chartColors()[0],
               },
             },
             {
@@ -158,7 +182,7 @@
                 opacity: 0.1,
               },
               itemStyle: {
-                color: '#22c55e',
+                color: chartColors()[1],
               },
             },
             {
@@ -175,21 +199,16 @@
                 opacity: 0.12,
               },
               itemStyle: {
-                color: '#f6c143',
+                color: chartColors()[2],
               },
             },
           ],
         }
-        setTimeout(() => {
-          loading.value = false
-          setTimeout(() => {
-            nextTick(() => {
-              if (fullYearSalesChart.value) {
-                useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)
-              }
-            })
-          }, 100)
-        }, 1000)
+        nextTick(() => {
+          if (fullYearSalesChart.value) {
+            useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)
+          }
+        })
       }
       const updateChart = () => {
         useEcharts(fullYearSalesChart.value as HTMLDivElement).resize()
@@ -198,8 +217,10 @@
         nextTick(async () => {
           await caseResultWeekSum()
         })
+        window.addEventListener('mango-theme-change', init)
       })
       onBeforeUnmount(() => {
+        window.removeEventListener('mango-theme-change', init)
         dispose(fullYearSalesChart.value as HTMLDivElement)
         clearInterval(interval)
       })
@@ -215,6 +236,21 @@
 
 <style lang="less" scoped>
   .chart-item-container {
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .mango-chart-spin,
+  :deep(.mango-chart-spin .arco-spin-children) {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .mango-chart-content {
     display: flex;
     height: 100%;
     min-height: 0;
@@ -235,9 +271,9 @@
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
-    border: 1px solid var(--color-neutral-3);
+    border: 1px solid var(--m-border);
     border-radius: 8px;
-    background: var(--color-fill-1);
+    background: var(--m-surface-soft);
 
     div {
       min-width: 0;
@@ -252,13 +288,13 @@
     }
 
     span {
-      color: var(--color-text-3);
+      color: var(--m-muted);
       font-size: 12px;
     }
 
     strong {
       margin-top: 2px;
-      color: var(--color-text-1);
+      color: var(--m-text);
       font-size: 18px;
       line-height: 22px;
     }

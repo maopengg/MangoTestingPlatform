@@ -1,7 +1,7 @@
 <template>
   <div
-    :class="[appStore.deviceType === 'mobile' && 'is-mobile', appStore.theme]"
-    class="vaw-layout-container"
+    :class="[appStore.deviceType === 'mobile' && 'mango-is-mobile', appStore.theme]"
+    class="mango-layout-container"
   >
     <template v-if="appStore.layoutMode === 'ttb'">
       <VAWHeader />
@@ -18,8 +18,8 @@
     </template>
     <div
       v-if="appStore.deviceType === 'mobile'"
-      :class="[appStore.isCollapse ? 'close-shadow' : 'show-shadow']"
-      class="mobile-shadow"
+      :class="[appStore.isCollapse ? 'mango-close-shadow' : 'mango-show-shadow']"
+      class="mango-mobile-shadow"
       @click="closeMenu"
     ></div>
   </div>
@@ -35,8 +35,6 @@
   import useAxios from '@/hooks/useAxios'
   import useAppConfigStore from '@/store/modules/app-config'
   import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
-  import usePrimaryColor from '@/hooks/usePrimaryColor'
-  import useTheme from '@/hooks/useTheme'
   import { DeviceType } from '@/store/types'
   import CustomRequestInterceptor from '@/api/interceptors/CustomRequestInterceptor'
 
@@ -46,9 +44,8 @@
       const settingRef = ref()
       const searchContentRef = ref()
       const appStore = useAppConfigStore()
-      useTheme(appStore.theme as 'light' | 'dark')
       useChangeMenuWidth(appStore.sideWidth)
-      usePrimaryColor(appStore.themeColor)
+      appStore.applyCurrentThemePreset()
       const emitter = useEmit()
       const axios = useAxios()
       axios.interceptors.request.use((config) => {
@@ -103,25 +100,25 @@
 </script>
 
 <style lang="less">
-  .vaw-layout-container {
+  .mango-layout-container {
     height: 100%;
     max-width: 100%;
     position: relative;
     overflow-x: hidden;
 
-    .mobile-shadow {
+    .mango-mobile-shadow {
       display: none;
     }
 
-    .layout-mode-ttb {
+    .mango-layout-mode-ttb {
       margin-top: @logoHeight;
       transition: all @transitionTime;
     }
   }
 
-  .is-mobile {
-    .mobile-shadow {
-      background-color: #000000;
+  .mango-is-mobile {
+    .mango-mobile-shadow {
+      background-color: var(--m-overlay-mask);
       position: fixed;
       top: 0;
       left: 0;
@@ -130,11 +127,11 @@
       z-index: 997;
     }
 
-    .close-shadow {
+    .mango-close-shadow {
       display: none;
     }
 
-    .show-shadow {
+    .mango-show-shadow {
       display: block;
       opacity: 0.5;
       transition: all @transitionTime;

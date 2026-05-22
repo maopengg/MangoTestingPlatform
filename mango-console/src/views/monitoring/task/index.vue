@@ -19,7 +19,6 @@
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="enumStore.monitoring_task_status"
@@ -32,7 +31,6 @@
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
                 <a-cascader
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
@@ -60,6 +58,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :loading="table.tableLoading.value"
@@ -101,60 +100,16 @@
               {{ record.notice_group?.name || '-' }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  v-if="record.status !== 1"
-                  @click="onStart(record)"
-                  >启动
-                </a-button>
-                <a-button
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  v-if="record.status === 1"
-                  @click="onStop(record)"
-                  >停止
-                </a-button>
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onLogs(record)"
-                  >日志
-                </a-button>
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        type="text"
-                        size="mini"
-                        class="custom-mini-btn"
-                        @click="onUpdate(record)"
-                        >编辑
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        type="text"
-                        size="mini"
-                        class="custom-mini-btn"
-                        @click="onViewFile(record)"
-                        >文件
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        status="danger"
-                        type="text"
-                        size="mini"
-                        class="custom-mini-btn"
-                        @click="onDelete(record)"
-                        >删除
-                      </a-button>
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '启动', hidden: record.status === 1, onClick: () => onStart(record) },
+                  { label: '停止', hidden: record.status !== 1, onClick: () => onStop(record) },
+                  { label: '日志', onClick: () => onLogs(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '文件', onClick: () => onViewFile(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -169,7 +124,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of filteredFormItems"
           :key="item.key"
@@ -241,8 +196,10 @@
       </div>
     </template>
     <template #extra-buttons>
-      <a-button status="success" @click="handleDownloadLog">下载</a-button>
-      <a-button type="primary" @click="fetchLogData">刷新</a-button>
+      <a-button status="success" :loading="logDownloadLoading" @click="handleDownloadLog"
+        >下载</a-button
+      >
+      <a-button type="primary" :loading="logRefreshLoading" @click="fetchLogData">刷新</a-button>
     </template>
   </BaseSidePanel>
 
@@ -271,7 +228,7 @@
       </div>
     </template>
     <template #extra-buttons>
-      <a-button type="primary" @click="onFileSave">保存</a-button>
+      <a-button type="primary" :loading="fileSaving" @click="onFileSave">保存</a-button>
     </template>
   </BaseSidePanel>
 </template>
@@ -279,7 +236,7 @@
 <script lang="ts" setup>
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, nextTick, onMounted, reactive, ref } from 'vue'
-  import BaseSidePanel from '@/components/BaseSidePanel.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import { ModalDialogType } from '@/types/components'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
@@ -323,6 +280,9 @@
 
   const logCodeText = ref('')
   const logEditorRef = ref<any>(null)
+  const logRefreshLoading = ref(false)
+  const logDownloadLoading = ref(false)
+  const fileSaving = ref(false)
 
   const logDrawer = reactive({
     visible: false,
@@ -369,8 +329,8 @@
       content: '是否要删除此任务？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteMonitoringTask(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteMonitoringTask(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -557,6 +517,8 @@
       Message.warning('未选择任务')
       return
     }
+    if (fileSaving.value) return
+    fileSaving.value = true
     const payload: any = {
       id: fileDrawer.taskId,
       name: fileDrawer.task.name,
@@ -572,16 +534,23 @@
       .catch((error) => {
         Message.error('保存失败')
       })
+      .finally(() => {
+        fileSaving.value = false
+      })
   }
 
   // 日志相关方法
   async function fetchLogData() {
     if (!logDrawer.taskId) return
+    if (logRefreshLoading.value) return
+    logRefreshLoading.value = true
     try {
       const res = await getMonitoringTaskLogs(logDrawer.taskId, 300)
       logCodeText.value = (res.data || []).join('')
     } catch (error) {
       console.log(error)
+    } finally {
+      logRefreshLoading.value = false
     }
   }
 
@@ -590,6 +559,8 @@
       Message.warning('请先选择任务')
       return
     }
+    if (logDownloadLoading.value) return
+    logDownloadLoading.value = true
     try {
       const res: any = await downloadMonitoringTaskLog(logDrawer.taskId)
       // 后端返回的是文件流
@@ -605,6 +576,8 @@
       Message.success('日志下载成功')
     } catch (error) {
       Message.error('下载失败')
+    } finally {
+      logDownloadLoading.value = false
     }
   }
 
@@ -616,10 +589,6 @@
 </script>
 
 <style scoped lang="less">
-  .custom-mini-btn {
-    padding: 0 4px;
-  }
-
   .log-drawer-title {
     display: flex;
     justify-content: space-between;
@@ -677,17 +646,17 @@
   }
 
   :deep(.log-drawer-body)::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--m-scrollbar-track);
     border-radius: 4px;
   }
 
   :deep(.log-drawer-body)::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: var(--m-scrollbar-thumb);
     border-radius: 4px;
   }
 
   :deep(.log-drawer-body)::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: var(--m-scrollbar-thumb-hover);
   }
 
   /* CodeMirror编辑器的滚动条 */
@@ -697,16 +666,16 @@
   }
 
   :deep(.cm-scroller)::-webkit-scrollbar-track {
-    background: #f8f8f8;
+    background: var(--m-scrollbar-track);
     border-radius: 4px;
   }
 
   :deep(.cm-scroller)::-webkit-scrollbar-thumb {
-    background: #ddd;
+    background: var(--m-scrollbar-thumb);
     border-radius: 4px;
   }
 
   :deep(.cm-scroller)::-webkit-scrollbar-thumb:hover {
-    background: #bbb;
+    background: var(--m-scrollbar-thumb-hover);
   }
 </style>

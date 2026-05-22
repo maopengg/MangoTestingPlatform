@@ -1,19 +1,19 @@
 <template>
   <a-card :body-style="{ padding: 0 }" :bordered="false">
-    <div class="vaw-nav-bar-wrapper">
+    <div class="mango-nav-bar-wrapper">
       <Humburger />
       <Breadcrumb v-if="appStore.deviceType !== 'mobile'" />
       <div style="flex: 1"></div>
-      <div class="right-wrapper">
+      <div class="mango-right-wrapper">
         <ActionItems />
       </div>
-      <div class="avatar-wrapper">
+      <div class="mango-avatar-wrapper">
         <Project />
       </div>
-      <div class="avatar-wrapper">
+      <div class="mango-avatar-wrapper">
         <TestEnvironment />
       </div>
-      <div class="avatar-wrapper">
+      <div class="mango-avatar-wrapper">
         <VAWavatar />
       </div>
     </div>
@@ -40,7 +40,7 @@
 </script>
 
 <style lang="less" scoped>
-  .vaw-nav-bar-wrapper {
+  .mango-nav-bar-wrapper {
     height: @logoHeight;
     max-height: @logoHeight;
     min-height: @logoHeight;
@@ -48,14 +48,16 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid var(--color-border);
+    color: var(--m-layout-header-text);
+    border-bottom: 1px solid var(--m-layout-header-border);
+    background: var(--m-layout-header-bg);
 
-    .avatar-wrapper {
+    .mango-avatar-wrapper {
       padding-right: 20px;
       margin-left: 10px;
     }
 
-    .right-wrapper {
+    .mango-right-wrapper {
       height: 100%;
     }
   }

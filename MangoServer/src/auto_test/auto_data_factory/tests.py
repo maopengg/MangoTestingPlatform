@@ -4,12 +4,14 @@ from django.test import SimpleTestCase
 from rest_framework import serializers
 
 from src.auto_test.auto_data_factory.models import DataFactoryField
+from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
 from src.auto_test.auto_data_factory.service.discover import DataFactoryDiscover
 from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGenerator
+from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
 from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
 from src.auto_test.auto_data_factory.views.field import DataFactoryFieldSerializer
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
-from src.models.data_factory_model import DataFactoryFieldOverrideRules
+from src.models.data_factory_model import DataFactoryFieldOverrideRules, validate_data_factory_scene_overrides
 
 
 class DataFactoryTypeCastTests(SimpleTestCase):
@@ -62,6 +64,83 @@ class DataFactoryGeneratorTests(SimpleTestCase):
             DataFactoryValueGenerator.build_payload([field])
 
 
+class DataFactoryCleanupTests(SimpleTestCase):
+    def test_compile_insert_sql_records_sql_and_params(self):
+        from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, insert
+
+        engine = create_engine("sqlite://")
+        table = Table(
+            "contract_category",
+            MetaData(),
+            Column("id", Integer, primary_key=True),
+            Column("name", String(64)),
+        )
+        statement = insert(table).values(name="合同类型")
+
+        insert_sql, insert_sql_params = DataFactoryRunner.compile_insert_sql(statement, engine.dialect)
+
+        self.assertIn("INSERT INTO contract_category", insert_sql)
+        self.assertEqual(insert_sql_params, {"name": "合同类型"})
+        engine.dispose()
+
+    def test_compile_cleanup_sql_records_sql_and_params(self):
+        from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, delete
+
+        engine = create_engine("sqlite://")
+        table = Table(
+            "contract_category",
+            MetaData(),
+            Column("id", Integer, primary_key=True),
+            Column("name", String(64)),
+        )
+        statement = delete(table).where(table.c.id == 12)
+
+        cleanup_sql, cleanup_sql_params = DataFactoryCleanup.compile_cleanup_sql(statement, engine.dialect)
+
+        self.assertIn("DELETE FROM contract_category", cleanup_sql)
+        self.assertEqual(cleanup_sql_params, {"id_1": 12})
+        engine.dispose()
+
+
+class DataFactoryPreviewTests(SimpleTestCase):
+    def test_build_dependency_tree_includes_fields_and_status(self):
+        node = DataFactoryRunner.build_dependency_tree(
+            template=None,
+            entity=None,
+            alias="合同类型角色",
+            action="create",
+            fields=[{"name": "role_id", "valid": False}],
+            missing_fields=[{"field": "role_id", "message": "必填字段生成结果为空"}],
+        )
+
+        self.assertEqual(node["status"], "warning")
+        self.assertEqual(node["missing_count"], 1)
+        self.assertEqual(node["fields"][0]["name"], "role_id")
+
+    def test_collect_preview_missing_fields_includes_dependencies(self):
+        result = DataFactoryRunner.collect_preview_missing_fields(
+            template={"id": 1, "name": "合同类型"},
+            entity={"id": 10, "name": "contract_category", "table_name": "contract_category"},
+            missing_fields=[],
+            dependencies=[
+                {
+                    "template": {"id": 2, "name": "合同类型角色"},
+                    "entity": {
+                        "id": 11,
+                        "name": "contract_category_role",
+                        "table_name": "contract_category_role",
+                    },
+                    "missing_fields": [{"field": "role_id", "message": "必填字段生成结果为空"}],
+                    "dependencies": [],
+                }
+            ],
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["field"], "role_id")
+        self.assertEqual(result[0]["path"], "合同类型 / 合同类型角色")
+
+
 class DataFactoryFieldSerializerTests(SimpleTestCase):
     def test_dependency_field_can_save_without_template_id(self):
         serializer = DataFactoryFieldSerializer()
@@ -102,6 +181,27 @@ class DataFactoryFieldSerializerTests(SimpleTestCase):
         }).model_dump()
 
         self.assertEqual(result["user_id"]["generator_config"]["template_id"], 99)
+
+    def test_scene_override_accepts_main_and_items(self):
+        result = validate_data_factory_scene_overrides({
+            "__main__": {
+                "name": {
+                    "generator_type": DataFactoryGeneratorTypeEnum.FIXED.value,
+                    "generator_config": {"value": "主表"},
+                },
+            },
+            "__items__": {
+                "20": {
+                    "category_id": {
+                        "generator_type": DataFactoryGeneratorTypeEnum.FIXED.value,
+                        "generator_config": {"value": 1},
+                    },
+                },
+            },
+        })
+
+        self.assertEqual(result["__main__"]["name"]["generator_config"]["value"], "主表")
+        self.assertEqual(result["__items__"]["20"]["category_id"]["generator_config"]["value"], 1)
 
     def test_random_range_must_be_valid(self):
         serializer = DataFactoryFieldSerializer()

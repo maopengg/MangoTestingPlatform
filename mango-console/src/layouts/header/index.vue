@@ -1,9 +1,9 @@
 <template>
-  <div class="vaw-header-layout">
-    <div class="logo-wrapper">
+  <div class="mango-header-layout">
+    <div class="mango-logo-wrapper">
       <Logo :always-show="true" />
     </div>
-    <div class="menu-wrapper">
+    <div class="mango-menu-wrapper">
       <ScrollerMenu
         :routes="permissionStore.getTopLevelTabs"
         mode="horizontal"
@@ -14,13 +14,13 @@
       :body-style="{ padding: 0, height: '100%' }"
       :bordered="false"
       :header-style="{ padding: 0 }"
-      class="right-wrapper"
+      class="mango-right-wrapper"
     >
       <div class="flex justify-end items-center h-full">
         <template v-if="appStore.deviceType !== 'mobile'">
           <ActionItems />
         </template>
-        <div class="avatar-wrapper">
+        <div class="mango-avatar-wrapper">
           <VAWavatar />
         </div>
       </div>
@@ -67,7 +67,7 @@
 </script>
 
 <style lang="less" scoped>
-  .vaw-header-layout {
+  .mango-header-layout {
     height: @logoHeight;
     position: fixed;
     top: 0;
@@ -77,19 +77,23 @@
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    border-bottom: 1px solid var(--color-border);
+    color: var(--m-layout-header-text);
+    border-bottom: 1px solid var(--m-layout-header-border);
+    background: var(--m-layout-header-bg);
 
-    .logo-wrapper {
+    .mango-logo-wrapper {
       width: @menuWidth;
     }
 
-    .menu-wrapper {
+    .mango-menu-wrapper {
       flex: 1;
       overflow: hidden;
 
       :deep(.arco-menu-horizontal) {
         height: 47px;
         width: 100%;
+        color: var(--m-layout-header-text);
+        background: transparent;
       }
 
       :deep(.arco-menu-horizontal .arco-menu-inner) {
@@ -100,16 +104,19 @@
       :deep(.arco-menu-selected-label) {
         bottom: -8px;
         height: 2px;
+        background-color: var(--m-primary);
       }
     }
 
-    .right-wrapper {
+    .mango-right-wrapper {
       height: 100%;
       display: flex;
       justify-content: flex-end;
       align-items: center;
+      color: var(--m-layout-header-text);
+      background: transparent;
 
-      .avatar-wrapper {
+      .mango-avatar-wrapper {
         padding-right: 15px;
         margin-left: 10px;
       }

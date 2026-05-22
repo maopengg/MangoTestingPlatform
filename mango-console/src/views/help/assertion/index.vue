@@ -2,9 +2,15 @@
   <TableBody ref="tableBody">
     <template #header></template>
     <template #default>
-      <a-card :bordered="false" title="断言方法">
+      <section class="mango-section-card assertion-shell">
+        <div class="mango-section-title">
+          <div>
+            <h2>断言方法</h2>
+            <p>验证断言函数的入参、预期值和结果反馈</p>
+          </div>
+        </div>
         <a-space class="assertion-page" direction="vertical" fill :size="16">
-          <a-card class="try-card" :bordered="false">
+          <div class="try-card mango-soft-panel">
             <a-space direction="vertical" fill :size="12">
               <div class="try-title">测试断言方法</div>
               <a-grid :cols="{ xs: 1, sm: 1, md: 2, lg: 3 }" :col-gap="12" :row-gap="12">
@@ -19,11 +25,7 @@
                   />
                 </a-grid-item>
                 <a-grid-item>
-                  <a-textarea
-                    v-model="actualValue"
-                    auto-size
-                    placeholder="请输入实际值"
-                  />
+                  <a-textarea v-model="actualValue" auto-size placeholder="请输入实际值" />
                 </a-grid-item>
                 <a-grid-item>
                   <a-textarea
@@ -49,7 +51,7 @@
                 {{ testResult.message }}
               </a-alert>
             </a-space>
-          </a-card>
+          </div>
 
           <a-space direction="vertical" fill :size="12">
             <div class="section-tip">
@@ -59,7 +61,11 @@
               <div class="category-panel">
                 <div class="category-title">方法分类</div>
                 <div class="category-list">
-                  <div v-for="section of menuSections" :key="section.value" class="category-section">
+                  <div
+                    v-for="section of menuSections"
+                    :key="section.value"
+                    class="category-section"
+                  >
                     <div class="category-section-title">{{ section.title }}</div>
                     <button
                       v-for="item of section.children"
@@ -84,10 +90,10 @@
                 />
               </div>
             </div>
-            <a-empty v-if="!classGroups.length" description="暂无断言方法" />
+            <div v-if="!classGroups.length" class="mango-empty-state">暂无断言方法</div>
           </a-space>
         </a-space>
-      </a-card>
+      </section>
     </template>
   </TableBody>
 </template>
@@ -345,14 +351,20 @@
     width: 100%;
   }
 
+  .assertion-shell {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+  }
+
   .try-card {
-    background: var(--color-fill-1);
+    padding: 12px;
   }
 
   .try-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .try-actions {
@@ -363,10 +375,10 @@
 
   .section-tip {
     padding: 10px 12px;
-    border-left: 3px solid rgb(var(--success-6));
+    border-left: 3px solid var(--m-success);
     border-radius: 4px;
-    background: rgb(var(--success-1));
-    color: var(--color-text-2);
+    background: color-mix(in srgb, var(--m-success) 12%, transparent);
+    color: var(--m-text-2);
   }
 
   .method-layout {
@@ -380,16 +392,16 @@
     position: sticky;
     top: 12px;
     overflow: hidden;
-    border: 1px solid var(--color-border-2);
+    border: 1px solid var(--m-border);
     border-radius: 6px;
-    background: var(--color-bg-2);
+    background: var(--m-surface);
   }
 
   .category-title {
     padding: 12px 14px;
-    border-bottom: 1px solid var(--color-border-2);
+    border-bottom: 1px solid var(--m-border);
     font-weight: 600;
-    color: var(--color-text-1);
+    color: var(--m-text);
   }
 
   .category-list {
@@ -407,7 +419,7 @@
 
   .category-section-title {
     padding: 4px 8px;
-    color: var(--color-text-3);
+    color: var(--m-muted);
     font-size: 12px;
     font-weight: 600;
   }
@@ -424,20 +436,20 @@
     border: 0;
     border-radius: 4px;
     background: transparent;
-    color: var(--color-text-2);
+    color: var(--m-text-2);
     text-align: left;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
 
   .category-item:hover {
-    background: var(--color-fill-2);
-    color: var(--color-text-1);
+    background: var(--m-hover);
+    color: var(--m-text);
   }
 
   .category-item.active {
-    background: var(--color-fill-2);
-    color: var(--color-text-1);
+    background: var(--m-hover);
+    color: var(--m-text);
     font-weight: 600;
   }
 
@@ -448,7 +460,7 @@
     left: 0;
     width: 3px;
     border-radius: 2px;
-    background: var(--color-text-2);
+    background: var(--m-primary);
     content: '';
   }
 
@@ -457,8 +469,8 @@
     min-width: 24px;
     padding: 0 6px;
     border-radius: 10px;
-    background: var(--color-fill-2);
-    color: var(--color-text-2);
+    background: var(--m-primary-soft);
+    color: var(--m-primary);
     text-align: center;
     font-size: 12px;
     line-height: 18px;
@@ -473,9 +485,9 @@
 
   .method-group-card {
     overflow: hidden;
-    border: 1px solid var(--color-border-2);
+    border: 1px solid var(--m-border);
     border-radius: 6px;
-    background: var(--color-bg-2);
+    background: var(--m-surface);
   }
 
   .method-name {
@@ -489,7 +501,7 @@
   }
 
   .empty-text {
-    color: var(--color-text-3);
+    color: var(--m-muted);
   }
 
   @media (max-width: 900px) {

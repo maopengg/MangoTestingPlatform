@@ -180,7 +180,7 @@
     max-height: 40px;
   }
 
-  .scrollbar {
+  .mango-scrollbar {
     height: calc(100vh - @logoHeight) !important;
     overflow-y: auto;
 

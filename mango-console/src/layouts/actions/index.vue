@@ -1,13 +1,13 @@
 <template>
-  <div class="action-items-wrapper">
-    <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
+  <div class="mango-action-items-wrapper">
+    <span v-if="appStore.actionBar.isShowSearch" class="mango-action-item" @click="onShowSearch">
       <SearchIcon />
     </span>
     <a-popover :width="300" placement="bottom" trigger="click">
       <a-badge
         v-if="appStore.actionBar.isShowMessage"
         :count="notificationMessage.badgeValue"
-        class="action-item"
+        class="mango-action-item"
       >
         <NotificationsIcon />
       </a-badge>
@@ -15,17 +15,17 @@
         <MessageContent />
       </template>
     </a-popover>
-    <span v-if="appStore.actionBar.isShowRefresh" class="action-item" @click="onRefrehRoute">
+    <span v-if="appStore.actionBar.isShowRefresh" class="mango-action-item" @click="onRefrehRoute">
       <RefreshIcon />
     </span>
     <span
       v-if="appStore.actionBar.isShowFullScreen && appStore.deviceType !== 'mobile'"
-      class="action-item"
+      class="mango-action-item"
       @click="onScreenFull"
     >
       <ExpandIcon />
     </span>
-    <span class="action-item" @click="onShowSetting">
+    <span class="mango-action-item" @click="onShowSetting">
       <SettingIcon />
     </span>
   </div>
@@ -112,28 +112,45 @@
 </script>
 
 <style lang="less" scoped>
-  .action-items-wrapper {
+  .mango-action-items-wrapper {
     position: relative;
     height: 100%;
     display: flex;
     align-items: center;
     z-index: 1;
 
-    .action-item {
+    .mango-action-item {
       min-width: 40px;
       display: flex;
       justify-content: center;
       align-items: center;
       font-size: 18px;
       height: 100%;
+      color: var(--m-layout-header-text);
 
       &:hover {
         cursor: pointer;
-        background-color: var(--color-secondary-hover);
+        color: var(--m-layout-sidebar-active-text);
+        background-color: var(--m-layout-sidebar-hover-bg);
       }
 
-      :deep(.arco-badge-number, .arco-badge-dot, .arco-badge-text, .arco-badge-custom-dot) {
-        transform: translate(10%, 20%);
+      :deep(.arco-badge-number),
+      :deep(.arco-badge-text) {
+        min-width: 14px;
+        height: 14px;
+        padding: 0 4px;
+        font-size: 10px;
+        line-height: 14px;
+        border-radius: 999px;
+        transform: translate(4px, 7px);
+        box-shadow: 0 0 0 1px var(--m-layout-header-bg);
+      }
+
+      :deep(.arco-badge-dot),
+      :deep(.arco-badge-custom-dot) {
+        width: 6px;
+        height: 6px;
+        transform: translate(4px, 7px);
       }
     }
   }

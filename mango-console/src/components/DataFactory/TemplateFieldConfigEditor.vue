@@ -2,9 +2,10 @@
   <a-table
     :columns="columns"
     :data="rows"
+    :loading="loading"
     :pagination="false"
     :row-key="'name'"
-    :scroll="{ x: 1120, y: 420 }"
+    :scroll="{ x: 1120, y: tableScrollY }"
     size="small"
   >
     <template #columns>
@@ -43,11 +44,7 @@
             placeholder="请选择枚举值"
             @change="(value) => changeEnumOverrideValue(record, value)"
           />
-          <a-space
-            v-else-if="isDependencyConfig(record)"
-            direction="vertical"
-            fill
-          >
+          <a-space v-else-if="isDependencyConfig(record)" direction="vertical" fill>
             <a-input
               :model-value="getDependencyEntityDisplay(record)"
               disabled
@@ -56,11 +53,17 @@
             <a-select
               :model-value="getDependencyTemplateId(record)"
               :options="getDependencyTemplateOptions(record)"
-              :disabled="readonly || !getDependencyEntityId(record) || isDependencyTemplateSelectDisabled(record)"
+              :disabled="
+                readonly ||
+                !getDependencyEntityId(record) ||
+                isDependencyTemplateSelectDisabled(record)
+              "
               allow-clear
               allow-search
               :placeholder="getDependencyTemplatePlaceholder(record)"
-              @popup-visible-change="(visible) => visible && loadDependencyTemplateOptions?.(record)"
+              @popup-visible-change="
+                (visible) => visible && loadDependencyTemplateOptions?.(record)
+              "
               @change="(value) => changeDependencyTemplateValue(record, value)"
             />
           </a-space>
@@ -134,6 +137,8 @@
       showConfig?: boolean
       showOutput?: boolean
       showPreview?: boolean
+      tableScrollY?: number | string
+      loading?: boolean
     }>(),
     {
       dependencyTemplateOptions: () => ({}),
@@ -143,6 +148,8 @@
       showConfig: true,
       showOutput: false,
       showPreview: false,
+      tableScrollY: 420,
+      loading: false,
     }
   )
 
@@ -461,7 +468,8 @@
     const overrideType = getOverrideType(row)
     return (
       overrideType === GENERATOR_TYPE_DEPENDENCY_FIELD ||
-      (overrideType === null && normalizeGeneratorType(row.generator_type) === GENERATOR_TYPE_DEPENDENCY_FIELD)
+      (overrideType === null &&
+        normalizeGeneratorType(row.generator_type) === GENERATOR_TYPE_DEPENDENCY_FIELD)
     )
   }
 

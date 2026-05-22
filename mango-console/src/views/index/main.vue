@@ -3,11 +3,11 @@
     <div class="left">
       <div class="item">
         <Title title="用例占比" />
-        <PieChart :chartData="data.caseSum" />
+        <PieChart :chartData="data.caseSum" :loading="data.caseSumLoading" />
       </div>
       <div class="item">
         <Title title="执行占比" />
-        <PieChart :chartData="data.reportSum" />
+        <PieChart :chartData="data.reportSum" :loading="data.reportSumLoading" />
       </div>
       <div class="item">
         <Title title="自动化测试统计" />
@@ -72,23 +72,33 @@
   const data: any = reactive({
     caseSum: [],
     reportSum: [],
+    caseSumLoading: false,
+    reportSumLoading: false,
     onlineUsers: 0,
   })
 
   function caseSum() {
+    data.caseSumLoading = true
     getSystemCaseSum()
       .then((res) => {
         data.caseSum = res.data
       })
       .catch(console.log)
+      .finally(() => {
+        data.caseSumLoading = false
+      })
   }
 
   function getAllReportSum() {
+    data.reportSumLoading = true
     getSystemCaseRunSum()
       .then((res) => {
         data.reportSum = res.data
       })
       .catch(console.log)
+      .finally(() => {
+        data.reportSumLoading = false
+      })
   }
 
   onMounted(() => {
@@ -127,13 +137,14 @@
 
   :deep(.arco-card) {
     border-radius: 8px;
-    border: none;
-    box-shadow: 0px 8px 16px 0px rgba(162, 173, 200, 0.2);
+    border: 1px solid var(--m-border);
+    background: var(--m-surface);
+    box-shadow: var(--m-shadow);
     transition: box-shadow 0.3s ease;
   }
 
   :deep(.arco-card:hover) {
-    box-shadow: 0px 12px 20px 0px rgba(162, 173, 200, 0.3);
+    box-shadow: var(--m-shadow);
   }
 
   :deep(.arco-card-body) {
@@ -144,10 +155,6 @@
   :deep(.arco-modal) {
     .arco-modal-body {
       padding: 20px;
-    }
-
-    .arco-modal-footer {
-      text-align: center;
     }
   }
 
@@ -166,8 +173,9 @@
       flex-direction: column;
       position: relative;
       border-radius: 8px;
-      background: var(--color-bg-2);
-      box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
+      border: 1px solid var(--m-border);
+      background: var(--m-surface);
+      box-shadow: var(--m-shadow);
       padding: 10px 12px 12px;
       transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
     }
@@ -193,9 +201,10 @@
         flex-direction: column;
         min-height: 0;
         position: relative;
-        background: var(--color-bg-2);
+        border: 1px solid var(--m-border);
+        background: var(--m-surface);
         transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
-        box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
+        box-shadow: var(--m-shadow);
         padding: 12px;
 
         div:nth-last-child(1) {
@@ -277,18 +286,18 @@
 
   :deep(.arco-btn:hover) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--m-shadow);
   }
 
   // 描述列表样式优化
   :deep(.arco-descriptions) {
     .arco-descriptions-item-label {
       font-weight: 500;
-      color: #666;
+      color: var(--m-muted);
     }
 
     .arco-descriptions-item-value {
-      color: #333;
+      color: var(--m-text-2);
     }
   }
 

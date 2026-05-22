@@ -1,13 +1,10 @@
 <template>
-  <a-card
-    :body-style="{ padding: 0, width: '100%' }"
-    :bordered="isBordered"
-    class="table-footer-container"
-  >
-    <div :class="[innerPosition]" class="flex items-center">
+  <a-card :bordered="isBordered" class="mango-table-mango-footer-container">
+    <div :class="[innerPosition]" class="mango-table-footer__inner">
       <a-pagination
         v-model:current="pagination.page"
         v-model:pageSize="pagination.pageSize"
+        :page-size-options="pagination.pageSizes"
         :show-page-size="pagination.showSizePicker"
         :total="pagination?.pageCount || 0"
         show-total
@@ -17,14 +14,14 @@
       />
       <a-button
         v-if="showRefresh"
+        class="mango-table-footer__refresh"
         shape="circle"
         size="small"
-        style="margin-left: 10px"
         type="primary"
         @click="refresh"
       >
         <template #icon>
-          <IconLoop style="font-size: 14px" />
+          <IconLoop class="mango-table-footer__refresh-icon" />
         </template>
       </a-button>
     </div>
@@ -88,18 +85,43 @@
 </script>
 <style lang="less" scoped>
   :deep(.arco-pagination-item-active) {
-    color: var(--color-white);
+    color: var(--m-on-primary);
   }
 
   :deep(.arco-pagination-item-active:hover) {
-    color: var(--color-white);
+    color: var(--m-on-primary);
   }
 
-  .table-footer-container {
+  .mango-table-mango-footer-container {
     height: 45px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    color: var(--m-text-2);
+    background: var(--m-surface);
+    border-top: 1px solid var(--m-border);
+    box-shadow: none;
+  }
+
+  :deep(.arco-card-body) {
+    width: 100%;
+    padding: 0;
+  }
+
+  .mango-table-footer__inner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mango-table-footer__refresh {
+    flex: none;
+    margin-left: 10px;
+  }
+
+  .mango-table-footer__refresh-icon {
+    font-size: 14px;
   }
 </style>

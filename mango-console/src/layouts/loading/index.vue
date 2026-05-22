@@ -1,5 +1,5 @@
 <template>
-  <div class="loading-wrapper">
+  <div class="mango-loading-wrapper">
     <a-spin />
   </div>
 </template>
@@ -13,7 +13,7 @@
 </script>
 
 <style lang="less" scoped>
-  .loading-wrapper {
+  .mango-loading-wrapper {
     min-height: 50vh;
     display: flex;
     justify-content: center;

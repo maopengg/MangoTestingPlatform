@@ -9,7 +9,7 @@ export const columns: any = reactive([
     dataIndex: 'page_step_name',
     ellipsis: true,
     tooltip: true,
-    width: 300,
+    width: 240,
   },
   {
     title: '切换URL',
@@ -26,7 +26,7 @@ export const columns: any = reactive([
   {
     title: '状态',
     dataIndex: 'status',
-    width: 70,
+    width: 80,
   },
   {
     title: '失败提示',
@@ -34,12 +34,14 @@ export const columns: any = reactive([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+    width: 360,
   },
   {
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 140,
+    width: 170,
+    fixed: 'right',
   },
 ])
 

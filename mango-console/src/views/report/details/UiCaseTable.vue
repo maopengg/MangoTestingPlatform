@@ -2,6 +2,7 @@
   <a-table
     :bordered="false"
     :data="flatRows"
+    :loading="loading"
     :pagination="false"
     :scroll="{ x: 1520 }"
     :span-method="spanMethod"
@@ -24,11 +25,18 @@
           <span class="case-count">共 {{ record.__caseCount }} 条</span>
         </template>
         <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-          <a-tag :color="statusColor(record.status)" size="small">{{ statusText(record.status) }}</a-tag>
+          <a-tag :color="statusColor(record.status)" size="small">{{
+            statusText(record.status)
+          }}</a-tag>
         </template>
         <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
           <div class="action-cell">
-            <a-button v-if="!record.children" type="text" size="mini" @click="$emit('show-details', record)">
+            <a-button
+              v-if="!record.children"
+              type="text"
+              size="mini"
+              @click="$emit('show-details', record)"
+            >
               查看详细报告
             </a-button>
             <span v-else></span>
@@ -56,6 +64,7 @@
     cases: any[]
     enumStore: any
     canRetry?: boolean
+    loading?: boolean
   }>()
 
   defineEmits<{
@@ -65,7 +74,8 @@
 
   const flatRows = computed(() =>
     (props.cases || []).flatMap((item) => {
-      const rows = Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+      const rows =
+        Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
       const rowSpan = rows.length
       const caseId = item?.case_id || item?.id || '-'
       const caseName = item?.case_name || item?.name || '未命名用例'

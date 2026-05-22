@@ -68,6 +68,16 @@ class DataFactoryCleanupStrategyEnum(BaseEnum):
         return {1: "执行结束", 2: "手动清理", 3: "不清理"}
 
 
+class DataFactoryTemplateConfigStatusEnum(BaseEnum):
+    """状态模板配置状态"""
+    INCOMPLETE = 0
+    READY = 1
+
+    @classmethod
+    def obj(cls):
+        return {0: "待完善", 1: "已就绪"}
+
+
 class DataFactoryExecutionSourceEnum(BaseEnum):
     """执行来源"""
     TEMPLATE_DEBUG = 1

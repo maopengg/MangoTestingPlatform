@@ -14,6 +14,7 @@ from src.enums.data_factory_enum import (
     DataFactoryExecutionStatusEnum,
     DataFactoryGeneratorTypeEnum,
     DataFactoryOperationTypeEnum,
+    DataFactoryTemplateConfigStatusEnum,
 )
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import ToolsError
@@ -121,7 +122,7 @@ class DataFactoryEntity(models.Model):
 
     def delete(self, *args, **kwargs):
         if DataFactoryTemplate.objects.filter(entity=self).exists():
-            raise ToolsError(300, "状态模板-有关联数据，请先删除绑定的数据后再删除！")
+            raise ToolsError(300, "场景模板-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
     def __str__(self):
@@ -162,7 +163,7 @@ class DataFactoryField(models.Model):
 
 
 class DataFactoryTemplate(models.Model):
-    """数据工厂状态模板"""
+    """数据工厂场景模板"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
@@ -179,6 +180,12 @@ class DataFactoryTemplate(models.Model):
         default=DataFactoryCleanupStrategyEnum.MANUAL.value,
     )
     is_default = models.BooleanField(verbose_name="是否默认模板", default=False, db_index=True)
+    config_status = models.SmallIntegerField(
+        verbose_name="配置状态",
+        choices=DataFactoryTemplateConfigStatusEnum.choices(),
+        default=DataFactoryTemplateConfigStatusEnum.INCOMPLETE.value,
+        db_index=True,
+    )
     status = models.SmallIntegerField(
         verbose_name="状态",
         choices=StatusEnum.choices(),
@@ -193,6 +200,35 @@ class DataFactoryTemplate(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class DataFactoryTemplateItem(models.Model):
+    """数据工厂场景模板关联项"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+
+    template = models.ForeignKey(
+        to=DataFactoryTemplate,
+        to_field="id",
+        related_name="items",
+        on_delete=models.CASCADE,
+    )
+    child_template = models.ForeignKey(
+        to=DataFactoryTemplate,
+        to_field="id",
+        related_name="used_in_template_items",
+        on_delete=models.PROTECT,
+    )
+    name = models.CharField(verbose_name="关联名称", max_length=64)
+    sort = models.IntegerField(verbose_name="执行顺序", default=0)
+    field_overrides = models.JSONField(verbose_name="字段覆盖", default=dict)
+
+    class Meta:
+        db_table = 'data_factory_template_item'
+        ordering = ['sort', 'id']
+
+    def __str__(self):
+        return f"{self.template_id}:{self.name or self.child_template_id}"
 
 
 class DataFactoryCaseConfig(models.Model):
@@ -282,6 +318,9 @@ class DataFactoryExecutionItem(models.Model):
     alias = models.CharField(verbose_name="上下文别名", max_length=64)
     primary_value = models.CharField(verbose_name="主键值", max_length=256, null=True, blank=True)
     data = models.JSONField(verbose_name="创建数据", default=dict)
+    insert_data = models.JSONField(verbose_name="插入数据", default=dict)
+    insert_sql = models.TextField(verbose_name="插入SQL", null=True, blank=True)
+    insert_sql_params = models.JSONField(verbose_name="插入SQL参数", default=dict)
 
     cleanup_strategy = models.SmallIntegerField(
         verbose_name="清理策略",
@@ -296,6 +335,8 @@ class DataFactoryExecutionItem(models.Model):
         db_index=True,
     )
     cleanup_error = models.TextField(verbose_name="清理错误", null=True, blank=True)
+    cleanup_sql = models.TextField(verbose_name="清理SQL", null=True, blank=True)
+    cleanup_sql_params = models.JSONField(verbose_name="清理SQL参数", default=dict)
 
     class Meta:
         db_table = 'data_factory_execution_item'

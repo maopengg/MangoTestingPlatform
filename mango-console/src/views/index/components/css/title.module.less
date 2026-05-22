@@ -1,5 +1,4 @@
 .title-container {
-  @text-color: #000;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -7,7 +6,7 @@
   padding: 10px;
 
   .title {
-    color: #333; /* 使用更深的颜色确保可见性 */
+    color: var(--m-text);
     font-size: 16px;
     font-weight: bold;
     vertical-align: middle;
@@ -16,7 +15,7 @@
 
   .line {
     display: inline-block;
-    background-color: rgb(var(--primary-1));
+    background-color: var(--m-primary);
     margin-right: 10px;
     width: 3px;
     height: 16px;

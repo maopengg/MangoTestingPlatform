@@ -6,7 +6,6 @@ import { toHump } from '../utils'
 import components from '../components'
 
 import ArcoVueIcon from '@arco-design/web-vue/es/icon'
-import '@arco-design/web-vue/dist/arco.css'
 import ArcoVue from '@arco-design/web-vue/es/arco-vue'
 
 function getComponentName(key: string) {

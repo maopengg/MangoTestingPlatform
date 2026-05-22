@@ -1,12 +1,12 @@
-.absolute() {
+.mango-absolute() {
   position: absolute;
   content: '';
   background-color: rgb(24, 144, 255);
   transition: transform 0.5s ease 0s;
 }
 
-.transfrom1 {
-  .absolute();
+.mango-transform-1 {
+  .mango-absolute();
   top: 0px;
   bottom: 0px;
   width: 2px;
@@ -14,13 +14,13 @@
   transform-origin: top;
 }
 
-.transfrom1Hover {
+.mango-transform-1-hover {
   transform: scaleY(1);
   transition: transform 0.5s ease 0s;
 }
 
-.transfrom2 {
-  .absolute();
+.mango-transform-2 {
+  .mango-absolute();
   left: 0px;
   right: 0px;
   height: 2px;
@@ -28,59 +28,59 @@
   transform-origin: left;
 }
 
-.transfrom2Hover {
+.mango-transform-2-hover {
   transform: scaleX(1);
   transition: transform 0.5s ease 0s;
 }
 
-.pillars-1::before {
+.mango-pillars-1::before {
   left: -8px;
-  .transfrom1();
+  .mango-transform-1();
 }
 
-.pillars-1:hover::after,
-.pillars-1:hover::before {
-  .transfrom1Hover();
+.mango-pillars-1:hover::after,
+.mango-pillars-1:hover::before {
+  .mango-transform-1-hover();
 }
 
-.pillars-1::after {
+.mango-pillars-1::after {
   right: -8px;
-  .transfrom1();
+  .mango-transform-1();
 }
 
-.pillars-2::before {
+.mango-pillars-2::before {
   top: -8px;
-  .transfrom2();
+  .mango-transform-2();
 }
 
-.pillars-2:hover::after,
-.pillars-2:hover::before {
-  .transfrom2Hover();
+.mango-pillars-2:hover::after,
+.mango-pillars-2:hover::before {
+  .mango-transform-2-hover();
 }
 
-.pillars-2::after {
+.mango-pillars-2::after {
   bottom: -8px;
-  .transfrom2();
+  .mango-transform-2();
 }
 
-.pillars-3::before {
+.mango-pillars-3::before {
   left: -8px;
-  .transfrom1();
+  .mango-transform-1();
 }
 
-.pillars-3:hover::after,
-.pillars-3:hover::before {
-  .transfrom1Hover();
+.mango-pillars-3:hover::after,
+.mango-pillars-3:hover::before {
+  .mango-transform-1-hover();
 }
 
-.pillars-3::after {
+.mango-pillars-3::after {
   right: -8px;
-  .transfrom1();
+  .mango-transform-1();
   transform-origin: bottom;
 }
 
-.strike-through::before {
-  .absolute();
+.mango-strike-through::before {
+  .mango-absolute();
   height: 2px;
   top: 50%;
   left: 0;
@@ -89,13 +89,13 @@
   transform-origin: left;
 }
 
-.strike-through:hover::before {
+.mango-strike-through:hover::before {
   transform: scaleX(1);
   transition: transform 0.5s ease 0s;
 }
 
-.under-line-1::before {
-  .absolute();
+.mango-under-line-1::before {
+  .mango-absolute();
   height: 2px;
   left: 0;
   right: 0;
@@ -104,8 +104,8 @@
   transform-origin: left;
 }
 
-.under-line-2::before {
-  .absolute();
+.mango-under-line-2::before {
+  .mango-absolute();
   height: 2px;
   left: 0;
   right: 0;
@@ -114,13 +114,13 @@
   transform-origin: left;
 }
 
-.under-line-2:hover::before {
+.mango-under-line-2:hover::before {
   transform: scaleX(0);
   transition: transform 0.5s ease 0s;
 }
 
-.under-line-3::before {
-  .absolute();
+.mango-under-line-3::before {
+  .mango-absolute();
   height: 2px;
   left: 0;
   right: 0;
@@ -129,14 +129,14 @@
   transform-origin: center;
 }
 
-.under-line-1:hover::before,
-.under-line-3:hover::before {
+.mango-under-line-1:hover::before,
+.mango-under-line-3:hover::before {
   transform: scaleX(1);
   transition: transform 0.5s ease 0s;
 }
 
-.over-line-1::before {
-  .absolute();
+.mango-over-line-1::before {
+  .mango-absolute();
   height: 2px;
   left: 0;
   right: 0;
@@ -145,13 +145,13 @@
   transform-origin: center;
 }
 
-.over-line-1:hover::before {
+.mango-over-line-1:hover::before {
   transform: scaleX(1);
   transition: transform 0.5s ease 0s;
 }
 
-.over-line-2::before {
-  .absolute();
+.mango-over-line-2::before {
+  .mango-absolute();
   height: 2px;
   left: 0;
   right: 0;
@@ -160,13 +160,13 @@
   transform-origin: left;
 }
 
-.over-line-2:hover::before {
+.mango-over-line-2:hover::before {
   transform: scaleX(1);
   transition: transform 0.5s ease 0s;
 }
 
-.highlight-1::before {
-  .absolute();
+.mango-highlight-1::before {
+  .mango-absolute();
   left: 0;
   right: 0;
   top: 0;
@@ -176,14 +176,14 @@
   z-index: -1;
 }
 
-.highlight-1:hover::before {
+.mango-highlight-1:hover::before {
   transform: scaleX(1);
   transition: transform 0.5s ease 0s;
   transform-origin: left;
 }
 
-.highlight-2::before {
-  .absolute();
+.mango-highlight-2::before {
+  .mango-absolute();
   left: 0;
   right: 0;
   top: 0;
@@ -193,12 +193,12 @@
   z-index: -1;
 }
 
-.highlight-2:hover::before {
+.mango-highlight-2:hover::before {
   transform: scaleY(1);
   transition: transform 0.5s ease 0s;
 }
 
-.bubble-transform {
+.mango-bubble-transform {
   position: absolute;
   z-index: -1;
   width: 1em;
@@ -211,34 +211,34 @@
   transform-origin: center;
 }
 
-.bubble-1::before {
-  .bubble-transform();
+.mango-bubble-1::before {
+  .mango-bubble-transform();
   top: 100%;
   left: 100%;
 }
 
-.bubble-2::before {
-  .bubble-transform();
+.mango-bubble-2::before {
+  .mango-bubble-transform();
   top: 100%;
   right: 100%;
 }
 
-.bubble-3::before {
-  .bubble-transform();
+.mango-bubble-3::before {
+  .mango-bubble-transform();
   right: 100%;
   bottom: 100%;
 }
 
-.bubble-4::before {
-  .bubble-transform();
+.mango-bubble-4::before {
+  .mango-bubble-transform();
   left: 100%;
   bottom: 100%;
 }
 
-.bubble-4:hover::before,
-.bubble-3:hover::before,
-.bubble-2:hover::before,
-.bubble-1:hover::before {
+.mango-bubble-4:hover::before,
+.mango-bubble-3:hover::before,
+.mango-bubble-2:hover::before,
+.mango-bubble-1:hover::before {
   transition: transform 0.45s ease-in-out;
   transform: translate3d(-50%, -50%, 0) scale3d(15, 15, 15);
   transform-origin: center;

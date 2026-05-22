@@ -28,9 +28,9 @@ export const templateConditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'name',
-    label: '模板名称',
+    label: '场景名称',
     type: 'input',
-    placeholder: '请输入模板名称',
+    placeholder: '请输入场景名称',
     value: ref(''),
   },
   {
@@ -98,9 +98,15 @@ export const templateTableColumns = useTableColumn([
     width: 120,
   },
   {
-    title: '默认模板',
+    title: '默认场景',
     key: 'is_default',
     dataIndex: 'is_default',
+    width: 100,
+  },
+  {
+    title: '配置状态',
+    key: 'config_status',
+    dataIndex: 'config_status',
     width: 100,
   },
   {
@@ -114,6 +120,6 @@ export const templateTableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 210,
+    width: 170,
   },
 ])

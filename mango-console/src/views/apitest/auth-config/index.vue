@@ -20,7 +20,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -33,7 +32,6 @@
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
-                  style="width: 150px"
                   value-key="key"
                   @change="doRefresh"
                 />
@@ -48,13 +46,15 @@
       <a-tabs>
         <template #extra>
           <div>
-          <a-space>
-            <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-            <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
-          </a-space></div>
+            <a-space>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
+              <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
+            </a-space></div
+          >
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -112,47 +112,15 @@
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onPreview(record)"
-                  >缓存
-                </a-button>
-                <a-button size="mini" type="text" class="custom-mini-btn" @click="onRefresh(record)"
-                  >刷新
-                </a-button>
-                <a-dropdown trigger="hover">
-                  <a-button size="mini" type="text">···</a-button>
-                  <template #content>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onUpdate(record)"
-                        >编辑
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onClear(record)"
-                        >清空
-                      </a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button
-                        size="mini"
-                        status="danger"
-                        type="text"
-                        class="custom-mini-btn"
-                        @click="onDelete(record)"
-                        >删除
-                      </a-button>
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '缓存', onClick: () => onPreview(record) },
+                  { label: '刷新', onClick: () => onRefresh(record) },
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '清空', onClick: () => onClear(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -169,7 +137,7 @@
         <a-form-item
           v-for="item of visibleFormItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -259,8 +227,12 @@
     <div class="cache-drawer-body">
       <a-descriptions v-if="cacheModal.data" :column="1" bordered>
         <a-descriptions-item label="授权名称">{{ cacheModal.data.name }}</a-descriptions-item>
-        <a-descriptions-item label="过期时间">{{ cacheModal.data.expires_at || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="剩余分钟">{{ cacheModal.data.remaining_minutes ?? '-' }}</a-descriptions-item>
+        <a-descriptions-item label="过期时间">{{
+          cacheModal.data.expires_at || '-'
+        }}</a-descriptions-item>
+        <a-descriptions-item label="剩余分钟">{{
+          cacheModal.data.remaining_minutes ?? '-'
+        }}</a-descriptions-item>
         <a-descriptions-item label="最近刷新时间">
           {{ cacheModal.data.last_refresh_time || '-' }}
         </a-descriptions-item>
@@ -286,8 +258,8 @@
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
-  import CodeEditor from '@/components/CodeEditor.vue'
-  import JsonDisplay from '@/components/JsonDisplay.vue'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import { getApiInfo } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
   import { conditionItems, formItems, tableColumns } from './config'
@@ -500,8 +472,8 @@
       content: '是否要删除此授权配置？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteApiAuthConfig(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteApiAuthConfig(batch ? selectedRowKeys.value : record.id)
           .then((res) => Message.success(res.msg))
           .catch(console.log)
           .finally(() => {
@@ -614,7 +586,7 @@
 
   .cache-json-title {
     margin-bottom: 8px;
-    color: var(--color-text-1);
+    color: var(--m-text);
     font-weight: 500;
   }
 </style>

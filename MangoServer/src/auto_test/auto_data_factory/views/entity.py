@@ -15,6 +15,7 @@ from src.auto_test.auto_data_factory.service.discover import DataFactoryDiscover
 from src.auto_test.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasSerializerC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializersC
+from src.enums.data_factory_enum import DataFactoryOperationTypeEnum
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -32,6 +33,7 @@ class DataFactoryEntitySerializer(serializers.ModelSerializer):
         validators = []
 
     def validate(self, attrs):
+        attrs['create_type'] = DataFactoryOperationTypeEnum.SQL.value
         datasource_alias = attrs.get(
             'datasource_alias',
             self.instance.datasource_alias if self.instance else None

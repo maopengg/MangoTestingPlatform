@@ -4,22 +4,19 @@
       <div class="icon-container">
         <a-input-search
           allowClear
+          class="icon-search"
           placeholder="搜索图标名称"
           press-enter
           search-button
-          style="width: 100%"
           @search="onSearch"
         />
         <div class="mt-4"></div>
         <div class="icon-wrapper">
           <a-row :wrap="true">
             <a-col v-for="item of iconNames" :key="item" :span="4">
-              <div
-                class="flex justify-center items-center flex-col icon-item"
-                @click="onSelectItem(item)"
-              >
-                <component :is="item" style="font-size: 26px" />
-                <div class="label-name">{{ item }}</div>
+              <div class="icon-item" @click="onSelectItem(item)">
+                <component :is="item" class="icon-preview" />
+                <div class="mango-label-name">{{ item }}</div>
               </div>
             </a-col>
           </a-row>
@@ -125,38 +122,54 @@
     width: 360px;
     overflow: hidden;
     text-align: center;
+    color: var(--m-text);
+  }
 
-    .icon-wrapper {
-      min-height: 300px;
+  .icon-search {
+    width: 100%;
+  }
 
-      .icon-item {
-        height: 60px;
+  .icon-wrapper {
+    min-height: 300px;
+
+    .icon-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 60px;
+      overflow: hidden;
+      text-align: center;
+      border-radius: var(--m-radius-md);
+      transition: background-color 0.16s ease, color 0.16s ease;
+
+      .mango-label-name {
+        width: 70%;
+        margin: 5px auto 0;
+        font-size: 12px;
+        color: var(--m-muted);
+        text-overflow: ellipsis;
         overflow: hidden;
-        text-align: center;
+        word-wrap: normal;
+      }
 
-        .label-name {
-          width: 70%;
-          margin: 0 auto;
-          font-size: 12px;
-          color: #888;
-          margin-top: 5px;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          word-wrap: normal;
-        }
+      .arco-icon {
+        transform: scale(1);
+        transition: transform 0.2s linear;
+      }
+
+      .icon-preview {
+        color: var(--m-text-2);
+        font-size: 26px;
+      }
+
+      &:hover {
+        cursor: pointer;
+        background: var(--m-table-row-hover);
 
         .arco-icon {
-          transform: scale(1);
+          transform: scale(1.5);
           transition: transform 0.2s linear;
-        }
-
-        &:hover {
-          cursor: pointer;
-
-          .arco-icon {
-            transform: scale(1.5);
-            transition: transform 0.2s linear;
-          }
         }
       }
     }

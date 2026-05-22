@@ -1,14 +1,5 @@
 <template>
-  <a-list
-    :bordered="false"
-    :style="{
-      width: '350px',
-      height: '400px',
-      overflowY: 'auto',
-    }"
-    class="custom-scrollbar"
-    size="small"
-  >
+  <a-list :bordered="false" class="mango-message-content-list mango-custom-scrollbar" size="small">
     <template #header>
       <a-space>
         <a-button
@@ -27,12 +18,12 @@
       <a-list-item-meta :description="item.description" :title="item.title">
         <template #avatar>
           <template v-if="item.status === 1">
-            <a-avatar :style="{ backgroundColor: '#2ECC71' }">
+            <a-avatar class="mango-message-content-avatar mango-message-content-avatar--success">
               <icon-check />
             </a-avatar>
           </template>
           <template v-else>
-            <a-avatar :style="{ backgroundColor: '#E74C3C' }">
+            <a-avatar class="mango-message-content-avatar mango-message-content-avatar--danger">
               <icon-close />
             </a-avatar>
           </template>
@@ -53,18 +44,58 @@
 </script>
 
 <style scoped>
-  /* 强制穿透样式 */
+  .mango-message-content-list {
+    width: 350px;
+    height: 400px;
+    color: var(--m-text);
+    background: var(--m-surface);
+  }
+
   :deep(.arco-list) {
     height: 400px !important;
     overflow-y: auto !important;
   }
-  /* 滚动条样式 */
-  .custom-scrollbar::-webkit-scrollbar {
+
+  :deep(.arco-list-header) {
+    background: var(--m-surface-2);
+    border-bottom-color: var(--m-border);
+  }
+
+  :deep(.arco-list-item) {
+    border-bottom-color: var(--m-border-soft);
+    transition: background-color 0.16s ease;
+  }
+
+  :deep(.arco-list-item:hover) {
+    background: var(--m-table-row-hover);
+  }
+
+  :deep(.arco-list-item-meta-title) {
+    color: var(--m-text);
+  }
+
+  :deep(.arco-list-item-meta-description) {
+    color: var(--m-muted);
+  }
+
+  .mango-message-content-avatar {
+    color: var(--m-on-primary);
+  }
+
+  .mango-message-content-avatar--success {
+    background: var(--m-success);
+  }
+
+  .mango-message-content-avatar--danger {
+    background: var(--m-danger);
+  }
+
+  .mango-custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+  .mango-custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--m-scrollbar-thumb);
     border-radius: 4px;
   }
 </style>

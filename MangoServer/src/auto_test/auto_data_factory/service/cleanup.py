@@ -14,6 +14,7 @@ from src.enums.data_factory_enum import (
 from src.exceptions import ToolsError
 
 from .datasource import DataFactoryDatasource
+from .type_cast import DataFactoryTypeCast
 
 
 class DataFactoryCleanup:
@@ -101,7 +102,14 @@ class DataFactoryCleanup:
         item.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
         item.cleanup_time = timezone.now()
         item.cleanup_error = None
-        item.save()
+        item.save(update_fields=[
+            'cleanup_status',
+            'cleanup_time',
+            'cleanup_error',
+            'cleanup_sql',
+            'cleanup_sql_params',
+            'update_time',
+        ])
 
     @classmethod
     def delete_by_primary_key(cls, item: DataFactoryExecutionItem):
@@ -119,12 +127,26 @@ class DataFactoryCleanup:
             table = Table(entity.table_name, metadata, autoload_with=engine)
             primary_column = table.c[entity.primary_key]
             primary_value = item.data.get(entity.primary_key, item.primary_value)
+            statement = delete(table).where(primary_column == primary_value)
+            cls.record_cleanup_sql(item, statement, engine)
             with engine.begin() as connection:
-                connection.execute(delete(table).where(primary_column == primary_value))
+                connection.execute(statement)
         except Exception as error:
             raise ToolsError(300, f"SQL清理数据失败：{error}") from error
         finally:
             engine.dispose()
+
+    @staticmethod
+    def record_cleanup_sql(item: DataFactoryExecutionItem, statement, engine):
+        cleanup_sql, cleanup_sql_params = DataFactoryCleanup.compile_cleanup_sql(statement, engine.dialect)
+        item.cleanup_sql = cleanup_sql
+        item.cleanup_sql_params = cleanup_sql_params
+        item.save(update_fields=['cleanup_sql', 'cleanup_sql_params', 'update_time'])
+
+    @staticmethod
+    def compile_cleanup_sql(statement, dialect):
+        compiled = statement.compile(dialect=dialect)
+        return str(compiled), DataFactoryTypeCast.to_jsonable(dict(compiled.params or {}))
 
     @staticmethod
     def get_item_entity(item: DataFactoryExecutionItem):
@@ -137,10 +159,10 @@ class DataFactoryCleanup:
         item.cleanup_status = DataFactoryCleanupStatusEnum.FAIL.value
         item.cleanup_error = error
         item.cleanup_time = timezone.now()
-        item.save()
+        item.save(update_fields=['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
 
     @staticmethod
     def mark_skipped(item: DataFactoryExecutionItem):
         item.cleanup_status = DataFactoryCleanupStatusEnum.SKIPPED.value
         item.cleanup_time = timezone.now()
-        item.save()
+        item.save(update_fields=['cleanup_status', 'cleanup_time', 'update_time'])

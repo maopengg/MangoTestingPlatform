@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="project.data"
@@ -54,7 +53,8 @@
           </a-space>
         </template>
         <a-table
-          style="width: 100%"
+          :scroll="{ x: 1100 }"
+          class="full-width"
           :bordered="false"
           :columns="tableColumns"
           :data="table.dataList"
@@ -84,24 +84,13 @@
                 }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button
-                  size="mini"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="onDownload(record)"
-                  >下载
-                </a-button>
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑
-                </a-button>
-                <a-button
-                  size="mini"
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
+                <MangoTableActions
+                  :actions="[
+                    { label: '下载', onClick: () => onDownload(record) },
+                    { label: '编辑', onClick: () => onUpdate(record) },
+                    { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  ]"
+                />
               </template>
             </a-table-column>
           </template>
@@ -116,7 +105,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems"
           :key="item.key"
@@ -137,11 +126,7 @@
       </a-form>
     </template>
   </ModalDialog>
-  <a-modal
-    v-model:visible="uploadModalVisible"
-    title="上传文件"
-    @cancel="onCancelUpload"
-  >
+  <a-modal v-model:visible="uploadModalVisible" title="上传文件" @cancel="onCancelUpload">
     <a-form :model="uploadForm">
       <a-form-item label="文件" required>
         <a-upload
@@ -247,8 +232,8 @@
       content: '是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUserFile(record.id)
+      onBeforeOk: () => {
+        return deleteUserFile(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -367,4 +352,8 @@
     })
   })
 </script>
-<style></style>
+<style scoped>
+  .full-width {
+    width: 100%;
+  }
+</style>

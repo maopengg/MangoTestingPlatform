@@ -13,8 +13,13 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    fixed: 'left',
     width: 250,
+  },
+  {
+    title: '等待时间(秒)',
+    key: 'sleep',
+    dataIndex: 'sleep',
+    width: 120,
   },
   {
     title: '类型-1',
@@ -86,18 +91,11 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '等待时间(秒)',
-    key: 'sleep',
-    dataIndex: 'sleep',
-    fixed: 'right',
-    width: 120,
-  },
-  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 190,
+    width: 170,
   },
 ])
 

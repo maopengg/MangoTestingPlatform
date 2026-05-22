@@ -35,9 +35,7 @@
           <template v-else-if="(item.key as any) === 'test_env'" #cell="{ record }">
             <a-tag :color="enumStore.colors[record.test_env]" size="small">
               {{
-                record.test_env !== null
-                  ? enumStore.environment_type[record.test_env]?.title
-                  : '-'
+                record.test_env !== null ? enumStore.environment_type[record.test_env]?.title : '-'
               }}
             </a-tag>
           </template>
@@ -143,20 +141,20 @@
 
     :deep(.arco-table-th) {
       height: 34px;
-      background: var(--color-fill-1);
-      color: var(--color-text-2);
+      background: var(--m-table-header-bg);
+      color: var(--m-text-2);
       font-size: 12px;
     }
 
     :deep(.arco-table-td) {
       height: 38px;
-      color: var(--color-text-2);
+      color: var(--m-text-2);
       font-size: 12px;
     }
   }
 
   .task-id {
-    color: rgb(var(--primary-6));
+    color: var(--m-primary);
     font-size: 12px;
     font-weight: 600;
   }

@@ -97,6 +97,14 @@ class DataFactoryCaseConfigRunner:
         self.set_data_factory_cache(f"{cache_name}.__execution_no", result.get("execution_no"))
         for key, value in self.flatten_value(data).items():
             self.set_data_factory_cache(f"{cache_name}.{key}", value)
+        for item in result.get("items") or []:
+            item_name = item.get("name")
+            item_data = item.get("data") or {}
+            if not item_name:
+                continue
+            self.set_data_factory_cache(f"{cache_name}.{item_name}", item_data)
+            for key, value in self.flatten_value(item_data).items():
+                self.set_data_factory_cache(f"{cache_name}.{item_name}.{key}", value)
 
     def set_data_factory_cache(self, key: str, value: Any):
         if hasattr(self.test_data, "set_data_factory_cache"):

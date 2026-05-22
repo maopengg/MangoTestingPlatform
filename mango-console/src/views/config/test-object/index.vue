@@ -15,7 +15,6 @@
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="project.data"
@@ -56,6 +55,7 @@
         </template>
       </a-tabs>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :loading="table.tableLoading.value"
         :data="table.dataList"
@@ -108,26 +108,13 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-space>
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑
-                </a-button>
-                <a-button
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  @click="clickDataBase(record)"
-                  >数据库
-                </a-button>
-                <a-button
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  size="mini"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </a-space>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '数据库', onClick: () => clickDataBase(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -141,7 +128,7 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
           v-for="item of formItems"
           :key="item.key"
@@ -261,8 +248,8 @@
       content: '是否要删除此测试环境？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteUserTestObject(record.id)
+      onBeforeOk: () => {
+        return deleteUserTestObject(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -383,6 +370,7 @@
       path: '/config/test/object/database',
       query: {
         id: record.id,
+        name: record.name,
       },
     })
   }

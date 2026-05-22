@@ -6,27 +6,36 @@
     placement="right"
     title="系统设置"
   >
-    <Scrollbar class="wrapper">
-      <a-divider dashed>主题设置</a-divider>
-      <div class="flex justify-around pb-8">
-        <div v-for="(item, index) of themeList" :key="index" class="example-wrapper">
-          <StyleExample
-            :checked="item.checked"
-            :left-bg="item.leftBg"
-            :right-bottom-bg="item.rightBottomBg"
-            :right-top-bg="item.rightTopBg"
-            :tip-text="item.tipText"
-            @click="themeClick(item)"
-          />
-        </div>
+    <Scrollbar class="mango-setting-wrapper">
+      <a-divider dashed>主题风格</a-divider>
+      <div class="mango-theme-preset-list">
+        <button
+          v-for="item in themePresets"
+          :key="item.id"
+          :class="{ active: appStore.themePreset === item.id }"
+          class="mango-theme-preset-card"
+          type="button"
+          @click="presetClick(item.id)"
+        >
+          <span class="mango-theme-preset-preview">
+            <i :style="{ background: item.tokens['m-layout-sidebar-bg'] }"></i>
+            <em :style="{ background: item.tokens['m-layout-header-bg'] }"></em>
+            <strong :style="{ background: item.tokens['m-primary'] }"></strong>
+          </span>
+          <span class="mango-theme-preset-copy">
+            <b>{{ item.name }}</b>
+            <small>{{ item.description }}</small>
+          </span>
+        </button>
       </div>
+      <div style="height: 20px"></div>
       <a-divider dashed>侧边栏样式</a-divider>
       <div class="flex justify-around pb-8">
         <div
           v-for="(item, index) of sideExampleList"
           :key="index"
           :span="6"
-          class="example-wrapper"
+          class="mango-example-wrapper"
         >
           <StyleExample
             :checked="item.checked"
@@ -39,7 +48,7 @@
       </div>
       <a-divider dashed>布局模式</a-divider>
       <div class="flex justify-around pb-8">
-        <div v-for="(item, index) of layoutExampleList" :key="index" class="example-wrapper">
+        <div v-for="(item, index) of layoutExampleList" :key="index" class="mango-example-wrapper">
           <StyleExample
             :checked="item.checked"
             :class="[item.class || '']"
@@ -51,47 +60,34 @@
           />
         </div>
       </div>
-      <div style="height: 20px"></div>
-      <a-divider dashed>主题颜色</a-divider>
-      <a-row :gutter="[10, 10]">
-        <a-col v-for="(item, index) of primartyColorList" :key="index" :span="4">
-          <div
-            :class="{ circle: item.checked }"
-            :style="{ backgroundColor: item.value }"
-            class="color-wrapper"
-            @click="colorClick(item)"
-          ></div>
-        </a-col>
-      </a-row>
-      <div style="height: 20px"></div>
       <a-divider dashed>菜单设置</a-divider>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span style="width: 100px">菜单宽度</span>
         <a-input-number v-model="menuWidth" :max="400" :min="200" :step="10" size="small" />
       </div>
       <a-divider dashed>页面切换动画</a-divider>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span style="width: 100px">动画效果</span>
         <a-select v-model="appStore.pageAnim" :options="animOptions" @change="onAnimUpdate" />
       </div>
       <a-divider dashed>按钮显示</a-divider>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span>固定顶部导航</span>
         <a-switch v-model="appStore.isFixedNavBar" :disabled="appStore.layoutMode === 'ttb'" />
       </div>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span>搜索</span>
         <a-switch v-model="appStore.actionBar.isShowSearch" />
       </div>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span>消息</span>
         <a-switch v-model="appStore.actionBar.isShowMessage" />
       </div>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span>刷新</span>
         <a-switch v-model="appStore.actionBar.isShowRefresh" />
       </div>
-      <div class="setting-item-wrapper">
+      <div class="mango-setting-item-wrapper">
         <span>全屏</span>
         <a-switch v-model="appStore.actionBar.isShowFullScreen" />
       </div>
@@ -107,7 +103,8 @@
   import { useMenuWidth } from '@/hooks/useMenuWidth'
   import LeftBg from '@/assets/bg_img.webp'
   import useAppConfigStore from '@/store/modules/app-config'
-  import { ThemeMode } from '@/store/types'
+  import { ThemeMode, ThemePresetId } from '@/store/types'
+  import { themePresets } from '@/theme/presets'
 
   export default defineComponent({
     name: 'Setting',
@@ -117,165 +114,55 @@
       const appStore = useAppConfigStore()
       const showContact = ref(false)
       const menuWidth = ref(useMenuWidth())
-      const themeList = reactive([
-        {
-          leftBg: '#ffffff',
-          rightTopBg: '#ffffff',
-          rightBottomBg: '#f5f5f5',
-          checked: false,
-          themeId: 'light',
-          tipText: '明亮',
-        },
-        {
-          leftBg: '#000000',
-          rightTopBg: '#000000',
-          rightBottomBg: '#333333',
-          checked: false,
-          themeId: 'dark',
-          tipText: '暗黑',
-        },
-      ])
       const sideExampleList = reactive([
         {
-          leftBg: '#000000',
-          rightTopBg: '#ffffff',
-          rightBottomBg: '#f5f5f5',
+          leftBg: 'var(--m-layout-sidebar-bg)',
+          rightTopBg: 'var(--m-layout-header-bg)',
+          rightBottomBg: 'var(--m-bg)',
           checked: false,
           themeId: 'dark',
         },
         {
-          leftBg: '#ffffff',
-          rightTopBg: '#ffffff',
-          rightBottomBg: '#f5f5f5',
+          leftBg: 'var(--m-surface)',
+          rightTopBg: 'var(--m-layout-header-bg)',
+          rightBottomBg: 'var(--m-bg)',
           checked: false,
           themeId: 'white',
         },
         {
           leftBg: `url(${LeftBg})`,
-          rightTopBg: '#ffffff',
-          rightBottomBg: '#f5f5f5',
+          rightTopBg: 'var(--m-layout-header-bg)',
+          rightBottomBg: 'var(--m-bg)',
           checked: false,
           themeId: 'image',
         },
       ])
       const layoutExampleList = reactive([
         {
-          leftBg: '#000000',
-          rightTopBg: '#d4d4d4',
-          rightBottomBg: '#d4d4d4',
+          leftBg: 'var(--m-layout-sidebar-bg)',
+          rightTopBg: 'var(--m-layout-header-bg)',
+          rightBottomBg: 'var(--m-bg)',
           checked: true,
           layoutId: 'ltr',
           tipText: '左右',
         },
         {
-          leftBg: '#d4d4d4',
-          rightTopBg: '#ffffff',
-          rightBottomBg: '#d4d4d4',
+          leftBg: 'var(--m-layout-header-bg)',
+          rightTopBg: 'var(--m-layout-header-bg)',
+          rightBottomBg: 'var(--m-bg)',
           checked: false,
           layoutId: 'ttb',
           class: 'extra-class',
           tipText: '上下',
         },
         {
-          leftBg: '#000000',
-          rightTopBg: '#d4d4d4',
-          rightBottomBg: '#d4d4d4',
+          leftBg: 'var(--m-layout-sidebar-bg)',
+          rightTopBg: 'var(--m-layout-header-bg)',
+          rightBottomBg: 'var(--m-bg)',
           checked: false,
           layoutId: 'lcr',
           class: 'extra-class-1',
           tipText: '分栏',
-        },
-      ])
-      const primartyColorList = reactive([
-        {
-          name: 'cyan',
-          value: '#165dff',
-          checked: true,
-        },
-        {
-          name: 'blue',
-          value: '#409eff',
-          checked: false,
-        },
-        {
-          name: 'red',
-          value: '#F5222D',
-          checked: false,
-        },
-        {
-          name: 'purple',
-          value: '#722ED1',
-          checked: false,
-        },
-        {
-          name: 'ee4f12',
-          value: '#ee4f12',
-          checked: false,
-        },
-        {
-          name: '0096c7',
-          value: '#0096c7',
-          checked: false,
-        },
-        {
-          name: 'ff9801',
-          value: '#ff9801',
-          checked: false,
-        },
-        {
-          name: 'ff3d68',
-          value: '#ff3d68',
-          checked: false,
-        },
-        {
-          name: '01c1d4',
-          value: '#01c1d4',
-          checked: false,
-        },
-        {
-          name: '71efa3',
-          value: '#71efa3',
-          checked: false,
-        },
-        {
-          name: '171010',
-          value: '#171010',
-          checked: false,
-        },
-        {
-          name: '78dec7',
-          value: '#78dec7',
-          checked: false,
-        },
-        {
-          name: '1768ac',
-          value: '#1768ac',
-          checked: false,
-        },
-        {
-          name: '1427df',
-          value: '#1427df',
-          checked: false,
-        },
-        {
-          name: 'D022FF',
-          value: '#D022FF',
-          checked: false,
-        },
-        {
-          name: 'BB59F0',
-          value: '#BB59F0',
-          checked: false,
-        },
-        {
-          name: 'B6DAF0',
-          value: '#B6DAF0',
-          checked: false,
-        },
-        {
-          name: '14DAF0',
-          value: '#14DAF0',
-          checked: false,
         },
       ])
       const animOptions = reactive([
@@ -297,32 +184,16 @@
         },
       ])
       onMounted(() => {
-        themeList.forEach((it) => {
-          it.checked = appStore.theme === it.themeId
-        })
         sideExampleList.forEach((it) => {
           it.checked = appStore.sideTheme === it.themeId
         })
         layoutExampleList.forEach((it) => {
           it.checked = appStore.layoutMode === it.layoutId
         })
-        primartyColorList.forEach((it) => {
-          it.checked = appStore.themeColor === it.value
-        })
       })
 
       function openDrawer() {
         opened.value = true
-      }
-
-      function themeClick(item: any) {
-        themeList.forEach((it) => {
-          it.checked = it === item
-        })
-        if (item.themeId === ThemeMode.DARK) {
-          exampleClick(sideExampleList[0])
-        }
-        appStore.changeTheme(item.themeId)
       }
 
       function exampleClick(item: any) {
@@ -343,11 +214,11 @@
         appStore.changeLayoutMode(item.layoutId)
       }
 
-      function colorClick(item: any) {
-        primartyColorList.forEach((it) => {
-          it.checked = it === item
+      function presetClick(presetId: ThemePresetId) {
+        appStore.changeThemePreset(presetId)
+        sideExampleList.forEach((it) => {
+          it.checked = appStore.sideTheme === it.themeId
         })
-        appStore.changePrimaryColor(item.value)
       }
 
       function onShowTabbar(val: boolean) {
@@ -373,17 +244,15 @@
         appInfoDialog,
         showContact,
         opened,
-        themeList,
         sideExampleList,
         layoutExampleList,
-        primartyColorList,
+        themePresets,
         openDrawer,
-        themeClick,
         exampleClick,
         onShowTabbar,
         layoutExampleClick,
         onAnimUpdate,
-        colorClick,
+        presetClick,
         openAppInfo,
         animOptions,
         menuWidth,
@@ -395,7 +264,7 @@
 <style lang="less">
   .dark {
     .el-drawer {
-      background-color: #272727 !important;
+      background-color: var(--m-overlay-bg) !important;
     }
   }
 
@@ -403,18 +272,18 @@
   .dark-side,
   .blue-side {
     .el-drawer {
-      background-color: #ffff !important;
+      background-color: var(--m-overlay-bg) !important;
     }
   }
 </style>
 <style lang="less" scoped>
   @width: 60px;
 
-  :deep(.scrollbar__bar.is-horizontal) {
+  :deep(.mango-scrollbar__bar.mango-is-horizontal) {
     display: none;
   }
 
-  .wrapper {
+  .mango-setting-wrapper {
     margin-top: -16px;
 
     .close-wrapper {
@@ -426,9 +295,96 @@
       width: 20px;
       height: 20px;
       border-radius: 5px;
-      border: 1px solid #c1c1c1;
+      border: 1px solid var(--m-border);
       margin-bottom: 20px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      box-shadow: var(--m-shadow);
+    }
+
+    .mango-theme-preset-list {
+      display: grid;
+      gap: 10px;
+      max-height: 218px;
+      overflow-y: auto;
+      padding: 0 2px;
+      padding-right: 4px;
+      scrollbar-width: thin;
+    }
+
+    .mango-theme-preset-card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 10px;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--m-border);
+      border-radius: 8px;
+      background: var(--m-surface);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .mango-theme-preset-card:hover,
+    .mango-theme-preset-card.active {
+      border-color: var(--m-primary);
+      box-shadow: var(--m-shadow);
+    }
+
+    .mango-theme-preset-card.active {
+      transform: translateY(-1px);
+    }
+
+    .mango-theme-preset-preview {
+      position: relative;
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      width: 58px;
+      height: 42px;
+      overflow: hidden;
+      border: 1px solid var(--m-border);
+      border-radius: 6px;
+      background: var(--m-surface-soft);
+    }
+
+    .mango-theme-preset-preview i,
+    .mango-theme-preset-preview em,
+    .mango-theme-preset-preview strong {
+      display: block;
+      font-style: normal;
+    }
+
+    .mango-theme-preset-preview i {
+      grid-row: span 2;
+    }
+
+    .mango-theme-preset-preview strong {
+      position: absolute;
+      right: 8px;
+      bottom: 7px;
+      width: 20px;
+      height: 6px;
+      border-radius: 999px;
+    }
+
+    .mango-theme-preset-copy {
+      min-width: 0;
+    }
+
+    .mango-theme-preset-copy b {
+      display: block;
+      color: var(--m-text);
+      font-size: 13px;
+      line-height: 18px;
+    }
+
+    .mango-theme-preset-copy small {
+      display: -webkit-box;
+      overflow: hidden;
+      color: var(--m-muted);
+      font-size: 12px;
+      line-height: 18px;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
     .circle::after {
@@ -439,11 +395,11 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: rgb(3, 190, 50);
+      background-color: var(--m-success);
       text-align: center;
     }
 
-    .setting-item-wrapper {
+    .mango-setting-item-wrapper {
       display: flex;
       justify-content: space-between;
       align-items: center;

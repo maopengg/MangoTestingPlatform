@@ -97,6 +97,12 @@ export const entityTableColumns = useTableColumn([
     width: 100,
   },
   {
+    title: '创建方式',
+    key: 'create_type',
+    dataIndex: 'create_type',
+    width: 110,
+  },
+  {
     title: '清理顺序',
     key: 'cleanup_order',
     dataIndex: 'cleanup_order',
@@ -113,7 +119,7 @@ export const entityTableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 190,
+    width: 170,
   },
 ])
 

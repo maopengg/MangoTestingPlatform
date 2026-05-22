@@ -1,27 +1,32 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card :bordered="false" title="项目绑定">
-        <template #extra>
-          <a-space>
-            <a-button size="small" type="primary" @click="clickUpdate">更新项目</a-button>
-            <a-button size="small" type="primary" @click="clickPush">提交项目</a-button>
-          </a-space>
-        </template>
-        <div>
-          <h4>注意项：</h4>
-          <h1> 1. 右上角的**更新项目**是git pull+git clone</h1>
-          <h1> 2. 右上角的**提交项目**是git push，冲突会默认接收远程最新的</h1>
-          <h1>
-            3.
-            现在编辑文件功能，如果多个人同时编辑一个文件，那么会以最后一个人提交的为主，不会合并，所以自己编辑自己的用例~</h1
-          >
+      <section class="mango-section-card pytest-bind-head">
+        <div class="mango-section-title">
+          <div>
+            <h2>项目绑定</h2>
+            <p>同步 Pytest 项目、初始化用例文件并提交代码变更</p>
+          </div>
+          <div class="mango-section-actions">
+            <a-button size="small" type="primary" :loading="updateLoading" @click="clickUpdate"
+              >更新项目</a-button
+            >
+            <a-button size="small" type="primary" :loading="pushLoading" @click="clickPush"
+              >提交项目</a-button
+            >
+          </div>
         </div>
-      </a-card>
+        <div class="mango-soft-panel pytest-bind-notes">
+          <div>更新项目会执行 git pull 或 git clone。</div>
+          <div>提交项目会执行 git push，冲突时默认接收远程最新内容。</div>
+          <div>多人同时编辑同一文件时，以最后提交内容为准，建议各自维护自己的用例文件。</div>
+        </div>
+      </section>
     </template>
 
     <template #default>
       <a-table
+        :scroll="{ x: 1100 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -66,20 +71,13 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑
-              </a-button>
-              <a-button size="mini" type="text" class="custom-mini-btn" @click="onEditFile(record)"
-                >初始化文件
-              </a-button>
-              <a-button
-                size="mini"
-                status="danger"
-                type="text"
-                class="custom-mini-btn"
-                @click="onDelete(record)"
-                >删除
-              </a-button>
+              <MangoTableActions
+                :actions="[
+                  { label: '编辑', onClick: () => onUpdate(record) },
+                  { label: '初始化文件', onClick: () => onEditFile(record) },
+                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                ]"
+              />
             </template>
           </a-table-column>
         </template>
@@ -105,7 +103,7 @@
           </div>
         </template>
         <template #extra-buttons>
-          <a-button type="primary" @click="drawerOk">保存</a-button>
+          <a-button type="primary" :loading="drawerSaving" @click="drawerOk">保存</a-button>
         </template>
       </BaseSidePanel>
     </template>
@@ -119,7 +117,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -182,8 +180,8 @@
     postPytestProductWrite,
     putPytestProduct,
   } from '@/api/pytest/product'
-  import CodeEditor from '@/components/CodeEditor.vue'
-  import BaseSidePanel from '@/components/BaseSidePanel.vue'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -193,6 +191,9 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const enumStore = useEnum()
+  const updateLoading = ref(false)
+  const pushLoading = ref(false)
+  const drawerSaving = ref(false)
 
   const data: any = reactive({
     isAdd: false,
@@ -208,8 +209,8 @@
       content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deletePytestProduct(record.id)
+      onBeforeOk: () => {
+        return deletePytestProduct(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -223,6 +224,8 @@
   }
 
   function clickUpdate() {
+    if (updateLoading.value) return
+    updateLoading.value = true
     Message.loading('项目更新中...')
 
     getPytestUpdate()
@@ -231,15 +234,23 @@
         doRefresh()
       })
       .catch(console.log)
+      .finally(() => {
+        updateLoading.value = false
+      })
   }
 
   function clickPush() {
+    if (pushLoading.value) return
+    pushLoading.value = true
     Message.loading('项目提交中...')
     getPytestPush()
       .then((res) => {
         Message.success(res.msg)
       })
       .catch(console.log)
+      .finally(() => {
+        pushLoading.value = false
+      })
   }
 
   function onDataForm() {
@@ -312,13 +323,18 @@
   }
 
   function drawerOk() {
-    data.drawerVisible = false
+    if (drawerSaving.value) return
+    drawerSaving.value = true
     postPytestProductWrite(data.updateId, data.codeText)
       .then((res) => {
         data.codeText = res.data
         Message.success(res.msg)
+        data.drawerVisible = false
       })
       .catch(console.log)
+      .finally(() => {
+        drawerSaving.value = false
+      })
   }
 
   function onEditFile(record: any) {
@@ -337,3 +353,16 @@
     })
   })
 </script>
+<style lang="less" scoped>
+  .pytest-bind-head {
+    margin-bottom: 4px;
+  }
+
+  .pytest-bind-notes {
+    display: grid;
+    gap: 6px;
+    color: var(--m-text-2);
+    font-size: 13px;
+    line-height: 20px;
+  }
+</style>

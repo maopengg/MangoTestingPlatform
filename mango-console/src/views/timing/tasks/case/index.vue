@@ -1,60 +1,63 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" class="mango-detail-workbench-page">
+    <template #header>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ taskCaseDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护当前定时任务绑定的执行用例和执行顺序</div>
+        </div>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button size="small" type="primary" @click="doAppend">增加用例</a-button>
+          <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
+      </div>
+    </template>
     <template #default>
-      <a-card :bordered="false" :title="'定时任务：' + route.query.name">
-        <template #extra>
-          <a-space>
-            <a-button size="small" type="primary" @click="doAppend">增加用例</a-button>
-            <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
-            <a-button size="small" status="warning" @click="doResetSearch">返回</a-button>
-          </a-space>
+      <a-table
+        :scroll="{ x: 1100 }"
+        :bordered="false"
+        :columns="tableColumns"
+        :data="table.dataList"
+        :draggable="{ type: 'handle', width: 40 }"
+        :loading="table.tableLoading.value"
+        :pagination="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
+        :rowKey="rowKey"
+        @selection-change="onSelectionChange"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of tableColumns"
+            :key="item.key"
+            :align="item.align"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'type'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.type]" size="small"
+                >{{ enumStore.test_case_type[record.type].title }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'case_id'" #cell="{ record }">
+              {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
+              <MangoTableActions
+                :actions="[{ label: '删除', danger: true, onClick: () => onDelete(record) }]"
+              />
+            </template>
+          </a-table-column>
         </template>
-        <a-table
-          :bordered="false"
-          :columns="tableColumns"
-          :data="table.dataList"
-          :draggable="{ type: 'handle', width: 40 }"
-          :loading="table.tableLoading.value"
-          :pagination="false"
-          :row-selection="{ selectedRowKeys, showCheckedAll }"
-          :rowKey="rowKey"
-          @selection-change="onSelectionChange"
-        >
-          <template #columns>
-            <a-table-column
-              v-for="item of tableColumns"
-              :key="item.key"
-              :align="item.align"
-              :data-index="item.key"
-              :fixed="item.fixed"
-              :title="item.title"
-              :width="item.width"
-            >
-              <template v-if="item.key === 'index'" #cell="{ record }">
-                {{ record.id }}
-              </template>
-              <template v-else-if="item.key === 'type'" #cell="{ record }">
-                <a-tag :color="enumStore.colors[record.type]" size="small"
-                  >{{ enumStore.test_case_type[record.type].title }}
-                </a-tag>
-              </template>
-              <template v-else-if="item.key === 'case_id'" #cell="{ record }">
-                {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
-              </template>
-              <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button
-                  size="mini"
-                  status="danger"
-                  type="text"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-card>
+      </a-table>
+    </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
 
@@ -64,7 +67,7 @@
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -122,7 +125,7 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
@@ -142,6 +145,7 @@
   import { getPytestProductName } from '@/api/pytest/product'
   import { useProductModule } from '@/store/modules/project_module'
   import { useProject } from '@/store/modules/get-project'
+  import TableFooter from '@/components/table/TableFooter.vue'
 
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
@@ -153,6 +157,11 @@
   const route = useRoute()
   pagination.pageSize = 1000
   const formModel = ref({})
+  const taskCaseDetailTitle = computed(() => {
+    const id = route.query.id || '-'
+    const name = route.query.name || '-'
+    return `定时任务用例配置 / ${id} / ${name}`
+  })
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const data: any = reactive({
     isAdd: false,
@@ -198,8 +207,8 @@
       content: '是否要删除此定时任务？',
       cancelText: '取消',
       okText: '删除',
-      onOk: () => {
-        deleteSystemTasksRunCase(batch ? selectedRowKeys.value : record.id)
+      onBeforeOk: () => {
+        return deleteSystemTasksRunCase(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })

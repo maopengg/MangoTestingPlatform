@@ -208,6 +208,7 @@ export const tableColumns = useTableColumn([
     key: 'file_path',
     dataIndex: 'file_path',
     align: 'left',
+    width: 360,
     ellipsis: true,
     tooltip: true,
   },
@@ -246,6 +247,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 160,
+    width: 170,
   },
 ])
