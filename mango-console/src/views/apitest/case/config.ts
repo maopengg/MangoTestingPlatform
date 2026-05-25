@@ -271,7 +271,7 @@ export const tableColumns = useTableColumn([
     key: 'scenario_type',
     dataIndex: 'scenario_type',
     align: 'left',
-    width: 90,
+    width: 100,
   },
   {
     title: '优先级',

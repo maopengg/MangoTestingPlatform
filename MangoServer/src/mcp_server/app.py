@@ -9,10 +9,23 @@ from datetime import datetime
 
 MCP_HTTP_PATH = "/mcp"
 MCP_FALLBACK_HTTP_PATH = "/system/mcp"
-DEFAULT_ALLOWED_HOSTS = ["*"]
+DEFAULT_ALLOWED_HOSTS = [
+    "127.0.0.1:*",
+    "localhost:*",
+    "[::1]:*",
+    "43.142.161.61:8000",
+    "43.142.161.61:*",
+    "qfei-auto-platform-dev.internal.qtech.cn",
+    "qfei-auto-platform-test.internal.qtech.cn",
+]
+
 DEFAULT_ALLOWED_ORIGINS = [
-    "http://*",
-    "https://*",
+    "http://127.0.0.1:*",
+    "http://localhost:*",
+    "http://[::1]:*",
+    "http://43.142.161.61:8000",
+    "https://qfei-auto-platform-dev.internal.qtech.cn",
+    "https://qfei-auto-platform-test.internal.qtech.cn",
 ]
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
