@@ -31,80 +31,82 @@
 
     <template #default>
       <a-spin
-        :loading="fieldLoading || previewLoading"
+        :loading="initialPageLoading"
         class="preview-spin"
-        tip="字段配置加载中..."
+        tip="模板配置加载中..."
       >
         <div v-if="templateForm.entity" class="scene-config-workbench">
-          <aside class="scene-items-card">
-            <div class="scene-items-header">
-              <div>
-                <div class="scene-items-title">场景编排</div>
-                <div class="scene-items-subtitle">点击模板查看局部依赖，拖动调整子模板创建顺序</div>
+          <a-spin :loading="scenePanelLoading" class="scene-items-spin" tip="编排数据加载中...">
+            <aside class="scene-items-card">
+              <div class="scene-items-header">
+                <div>
+                  <div class="scene-items-title">场景编排</div>
+                  <div class="scene-items-subtitle">点击模板查看局部依赖，拖动调整子模板创建顺序</div>
+                </div>
+                <a-button size="small" type="primary" long @click="addSceneItem"
+                  >添加关联模板</a-button
+                >
               </div>
-              <a-button size="small" type="primary" long @click="addSceneItem"
-                >添加关联模板</a-button
-              >
-            </div>
-            <div class="scene-items-list">
-              <div
-                :class="[
-                  'scene-root-card',
-                  { 'scene-item-card-active': activeSceneNodeKey === 'root' },
-                ]"
-                @click="activeSceneNodeKey = 'root'"
-              >
-                <div class="scene-root-label">主模板</div>
-                <div class="scene-root-name">{{
-                  templateForm.name || pageRecord?.name || '-'
-                }}</div>
-                <div class="scene-root-meta">场景入口，优先创建</div>
-              </div>
-              <div
-                v-for="(item, index) in templateForm.items || []"
-                :key="item._key || item.id || index"
-                :class="[
-                  'scene-item-card',
-                  { 'scene-item-card-active': activeSceneNodeKey === getSceneItemFocusKey(item) },
-                  { 'scene-item-card-dragging': draggingSceneItemKey === getSceneItemKey(item) },
-                ]"
-                draggable="true"
-                @click="activeSceneNodeKey = getSceneItemFocusKey(item)"
-                @dragstart="onSceneItemDragStart(item)"
-                @dragover.prevent
-                @drop="onSceneItemDrop(item)"
-                @dragend="onSceneItemDragEnd"
-              >
-                <div class="scene-item-drag" title="拖动排序">::</div>
-                <div class="scene-item-content">
-                  <a-select
-                    v-model="item.child_template"
-                    :options="sceneTemplateOptions"
-                    :field-names="{ value: 'id', label: 'name' }"
-                    allow-search
-                    allow-clear
-                    placeholder="选择关联模板"
-                    @change="() => onSceneItemTemplateChange(item)"
-                  />
-                  <a-input v-model="item.name" placeholder="关联名称" @blur="loadPreview" />
-                  <div class="scene-item-footer">
-                    <span class="scene-item-hint">共享主场景上下文</span>
-                    <a-button
-                      size="mini"
-                      status="danger"
-                      type="text"
-                      @click="removeSceneItem(index)"
-                    >
-                      移除
-                    </a-button>
+              <div class="scene-items-list">
+                <div
+                  :class="[
+                    'scene-root-card',
+                    { 'scene-item-card-active': activeSceneNodeKey === 'root' },
+                  ]"
+                  @click="activeSceneNodeKey = 'root'"
+                >
+                  <div class="scene-root-label">主模板</div>
+                  <div class="scene-root-name">{{
+                    templateForm.name || pageRecord?.name || '-'
+                  }}</div>
+                  <div class="scene-root-meta">场景入口，优先创建</div>
+                </div>
+                <div
+                  v-for="(item, index) in templateForm.items || []"
+                  :key="item._key || item.id || index"
+                  :class="[
+                    'scene-item-card',
+                    { 'scene-item-card-active': activeSceneNodeKey === getSceneItemFocusKey(item) },
+                    { 'scene-item-card-dragging': draggingSceneItemKey === getSceneItemKey(item) },
+                  ]"
+                  draggable="true"
+                  @click="activeSceneNodeKey = getSceneItemFocusKey(item)"
+                  @dragstart="onSceneItemDragStart(item)"
+                  @dragover.prevent
+                  @drop="onSceneItemDrop(item)"
+                  @dragend="onSceneItemDragEnd"
+                >
+                  <div class="scene-item-drag" title="拖动排序">::</div>
+                  <div class="scene-item-content">
+                    <a-select
+                      v-model="item.child_template"
+                      :options="sceneTemplateOptions"
+                      :field-names="{ value: 'id', label: 'name' }"
+                      allow-search
+                      allow-clear
+                      placeholder="选择关联模板"
+                      @change="() => onSceneItemTemplateChange(item)"
+                    />
+                    <a-input v-model="item.name" placeholder="关联名称" @blur="loadPreview" />
+                    <div class="scene-item-footer">
+                      <span class="scene-item-hint">共享主场景上下文</span>
+                      <a-button
+                        size="mini"
+                        status="danger"
+                        type="text"
+                        @click="removeSceneItem(index)"
+                      >
+                        移除
+                      </a-button>
+                    </div>
                   </div>
                 </div>
+                <div v-if="!templateForm.items?.length" class="mango-empty-state scene-empty">
+                  暂未添加关联模板
+                </div>
               </div>
-              <div v-if="!templateForm.items?.length" class="mango-empty-state scene-empty">
-                暂未添加关联模板
-              </div>
-            </div>
-          </aside>
+            </aside>
+          </a-spin>
           <section class="scene-preview-panel">
             <DataFactoryDependencyPreview
               :dependency-tree="previewResult.dependency_tree"
@@ -117,6 +119,8 @@
               :dependency-template-options="dependencyTemplateOptions"
               :load-dependency-template-options="loadDependencyTemplateOptions"
               :focus-node-key="activeSceneNodeKey"
+              :flow-loading="previewLoading"
+              :field-loading="fieldPanelLoading"
               editable-root
               field-table-scroll-y="calc(100vh - 405px)"
               @open-template="openDependencyTemplate"
@@ -170,8 +174,14 @@
   const enumStore = useEnum()
   const userStore = useUserStore()
   const pageData = usePageData()
+  const templateLoading = ref(false)
   const fieldLoading = ref(false)
+  const sceneOptionsLoading = ref(false)
+  const sceneItemFieldsLoading = ref(false)
+  const dependencyTemplateLoading = ref(false)
   const previewLoading = ref(false)
+  const firstPreviewReady = ref(false)
+  const editableFieldsReady = ref(false)
   const previewResult = ref<any>({})
   const debugLoading = ref(false)
   const debugVisible = ref(false)
@@ -224,6 +234,24 @@
       ? '依赖链路完整，可以保存当前字段配置'
       : '依赖链路存在未配置字段，请在字段配置中补齐'
   })
+  const initialPageLoading = computed(() => {
+    return (
+      (templateLoading.value || fieldLoading.value || previewLoading.value) &&
+      !templateForm.entity &&
+      !fieldRows.value.length &&
+      !previewResult.value.dependency_tree
+    )
+  })
+  const scenePanelLoading = computed(() => templateLoading.value || sceneOptionsLoading.value)
+  const fieldPanelLoading = computed(
+    () =>
+      fieldLoading.value ||
+      sceneItemFieldsLoading.value ||
+      dependencyTemplateLoading.value ||
+      previewLoading.value ||
+      !firstPreviewReady.value ||
+      !editableFieldsReady.value
+  )
 
   function buildPreviewPayload() {
     return {
@@ -268,21 +296,34 @@
       resetTemplateForm(cached)
       return Promise.resolve(cached)
     }
-    return getDataFactoryTemplate({ id: templateId.value, page: 1, pageSize: 1 }).then((res) => {
-      const record = (res.data || [])[0]
-      resetTemplateForm(record || {})
-      return record
-    })
+    templateLoading.value = true
+    return getDataFactoryTemplate({ id: templateId.value, page: 1, pageSize: 1 })
+      .then((res) => {
+        const record = (res.data || [])[0]
+        resetTemplateForm(record || {})
+        return record
+      })
+      .finally(() => {
+        templateLoading.value = false
+      })
   }
 
   function reloadPageData() {
     previewResult.value = {}
     dependencyTemplateOptions.value = {}
+    itemFieldsMap.value = {}
+    firstPreviewReady.value = false
+    editableFieldsReady.value = false
     return loadTemplate()
-      .then(loadTemplateFields)
-      .then(loadSceneTemplateOptions)
-      .then(loadSceneItemFields)
-      .then(loadPreview)
+      .then(() => Promise.all([loadSceneTemplateOptions(), loadPreview()]))
+      .then(loadEditableFieldDefinitions)
+  }
+
+  function loadEditableFieldDefinitions() {
+    editableFieldsReady.value = false
+    return Promise.all([loadTemplateFields(), loadSceneItemFields()]).finally(() => {
+      editableFieldsReady.value = true
+    })
   }
 
   function loadTemplateFields() {
@@ -294,7 +335,7 @@
     return getDataFactoryField({ entity: templateForm.entity })
       .then((res) => {
         fieldRows.value = res.data || []
-        preloadDependencyTemplateOptions()
+        return preloadDependencyTemplateOptions()
       })
       .finally(() => {
         fieldLoading.value = false
@@ -304,6 +345,7 @@
   function loadPreview() {
     if (!templateId.value) {
       Message.error('场景模板不存在，请返回后重试')
+      firstPreviewReady.value = true
       return Promise.resolve()
     }
     previewLoading.value = true
@@ -313,6 +355,7 @@
       })
       .finally(() => {
         previewLoading.value = false
+        firstPreviewReady.value = true
       })
   }
 
@@ -383,13 +426,13 @@
     const dependencyEntityId = row.generator_config?.dependency_entity_id
     const projectProduct = templateForm.project_product
     if (!dependencyEntityId || !projectProduct) {
-      return
+      return Promise.resolve()
     }
     const cacheKey = String(dependencyEntityId)
     if (dependencyTemplateOptions.value[cacheKey]) {
-      return
+      return Promise.resolve()
     }
-    getDataFactoryTemplate({
+    return getDataFactoryTemplate({
       project_product: projectProduct,
       entity: dependencyEntityId,
       page: 1,
@@ -406,9 +449,16 @@
   }
 
   function preloadDependencyTemplateOptions() {
-    fieldRows.value
+    const tasks = fieldRows.value
       .filter((row: any) => row.generator_config?.dependency_entity_id)
-      .forEach((row) => loadDependencyTemplateOptions(row))
+      .map((row) => loadDependencyTemplateOptions(row))
+    if (!tasks.length) {
+      return Promise.resolve([])
+    }
+    dependencyTemplateLoading.value = true
+    return Promise.all(tasks).finally(() => {
+      dependencyTemplateLoading.value = false
+    })
   }
 
   function loadSceneTemplateOptions() {
@@ -416,15 +466,20 @@
       sceneTemplateOptions.value = []
       return Promise.resolve()
     }
+    sceneOptionsLoading.value = true
     return getDataFactoryTemplate({
       project_product: templateForm.project_product,
       page: 1,
       pageSize: 9999,
-    }).then((res) => {
-      sceneTemplateOptions.value = (res.data || []).filter(
-        (item: any) => String(item.id) !== String(templateForm.id)
-      )
     })
+      .then((res) => {
+        sceneTemplateOptions.value = (res.data || []).filter(
+          (item: any) => String(item.id) !== String(templateForm.id)
+        )
+      })
+      .finally(() => {
+        sceneOptionsLoading.value = false
+      })
   }
 
   function normalizeLoadedItems(items: any[]) {
@@ -541,6 +596,7 @@
   }
 
   function loadSceneItemFields() {
+    sceneItemFieldsLoading.value = true
     const tasks = (templateForm.items || []).map((item: any) => {
       const entityId =
         getSceneTemplateEntity(item.child_template) ||
@@ -557,7 +613,9 @@
         }
       })
     })
-    return Promise.all(tasks)
+    return Promise.all(tasks).finally(() => {
+      sceneItemFieldsLoading.value = false
+    })
   }
 
   function updateSceneItemOverrides(key: string, value: Record<string, any>) {
@@ -637,6 +695,18 @@
     min-height: 0;
     gap: 12px;
     grid-template-columns: 332px minmax(0, 1fr);
+  }
+
+  .scene-items-spin {
+    display: block;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .scene-items-spin :deep(.arco-spin),
+  .scene-items-spin :deep(.arco-spin-children) {
+    height: 100%;
+    min-height: 0;
   }
 
   .scene-items-card {
