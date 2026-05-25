@@ -1,5 +1,5 @@
-mangotools==2.0.1
-mangoautomation==2.0.1
+mangotools==2.0.3
+mangoautomation==2.0.2
 mangoui==4.0.4
 pyinstaller
 
