@@ -10,7 +10,7 @@
         </div>
         <a-space class="mango-detail-actions" wrap>
           <a-button size="small" type="primary" :loading="saving" @click="saveTemplateConfig">
-            保存
+            保存字段配置
           </a-button>
           <a-button size="small" :loading="syncLoading" @click="syncTemplateFields">
             同步实体规则
@@ -43,6 +43,14 @@
                   <div class="scene-items-title">场景编排</div>
                   <div class="scene-items-subtitle">点击模板查看局部依赖，拖动调整子模板创建顺序</div>
                 </div>
+                <a-tag
+                  size="small"
+                  :color="sceneAutoSaveMeta.color"
+                  class="scene-save-status"
+                  @click="retrySceneAutoSave"
+                >
+                  {{ sceneAutoSaveMeta.text }}
+                </a-tag>
                 <a-button size="small" type="primary" long @click="addSceneItem"
                   >添加关联模板</a-button
                 >
@@ -87,7 +95,11 @@
                       placeholder="选择关联模板"
                       @change="() => onSceneItemTemplateChange(item)"
                     />
-                    <a-input v-model="item.name" placeholder="关联名称" @blur="loadPreview" />
+                    <a-input
+                      v-model="item.name"
+                      placeholder="关联名称"
+                      @blur="() => onSceneItemNameBlur(item)"
+                    />
                     <div class="scene-item-footer">
                       <span class="scene-item-hint">共享主场景上下文</span>
                       <a-button
@@ -167,7 +179,7 @@
   import { usePageData } from '@/store/page-data'
   import { Message } from '@arco-design/web-vue'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
   const route = useRoute()
   const router = useRouter()
@@ -189,6 +201,10 @@
   const debugCleanupLoading = ref(false)
   const saving = ref(false)
   const syncLoading = ref(false)
+  const sceneAutoSaving = ref(false)
+  const sceneAutoSaveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const sceneSavedItemOverrides = ref<Record<string, Record<string, any>>>({})
+  const savedFieldConfigSignature = ref('')
   const fieldRows = ref<any[]>([])
   const sceneTemplateOptions = ref<any[]>([])
   const itemFieldsMap = ref<Record<string, any[]>>({})
@@ -243,6 +259,18 @@
     )
   })
   const scenePanelLoading = computed(() => templateLoading.value || sceneOptionsLoading.value)
+  const sceneAutoSaveMeta = computed(() => {
+    if (sceneAutoSaving.value || sceneAutoSaveStatus.value === 'saving') {
+      return { text: '保存中...', color: 'arcoblue' }
+    }
+    if (sceneAutoSaveStatus.value === 'error') {
+      return { text: '保存失败，点击重试', color: 'red' }
+    }
+    if (sceneAutoSaveStatus.value === 'saved') {
+      return { text: '已保存', color: 'green' }
+    }
+    return { text: '选择模板后自动保存', color: 'gray' }
+  })
   const fieldPanelLoading = computed(
     () =>
       fieldLoading.value ||
@@ -280,6 +308,8 @@
       output_config: previewContext.value.output_config || record?.output_config || [],
       items: normalizeLoadedItems(record?.items || []),
     })
+    snapshotSceneItemOverrides(record?.items || [])
+    snapshotFieldConfig()
   }
 
   function loadTemplate() {
@@ -395,6 +425,7 @@
       .then((res) => {
         Message.success(res.msg)
         resetTemplateForm(res.data || templateForm)
+        snapshotFieldConfig()
         loadSceneItemFields().then(loadPreview)
       })
       .finally(() => {
@@ -414,6 +445,7 @@
     })
       .then((res) => {
         templateForm.field_overrides = res.data?.field_overrides || {}
+        snapshotFieldConfig()
         Message.success(res.msg)
         return loadTemplateFields().then(loadPreview)
       })
@@ -508,6 +540,50 @@
       .filter((item: any) => item.child_template)
   }
 
+  function normalizeSceneArrangementItems() {
+    return (templateForm.items || [])
+      .map((item: any, index: number) => {
+        const key = getSceneItemKey(item)
+        return {
+          id: typeof item.id === 'number' ? item.id : undefined,
+          child_template: item.child_template,
+          name: item.name || getSceneTemplateName(item.child_template) || `关联模板${index + 1}`,
+          sort: index * 10,
+          field_overrides: sceneSavedItemOverrides.value[key] || {},
+        }
+      })
+      .filter((item: any) => item.child_template)
+  }
+
+  function snapshotSceneItemOverrides(items: any[]) {
+    const next: Record<string, Record<string, any>> = {}
+    normalizeLoadedItems(items).forEach((item: any) => {
+      next[getSceneItemKey(item)] = item.field_overrides || {}
+    })
+    sceneSavedItemOverrides.value = next
+  }
+
+  function buildFieldConfigSignature() {
+    return JSON.stringify({
+      field_overrides: templateForm.field_overrides || {},
+      output_config: templateForm.output_config || [],
+      item_field_overrides: (templateForm.items || [])
+        .filter((item: any) => Object.keys(item.field_overrides || {}).length)
+        .map((item: any) => ({
+          key: item.id || item.child_template || item._key,
+          field_overrides: item.field_overrides || {},
+        })),
+    })
+  }
+
+  function snapshotFieldConfig() {
+    savedFieldConfigSignature.value = buildFieldConfigSignature()
+  }
+
+  function hasUnsavedFieldConfig() {
+    return savedFieldConfigSignature.value && savedFieldConfigSignature.value !== buildFieldConfigSignature()
+  }
+
   function getSceneItemKey(item: any) {
     return String(item.id || item._key || item.name)
   }
@@ -551,7 +627,7 @@
     if (activeSceneNodeKey.value === removedKey) {
       activeSceneNodeKey.value = 'root'
     }
-    loadPreview()
+    autoSaveSceneItems()
   }
 
   function reorderSceneItems(data: any[]) {
@@ -559,7 +635,7 @@
       ...item,
       sort: index * 10,
     }))
-    loadPreview()
+    autoSaveSceneItems()
   }
 
   function onSceneItemDragStart(item: any) {
@@ -592,7 +668,14 @@
       item.name = getSceneTemplateName(item.child_template)
     }
     item.field_overrides = item.field_overrides || {}
-    loadSceneItemFields().then(loadPreview)
+    loadSceneItemFields().then(() => autoSaveSceneItems())
+  }
+
+  function onSceneItemNameBlur(item: any) {
+    if (!item.child_template) {
+      return
+    }
+    autoSaveSceneItems()
   }
 
   function loadSceneItemFields() {
@@ -626,6 +709,67 @@
     }
     item.field_overrides = value
     loadPreview()
+  }
+
+  function mergeSavedSceneItems(savedItems: any[], keepFieldDirty = false) {
+    const loadedItems = normalizeLoadedItems(savedItems)
+    let validIndex = 0
+    const previousActiveKey = activeSceneNodeKey.value
+    templateForm.items = (templateForm.items || []).map((item: any) => {
+      if (!item.child_template) {
+        return item
+      }
+      const saved = loadedItems[validIndex]
+      validIndex += 1
+      if (!saved) {
+        return item
+      }
+      const previousFocusKey = getSceneItemFocusKey(item)
+      const nextItem = {
+        ...saved,
+        field_overrides: item.field_overrides || {},
+      }
+      if (previousActiveKey === previousFocusKey) {
+        activeSceneNodeKey.value = getSceneItemFocusKey(nextItem)
+      }
+      return nextItem
+    })
+    snapshotSceneItemOverrides(savedItems)
+    if (!keepFieldDirty) {
+      snapshotFieldConfig()
+    }
+  }
+
+  function autoSaveSceneItems() {
+    if (!templateForm.id) {
+      return Promise.resolve()
+    }
+    sceneAutoSaving.value = true
+    sceneAutoSaveStatus.value = 'saving'
+    const keepFieldDirty = hasUnsavedFieldConfig()
+    return putDataFactoryTemplate({
+      id: templateForm.id,
+      items: normalizeSceneArrangementItems(),
+      test_env: route.query.test_env || userStore.selected_environment,
+    })
+      .then((res) => {
+        mergeSavedSceneItems(res.data?.items || [], keepFieldDirty)
+        sceneAutoSaveStatus.value = 'saved'
+        loadSceneItemFields().then(loadPreview).catch(() => undefined)
+      })
+      .catch(() => {
+        sceneAutoSaveStatus.value = 'error'
+      })
+      .finally(() => {
+        sceneAutoSaving.value = false
+      })
+  }
+
+  function retrySceneAutoSave() {
+    if (sceneAutoSaveStatus.value !== 'error') {
+      return
+    }
+    autoSaveSceneItems()
   }
 
   function debugCleanup() {
@@ -672,6 +816,13 @@
       reloadPageData()
     }
   )
+
+  onBeforeRouteLeave(() => {
+    if (!hasUnsavedFieldConfig()) {
+      return true
+    }
+    return window.confirm('当前字段配置尚未保存，确认离开吗？')
+  })
 </script>
 
 <style scoped>

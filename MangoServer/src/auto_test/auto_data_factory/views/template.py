@@ -23,7 +23,8 @@ from src.models.data_factory_model import DataFactoryFieldOverrideRules, DataFac
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
-from src.tools.view.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0002, RESPONSE_MSG_0003, RESPONSE_MSG_0004, RESPONSE_MSG_0082
+from src.tools.view.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0002, RESPONSE_MSG_0003, RESPONSE_MSG_0004, \
+    RESPONSE_MSG_0082, RESPONSE_MSG_0005
 
 
 class DataFactoryTemplateItemSerializer(serializers.ModelSerializer):
@@ -360,4 +361,4 @@ class DataFactoryTemplateViews(ViewSet):
     @error_response('system')
     def debug_cleanup(self, request: Request):
         result = DataFactoryCleanup.cleanup_execution(request.data.get('execution_id'))
-        return ResponseData.success(RESPONSE_MSG_0001, result)
+        return ResponseData.success(RESPONSE_MSG_0005, result)

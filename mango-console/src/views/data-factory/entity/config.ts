@@ -6,6 +6,13 @@ const table = useTable()
 
 export const entityConditionItems: Array<FormItem> = reactive([
   {
+    key: 'id',
+    label: 'ID',
+    type: 'input',
+    placeholder: '请输入ID',
+    value: ref(''),
+  },
+  {
     key: 'project_product',
     label: '项目/产品',
     value: ref(''),
