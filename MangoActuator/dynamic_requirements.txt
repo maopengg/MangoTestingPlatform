@@ -1,2 +1,2 @@
-mangotools==2.0.1
-mangoautomation==2.0.1
+mangotools==2.0.4
+mangoautomation==2.0.2
