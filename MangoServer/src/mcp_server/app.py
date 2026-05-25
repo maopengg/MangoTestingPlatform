@@ -15,8 +15,6 @@ DEFAULT_ALLOWED_HOSTS = [
     "[::1]:*",
     "43.142.161.61:8000",
     "43.142.161.61:*",
-    "qfei-auto-platform-dev.internal.qtech.cn",
-    "qfei-auto-platform-test.internal.qtech.cn",
 ]
 
 DEFAULT_ALLOWED_ORIGINS = [
@@ -24,8 +22,6 @@ DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:*",
     "http://[::1]:*",
     "http://43.142.161.61:8000",
-    "https://qfei-auto-platform-dev.internal.qtech.cn",
-    "https://qfei-auto-platform-test.internal.qtech.cn",
 ]
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
