@@ -174,6 +174,12 @@ class Database(models.Model):
         db_table = 'data_base'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        from src.auto_test.auto_data_factory.models import DataFactoryDatasourceBinding
+        if DataFactoryDatasourceBinding.objects.filter(database=self).exists():
+            raise ToolsError(300, "数据工厂数据源绑定-有关联数据，请先删除绑定的数据后再删除！")
+        super().delete(*args, **kwargs)
+
 
 class FileData(models.Model):
     """ 文件表 """

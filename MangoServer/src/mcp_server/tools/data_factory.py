@@ -418,6 +418,7 @@ def register_data_factory_tools(mcp):
 
     @mcp.tool()
     def list_data_factory_entities(
+        entity_id: int | None = None,
         project_product_id: int | None = None,
         module_id: int | None = None,
         datasource_alias_id: int | None = None,
@@ -426,6 +427,8 @@ def register_data_factory_tools(mcp):
     ) -> dict:
         """查询数据工厂实体。"""
         queryset = DataFactoryEntity.objects.select_related("project_product", "module", "datasource_alias").all()
+        if entity_id is not None:
+            queryset = queryset.filter(id=entity_id)
         if project_product_id is not None:
             queryset = queryset.filter(project_product_id=project_product_id)
         if module_id is not None:
@@ -622,6 +625,7 @@ def register_data_factory_tools(mcp):
 
     @mcp.tool()
     def list_data_factory_templates(
+        template_id: int | None = None,
         project_product_id: int | None = None,
         module_id: int | None = None,
         entity_id: int | None = None,
@@ -630,6 +634,8 @@ def register_data_factory_tools(mcp):
     ) -> dict:
         """查询数据工厂场景模板。场景模板可包含主实体和多个关联模板。"""
         queryset = DataFactoryTemplate.objects.select_related("entity", "module", "project_product").all()
+        if template_id is not None:
+            queryset = queryset.filter(id=template_id)
         if project_product_id is not None:
             queryset = queryset.filter(project_product_id=project_product_id)
         if module_id is not None:

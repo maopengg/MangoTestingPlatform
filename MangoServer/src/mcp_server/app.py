@@ -9,19 +9,10 @@ from datetime import datetime
 
 MCP_HTTP_PATH = "/mcp"
 MCP_FALLBACK_HTTP_PATH = "/system/mcp"
-DEFAULT_ALLOWED_HOSTS = [
-    "127.0.0.1:*",
-    "localhost:*",
-    "[::1]:*",
-    "qfei-auto-platform-dev.internal.qtech.cn",
-    "qfei-auto-platform-test.internal.qtech.cn",
-]
+DEFAULT_ALLOWED_HOSTS = ["*"]
 DEFAULT_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:*",
-    "http://localhost:*",
-    "http://[::1]:*",
-    "https://qfei-auto-platform-dev.internal.qtech.cn",
-    "https://qfei-auto-platform-test.internal.qtech.cn",
+    "http://*",
+    "https://*",
 ]
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
@@ -100,6 +91,10 @@ def _authenticated_tool_method(mcp):
                     log_mcp_tool_call_async(func.__name__, tool_arguments, auth_error, status_code=401)
                     return auth_error
                 user = user_from_auth_token()
+                write_guard_error = _mcp_demo_write_guard(func.__name__, user)
+                if write_guard_error:
+                    log_mcp_tool_call_async(func.__name__, tool_arguments, write_guard_error, status_code=200, user=user)
+                    return write_guard_error
                 try:
                     result = func(*args, **kwargs)
                 except Exception as exc:
@@ -119,6 +114,83 @@ def _authenticated_tool_method(mcp):
         return decorate
 
     return authenticated_tool
+
+
+def _mcp_demo_write_guard(tool_name: str, user) -> dict | None:
+    """Apply the same demo-environment write restrictions as IsDeleteMiddleWare."""
+    from src.mcp_server.common import fail
+    from src.settings import IS_DELETE
+
+    if IS_DELETE:
+        return None
+    if getattr(user, "username", None) in ["admin", "open"]:
+        return None
+
+    operation = _mcp_tool_write_operation(tool_name)
+    if operation is None:
+        return None
+
+    messages = {
+        "delete": "演示环境非管理员权限禁止删除，只能执行测试任务",
+        "create": "演示环境非管理员权限禁止新增，只能执行测试任务",
+        "update": "演示环境非管理员权限禁止修改，只能执行测试任务",
+    }
+    return fail(
+        messages[operation],
+        "DEMO_ENV_WRITE_FORBIDDEN",
+        {
+            "tool": tool_name,
+            "operation": operation,
+            "allowed_users": ["admin", "open"],
+            "current_user": getattr(user, "username", None),
+        },
+    )
+
+
+def _mcp_tool_write_operation(tool_name: str) -> str | None:
+    allowed_tools = {
+        "ensure_user_test_environment",
+        "switch_user_test_environment",
+        "run_api_info",
+        "run_api_case",
+        "run_api_case_batch",
+        "retry_test_report_case",
+        "retry_test_report",
+        "test_data_factory_datasource_connection",
+        "evaluate_test_data_expression",
+    }
+    if tool_name in allowed_tools:
+        return None
+
+    delete_prefixes = (
+        "delete_",
+        "cleanup_",
+        "clear_",
+    )
+    create_prefixes = (
+        "create_",
+        "add_",
+        "copy_",
+        "upload_",
+        "bind_",
+        "batch_generate_",
+        "execute_",
+        "debug_run_",
+    )
+    update_prefixes = (
+        "update_",
+        "set_",
+        "sort_",
+        "refresh_",
+        "auto_generate_",
+    )
+    if tool_name.startswith(delete_prefixes):
+        return "delete"
+    if tool_name.startswith(create_prefixes):
+        return "create"
+    if tool_name.startswith(update_prefixes):
+        return "update"
+    return None
 
 
 def _logged_public_tool(func):
@@ -174,6 +246,11 @@ def _platform_capabilities() -> dict:
                 "header": "Authorization: Bearer <MCP APIKey>",
                 "api_key_prefix": "mango_",
                 "setup_hint": "请到「系统管理 - 用户管理」复制或生成 MCP APIKey，并配置到 MCP 客户端 Authorization 请求头。",
+                "demo_write_guard": {
+                    "enabled_when": "IS_DELETE=False",
+                    "admin_users": ["admin", "open"],
+                    "rule": "演示环境下非管理员禁止 MCP 新增、修改、删除类工具；查询、预览、分析和测试任务执行类工具保留。",
+                },
                 "public_tools": ["get_mcp_server_info", "get_platform_capabilities"],
             },
             "capabilities": [

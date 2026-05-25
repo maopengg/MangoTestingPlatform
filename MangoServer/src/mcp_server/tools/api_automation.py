@@ -1267,7 +1267,7 @@ def register_api_automation_tools(mcp):
         return ok(
             {
                 "assertion_types": {
-                    "ass_json_all": "JSON一致断言。保存期望 JSON 对象或 JSON 字符串，后端用 p_in_dict 判断响应 JSON 是否匹配期望 JSON。",
+                    "ass_json_all": "JSON一致断言。保存基础、固定的期望 JSON 片段，后端用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言；已在这里断言的字段无需再重复写入 ass_jsonpath。",
                     "ass_jsonpath": "JSONPath断言。actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value；expect 是否需要传值取决于该 method 的 parameter，包含 f=expect 时传预期值，不包含 f=expect 时传 null。",
                     "ass_text_all": "文本一致断言。保存完整预期响应文本，后端用 response.text.strip() == expect.strip()。",
                     "ass_general": "通用断言。外层 value 保存前端级联选中的完整对象；parameter[].v 面向 textarea 保存，dict/list 应保存为 JSON 字符串，执行 SQL 断言时会自动反序列化。",
@@ -1279,7 +1279,7 @@ def register_api_automation_tools(mcp):
                     {"actual": "$.success", "method": "p_is_true", "expect": None},
                 ],
                 "ass_general": [general_equal],
-                "ass_json_all": {"code": 0},
+                "ass_json_all": {"code": 0, "data": {"status": 1}},
                 "ass_text_all": "完整响应文本",
                 "ass_schema": {"type": "object", "properties": {"code": {"type": "integer"}}},
             }
@@ -1510,8 +1510,8 @@ def register_api_automation_tools(mcp):
                     "ass_json_all": {
                         "type": "dict | list | null",
                         "default": None,
-                        "description": "JSON 一致断言，使用 p_in_dict 判断响应 JSON 是否包含/匹配期望结构。",
-                        "example": {"code": 0},
+                        "description": "JSON 一致断言，用于断言基础、固定的响应 JSON 片段；使用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言。已在 ass_json_all 中断言的字段无需再重复添加到 ass_jsonpath。",
+                        "example": {"code": 0, "data": {"status": 1}},
                     },
                     "ass_text_all": {
                         "type": "str | null",

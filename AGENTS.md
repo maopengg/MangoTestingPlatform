@@ -49,6 +49,7 @@ python manage.py runserver --env=dev 0.0.0.0:8000
 10. 开发过程中不允许执行迁移命令。
 11. 迁移脚本由用户自己生成和执行。
 12. 如模型发生变化，只说明需要迁移，不要运行 `makemigrations` 或 `migrate`。
+13. 新增 MCP 增删改工具时，必须确认是否会被 `src/mcp_server/app.py` 的演示环境写操作拦截识别；如属于新增、修改、删除、清理、上传、绑定、执行落库等写操作，工具命名应使用既有前缀或同步更新 MCP 写操作分类规则。
 
 ## 前端 mango-console
 
