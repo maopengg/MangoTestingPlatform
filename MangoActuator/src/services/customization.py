@@ -3,11 +3,12 @@
 # @Description: 
 # @Time   : 2025-04-29 14:06
 # @Author : 毛鹏
+from mangoautomation.tools import async_method_callback, func_info, inject_to_class
 from mangoautomation.uidrives import AsyncWebCustomization
-from mangotools.decorator import *
 from mangotools.models import MethodModel
 from playwright.async_api import Locator
 
+func_info = func_info
 """
 示例，自定义方法
 
