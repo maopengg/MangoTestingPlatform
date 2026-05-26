@@ -7,6 +7,7 @@ import copy
 import random
 import traceback
 
+from django.core.exceptions import ObjectDoesNotExist
 from mangotools.mangos import build_decision_tree
 from pydantic import ValidationError
 
@@ -73,7 +74,7 @@ class TestCase:
                 test_suite_id=test_suite,
                 id=case.id,
                 name=case_name if case_name else case.name,
-                module_name=case.module.name,
+                module_name=self.__module_name(case),
                 project_product=case.project_product.id,
                 project_product_name=case.project_product.name,
                 test_env=self.test_env,
@@ -126,7 +127,7 @@ class TestCase:
             name=page.name,
             project_product=page.project_product.id,
             project_product_name=page.project_product.name,
-            module_name=page.module.name,
+            module_name=self.__module_name(page),
             type=page.project_product.ui_client_type,
             url=page.url,
             switch_step_open_url=False,
@@ -134,7 +135,7 @@ class TestCase:
             element_list=[self.element_model(element_obj, True, data)],
             # equipment_config=self.__equipment_config(page.project_product.ui_client_type),
             environment_config=self.__environment_config(page.project_product.id),
-            public_data_list=self.__public_data(page.project_product_id),
+            public_data_list=self.__public_data(page.project_product_id, self.test_env),
         )
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
 
@@ -154,12 +155,12 @@ class TestCase:
             name=page_steps.name,
             project_product=page_steps.project_product.id,
             project_product_name=page_steps.project_product.name,
-            module_name=page_steps.module.name,
+            module_name=self.__module_name(page_steps, page_steps.page),
             type=page_steps.project_product.ui_client_type,
             url=page_steps.page.url,
             switch_step_open_url=switch_step_open_url,
             environment_config=self.__environment_config(page_steps.project_product.id),
-            public_data_list=self.__public_data(page_steps.project_product_id),
+            public_data_list=self.__public_data(page_steps.project_product_id, self.test_env),
             flow_data=build_decision_tree(page_steps.flow_data)
         )
         if case_steps_detailed:
@@ -174,6 +175,17 @@ class TestCase:
                 raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
         page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model
+
+    @classmethod
+    def __module_name(cls, *objects) -> str:
+        for obj in objects:
+            try:
+                module = getattr(obj, 'module', None)
+                if module:
+                    return module.name
+            except ObjectDoesNotExist:
+                continue
+        return ''
 
     @classmethod
     def __validate_flow_data(cls, flow_data: dict):
@@ -291,9 +303,9 @@ class TestCase:
         )
 
     @classmethod
-    def __public_data(cls, project_product_id) -> list[UiPublicModel]:
+    def __public_data(cls, project_product_id, test_env) -> list[UiPublicModel]:
         ui_public_list = UiPublic \
             .objects \
-            .filter(project_product=project_product_id, status=StatusEnum.SUCCESS.value) \
-            .order_by('type')
+            .filter(project_product=project_product_id, test_env=test_env, status=StatusEnum.SUCCESS.value) \
+            .order_by('type', 'test_env', 'id')
         return [UiPublicModel(type=i.type, key=i.key, value=i.value) for i in ui_public_list]

@@ -85,7 +85,10 @@ class UiCaseStepsDetailedViews(ViewSet):
         def m(_id):
             books = self.model.objects.get(id=_id)
             case_data_list = []
-            ids = get_execution_order_with_config_ids(books.page_step.flow_data)
+            flow_data = books.page_step.flow_data if books.page_step else None
+            if not isinstance(flow_data, dict) or not isinstance(flow_data.get('nodes'), list) or not flow_data.get('nodes'):
+                return ResponseData.fail(RESPONSE_MSG_0159)
+            ids = get_execution_order_with_config_ids(flow_data)
             if ids:
                 for page_step_details_id in ids:
                     steps_detailed = PageStepsDetailed.objects.get(id=page_step_details_id)
@@ -117,12 +120,16 @@ class UiCaseStepsDetailedViews(ViewSet):
 
         _id = request.query_params.get('id', None)
         if _id:
-            m(_id)
+            error_response_data = m(_id)
+            if error_response_data:
+                return error_response_data
         else:
             case_id = request.query_params.get('case_id', None)
             _books = self.model.objects.filter(case_id=case_id)
             for i in _books:
-                m(i.id)
+                error_response_data = m(i.id)
+                if error_response_data:
+                    return error_response_data
         return ResponseData.success(RESPONSE_MSG_0050)
 
     @action(methods=['put'], detail=False)

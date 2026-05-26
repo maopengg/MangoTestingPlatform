@@ -9,10 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_system.models import Database, TestObject
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_ui.models import UiPublic
-from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import UiPublicTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -27,6 +25,11 @@ class UiPublicSerializers(serializers.ModelSerializer):
     class Meta:
         model = UiPublic
         fields = '__all__'
+
+    def validate_type(self, value):
+        if value not in UiPublicTypeEnum.get_key_list():
+            raise serializers.ValidationError('公共变量类型只支持自定义和SQL')
+        return value
 
 
 class UiPublicSerializersC(serializers.ModelSerializer):
@@ -47,9 +50,10 @@ class UiPublicSerializersC(serializers.ModelSerializer):
 
 class UiPublicCRUD(ModelCRUD):
     model = UiPublic
-    queryset = UiPublic.objects.select_related('project').all()
+    queryset = UiPublic.objects.filter(type__in=UiPublicTypeEnum.get_key_list())
     serializer_class = UiPublicSerializersC
     serializer = UiPublicSerializers
+    not_matching_str = ModelCRUD.not_matching_str + ['test_env']
 
 
 class UiPublicViews(ViewSet):

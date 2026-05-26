@@ -52,15 +52,7 @@
           </template>
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
             <a-space>
-              <a-button size="mini" type="text" @click="open(record)">编辑</a-button>
-              <a-button
-                size="mini"
-                type="text"
-                :loading="previewLoading === record.id"
-                @click="preview(record)"
-              >
-                预览
-              </a-button>
+              <a-button size="mini" type="text" @click="open(record)">编辑/预览</a-button>
               <a-button
                 size="mini"
                 status="danger"
@@ -76,16 +68,16 @@
     </a-table>
   </a-space>
 
-  <a-modal
+  <a-drawer
     v-model:visible="visible"
     :title="form.id ? '编辑数据工厂配置' : '新增数据工厂配置'"
-    width="1120px"
-    :ok-loading="saving"
-    :on-before-ok="save"
+    width="min(1480px, 96vw)"
+    :mask-closable="false"
+    unmount-on-close
   >
-    <a-form :model="form" layout="vertical">
-      <a-grid :cols="2" :col-gap="16">
-        <a-grid-item>
+    <div class="mango-data-factory-config-drawer">
+      <a-form :model="form" layout="vertical" class="mango-data-factory-config-form">
+        <div class="mango-section-card mango-data-factory-base-card">
           <a-form-item label="项目/产品" required>
             <a-cascader
               v-model="form.project_product"
@@ -96,8 +88,6 @@
               @change="onProjectProductChange"
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
           <a-form-item label="模块" required>
             <a-select
               v-model="form.module"
@@ -109,28 +99,9 @@
               @change="onModuleChange"
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
-          <a-form-item label="场景模板" required>
-            <a-select
-              v-model="form.template"
-              :options="templateList"
-              :field-names="{ value: 'id', label: 'name' }"
-              :disabled="!form.project_product || !form.module"
-              :loading="templateLoading"
-              allow-clear
-              allow-search
-              placeholder="请先选择项目/产品和模块"
-              @change="onTemplateChange"
-            />
-          </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
           <a-form-item label="数据名称" required>
             <a-input v-model="form.name" placeholder="例如：订单数据；用例中按“订单数据.id”取值" />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
           <a-form-item label="清理策略">
             <a-select
               v-model="form.cleanup_strategy"
@@ -140,166 +111,194 @@
               placeholder="默认使用模板清理策略"
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
           <a-form-item label="状态">
             <a-switch
               :model-value="form.status === 1"
               @change="(value) => (form.status = value ? 1 : 0)"
             />
           </a-form-item>
-        </a-grid-item>
-      </a-grid>
-      <a-form-item label="字段覆盖">
-        <a-spin :loading="fieldLoading" class="full-width">
-          <a-space v-if="form.template" direction="vertical" fill>
-            <section class="mango-section-card mango-case-config-field-card">
-              <div class="mango-section-title">
-                <div>
-                  <h2>主模板字段</h2>
-                  <p>配置主模板字段生成规则和输出字段</p>
+        </div>
+
+        <div class="mango-data-factory-template-workbench">
+          <aside class="mango-template-selector mango-section-card">
+            <div class="mango-section-title">
+              <div>
+                <h2>场景模板</h2>
+                <p>按模板名、实体或表名搜索，选择后在右侧配置字段覆盖</p>
+              </div>
+              <a-tag size="small" color="arcoblue">{{ filteredTemplateList.length }}</a-tag>
+            </div>
+            <div v-if="currentTemplate" class="mango-template-current-card">
+              <div class="mango-template-current-card__label">当前主模板</div>
+              <div class="mango-template-current-card__name">{{ currentTemplate.name }}</div>
+              <div class="mango-template-current-card__meta">
+                {{ getTemplateEntityName(currentTemplate) }} / {{ getTemplateTableName(currentTemplate) }}
+              </div>
+              <div class="mango-template-current-card__foot">
+                <span>{{ getTemplateItemCount(currentTemplate) }} 个关联模板</span>
+                <span>{{ getTemplateCleanupText(currentTemplate) }}</span>
+              </div>
+              <a-button size="mini" type="text" class="mango-template-current-card__action" @click="clearSelectedTemplate">
+                更换模板
+              </a-button>
+            </div>
+            <a-input-search
+              v-model="templateKeyword"
+              allow-clear
+              size="small"
+              :placeholder="currentTemplate ? '搜索关联模板 / 实体 / 表名' : '搜索模板 / 实体 / 表名'"
+            />
+            <a-spin :loading="templateLoading" class="mango-template-list-spin">
+              <div v-if="!form.project_product || !form.module" class="mango-empty-state mango-template-empty">
+                请先选择项目/产品和模块
+              </div>
+              <template v-else-if="currentTemplate">
+                <div v-if="!filteredTemplateItemList.length" class="mango-empty-state mango-template-empty">
+                  当前主模板暂无关联模板
+                </div>
+                <div v-else class="mango-template-list">
+                  <div
+                    v-for="item in filteredTemplateItemList"
+                    :key="getItemCaseKey(item)"
+                    class="mango-template-option mango-template-option--relation"
+                  >
+                    <span class="mango-template-option__name">
+                      {{ item.name || item.child_template_detail?.name || item.child_template }}
+                    </span>
+                    <span class="mango-template-option__meta">
+                      {{ getTemplateEntityName(item.child_template_detail) }} /
+                      {{ getTemplateTableName(item.child_template_detail) }}
+                    </span>
+                    <span class="mango-template-option__foot">
+                      <span>{{ item.field || '关联模板' }}</span>
+                      <span>{{ item.target_field || 'id' }}</span>
+                    </span>
+                  </div>
+                </div>
+              </template>
+              <div v-else-if="!filteredTemplateList.length" class="mango-empty-state mango-template-empty">
+                暂无可选场景模板
+              </div>
+              <div v-else class="mango-template-list">
+                <button
+                  v-for="template in filteredTemplateList"
+                  :key="template.id"
+                  type="button"
+                  :class="[
+                    'mango-template-option',
+                    { 'mango-template-option--active': String(form.template) === String(template.id) },
+                  ]"
+                  @click="selectTemplate(template)"
+                >
+                  <span class="mango-template-option__name">{{ template.name }}</span>
+                  <span class="mango-template-option__meta">
+                    {{ getTemplateEntityName(template) }} / {{ getTemplateTableName(template) }}
+                  </span>
+                  <span class="mango-template-option__foot">
+                    <span>{{ getTemplateItemCount(template) }} 个关联模板</span>
+                    <span>{{ getTemplateCleanupText(template) }}</span>
+                  </span>
+                </button>
+              </div>
+            </a-spin>
+          </aside>
+
+          <section class="mango-template-editor">
+            <div v-if="currentTemplate" class="mango-section-card mango-template-summary">
+              <div>
+                <div class="mango-template-summary__title">{{ currentTemplate.name }}</div>
+                <div class="mango-template-summary__meta">
+                  {{ getTemplateEntityName(currentTemplate) }} / {{ getTemplateTableName(currentTemplate) }}
                 </div>
               </div>
-              <TemplateFieldConfigEditor
-                :field-overrides="mainCaseOverrides"
-                :output-config="templateOutputConfig"
-                :fields="fieldRows"
-                :generator-options="enumStore.data_factory_generator_type"
-                :dependency-template-options="dependencyTemplateOptions"
-                :load-dependency-template-options="loadDependencyTemplateOptions"
-                :loading="fieldLoading"
-                :show-output="false"
-                @update:field-overrides="updateMainCaseOverrides"
-                @update:output-config="updateTemplateOutputConfig"
-              />
-            </section>
-            <section
-              v-for="item in selectedTemplateItems"
-              :key="item.id"
-              class="mango-section-card mango-case-config-field-card"
-            >
-              <div class="mango-section-title">
-                <div>
-                  <h2>关联模板</h2>
-                  <p>{{ item.name || item.child_template_detail?.name || item.child_template }}</p>
-                </div>
-              </div>
-              <TemplateFieldConfigEditor
-                :field-overrides="getItemCaseOverrides(item)"
-                :output-config="[]"
-                :fields="itemFieldsMap[String(item.id)] || []"
-                :generator-options="enumStore.data_factory_generator_type"
-                :dependency-template-options="dependencyTemplateOptions"
-                :load-dependency-template-options="loadDependencyTemplateOptions"
-                :loading="fieldLoading"
-                :show-output="false"
-                @update:field-overrides="(value) => updateItemCaseOverrides(item, value)"
-              />
-            </section>
-          </a-space>
-          <div v-else class="mango-empty-state mango-field-empty">请先选择场景模板</div>
-        </a-spin>
-      </a-form-item>
-    </a-form>
+              <a-space>
+                <a-tag size="small" color="arcoblue">{{ getTemplateItemCount(currentTemplate) }} 个关联模板</a-tag>
+                <a-tag size="small">{{ getTemplateCleanupText(currentTemplate) }}</a-tag>
+              </a-space>
+            </div>
+            <a-spin :loading="fieldLoading" class="mango-template-editor-spin">
+              <a-space v-if="form.template" class="mango-template-field-stack" direction="vertical" fill>
+                <section class="mango-section-card mango-case-config-field-card">
+                  <div class="mango-section-title">
+                    <div>
+                      <h2>主模板字段</h2>
+                      <p>配置主模板字段生成规则和输出字段</p>
+                    </div>
+                  </div>
+                  <TemplateFieldConfigEditor
+                    :field-overrides="mainCaseOverrides"
+                    :output-config="templateOutputConfig"
+                    :fields="fieldRows"
+                    :generator-options="enumStore.data_factory_generator_type"
+                    :dependency-template-options="dependencyTemplateOptions"
+                    :load-dependency-template-options="loadDependencyTemplateOptions"
+                    :preview-fields="previewResult.fields || []"
+                    :loading="fieldLoading || previewLoading === 'form'"
+                    :show-output="false"
+                    show-preview
+                    @update:field-overrides="updateMainCaseOverrides"
+                    @update:output-config="updateTemplateOutputConfig"
+                  />
+                </section>
+                <section
+                  v-for="item in selectedTemplateItems"
+                  :key="item.id"
+                  :class="[
+                    'mango-section-card',
+                    'mango-case-config-field-card',
+                    { 'mango-case-config-field-card--collapsed': !isItemExpanded(item) },
+                  ]"
+                >
+                  <div class="mango-section-title">
+                    <div>
+                      <h2>关联模板 / {{ getItemTemplateName(item) }}</h2>
+                      <p>配置该关联模板在当前用例中的字段生成规则</p>
+                    </div>
+                    <a-space>
+                      <a-tag size="small">{{ itemFieldsMap[String(item.id)]?.length || 0 }} 个字段</a-tag>
+                      <a-button size="mini" type="text" @click="toggleItemExpanded(item)">
+                        {{ isItemExpanded(item) ? '收起' : '展开' }}
+                      </a-button>
+                    </a-space>
+                  </div>
+                  <template v-if="isItemExpanded(item)">
+                    <TemplateFieldConfigEditor
+                      :field-overrides="getItemCaseOverrides(item)"
+                      :output-config="[]"
+                      :fields="itemFieldsMap[String(item.id)] || []"
+                      :generator-options="enumStore.data_factory_generator_type"
+                      :dependency-template-options="dependencyTemplateOptions"
+                      :load-dependency-template-options="loadDependencyTemplateOptions"
+                      :preview-fields="getItemPreviewFields(item)"
+                      :loading="fieldLoading || previewLoading === 'form'"
+                      :show-output="false"
+                      show-preview
+                      @update:field-overrides="(value) => updateItemCaseOverrides(item, value)"
+                    />
+                  </template>
+                  <div v-else class="mango-soft-panel mango-template-item-collapsed">
+                    关联模板字段已收起。展开后可覆盖该模板在当前用例中的字段生成规则。
+                  </div>
+                </section>
+              </a-space>
+              <div v-else class="mango-empty-state mango-field-empty">请先选择场景模板</div>
+            </a-spin>
+          </section>
+        </div>
+      </a-form>
+    </div>
     <template #footer>
-      <a-space>
+      <a-space class="mango-data-factory-config-footer">
         <a-button @click="visible = false">取消</a-button>
-        <a-button :loading="previewLoading === 'form'" @click="preview()">预览</a-button>
         <a-button type="primary" :loading="saving" @click="save()">确定</a-button>
       </a-space>
     </template>
-  </a-modal>
-
-  <a-modal v-model:visible="previewVisible" title="生成数据预览" width="920px">
-    <a-space class="mango-data-factory-case-preview-content" direction="vertical">
-      <a-alert v-if="previewResult.missing_fields?.length" type="warning">
-        当前还有 {{ previewResult.missing_fields.length }} 个字段需要配置，建议补齐后再运行用例。
-      </a-alert>
-      <a-alert v-else-if="previewResult.payload" type="success"
-        >当前场景模板字段已能生成 payload。</a-alert
-      >
-      <a-textarea
-        v-if="Object.keys(previewResult.output || {}).length"
-        :model-value="JSON.stringify(previewResult.output, null, 2)"
-        :auto-size="{ minRows: 3, maxRows: 8 }"
-        readonly
-      />
-      <a-table
-        v-if="flattenDependencyTree(previewResult.dependency_tree).length"
-        :columns="dependencyTreeColumns"
-        :data="flattenDependencyTree(previewResult.dependency_tree)"
-        :loading="previewLoading === 'form'"
-        :pagination="false"
-        :row-key="'path'"
-        :scroll="{ x: 900, y: 220 }"
-        size="small"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of dependencyTreeColumns"
-            :key="item.key"
-            :data-index="item.key"
-            :ellipsis="item.ellipsis"
-            :tooltip="item.tooltip"
-            :title="item.title"
-            :width="item.width"
-          >
-            <template v-if="item.key === 'node'" #cell="{ record }">
-              <span
-                class="mango-dependency-node-name"
-                :style="{ '--dependency-indent': `${record.level * 18}px` }"
-                >{{ record.template_name }}</span
-              >
-              <a-tag
-                v-if="record.level === 0"
-                size="small"
-                color="arcoblue"
-                class="mango-dependency-node-tag"
-                >根节点</a-tag
-              >
-              <a-tag
-                v-else-if="record.reused"
-                size="small"
-                color="green"
-                class="mango-dependency-node-tag"
-                >复用</a-tag
-              >
-              <a-tag v-else size="small" color="orange" class="mango-dependency-node-tag">创建</a-tag>
-            </template>
-            <template v-else-if="item.key === 'action'" #cell="{ record }">
-              <a-tag :color="getDependencyActionColor(record.action)" size="small">{{
-                getDependencyActionText(record.action)
-              }}</a-tag>
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-      <TemplateFieldConfigEditor
-        v-if="previewResult.fields?.length"
-        :fields="previewResult.fields || []"
-        :field-overrides="{}"
-        :output-config="[]"
-        :generator-options="enumStore.data_factory_generator_type"
-        :preview-fields="previewResult.fields || []"
-        :loading="previewLoading === 'form'"
-        readonly
-        :show-config="false"
-        :show-output="false"
-        show-preview
-      />
-    </a-space>
-    <template #footer>
-      <a-space class="mango-data-factory-case-preview-footer">
-        <a-button @click="previewVisible = false">关闭</a-button>
-      </a-space>
-    </template>
-  </a-modal>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { useTableColumn } from '@/hooks/table'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
@@ -385,6 +384,8 @@
 
   const caseConfigList = ref<any[]>([])
   const templateList = ref<any[]>([])
+  const templateKeyword = ref('')
+  const expandedTemplateItemKeys = ref<string[]>([])
   const fieldRows = ref<DataFactoryFieldRule[]>([])
   const itemFieldsMap = ref<Record<string, DataFactoryFieldRule[]>>({})
   const dependencyTemplateOptions = ref<Record<string, any[]>>({})
@@ -394,10 +395,10 @@
   const fieldLoading = ref(false)
   const saving = ref(false)
   const visible = ref(false)
-  const previewVisible = ref(false)
   const previewLoading = ref<any>(null)
   const deleteLoading = ref<number | null>(null)
   const previewResult = ref<any>({})
+  const previewTimerId = ref<number>()
 
   const form = reactive<{
     id: number | null
@@ -434,7 +435,43 @@
   const currentTemplate = computed(() =>
     templateList.value.find((item) => String(item.id) === String(form.template))
   )
+  const filteredTemplateList = computed(() => {
+    const keyword = templateKeyword.value.trim().toLowerCase()
+    if (!keyword) {
+      return templateList.value
+    }
+    return templateList.value.filter((item) => {
+      return [
+        item.name,
+        getTemplateEntityName(item),
+        getTemplateTableName(item),
+        item.description,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    })
+  })
   const selectedTemplateItems = computed(() => currentTemplate.value?.items || [])
+  const filteredTemplateItemList = computed(() => {
+    const keyword = templateKeyword.value.trim().toLowerCase()
+    if (!keyword) {
+      return selectedTemplateItems.value
+    }
+    return selectedTemplateItems.value.filter((item: any) => {
+      const template = item.child_template_detail || {}
+      return [
+        item.name,
+        item.child_template,
+        item.field,
+        item.target_field,
+        template.name,
+        getTemplateEntityName(template),
+        getTemplateTableName(template),
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    })
+  })
   const isSceneOverrideShape = computed(
     () =>
       Object.prototype.hasOwnProperty.call(form.field_overrides || {}, '__main__') ||
@@ -443,17 +480,28 @@
   const mainCaseOverrides = computed(() =>
     isSceneOverrideShape.value ? form.field_overrides?.__main__ || {} : form.field_overrides || {}
   )
-  const dependencyTreeColumns = useTableColumn([
-    { title: '依赖节点', key: 'node', dataIndex: 'node', width: 260 },
-    { title: '来源字段', key: 'field', dataIndex: 'field', width: 140 },
-    { title: '取值字段', key: 'target_field', dataIndex: 'target_field', width: 100 },
-    { title: '策略', key: 'strategy', dataIndex: 'strategy', width: 140 },
-    { title: '动作', key: 'action', dataIndex: 'action', width: 100 },
-    { title: '说明', key: 'message', dataIndex: 'message' },
-  ])
 
   function enumTitle(options: any[] = [], value: any) {
     return options.find((item) => item.key === value)?.title || value || '-'
+  }
+
+  function getTemplateEntityName(template: any) {
+    return template?.entity?.name || template?.entity_name || template?.entity?.id || template?.entity || '-'
+  }
+
+  function getTemplateTableName(template: any) {
+    return template?.entity?.table_name || template?.table_name || '-'
+  }
+
+  function getTemplateItemCount(template: any) {
+    return template?.items?.length || 0
+  }
+
+  function getTemplateCleanupText(template: any) {
+    return enumTitle(
+      enumStore.data_factory_cleanup_strategy,
+      template?.cleanup_strategy ?? form.cleanup_strategy
+    )
   }
 
   function getOptionId(value: any) {
@@ -536,10 +584,13 @@
     templateOutputConfig.value = record?.template?.output_config || []
     fieldRows.value = []
     itemFieldsMap.value = {}
+    expandedTemplateItemKeys.value = []
+    previewResult.value = {}
   }
 
   function open(record: any = null) {
     resetForm(record)
+    templateKeyword.value = ''
     visible.value = true
     if (form.project_product) {
       productModule.getProjectModule(getOptionId(form.project_product))
@@ -548,6 +599,7 @@
       loadTemplates().then(() => {
         if (form.template) {
           loadFields()
+          scheduleCasePreview()
         }
       })
     } else {
@@ -559,9 +611,13 @@
     form.module = null
     form.template = null
     form.field_overrides = {}
+    templateKeyword.value = ''
     templateOutputConfig.value = []
     templateList.value = []
     fieldRows.value = []
+    itemFieldsMap.value = {}
+    expandedTemplateItemKeys.value = []
+    previewResult.value = {}
     if (form.project_product) {
       productModule.getProjectModule(getOptionId(form.project_product))
     }
@@ -570,9 +626,31 @@
   function onModuleChange() {
     form.template = null
     form.field_overrides = {}
+    templateKeyword.value = ''
     templateOutputConfig.value = []
     fieldRows.value = []
+    itemFieldsMap.value = {}
+    expandedTemplateItemKeys.value = []
+    previewResult.value = {}
     loadTemplates()
+  }
+
+  function selectTemplate(template: any) {
+    if (String(form.template) === String(template?.id)) {
+      return
+    }
+    form.template = template?.id || null
+    onTemplateChange()
+  }
+
+  function clearSelectedTemplate() {
+    form.template = null
+    form.field_overrides = {}
+    templateOutputConfig.value = []
+    fieldRows.value = []
+    itemFieldsMap.value = {}
+    expandedTemplateItemKeys.value = []
+    templateKeyword.value = ''
   }
 
   function onTemplateChange() {
@@ -582,7 +660,11 @@
     }
     templateOutputConfig.value = template?.output_config || []
     form.field_overrides = normalizeSceneOverrides(template?.field_overrides || {})
+    itemFieldsMap.value = {}
+    expandedTemplateItemKeys.value = []
+    previewResult.value = {}
     loadFields()
+    scheduleCasePreview()
   }
 
   function loadFields() {
@@ -597,7 +679,7 @@
       .then((res) => {
         fieldRows.value = res.data || []
         preloadDependencyTemplateOptions()
-        loadItemFields()
+        return loadItemFields()
       })
       .finally(() => {
         fieldLoading.value = false
@@ -657,6 +739,7 @@
       __main__: value,
       __items__: form.field_overrides?.__items__ || {},
     }
+    scheduleCasePreview()
   }
 
   function updateTemplateOutputConfig(value: DataFactoryOutputConfig) {
@@ -665,6 +748,21 @@
 
   function getItemCaseKey(item: any) {
     return String(item.id || item.name || item.child_template)
+  }
+
+  function getItemTemplateName(item: any) {
+    return item.name || item.child_template_detail?.name || item.child_template || '-'
+  }
+
+  function isItemExpanded(item: any) {
+    return expandedTemplateItemKeys.value.includes(getItemCaseKey(item))
+  }
+
+  function toggleItemExpanded(item: any) {
+    const key = getItemCaseKey(item)
+    expandedTemplateItemKeys.value = isItemExpanded(item)
+      ? expandedTemplateItemKeys.value.filter((itemKey) => itemKey !== key)
+      : [...expandedTemplateItemKeys.value, key]
   }
 
   function getItemCaseOverrides(item: any) {
@@ -679,6 +777,17 @@
         [getItemCaseKey(item)]: value,
       },
     }
+    scheduleCasePreview()
+  }
+
+  function getItemPreviewFields(item: any) {
+    const itemKey = getItemCaseKey(item)
+    const itemPreview = (previewResult.value?.items || []).find((previewItem: any) =>
+      [previewItem.id, previewItem.name, previewItem.template?.id]
+        .filter((value) => value !== undefined && value !== null && value !== '')
+        .some((value) => String(value) === itemKey)
+    )
+    return itemPreview?.fields || []
   }
 
   function loadItemFields() {
@@ -781,67 +890,39 @@
     })
   }
 
-  function preview(record: any = null) {
-    const target = record || form
-    const templateId = target?.template?.id || target?.template
+  function scheduleCasePreview() {
+    if (previewTimerId.value) {
+      window.clearTimeout(previewTimerId.value)
+    }
+    previewTimerId.value = window.setTimeout(() => {
+      loadCasePreview()
+    }, 360)
+  }
+
+  function loadCasePreview() {
+    const templateId = form.template
     if (!templateId) {
-      Message.error('请选择场景模板')
+      previewResult.value = {}
       return
     }
     if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
+      previewResult.value = {}
       return
     }
-    previewLoading.value = record ? target.id : 'form'
+    previewLoading.value = 'form'
     postDataFactoryCaseConfigPreview({
       source_type: props.sourceType,
       source_id: props.caseId,
       template_id: templateId,
-      field_overrides: target.field_overrides || {},
+      field_overrides: form.field_overrides || {},
       test_env: userStore.selected_environment,
     })
       .then((res) => {
-        previewResult.value = res.data
-        previewVisible.value = true
+        previewResult.value = res.data || {}
       })
       .finally(() => {
         previewLoading.value = null
       })
-  }
-
-  function flattenDependencyTree(tree: any, level = 0, path = '0'): any[] {
-    if (!tree) {
-      return []
-    }
-    const current = {
-      ...tree,
-      level,
-      path,
-      node: tree.template_name,
-      message: tree.message || (tree.reused ? '复用上下文已有数据' : ''),
-    }
-    const children = (tree.children || []).flatMap((child: any, index: number) =>
-      flattenDependencyTree(child, level + 1, `${path}-${index}`)
-    )
-    return [current, ...children]
-  }
-
-  function getDependencyActionText(action: string) {
-    const map: Record<string, string> = {
-      root: '根节点',
-      create: '创建',
-      reuse: '复用',
-    }
-    return map[action] || action || '-'
-  }
-
-  function getDependencyActionColor(action: string) {
-    const map: Record<string, string> = {
-      root: 'arcoblue',
-      create: 'orange',
-      reuse: 'green',
-    }
-    return map[action] || 'gray'
   }
 
   watch(
@@ -868,6 +949,12 @@
     refresh()
   })
 
+  onBeforeUnmount(() => {
+    if (previewTimerId.value) {
+      window.clearTimeout(previewTimerId.value)
+    }
+  })
+
   defineExpose({
     open,
     refresh,
@@ -884,31 +971,290 @@
     width: 100%;
   }
 
-  .mango-dependency-node-name {
-    padding-left: var(--dependency-indent);
+  .mango-data-factory-config-drawer {
+    height: calc(100vh - 118px);
+    min-height: 0;
   }
 
-  .mango-dependency-node-tag {
-    margin-left: 8px;
+  .mango-data-factory-config-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  .mango-data-factory-base-card {
+    display: grid;
+    padding: 12px;
+    gap: 8px 12px;
+    grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(220px, 1.4fr) minmax(160px, 1fr) 80px;
+  }
+
+  .mango-data-factory-base-card :deep(.arco-form-item) {
+    margin-bottom: 0;
+  }
+
+  .mango-data-factory-template-workbench {
+    display: grid;
+    flex: 1;
+    min-height: 0;
+    gap: 12px;
+    grid-template-columns: 330px minmax(0, 1fr);
+  }
+
+  .mango-template-selector,
+  .mango-template-editor {
+    min-height: 0;
+  }
+
+  .mango-template-selector {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .mango-template-list-spin {
+    display: block;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .mango-template-list-spin :deep(.arco-spin),
+  .mango-template-list-spin :deep(.arco-spin-children) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mango-template-list {
+    display: flex;
+    overflow: auto;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding-right: 2px;
+    gap: 8px;
+  }
+
+  .mango-template-current-card {
+    flex-shrink: 0;
+    padding: 10px 11px;
+    border: 1px solid var(--m-primary-border);
+    border-radius: var(--m-radius-md);
+    background: color-mix(in srgb, var(--m-primary) 7%, var(--m-surface));
+    box-shadow: var(--m-form-focus-shadow);
+  }
+
+  .mango-template-current-card__label {
+    margin-bottom: 4px;
+    color: var(--m-primary);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  .mango-template-current-card__name,
+  .mango-template-current-card__meta,
+  .mango-template-current-card__foot {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mango-template-current-card__name {
+    color: var(--m-text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 19px;
+  }
+
+  .mango-template-current-card__meta,
+  .mango-template-current-card__foot {
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .mango-template-current-card__foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3px;
+    gap: 8px;
+  }
+
+  .mango-template-current-card__action {
+    margin-top: 6px;
+    padding: 0;
+  }
+
+  .mango-template-option {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+    padding: 10px 11px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface-soft);
+    color: var(--m-text);
+    cursor: pointer;
+    gap: 5px;
+    text-align: left;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .mango-template-option:hover {
+    border-color: color-mix(in srgb, var(--m-primary) 28%, var(--m-border));
+    background: var(--m-surface);
+  }
+
+  .mango-template-option--active {
+    border-color: var(--m-primary);
+    background: color-mix(in srgb, var(--m-primary) 7%, var(--m-surface));
+    box-shadow: var(--m-form-focus-shadow);
+  }
+
+  .mango-template-option--relation {
+    cursor: default;
+  }
+
+  .mango-template-option--relation:hover {
+    border-color: var(--m-border);
+    background: var(--m-surface-soft);
+  }
+
+  .mango-template-option__name,
+  .mango-template-option__meta,
+  .mango-template-option__foot {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mango-template-option__name {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 19px;
+  }
+
+  .mango-template-option__meta,
+  .mango-template-option__foot {
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .mango-template-option__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .mango-template-editor {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mango-template-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 12px;
+    gap: 12px;
+    box-shadow: none;
+  }
+
+  .mango-template-summary__title {
+    overflow: hidden;
+    color: var(--m-text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mango-template-summary__meta {
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mango-template-editor-spin {
+    display: block;
+    overflow: hidden;
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mango-template-editor-spin :deep(.arco-spin),
+  .mango-template-editor-spin :deep(.arco-spin-children) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mango-template-editor-spin :deep(.arco-spin-children) {
+    overflow: hidden;
+  }
+
+  .mango-template-field-stack {
+    overflow-y: auto;
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+    padding-right: 2px;
+  }
+
+  .mango-template-field-stack :deep(.arco-space-item) {
+    flex-shrink: 0;
+  }
+
+  .mango-template-empty {
+    min-height: 160px;
+  }
+
+  .mango-data-factory-config-footer {
+    width: 100%;
   }
 
   .mango-case-config-field-card {
+    flex-shrink: 0;
     box-shadow: none;
+  }
+
+  .mango-case-config-field-card--collapsed {
+    padding-bottom: 12px;
+  }
+
+  .mango-template-item-collapsed {
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
   }
 
   .mango-field-empty {
     min-height: 96px;
   }
 
-  .mango-data-factory-case-preview-content {
-    max-height: 70vh;
-    overflow-y: auto;
-    padding-right: 8px;
-    width: 100%;
-  }
+  @media (max-width: 1200px) {
+    .mango-data-factory-base-card {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 
-  .mango-data-factory-case-preview-footer {
-    justify-content: flex-end;
-    width: 100%;
+    .mango-data-factory-template-workbench {
+      grid-template-columns: 1fr;
+    }
+
   }
 </style>

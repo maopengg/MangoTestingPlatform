@@ -28,7 +28,7 @@
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
-                  :options="item.optionItems"
+                  :options="item.key === 'test_env' ? enumStore.environment_type : item.optionItems"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -78,6 +78,11 @@
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+            </template>
+            <template v-else-if="item.key === 'test_env'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.test_env]" size="small">
+                {{ enumStore.environment_type[record.test_env]?.title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.type]" size="small"
@@ -146,6 +151,17 @@
               value-key="key"
             />
           </template>
+          <template v-else-if="item.type === 'select' && item.key === 'test_env'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.environment_type"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
         </a-form-item>
       </a-form>
     </template>
@@ -169,8 +185,10 @@
     putUiPublicPutStatus,
   } from '@/api/uitest/public'
   import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
 
   const enumStore = useEnum()
+  const userStore = useUserStore()
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -239,6 +257,10 @@
         it.value = ''
       }
     })
+    const envItem = formItems.find((it) => it.key === 'test_env')
+    if (envItem && userStore.selected_environment != null) {
+      envItem.value = userStore.selected_environment
+    }
   }
 
   function onDelete(record: any) {

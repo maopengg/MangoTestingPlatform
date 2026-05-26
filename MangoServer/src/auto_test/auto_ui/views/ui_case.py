@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-03-25 18:53
 # @Author : 毛鹏
+from django.db.models import Q
 from django.forms import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -10,8 +11,10 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
+from src.auto_test.auto_system.models import ProjectProduct
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_api.schemas.case_schema import validate_int_list
 from src.auto_test.auto_ui.models import UiCase
 from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.auto_test.auto_user.views.user import UserSerializers
@@ -30,6 +33,9 @@ class UiCaseSerializers(serializers.ModelSerializer):
     class Meta:
         model = UiCase
         fields = '__all__'
+
+    def validate_scenario_tags(self, value):
+        return validate_int_list(value, '场景标签')
 
 
 class UiCaseSerializersC(serializers.ModelSerializer):
@@ -57,6 +63,61 @@ class UiCaseCRUD(ModelCRUD):
     queryset = UiCase.objects.all()
     serializer_class = UiCaseSerializersC
     serializer = UiCaseSerializers
+
+    @error_response('ui')
+    def get(self, request: Request):
+        query_dict = {}
+        scenario_tags = request.query_params.getlist('scenario_tags[]')
+        scenario_tags.extend(request.query_params.getlist('scenario_tags'))
+        scenario_tags = [
+            int(item)
+            for item in scenario_tags
+            if str(item).strip() not in ['', 'null', 'undefined']
+        ]
+
+        for key, value_list in dict(request.query_params.lists()).items():
+            if key in ['scenario_tags', 'scenario_tags[]', 'page', 'pageSize']:
+                continue
+            value = value_list[0]
+            if value in [None, '', 'null', 'undefined']:
+                continue
+            if key in self.not_matching_str or key in ['level', 'scenario_type']:
+                query_dict[key] = value
+            elif 'id' not in key:
+                query_dict[f'{key}__contains'] = value
+            else:
+                query_dict[key] = value
+
+        project_id = request.headers.get('Project', None)
+        if query_dict.get('project_product') is None and project_id:
+            query_dict['project_product_id__in'] = ProjectProduct.objects.filter(
+                project_id=project_id
+            ).values_list('id', flat=True)
+
+        queryset = UiCase.objects.filter(**query_dict)
+        if scenario_tags:
+            tag_query = Q()
+            for tag in scenario_tags:
+                tag_query |= Q(scenario_tags__contains=[tag])
+            queryset = queryset.filter(tag_query)
+
+        paging = request.query_params.get("pageSize") and request.query_params.get("page")
+        if paging:
+            data_list, count = self.paging_list(
+                request.query_params.get("pageSize"),
+                request.query_params.get("page"),
+                queryset,
+                self.get_serializer_class()
+            )
+            return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
+
+        serializer = self.get_serializer_class()
+        queryset = serializer.setup_eager_loading(queryset)
+        return ResponseData.success(
+            RESPONSE_MSG_0001,
+            serializer(instance=queryset, many=True).data,
+            queryset.count()
+        )
 
 
 class UiCaseViews(ViewSet):

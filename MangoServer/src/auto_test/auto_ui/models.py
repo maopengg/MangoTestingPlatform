@@ -2,6 +2,7 @@ from django.db import models
 
 from src.auto_test.auto_system.models import ProjectProduct, ProductModule
 from src.auto_test.auto_user.models import User
+from src.enums.tools_enum import EnvironmentEnum
 from src.exceptions import ToolsError
 
 """
@@ -128,6 +129,9 @@ class UiCase(models.Model):
     case_flow = models.TextField(verbose_name="步骤顺序", null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
     parametrize = models.JSONField(verbose_name="参数化", default=list)
+    scenario_type = models.SmallIntegerField(verbose_name="场景类型", default=0)
+    scenario_tags = models.JSONField(verbose_name="场景标签", default=list)
+    scenario_description = models.TextField(verbose_name="场景描述", null=True, blank=True)
     # 0失败，1成功，2待开始，3，进行中
     status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
     level = models.SmallIntegerField(verbose_name="用例级别", default=0, db_index=True)
@@ -177,6 +181,13 @@ class UiPublic(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    test_env = models.SmallIntegerField(
+        verbose_name="测试环境",
+        choices=EnvironmentEnum.choices(),
+        null=True,
+        blank=True,
+        default=None,
+    )
     # 0等于自定义，1等于sql，2等于登录，3等于header
     type = models.SmallIntegerField(verbose_name="自定义变量类型")
     name = models.CharField(verbose_name="名称", max_length=64)

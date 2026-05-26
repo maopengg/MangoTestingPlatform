@@ -45,12 +45,32 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'level',
-    label: '用例级别',
+    label: '优先级',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择用例级别',
+    placeholder: '请选择优先级',
     optionItems: [],
     reset: function () {},
+  },
+  {
+    key: 'scenario_type',
+    label: '场景类型',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择场景类型',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'scenario_tags',
+    label: '场景标签',
+    value: ref([]),
+    type: 'select',
+    placeholder: '请选择场景标签',
+    optionItems: [],
+    reset: function () {
+      this.value = []
+    },
   },
   {
     key: 'case_people',
@@ -118,18 +138,56 @@ export const formItems = reactive([
     },
   },
   {
-    label: '用例级别',
+    label: '优先级',
     key: 'level',
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请设置用例级别',
+    placeholder: '请设置优先级',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
       return true
+    },
+  },
+  {
+    label: '场景类型',
+    key: 'scenario_type',
+    value: ref(0),
+    type: 'select',
+    required: true,
+    placeholder: '请选择场景类型',
+    reset: function () {
+      this.value = 0
+    },
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '场景标签',
+    key: 'scenario_tags',
+    value: ref([]),
+    type: 'select',
+    placeholder: '请选择场景标签',
+    reset: function () {
+      this.value = []
+    },
+  },
+  {
+    label: '场景描述',
+    key: 'scenario_description',
+    value: ref(''),
+    type: 'textarea',
+    placeholder: 'Given 前置条件\nWhen 用户执行某个行为\nThen 应得到某个结果',
+    reset: function () {
+      this.value = ''
     },
   },
   {
@@ -179,6 +237,15 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '场景描述',
+    key: 'scenario_description',
+    dataIndex: 'scenario_description',
+    align: 'left',
+    width: 260,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '步骤顺序',
     key: 'case_flow',
     dataIndex: 'case_flow',
@@ -188,10 +255,26 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '级别',
+    title: '场景标签',
+    key: 'scenario_tags',
+    dataIndex: 'scenario_tags',
+    align: 'left',
+    width: 110,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '场景类型',
+    key: 'scenario_type',
+    dataIndex: 'scenario_type',
+    align: 'left',
+    width: 100,
+  },
+  {
+    title: '优先级',
     key: 'level',
     dataIndex: 'level',
-    width: 60,
+    width: 80,
   },
   {
     title: '负责人',

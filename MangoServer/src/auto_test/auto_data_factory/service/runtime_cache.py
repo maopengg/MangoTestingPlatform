@@ -20,7 +20,7 @@ class DataFactoryRuntimeCache:
         test_data = ObtainTestData()
         project_product_ids = cls.get_same_project_product_ids(project_product_id)
         cls.load_api_public(test_data, project_product_id, project_product_ids, test_env)
-        cls.load_ui_public(test_data, project_product_id, project_product_ids)
+        cls.load_ui_public(test_data, project_product_id, project_product_ids, test_env)
         return test_data
 
     @classmethod
@@ -65,11 +65,13 @@ class DataFactoryRuntimeCache:
             test_data: ObtainTestData,
             project_product_id: int,
             project_product_ids: list[int],
+            test_env,
     ) -> None:
         queryset = UiPublic.objects.filter(
                 project_product_id__in=project_product_ids,
                 type=UiPublicTypeEnum.CUSTOM.value,
                 status=StatusEnum.SUCCESS.value,
+                test_env=test_env,
         )
         current_product_items = queryset.filter(project_product_id=project_product_id).order_by('id')
         same_project_items = queryset.exclude(project_product_id=project_product_id).order_by('id')

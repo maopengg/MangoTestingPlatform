@@ -76,6 +76,31 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_case_scenario_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_case_scenario_tag"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  multiple
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -130,7 +155,7 @@
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
-        :scroll="{ x: 1260 }"
+        :scroll="{ x: 1520 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -154,6 +179,27 @@
             <template v-else-if="item.key === 'module'" #cell="{ record }">
               {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
               }}{{ record?.module?.name }}
+            </template>
+            <template v-else-if="item.key === 'scenario_type'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.scenario_type]" size="small">
+                {{ getEnumTitle(enumStore.api_case_scenario_type, record.scenario_type) }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'scenario_tags'" #cell="{ record }">
+              <a-space wrap :size="4">
+                <a-tag
+                  v-for="tag of getScenarioTagList(record)"
+                  :key="tag.key"
+                  :color="enumStore.colors[tag.key]"
+                  size="small"
+                >
+                  {{ tag.title }}
+                </a-tag>
+                <span v-if="!getScenarioTagList(record).length">-</span>
+              </a-space>
+            </template>
+            <template v-else-if="item.key === 'scenario_description'" #cell="{ record }">
+              {{ record.scenario_description || '-' }}
             </template>
             <template v-else-if="item.key === 'level'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record?.level]" size="small"
@@ -249,6 +295,36 @@
               value-key="key"
             />
           </template>
+          <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.api_case_scenario_type"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.api_case_scenario_tag"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              multiple
+              value-key="key"
+            />
+          </template>
+          <template v-else-if="item.type === 'textarea'">
+            <a-textarea
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :auto-size="{ minRows: 3, maxRows: 5 }"
+            />
+          </template>
         </a-form-item>
       </a-form>
     </template>
@@ -323,6 +399,9 @@
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
     clearPollingTimer()
     let value = getFormItems(conditionItems)
+    if (!Array.isArray(value.scenario_tags) || !value.scenario_tags.length) {
+      delete value.scenario_tags
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {
@@ -348,9 +427,28 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      if (it.reset) {
+        it.reset()
+      } else {
+        it.value = ''
+      }
     })
     doRefresh()
+  }
+
+  function getEnumTitle(options: any[] | null, value: any) {
+    return options?.find((item: any) => Number(item.key) === Number(value))?.title || '-'
+  }
+
+  function getScenarioTagList(record: any) {
+    const tags = Array.isArray(record.scenario_tags) ? record.scenario_tags : []
+    return tags
+      .map((tag: any) =>
+        (enumStore.api_case_scenario_tag || []).find(
+          (item: any) => Number(item.key) === Number(tag)
+        )
+      )
+      .filter(Boolean)
   }
 
   function onAdd() {
@@ -404,7 +502,9 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        if (Array.isArray(propName)) {
+          it.value = propName
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
           it.value = propName
@@ -479,6 +579,7 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
+      value['scenario_tags'] = value['scenario_tags'] || []
       if (data.isAdd) {
         value['front_custom'] = []
         value['front_sql'] = []

@@ -668,7 +668,7 @@
       item.name = getSceneTemplateName(item.child_template)
     }
     item.field_overrides = item.field_overrides || {}
-    loadSceneItemFields().then(() => autoSaveSceneItems())
+    autoSaveSceneItems()
   }
 
   function onSceneItemNameBlur(item: any) {

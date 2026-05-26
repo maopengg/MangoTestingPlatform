@@ -9,6 +9,7 @@ from threading import Thread
 
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
+from django.db import models
 from django.db.models.query import QuerySet
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
@@ -30,6 +31,24 @@ class ModelCRUD(GenericAPIView):
         'module', 'project_product', 'case_people', 'test_object', 'project', 'user'
     ]
     pytest_model = ['PytestAct', 'PytestCase', 'PytestTools', 'PytestTestFile']
+
+    def has_invalid_integer_filter(self, query_dict: dict) -> bool:
+        for key, value in query_dict.items():
+            if not isinstance(value, str):
+                continue
+            field_name = key.split('__', 1)[0]
+            try:
+                field = self.model._meta.get_field(field_name)
+            except FieldDoesNotExist:
+                continue
+            target_field = field.target_field if isinstance(field, models.ForeignKey) else field
+            if not isinstance(target_field, models.IntegerField):
+                continue
+            try:
+                int(value)
+            except ValueError:
+                return True
+        return False
 
     @error_response('system')
     def get(self, request: Request):
@@ -57,11 +76,14 @@ class ModelCRUD(GenericAPIView):
         if paging:
             del query_dict['pageSize'], query_dict['page']
         try:
-            try:
-                self.model._meta.get_field('case_sort')
-                books = self.model.objects.filter(**query_dict).order_by('case_sort')
-            except FieldDoesNotExist:
-                books = self.model.objects.filter(**query_dict)
+            if self.has_invalid_integer_filter(query_dict):
+                books = self.model.objects.none()
+            else:
+                try:
+                    self.model._meta.get_field('case_sort')
+                    books = self.model.objects.filter(**query_dict).order_by('case_sort')
+                except FieldDoesNotExist:
+                    books = self.model.objects.filter(**query_dict)
             if paging:
                 data_list, count = self.paging_list(
                     request.query_params.get("pageSize"),
@@ -99,18 +121,19 @@ class ModelCRUD(GenericAPIView):
     def put(self, request: Request):
         if isinstance(request, dict):
             data = request
-            serializer = self.serializer(
-                instance=self.model.objects.get(pk=request.get('id')),
-                data=data,
-                partial=True
-            )
+            instance_id = request.get('id')
         else:
             data = request.data
-            serializer = self.serializer(
-                instance=self.model.objects.get(pk=request.data.get('id')),
-                data=data,
-                partial=True
-            )
+            instance_id = request.data.get('id')
+        try:
+            instance = self.model.objects.get(pk=instance_id)
+        except self.model.DoesNotExist:
+            return ResponseData.fail(RESPONSE_MSG_0158)
+        serializer = self.serializer(
+            instance=instance,
+            data=data,
+            partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             parent_id = data.get('parent_id')

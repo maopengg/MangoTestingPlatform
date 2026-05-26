@@ -101,7 +101,8 @@ class UserViews(ViewSet):
     def put_project(self, request: Request):
 
         user = self.model.objects.get(id=request.data.get('id'))
-        user.selected_project = request.data.get('selected_project')
+        selected_project = request.data.get('selected_project')
+        user.selected_project = None if selected_project == '' else selected_project
         user.save()
         return ResponseData.success(RESPONSE_MSG_0034, model_to_dict(user, exclude=['password']))
         # return ResponseData.fail(RESPONSE_MSG_0035, serializer.errors)
@@ -110,7 +111,8 @@ class UserViews(ViewSet):
     @error_response('user')
     def put_environment(self, request: Request):
         user = self.model.objects.get(id=request.data.get('id'))
-        user.selected_environment = request.data.get('selected_environment')
+        selected_environment = request.data.get('selected_environment')
+        user.selected_environment = None if selected_environment == '' else selected_environment
         user.save()
         return ResponseData.success(RESPONSE_MSG_0036, model_to_dict(user, exclude=['password']))
         # return ResponseData.fail(RESPONSE_MSG_0037, serializer.errors)
