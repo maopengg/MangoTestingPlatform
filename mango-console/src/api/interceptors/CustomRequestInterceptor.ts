@@ -10,7 +10,7 @@ export default function (config: AxiosRequestConfig) {
       config.headers = {}
     }
     config.headers['Source-Type'] = '1'
-    if (!config.headers['Authorization']) {
+    if (useStore.token && !config.headers['Authorization']) {
       config.headers['Authorization'] = useStore.token
       if (project.selectValue) {
         config.headers['project'] = project.selectValue.toString()

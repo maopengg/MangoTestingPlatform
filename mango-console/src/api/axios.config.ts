@@ -1,5 +1,7 @@
 import Axios, { AxiosResponse } from 'axios'
 import qs from 'qs'
+import CustomRequestInterceptor from './interceptors/CustomRequestInterceptor'
+import UserTokenExpiredInterceptor from './interceptors/UserTokenExpiredInterceptor'
 
 function currentWebSocketURL(): string {
   if (typeof window === 'undefined') {
@@ -36,7 +38,7 @@ service.interceptors.request.use(
     if (config.headers[CONTENT_TYPE] === FORM_URLENCODED) {
       config.data = qs.stringify(config.data)
     }
-    return config
+    return CustomRequestInterceptor(config)
   },
   (error) => {
     return Promise.reject(error.response)
@@ -46,6 +48,7 @@ service.interceptors.request.use(
 // 在接口返回数据的时候进行一次拦截
 service.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => {
+    UserTokenExpiredInterceptor(response)
     if (response.status === 200) {
       return response
     } else {
