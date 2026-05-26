@@ -41,20 +41,35 @@
     setup() {
       const loading = ref(true)
       const fullYearSalesChart = ref<HTMLDivElement | null>(null)
+      let resizeObserver: ResizeObserver | null = null
+      let resizeFrame = 0
       const token = (name: string, fallback: string) =>
         getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-      const chartColors = () => [
-        token('--m-chart-1', '#5b7cfa'),
-        token('--m-chart-2', '#22c55e'),
-        token('--m-chart-3', '#f6c143'),
-      ]
+      const testTypeColors = () => ({
+        api: token('--m-chart-1', '#5b7cfa'),
+        ui: token('--m-chart-2', '#22c55e'),
+        pytest: token('--m-chart-3', '#f6c143'),
+      })
       const seriesSummary = ref([
-        { name: '接口用例', total: 0, color: chartColors()[0] },
-        { name: '界面用例', total: 0, color: chartColors()[1] },
-        { name: '单元用例', total: 0, color: chartColors()[2] },
+        { name: '接口自动化', total: 0, color: testTypeColors().api },
+        { name: '界面自动化', total: 0, color: testTypeColors().ui },
+        { name: '单元自动化', total: 0, color: testTypeColors().pytest },
       ])
       let interval: any = null
       let data: any = reactive([])
+
+      function syncSummaryColors() {
+        const colors = testTypeColors()
+        seriesSummary.value = seriesSummary.value.map((item) => {
+          if (item.name.includes('接口')) {
+            return { ...item, color: colors.api }
+          }
+          if (item.name.includes('界面')) {
+            return { ...item, color: colors.ui }
+          }
+          return { ...item, color: colors.pytest }
+        })
+      }
 
       function caseResultWeekSum() {
         loading.value = true
@@ -63,28 +78,28 @@
             data = res.data
             seriesSummary.value = [
               {
-                name: '接口用例',
+                name: '接口自动化',
                 total: (data.api_count || []).reduce(
                   (sum: number, item: number) => sum + Number(item || 0),
                   0
                 ),
-                color: chartColors()[0],
+                color: testTypeColors().api,
               },
               {
-                name: '界面用例',
+                name: '界面自动化',
                 total: (data.ui_count || []).reduce(
                   (sum: number, item: number) => sum + Number(item || 0),
                   0
                 ),
-                color: chartColors()[1],
+                color: testTypeColors().ui,
               },
               {
-                name: '单元用例',
+                name: '单元自动化',
                 total: (data.pytest_count || []).reduce(
                   (sum: number, item: number) => sum + Number(item || 0),
                   0
                 ),
-                color: chartColors()[2],
+                color: testTypeColors().pytest,
               },
             ]
             init()
@@ -96,8 +111,9 @@
       }
 
       const init = () => {
+        syncSummaryColors()
         const option = {
-          color: chartColors(),
+          color: [testTypeColors().api, testTypeColors().ui, testTypeColors().pytest],
           grid: {
             top: 20,
             left: 8,
@@ -153,7 +169,7 @@
           series: [
             {
               type: 'line',
-              name: '接口用例',
+              name: '接口自动化',
               data: data.api_count,
               symbol: 'circle',
               symbolSize: 6,
@@ -165,12 +181,12 @@
                 opacity: 0.12,
               },
               itemStyle: {
-                color: chartColors()[0],
+                color: testTypeColors().api,
               },
             },
             {
               type: 'line',
-              name: '界面用例',
+              name: '界面自动化',
               data: data.ui_count,
               symbol: 'circle',
               symbolSize: 6,
@@ -182,12 +198,12 @@
                 opacity: 0.1,
               },
               itemStyle: {
-                color: chartColors()[1],
+                color: testTypeColors().ui,
               },
             },
             {
               type: 'line',
-              name: '单元用例',
+              name: '单元自动化',
               data: data.pytest_count,
               symbol: 'circle',
               symbolSize: 6,
@@ -199,7 +215,7 @@
                 opacity: 0.12,
               },
               itemStyle: {
-                color: chartColors()[2],
+                color: testTypeColors().pytest,
               },
             },
           ],
@@ -207,20 +223,43 @@
         nextTick(() => {
           if (fullYearSalesChart.value) {
             useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)
+            updateChart()
           }
         })
       }
       const updateChart = () => {
-        useEcharts(fullYearSalesChart.value as HTMLDivElement).resize()
+        if (!fullYearSalesChart.value) {
+          return
+        }
+        if (resizeFrame) {
+          window.cancelAnimationFrame(resizeFrame)
+        }
+        resizeFrame = window.requestAnimationFrame(() => {
+          if (fullYearSalesChart.value) {
+            useEcharts(fullYearSalesChart.value as HTMLDivElement).resize()
+          }
+          resizeFrame = 0
+        })
       }
       onMounted(() => {
         nextTick(async () => {
           await caseResultWeekSum()
+          updateChart()
         })
         window.addEventListener('mango-theme-change', init)
+        window.addEventListener('resize', updateChart)
+        if (fullYearSalesChart.value) {
+          resizeObserver = new ResizeObserver(updateChart)
+          resizeObserver.observe(fullYearSalesChart.value)
+        }
       })
       onBeforeUnmount(() => {
         window.removeEventListener('mango-theme-change', init)
+        window.removeEventListener('resize', updateChart)
+        resizeObserver?.disconnect()
+        if (resizeFrame) {
+          window.cancelAnimationFrame(resizeFrame)
+        }
         dispose(fullYearSalesChart.value as HTMLDivElement)
         clearInterval(interval)
       })
@@ -310,5 +349,7 @@
   .chart-item {
     flex: 1;
     min-height: 0;
+    width: 100%;
+    min-width: 0;
   }
 </style>

@@ -87,22 +87,27 @@
 
   .main-layout-open-status {
     margin-left: @menuWidth;
+    min-width: var(--m-workspace-min-width);
   }
 
   .main-layout-close-status {
     margin-left: @minMenuWidth;
+    min-width: var(--m-workspace-min-width);
   }
 
   .nav-bar-open-status.fixed-nav-bar {
     width: calc(100% - @menuWidth);
+    min-width: var(--m-workspace-min-width);
   }
 
   .nav-bar-close-status.fixed-nav-bar {
     width: calc(100% - @minMenuWidth);
+    min-width: var(--m-workspace-min-width);
   }
 
   .nav-bar-open-status__ttb {
     width: 100%;
+    min-width: var(--m-workspace-min-width);
   }
 
   :deep(.mango-main-base-style .mango-scrollbar__view) {

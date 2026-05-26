@@ -36,6 +36,8 @@ class TestCase:
         self.case_model: CaseModel = case_model
         self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
+        for key, value in (self.case_model.data_factory_cache_data or {}).items():
+            self.test_data.set_data_factory_cache(key, value)
         self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot())
         if SetConfig.get_is_agent():
@@ -50,6 +52,9 @@ class TestCase:
             test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             test_env=self.case_model.test_env,
             status=StatusEnum.SUCCESS.value,
+            data_factory_cache_data=self.case_model.data_factory_cache_data,
+            data_factory_execution_ids=self.case_model.data_factory_execution_ids,
+            data_factory_auto_cleanup_execution_ids=self.case_model.data_factory_auto_cleanup_execution_ids,
         )
         send_global_msg(self.case_model.name, MessageEnum.CASE_NAME)
 
@@ -103,10 +108,10 @@ class TestCase:
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')
                 break
         try:
-            await self.send_case_result(
-                f'用例【{self.case_model.name}】执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
             await self.case_posterior(self.case_model.posterior_sql)
             await self.sava_videos()
+            await self.send_case_result(
+                f'用例【{self.case_model.name}】执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
         except Exception:
             await self.send_case_result(
                 f'用例【{self.case_model.name}】后置处理失败了，如果是因为开启视频录制则忽略，开启视频录制需要安装：playwright install ffmpeg，或者请联系管理员来解决!')
@@ -174,6 +179,8 @@ class TestCase:
         send_global_msg(msg, )
 
     def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg=None):
+        page_steps_result_model.data_factory_cache_data = self.base_data.test_data.get_data_factory_all()
+        self.case_result.data_factory_cache_data = self.base_data.test_data.get_data_factory_all()
         self.case_result.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if msg:
             self.case_result.error_message = msg

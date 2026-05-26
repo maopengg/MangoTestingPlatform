@@ -123,6 +123,7 @@ class PageSteps:
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = str(error)
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
+        self.page_step_result_model.data_factory_cache_data = self.base_data.test_data.get_data_factory_all()
         self.page_step_result_model.test_object = self.test_object
         self.page_step_result_model.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return self.page_step_result_model

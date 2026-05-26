@@ -4,6 +4,7 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 from src.auto_test.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
+from src.auto_test.auto_data_factory.service.cleanup import DataFactoryCleanup
 from src.exceptions import *
 from src.models.ui_model import UiCaseResultModel, PageStepsResultModel
 
@@ -30,6 +31,7 @@ class TestReportWriting:
         case.save()
         for i in data.steps:
             cls.update_step(i)
+        cls.cleanup_data_factory(data)
 
     @classmethod
     def update_step(cls, step_data: PageStepsResultModel):
@@ -45,3 +47,12 @@ class TestReportWriting:
         page_step.status = step_data.status
         page_step.result_data = step_data.model_dump()
         page_step.save()
+
+    @classmethod
+    def cleanup_data_factory(cls, data: UiCaseResultModel):
+        for execution_id in data.data_factory_auto_cleanup_execution_ids:
+            try:
+                result = DataFactoryCleanup.cleanup_execution(execution_id)
+                log.ui.info(f'UI用例数据工厂自动清理完成，execution_id:{execution_id}，结果:{result}')
+            except Exception as error:
+                log.ui.error(f'UI用例数据工厂自动清理失败，execution_id:{execution_id}，错误:{error}')

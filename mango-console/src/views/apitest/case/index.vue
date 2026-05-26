@@ -200,12 +200,12 @@
             </template>
             <template v-else-if="item.key === 'level'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.level]" size="small">
-                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}
+                {{ record.level !== null ? enumStore.case_level[record.level]?.title || '-' : '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                >{{ enumStore.task_status[record.status].title }}
+                >{{ enumStore.task_status[record.status]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">

@@ -69,7 +69,7 @@
     margin-top: 18px;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .manual-layout {
       grid-template-columns: 1fr;
     }

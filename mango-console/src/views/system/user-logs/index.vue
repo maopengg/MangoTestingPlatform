@@ -101,7 +101,7 @@
             </template>
             <template v-else-if="item.key === 'source_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.source_type]" size="small"
-                >{{ enumStore.cline_type[record.source_type].title }}
+                >{{ enumStore.cline_type[record.source_type]?.title || '-' }}
               </a-tag>
             </template>
           </a-table-column>

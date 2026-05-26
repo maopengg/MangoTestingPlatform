@@ -797,7 +797,7 @@
       }
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1px) {
       .center {
         width: 90%;
         max-width: 500px;
@@ -819,7 +819,7 @@
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 1px) {
       .center {
         .form-wrapper {
           padding: 40px 30px;

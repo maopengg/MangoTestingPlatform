@@ -1,5 +1,6 @@
 import useUserStore from '@/store/modules/user'
 import usePermissionStore from '@/store/modules/permission'
+import { useEnum } from '@/store/modules/get-enum'
 import router from '..'
 import { connectWebSocket, hasWebSocketLoginSession } from '@/utils/socket'
 
@@ -17,6 +18,8 @@ function usePermissionGuard() {
         query: { redirect: to.fullPath },
       }
     }
+
+    await useEnum().getEnum()
 
     // 用户已登录，确保 WebSocket 已连接（处理页面刷新的情况）
     if (hasWebSocketLoginSession() && userStore.userName && userStore.password) {

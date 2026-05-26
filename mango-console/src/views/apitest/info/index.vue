@@ -137,12 +137,12 @@
             </template>
             <template v-else-if="item.key === 'method'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.method]" size="small"
-                >{{ enumStore.method[record.method].title }}
+                >{{ enumStore.method[record.method]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                >{{ enumStore.task_status[record.status].title }}
+                >{{ enumStore.task_status[record.status]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'is_schema'" #cell="{ record }">

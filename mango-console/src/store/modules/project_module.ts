@@ -15,7 +15,7 @@ export const useProductModule = defineStore('product-module', {
     getProjectModule(projectProductId: number | string | null = null) {
       return getUserModuleName(projectProductId)
         .then((res) => {
-          this.data = res.data
+          this.data = Array.isArray(res.data) ? res.data : []
           return res
         })
         .catch(console.log)

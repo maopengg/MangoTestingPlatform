@@ -212,12 +212,16 @@
               {{ resultData.video_path }}
             </div>
           </article>
-          <article class="mango-ui-report__detail-panel mango-ui-report__runtime-wide">
+          <article
+            v-for="section in runtimeSections"
+            :key="section.key"
+            class="mango-ui-report__detail-panel mango-ui-report__runtime-wide"
+          >
             <div class="mango-ui-report__section-head">
-              <h3>缓存数据</h3>
-              <p>执行过程中产生的上下文缓存。</p>
+              <h3>{{ section.title }}</h3>
+              <p>{{ section.description }}</p>
             </div>
-            <JsonDisplay :data="resultData?.cache_data || {}" />
+            <JsonDisplay :data="section.data" />
           </article>
         </div>
       </a-tab-pane>
@@ -267,6 +271,46 @@
   })
   const resultStatusColor = computed(() => statusColor(props.resultData?.status))
   const resultStatusClass = computed(() => `mango-ui-report__progress-card--${resultStatusType.value}`)
+
+  type RuntimeSection = {
+    key: string
+    title: string
+    description: string
+    data: unknown
+  }
+
+  const hasValue = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return false
+    if (Array.isArray(value)) return value.length > 0
+    if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0
+    return true
+  }
+
+  const runtimeSections = computed<RuntimeSection[]>(() => {
+    const sections: RuntimeSection[] = [
+      {
+        key: 'cache',
+        title: '缓存数据',
+        description: '本次 UI 执行过程中写入或读取的缓存上下文。',
+        data: props.resultData?.cache_data,
+      },
+      {
+        key: 'factory',
+        title: '数据工厂',
+        description: '数据工厂生成或注入到 UI 执行器的上下文。',
+        data: props.resultData?.data_factory_cache_data,
+      },
+    ]
+    const visibleSections = sections.filter((item) => hasValue(item.data))
+    return visibleSections.length ? visibleSections : [
+      {
+        key: 'empty',
+        title: '暂无运行缓存',
+        description: '本次 UI 执行没有记录缓存数据或数据工厂上下文。',
+        data: {},
+      },
+    ]
+  })
 
   function stepKey(item: any, index: number) {
     return String(item?.id ?? item?.page_step_details_id ?? index)

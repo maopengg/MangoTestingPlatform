@@ -4,6 +4,7 @@ import { getSystemEnum, getSystemEnumShare } from '@/api/system/system'
 type StateValueType = null | { key: number; title: string }[]
 
 interface EnumState {
+  client: StateValueType
   cline_type: StateValueType
   method: StateValueType
   api_public_type: StateValueType
@@ -46,8 +47,11 @@ interface EnumState {
   status_colors: string[]
 }
 
+let enumRequest: Promise<void> | null = null
+
 export const useEnum = defineStore('get-enum', {
   state: (): EnumState => ({
+    client: [],
     cline_type: [],
     method: [],
     api_public_type: [],
@@ -106,57 +110,69 @@ export const useEnum = defineStore('get-enum', {
   }),
   getters: {},
   actions: {
-    setEnumData(data: any) {
-      this.cline_type = data.cline_type
-      this.method = data.method
-      this.api_public_type = data.api_public_type
-      this.api_auth_type = data.api_auth_type
-      this.api_auth_refresh_mode = data.api_auth_refresh_mode
-      this.api_auth_refresh_status = data.api_auth_refresh_status
-      this.api_client = data.api_client
-      this.notice = data.notice
-      this.status = data.status
-      this.drive_type = data.drive_type
-      this.browser_type = data.browser_type
-      this.element_exp = data.element_exp
-      this.case_level = data.case_level
-      this.ui_public = data.ui_public
-      this.element_ope = data.element_ope
-      this.api_parameter_type = data.api_parameter_type
-      this.api_case_scenario_type = data.api_case_scenario_type
-      this.api_case_scenario_tag = data.api_case_scenario_tag
-      this.product_type = data.product_type
-      this.auto_type = data.auto_type
-      this.task_status = data.task_status
-      this.environment_type = data.environment_type
-      this.test_case_type = data.test_case_type
-      this.file_status = data.file_status
-      this.file_type = data.file_type
-      this.monitoring_task_status = data.monitoring_task_status
-      this.monitoring_log_status = data.monitoring_log_status
-      this.test_suite_notice = data.test_suite_notice
-      this.database_type = data.database_type
-      this.data_factory_source_mode = data.data_factory_source_mode
-      this.data_factory_operation_type = data.data_factory_operation_type
-      this.data_factory_generator_type = data.data_factory_generator_type
-      this.data_factory_cleanup_strategy = data.data_factory_cleanup_strategy
-      this.data_factory_template_config_status = data.data_factory_template_config_status
-      this.data_factory_execution_source = data.data_factory_execution_source
-      this.data_factory_execution_stage = data.data_factory_execution_stage
-      this.data_factory_execution_status = data.data_factory_execution_status
-      this.data_factory_cleanup_status = data.data_factory_cleanup_status
+    hasEnumData() {
+      return Array.isArray(this.method) && this.method.length > 0
     },
-    getEnum() {
-      getSystemEnum()
+    setEnumData(data: any) {
+      this.client = data.client || data.cline_type || []
+      this.cline_type = data.cline_type || []
+      this.method = data.method || []
+      this.api_public_type = data.api_public_type || []
+      this.api_auth_type = data.api_auth_type || []
+      this.api_auth_refresh_mode = data.api_auth_refresh_mode || []
+      this.api_auth_refresh_status = data.api_auth_refresh_status || []
+      this.api_client = data.api_client || []
+      this.notice = data.notice || []
+      this.status = data.status || []
+      this.drive_type = data.drive_type || []
+      this.browser_type = data.browser_type || []
+      this.element_exp = data.element_exp || []
+      this.case_level = data.case_level || []
+      this.ui_public = data.ui_public || []
+      this.element_ope = data.element_ope || []
+      this.api_parameter_type = data.api_parameter_type || []
+      this.api_case_scenario_type = data.api_case_scenario_type || []
+      this.api_case_scenario_tag = data.api_case_scenario_tag || []
+      this.product_type = data.product_type || []
+      this.auto_type = data.auto_type || []
+      this.task_status = data.task_status || []
+      this.environment_type = data.environment_type || []
+      this.test_case_type = data.test_case_type || []
+      this.file_status = data.file_status || []
+      this.file_type = data.file_type || []
+      this.monitoring_task_status = data.monitoring_task_status || []
+      this.monitoring_log_status = data.monitoring_log_status || []
+      this.test_suite_notice = data.test_suite_notice || []
+      this.database_type = data.database_type || []
+      this.data_factory_source_mode = data.data_factory_source_mode || []
+      this.data_factory_operation_type = data.data_factory_operation_type || []
+      this.data_factory_generator_type = data.data_factory_generator_type || []
+      this.data_factory_cleanup_strategy = data.data_factory_cleanup_strategy || []
+      this.data_factory_template_config_status = data.data_factory_template_config_status || []
+      this.data_factory_execution_source = data.data_factory_execution_source || []
+      this.data_factory_execution_stage = data.data_factory_execution_stage || []
+      this.data_factory_execution_status = data.data_factory_execution_status || []
+      this.data_factory_cleanup_status = data.data_factory_cleanup_status || []
+    },
+    getEnum(force = false) {
+      if (!force && this.hasEnumData()) {
+        return Promise.resolve()
+      }
+      if (enumRequest) {
+        return enumRequest
+      }
+      enumRequest = getSystemEnum()
         .then((res) => {
-          if (!this.client) {
-            this.setEnumData(res.data)
-          }
+          this.setEnumData(res.data)
         })
         .catch(console.log)
+        .finally(() => {
+          enumRequest = null
+        })
+      return enumRequest
     },
     getEnumShare() {
-      getSystemEnumShare()
+      return getSystemEnumShare()
         .then((res) => {
           this.setEnumData(res.data)
         })

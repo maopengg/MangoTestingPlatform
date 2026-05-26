@@ -85,10 +85,11 @@ class DataFactoryExecutionSourceEnum(BaseEnum):
     SYSTEM = 3
     API_CASE = 4
     API_CASE_PARAMETER = 5
+    UI_CASE = 6
 
     @classmethod
     def obj(cls):
-        return {1: "模板调试", 2: "手动执行", 3: "系统调用", 4: "API用例", 5: "API接口场景"}
+        return {1: "模板调试", 2: "手动执行", 3: "系统调用", 4: "API用例", 5: "API接口场景", 6: "UI用例"}
 
 
 class DataFactoryCaseSourceTypeEnum(BaseEnum):

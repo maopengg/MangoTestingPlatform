@@ -88,7 +88,7 @@
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.status]" size="small"
-                >{{ enumStore.monitoring_task_status[record.status].title }}
+                >{{ enumStore.monitoring_task_status[record.status]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'is_notice'" #cell="{ record }">

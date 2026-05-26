@@ -33,56 +33,21 @@
     </div>
 
     <div class="mango-preview-body">
-      <div class="mango-flow-panel">
-        <div class="mango-panel-header">
-          <div>
-            <div class="mango-panel-title">依赖关系</div>
-            <div class="mango-panel-subtitle">当前模板的局部依赖，点击非复用节点查看字段生成明细</div>
-          </div>
-        </div>
-        <a-spin :loading="flowLoading" class="mango-flow-spin" tip="依赖关系加载中...">
-          <div ref="flowCanvasRef" class="mango-flow-canvas">
-            <VueFlow
-              :id="flowId"
-              v-model:nodes="flowNodes"
-              v-model:edges="flowEdges"
-              class="mango-relation-flow"
-              :nodes-draggable="false"
-              :nodes-connectable="false"
-              :elements-selectable="true"
-              :min-zoom="0.25"
-              :max-zoom="1.2"
-              @pane-ready="onFlowPaneReady"
-              @nodes-initialized="onFlowNodesInitialized"
-              @node-click="onNodeClick"
-            >
-              <template #node-tableNode="{ data }">
-                <div
-                  :class="[
-                    'table-node',
-                    `table-node-${data.status || 'valid'}`,
-                    { 'table-node-selected': selectedNodeId === data.nodeId },
-                    { 'table-node-disabled': !data.clickable },
-                  ]"
-                >
-                  <div class="mango-node-header">
-                    <span class="mango-node-title">{{ data.entityName || data.templateName }}</span>
-                    <a-tag v-if="data.reused" color="blue" size="small">复用</a-tag>
-                    <a-tag v-else :color="getNodeStatusColor(data.status)" size="small">
-                      {{ getNodeStatusText(data.status, data.missingCount) }}
-                    </a-tag>
-                  </div>
-                  <div class="mango-node-table">{{ data.tableName || '-' }}</div>
-                  <div class="mango-node-template">{{ data.templateName || '-' }}</div>
-                  <div v-if="data.linkText" class="mango-node-link">{{ data.linkText }}</div>
-                </div>
-              </template>
-              <Background pattern-color="var(--m-border)" :gap="18" />
-              <Controls />
-            </VueFlow>
-          </div>
-        </a-spin>
-      </div>
+      <DataFactoryRelationFlow
+        :dependency-tree="dependencyTree"
+        :focus-node-key="focusNodeKey"
+        :editable-root="editableRoot"
+        :flow-loading="flowLoading"
+        title="依赖关系"
+        subtitle="展示场景入口、关联模板和字段依赖，点击节点查看字段生成明细"
+        @select-node="onRelationNodeSelect"
+      >
+        <template #extra>
+          <a-button size="mini" type="primary" @click.stop="flowDrawerVisible = true">
+            放大查看
+          </a-button>
+        </template>
+      </DataFactoryRelationFlow>
 
       <div class="mango-field-panel">
         <div class="mango-field-panel-header">
@@ -117,37 +82,59 @@
               {{ issue.message || issue.field }}
             </div>
           </a-alert>
-          <TemplateFieldConfigEditor
-            v-if="currentNodeFields.length"
-            :fields="currentNodeFields"
-            :field-overrides="selectedNodeEditable ? currentFieldOverrides : {}"
-            :output-config="selectedNodeEditable ? currentOutputConfig : []"
-            :generator-options="generatorOptions"
-            :dependency-template-options="dependencyTemplateOptions"
-            :load-dependency-template-options="loadDependencyTemplateOptions"
-            :preview-fields="selectedNodeFields"
-            :readonly="!selectedNodeEditable"
-            :show-config="selectedNodeEditable"
-            :show-output="false"
-            :table-scroll-y="fieldTableScrollY"
-            show-preview
-            @update:field-overrides="updateSelectedNodeOverrides"
-            @update:output-config="updateSelectedNodeOutputConfig"
-          />
+          <div v-if="currentNodeFields.length" class="mango-field-editor-body">
+            <TemplateFieldConfigEditor
+              :fields="currentNodeFields"
+              :field-overrides="selectedNodeEditable ? currentFieldOverrides : {}"
+              :output-config="selectedNodeEditable ? currentOutputConfig : []"
+              :generator-options="generatorOptions"
+              :dependency-template-options="dependencyTemplateOptions"
+              :load-dependency-template-options="loadDependencyTemplateOptions"
+              :preview-fields="selectedNodeFields"
+              :readonly="!selectedNodeEditable"
+              :show-config="selectedNodeEditable"
+              :show-output="false"
+              :table-scroll-y="fieldTableScrollY"
+              show-preview
+              @update:field-overrides="updateSelectedNodeOverrides"
+              @update:output-config="updateSelectedNodeOutputConfig"
+            />
+          </div>
           <div v-else class="mango-empty-state mango-dependency-empty">当前节点暂无字段明细</div>
         </a-spin>
       </div>
     </div>
   </div>
+
+  <a-drawer
+    v-model:visible="flowDrawerVisible"
+    title="依赖关系 / 放大查看"
+    width="76%"
+    :footer="false"
+    unmount-on-close
+  >
+    <div class="mango-relation-drawer-body">
+      <DataFactoryRelationFlow
+        :dependency-tree="dependencyTree"
+        :focus-node-key="focusNodeKey"
+        :editable-root="editableRoot"
+        :flow-loading="flowLoading"
+        title="依赖关系"
+        subtitle="展示场景入口、关联模板和字段依赖"
+        height="calc(100vh - 110px)"
+        :initial-max-zoom="0.82"
+        show-download
+        show-mini-map
+        download-name="数据工厂依赖关系"
+        @select-node="onRelationNodeSelect"
+      />
+    </div>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-  import { VueFlow, useVueFlow } from '@vue-flow/core'
-  import type { Edge, Node } from '@vue-flow/core'
-  import { Background, Controls } from '@vue-flow/additional-components'
-  import '@vue-flow/core/dist/style.css'
-  import '@vue-flow/core/dist/theme-default.css'
+  import { computed, ref } from 'vue'
+  import DataFactoryRelationFlow from '@/components/DataFactory/DataFactoryRelationFlow.vue'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
 
   interface EnumOption {
@@ -171,6 +158,7 @@
     status?: string
     missing_count?: number
     fields?: any[]
+    missing_fields?: any[]
     children?: PreviewNode[]
   }
 
@@ -194,7 +182,7 @@
     {
       dependencyTree: null,
       canDebugRun: false,
-      fieldTableScrollY: 'calc(100vh - 360px)',
+      fieldTableScrollY: 'calc(100vh - 320px)',
       editableRoot: false,
       rootFields: () => [],
       fieldOverrides: () => ({}),
@@ -213,30 +201,12 @@
     (event: 'update:outputConfig', value: any[]): void
     (event: 'updateNodeFieldOverrides', key: string, value: Record<string, any>): void
     (event: 'updateNodeOutputConfig', key: string, value: any[]): void
-    (event: 'openTemplate', value: PreviewNode): void
+    (event: 'openTemplate', value?: PreviewNode): void
   }>()
 
-  const selectedNodeId = ref('')
-  const flowNodes = ref<Node[]>([])
-  const flowEdges = ref<Edge[]>([])
-  const flowCanvasRef = ref<HTMLElement>()
-  const flowPaneReady = ref(false)
-  const fitFrameId = ref<number>()
-  const fitTimerId = ref<number>()
-  const flowId = 'mango-data-factory-dependency-flow'
-  const INITIAL_MAX_ZOOM = 0.62
-  const nodeMap = computed(() => {
-    const map = new Map<string, PreviewNode>()
-    flattenTree(focusedDependencyTree.value).forEach((item) => map.set(item.id, item.node))
-    return map
-  })
-  const focusedDependencyTree = computed(() => {
-    return (
-      findNodeByEditableKey(props.dependencyTree, props.focusNodeKey || 'root') ||
-      props.dependencyTree
-    )
-  })
-  const selectedNode = computed(() => nodeMap.value.get(selectedNodeId.value))
+  const selectedNode = ref<PreviewNode>()
+  const flowDrawerVisible = ref(false)
+
   const selectedNodeFields = computed(() => selectedNode.value?.fields || [])
   const selectedNodeIssues = computed(() => selectedNode.value?.missing_fields || [])
   const selectedEditableKey = computed(() => getEditableNodeKey(selectedNode.value))
@@ -283,171 +253,16 @@
       missingCount: items.reduce((total, item) => total + Number(item.node.missing_count || 0), 0),
     }
   })
-  const { fitView, areNodesInitialized } = useVueFlow(flowId)
 
-  watch(
-    () => props.dependencyTree,
-    () => {
-      buildFlow()
-      scheduleFitView()
-    },
-    { immediate: true, deep: true }
-  )
-
-  watch(
-    () => props.focusNodeKey,
-    () => {
-      buildFlow()
-      scheduleFitView()
-    }
-  )
-
-  watch(
-    () => props.flowLoading,
-    (loading) => {
-      if (!loading) {
-        scheduleFitView()
-      }
-    }
-  )
-
-  watch(areNodesInitialized, (ready) => {
-    if (ready) {
-      scheduleFitView()
-    }
-  })
-
-  onBeforeUnmount(() => {
-    cancelScheduledFitView()
-  })
-
-  function onFlowPaneReady() {
-    flowPaneReady.value = true
-    scheduleFitView()
+  function onRelationNodeSelect(payload: { id: string; node?: PreviewNode }) {
+    selectedNode.value = payload.node
   }
 
-  function onFlowNodesInitialized() {
-    scheduleFitView()
-  }
-
-  function cancelScheduledFitView() {
-    if (fitFrameId.value) {
-      window.cancelAnimationFrame(fitFrameId.value)
-      fitFrameId.value = undefined
-    }
-    if (fitTimerId.value) {
-      window.clearTimeout(fitTimerId.value)
-      fitTimerId.value = undefined
-    }
-  }
-
-  function scheduleFitView(retry = 0) {
-    cancelScheduledFitView()
-    nextTick(() => {
-      fitFrameId.value = window.requestAnimationFrame(() => {
-        const rect = flowCanvasRef.value?.getBoundingClientRect()
-        const canFit =
-          flowPaneReady.value &&
-          areNodesInitialized.value &&
-          flowNodes.value.length > 0 &&
-          rect &&
-          rect.width > 80 &&
-          rect.height > 80
-
-        if (!canFit) {
-          if (retry < 8) {
-            fitTimerId.value = window.setTimeout(() => scheduleFitView(retry + 1), 80)
-          }
-          return
-        }
-
-        fitView({
-          padding: 0.38,
-          maxZoom: INITIAL_MAX_ZOOM,
-          duration: retry ? 0 : 180,
-        })
-
-        if (retry === 0) {
-          fitTimerId.value = window.setTimeout(() => scheduleFitView(1), 120)
-        }
-      })
-    })
-  }
-
-  function buildFlow() {
-    const nodes: Node[] = []
-    const edges: Edge[] = []
-    const levels: Record<number, number> = {}
-
-    function walk(node: PreviewNode, level = 0, indexPath = '0') {
-      const id = buildNodeId(node, indexPath)
-      levels[level] = levels[level] || 0
-      const row = levels[level]
-      levels[level] += 1
-      nodes.push({
-        id,
-        type: 'tableNode',
-        position: { x: level * 248, y: row * 126 },
-        selectable: node.action !== 'reuse' && !node.reused,
-        data: {
-          nodeId: id,
-          templateName: node.template_name || node.alias || '-',
-          entityName: node.entity_name || node.alias || '-',
-          tableName: node.table_name || '',
-          status: node.status || 'valid',
-          missingCount: node.missing_count || 0,
-          clickable: node.action !== 'reuse' && !node.reused,
-          reused: node.action === 'reuse' || node.reused,
-          linkText: node.field ? `${node.field} -> ${node.target_field || 'id'}` : '',
-        },
-      })
-      ;(node.children || []).forEach((child, childIndex) => {
-        const childId = buildNodeId(child, `${indexPath}-${childIndex}`)
-        edges.push({
-          id: `${id}-${childId}`,
-          source: id,
-          target: childId,
-          label: child.field ? `${child.field} -> ${child.target_field || 'id'}` : '',
-          type: 'smoothstep',
-          animated: child.action === 'create',
-          style: { stroke: child.status === 'warning' ? 'var(--m-warning)' : 'var(--m-muted)' },
-          labelStyle: { fill: 'var(--m-text-2)', fontSize: 12 },
-          labelBgStyle: { fill: 'var(--m-surface)', fillOpacity: 0.85 },
-        })
-        walk(child, level + 1, `${indexPath}-${childIndex}`)
-      })
-    }
-
-    if (focusedDependencyTree.value) {
-      walk(focusedDependencyTree.value)
-    }
-    flowNodes.value = nodes
-    flowEdges.value = edges
-    selectedNodeId.value = nodes.some((node) => node.id === selectedNodeId.value)
-      ? selectedNodeId.value
-      : nodes[0]?.id || ''
-  }
-
-  function flattenTree(
-    tree?: PreviewNode | null,
-    indexPath = '0'
-  ): Array<{ id: string; node: PreviewNode }> {
+  function flattenTree(tree?: PreviewNode | null): Array<{ node: PreviewNode }> {
     if (!tree) {
       return []
     }
-    const id = buildNodeId(tree, indexPath)
-    return [
-      { id, node: tree },
-      ...(tree.children || []).flatMap((child, index) =>
-        flattenTree(child, `${indexPath}-${index}`)
-      ),
-    ]
-  }
-
-  function buildNodeId(node: PreviewNode, indexPath: string) {
-    return `node-${
-      node.scene_item_id || node.template_id || node.entity_id || node.alias || indexPath
-    }-${indexPath}`
+    return [{ node: tree }, ...(tree.children || []).flatMap((child) => flattenTree(child))]
   }
 
   function getEditableNodeKey(node?: PreviewNode) {
@@ -461,22 +276,6 @@
       return `item:${node.scene_item_id}`
     }
     return ''
-  }
-
-  function findNodeByEditableKey(tree?: PreviewNode | null, key = 'root'): PreviewNode | null {
-    if (!tree) {
-      return null
-    }
-    if (getEditableNodeKey(tree) === key) {
-      return tree
-    }
-    for (const child of tree.children || []) {
-      const found = findNodeByEditableKey(child, key)
-      if (found) {
-        return found
-      }
-    }
-    return null
   }
 
   function updateSelectedNodeOverrides(value: Record<string, any>) {
@@ -495,13 +294,6 @@
       return
     }
     emit('updateNodeOutputConfig', key, value)
-  }
-
-  function onNodeClick(event: any) {
-    if (!event.node?.data?.clickable) {
-      return
-    }
-    selectedNodeId.value = event.node?.id || ''
   }
 
   function getNodeStatusColor(status?: string) {
@@ -597,27 +389,22 @@
 
   .mango-preview-body {
     display: grid;
-    grid-template-columns: minmax(430px, 40%) minmax(560px, 1fr);
+    grid-template-columns: minmax(380px, 34%) minmax(0, 1fr);
     gap: 12px;
     min-height: 0;
     flex: 1;
   }
 
-  .mango-flow-panel,
   .mango-field-panel {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
     min-height: 0;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface);
   }
 
-  .mango-flow-panel {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .mango-flow-spin,
   .mango-field-spin {
     display: block;
     height: 100%;
@@ -625,120 +412,22 @@
     flex: 1;
   }
 
-  .mango-flow-spin :deep(.arco-spin),
-  .mango-flow-spin :deep(.arco-spin-children),
   .mango-field-spin :deep(.arco-spin),
   .mango-field-spin :deep(.arco-spin-children) {
     height: 100%;
     min-height: 0;
   }
 
-  .mango-panel-header {
+  .mango-field-spin :deep(.arco-spin-children) {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 58px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--m-border);
-  }
-
-  .mango-panel-title {
-    color: var(--m-text);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 22px;
-  }
-
-  .mango-panel-subtitle {
-    margin-top: 2px;
-    color: var(--m-muted);
-    font-size: 12px;
-    line-height: 18px;
-  }
-
-  .mango-flow-canvas {
-    flex: 1;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .mango-relation-flow {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--m-surface) 72%, transparent),
-        color-mix(in srgb, var(--m-surface-soft) 85%, transparent)
-      ),
-      var(--m-surface-soft);
-  }
-
-  .table-node {
-    width: 206px;
-    padding: 10px 11px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-md);
-    background: var(--m-surface);
-    cursor: pointer;
-    box-shadow: var(--m-shadow);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .table-node-selected {
-    border-color: var(--m-primary);
-    box-shadow: var(--m-form-focus-shadow);
-  }
-
-  .table-node-disabled {
-    cursor: not-allowed;
-    opacity: 0.72;
-  }
-
-  .table-node-warning {
-    border-color: var(--m-warning);
-  }
-
-  .table-node-error {
-    border-color: var(--m-danger);
-  }
-
-  .mango-node-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .mango-node-title {
     overflow: hidden;
-    color: var(--m-text);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mango-node-table,
-  .mango-node-template,
-  .mango-node-link {
-    overflow: hidden;
-    margin-top: 4px;
-    color: var(--m-text-2);
-    font-size: 12px;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mango-node-link {
-    color: var(--m-primary);
-  }
-
-  .mango-field-panel {
-    display: flex;
     flex-direction: column;
+  }
+
+  .mango-field-editor-body {
     overflow: hidden;
+    flex: 1;
+    min-height: 0;
   }
 
   .mango-field-panel-header {
@@ -813,7 +502,12 @@
     min-height: 160px;
   }
 
-  @media (max-width: 1100px) {
+  .mango-relation-drawer-body {
+    height: calc(100vh - 110px);
+    min-height: 0;
+  }
+
+  @media (max-width: 1px) {
     .mango-preview-summary {
       align-items: stretch;
       flex-direction: column;

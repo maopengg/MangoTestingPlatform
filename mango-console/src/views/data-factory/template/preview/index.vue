@@ -134,7 +134,7 @@
               :flow-loading="previewLoading"
               :field-loading="fieldPanelLoading"
               editable-root
-              field-table-scroll-y="calc(100vh - 405px)"
+              field-table-scroll-y="calc(100vh - 320px)"
               @open-template="openDependencyTemplate"
               @update-node-field-overrides="updateSceneItemOverrides"
             />
@@ -845,7 +845,7 @@
     height: 100%;
     min-height: 0;
     gap: 12px;
-    grid-template-columns: 332px minmax(0, 1fr);
+    grid-template-columns: 300px minmax(0, 1fr);
   }
 
   .scene-items-spin {
@@ -1022,7 +1022,7 @@
     height: 100%;
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1px) {
     .scene-config-workbench {
       grid-template-columns: 1fr;
     }

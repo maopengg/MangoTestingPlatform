@@ -84,7 +84,7 @@
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.auto_type]" size="small"
-                >{{ enumStore.auto_type[record.auto_type].title }}
+                >{{ enumStore.auto_type[record.auto_type]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
@@ -104,7 +104,7 @@
             </template>
             <template v-else-if="item.key === 'environment'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.environment]" size="small">
-                {{ enumStore.environment_type[record.environment].title }}
+                {{ enumStore.environment_type[record.environment]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">

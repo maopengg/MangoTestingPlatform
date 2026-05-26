@@ -1998,7 +1998,7 @@
     font-size: 13px;
   }
 
-  @media (max-width: 1180px) {
+  @media (max-width: 1px) {
     .token-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -2020,7 +2020,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .theme-lab {
       padding: 8px;
     }

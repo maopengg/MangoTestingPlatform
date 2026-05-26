@@ -69,7 +69,17 @@
       })
 
       function handleScreenResize() {
-        const width = document.body.clientWidth
+        const minWidth = Number.parseInt(
+          getComputedStyle(document.documentElement).getPropertyValue('--m-app-min-width'),
+          10
+        )
+        const appMinWidth = Number.isNaN(minWidth) ? 960 : minWidth
+        if (window.innerWidth < appMinWidth) {
+          appStore.changeDevice(DeviceType.PC)
+          appStore.toggleCollapse(false)
+          return
+        }
+        const width = window.innerWidth
         if (width <= 768) {
           appStore.changeDevice(DeviceType.MOBILE)
           appStore.toggleCollapse(true)
@@ -102,7 +112,8 @@
 <style lang="less">
   .mango-layout-container {
     height: 100%;
-    max-width: 100%;
+    width: max(100vw, var(--m-app-min-width));
+    min-width: var(--m-app-min-width);
     position: relative;
     overflow-x: hidden;
 

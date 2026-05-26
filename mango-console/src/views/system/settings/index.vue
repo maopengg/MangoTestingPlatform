@@ -384,7 +384,7 @@
   }
 
   /* 响应式设计 */
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .settings-row {
       flex-direction: column;
     }

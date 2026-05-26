@@ -16,12 +16,16 @@ from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_system.service.factory import func_mysql_config, func_test_object_value
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.models import *
+from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+from src.auto_test.auto_data_factory.service.runtime_cache import DataFactoryRuntimeCache
+from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum, TaskEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.ui_model import *
+from src.auto_test.auto_ui.service.test_case.case_data_factory import UiCaseDataFactory
 
 
 class TestCase:
@@ -37,6 +41,8 @@ class TestCase:
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_send = is_send
+        self.test_data = None
+        self.case_data_factory: UiCaseDataFactory | None = None
 
     def test_case(self,
                   case_id: int,
@@ -68,42 +74,117 @@ class TestCase:
                 for e in i.get('parametrize'):
                     if not e.get('key'):
                         raise UiError(*ERROR_MSG_0032)
-            case_model = CaseModel(
-                send_user=send_case_user if send_case_user else self.send_user,
-                test_suite_details=test_suite_details,
-                test_suite_id=test_suite,
-                id=case.id,
-                name=case_name if case_name else case.name,
-                module_name=self.__module_name(case),
-                project_product=case.project_product.id,
-                project_product_name=case.project_product.name,
-                test_env=self.test_env,
-                case_people=case.case_people.name,
-                front_custom=case.front_custom,
-                front_sql=case.front_sql,
-                posterior_sql=case.posterior_sql,
-                parametrize=case.parametrize,
-                steps=[self.steps_model(i.page_step.id, i, bool(i.switch_step_open_url)) for i in case_steps_detailed],
-            )
+            case_model = None
             if case.parametrize and test_suite is None:
                 for i in case.parametrize:
-                    case_model_1 = copy.deepcopy(case_model)
-                    case_model_1.parametrize = i.get('parametrize')
-                    case_model_1.name = f'{case.name} - {i.get("name")}'
+                    case_model_1 = self.__case_model(
+                        case,
+                        case_steps_detailed,
+                        f'{case.name} - {i.get("name")}',
+                        test_suite,
+                        test_suite_details,
+                        i.get('parametrize'),
+                        send_case_user,
+                    )
+                    case_model = copy.deepcopy(case_model_1)
                     self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                        data_model=case_model_1, is_open=True)
             elif test_suite and test_suite_details and parametrize:
-                case_model.parametrize = parametrize
+                case_model = self.__case_model(
+                    case,
+                    case_steps_detailed,
+                    case_name,
+                    test_suite,
+                    test_suite_details,
+                    parametrize,
+                    send_case_user,
+                )
                 self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                    data_model=case_model, is_open=True)
             else:
+                case_model = self.__case_model(
+                    case,
+                    case_steps_detailed,
+                    case_name,
+                    test_suite,
+                    test_suite_details,
+                    case.parametrize,
+                    send_case_user,
+                )
                 self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                    data_model=case_model, is_open=True)
             return case_model
         except Exception as error:
+            self.__cleanup_case_data_factory()
             case.status = TaskEnum.FAIL.value
             case.save()
             raise error
+
+    def __case_model(self,
+                     case: UiCase,
+                     case_steps_detailed,
+                     case_name: str | None,
+                     test_suite: int | None,
+                     test_suite_details: int | None,
+                     parametrize: list[dict] | list | None,
+                     send_case_user: str | None) -> CaseModel:
+        self.__run_case_data_factory(case, parametrize)
+        return CaseModel(
+            send_user=send_case_user if send_case_user else self.send_user,
+            test_suite_details=test_suite_details,
+            test_suite_id=test_suite,
+            id=case.id,
+            name=case_name if case_name else case.name,
+            module_name=self.__module_name(case),
+            project_product=case.project_product.id,
+            project_product_name=case.project_product.name,
+            test_env=self.test_env,
+            case_people=case.case_people.name,
+            front_custom=case.front_custom,
+            front_sql=case.front_sql,
+            posterior_sql=case.posterior_sql,
+            parametrize=parametrize or [],
+            data_factory_cache_data=self.test_data.get_data_factory_all() if self.test_data else {},
+            data_factory_execution_ids=self.case_data_factory.runner.execution_ids
+            if self.case_data_factory and self.case_data_factory.runner else [],
+            data_factory_auto_cleanup_execution_ids=self.case_data_factory.runner.auto_cleanup_execution_ids
+            if self.case_data_factory and self.case_data_factory.runner else [],
+            steps=[self.steps_model(i.page_step.id, i, bool(i.switch_step_open_url)) for i in case_steps_detailed],
+        )
+
+    def __run_case_data_factory(self, case: UiCase, parametrize: list[dict] | list | None = None):
+        self.test_data = None
+        self.case_data_factory = None
+        if not isinstance(case, UiCase):
+            return
+        if not DataFactoryCaseConfig.objects.filter(
+                source_type=DataFactoryCaseSourceTypeEnum.UI_CASE.value,
+                source_id=case.id,
+                stage=1,
+                status=StatusEnum.SUCCESS.value,
+        ).exists():
+            return
+        test_object = func_test_object_value(self.test_env, case.project_product_id, AutoTypeEnum.UI.value)
+        self.test_data = DataFactoryRuntimeCache.build_test_data(case.project_product_id, self.test_env)
+        for custom in case.front_custom:
+            self.test_data.set_cache(custom.get('key'), self.test_data.replace(custom.get('value')))
+        self.__set_parametrize_cache(parametrize)
+        self.case_data_factory = UiCaseDataFactory(test_object.id, self.test_data, case)
+        self.case_data_factory.run_front()
+
+    def __set_parametrize_cache(self, parametrize: list[dict] | list | None):
+        if not self.test_data or not parametrize:
+            return
+        for item in parametrize:
+            key = item.get('key')
+            if not key:
+                continue
+            value = item.get('value')
+            self.test_data.set_cache(key, self.test_data.replace(value) if value is not None else value)
+
+    def __cleanup_case_data_factory(self):
+        if self.case_data_factory:
+            self.case_data_factory.cleanup()
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
         try:

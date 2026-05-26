@@ -301,8 +301,8 @@
     }
   }
 
-  // 响应式设计
-  @media (max-width: 1200px) {
+  // 首页作为后台工作台页面，低于全局最小工作区宽度后不再降级为移动布局。
+  @media (max-width: 1px) {
     .main-container {
       height: auto;
       min-height: 100%;
@@ -345,7 +345,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .main-container {
       padding: 10px;
       gap: 10px;

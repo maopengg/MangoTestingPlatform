@@ -1214,7 +1214,7 @@
     color: var(--m-muted);
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1px) {
     .head-main {
       grid-template-columns: minmax(0, 1fr) 140px;
     }
@@ -1236,7 +1236,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .report-lab {
       padding: 8px;
     }

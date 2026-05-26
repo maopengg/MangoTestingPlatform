@@ -86,7 +86,7 @@
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.type]" size="small"
-                >{{ enumStore.ui_public[record.type].title }}
+                >{{ enumStore.ui_public[record.type]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">

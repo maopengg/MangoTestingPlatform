@@ -504,7 +504,7 @@
     color: var(--m-muted);
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1px) {
     .method-layout {
       grid-template-columns: 1fr;
     }

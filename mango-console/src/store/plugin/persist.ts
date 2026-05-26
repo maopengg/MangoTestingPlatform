@@ -33,11 +33,16 @@ export default ({ options, store }: PiniaPluginContext) => {
     // 恢复状态
     if (presist.resetToState) {
       if (typeof presist.resetToState === 'boolean') {
-        const json = (window as any)[presist.option?.storage + 'Storage'].getItem(
-          presist.option?.key
-        )
-        if (json) {
-          store.$patch(JSON.parse(json))
+        try {
+          const json = (window as any)[presist.option?.storage + 'Storage'].getItem(
+            presist.option?.key
+          )
+          if (json) {
+            store.$patch(JSON.parse(json))
+          }
+        } catch (error) {
+          console.error(`恢复 ${store.$id} 状态失败，已清理本地缓存`, error)
+          ;(window as any)[storage + 'Storage'].removeItem(key)
         }
       } else if (typeof presist.resetToState === 'function') {
         presist.resetToState.call(presist, store)
@@ -47,18 +52,22 @@ export default ({ options, store }: PiniaPluginContext) => {
     // 设置监听器
     store.$subscribe(
       (mutation, state) => {
-        const toPersistObj = JSON.parse(JSON.stringify(toRaw(state)))
-        if (presist.option?.include || presist.option?.exclude) {
-          Object.keys(toPersistObj).forEach((it) => {
-            if (
-              (presist.option?.include && !presist.option?.include?.includes(it)) ||
-              (presist.option?.exclude && presist.option?.exclude?.includes(it))
-            ) {
-              toPersistObj[it] = undefined
-            }
-          })
+        try {
+          const toPersistObj = JSON.parse(JSON.stringify(toRaw(state)))
+          if (presist.option?.include || presist.option?.exclude) {
+            Object.keys(toPersistObj).forEach((it) => {
+              if (
+                (presist.option?.include && !presist.option?.include?.includes(it)) ||
+                (presist.option?.exclude && presist.option?.exclude?.includes(it))
+              ) {
+                toPersistObj[it] = undefined
+              }
+            })
+          }
+          ;(window as any)[storage + 'Storage'].setItem(key, JSON.stringify(toPersistObj))
+        } catch (error) {
+          console.error(`持久化 ${store.$id} 状态失败`, error)
         }
-        ;(window as any)[storage + 'Storage'].setItem(key, JSON.stringify(toPersistObj))
       },
       { detached: true }
     )

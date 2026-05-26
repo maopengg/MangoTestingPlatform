@@ -13,7 +13,7 @@
           <div v-for="(item, index) in normalizedData" :key="item.name" class="mango-legend-item">
             <span
               class="mango-legend-dot"
-              :style="{ backgroundColor: palette[index % palette.length] }"
+              :style="{ backgroundColor: getTypeColor(item.name, index) }"
             ></span>
             <div class="mango-legend-main">
               <span class="mango-legend-name">{{ item.name }}</span>
@@ -21,7 +21,7 @@
                 <span
                   :style="{
                     width: `${item.percent}%`,
-                    backgroundColor: palette[index % palette.length],
+                    backgroundColor: getTypeColor(item.name, index),
                   }"
                 ></span>
               </div>
@@ -55,6 +55,8 @@
   })
 
   const chartRef = ref<HTMLDivElement | null>(null)
+  let resizeObserver: ResizeObserver | null = null
+  let resizeFrame = 0
   const token = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
   const palette = computed(() => [
@@ -65,6 +67,25 @@
     token('--m-chart-5', '#a78bfa'),
     token('--m-primary-border', '#fb7185'),
   ])
+  const testTypeColorMap = computed(() => ({
+    api: token('--m-chart-1', '#5b7cfa'),
+    ui: token('--m-chart-2', '#7bcf65'),
+    pytest: token('--m-chart-3', '#f6c143'),
+  }))
+
+  function getTypeColor(name: string, index: number) {
+    const text = String(name || '').toLowerCase()
+    if (text.includes('接口') || text.includes('api')) {
+      return testTypeColorMap.value.api
+    }
+    if (text.includes('界面') || text.includes('ui')) {
+      return testTypeColorMap.value.ui
+    }
+    if (text.includes('单元') || text.includes('pytest') || text.includes('python')) {
+      return testTypeColorMap.value.pytest
+    }
+    return palette.value[index % palette.value.length]
+  }
 
   const total = computed(() =>
     props.chartData.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0)
@@ -87,7 +108,7 @@
     if (!chartRef.value) return
 
     const option = {
-      color: palette.value,
+      color: normalizedData.value.map((item: any, index: number) => getTypeColor(item.name, index)),
       tooltip: {
         trigger: 'item',
         formatter: '{b}<br />{d}% | {c}',
@@ -124,12 +145,22 @@
     }
 
     useEcharts(chartRef.value).setOption(option)
+    updateChart()
   }
 
   const updateChart = () => {
-    if (chartRef.value) {
-      useEcharts(chartRef.value).resize()
+    if (!chartRef.value) {
+      return
     }
+    if (resizeFrame) {
+      window.cancelAnimationFrame(resizeFrame)
+    }
+    resizeFrame = window.requestAnimationFrame(() => {
+      if (chartRef.value) {
+        useEcharts(chartRef.value).resize()
+      }
+      resizeFrame = 0
+    })
   }
 
   // 监听 chartData 变化，重新渲染图表
@@ -144,10 +175,20 @@
   onMounted(() => {
     initChart()
     window.addEventListener('mango-theme-change', initChart)
+    window.addEventListener('resize', updateChart)
+    if (chartRef.value) {
+      resizeObserver = new ResizeObserver(updateChart)
+      resizeObserver.observe(chartRef.value)
+    }
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener('mango-theme-change', initChart)
+    window.removeEventListener('resize', updateChart)
+    resizeObserver?.disconnect()
+    if (resizeFrame) {
+      window.cancelAnimationFrame(resizeFrame)
+    }
     if (chartRef.value) {
       dispose(chartRef.value)
     }
@@ -186,6 +227,8 @@
 
     .mango-chart-item {
       height: 100%;
+      width: 100%;
+      min-width: 0;
     }
   }
 

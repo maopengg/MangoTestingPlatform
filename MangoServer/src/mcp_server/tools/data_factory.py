@@ -676,6 +676,7 @@ def register_data_factory_tools(mcp):
         cleanup_strategy: int = DataFactoryCleanupStrategyEnum.MANUAL.value,
         is_default: bool = False,
         status: int = StatusEnum.SUCCESS.value,
+        test_env: int | None = None,
     ) -> dict:
         """创建数据工厂场景模板。
 
@@ -683,6 +684,7 @@ def register_data_factory_tools(mcp):
         items 用于配置关联模板，格式：
         [{"child_template": 20, "name": "流程分类绑定", "sort": 10, "field_overrides": {}}]
         关联模板清理策略继承场景模板。
+        test_env 用于保存后刷新配置状态 config_status；不传时按页面逻辑使用空环境预览。
         字符串类字段覆盖优先使用 generator_type=13 测试数据方法；调用 list_test_data_methods 获取可用类型。
         """
         data = DataFactoryTemplateCRUD.inside_post(
@@ -701,7 +703,17 @@ def register_data_factory_tools(mcp):
             }
         )
         template = DataFactoryTemplate.objects.get(id=data["id"])
-        return ok({"template_id": data["id"], **data, "cache_keys": _cache_keys_for_template(template)}, "场景模板创建成功")
+        DataFactoryTemplateCRUD.refresh_config_status(template, test_env)
+        template.refresh_from_db()
+        return ok(
+            {
+                "template_id": data["id"],
+                **data,
+                "config_status": template.config_status,
+                "cache_keys": _cache_keys_for_template(template),
+            },
+            "场景模板创建成功",
+        )
 
     @mcp.tool()
     def update_data_factory_template(
@@ -717,12 +729,14 @@ def register_data_factory_tools(mcp):
         cleanup_strategy: int | None = None,
         is_default: bool | None = None,
         status: int | None = None,
+        test_env: int | None = None,
     ) -> dict:
         """更新数据工厂场景模板。
 
         is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
         items 不传则不修改关联模板；传入时以完整列表覆盖保存。
         关联模板清理策略继承场景模板。
+        test_env 用于保存后刷新配置状态 config_status；页面 PUT /data-factory/template 也是这样处理。
         字符串类字段覆盖优先使用 generator_type=13 测试数据方法；调用 list_test_data_methods 获取可用类型。
         """
         payload: dict[str, Any] = {"id": template_id}
@@ -743,7 +757,17 @@ def register_data_factory_tools(mcp):
                 payload[key] = value
         data = DataFactoryTemplateCRUD.inside_put(template_id, payload)
         template = DataFactoryTemplate.objects.get(id=template_id)
-        return ok({"template_id": template_id, **data, "cache_keys": _cache_keys_for_template(template)}, "场景模板更新成功")
+        DataFactoryTemplateCRUD.refresh_config_status(template, test_env)
+        template.refresh_from_db()
+        return ok(
+            {
+                "template_id": template_id,
+                **data,
+                "config_status": template.config_status,
+                "cache_keys": _cache_keys_for_template(template),
+            },
+            "场景模板更新成功",
+        )
 
     @mcp.tool()
     def preview_data_factory_template(

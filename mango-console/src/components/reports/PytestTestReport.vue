@@ -721,7 +721,7 @@
     word-break: break-word;
   }
 
-  @media (max-width: 1024px) {
+  @media (max-width: 1px) {
     .mango-pytest-report__metrics,
     .mango-pytest-report__http-layout,
     .mango-pytest-report__ui-layout,
@@ -731,7 +731,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .mango-pytest-report__hero,
     .mango-pytest-report__metrics,
     .mango-pytest-report__http-layout,

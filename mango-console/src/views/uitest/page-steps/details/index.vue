@@ -1041,7 +1041,7 @@
     margin-bottom: 12px;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .steps-flow-area {
       min-height: 560px;
     }

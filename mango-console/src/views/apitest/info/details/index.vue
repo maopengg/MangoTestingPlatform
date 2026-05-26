@@ -1012,13 +1012,13 @@
     background-color: color-mix(in srgb, var(--m-warning) 16%, var(--m-surface));
   }
 
-  @media (max-width: 1440px) {
+  @media (max-width: 1px) {
     .api-detail-workbench {
       grid-template-columns: 190px minmax(340px, 0.9fr) minmax(430px, 1.1fr);
     }
   }
 
-  @media (max-width: 1280px) {
+  @media (max-width: 1px) {
     .api-detail-workbench {
       grid-template-columns: 200px minmax(0, 1fr);
       height: auto;
@@ -1030,7 +1030,7 @@
     }
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1px) {
     .api-detail-workbench {
       grid-template-columns: 1fr;
       height: auto;

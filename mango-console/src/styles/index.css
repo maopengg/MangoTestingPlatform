@@ -4,6 +4,8 @@
 
 :root {
     --menu-width: 210px;
+    --m-workspace-min-width: 960px;
+    --m-app-min-width: 1200px;
     --m-bg: #f8fafc;
     --m-surface: #ffffff;
     --m-surface-soft: #f1f5f9;
@@ -78,6 +80,19 @@ html,
 body,
 #app {
     height: 100vh;
+}
+
+html,
+body {
+    width: max(100vw, var(--m-app-min-width));
+    min-width: var(--m-app-min-width);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+#app {
+    width: max(100vw, var(--m-app-min-width));
+    min-width: var(--m-app-min-width);
     overflow: hidden;
 }
 
@@ -297,7 +312,7 @@ body {
     gap: 12px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1px) {
     .mango-detail-toolbar {
         align-items: flex-start;
         flex-direction: column;
@@ -624,14 +639,14 @@ body {
     font-size: 13px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1px) {
     .mango-metric-grid,
     .mango-meta-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1px) {
     .mango-theme-page {
         padding: 10px;
     }

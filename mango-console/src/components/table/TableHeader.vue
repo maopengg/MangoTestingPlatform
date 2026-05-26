@@ -246,7 +246,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .mango-table-header__filters {
       --table-filter-label-width: 70px;
       --table-filter-control-width: calc(100vw - 150px);

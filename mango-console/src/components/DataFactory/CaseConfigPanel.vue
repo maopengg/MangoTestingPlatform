@@ -11,6 +11,7 @@
       :pagination="false"
       :row-key="'id'"
       :draggable="{ type: 'handle', width: 40 }"
+      :scroll="{ x: 900 }"
       size="small"
       @change="handleChange"
     >
@@ -24,6 +25,7 @@
           :title="item.title"
           :width="item.width"
           :align="item.align"
+          :fixed="item.fixed"
         >
           <template v-if="item.key === 'template'" #cell="{ record }">
             {{ record.template?.name }}
@@ -51,17 +53,17 @@
             />
           </template>
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
-            <a-space>
-              <a-button size="mini" type="text" @click="open(record)">编辑/预览</a-button>
-              <a-button
-                size="mini"
-                status="danger"
-                type="text"
-                :loading="deleteLoading === record.id"
-                @click="deleteConfig(record)"
-                >删除</a-button
-              >
-            </a-space>
+            <MangoTableActions
+              :actions="[
+                { label: '编辑/预览', onClick: () => open(record) },
+                {
+                  label: '删除',
+                  danger: true,
+                  loading: deleteLoading === record.id,
+                  onClick: () => deleteConfig(record),
+                },
+              ]"
+            />
           </template>
         </a-table-column>
       </template>
@@ -212,6 +214,15 @@
                 </div>
               </div>
               <a-space>
+                <a-button
+                  size="small"
+                  type="primary"
+                  :loading="previewLoading === 'form'"
+                  :disabled="!form.template"
+                  @click="openRelationPreview"
+                >
+                  预览整体流程
+                </a-button>
                 <a-tag size="small" color="arcoblue">{{ getTemplateItemCount(currentTemplate) }} 个关联模板</a-tag>
                 <a-tag size="small">{{ getTemplateCleanupText(currentTemplate) }}</a-tag>
               </a-space>
@@ -294,6 +305,28 @@
       </a-space>
     </template>
   </a-drawer>
+
+  <a-drawer
+    v-model:visible="relationPreviewVisible"
+    title="预览整体流程"
+    width="76%"
+    :footer="false"
+    unmount-on-close
+  >
+    <div class="mango-data-factory-relation-drawer">
+      <DataFactoryRelationFlow
+        :dependency-tree="previewResult.dependency_tree"
+        :flow-loading="previewLoading === 'form'"
+        title="整体流程"
+        subtitle="查看当前用例数据工厂配置将创建或复用的数据关系"
+        height="calc(100vh - 110px)"
+        :initial-max-zoom="0.82"
+        show-download
+        show-mini-map
+        :download-name="`${form.name || '数据工厂'}-整体流程`"
+      />
+    </div>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
@@ -303,6 +336,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
   import { useProductModule } from '@/store/modules/project_module'
+  import DataFactoryRelationFlow from '@/components/DataFactory/DataFactoryRelationFlow.vue'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
   import {
     deleteDataFactoryCaseConfig,
@@ -379,7 +413,14 @@
     },
     { title: '清理策略', key: 'cleanup_strategy', dataIndex: 'cleanup_strategy', width: 120 },
     { title: '状态', key: 'status', dataIndex: 'status', width: 90, align: 'center' },
-    { title: '操作', key: 'actions', dataIndex: 'actions', width: 170, align: 'center' },
+    {
+      title: '操作',
+      key: 'actions',
+      dataIndex: 'actions',
+      width: 170,
+      align: 'center',
+      fixed: 'right',
+    },
   ]
 
   const caseConfigList = ref<any[]>([])
@@ -395,6 +436,7 @@
   const fieldLoading = ref(false)
   const saving = ref(false)
   const visible = ref(false)
+  const relationPreviewVisible = ref(false)
   const previewLoading = ref<any>(null)
   const deleteLoading = ref<number | null>(null)
   const previewResult = ref<any>({})
@@ -788,6 +830,13 @@
         .some((value) => String(value) === itemKey)
     )
     return itemPreview?.fields || []
+  }
+
+  function openRelationPreview() {
+    relationPreviewVisible.value = true
+    if (!previewResult.value?.dependency_tree) {
+      loadCasePreview()
+    }
   }
 
   function loadItemFields() {
@@ -1247,7 +1296,12 @@
     min-height: 96px;
   }
 
-  @media (max-width: 1200px) {
+  .mango-data-factory-relation-drawer {
+    height: calc(100vh - 110px);
+    min-height: 0;
+  }
+
+  @media (max-width: 1px) {
     .mango-data-factory-base-card {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

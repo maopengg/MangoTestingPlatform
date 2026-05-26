@@ -16,6 +16,7 @@ interface ChildrenItem {
   label: string // 标签
   parameter: ParameterItem[] // 参数配置
   sort: number // 排序
+  children?: ChildrenItem[] // 子项列表
 }
 
 // 主项类型
@@ -37,6 +38,8 @@ interface SlsectValueState {
   ass: SelectValueItem[]
 }
 
+let selectValueRequest: Promise<void> | null = null
+
 export const useSelectValueStore = defineStore('get-select-value', {
   state: (): SlsectValueState => ({
     data: [],
@@ -50,29 +53,38 @@ export const useSelectValueStore = defineStore('get-select-value', {
   getters: {},
   actions: {
     getSelectValue() {
-      getSystemCacheDataKeyValue('select_value')
+      if (selectValueRequest) {
+        return selectValueRequest
+      }
+      selectValueRequest = getSystemCacheDataKeyValue('select_value')
         .then((res) => {
-          this.data = res.data
-          this.dataList = [...this.data]
-          for (const item of this.dataList) {
-            if (item.children) {
-              this.dataList.push(...item.children)
+          this.data = Array.isArray(res.data) ? res.data : []
+          this.dataList = []
+          const appendChildren = (items: any[]) => {
+            for (const item of items) {
+              if (!item) continue
+              this.dataList.push(item)
+              if (Array.isArray(item.children)) {
+                appendChildren(item.children)
+              }
             }
           }
+          appendChildren(this.data)
           this.webOpe = []
           this.androidOpe = []
           this.assAndroid = []
           this.assWeb = []
           this.ass = []
           this.data.forEach((item: SelectValueItem) => {
+            const children = Array.isArray(item.children) ? item.children : []
             if (item.value === 'web') {
-              this.webOpe.push(...item.children)
+              this.webOpe.push(...children)
             } else if (item.value === 'android') {
-              this.androidOpe.push(...item.children)
+              this.androidOpe.push(...children)
             } else if (item.value === 'ass_android') {
-              this.assAndroid.push(...item.children)
+              this.assAndroid.push(...children)
             } else if (item.value === 'ass_web') {
-              this.assWeb.push(...item.children)
+              this.assWeb.push(...children)
             } else if (item.value.includes('断言')) {
               this.ass.push(item)
               this.assAndroid.push(item)
@@ -81,6 +93,10 @@ export const useSelectValueStore = defineStore('get-select-value', {
           })
         })
         .catch(console.log)
+        .finally(() => {
+          selectValueRequest = null
+        })
+      return selectValueRequest
     },
     getSelectLabel(value: string): ChildrenItem[] {
       // 如果数据为空，则调用初始化函数

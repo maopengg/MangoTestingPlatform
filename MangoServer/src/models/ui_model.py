@@ -121,6 +121,9 @@ class CaseModel(BaseModel):
     front_sql: list
     posterior_sql: list
     parametrize: list[dict] | list
+    data_factory_cache_data: dict = {}
+    data_factory_execution_ids: list[int] = []
+    data_factory_auto_cleanup_execution_ids: list[int] = []
     steps: list[PageStepsModel]
 
 
@@ -135,6 +138,7 @@ class PageStepsResultModel(BaseModel):
     stop_time: str | None = None
 
     cache_data: dict
+    data_factory_cache_data: dict = {}
     test_object: str  # url或者软件包
 
     status: int
@@ -154,4 +158,7 @@ class UiCaseResultModel(BaseModel):
     stop_time: str | None = None
     error_message: str | None = None
     video_path: str | None = None
+    data_factory_cache_data: dict = {}
+    data_factory_execution_ids: list[int] = []
+    data_factory_auto_cleanup_execution_ids: list[int] = []
     steps: list[PageStepsResultModel]

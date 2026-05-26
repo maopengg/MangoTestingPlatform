@@ -6,8 +6,11 @@
     </a-space>
     <a-space class="mango-json-display-toolbar__actions">
       <a-button type="outline" status="success" @click="copyToClipboard">复制</a-button>
+      <a-button v-if="isLargeJson && !largePreviewEnabled" type="outline" @click="enableLargePreview">
+        渲染预览
+      </a-button>
       <a-button
-        v-if="isObjectOrArray || (isString && isValidJson)"
+        v-if="!isLargeJson && (isObjectOrArray || (isString && isValidJson))"
         type="outline"
         @click="toggleExpand"
       >
@@ -17,8 +20,18 @@
     </a-space>
   </div>
   <div class="mango-json-display-content mango-code-panel">
+    <div v-if="isLargeJson && !largePreviewEnabled" class="mango-json-large-placeholder">
+      <div>
+        <strong>JSON 数据较大，已暂停树渲染</strong>
+        <span>{{ largeJsonSummary }}</span>
+      </div>
+      <a-space>
+        <a-button size="small" type="primary" @click="openJsonDrawer">查看JSON</a-button>
+        <a-button size="small" @click="enableLargePreview">渲染预览</a-button>
+      </a-space>
+    </div>
     <vue-json-pretty
-      v-if="isObjectOrArray && showComponent"
+      v-else-if="isObjectOrArray && showComponent"
       :data="parsedData"
       :deep="jsonTreeDeep"
       :show-length="true"
@@ -50,13 +63,17 @@
         </a-button>
       </div>
       <div class="mango-json-drawer-content mango-code-panel">
-        <vue-json-pretty
-          v-if="showDrawerComponent"
-          :data="drawerJsonData"
-          :deep="drawerJsonTreeDeep"
-          :show-length="true"
-          :show-icon="true"
-        />
+        <div v-if="showDrawerComponent" class="mango-json-drawer-render">
+          <vue-json-pretty
+            :data="drawerJsonData"
+            :deep="drawerJsonTreeDeep"
+            :show-length="true"
+            :show-icon="true"
+          />
+        </div>
+        <div v-else class="mango-json-large-placeholder">
+          <strong>JSON 准备中...</strong>
+        </div>
       </div>
     </div>
   </a-drawer>
@@ -93,9 +110,41 @@
   const jsonDrawerVisible = ref(false)
   const drawerExpanded = ref(false)
   const showDrawerComponent = ref(false)
+  const largePreviewEnabled = ref(false)
   const collapsedDeep = 0
   const previewDeep = 1
   const expandedDeep = Number.MAX_SAFE_INTEGER
+  const LARGE_JSON_STRING_LENGTH = 120000
+  const LARGE_JSON_NODE_COUNT = 900
+
+  const estimateNodeCount = (value, limit = LARGE_JSON_NODE_COUNT + 1) => {
+    if (!value || typeof value !== 'object') {
+      return 1
+    }
+    const stack = [value]
+    let count = 0
+    while (stack.length) {
+      const current = stack.pop()
+      count += 1
+      if (count > limit) {
+        return count
+      }
+      if (current && typeof current === 'object') {
+        const children = Array.isArray(current) ? current : Object.values(current)
+        for (const child of children) {
+          if (child && typeof child === 'object') {
+            stack.push(child)
+          } else {
+            count += 1
+            if (count > limit) {
+              return count
+            }
+          }
+        }
+      }
+    }
+    return count
+  }
 
   /**
    * 判断是否是对象或数组
@@ -126,6 +175,13 @@
   const isValidJson = computed(() => {
     if (!isString.value) return false
     try {
+      if (props.data.length > LARGE_JSON_STRING_LENGTH) {
+        const text = props.data.trim()
+        return (
+          (text.startsWith('{') && text.endsWith('}')) ||
+          (text.startsWith('[') && text.endsWith(']'))
+        )
+      }
       // 对于可能包含大数字的 JSON 字符串，我们需要特殊处理
       if (isString.value && props.data.includes(':') && props.data.includes('{')) {
         // 检查是否可能包含大数字
@@ -191,6 +247,39 @@
 
   const canPreviewJson = computed(() => {
     return isObjectOrArray.value || (isString.value && isValidJson.value)
+  })
+
+  const estimatedJsonSize = computed(() => {
+    if (isString.value) {
+      return props.data.length
+    }
+    if (isObjectOrArray.value) {
+      return estimateNodeCount(props.data)
+    }
+    return 0
+  })
+
+  const isLargeJson = computed(() => {
+    if (isString.value) {
+      return props.data.length > LARGE_JSON_STRING_LENGTH
+    }
+    if (isObjectOrArray.value) {
+      return estimatedJsonSize.value > LARGE_JSON_NODE_COUNT
+    }
+    return false
+  })
+
+  const largeJsonSummary = computed(() => {
+    if (isString.value) {
+      return `约 ${Math.ceil(props.data.length / 1024)} KB，点击后再渲染树结构。`
+    }
+    if (Array.isArray(props.data)) {
+      return `${props.data.length} 个数组项，点击后再渲染树结构。`
+    }
+    if (isObjectOrArray.value) {
+      return `${Object.keys(props.data).length} 个顶层字段，点击后再渲染树结构。`
+    }
+    return '点击后再渲染树结构。'
   })
 
   const drawerJsonData = computed(() => {
@@ -296,12 +385,21 @@
     jsonDrawerVisible.value = true
     drawerExpanded.value = shouldExpandFullyByDefault.value
     showDrawerComponent.value = false
-    await nextTick()
-    showDrawerComponent.value = true
+    window.setTimeout(() => {
+      showDrawerComponent.value = true
+    }, 80)
   }
 
   const toggleDrawerExpand = () => {
     drawerExpanded.value = !drawerExpanded.value
+  }
+
+  const enableLargePreview = () => {
+    largePreviewEnabled.value = true
+    showComponent.value = false
+    window.setTimeout(() => {
+      showComponent.value = true
+    }, 80)
   }
 
   // 监听数据变化，确保组件正确渲染
@@ -310,10 +408,11 @@
     async () => {
       showComponent.value = false
       showDrawerComponent.value = false
+      largePreviewEnabled.value = false
       isExpanded.value = shouldExpandFullyByDefault.value
       drawerExpanded.value = shouldExpandFullyByDefault.value
       await nextTick()
-      showComponent.value = true
+      showComponent.value = !isLargeJson.value
       showDrawerComponent.value = jsonDrawerVisible.value
     }
     // 去掉 immediate: true，首次渲染由 onMounted 处理，避免挂载时触发两次重建
@@ -324,7 +423,7 @@
     isExpanded.value = shouldExpandFullyByDefault.value
     drawerExpanded.value = shouldExpandFullyByDefault.value
     await nextTick()
-    showComponent.value = true
+    showComponent.value = !isLargeJson.value
   })
 </script>
 
@@ -428,6 +527,40 @@
     :deep(.vjs-indent-unit.has-line) {
       border-left-color: var(--m-code-border);
     }
+  }
+
+  .mango-json-large-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 96px;
+    padding: 12px;
+    border: 1px dashed var(--m-code-border);
+    border-radius: var(--m-radius-md);
+    background: color-mix(in srgb, var(--m-code-bg) 82%, var(--m-surface));
+
+    strong,
+    span {
+      display: block;
+    }
+
+    strong {
+      color: var(--m-code-key);
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    span {
+      margin-top: 4px;
+      color: var(--m-code-text);
+      font-size: 12px;
+      line-height: 18px;
+    }
+  }
+
+  .mango-json-drawer-render {
+    min-width: 0;
   }
 
   .copy-button {

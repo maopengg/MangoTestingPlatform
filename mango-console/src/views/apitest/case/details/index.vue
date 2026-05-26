@@ -149,7 +149,7 @@
                       </template>
                       <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
                         <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                          >{{ enumStore.task_status[record.status].title }}
+                          >{{ enumStore.task_status[record.status]?.title || '-' }}
                         </a-tag>
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
@@ -235,7 +235,7 @@
                           <span class="custom-header__name">{{ '场景名称：' + item.name }}</span>
                           <div class="custom-header__tags">
                             <a-tag :color="enumStore.status_colors[item.status]">
-                              {{ enumStore.task_status[item.status].title }}
+                              {{ enumStore.task_status[item.status]?.title || '-' }}
                             </a-tag>
                             <a-tag color="purple">
                               {{
@@ -269,12 +269,17 @@
                         v-show="isActiveCollapseItem(index)"
                         class="scenario-expand-body"
                       >
-                        <a-tabs
-                          :active-key="data.caseDetailsTypeKey"
-                          position="left"
-                          @tab-click="(key) => switchApiInfoType(key, item)"
+                        <a-spin
+                          :loading="data.caseDetailTabLoading"
+                          tip="页签内容加载中..."
+                          class="scenario-tab-loading-spin"
                         >
-                          <a-tab-pane key="1" title="前置处理">
+                          <a-tabs
+                            :active-key="data.caseDetailsTypeKey"
+                            position="left"
+                            @tab-click="(key) => switchApiInfoType(key, item)"
+                          >
+                            <a-tab-pane key="1" title="前置处理">
                             <a-tabs
                               :active-key="data.tabsKey"
                               @tab-click="(key) => tabsChange(key, item)"
@@ -350,8 +355,8 @@
                                 </div>
                               </a-tab-pane>
                             </a-tabs>
-                          </a-tab-pane>
-                          <a-tab-pane key="0" title="请求配置">
+                            </a-tab-pane>
+                            <a-tab-pane key="0" title="请求配置">
                             <a-tabs
                               :active-key="data.tabsKey"
                               @tab-click="(key) => tabsChange(key, item)"
@@ -459,8 +464,8 @@
                                 </div>
                               </a-tab-pane>
                             </a-tabs>
-                          </a-tab-pane>
-                          <a-tab-pane key="2" title="响应结果">
+                            </a-tab-pane>
+                            <a-tab-pane key="2" title="响应结果">
                             <a-tabs
                               :active-key="data.tabsKey"
                               @tab-click="(key) => tabsChange(key, item)"
@@ -545,8 +550,8 @@
                                 </div>
                               </a-tab-pane>
                             </a-tabs>
-                          </a-tab-pane>
-                          <a-tab-pane key="4" title="后置处理">
+                            </a-tab-pane>
+                            <a-tab-pane key="4" title="后置处理">
                             <a-tabs
                               :active-key="data.tabsKey"
                               @tab-click="(key) => tabsChange(key, item)"
@@ -769,8 +774,8 @@
                                 </div>
                               </a-tab-pane>
                             </a-tabs>
-                          </a-tab-pane>
-                          <a-tab-pane key="3" title="接口断言">
+                            </a-tab-pane>
+                            <a-tab-pane key="3" title="接口断言">
                             <a-tabs
                               :active-key="data.tabsKey"
                               @tab-click="(key) => tabsChange(key)"
@@ -972,32 +977,33 @@
                                 </div>
                               </a-tab-pane>
                             </a-tabs>
-                          </a-tab-pane>
-                          <a-tab-pane key="5" title="缓存数据">
+                            </a-tab-pane>
+                            <a-tab-pane key="5" title="缓存数据">
                             <div class="m-2">
                               <JsonDisplay
                                 v-if="data.caseDetailsTypeKey === '5'"
                                 :data="item.result_data?.cache_data"
                               />
                             </div>
-                          </a-tab-pane>
-                          <a-tab-pane key="7" title="数据工厂">
+                            </a-tab-pane>
+                            <a-tab-pane key="7" title="数据工厂">
                             <div class="m-2">
                               <JsonDisplay
                                 v-if="data.caseDetailsTypeKey === '7'"
                                 :data="item.result_data?.data_factory_cache_data"
                               />
                             </div>
-                          </a-tab-pane>
-                          <a-tab-pane key="6" title="断言结果">
+                            </a-tab-pane>
+                            <a-tab-pane key="6" title="断言结果">
                             <div class="m-2">
                               <AssertionResult
                                 v-if="data.caseDetailsTypeKey === '6'"
                                 :data="item.result_data?.ass"
                               />
                             </div>
-                          </a-tab-pane>
-                        </a-tabs>
+                            </a-tab-pane>
+                          </a-tabs>
+                        </a-spin>
                       </div>
                       <div v-else-if="isActiveCollapseItem(index)" class="collapse-content-loading">
                         <a-spin tip="内容加载中..." />
@@ -1190,6 +1196,7 @@
     activeCollapseKey: [0],
     mountedCollapseKeys: [],
     collapseLoading: false, // 列表整体 loading
+    caseDetailTabLoading: false,
     expandingIndex: -1, // 正在展开中的 item index，-1 表示无
   })
 
@@ -1309,6 +1316,40 @@
     data.apiType = key
   }
 
+  function waitFrame() {
+    return new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve())
+    })
+  }
+
+  function delay(ms: number) {
+    return new Promise<void>((resolve) => {
+      window.setTimeout(resolve, ms)
+    })
+  }
+
+  async function runCaseDetailTabLoading(task: () => void | Promise<void>) {
+    let finished = false
+    const loadingTimer = window.setTimeout(() => {
+      if (!finished) {
+        data.caseDetailTabLoading = true
+      }
+    }, 180)
+    try {
+      await task()
+      await nextTick()
+      await waitFrame()
+      await waitFrame()
+      if (data.caseDetailTabLoading) {
+        await delay(120)
+      }
+    } finally {
+      finished = true
+      window.clearTimeout(loadingTimer)
+      data.caseDetailTabLoading = false
+    }
+  }
+
   function hasConfigValue(value: any) {
     if (value === undefined || value === null) return false
     if (typeof value === 'string') {
@@ -1321,58 +1362,63 @@
   }
 
   async function switchApiInfoType(key: any, item: any) {
-    data.caseDetailsTypeKey = key
-    if (key === '0') {
-      if (hasConfigValue(item?.headers)) {
-        data.tabsKey = '00'
-      } else if (hasConfigValue(item?.params)) {
-        data.tabsKey = '01'
-      } else if (hasConfigValue(item?.data)) {
-        data.tabsKey = '02'
-      } else if (hasConfigValue(item?.json)) {
-        data.tabsKey = '03'
-      } else if (hasConfigValue(item?.file)) {
-        data.tabsKey = '04'
-      } else {
-        data.tabsKey = '03'
-      }
-    } else if (key === '1') {
-      await switchFrontProcessTab(item)
-    } else if (key === '2') {
-      data.tabsKey = '23'
-    } else if (key === '3') {
-      if (item.ass_general && item.ass_general.length > 0) {
-        data.tabsKey = '32'
-        data.assClickAdd = true
-      } else if (item.ass_jsonpath && item.ass_jsonpath.length > 0) {
-        data.tabsKey = '31'
-        data.assClickAdd = false
-      } else if (item.ass_text_all) {
-        data.tabsKey = '33'
-        data.assClickAdd = false
-      } else if (item.ass_schema) {
-        data.tabsKey = '34'
-        data.assClickAdd = false
-      } else {
-        data.tabsKey = '30'
-        data.assClickAdd = false
-      }
-    } else if (key === '4') {
-      if (item.posterior_sql && item.posterior_sql.length > 0) {
-        data.tabsKey = '41'
-      } else if (item.posterior_func && item.posterior_func.length > 0) {
-        data.tabsKey = '43'
-      } else if (item.posterior_response_text) {
-        data.tabsKey = '44'
-      } else if (item.posterior_sleep) {
-        data.tabsKey = '42'
-      } else {
-        data.tabsKey = '40'
-      }
-      data.assClickAdd = true
-    } else if (key === '5') {
-      data.tabsKey = '50'
+    if (data.caseDetailTabLoading) {
+      return
     }
+    await runCaseDetailTabLoading(async () => {
+      data.caseDetailsTypeKey = key
+      if (key === '0') {
+        if (hasConfigValue(item?.headers)) {
+          data.tabsKey = '00'
+        } else if (hasConfigValue(item?.params)) {
+          data.tabsKey = '01'
+        } else if (hasConfigValue(item?.data)) {
+          data.tabsKey = '02'
+        } else if (hasConfigValue(item?.json)) {
+          data.tabsKey = '03'
+        } else if (hasConfigValue(item?.file)) {
+          data.tabsKey = '04'
+        } else {
+          data.tabsKey = '03'
+        }
+      } else if (key === '1') {
+        await switchFrontProcessTab(item)
+      } else if (key === '2') {
+        data.tabsKey = '23'
+      } else if (key === '3') {
+        if (item.ass_general && item.ass_general.length > 0) {
+          data.tabsKey = '32'
+          data.assClickAdd = true
+        } else if (item.ass_jsonpath && item.ass_jsonpath.length > 0) {
+          data.tabsKey = '31'
+          data.assClickAdd = false
+        } else if (item.ass_text_all) {
+          data.tabsKey = '33'
+          data.assClickAdd = false
+        } else if (item.ass_schema) {
+          data.tabsKey = '34'
+          data.assClickAdd = false
+        } else {
+          data.tabsKey = '30'
+          data.assClickAdd = false
+        }
+      } else if (key === '4') {
+        if (item.posterior_sql && item.posterior_sql.length > 0) {
+          data.tabsKey = '41'
+        } else if (item.posterior_func && item.posterior_func.length > 0) {
+          data.tabsKey = '43'
+        } else if (item.posterior_response_text) {
+          data.tabsKey = '44'
+        } else if (item.posterior_sleep) {
+          data.tabsKey = '42'
+        } else {
+          data.tabsKey = '40'
+        }
+        data.assClickAdd = true
+      } else if (key === '5') {
+        data.tabsKey = '50'
+      }
+    })
   }
 
   async function switchFrontProcessTab(item: any) {
@@ -1420,16 +1466,21 @@
     }
   }
 
-  function tabsChange(key: string | number, item: any = null) {
-    data.tabsKey = key
-    fillDefaultFunc(item, key)
-    data.assClickAdd = !(
-      key === '30' ||
-      key === '42' ||
-      key === '33' ||
-      key === '43' ||
-      key === '11'
-    )
+  async function tabsChange(key: string | number, item: any = null) {
+    if (data.caseDetailTabLoading) {
+      return
+    }
+    await runCaseDetailTabLoading(() => {
+      data.tabsKey = key
+      fillDefaultFunc(item, key)
+      data.assClickAdd = !(
+        key === '30' ||
+        key === '42' ||
+        key === '33' ||
+        key === '43' ||
+        key === '11'
+      )
+    })
   }
 
   function clickAdd(item: any = null) {
@@ -2206,6 +2257,27 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     font-size: 13px;
   }
 
+  .scenario-tab-loading-spin {
+    display: block;
+    min-height: 360px;
+  }
+
+  .scenario-tab-loading-spin :deep(.arco-spin),
+  .scenario-tab-loading-spin :deep(.arco-spin-children) {
+    width: 100%;
+    min-height: 360px;
+  }
+
+  .scenario-tab-loading-spin :deep(.arco-spin-mask) {
+    border-radius: var(--m-radius-md);
+    background: color-mix(in srgb, var(--m-surface) 86%, transparent);
+  }
+
+  .scenario-tab-loading-spin :deep(.arco-spin-tip) {
+    color: var(--m-muted);
+    font-size: 13px;
+  }
+
   .request-header-panel {
     height: 220px;
     margin: 8px;
@@ -2317,7 +2389,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   /* ── 响应式 ──────────────────────────────────────────────────────── */
-  @media (max-width: 1180px) {
+  @media (max-width: 1px) {
     .api-case-workbench {
       grid-template-columns: 1fr;
       height: auto;
@@ -2328,7 +2400,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     :deep(.mango-test-btn) {
       margin-top: 0;
       align-self: center;

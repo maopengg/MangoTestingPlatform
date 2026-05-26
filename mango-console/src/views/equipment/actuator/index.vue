@@ -342,7 +342,7 @@
   }
 
   // 响应式调整
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .cards-container {
       margin-top: 8px;
     }

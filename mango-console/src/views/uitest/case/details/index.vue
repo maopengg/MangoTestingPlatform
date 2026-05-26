@@ -114,7 +114,7 @@
                       </template>
                       <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
                         <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                          >{{ enumStore.task_status[record.status].title }}
+                          >{{ enumStore.task_status[record.status]?.title || '-' }}
                         </a-tag>
                       </template>
                       <template v-else-if="item.dataIndex === 'error_message'" #cell="{ record }">
@@ -1102,7 +1102,7 @@
   }
 
   /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     :deep(.mango-key-value-row) {
       flex-wrap: wrap;
     }

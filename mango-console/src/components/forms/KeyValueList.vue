@@ -218,7 +218,7 @@
   }
 
   /* 响应式处理：在小屏幕上允许换行，但保持按钮在同一行 */
-  @media (max-width: 768px) {
+  @media (max-width: 1px) {
     .mango-key-value-row {
       flex-wrap: wrap;
     }

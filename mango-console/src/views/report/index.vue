@@ -90,12 +90,12 @@
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                  >{{ enumStore.task_status[record.status].title }}
+                  >{{ enumStore.task_status[record.status]?.title || '-' }}
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
                 <a-tag :color="enumStore.colors[record.is_notice]" size="small"
-                  >{{ enumStore.test_suite_notice[record.is_notice].title }}
+                  >{{ enumStore.test_suite_notice[record.is_notice]?.title || '-' }}
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -271,7 +271,7 @@
     flex: 1;
   }
 
-  @media (max-width: 1280px) {
+  @media (max-width: 1px) {
     .report-chart-grid {
       grid-template-columns: 1fr;
     }

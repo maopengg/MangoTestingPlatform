@@ -94,7 +94,7 @@
             </template>
             <template v-else-if="item.key === 'client'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.project_product.ui_client_type]" size="small"
-                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}
+                >{{ enumStore.drive_type[record.project_product.ui_client_type]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
