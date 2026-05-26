@@ -154,6 +154,7 @@ def _template_summary(item: DataFactoryTemplate, name: str | None = None) -> dic
         "output_config": item.output_config,
         "cleanup_strategy": item.cleanup_strategy,
         "is_default": item.is_default,
+        "usage_scope": item.usage_scope,
         "status": item.status,
         "items": [
             _template_item_summary(scene_item)
@@ -630,9 +631,16 @@ def register_data_factory_tools(mcp):
         module_id: int | None = None,
         entity_id: int | None = None,
         keyword: str | None = None,
+        usage_scope: int | None = None,
         enabled_only: bool = True,
     ) -> dict:
-        """查询数据工厂场景模板。场景模板可包含主实体和多个关联模板。"""
+        """查询数据工厂场景模板。
+
+        usage_scope 用于区分模板可见范围：
+        - 1 用例可直接选择：会出现在 API/UI case 的数据工厂选择列表，可直接绑定到用例执行。
+        - 2 仅场景内部引用：不会出现在 case 选择列表，只用于被其他场景模板编排引用。
+        不传 usage_scope 时返回全部用途。
+        """
         queryset = DataFactoryTemplate.objects.select_related("entity", "module", "project_product").all()
         if template_id is not None:
             queryset = queryset.filter(id=template_id)
@@ -644,6 +652,8 @@ def register_data_factory_tools(mcp):
             queryset = queryset.filter(entity_id=entity_id)
         if keyword:
             queryset = queryset.filter(name__contains=keyword)
+        if usage_scope is not None:
+            queryset = queryset.filter(usage_scope=usage_scope)
         if enabled_only:
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
         return ok({"items": [_template_summary(item) for item in queryset.order_by("-id")]})
@@ -675,12 +685,16 @@ def register_data_factory_tools(mcp):
         items: list[dict] | None = None,
         cleanup_strategy: int = DataFactoryCleanupStrategyEnum.MANUAL.value,
         is_default: bool = False,
+        usage_scope: int = 1,
         status: int = StatusEnum.SUCCESS.value,
         test_env: int | None = None,
     ) -> dict:
         """创建数据工厂场景模板。
 
         is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
+        usage_scope 场景用途，默认 1：
+        - 1 用例可直接选择：用于完整业务对象入口，API/UI case 可直接选择执行。
+        - 2 仅场景内部引用：用于底层子表/中间表/补充数据，只能被其他场景模板作为关联模板使用。
         items 用于配置关联模板，格式：
         [{"child_template": 20, "name": "流程分类绑定", "sort": 10, "field_overrides": {}}]
         关联模板清理策略继承场景模板。
@@ -699,6 +713,7 @@ def register_data_factory_tools(mcp):
                 "items": items or [],
                 "cleanup_strategy": cleanup_strategy,
                 "is_default": is_default,
+                "usage_scope": usage_scope,
                 "status": status,
             }
         )
@@ -728,12 +743,16 @@ def register_data_factory_tools(mcp):
         items: list[dict] | None = None,
         cleanup_strategy: int | None = None,
         is_default: bool | None = None,
+        usage_scope: int | None = None,
         status: int | None = None,
         test_env: int | None = None,
     ) -> dict:
         """更新数据工厂场景模板。
 
         is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
+        usage_scope 场景用途：
+        - 1 用例可直接选择：API/UI case 可直接选择执行。
+        - 2 仅场景内部引用：隐藏于 case 选择列表，只能被场景编排引用。
         items 不传则不修改关联模板；传入时以完整列表覆盖保存。
         关联模板清理策略继承场景模板。
         test_env 用于保存后刷新配置状态 config_status；页面 PUT /data-factory/template 也是这样处理。
@@ -751,6 +770,7 @@ def register_data_factory_tools(mcp):
             "items": items,
             "cleanup_strategy": cleanup_strategy,
             "is_default": is_default,
+            "usage_scope": usage_scope,
             "status": status,
         }.items():
             if value is not None:
@@ -1500,6 +1520,23 @@ def register_data_factory_tools(mcp):
                         },
                     },
                     "default_template": "状态模板 is_default=True 时为该实体默认模板；同一实体只保留一个默认模板。",
+                },
+                "template_usage_scope": {
+                    1: {
+                        "name": "用例可直接选择",
+                        "meaning": "完整业务对象入口模板，会出现在 API/UI case 的数据工厂选择列表中，可直接绑定到用例执行。",
+                        "recommended_for": "普通测试用户会直接消费的场景，例如完整合同流程、完整订单、有效用户。",
+                    },
+                    2: {
+                        "name": "仅场景内部引用",
+                        "meaning": "内部编排模板，不出现在 API/UI case 选择列表，只能被其他场景模板作为关联模板引用。",
+                        "recommended_for": "子表、中间表、绑定关系、节点配置、字段权限等底层模板。",
+                    },
+                    "important": [
+                        "usage_scope 不等于 is_default。",
+                        "is_default 只用于依赖实体字段未指定 template_id 时选择该实体的默认启用模板。",
+                        "usage_scope 只控制模板是否出现在 case 选择列表以及模板用途语义。",
+                    ],
                 },
                 "examples": {
                     "field_overrides": {

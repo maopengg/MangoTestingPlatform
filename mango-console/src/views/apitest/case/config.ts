@@ -54,6 +54,15 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
+    key: 'scenario_layer',
+    label: '场景层级',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择场景层级',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'scenario_type',
     label: '场景类型',
     value: ref(''),
@@ -145,6 +154,25 @@ export const formItems: FormItem[] = reactive([
     type: 'select',
     required: true,
     placeholder: '请设置优先级',
+    validator: function () {
+      // @ts-ignore
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '场景层级',
+    key: 'scenario_layer',
+    value: ref(0),
+    type: 'select',
+    required: true,
+    placeholder: '请选择场景层级',
+    reset: function () {
+      this.value = 0
+    },
     validator: function () {
       // @ts-ignore
       if (!this.value && this.value !== 0) {
@@ -256,6 +284,13 @@ export const tableColumns = useTableColumn([
     width: 240,
     ellipsis: true,
     tooltip: true,
+  },
+  {
+    title: '场景层级',
+    key: 'scenario_layer',
+    dataIndex: 'scenario_layer',
+    align: 'left',
+    width: 120,
   },
   {
     title: '场景标签',

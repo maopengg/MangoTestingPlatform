@@ -305,8 +305,7 @@
       gap: 10px;
       max-height: 218px;
       overflow-y: auto;
-      padding: 0 2px;
-      padding-right: 4px;
+      padding: 2px 4px 2px 2px;
       scrollbar-width: thin;
     }
 
@@ -331,7 +330,8 @@
     }
 
     .mango-theme-preset-card.active {
-      transform: translateY(-1px);
+      outline: 1px solid color-mix(in srgb, var(--m-primary) 18%, transparent);
+      outline-offset: -2px;
     }
 
     .mango-theme-preset-preview {

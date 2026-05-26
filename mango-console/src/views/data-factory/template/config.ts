@@ -48,6 +48,13 @@ export const templateConditionItems: Array<FormItem> = reactive([
     value: ref(''),
   },
   {
+    key: 'usage_scope',
+    label: '场景用途',
+    type: 'select',
+    placeholder: '请选择用途',
+    value: ref(''),
+  },
+  {
     key: 'status',
     label: '状态',
     type: 'select',
@@ -105,15 +112,21 @@ export const templateTableColumns = useTableColumn([
     width: 120,
   },
   {
-    title: '默认场景',
-    key: 'is_default',
-    dataIndex: 'is_default',
-    width: 100,
+    title: '场景用途',
+    key: 'usage_scope',
+    dataIndex: 'usage_scope',
+    width: 110,
   },
   {
     title: '配置状态',
     key: 'config_status',
     dataIndex: 'config_status',
+    width: 100,
+  },
+  {
+    title: '默认场景',
+    key: 'is_default',
+    dataIndex: 'is_default',
     width: 100,
   },
   {

@@ -85,6 +85,7 @@ class DataFactoryTemplateItemSerializerC(serializers.ModelSerializer):
             "field_overrides": template.field_overrides,
             "output_config": template.output_config,
             "cleanup_strategy": template.cleanup_strategy,
+            "usage_scope": template.usage_scope,
             "status": template.status,
         }
 
@@ -215,7 +216,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
     queryset = DataFactoryTemplate.objects.all()
     serializer_class = DataFactoryTemplateSerializerC
     serializer = DataFactoryTemplateSerializer
-    not_matching_str = ModelCRUD.not_matching_str + ['entity']
+    not_matching_str = ModelCRUD.not_matching_str + ['entity', 'usage_scope']
 
     def post(self, request: Request):
         duplicated = self.get_duplicated_template(request.data)
@@ -294,6 +295,7 @@ class DataFactoryTemplateViews(ViewSet):
             output_config=source.output_config,
             cleanup_strategy=source.cleanup_strategy,
             is_default=False,
+            usage_scope=source.usage_scope,
             status=source.status,
         )
         for item in source.items.all():

@@ -28,6 +28,7 @@ export interface ApiCasePayload {
   case_people?: number
   parametrize?: ApiParametrizeSuite[]
   level?: number
+  scenario_layer?: number
   scenario_type?: number
   scenario_tags?: number[]
   scenario_description?: string | null

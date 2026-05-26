@@ -168,8 +168,49 @@
   }
 
   .sidebar-bg-dark {
+    background-color: var(--m-layout-sidebar-bg);
+
     :deep(.mango-logo-wrapper .mango-logo-title) {
       color: var(--m-layout-logo-text) !important;
+    }
+
+    :deep(.arco-menu),
+    :deep(.arco-menu-dark),
+    :deep(.arco-menu-inner),
+    :deep(.arco-menu-inline-header),
+    :deep(.arco-menu-pop-header),
+    :deep(.arco-menu-item) {
+      color: var(--m-layout-sidebar-text);
+      background-color: transparent !important;
+    }
+
+    :deep(.arco-menu-icon),
+    :deep(.arco-menu .arco-icon) {
+      color: currentColor !important;
+    }
+
+    :deep(.arco-menu-dark .arco-menu-item.arco-menu-selected),
+    :deep(.arco-menu-dark .arco-menu-inline-header.arco-menu-selected) {
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-active-bg) !important;
+
+      & .arco-menu-icon {
+        color: var(--m-layout-sidebar-active-text) !important;
+      }
+    }
+
+    :deep(
+        .arco-menu-dark .arco-menu-item:hover,
+        .arco-menu-dark .arco-menu-group-title:hover,
+        .arco-menu-dark .arco-menu-pop-header:hover,
+        .arco-menu-dark .arco-menu-inline-header:hover
+      ) {
+      color: var(--m-layout-sidebar-active-text) !important;
+      background-color: var(--m-layout-sidebar-hover-bg) !important;
+
+      & .arco-menu-icon {
+        color: var(--m-layout-sidebar-active-text) !important;
+      }
     }
 
     .mango-tab-split-tab-wrapper {
@@ -183,6 +224,35 @@
 
   .sidebar-bg-light {
     background-color: var(--m-layout-sidebar-bg);
+
+    :deep(.arco-menu),
+    :deep(.arco-menu-light),
+    :deep(.arco-menu-inner),
+    :deep(.arco-menu-inline),
+    :deep(.arco-menu-inline-header),
+    :deep(.arco-menu-pop-header),
+    :deep(.arco-menu-item) {
+      color: var(--m-layout-sidebar-text);
+      background-color: transparent !important;
+    }
+
+    :deep(.arco-menu-icon),
+    :deep(.arco-menu .arco-icon) {
+      color: currentColor !important;
+    }
+
+    :deep(.arco-menu-light .arco-menu-item:hover),
+    :deep(.arco-menu-light .arco-menu-inline-header:hover),
+    :deep(.arco-menu-light .arco-menu-pop-header:hover) {
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-hover-bg) !important;
+    }
+
+    :deep(.arco-menu-light .arco-menu-item.arco-menu-selected),
+    :deep(.arco-menu-light .arco-menu-inline-header.arco-menu-selected) {
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-active-bg) !important;
+    }
 
     .mango-tab-split-tab-wrapper {
       background-color: var(--m-layout-sidebar-bg);

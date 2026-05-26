@@ -15,6 +15,7 @@ from src.enums.data_factory_enum import (
     DataFactoryGeneratorTypeEnum,
     DataFactoryOperationTypeEnum,
     DataFactoryTemplateConfigStatusEnum,
+    DataFactoryTemplateUsageScopeEnum,
 )
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import ToolsError
@@ -180,6 +181,12 @@ class DataFactoryTemplate(models.Model):
         default=DataFactoryCleanupStrategyEnum.MANUAL.value,
     )
     is_default = models.BooleanField(verbose_name="是否默认模板", default=False, db_index=True)
+    usage_scope = models.SmallIntegerField(
+        verbose_name="场景用途",
+        choices=DataFactoryTemplateUsageScopeEnum.choices(),
+        default=DataFactoryTemplateUsageScopeEnum.CASE.value,
+        db_index=True,
+    )
     config_status = models.SmallIntegerField(
         verbose_name="配置状态",
         choices=DataFactoryTemplateConfigStatusEnum.choices(),

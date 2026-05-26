@@ -15,7 +15,7 @@ def set_env():
             del sys.argv[i]
             break
 set_env()
-VERSION = '6.1.1'
+VERSION = '6.1.2'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -70,7 +70,7 @@ TIME_ZONE = 'Asia/Shanghai'
 ALLOWED_HOSTS = ["*"]
 # **********************************************************************************************************************
 
-SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
+SECRET_KEY = f'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1{VERSION}'
 # **********************************************************************************************************************
 
 INSTALLED_APPS = [

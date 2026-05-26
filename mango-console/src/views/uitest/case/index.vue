@@ -76,6 +76,18 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_case_scenario_layer"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
                 <a-select
                   v-model="item.value"
@@ -155,7 +167,7 @@
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
-        :scroll="{ x: 1520 }"
+        :scroll="{ x: 1640 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -183,6 +195,11 @@
             <template v-else-if="item.key === 'scenario_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.scenario_type]" size="small">
                 {{ getEnumTitle(enumStore.api_case_scenario_type, record.scenario_type) }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'scenario_layer'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.scenario_layer]" size="small">
+                {{ getEnumTitle(enumStore.api_case_scenario_layer, record.scenario_layer) }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'scenario_tags'" #cell="{ record }">
@@ -289,6 +306,17 @@
               v-model="item.value"
               :field-names="fieldNames"
               :options="enumStore.case_level"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.api_case_scenario_layer"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -502,7 +530,9 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
-        if (Array.isArray(propName)) {
+        if (it.key === 'scenario_layer' && (propName === undefined || propName === null)) {
+          it.value = 0
+        } else if (Array.isArray(propName)) {
           it.value = propName
         } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
@@ -584,6 +614,7 @@
         value['front_custom'] = []
         value['front_sql'] = []
         value['posterior_sql'] = []
+        value['scenario_layer'] = value['scenario_layer'] ?? 0
         postUiCase(value)
           .then((res) => {
             modalDialogRef.value?.toggle()

@@ -78,6 +78,16 @@ class DataFactoryTemplateConfigStatusEnum(BaseEnum):
         return {0: "待完善", 1: "已就绪"}
 
 
+class DataFactoryTemplateUsageScopeEnum(BaseEnum):
+    """场景模板用途"""
+    CASE = 1
+    INTERNAL = 2
+
+    @classmethod
+    def obj(cls):
+        return {1: "用例可直接选择", 2: "仅场景内部引用"}
+
+
 class DataFactoryExecutionSourceEnum(BaseEnum):
     """执行来源"""
     TEMPLATE_DEBUG = 1

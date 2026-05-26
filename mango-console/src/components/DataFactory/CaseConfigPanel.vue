@@ -373,6 +373,7 @@
   const projectInfo = useProject()
   const productModule = useProductModule()
   const enumFieldNames = { value: 'key', label: 'title' }
+  const TEMPLATE_USAGE_CASE = 1
 
   const columns = [
     {
@@ -601,7 +602,10 @@
     templateLoading.value = true
     return getDataFactoryTemplate(query)
       .then((res) => {
-        templateList.value = res.data || []
+        templateList.value = (res.data || []).filter((template: any) => {
+          const usageScope = Number(template.usage_scope || TEMPLATE_USAGE_CASE)
+          return usageScope === TEMPLATE_USAGE_CASE || String(template.id) === String(form.template)
+        })
       })
       .finally(() => {
         templateLoading.value = false

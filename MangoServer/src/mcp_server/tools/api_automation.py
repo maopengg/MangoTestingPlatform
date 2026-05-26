@@ -24,6 +24,7 @@ from src.auto_test.auto_user.models import User
 from src.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import (
+    ApiCaseScenarioLayerEnum,
     ApiCaseScenarioTagEnum,
     ApiCaseScenarioTypeEnum,
     CaseLevelEnum,
@@ -73,6 +74,17 @@ def _clean_list_rows(value: Any) -> list:
     if not isinstance(value, list):
         return []
     return [item for item in value if not _is_empty_value(item)]
+
+
+def _validate_scenario_tags(tags: list[int] | None) -> str | None:
+    layer_tags = {7, 8, 9}
+    for tag in tags or []:
+        try:
+            if int(tag) in layer_tags:
+                return "API/Integration/E2E 已迁移到 scenario_layer 字段，请不要再把 7/8/9 写入 scenario_tags。"
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def _normalize_scenario_payload(payload: dict) -> dict:
@@ -645,6 +657,7 @@ def register_api_automation_tools(mcp):
         keyword: str | None = None,
         case_people_id: int | None = None,
         level: int | None = None,
+        scenario_layer: int | None = None,
         scenario_type: int | None = None,
         scenario_tags: list[int] | None = None,
         page: int = 1,
@@ -660,6 +673,8 @@ def register_api_automation_tools(mcp):
             queryset = queryset.filter(case_people_id=case_people_id)
         if level is not None:
             queryset = queryset.filter(level=level)
+        if scenario_layer is not None:
+            queryset = queryset.filter(scenario_layer=scenario_layer)
         if scenario_type is not None:
             queryset = queryset.filter(scenario_type=scenario_type)
         if scenario_tags:
@@ -680,6 +695,7 @@ def register_api_automation_tools(mcp):
                 "case_people_id": item.case_people_id,
                 "case_flow": item.case_flow,
                 "level": item.level,
+                "scenario_layer": item.scenario_layer,
                 "scenario_type": item.scenario_type,
                 "scenario_tags": item.scenario_tags,
                 "scenario_description": item.scenario_description,
@@ -696,6 +712,7 @@ def register_api_automation_tools(mcp):
         name: str,
         case_people_id: int | None = None,
         level: int = 1,
+        scenario_layer: int = 0,
         scenario_type: int = 0,
         scenario_tags: list[int] | None = None,
         scenario_description: str | None = None,
@@ -708,8 +725,14 @@ def register_api_automation_tools(mcp):
 
         复杂字段格式见 get_api_case_schema.api_case_fields。front_headers 只传 ApiHeaders.id 数组，
         表示用例级默认请求头；如果某个场景参数 headers 非空，执行时会完全覆盖 front_headers，不会合并。
+        scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端。
+        接口/组件层用于单接口、组件能力、契约、边界、异常校验，Integration用于跨模块/跨服务/数据库/消息/第三方协作验证，
+        E2E用于核心用户路径和完整业务闭环验证。scenario_tags 只放冒烟、回归、主流程等辅助标签。
         未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
         """
+        tag_error = _validate_scenario_tags(scenario_tags)
+        if tag_error:
+            return fail(tag_error, "INVALID_SCENARIO_TAGS")
         if case_people_id is None:
             case_people_id = current_user().id
         data_obj = ApiCaseCRUD.inside_post(
@@ -719,6 +742,7 @@ def register_api_automation_tools(mcp):
                 "name": name,
                 "case_people": case_people_id,
                 "level": level,
+                "scenario_layer": scenario_layer,
                 "scenario_type": scenario_type,
                 "scenario_tags": scenario_tags or [],
                 "scenario_description": scenario_description,
@@ -735,6 +759,7 @@ def register_api_automation_tools(mcp):
         case_id: int,
         name: str | None = None,
         level: int | None = None,
+        scenario_layer: int | None = None,
         scenario_type: int | None = None,
         scenario_tags: list[int] | None = None,
         scenario_description: str | None = None,
@@ -744,10 +769,14 @@ def register_api_automation_tools(mcp):
         posterior_sql: list | None = None,
     ) -> dict:
         """更新 API case 主体配置。复杂字段格式见 get_api_case_schema.api_case_fields。"""
+        tag_error = _validate_scenario_tags(scenario_tags)
+        if tag_error:
+            return fail(tag_error, "INVALID_SCENARIO_TAGS")
         payload: dict[str, Any] = {"id": case_id}
         for key, value in {
             "name": name,
             "level": level,
+            "scenario_layer": scenario_layer,
             "scenario_type": scenario_type,
             "scenario_tags": scenario_tags,
             "scenario_description": scenario_description,
@@ -1017,6 +1046,7 @@ def register_api_automation_tools(mcp):
         api: dict,
         scenarios: list[dict],
         case_people_id: int | None = None,
+        scenario_layer: int = 0,
         scenario_type: int = 0,
         scenario_tags: list[int] | None = None,
         scenario_description: str | None = None,
@@ -1033,7 +1063,11 @@ def register_api_automation_tools(mcp):
         如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
         api.file 和 scenarios[].file 如需上传文件，请先调用 upload_system_file 上传真实文件，再使用
         [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端；scenario_tags 只放辅助标签。
         """
+        tag_error = _validate_scenario_tags(scenario_tags)
+        if tag_error:
+            return fail(tag_error, "INVALID_SCENARIO_TAGS")
         if case_people_id is None:
             case_people_id = current_user(user_id).id
         try:
@@ -1072,6 +1106,7 @@ def register_api_automation_tools(mcp):
                         "name": case_name,
                         "case_people": case_people_id,
                         "level": api.get("level", 1),
+                        "scenario_layer": scenario_layer,
                         "scenario_type": scenario_type,
                         "scenario_tags": scenario_tags or [],
                         "scenario_description": scenario_description,
@@ -1322,6 +1357,7 @@ def register_api_automation_tools(mcp):
                     "name",
                     "case_people",
                     "level",
+                    "scenario_layer",
                     "scenario_type",
                     "scenario_tags",
                     "scenario_description",
@@ -1383,17 +1419,37 @@ def register_api_automation_tools(mcp):
                         "enum": CaseLevelEnum.obj(),
                         "description": "用例级别。0=高(P0)，1=中(P1)，2=低(P2)，3=极低(P3)。",
                     },
+                    "scenario_layer": {
+                        "type": "int",
+                        "default": 0,
+                        "enum_source": "ApiCaseScenarioLayerEnum",
+                        "enum": ApiCaseScenarioLayerEnum.obj(),
+                        "description": "场景层级/测试分层。创建 API case 时必须明确选择：0=接口/组件层、1=Integration集成、2=E2E端到端。",
+                        "coverage_distribution": {
+                            "0_api_component": "接口/组件层，建议约 70%。用于单接口、组件能力、契约、参数、边界、异常、权限等底层能力校验，是主要覆盖层。",
+                            "1_Integration": "Integration集成，建议约 20%。用于跨模块、跨服务、数据库、消息、第三方协作验证。",
+                            "2_E2E": "E2E端到端，建议约 10%。用于核心用户路径和完整业务闭环验证。",
+                        },
+                    },
                     "scenario_type": {
                         "type": "int",
                         "default": 0,
                         "enum_source": "ApiCaseScenarioTypeEnum",
                         "enum": ApiCaseScenarioTypeEnum.obj(),
+                        "description": "场景类型，描述当前 case 的测试意图，例如正常、异常、边界、权限、数据、流程。",
                     },
                     "scenario_tags": {
                         "type": "list[int]",
                         "default": [],
                         "enum_source": "ApiCaseScenarioTagEnum",
                         "enum": ApiCaseScenarioTagEnum.obj(),
+                        "description": "场景标签，只表示执行策略或业务重要性，例如冒烟、回归、主流程、核心链路、高频、阻塞、线上巡检；不要把 API/Integration/E2E 放在这里。",
+                        "selection_guidance": [
+                            "冒烟用于每次发布前必须快速验证的关键路径。",
+                            "回归用于版本变更后需要持续覆盖的稳定能力。",
+                            "主流程/核心链路用于标记业务重要路径，高频/阻塞/线上巡检用于执行优先级或风险标识。",
+                            "API/Integration/E2E 属于 scenario_layer，不属于 scenario_tags。",
+                        ],
                     },
                     "scenario_description": {
                         "type": "str | null",
@@ -1564,7 +1620,7 @@ def register_api_automation_tools(mcp):
                         "如果场景 headers=[]，执行时使用用例级 front_headers。",
                         "如果用例级 front_headers=[]，则 API case 请求头为空。",
                         "ApiInfo.headers 在 MCP 创建/更新接口定义时默认保持 null，不作为 API case 的请求头来源。",
-                        "ApiHeaders.status=1 的全局默认请求头主要用于直接执行 ApiInfo 或接口层初始化 headers；API case 执行主要依赖 case/scene 选择的 headers。",
+                        "ApiHeaders.status=1 的全局默认请求头主要用于直接执行 ApiInfo 或接口定义初始化 headers；API case 执行主要依赖 case/scene 选择的 headers。",
                     ],
                     "execution_order": [
                         "初始化测试对象和 API 全局变量。",
@@ -1594,6 +1650,7 @@ def register_api_automation_tools(mcp):
                         "name": "编辑合同类型",
                         "case_people_id": None,
                         "level": 1,
+                        "scenario_layer": 0,
                         "scenario_type": 0,
                         "scenario_tags": [0, 1],
                         "scenario_description": "验证编辑合同类型成功",
@@ -1620,13 +1677,29 @@ def register_api_automation_tools(mcp):
                     },
                 },
                 "enums": {
+                    "scenario_layer": ApiCaseScenarioLayerEnum.obj(),
                     "scenario_type": ApiCaseScenarioTypeEnum.obj(),
                     "scenario_tags": ApiCaseScenarioTagEnum.obj(),
+                },
+                "scenario_layer_usage": {
+                    "required": "创建 API case 时必须选择 scenario_layer。未传时 MCP 默认 0=接口/组件层。",
+                    "coverage_distribution": {
+                        "接口/组件层": "约 70%。单接口、组件能力、契约、边界、异常校验，是主要覆盖层。",
+                        "Integration集成": "约 20%。跨模块、跨服务、数据库/消息/第三方协作验证。",
+                        "E2E端到端": "约 10%。核心用户路径、完整业务闭环验证。",
+                    },
+                    "recommended_combinations": {
+                        "普通接口或组件用例": {"scenario_layer": 0, "scenario_tags": []},
+                        "冒烟接口或组件用例": {"scenario_layer": 0, "scenario_tags": [0]},
+                        "回归接口或组件用例": {"scenario_layer": 0, "scenario_tags": [1]},
+                        "跨服务集成用例": {"scenario_layer": 1, "scenario_tags": [1]},
+                        "核心链路闭环用例": {"scenario_layer": 2, "scenario_tags": [3]},
+                    },
                 },
                 "file_upload_usage": FILE_UPLOAD_USAGE,
                 "notes": [
                     "创建 API 全局变量时 test_env_id 必填，对应 api_public.test_env。",
-                    "API case 的 scenario_type 默认 0=正常场景；scenario_tags 保存整数数组；scenario_description 可为空。",
+                    "API case 的 scenario_layer 默认 0=接口/组件层；scenario_type 默认 0=正常场景；scenario_tags 保存辅助标签整数数组；scenario_description 可为空。",
                     "API 文件上传参数不要直接传本地路径；先用 upload_system_file 上传，再在 file 字段中通过 ${{get_file(文件名)}} 引用。",
                     "创建或编辑复杂场景前，建议先调用 get_api_assertion_schema 和 get_api_assertion_methods 获取断言格式和可选 method。",
                 ],

@@ -21,6 +21,7 @@ interface EnumState {
   ui_public: StateValueType
   element_ope: StateValueType
   api_parameter_type: StateValueType
+  api_case_scenario_layer: StateValueType
   api_case_scenario_type: StateValueType
   api_case_scenario_tag: StateValueType
   product_type: StateValueType
@@ -39,6 +40,7 @@ interface EnumState {
   data_factory_generator_type: StateValueType
   data_factory_cleanup_strategy: StateValueType
   data_factory_template_config_status: StateValueType
+  data_factory_template_usage_scope: StateValueType
   data_factory_execution_source: StateValueType
   data_factory_execution_stage: StateValueType
   data_factory_execution_status: StateValueType
@@ -68,6 +70,7 @@ export const useEnum = defineStore('get-enum', {
     ui_public: [],
     element_ope: [],
     api_parameter_type: [],
+    api_case_scenario_layer: [],
     api_case_scenario_type: [],
     api_case_scenario_tag: [],
     product_type: [],
@@ -86,6 +89,7 @@ export const useEnum = defineStore('get-enum', {
     data_factory_generator_type: [],
     data_factory_cleanup_strategy: [],
     data_factory_template_config_status: [],
+    data_factory_template_usage_scope: [],
     data_factory_execution_source: [],
     data_factory_execution_stage: [],
     data_factory_execution_status: [],
@@ -131,6 +135,7 @@ export const useEnum = defineStore('get-enum', {
       this.ui_public = data.ui_public || []
       this.element_ope = data.element_ope || []
       this.api_parameter_type = data.api_parameter_type || []
+      this.api_case_scenario_layer = data.api_case_scenario_layer || []
       this.api_case_scenario_type = data.api_case_scenario_type || []
       this.api_case_scenario_tag = data.api_case_scenario_tag || []
       this.product_type = data.product_type || []
@@ -149,6 +154,7 @@ export const useEnum = defineStore('get-enum', {
       this.data_factory_generator_type = data.data_factory_generator_type || []
       this.data_factory_cleanup_strategy = data.data_factory_cleanup_strategy || []
       this.data_factory_template_config_status = data.data_factory_template_config_status || []
+      this.data_factory_template_usage_scope = data.data_factory_template_usage_scope || []
       this.data_factory_execution_source = data.data_factory_execution_source || []
       this.data_factory_execution_stage = data.data_factory_execution_stage || []
       this.data_factory_execution_status = data.data_factory_execution_status || []

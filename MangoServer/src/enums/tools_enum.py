@@ -146,6 +146,21 @@ class ApiCaseScenarioTypeEnum(BaseEnum):
         }
 
 
+class ApiCaseScenarioLayerEnum(BaseEnum):
+    """API 用例场景层级"""
+    API = 0
+    INTEGRATION = 1
+    E2E = 2
+
+    @classmethod
+    def obj(cls):
+        return {
+            0: "接口/组件层",
+            1: "Integration集成",
+            2: "E2E端到端",
+        }
+
+
 class ApiCaseScenarioTagEnum(BaseEnum):
     """API 用例场景标签"""
     SMOKE = 0

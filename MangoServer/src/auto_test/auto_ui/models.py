@@ -129,6 +129,7 @@ class UiCase(models.Model):
     case_flow = models.TextField(verbose_name="步骤顺序", null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
     parametrize = models.JSONField(verbose_name="参数化", default=list)
+    scenario_layer = models.SmallIntegerField(verbose_name="场景层级", default=0)
     scenario_type = models.SmallIntegerField(verbose_name="场景类型", default=0)
     scenario_tags = models.JSONField(verbose_name="场景标签", default=list)
     scenario_description = models.TextField(verbose_name="场景描述", null=True, blank=True)

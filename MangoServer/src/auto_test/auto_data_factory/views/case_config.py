@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
 from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
 from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateSerializerC
-from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum, DataFactoryTemplateUsageScopeEnum
 from src.exceptions import ToolsError
 from src.models.data_factory_model import validate_data_factory_scene_overrides
 from src.tools.decorator.error_response import error_response
@@ -44,6 +44,9 @@ class DataFactoryCaseConfigSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("用例ID不能为空")
         if attrs.get('cleanup_strategy') == "":
             attrs['cleanup_strategy'] = None
+        template = attrs.get('template', self.instance.template if self.instance else None)
+        if template and template.usage_scope == DataFactoryTemplateUsageScopeEnum.INTERNAL.value:
+            raise serializers.ValidationError("仅场景内部引用用途的场景模板不能绑定到用例")
         field_overrides = attrs.get('field_overrides', self.instance.field_overrides if self.instance else {})
         try:
             attrs['field_overrides'] = validate_data_factory_scene_overrides(field_overrides or {})

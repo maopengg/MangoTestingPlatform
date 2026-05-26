@@ -54,6 +54,18 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'usage_scope'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="enumFieldNames"
+                  :options="enumStore.data_factory_template_usage_scope"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
@@ -85,7 +97,7 @@
         </template>
       </a-tabs>
       <a-table
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: 1210 }"
         :columns="templateTableColumns"
         :data="table.dataList"
         :loading="table.tableLoading.value"
@@ -124,7 +136,12 @@
             </template>
             <template v-else-if="item.key === 'is_default'" #cell="{ record }">
               <a-tag :color="record.is_default ? 'green' : 'gray'" size="small">
-                {{ record.is_default ? '默认' : '普通' }}
+                {{ record.is_default ? '默认使用' : '手动选择' }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'usage_scope'" #cell="{ record }">
+              <a-tag :color="getUsageScopeColor(record.usage_scope)" size="small">
+                {{ getUsageScopeTitle(record.usage_scope) }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'config_status'" #cell="{ record }">
@@ -231,6 +248,16 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
+          <a-form-item label="场景用途" required>
+            <a-select
+              v-model="templateForm.usage_scope"
+              :options="enumStore.data_factory_template_usage_scope"
+              :field-names="enumFieldNames"
+              placeholder="请选择场景用途"
+            />
+          </a-form-item>
+        </a-grid-item>
+        <a-grid-item>
           <a-form-item label="描述"
             ><a-textarea v-model="templateForm.description" :auto-size="{ minRows: 1, maxRows: 4 }"
           /></a-form-item>
@@ -286,6 +313,18 @@
     return options.find((it) => it.key === value)?.title || value
   }
 
+  function getUsageScopeColor(value: any) {
+    if (Number(value) === 2) {
+      return 'orange'
+    }
+    return 'green'
+  }
+
+  function getUsageScopeTitle(value: any) {
+    const normalizedValue = Number(value) === 2 ? 2 : 1
+    return enumTitle(enumStore.data_factory_template_usage_scope, normalizedValue)
+  }
+
   function getOptionId(value: any) {
     return value?.id ?? value
   }
@@ -338,6 +377,7 @@
       output_config: (record?.output_config || []) as DataFactoryOutputConfig,
       cleanup_strategy: record?.cleanup_strategy || 2,
       is_default: record?.is_default || false,
+      usage_scope: Number(record?.usage_scope) === 2 ? 2 : 1,
       status: record?.status || 1,
     })
     resettingTemplateForm.value = false
@@ -406,9 +446,10 @@
       !templateForm.project_product ||
       !templateForm.module ||
       !templateForm.entity ||
-      !templateForm.name
+      !templateForm.name ||
+      !templateForm.usage_scope
     ) {
-      Message.error('请先填写产品、模块、实体和场景名称')
+      Message.error('请先填写产品、模块、实体、场景名称和场景用途')
       return false
     }
 

@@ -81,7 +81,7 @@ class UiCaseCRUD(ModelCRUD):
             value = value_list[0]
             if value in [None, '', 'null', 'undefined']:
                 continue
-            if key in self.not_matching_str or key in ['level', 'scenario_type']:
+            if key in self.not_matching_str or key in ['level', 'scenario_layer', 'scenario_type']:
                 query_dict[key] = value
             elif 'id' not in key:
                 query_dict[f'{key}__contains'] = value
