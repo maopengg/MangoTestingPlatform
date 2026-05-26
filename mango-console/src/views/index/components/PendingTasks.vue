@@ -84,7 +84,7 @@
       title: '环境',
       key: 'test_env',
       dataIndex: 'test_env',
-      width: 86,
+      width: 100,
     },
     {
       title: '负责人',
