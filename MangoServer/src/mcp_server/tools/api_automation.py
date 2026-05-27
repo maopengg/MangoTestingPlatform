@@ -36,6 +36,8 @@ from src.mcp_server.common import current_user, fail, ok
 
 FILE_UPLOAD_USAGE = {
     "description": "API 接口定义和 API case 场景参数中的 file 字段用于描述 multipart/form-data 文件参数。",
+    "required_format": [{"请求文件字段名": "${{get_file(已上传文件名)}}" }],
+    "strict_rule": "只要 api_info.file 或 api_case 场景 file 非空，每个文件字段值都必须使用 ${{get_file(文件名)}} 表达式；不能直接传本地路径、URL、裸文件名或二进制内容。",
     "workflow": [
         "先调用 system_file 分组的 upload_system_file 上传真实文件，记录返回的 file.name 或上传时传入的 name。",
         "在 api_info.file 或 api_case_detailed_parameter.file 中使用 ${{get_file(文件名)}} 引用已上传文件。",
@@ -84,6 +86,30 @@ def _validate_scenario_tags(tags: list[int] | None) -> str | None:
                 return "API/Integration/E2E 已迁移到 scenario_layer 字段，请不要再把 7/8/9 写入 scenario_tags。"
         except (TypeError, ValueError):
             continue
+    return None
+
+
+def _validate_file_value(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    value = value.strip()
+    return value.startswith("${{get_file(") and value.endswith(")}}") and len(value) > len("${{get_file()}}")
+
+
+def _validate_file_payload(file_payload: Any) -> str | None:
+    if file_payload is None:
+        return None
+    rows = file_payload if isinstance(file_payload, list) else [file_payload]
+    if not rows:
+        return None
+    for row in rows:
+        if not isinstance(row, dict) or not row:
+            return "file 必须是对象或对象数组，例如 [{'file': '${{get_file(数据订阅新增模板.xlsx)}}'}]。"
+        for field_name, field_value in row.items():
+            if not field_name:
+                return "file 中的请求文件字段名不能为空。"
+            if not _validate_file_value(field_value):
+                return "file 字段值必须使用 ${{get_file(已上传文件名)}} 格式，不能直接传本地路径、URL、裸文件名或二进制内容。"
     return None
 
 
@@ -550,11 +576,17 @@ def register_api_automation_tools(mcp):
     ) -> dict:
         """创建 API 接口定义。params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
 
-        文件上传接口的 file 字段请先调用 upload_system_file 上传真实文件，再使用
-        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        文件上传接口的 file 字段必须先调用 upload_system_file 上传真实文件，再使用
+        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用。
+        其中 file 是请求文件字段名；如果字段名是 upload_file，则写成
+        [{"upload_file": "${{get_file(数据订阅新增模板.xlsx)}}"}]。
+        不能直接传本地路径、URL、裸文件名或二进制内容；详细格式见 get_api_case_schema.file_upload_usage。
         """
         if method not in MethodEnum.get_key_list():
             return fail("请求方法不存在", "METHOD_NOT_FOUND", {"method": method})
+        file_error = _validate_file_payload(file)
+        if file_error:
+            return fail(file_error, "INVALID_FILE_FORMAT")
         data_obj = ApiInfoCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -621,9 +653,13 @@ def register_api_automation_tools(mcp):
     ) -> dict:
         """更新 API 接口定义。
 
-        文件上传接口的 file 字段请先调用 upload_system_file 上传真实文件，再使用
-        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        文件上传接口的 file 字段必须先调用 upload_system_file 上传真实文件，再使用
+        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；不能直接传本地路径、URL、裸文件名或二进制内容。
+        详细格式见 get_api_case_schema.file_upload_usage。
         """
+        file_error = _validate_file_payload(file)
+        if file_error:
+            return fail(file_error, "INVALID_FILE_FORMAT")
         payload: dict[str, Any] = {"id": api_info_id}
         for key, value in {
             "name": name,
@@ -876,8 +912,12 @@ def register_api_automation_tools(mcp):
         headers 只传 ApiHeaders.id 数组；只要 headers 非空，就会完全覆盖 API case 的 front_headers，不会合并。
         ass_jsonpath 中 actual 是 JSONPath；method 使用 get_api_assertion_methods 返回的叶子 value。
         如果 method 的参数只有 actual、没有 expect，例如 p_is_none/p_is_true/p_is_false，expect 传 null。
-        文件上传参数 file 请使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件。
+        文件上传参数 file 必须使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件；
+        file 是请求文件字段名，不能直接传本地路径、URL、裸文件名或二进制内容。
         """
+        file_error = _validate_file_payload(file)
+        if file_error:
+            return fail(file_error, "INVALID_FILE_FORMAT")
         payload = {
             "case_detailed": step_id,
             "name": name,
@@ -911,8 +951,13 @@ def register_api_automation_tools(mcp):
 
         字段格式见 get_api_case_schema.api_case_scenario_fields。fields.headers 非空时会覆盖 API case 的 front_headers。
         fields.ass_jsonpath 的规则同 create_api_case_scenario：单参数断言方法 expect 传 null。
-        fields.file 如需上传文件，请使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件。
+        fields.file 如需上传文件，必须使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件；
+        file 是请求文件字段名，不能直接传本地路径、URL、裸文件名或二进制内容。
         """
+        if "file" in fields:
+            file_error = _validate_file_payload(fields.get("file"))
+            if file_error:
+                return fail(file_error, "INVALID_FILE_FORMAT")
         payload = {"id": scenario_id, **fields}
         payload = _normalize_scenario_payload(payload)
         data_obj = ApiCaseDetailedParameterCRUD.inside_put(scenario_id, payload)
@@ -1061,13 +1106,22 @@ def register_api_automation_tools(mcp):
         未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
         headers 会创建 ApiHeaders 记录；case_front_headers 为空时默认把本次创建的 headers 全部绑定为 case.front_headers。
         如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
-        api.file 和 scenarios[].file 如需上传文件，请先调用 upload_system_file 上传真实文件，再使用
-        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；详细格式见 get_api_case_schema.file_upload_usage。
+        api.file 和 scenarios[].file 如需上传文件，必须先调用 upload_system_file 上传真实文件，再使用
+        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；不能直接传本地路径、URL、裸文件名或二进制内容。
+        详细格式见 get_api_case_schema.file_upload_usage。
         scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端；scenario_tags 只放辅助标签。
         """
         tag_error = _validate_scenario_tags(scenario_tags)
         if tag_error:
             return fail(tag_error, "INVALID_SCENARIO_TAGS")
+        file_error = _validate_file_payload(api.get("file"))
+        if file_error:
+            return fail(f"api.file 格式错误：{file_error}", "INVALID_FILE_FORMAT")
+        for index, scenario in enumerate(scenarios or [], start=1):
+            if "file" in scenario:
+                file_error = _validate_file_payload(scenario.get("file"))
+                if file_error:
+                    return fail(f"scenarios[{index}].file 格式错误：{file_error}", "INVALID_FILE_FORMAT")
         if case_people_id is None:
             case_people_id = current_user(user_id).id
         try:
@@ -1391,6 +1445,16 @@ def register_api_automation_tools(mcp):
                     "posterior_file",
                     "posterior_func",
                 ],
+                "api_info_fields": {
+                    "file": {
+                        "type": "list[object] | dict | null",
+                        "model_field": "ApiInfo.file",
+                        "description": "接口定义层的 multipart/form-data 文件参数。只要 file 非空，就必须使用 ${{get_file(已上传文件名)}} 引用。",
+                        "required_format": file_example,
+                        "field_name_rule": "对象 key 是请求文件字段名，例如 file/upload_file/test_file；对象 value 必须是 ${{get_file(已上传文件名)}}。",
+                        "forbidden": ["本地路径", "URL", "裸文件名", "base64/二进制内容"],
+                    },
+                },
                 "api_case_fields": {
                     "project_product_id": {
                         "type": "int",
@@ -1537,7 +1601,9 @@ def register_api_automation_tools(mcp):
                     },
                     "file": {
                         "type": "list[object] | dict | null",
-                        "description": "multipart/form-data 文件参数。推荐先用 upload_system_file 上传，再用 get_file 引用文件名。",
+                        "description": "multipart/form-data 文件参数。必须先用 upload_system_file 上传，再用 ${{get_file(文件名)}} 引用文件名；不能直接传本地路径、URL、裸文件名或二进制内容。",
+                        "required_format": file_example,
+                        "field_name_rule": "对象 key 是请求文件字段名，例如 file/upload_file/test_file；对象 value 必须是 ${{get_file(已上传文件名)}}。",
                         "example": file_example,
                     },
                     "front_sql": {

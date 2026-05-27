@@ -4,7 +4,13 @@ import { useEnum } from '@/store/modules/get-enum'
 import router from '..'
 import { connectWebSocket, hasWebSocketLoginSession } from '@/utils/socket'
 
-const whiteRoutes: string[] = ['/login', '/404', '/403', '/500', '/report/details']
+const whiteRoutes: string[] = [
+  '/login',
+  '/404',
+  '/403',
+  '/500',
+  '/report/details',
+]
 
 function usePermissionGuard() {
   router.beforeEach(async (to) => {
@@ -13,6 +19,13 @@ function usePermissionGuard() {
     }
     const userStore = useUserStore()
     if (userStore.isTokenExpire()) {
+      if (to.path === '/report/system/details') {
+        return {
+          path: '/report/details',
+          query: to.query,
+          replace: true,
+        }
+      }
       return {
         path: '/login',
         query: { redirect: to.fullPath },

@@ -8,6 +8,7 @@ import traceback
 import uuid
 from typing import Any
 
+import minio.error
 from mangotools.data_processor import DataProcessor
 from mangotools.decorator import data_method
 from mangotools.models import MethodModel
@@ -70,7 +71,12 @@ class ObtainTestData(DataProcessor):
             return str(file_path)
         except FileData.DoesNotExist:
             raise ToolsError(*ERROR_MSG_0019, value=(file_name,))
-        except IOError as e:
+        except minio.error.S3Error as error:
+            traceback.print_exc()
+            if getattr(error, 'code', '') == 'NoSuchKey':
+                raise ToolsError(*ERROR_MSG_0019, value=(file_name,))
+            raise ToolsError(*ERROR_MSG_0024, value=(file_name,))
+        except OSError:
             traceback.print_exc()
             raise ToolsError(*ERROR_MSG_0024, value=(file_name,))
 
