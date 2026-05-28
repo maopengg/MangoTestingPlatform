@@ -348,10 +348,14 @@ class TestSuiteDetailsShareViews(ViewSet):
         test_suite_id = request.query_params.get('test_suite_id')
         if not test_suite_id:
             return ResponseData.fail((300, '缺少测试报告ID'))
+        if not str(test_suite_id).isdigit():
+            return ResponseData.success(RESPONSE_MSG_0001, [], 0)
         query_dict = {'test_suite_id': test_suite_id}
         for key in ['status', 'type']:
             value = request.query_params.get(key)
             if value is not None and value != '':
+                if not str(value).isdigit():
+                    return ResponseData.success(RESPONSE_MSG_0001, [], 0)
                 query_dict[key] = value
         books = self.model.objects.filter(**query_dict)
         data_list, count = TestSuiteDetailsCRUD.paging_list(

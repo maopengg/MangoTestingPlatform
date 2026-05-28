@@ -33,6 +33,7 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                                 '/api/case/batch',
                                 '/ui/case/batch',
                                 '/ui/element/test',
+                                '/menu'
                             ]:
                                 return JsonResponse({
                                     "code": 300,

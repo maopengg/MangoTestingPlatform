@@ -687,6 +687,7 @@ class DataFactoryRunner:
             source_id=source_id,
             template=template,
             project_product=template.project_product,
+            module=template.module or template.entity.module,
             stage=stage,
             status=DataFactoryExecutionStatusEnum.PROCEED.value,
             context=context or {},
