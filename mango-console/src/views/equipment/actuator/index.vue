@@ -3,11 +3,11 @@
     <template #header></template>
 
     <template #default>
-      <div class="cards-container">
-        <a-spin :loading="tableLoading" class="full-width mango-panel-loading">
-          <a-row :gutter="[16, 16]">
-            <a-col v-for="record in dataList" :key="record.id" :span="24" :md="12" :lg="8" :xl="6">
-              <a-card class="executor-card mango-section-card" :bordered="false" hoverable>
+      <div class="mango-equipment-page">
+        <a-spin :loading="tableLoading" class="mango-equipment-spin mango-panel-loading">
+          <div class="mango-equipment-grid">
+            <div v-for="record in dataList" :key="record.id" class="mango-equipment-grid-item">
+              <a-card class="executor-card" :bordered="false" hoverable>
                 <template #title>
                   <div class="card-header">
                     <a-avatar :size="24" class="avatar">
@@ -72,12 +72,12 @@
                   </a-button>
                 </template>
               </a-card>
-            </a-col>
+            </div>
 
-            <a-col v-if="dataList.length === 0" :span="24">
+            <div v-if="dataList.length === 0" class="mango-equipment-empty">
               <div class="mango-empty-state">暂无在线执行器</div>
-            </a-col>
-          </a-row>
+            </div>
+          </div>
         </a-spin>
       </div>
     </template>
@@ -194,15 +194,47 @@
 </script>
 
 <style lang="less" scoped>
-  .full-width {
+  .mango-equipment-page {
     width: 100%;
+    min-width: 0;
   }
 
-  .cards-container {
+  .mango-equipment-spin {
+    display: block;
+    width: 100%;
     margin-top: 8px;
   }
 
+  .mango-equipment-spin :deep(.arco-spin-children) {
+    display: block;
+    width: 100%;
+  }
+
+  .mango-equipment-grid {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+
+  .mango-equipment-grid-item {
+    min-width: 0;
+  }
+
+  .mango-equipment-empty {
+    grid-column: 1 / -1;
+  }
+
   .executor-card {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    flex-direction: column;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-lg);
+    background: var(--m-surface);
     overflow: hidden;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
@@ -217,6 +249,7 @@
     }
 
     :deep(.arco-card-body) {
+      flex: 1;
       padding: 12px 16px;
     }
 
@@ -342,63 +375,67 @@
   }
 
   // 响应式调整
-  @media (max-width: 1px) {
-    .cards-container {
-      margin-top: 8px;
+  @media (max-width: 1200px) {
+    .mango-equipment-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .mango-equipment-grid {
+      grid-template-columns: 1fr;
     }
 
-    :deep(.arco-col) {
-      .executor-card {
-        :deep(.arco-card-body) {
-          padding: 10px 12px;
-        }
+    .executor-card {
+      :deep(.arco-card-body) {
+        padding: 10px 12px;
+      }
 
-        :deep(.arco-card-footer) {
-          padding: 3px 12px;
-        }
+      :deep(.arco-card-footer) {
+        padding: 3px 12px;
+      }
 
-        .card-header {
-          .header-info {
-            .owner-name {
-              font-size: 14px;
-            }
-          }
-
-          .online-status {
-            width: 8px;
-            height: 8px;
-            margin-left: 10px;
+      .card-header {
+        .header-info {
+          .owner-name {
+            font-size: 14px;
           }
         }
 
-        .card-content {
-          .info-item,
-          .status-item {
-            margin-bottom: 8px;
+        .online-status {
+          width: 8px;
+          height: 8px;
+          margin-left: 10px;
+        }
+      }
 
-            &:last-child {
-              margin-bottom: 3px;
-            }
+      .card-content {
+        .info-item,
+        .status-item {
+          margin-bottom: 8px;
 
-            .info-label,
-            .status-label {
-              font-size: 13px;
-            }
+          &:last-child {
+            margin-bottom: 3px;
+          }
 
-            .info-value {
-              font-size: 13px;
+          .info-label,
+          .status-label {
+            font-size: 13px;
+          }
 
-              &.type-badge {
-                font-size: 11px;
-                padding: 1px 6px;
-              }
+          .info-value {
+            font-size: 13px;
+
+            &.type-badge {
+              font-size: 11px;
+              padding: 1px 6px;
             }
           }
         }
+      }
 
-        :deep(.arco-card-actions) {
-          padding: 1px 0 0;
-        }
+      :deep(.arco-card-actions) {
+        padding: 1px 0 0;
       }
     }
   }
