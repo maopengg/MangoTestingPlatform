@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiPublic
+from src.auto_test.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasSerializerC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.api_enum import ApiPublicTypeEnum
 from src.enums.tools_enum import StatusEnum
@@ -31,11 +32,28 @@ class ApiPublicSerializers(serializers.ModelSerializer):
             raise serializers.ValidationError('公共变量类型只支持自定义和SQL')
         return value
 
+    def validate(self, attrs):
+        public_type = attrs.get('type', self.instance.type if self.instance else None)
+        datasource_alias = attrs.get(
+            'datasource_alias',
+            self.instance.datasource_alias if self.instance else None,
+        )
+        project_product = attrs.get(
+            'project_product',
+            self.instance.project_product if self.instance else None,
+        )
+        if public_type == ApiPublicTypeEnum.SQL.value and not datasource_alias:
+            raise serializers.ValidationError('SQL公共变量必须选择逻辑数据源')
+        if datasource_alias and project_product and datasource_alias.project_product_id != project_product.id:
+            raise serializers.ValidationError('逻辑数据源不属于当前项目产品')
+        return attrs
+
 
 class ApiPublicSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
+    datasource_alias = DataFactoryDatasourceAliasSerializerC(read_only=True)
 
     class Meta:
         model = ApiPublic
@@ -44,7 +62,8 @@ class ApiPublicSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project_product')
+            'project_product',
+            'datasource_alias')
         return queryset
 
 
@@ -53,7 +72,7 @@ class ApiPublicCRUD(ModelCRUD):
     queryset = ApiPublic.objects.filter(type__in=ApiPublicTypeEnum.get_key_list())
     serializer_class = ApiPublicSerializersC
     serializer = ApiPublicSerializers
-    not_matching_str = ModelCRUD.not_matching_str + ['test_env']
+    not_matching_str = ModelCRUD.not_matching_str + ['test_env', 'datasource_alias']
 
 
 class ApiPublicViews(ViewSet):

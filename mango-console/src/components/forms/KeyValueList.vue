@@ -20,6 +20,16 @@
             @change="(value) => field.onChange && field.onChange(value, dataList, index)"
             :class="field.className || 'mango-key-cascader'"
           />
+          <a-select
+            v-else-if="field.type === 'select' && field.field"
+            v-model="item[field.field]"
+            :allow-clear="field.allowClear !== false"
+            :options="field.options || []"
+            :placeholder="field.placeholder || `请选择${field.label}`"
+            :field-names="field.fieldNames"
+            :class="field.className || 'mango-key-select'"
+            @change="onBlur"
+          />
           <!-- 支持文本域 -->
           <a-textarea
             v-else-if="field.field"
@@ -69,11 +79,13 @@
     label: string // 显示标签
     className?: string // 自定义类名
     placeholder?: string // 占位符文本
-    type?: 'input' | 'textarea' | 'cascader' // 字段类型
+    type?: 'input' | 'textarea' | 'cascader' | 'select' // 字段类型
     // 级联选择器特有属性
     options?: any[] // 选项数据
     expandTrigger?: 'click' | 'hover' // 次级菜单展开方式
     valueKey?: string // 选项值的键名
+    fieldNames?: any
+    allowClear?: boolean
     onChange?: (value: any, item: any, index: number) => void // 值改变时的回调
     autoSize?: { minRows: number; maxRows: number } // 文本域自动调整大小
     visible?: (item: any) => boolean // 控制字段是否展示
@@ -187,7 +199,8 @@
   .mango-key-input,
   .value-input,
   .sql-input,
-  .mango-key-cascader {
+  .mango-key-cascader,
+  .mango-key-select {
     width: 100%;
     min-width: 0; /* 允许输入框收缩 */
   }

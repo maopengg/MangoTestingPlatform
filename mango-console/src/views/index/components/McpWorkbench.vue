@@ -181,11 +181,13 @@
     { key: 'file', title: '文件上传', desc: '上传并生成 get_file 引用', icon: IconFile },
   ]
 
+  const mcpServerName =
+    String(import.meta.env.VITE_APP_MCP_SERVER_NAME || '').trim() || 'mango-test-platform'
   const prompts = [
-    '使用 mango-test-platform MCP 查询当前平台开放了哪些能力。',
-    '使用 mango-test-platform MCP 创建一个 API case，执行后分析失败原因。',
-    '使用 mango-test-platform MCP 分析 test_suite_id=662993174721 的失败 API 用例。',
-    '使用 mango-test-platform MCP 为指定表创建数据工厂实体和状态模板。',
+    `使用 ${mcpServerName} MCP 查询当前平台开放了哪些能力。`,
+    `使用 ${mcpServerName} MCP 创建一个 API case，执行后分析失败原因。`,
+    `使用 ${mcpServerName} MCP 分析 test_suite_id=662993174721 的失败 API 用例。`,
+    `使用 ${mcpServerName} MCP 为指定表创建数据工厂实体和状态模板。`,
   ]
   const promptIndex = ref(Math.floor(Math.random() * prompts.length))
 
@@ -206,7 +208,7 @@
   const installPrompt = computed(
     () => `请根据下面的配置帮我安装 Mango MCP 服务，并在安装后查询这个 MCP 服务开放了哪些能力。
 
-MCP 服务名称：mango-test-platform
+MCP 服务名称：${mcpServerName}
 URL：${mcpUrl.value}
 Headers：
 Authorization: ${authHeader.value}
@@ -218,7 +220,7 @@ Authorization: ${authHeader.value}
 4. 后续创建、执行、上传等操作都使用这个 Authorization 对应的 Mango 用户权限。`
   )
   const codexConfig = computed(
-    () => `[mcp_servers.mango-test-platform]
+    () => `[mcp_servers.${mcpServerName}]
 url = "${mcpUrl.value}"
 env_http_headers = { Authorization = "MANGO_TEST_PLATFORM_AUTH_HEADER" }
 

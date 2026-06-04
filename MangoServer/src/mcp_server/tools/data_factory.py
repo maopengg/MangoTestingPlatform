@@ -37,6 +37,7 @@ from src.enums.data_factory_enum import (
     DataFactoryOperationTypeEnum,
 )
 from src.enums.tools_enum import StatusEnum
+from src.exceptions import MangoServerError
 from src.mcp_server.common import (
     create_dangerous_action_preview,
     current_user,
@@ -701,25 +702,28 @@ def register_data_factory_tools(mcp):
         test_env 用于保存后刷新配置状态 config_status；不传时按页面逻辑使用空环境预览。
         字符串类字段覆盖优先使用 generator_type=13 测试数据方法；调用 list_test_data_methods 获取可用类型。
         """
-        data = DataFactoryTemplateCRUD.inside_post(
-            {
-                "project_product": project_product_id,
-                "module": module_id,
-                "entity": entity_id,
-                "name": name,
-                "description": description,
-                "field_overrides": field_overrides or {},
-                "output_config": _normalize_output_config(output_config),
-                "items": items or [],
-                "cleanup_strategy": cleanup_strategy,
-                "is_default": is_default,
-                "usage_scope": usage_scope,
-                "status": status,
-            }
-        )
-        template = DataFactoryTemplate.objects.get(id=data["id"])
-        DataFactoryTemplateCRUD.refresh_config_status(template, test_env)
-        template.refresh_from_db()
+        try:
+            data = DataFactoryTemplateCRUD.inside_post(
+                {
+                    "project_product": project_product_id,
+                    "module": module_id,
+                    "entity": entity_id,
+                    "name": name,
+                    "description": description,
+                    "field_overrides": field_overrides or {},
+                    "output_config": _normalize_output_config(output_config),
+                    "items": items or [],
+                    "cleanup_strategy": cleanup_strategy,
+                    "is_default": is_default,
+                    "usage_scope": usage_scope,
+                    "status": status,
+                }
+            )
+            template = DataFactoryTemplate.objects.get(id=data["id"])
+            DataFactoryTemplateCRUD.refresh_config_status(template, test_env)
+            template.refresh_from_db()
+        except MangoServerError as error:
+            return fail(error.msg, str(error.code))
         return ok(
             {
                 "template_id": data["id"],
@@ -775,10 +779,13 @@ def register_data_factory_tools(mcp):
         }.items():
             if value is not None:
                 payload[key] = value
-        data = DataFactoryTemplateCRUD.inside_put(template_id, payload)
-        template = DataFactoryTemplate.objects.get(id=template_id)
-        DataFactoryTemplateCRUD.refresh_config_status(template, test_env)
-        template.refresh_from_db()
+        try:
+            data = DataFactoryTemplateCRUD.inside_put(template_id, payload)
+            template = DataFactoryTemplate.objects.get(id=template_id)
+            DataFactoryTemplateCRUD.refresh_config_status(template, test_env)
+            template.refresh_from_db()
+        except MangoServerError as error:
+            return fail(error.msg, str(error.code))
         return ok(
             {
                 "template_id": template_id,
@@ -1179,14 +1186,14 @@ def register_data_factory_tools(mcp):
         return ok({"execution_id": execution.id, "execution_no": execution.execution_no, "context": execution.context})
 
     @mcp.tool()
-    def preview_cleanup_data_factory_execution_impact(execution_id: int) -> dict:
+    def preview_cleanup_data_factory_execution_impact(execution_id: int, force_cleanup: bool = False) -> dict:
         """预览清理某次数据工厂执行记录创建数据的影响，并生成二次确认 token。"""
         detail = _execution_detail(execution_id)
         items = detail["items"]
         pending_items = [
             item
             for item in items
-            if item.get("cleanup_status") != DataFactoryCleanupStatusEnum.SUCCESS.value
+            if force_cleanup or item.get("cleanup_status") != DataFactoryCleanupStatusEnum.SUCCESS.value
         ]
         impact = {
             "execution": detail["execution"],
@@ -1208,6 +1215,7 @@ def register_data_factory_tools(mcp):
                 for item in pending_items
             ],
             "risk": "清理会按执行明细记录的数据库、表、主键删除真实测试数据；部分明细可能因策略为不清理而跳过。",
+            "force_cleanup": force_cleanup,
         }
         execution_no = detail["execution"].get("execution_no")
         confirm_text = f"CLEANUP_DATA_FACTORY_EXECUTION:{execution_id}:{execution_no}"
@@ -1221,6 +1229,7 @@ def register_data_factory_tools(mcp):
         execution_id: int,
         preview_token: str | None = None,
         confirm_text: str | None = None,
+        force_cleanup: bool = False,
     ) -> dict:
         """清理某次数据工厂执行记录创建的数据。必须先调用 preview_cleanup_data_factory_execution_impact。"""
         confirm_error = validate_dangerous_action_confirmation(
@@ -1231,7 +1240,7 @@ def register_data_factory_tools(mcp):
         )
         if confirm_error:
             return confirm_error
-        result = DataFactoryCleanup.cleanup_execution(execution_id)
+        result = DataFactoryCleanup.cleanup_execution(execution_id, force_cleanup=force_cleanup)
         return ok(result, result.get("message") or "数据工厂执行记录清理完成")
 
     @mcp.tool()

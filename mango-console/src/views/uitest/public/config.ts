@@ -134,6 +134,17 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '逻辑数据源',
+    key: 'datasource_alias',
+    value: ref(''),
+    type: 'select',
+    required: false,
+    placeholder: '请选择逻辑数据源',
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
     label: 'value',
     key: 'value',
     value: ref(''),
@@ -186,6 +197,13 @@ export const tableColumns = useTableColumn([
     dataIndex: 'key',
     align: 'left',
     width: 200,
+  },
+  {
+    title: '逻辑数据源',
+    key: 'datasource_alias',
+    dataIndex: 'datasource_alias',
+    align: 'left',
+    width: 160,
   },
   {
     title: 'value',

@@ -11,7 +11,20 @@
           <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="doRefresh"
+                />
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
@@ -80,7 +93,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.auto_type]" size="small"
@@ -111,7 +124,7 @@
               <MangoTableActions
                 :actions="[
                   { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '数据库', onClick: () => clickDataBase(record) },
+                  { label: '数据源', onClick: () => clickDataSource(record) },
                   { label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
@@ -137,12 +150,9 @@
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'environment'">
@@ -204,9 +214,11 @@
   import { usePageData } from '@/store/page-data'
   import { useRouter } from 'vue-router'
   import { useEnum } from '@/store/modules/get-enum'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
 
   const router = useRouter()
-  const projectInfo = useProject()
+  const project = useProject()
   const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -363,7 +375,7 @@
     })
   }
 
-  function clickDataBase(record: any) {
+  function clickDataSource(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
     router.push({
@@ -371,6 +383,7 @@
       query: {
         id: record.id,
         name: record.name,
+        project_product: record?.project_product?.id || record?.project_product,
       },
     })
   }

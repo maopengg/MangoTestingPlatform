@@ -7,6 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import time
+from django.db.models import F
 from django.utils import timezone
 
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
@@ -54,43 +55,72 @@ class ApiCaseFlow:
     @async_task_db_connection(max_retries=1, retry_delay=1)
     def get_case(cls, ):
         with cls._get_case_lock:
-
-            test_suite_details = TestSuiteDetails.objects.filter(
-                status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=RETRY_FREQUENCY + 1,
-                type=TestCaseTypeEnum.API.value
-            ).first()
+            case_model = None
             try:
-                if test_suite_details:
-                    test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-                    case_model = ConsumerCaseModel(
-                        test_suite_details=test_suite_details.id,
-                        test_suite=test_suite_details.test_suite.id,
-                        case_id=test_suite_details.case_id,
-                        case_name=test_suite_details.case_name,
-                        test_env=test_suite_details.test_env,
-                        user_id=test_suite.user.id,
-                        tasks_id=test_suite.tasks.id if test_suite.tasks else None,
-                        parametrize=test_suite_details.parametrize,
-                    )
-                    log.api.debug(f'API发送用例：{case_model.model_dump_json()}')
-                    future = cls.executor.submit(cls.execute_task, case_model)
-                    cls.update_status_proceed(test_suite, test_suite_details)
+                case_model = cls.claim_case()
+                if not case_model:
+                    return
+                log.api.debug(f'API发送用例：{case_model.model_dump_json()}')
+                future = cls.executor.submit(cls.execute_task, case_model)
 
-                    def task_done(fut):
-                        try:
-                            fut.result()
-                        except Exception as e:
-                            log.api.error(f'任务执行失败: {e}')
-                        finally:
-                            pass
+                def task_done(fut):
+                    try:
+                        fut.result()
+                    except Exception as e:
+                        log.api.error(f'任务执行失败: {e}')
+                    finally:
+                        pass
 
-                    future.add_done_callback(task_done)
+                future.add_done_callback(task_done)
             except Exception as error:
                 log.api.error(f'执行器主动拉取任务失败：{error}')
-                test_suite_details.status = TaskEnum.FAIL.value
-                test_suite_details.retry += 1
-                test_suite_details.save()
+                if case_model:
+                    cls.mark_claim_failed(case_model.test_suite_details)
+
+    @classmethod
+    def claim_case(cls) -> ConsumerCaseModel | None:
+        test_suite_details = TestSuiteDetails.objects.filter(
+            status=TaskEnum.STAY_BEGIN.value,
+            retry__lt=RETRY_FREQUENCY + 1,
+            type=TestCaseTypeEnum.API.value
+        ).order_by('id').first()
+        if not test_suite_details:
+            return None
+
+        now = timezone.now()
+        updated = TestSuiteDetails.objects.filter(
+            id=test_suite_details.id,
+            status=TaskEnum.STAY_BEGIN.value,
+            retry__lt=RETRY_FREQUENCY + 1,
+            type=TestCaseTypeEnum.API.value
+        ).update(
+            status=TaskEnum.PROCEED.value,
+            retry=F('retry') + 1,
+            push_time=now,
+            update_time=now
+        )
+        if updated != 1:
+            return None
+
+        test_suite = TestSuite.objects.get(id=test_suite_details.test_suite_id)
+        TestSuite.objects.filter(id=test_suite.id).update(status=TaskEnum.PROCEED.value, update_time=now)
+        return ConsumerCaseModel(
+            test_suite_details=test_suite_details.id,
+            test_suite=test_suite_details.test_suite_id,
+            case_id=test_suite_details.case_id,
+            case_name=test_suite_details.case_name,
+            test_env=test_suite_details.test_env,
+            user_id=test_suite.user_id,
+            tasks_id=test_suite.tasks_id,
+            parametrize=test_suite_details.parametrize,
+        )
+
+    @classmethod
+    def mark_claim_failed(cls, test_suite_details_id: int):
+        TestSuiteDetails.objects.filter(id=test_suite_details_id).update(
+            status=TaskEnum.FAIL.value,
+            update_time=timezone.now()
+        )
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):

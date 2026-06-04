@@ -6,8 +6,9 @@
 
 from typing import Any
 
-from mangotools.models import MysqlConingModel, MethodModel
+from mangotools.models import MethodModel
 from pydantic import BaseModel
+from src.tools.database import DatabaseConnectionConfig
 
 
 class Position(BaseModel):
@@ -65,6 +66,9 @@ class UiPublicModel(BaseModel):
     type: int
     key: str
     value: str
+    datasource_alias: int | None = None
+    db_type: int | None = None
+    mysql_config: DatabaseConnectionConfig | None = None
 
 
 class RecordingModel(BaseModel):
@@ -76,7 +80,8 @@ class EnvironmentConfigModel(BaseModel):
     test_object_value: str
     db_c_status: bool
     db_rud_status: bool
-    mysql_config: MysqlConingModel | None = None
+    mysql_config: DatabaseConnectionConfig | None = None
+    database_connections: list[dict] = []
 
 
 class StepsDataModel(BaseModel):

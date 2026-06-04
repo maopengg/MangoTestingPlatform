@@ -33,7 +33,6 @@ class CaseParameter:
 
         self.test_data = api_base_test_setup.test_data
         self.test_object = api_base_test_setup.test_object
-        self.mysql_connect = api_base_test_setup.mysql_connect
 
     def headers(self, parameter: ApiCaseDetailedParameter, headers: dict) -> dict:
         if parameter.headers:
@@ -104,19 +103,18 @@ class CaseParameter:
             raise ApiError(*ERROR_MSG_0013)
 
     def __posterior_sql(self, sql_list: list[dict]):
-        if self.test_setup.mysql_connect:
-            for sql_obj in sql_list:
-                key = self.test_setup.test_data.replace(sql_obj.get('key'))
-                value = self.test_setup.test_data.replace(sql_obj.get('value'))
-                log.api.debug(f'用例详情后置sql-1->key:{key}，value:{value}')
-                if not value:
-                    raise ApiError(*ERROR_MSG_0009)
-                res = self.test_setup.mysql_connect.condition_execute(value)
-                log.api.debug(f'用例详情后置sql-2->key：{key}，sql：{value}，结果：{res}')
-                if isinstance(res, list) and len(res) < 0:
-                    raise ApiError(*ERROR_MSG_0047, value=(value, res))
-                if isinstance(res, list) and len(res) > 0 and key:
-                    self.test_setup.test_data.set_sql_cache(key, res[0])
+        for sql_obj in sql_list:
+            key = self.test_setup.test_data.replace(sql_obj.get('key'))
+            value = self.test_setup.test_data.replace(sql_obj.get('value'))
+            log.api.debug(f'用例详情后置sql-1->key:{key}，value:{value}')
+            if not value:
+                raise ApiError(*ERROR_MSG_0009)
+            res = self.test_setup.get_db_connection(sql_obj).condition_execute(value)
+            log.api.debug(f'用例详情后置sql-2->key：{key}，sql：{value}，结果：{res}')
+            if isinstance(res, list) and len(res) < 0:
+                raise ApiError(*ERROR_MSG_0047, value=(value, res))
+            if isinstance(res, list) and len(res) > 0 and key:
+                self.test_setup.test_data.set_sql_cache(key, res[0])
 
     def __posterior_response(self, response_dict: dict, posterior_response: list[dict]):
         for i in posterior_response:
@@ -165,7 +163,7 @@ class CaseParameter:
                     'actual': self.test_setup.test_data.get_json_path_value(response_data, actual),
                     'method': i.get('method')
                 }
-                mango_assertion = ObtainAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
+                mango_assertion = ObtainAssertion(mysql_conn=None, test_data=self.test_data)
                 self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0005)
 
     def __ass_general(self, general: list[dict]):
@@ -179,19 +177,21 @@ class CaseParameter:
                 ass_dict[p.get('f')] = p.get('v')
             if not ass_dict.get('method') or not ass_dict.get('actual'):
                 raise ApiError(*ERROR_MSG_0055)
-            mango_assertion = ObtainAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
+            mango_assertion = ObtainAssertion(mysql_conn=None, test_data=self.test_data)
             self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_sql(self, sql_list: list[dict]):
-        if self.test_setup.mysql_connect:
-            for sql in sql_list:
-                ass_dict = {
-                    'expect': self.test_setup.test_data.replace(sql.get('expect')),
-                    'actual': self.test_setup.test_data.replace(sql.get('actual')),
-                    'method': sql.get('method')
-                }
-                mango_assertion = ObtainAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
-                self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
+        for sql in sql_list:
+            ass_dict = {
+                'expect': self.test_setup.test_data.replace(sql.get('expect')),
+                'actual': self.test_setup.test_data.replace(sql.get('actual')),
+                'method': sql.get('method')
+            }
+            mango_assertion = ObtainAssertion(
+                mysql_conn=self.test_setup.get_db_connection(sql),
+                test_data=self.test_data
+            )
+            self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_json_all(self, actual: dict, expect: dict):
         log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
@@ -202,7 +202,7 @@ class CaseParameter:
         try:
             assert actual is not None, f'实际={actual}, 预期={ass_result.expect}'
             ass_result.actual = json.dumps(actual, ensure_ascii=False)
-            ass_result.ass_msg = ObtainAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data).p_in_dict(
+            ass_result.ass_msg = ObtainAssertion(mysql_conn=None, test_data=self.test_data).p_in_dict(
                 actual, expect)
             self.ass_result.append(ass_result)
         except AssertionError as error:
@@ -273,19 +273,18 @@ class CaseParameter:
             raise ApiError(*ERROR_MSG_0050)
 
     def __front_sql(self, front_sql):
-        if self.test_setup.mysql_connect and front_sql:
-            for i in front_sql:
-                key = self.test_setup.test_data.replace(i.get('key'))
-                value = self.test_setup.test_data.replace(i.get('value'))
-                log.api.debug(f'用例场景前置sql-1->key:{key}，value:{value}')
-                if not value:
-                    raise ApiError(*ERROR_MSG_0035)
-                res: list[dict] = self.test_setup.mysql_connect.condition_execute(value)
-                log.api.debug(f'用例场景前置sql-2->key:{key}，res:{res}')
-                if isinstance(res, list) and len(res) < 0:
-                    raise ApiError(*ERROR_MSG_0034, value=(value, res))
-                if isinstance(res, list) and len(res) > 0 and key:
-                    self.test_setup.test_data.set_sql_cache(key, res[0])
+        for i in front_sql or []:
+            key = self.test_setup.test_data.replace(i.get('key'))
+            value = self.test_setup.test_data.replace(i.get('value'))
+            log.api.debug(f'用例场景前置sql-1->key:{key}，value:{value}')
+            if not value:
+                raise ApiError(*ERROR_MSG_0035)
+            res: list[dict] = self.test_setup.get_db_connection(i).condition_execute(value)
+            log.api.debug(f'用例场景前置sql-2->key:{key}，res:{res}')
+            if isinstance(res, list) and len(res) < 0:
+                raise ApiError(*ERROR_MSG_0034, value=(value, res))
+            if isinstance(res, list) and len(res) > 0 and key:
+                self.test_setup.test_data.set_sql_cache(key, res[0])
 
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
         try:

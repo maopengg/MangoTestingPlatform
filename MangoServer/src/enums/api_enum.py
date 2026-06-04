@@ -81,10 +81,11 @@ class ApiAuthRefreshModeEnum(BaseEnum):
     PASSIVE = 0
     TIMING = 1
     BOTH = 2
+    MANUAL = 3
 
     @classmethod
     def obj(cls):
-        return {0: "执行时检测刷新", 1: "定时刷新", 2: "执行时检测+定时刷新"}
+        return {0: "执行时检测刷新", 1: "定时刷新", 2: "执行时检测+定时刷新", 3: "手动刷新"}
 
 
 class ApiAuthRefreshStatusEnum(BaseEnum):

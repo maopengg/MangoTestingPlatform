@@ -10,8 +10,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from src.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
+from src.auto_test.auto_user.models import User
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
+from src.tools.database.mysql_lock import acquire_mysql_lock, release_mysql_lock
 from src.tools.decorator.retry import async_task_db_connection
 from src.tools.log_collector import log
 
@@ -139,8 +141,14 @@ class RunTasks:
     @classmethod
     @async_task_db_connection()
     def timing(cls, timing_strategy_id):
+        lock_name = f'mango:timing:{timing_strategy_id}'
+        lock_acquired = False
         try:
             log.system.debug(f'触发定时器：{timing_strategy_id}')
+            lock_acquired = acquire_mysql_lock(lock_name, timeout=0)
+            if not lock_acquired:
+                log.system.info(f'定时策略 {timing_strategy_id} 已被其他实例触发，本实例跳过')
+                return
             try:
                 from src.auto_test.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
                 ApiAuthManager.refresh_by_time_task(timing_strategy_id)
@@ -169,20 +177,25 @@ class RunTasks:
             log.system.error(f'执行定时任务异常: {e}')
             import traceback
             traceback.print_exc()
+        finally:
+            if lock_acquired:
+                release_mysql_lock(lock_name)
 
     @classmethod
-    def trigger(cls, scheduled_tasks_id):
+    def trigger(cls, scheduled_tasks_id, user_id=None):
         scheduled_tasks = Tasks.objects.get(id=scheduled_tasks_id)
-        cls.distribute(scheduled_tasks)
+        cls.distribute(scheduled_tasks, user_id=user_id)
 
     @classmethod
-    def distribute(cls, tasks: Tasks):
+    def distribute(cls, tasks: Tasks, user_id=None):
         tasks_details = TasksDetails.objects.filter(task=tasks.id)
+        if not user_id or not str(user_id).isdigit() or not User.objects.filter(id=user_id).exists():
+            user_id = tasks.case_people_id
         add_tasks = AddTasks(
             project_product=tasks.project_product.id,
             test_env=tasks.test_env,
             is_notice=tasks.is_notice,
-            user_id=tasks.case_people.id,
+            user_id=user_id,
             tasks_id=tasks.id,
         )
         for task in tasks_details:

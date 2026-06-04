@@ -53,12 +53,6 @@ export const datasourceAliasColumns = useTableColumn([
     align: 'left',
   },
   {
-    title: '编码',
-    key: 'code',
-    dataIndex: 'code',
-    align: 'left',
-  },
-  {
     title: '类型',
     key: 'db_type',
     dataIndex: 'db_type',

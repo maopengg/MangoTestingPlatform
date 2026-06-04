@@ -8,15 +8,16 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from django.db.models import Q
 
 from src.auto_test.auto_api.models import ApiCase
-from src.auto_test.auto_api.views.api_case import ApiCaseSerializers
+from src.auto_test.auto_api.views.api_case import ApiCaseSerializersC
 from src.auto_test.auto_pytest.models import PytestCase
-from src.auto_test.auto_pytest.views.pytest_case import PytestCaseSerializers
+from src.auto_test.auto_pytest.views.pytest_case import PytestCaseSerializersC
 from src.auto_test.auto_system.models import TasksDetails
 from src.auto_test.auto_system.views.tasks import TasksSerializers
 from src.auto_test.auto_ui.models import UiCase
-from src.auto_test.auto_ui.views.ui_case import UiCaseSerializers
+from src.auto_test.auto_ui.views.ui_case import UiCaseSerializersC
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -37,9 +38,9 @@ class TasksDetailsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     task = TasksSerializers(read_only=True)
-    ui_case = UiCaseSerializers(read_only=True)
-    api_case = ApiCaseSerializers(read_only=True)
-    pytest_case = PytestCaseSerializers(read_only=True)
+    ui_case = UiCaseSerializersC(read_only=True)
+    api_case = ApiCaseSerializersC(read_only=True)
+    pytest_case = PytestCaseSerializersC(read_only=True)
 
     class Meta:
         model = TasksDetails
@@ -50,7 +51,8 @@ class TasksDetailsSerializersC(serializers.ModelSerializer):
         queryset = queryset.select_related(
             'task',
             'ui_case',
-            'api_case'
+            'api_case',
+            'pytest_case'
         )
         return queryset
 
@@ -60,6 +62,76 @@ class TasksDetailsCRUD(ModelCRUD):
     queryset = TasksDetails.objects.all()
     serializer_class = TasksDetailsSerializersC
     serializer = TasksDetailsSerializers
+
+    @error_response('system')
+    def get(self, request: Request):
+        queryset = TasksDetails.objects.all()
+        task_id = request.query_params.get('task_id')
+        _type = request.query_params.get('type')
+        project_product_id = request.query_params.get('project_product_id')
+        module_id = request.query_params.get('module_id')
+        case_people_id = request.query_params.get('case_people_id')
+        case_name = request.query_params.get('case_name')
+
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        if _type not in (None, ''):
+            queryset = queryset.filter(type=_type)
+        if project_product_id:
+            queryset = queryset.filter(
+                Q(ui_case__project_product_id=project_product_id)
+                | Q(api_case__project_product_id=project_product_id)
+                | Q(pytest_case__project_product__project_product_id=project_product_id)
+            )
+        if module_id:
+            queryset = queryset.filter(
+                Q(ui_case__module_id=module_id)
+                | Q(api_case__module_id=module_id)
+                | Q(pytest_case__module_id=module_id)
+            )
+        if case_people_id:
+            queryset = queryset.filter(
+                Q(ui_case__case_people_id=case_people_id)
+                | Q(api_case__case_people_id=case_people_id)
+                | Q(pytest_case__case_people_id=case_people_id)
+            )
+        if case_name:
+            queryset = queryset.filter(
+                Q(ui_case__name__contains=case_name)
+                | Q(api_case__name__contains=case_name)
+                | Q(pytest_case__name__contains=case_name)
+            )
+
+        queryset = queryset.select_related(
+            'task',
+            'ui_case',
+            'ui_case__project_product',
+            'ui_case__module',
+            'ui_case__case_people',
+            'api_case',
+            'api_case__project_product',
+            'api_case__module',
+            'api_case__case_people',
+            'pytest_case',
+            'pytest_case__project_product',
+            'pytest_case__project_product__project_product',
+            'pytest_case__module',
+            'pytest_case__case_people',
+        ).order_by('id')
+
+        if request.query_params.get('pageSize') and request.query_params.get('page'):
+            data_list, count = self.paging_list(
+                request.query_params.get('pageSize'),
+                request.query_params.get('page'),
+                queryset,
+                self.get_serializer_class(),
+            )
+            return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
+        return ResponseData.success(
+            RESPONSE_MSG_0001,
+            self.get_serializer_class()(instance=queryset, many=True).data,
+            queryset.count(),
+        )
 
     @error_response('system')
     def post(self, request: Request):
@@ -109,12 +181,34 @@ class TasksDetailsViews(ViewSet):
     def get_type_case_name(self, request: Request):
         _type = int(request.query_params.get('type'))
         module_id = request.query_params.get('module_id')
+        project_product_id = request.query_params.get('project_product_id')
         if _type == TestCaseTypeEnum.UI.value:
-            res = UiCase.objects.filter(module=module_id).values_list('id', 'name')
+            queryset = UiCase.objects.all()
+            if module_id:
+                queryset = queryset.filter(module=module_id)
+            elif project_product_id:
+                queryset = queryset.filter(project_product=project_product_id)
+            else:
+                queryset = queryset.none()
+            res = queryset.values_list('id', 'name')
         elif _type == TestCaseTypeEnum.API.value:
-            res = ApiCase.objects.filter(module=module_id).values_list('id', 'name')
+            queryset = ApiCase.objects.all()
+            if module_id:
+                queryset = queryset.filter(module=module_id)
+            elif project_product_id:
+                queryset = queryset.filter(project_product=project_product_id)
+            else:
+                queryset = queryset.none()
+            res = queryset.values_list('id', 'name')
         else:
-            res = PytestCase.objects.filter(module=module_id).values_list('id', 'name')
+            queryset = PytestCase.objects.all()
+            if module_id:
+                queryset = queryset.filter(module=module_id)
+            elif project_product_id:
+                queryset = queryset.filter(project_product__project_product=project_product_id)
+            else:
+                queryset = queryset.none()
+            res = queryset.values_list('id', 'name')
         return ResponseData.success(RESPONSE_MSG_0065, [{'key': _id, 'title': name} for _id, name in res])
 
     @action(methods=['post'], detail=False)

@@ -134,11 +134,6 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/data-factory",
-                    "menuUrl": "/data-factory/datasource/index",
-                    "menuName": "数据源映射",
-                },
-                {
-                    "parentPath": "/data-factory",
                     "menuUrl": "/data-factory/entity/index",
                     "menuName": "工厂实体",
                 },

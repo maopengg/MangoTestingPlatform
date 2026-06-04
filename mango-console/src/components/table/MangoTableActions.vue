@@ -14,7 +14,7 @@
     >
       {{ action.label }}
     </a-button>
-    <a-dropdown v-if="overflowActions.length" trigger="hover">
+    <a-dropdown v-if="overflowActions.length" content-class="mango-table-actions-dropdown" trigger="hover">
       <a-button class="mango-table-action-more" size="mini" type="text">更多</a-button>
       <template #content>
         <a-doption
@@ -109,7 +109,23 @@
   }
 
   .mango-table-action-menu-item {
-    display: block;
-    min-width: 56px;
+    display: flex;
+    min-width: 64px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  :global(.mango-table-actions-dropdown .arco-dropdown-option) {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  :global(.mango-table-actions-dropdown .arco-dropdown-option-content) {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 </style>

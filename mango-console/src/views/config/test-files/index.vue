@@ -11,7 +11,13 @@
           <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
@@ -77,11 +83,7 @@
                 {{ record.id }}
               </template>
               <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                {{
-                  (record?.project_product?.project?.name || '无') +
-                  '/' +
-                  (record?.project_product?.name || '无')
-                }}
+                {{ formatProjectProductPath(record?.project_product) }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
@@ -114,12 +116,9 @@
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
             />
           </template>
         </a-form-item>
@@ -138,12 +137,9 @@
         />
       </a-form-item>
       <a-form-item label="项目/产品" required>
-        <a-cascader
+        <ProjectProductSelect
           v-model="uploadForm.project_product"
           :placeholder="'请选择项目产品'"
-          :options="projectInfo.projectProduct"
-          allow-search
-          allow-clear
         />
       </a-form-item>
     </a-form>
@@ -170,11 +166,13 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
   import { useProject } from '@/store/modules/get-project'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
 
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
-  const projectInfo = useProject()
+  const project = useProject()
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -347,7 +345,7 @@
 
   onMounted(() => {
     nextTick(async () => {
-      projectInfo.projectProductName()
+      project.getProject()
       doRefresh()
     })
   })

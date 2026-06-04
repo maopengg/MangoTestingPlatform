@@ -166,6 +166,8 @@ class LoginViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0042)
         if not user_info:
             return ResponseData.fail(RESPONSE_MSG_0042)
+        if username == 'open' and source_type != ClientTypeEnum.ACTUATOR.value:
+            return ResponseData.fail(RESPONSE_MSG_0160)
         if source_type == ClientTypeEnum.ACTUATOR.value:
             if request.data.get('version') != settings.VERSION:
                 return ResponseData.fail(RESPONSE_MSG_0037)

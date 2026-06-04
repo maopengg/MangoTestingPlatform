@@ -61,6 +61,7 @@
                       :data-list="pageData.record.front_sql"
                       :field-config="[
                         { field: 'sql', label: 'Sql语句', placeholder: '请输入sql语句' },
+                        sqlDatasourceField,
                         {
                           field: 'key_list',
                           label: 'Key列表',
@@ -156,6 +157,7 @@
                       :data-list="pageData.record.posterior_sql"
                       :field-config="[
                         { field: 'sql', label: 'Sql语句', placeholder: '请输入sql语句' },
+                        sqlDatasourceField,
                       ]"
                       :on-delete-item="
                         (index) => removeFrontSql(pageData.record.posterior_sql, index)
@@ -355,13 +357,11 @@
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'module'">
-            <a-cascader
+            <ProductModuleSelect
               v-model="item.value"
-              :options="data.productModuleName"
+              :project-product-id="pageData.record.project_product?.id || route.query.project_product"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              @change="doUiPageNameAll(item.value)"
+              @change="doUiPageNameAll"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'page'">
@@ -414,7 +414,6 @@
     putUiCasePutCaseSort,
     putUiCaseStepsDetailed,
   } from '@/api/uitest/case-steps-detailed'
-  import { getUserProductAllModuleName } from '@/api/system/product'
   import { getUiCaseRun, putUiCase } from '@/api/uitest/case'
   import { getUiStepsPageStepsName, getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiPageName } from '@/api/uitest/page'
@@ -425,6 +424,8 @@
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -438,7 +439,6 @@
   const data: any = reactive({
     isAdd: true,
     updateId: null,
-    productModuleName: [],
     pageName: [],
     pageStepsName: [],
     data: [],
@@ -446,6 +446,7 @@
     actionTitle: '新增',
     uiType: '2',
     uiSonType: '11',
+    datasourceAliasOptions: [],
   })
   const useSelectValue = useSelectValueStore()
 
@@ -459,6 +460,13 @@
     return `界面用例配置 / ${id} / ${name}`
   })
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
+  const sqlDatasourceField = computed(() => ({
+    field: 'datasource_alias',
+    label: '数据源',
+    type: 'select',
+    placeholder: '单库可不选',
+    options: data.datasourceAliasOptions,
+  }))
 
   function clearPollingTimer() {
     if (pollingTimer.value) {
@@ -490,11 +498,11 @@
     if (data.uiSonType === '11') {
       pageData.record.front_custom.push({ key: '', value: '' })
     } else if (data.uiSonType === '12') {
-      pageData.record.front_sql.push({ sql: '', key_list: '' })
+      pageData.record.front_sql.push({ sql: '', key_list: '', datasource_alias: null })
     } else if (data.uiSonType === '14') {
       dataFactoryPanelRef.value?.open()
     } else if (data.uiSonType === '31') {
-      pageData.record.posterior_sql.push({ sql: '' })
+      pageData.record.posterior_sql.push({ sql: '', datasource_alias: null })
     }
   }
 
@@ -685,14 +693,6 @@
     })
   }
 
-  function onProductModuleName() {
-    getUserProductAllModuleName(pageData.record.project_product?.project?.id)
-      .then((res) => {
-        data.productModuleName = res.data
-      })
-      .catch(console.log)
-  }
-
   function doUiPageNameAll(moduleId: number) {
     getUiPageName(moduleId)
       .then((res) => {
@@ -705,6 +705,20 @@
     getUiStepsPageStepsName(pageId)
       .then((res) => {
         data.pageStepsName = res.data
+      })
+      .catch(console.log)
+  }
+
+  function loadDatasourceAliases() {
+    getDataFactoryDatasourceAlias({
+      project_product: route.query.project_product,
+      status: 1,
+    })
+      .then((res) => {
+        data.datasourceAliasOptions = (res.data || []).map((item: any) => ({
+          label: item.name,
+          value: item.id,
+        }))
       })
       .catch(console.log)
   }
@@ -817,8 +831,8 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      onProductModuleName()
       useSelectValue.getSelectValue()
+      loadDatasourceAliases()
     })
   })
   onUnmounted(() => {

@@ -21,7 +21,7 @@
                   value-key="key"
                   allow-clear
                   allow-search
-                  @change="doRefresh(item.value, true)"
+                  @change="onSearchProjectProductChange(item.value)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
@@ -598,9 +598,23 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.key === 'project_product' || it.key === 'module' ? null : ''
     })
+    data.moduleList = []
     doRefresh()
+  }
+
+  function onSearchProjectProductChange(projectProductId: any) {
+    const moduleItem = conditionItems.find((it) => it.key === 'module')
+    if (moduleItem) {
+      moduleItem.value = null
+    }
+    if (projectProductId) {
+      data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
+    } else {
+      data.moduleList = []
+    }
+    doRefresh(projectProductId, true)
   }
 
   const onRun = async (param) => {

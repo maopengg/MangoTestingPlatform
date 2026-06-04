@@ -81,23 +81,16 @@
       <a-form :model="form" layout="vertical" class="mango-data-factory-config-form">
         <div class="mango-section-card mango-data-factory-base-card">
           <a-form-item label="项目/产品" required>
-            <a-cascader
+            <ProjectProductSelect
               v-model="form.project_product"
-              :options="projectInfo.projectProduct"
-              allow-clear
-              allow-search
-              value-key="key"
               @change="onProjectProductChange"
             />
           </a-form-item>
           <a-form-item label="模块" required>
-            <a-select
+            <ProductModuleSelect
               v-model="form.module"
-              :field-names="enumFieldNames"
-              :options="productModule.data"
-              allow-clear
-              allow-search
-              value-key="key"
+              :project-product-id="form.project_product"
+              :auto-clear="false"
               @change="onModuleChange"
             />
           </a-form-item>
@@ -334,10 +327,10 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import { useProject } from '@/store/modules/get-project'
-  import { useProductModule } from '@/store/modules/project_module'
   import DataFactoryRelationFlow from '@/components/DataFactory/DataFactoryRelationFlow.vue'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
   import {
     deleteDataFactoryCaseConfig,
     getDataFactoryCaseConfig,
@@ -370,9 +363,6 @@
 
   const enumStore = useEnum()
   const userStore = useUserStore()
-  const projectInfo = useProject()
-  const productModule = useProductModule()
-  const enumFieldNames = { value: 'key', label: 'title' }
   const TEMPLATE_USAGE_CASE = 1
 
   const columns = [
@@ -548,6 +538,9 @@
   }
 
   function getOptionId(value: any) {
+    if (Array.isArray(value)) {
+      return value[value.length - 1] ?? null
+    }
     return value?.id ?? value
   }
 
@@ -638,9 +631,6 @@
     resetForm(record)
     templateKeyword.value = ''
     visible.value = true
-    if (form.project_product) {
-      productModule.getProjectModule(getOptionId(form.project_product))
-    }
     if (form.project_product && form.module) {
       loadTemplates().then(() => {
         if (form.template) {
@@ -664,9 +654,6 @@
     itemFieldsMap.value = {}
     expandedTemplateItemKeys.value = []
     previewResult.value = {}
-    if (form.project_product) {
-      productModule.getProjectModule(getOptionId(form.project_product))
-    }
   }
 
   function onModuleChange() {
@@ -997,8 +984,6 @@
   )
 
   onMounted(() => {
-    projectInfo.projectProductName()
-    productModule.getProjectModule()
     refresh()
   })
 

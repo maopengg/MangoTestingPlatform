@@ -10,16 +10,18 @@
               :label="item.label"
             >
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
-                  :options="projectInfo.projectProduct"
                   :placeholder="item.placeholder"
                   allow-clear
-                  allow-search
-                  value-key="key"
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
                   @change="doRefresh"
                 />
               </template>
@@ -75,7 +77,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'db_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.db_type]" size="small">
@@ -116,15 +118,11 @@
   >
     <a-form :model="aliasForm" layout="vertical">
       <a-form-item label="产品" required>
-        <a-cascader
+        <ProjectProductSelect
           v-model="aliasForm.project_product"
-          :options="projectInfo.projectProduct"
-          allow-search
-          allow-clear
         />
       </a-form-item>
       <a-form-item label="名称" required><a-input v-model="aliasForm.name" /></a-form-item>
-      <a-form-item label="编码" required><a-input v-model="aliasForm.code" /></a-form-item>
       <a-form-item label="数据库类型" required>
         <a-select
           v-model="aliasForm.db_type"
@@ -204,9 +202,11 @@
       <a-form-item label="测试环境" required>
         <a-select
           v-model="bindingForm.test_object"
-          :options="testObjectOptions"
+          :options="bindingTestObjectOptions"
           :field-names="{ value: 'id', label: 'name' }"
+          placeholder="请选择测试环境"
           allow-search
+          @change="onBindingTestObjectChange"
         />
       </a-form-item>
       <a-form-item label="实际数据库" required>
@@ -214,6 +214,9 @@
           v-model="bindingForm.database"
           :options="databaseOptions"
           :field-names="{ value: 'id', label: 'name' }"
+          :disabled="!bindingForm.test_object"
+          :loading="databaseLoading"
+          placeholder="请先选择测试环境"
           allow-search
         />
       </a-form-item>
@@ -237,10 +240,11 @@
   import { getUserTestObject } from '@/api/system/test_object'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
-  import { useProject } from '@/store/modules/get-project'
   import { getFormItems } from '@/utils/datacleaning'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
   import {
     datasourceAliasColumns,
     datasourceAliasConditionItems,
@@ -250,7 +254,6 @@
   const aliasTable = useTable()
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
-  const projectInfo = useProject()
   const enumFieldNames = { value: 'key', label: 'title' }
   const aliasVisible = ref(false)
   const bindingVisible = ref(false)
@@ -258,13 +261,25 @@
   const aliasSaving = ref(false)
   const bindingSaving = ref(false)
   const bindingLoading = ref(false)
+  const databaseLoading = ref(false)
   const actionLoading = ref('')
   const currentAlias = ref<any>(null)
   const bindingRows = ref<any[]>([])
-  const testObjectOptions = ref<any[]>([])
+  const allTestObjectOptions = ref<any[]>([])
   const databaseOptions = ref<any[]>([])
   const aliasForm = reactive<any>({})
   const bindingForm = reactive<any>({})
+
+  const bindingTestObjectOptions = computed(() => {
+    const projectProductId = currentAlias.value?.project_product?.id || currentAlias.value?.project_product
+    if (!projectProductId) {
+      return allTestObjectOptions.value
+    }
+    return allTestObjectOptions.value.filter((item: any) => {
+      const itemProjectProductId = item?.project_product?.id || item?.project_product
+      return String(itemProjectProductId) === String(projectProductId)
+    })
+  })
 
   function enumTitle(options: any[] = [], value: any) {
     return options.find((it) => it.key === value)?.title || value
@@ -276,6 +291,15 @@
 
   function displayDatabase(value: any) {
     return value?.name ? `${value.name}(${value.host}:${value.port})` : value
+  }
+
+  function generateDatasourceCode(name: string) {
+    const cleaned = String(name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+    return `${cleaned || 'ds'}_${Date.now()}`
   }
 
   function doRefresh() {
@@ -299,8 +323,7 @@
   }
 
   function loadOptions() {
-    getUserTestObject({}).then((res) => (testObjectOptions.value = res.data || []))
-    getSystemDatabase({}).then((res) => (databaseOptions.value = res.data || []))
+    getUserTestObject({}).then((res) => (allTestObjectOptions.value = res.data || []))
   }
 
   function openAlias(record?: any) {
@@ -318,6 +341,13 @@
   }
 
   async function saveAlias() {
+    if (!aliasForm.project_product || !aliasForm.name || aliasForm.db_type == null) {
+      Message.error('请先填写产品、名称和数据库类型')
+      return false
+    }
+    if (!aliasForm.code) {
+      aliasForm.code = generateDatasourceCode(aliasForm.name)
+    }
     const request = aliasForm.id ? putDataFactoryDatasourceAlias : postDataFactoryDatasourceAlias
     aliasSaving.value = true
     try {
@@ -369,6 +399,7 @@
 
   function openBindingForm(record?: any) {
     Object.keys(bindingForm).forEach((key) => delete bindingForm[key])
+    databaseOptions.value = []
     Object.assign(bindingForm, {
       id: record?.id,
       datasource_alias: currentAlias.value.id,
@@ -377,10 +408,46 @@
       description: record?.description || '',
       status: record?.status ?? 1,
     })
+    if (bindingForm.test_object) {
+      loadDatabaseOptions(bindingForm.test_object, bindingForm.database)
+    }
     bindingFormVisible.value = true
   }
 
+  function onBindingTestObjectChange(value: any) {
+    bindingForm.database = null
+    loadDatabaseOptions(value)
+  }
+
+  function loadDatabaseOptions(testObjectId: any, selectedDatabaseId?: any) {
+    databaseOptions.value = []
+    if (!testObjectId) {
+      return Promise.resolve()
+    }
+    databaseLoading.value = true
+    return getSystemDatabase({ test_object: testObjectId })
+      .then((res) => {
+        const dbType = currentAlias.value?.db_type
+        databaseOptions.value = (res.data || []).filter((item: any) => {
+          return dbType == null || Number(item.db_type) === Number(dbType)
+        })
+        if (
+          selectedDatabaseId &&
+          !databaseOptions.value.some((item: any) => String(item.id) === String(selectedDatabaseId))
+        ) {
+          bindingForm.database = null
+        }
+      })
+      .finally(() => {
+        databaseLoading.value = false
+      })
+  }
+
   async function saveBinding() {
+    if (!bindingForm.test_object || !bindingForm.database) {
+      Message.error('请先选择测试环境和实际数据库')
+      return false
+    }
     const request = bindingForm.id
       ? putDataFactoryDatasourceBinding
       : postDataFactoryDatasourceBinding
@@ -414,7 +481,6 @@
 
   onMounted(() => {
     enumStore.getEnum()
-    projectInfo.projectProductName()
     loadOptions()
     doRefresh()
   })

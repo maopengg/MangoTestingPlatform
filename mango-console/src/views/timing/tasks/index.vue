@@ -11,7 +11,13 @@
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
               </template>
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
@@ -80,7 +86,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
               {{ record.timing_strategy?.name }}
@@ -153,12 +159,9 @@
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
-              :options="projectInfo.projectProduct"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
               @change="onProjectChange(item.value)"
             />
           </template>
@@ -243,11 +246,11 @@
   } from '@/api/system/tasks'
   import { getSystemTimingList } from '@/api/system/time'
   import { getUserName } from '@/api/user/user'
-  import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import { getSystemNoticeName } from '@/api/system/notice_group'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
 
-  const projectInfo = useProject()
   const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -321,17 +324,27 @@
   }
 
   function onTrigger(record: any) {
-    data.triggerLoading = true
-    getSystemTriggerTiming(record.id)
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch((error) => {
-        Message.error(error?.msg || '触发失败')
-      })
-      .finally(() => {
-        data.triggerLoading = false
-      })
+    Modal.confirm({
+      title: '确认触发定时任务',
+      content: `确认立即触发定时任务「${record.name || record.id}」吗？触发后会生成测试报告并开始执行绑定用例。`,
+      cancelText: '取消',
+      okText: '确认触发',
+      onBeforeOk: () => {
+        data.triggerLoading = true
+        return getSystemTriggerTiming(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+            return true
+          })
+          .catch((error) => {
+            Message.error(error?.msg || '触发失败')
+            return false
+          })
+          .finally(() => {
+            data.triggerLoading = false
+          })
+      },
+    })
   }
 
   function onUpdate(item: any) {
@@ -443,7 +456,8 @@
     })
   }
 
-  function onProjectChange(id) {
+  function onProjectChange(value: any) {
+    const id = getOptionId(value)
     getSystemNoticeName(id)
       .then((res) => {
         data.noticeList = res.data

@@ -18,7 +18,16 @@ from src.auto_test.auto_data_factory.views.entity import DataFactoryEntitySerial
 from src.enums.data_factory_enum import DataFactoryTemplateConfigStatusEnum
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializersC
-from src.exceptions import ToolsError
+from src.exceptions import DataFactoryError, ToolsError
+from src.exceptions.error_msg import (
+    DATA_FACTORY_ERROR_0001,
+    DATA_FACTORY_ERROR_0002,
+    DATA_FACTORY_ERROR_0003,
+    DATA_FACTORY_ERROR_0004,
+    DATA_FACTORY_ERROR_0005,
+    DATA_FACTORY_ERROR_0006,
+    DATA_FACTORY_ERROR_0007,
+)
 from src.models.data_factory_model import DataFactoryFieldOverrideRules, DataFactoryOutputConfig
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -106,29 +115,29 @@ class DataFactoryTemplateSerializer(serializers.ModelSerializer):
         entity = attrs.get('entity', self.instance.entity if self.instance else None)
         name = attrs.get('name', self.instance.name if self.instance else None)
         if not module:
-            raise serializers.ValidationError("场景模板必须绑定模块")
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0001)
         if project_product and module and module.project_product_id != project_product.id:
-            raise serializers.ValidationError("模块不属于当前项目/产品")
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0002)
         if project_product and entity and entity.project_product_id != project_product.id:
-            raise serializers.ValidationError("实体不属于当前项目/产品")
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0003)
         if module and entity and entity.module_id and entity.module_id != module.id:
-            raise serializers.ValidationError("实体不属于当前模块")
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0004)
         if entity and name:
             queryset = DataFactoryTemplate.objects.filter(entity=entity, name=name)
             if self.instance:
                 queryset = queryset.exclude(id=self.instance.id)
             if queryset.exists():
-                raise serializers.ValidationError(f"当前实体下已存在模板名称：{name}")
+                raise DataFactoryError(*DATA_FACTORY_ERROR_0005, value=(name,))
         field_overrides = attrs.get('field_overrides', self.instance.field_overrides if self.instance else {})
         try:
             attrs['field_overrides'] = DataFactoryFieldOverrideRules.model_validate(field_overrides or {}).model_dump()
         except ValidationError as error:
-            raise serializers.ValidationError(f"字段覆盖规则格式错误：{error}") from error
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0006, value=(error,)) from error
         output_config = attrs.get('output_config', self.instance.output_config if self.instance else [])
         try:
             attrs['output_config'] = DataFactoryOutputConfig.model_validate(output_config or []).model_dump()
         except ValidationError as error:
-            raise serializers.ValidationError(f"输出配置格式错误：{error}") from error
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0007, value=(error,)) from error
         return attrs
 
     @transaction.atomic
@@ -218,10 +227,11 @@ class DataFactoryTemplateCRUD(ModelCRUD):
     serializer = DataFactoryTemplateSerializer
     not_matching_str = ModelCRUD.not_matching_str + ['entity', 'usage_scope']
 
+    @error_response('system')
     def post(self, request: Request):
         duplicated = self.get_duplicated_template(request.data)
         if duplicated:
-            return ResponseData.fail((300, f"当前实体下已存在模板名称：{duplicated.name}，请编辑已有模板或更换名称"))
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0005, value=(duplicated.name,))
         data = request.data.copy()
         test_env = data.pop('test_env', None)
         serializer = self.serializer(data=data)
@@ -231,10 +241,11 @@ class DataFactoryTemplateCRUD(ModelCRUD):
             return ResponseData.success(RESPONSE_MSG_0002, self.serializer(instance).data)
         return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
+    @error_response('system')
     def put(self, request: Request):
         duplicated = self.get_duplicated_template(request.data, request.data.get('id'))
         if duplicated:
-            return ResponseData.fail((300, f"当前实体下已存在模板名称：{duplicated.name}，请编辑已有模板或更换名称"))
+            raise DataFactoryError(*DATA_FACTORY_ERROR_0005, value=(duplicated.name,))
         data = request.data.copy()
         test_env = data.pop('test_env', None)
         serializer = self.serializer(

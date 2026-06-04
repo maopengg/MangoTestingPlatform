@@ -221,7 +221,7 @@ class NoticeMain:
             return domain_name
         if not domain_name.startswith(('http://', 'https://')):
             return domain_name
-        return f'{domain_name.rstrip("/")}/#/report/details?id={test_report.test_suite_id}'
+        return f'{domain_name.rstrip("/")}/#/report/system/details?id={test_report.test_suite_id}'
 
     @staticmethod
     def __get_domain_name():

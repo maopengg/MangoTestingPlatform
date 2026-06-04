@@ -193,6 +193,7 @@ def register_api_auth_config_tools(mcp):
                 "runtime": {
                     "load_order": ["ApiPublic 自定义变量", "ApiPublic SQL 变量", "ApiAuthConfig Token 授权缓存"],
                     "cache_injection": "刷新成功或缓存可用时，cache_data 会全量写入当前执行上下文，可通过 ${token}、${tenant_id} 引用。",
+                    "manual_refresh": "refresh_mode=3 表示手动刷新，API/case 执行只读取已有且未过期的 cache_data，不会自动调用登录接口或自定义代码；需要调用 refresh_api_auth_config 才会刷新。",
                     "refresh_warning": "refresh_api_auth_config 会真实执行登录接口或自定义代码，并写入 cache_data。",
                     "clear_warning": "clear_api_auth_config_cache 会清空 cache_data 和 expires_at，必须先调用 preview_clear_api_auth_config_cache_impact。",
                     "delete_warning": "delete_api_auth_config 会删除授权配置，必须先调用 preview_delete_api_auth_config_impact。",

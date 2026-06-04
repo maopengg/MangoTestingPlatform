@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from src.auto_test.auto_system.service.factory import func_mysql_config
+from src.auto_test.auto_system.service.factory import get_enabled_databases
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import MangoServerError
@@ -72,7 +72,8 @@ class TestObjectViews(ViewSet):
         try:
             obj = self.model.objects.get(id=request.data.get('id'))
             if db_c_status == StatusEnum.SUCCESS.value or db_rud_status == StatusEnum.SUCCESS.value:
-                func_mysql_config(request.data.get('id'))
+                if not get_enabled_databases(request.data.get('id')).exists():
+                    return ResponseData.fail(RESPONSE_MSG_0123)
             if db_c_status is not None:
                 obj.db_c_status = db_c_status
             if db_rud_status is not None:

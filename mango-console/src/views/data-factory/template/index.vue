@@ -6,28 +6,27 @@
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of templateConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
-                  :options="projectInfo.projectProduct"
                   :placeholder="item.placeholder"
                   allow-clear
-                  allow-search
-                  value-key="key"
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
                   @change="onSearchProjectChange(item.value)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
+                <ProductModuleSelect
                   v-model="item.value"
-                  :field-names="enumFieldNames"
-                  :options="productModule.data"
+                  :project-product-id="getSearchItemValue('project_product')"
                   :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
+                  :auto-clear="false"
                   @change="onSearchModuleChange"
                 />
               </template>
@@ -35,7 +34,7 @@
                 <a-select
                   v-model="item.value"
                   :field-names="{ value: 'id', label: 'name' }"
-                  :options="entityOptions"
+                  :options="searchEntityOptions"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -120,11 +119,10 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
-              }}{{ record?.module?.name }}
+              {{ formatModulePath(record?.module) }}
             </template>
             <template v-else-if="item.key === 'entity'" #cell="{ record }">
               {{ record.entity?.name || record.entity }}
@@ -202,22 +200,17 @@
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
           <a-form-item label="产品" required
-            ><a-cascader
+            ><ProjectProductSelect
               v-model="templateForm.project_product"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
               @change="onTemplateProjectChange"
           /></a-form-item>
         </a-grid-item>
         <a-grid-item>
           <a-form-item label="模块" required
-            ><a-select
+            ><ProductModuleSelect
               v-model="templateForm.module"
-              :options="productModule.data"
-              :field-names="enumFieldNames"
-              allow-search
-              allow-clear
+              :project-product-id="templateForm.project_product"
+              :auto-clear="false"
               @change="onTemplateModuleChange"
           /></a-form-item>
         </a-grid-item>
@@ -225,7 +218,7 @@
           <a-form-item label="实体" required
             ><a-select
               v-model="templateForm.entity"
-              :options="entityOptions"
+              :options="templateEntityOptions"
               :field-names="{ value: 'id', label: 'name' }"
               allow-search
           /></a-form-item>
@@ -279,8 +272,6 @@
   } from '@/api/data-factory'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
-  import { useProject } from '@/store/modules/get-project'
-  import { useProductModule } from '@/store/modules/project_module'
   import useUserStore from '@/store/modules/user'
   import { usePageData } from '@/store/page-data'
   import { getFormItems } from '@/utils/datacleaning'
@@ -288,18 +279,24 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import {
+    formatModulePath,
+    formatProjectProductPath,
+    getItemValue,
+  } from '@/utils/business-format'
   import { templateConditionItems, templateTableColumns } from './config'
 
   const table = useTable()
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
-  const projectInfo = useProject()
-  const productModule = useProductModule()
   const userStore = useUserStore()
   const pageData = usePageData()
   const router = useRouter()
   const enumFieldNames = { value: 'key', label: 'title' }
-  const entityOptions = ref<any[]>([])
+  const searchEntityOptions = ref<any[]>([])
+  const templateEntityOptions = ref<any[]>([])
   const templateVisible = ref(false)
   const templateForm = reactive<any>({})
   const templateSaving = ref(false)
@@ -326,11 +323,18 @@
   }
 
   function getOptionId(value: any) {
+    if (Array.isArray(value)) {
+      return value[value.length - 1] ?? null
+    }
     return value?.id ?? value
   }
 
   function getSearchItem(key: string) {
     return templateConditionItems.find((item) => item.key === key)
+  }
+
+  function getSearchItemValue(key: string) {
+    return getItemValue(templateConditionItems, key)
   }
 
   function onSearchProjectChange(value: any) {
@@ -342,8 +346,7 @@
     if (entityItem) {
       entityItem.value = ''
     }
-    productModule.getProjectModule(getOptionId(value))
-    loadEntities({
+    loadSearchEntities({
       project_product: getOptionId(value),
     })
     doRefresh()
@@ -356,7 +359,7 @@
     if (entityItem) {
       entityItem.value = ''
     }
-    loadEntities({
+    loadSearchEntities({
       project_product: getOptionId(projectProduct),
       module: getOptionId(module),
     })
@@ -401,7 +404,7 @@
     doRefresh()
   }
 
-  function loadEntities(params: any = {}) {
+  function loadEntityOptions(params: any = {}, target = templateEntityOptions) {
     const query: any = { page: 1, pageSize: 9999 }
     const projectProduct = params.project_product ?? templateForm.project_product
     const module = params.module ?? templateForm.module
@@ -411,9 +414,17 @@
     if (module) {
       query.module = getOptionId(module)
     }
-    getDataFactoryEntity(query).then((res) => {
-      entityOptions.value = res.data || []
+    return getDataFactoryEntity(query).then((res) => {
+      target.value = res.data || []
     })
+  }
+
+  function loadSearchEntities(params: any = {}) {
+    return loadEntityOptions(params, searchEntityOptions)
+  }
+
+  function loadTemplateEntities(params: any = {}) {
+    return loadEntityOptions(params, templateEntityOptions)
   }
 
   function onTemplateProjectChange(value: any) {
@@ -421,23 +432,19 @@
     templateForm.entity = null
     templateForm.field_overrides = {}
     templateForm.output_config = []
-    entityOptions.value = []
-    productModule.getProjectModule(getOptionId(value))
+    templateEntityOptions.value = []
   }
 
   function onTemplateModuleChange() {
     templateForm.entity = null
     templateForm.field_overrides = {}
     templateForm.output_config = []
-    loadEntities()
+    loadTemplateEntities()
   }
 
   function openTemplate(record?: any) {
     resetTemplateForm(record)
-    if (templateForm.project_product) {
-      productModule.getProjectModule(getOptionId(templateForm.project_product))
-    }
-    loadEntities()
+    loadTemplateEntities()
     templateVisible.value = true
   }
 
@@ -530,9 +537,7 @@
 
   onMounted(() => {
     enumStore.getEnum()
-    projectInfo.projectProductName()
-    productModule.getProjectModule()
-    loadEntities()
+    loadSearchEntities()
     doRefresh()
   })
 

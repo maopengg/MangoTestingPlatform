@@ -80,8 +80,9 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
+                  { label: '模块', onClick: () => onModule(record) },
+                  { label: '逻辑数据源', onClick: () => onDatasource(record) },
                   { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '增加模块', onClick: () => onClick(record) },
                   { label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
@@ -249,9 +250,19 @@
     })
   }
 
-  function onClick(record: any) {
+  function onModule(record: any) {
     router.push({
       path: '/config/product/module',
+      query: {
+        id: record.id,
+        name: record.name,
+      },
+    })
+  }
+
+  function onDatasource(record: any) {
+    router.push({
+      path: '/config/product/datasource',
       query: {
         id: record.id,
         name: record.name,

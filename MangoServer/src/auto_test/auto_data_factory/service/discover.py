@@ -174,9 +174,20 @@ class DataFactoryDiscover:
     @classmethod
     def extract_enum_options(cls, db_type: str, label: str, platform_type: str) -> list[dict[str, Any]]:
         db_enum_values = cls.extract_enum_values(db_type)
+        comment_options = cls.extract_comment_enum_options(label, platform_type)
         if db_enum_values:
-            return [{"label": str(value), "value": cls.cast_enum_value(value, platform_type)} for value in db_enum_values]
-        return cls.extract_comment_enum_options(label, platform_type)
+            db_options = [{"label": str(value), "value": cls.cast_enum_value(value, platform_type)} for value in db_enum_values]
+            comment_option_map = {item["value"]: item["label"] for item in comment_options}
+            if comment_option_map:
+                return [
+                    {
+                        "label": comment_option_map.get(item["value"], item["label"]),
+                        "value": item["value"],
+                    }
+                    for item in db_options
+                ]
+            return db_options
+        return comment_options
 
     @classmethod
     def extract_comment_enum_options(cls, label: str, platform_type: str) -> list[dict[str, Any]]:
@@ -186,14 +197,14 @@ class DataFactoryDiscover:
 
         text = re.sub(r"\s+", " ", str(label)).strip()
         pattern = re.compile(
-            r"(?<![\d.])(?P<value>-?\d+(?:\.\d+)?)\s*[：:、，,.]?"
-            r"(?=\s*[\u4e00-\u9fa5A-Za-z])"
+            r"(?<![\d.])(?P<value>-?\d+(?:\.\d+)?)\s*[：:=、，,.;；。/-]?"
+            r"(?=\s*[（(【\[]?\s*[\u4e00-\u9fa5A-Za-z])"
         )
         matches = list(pattern.finditer(text))
         options = []
         for index, match in enumerate(matches):
             next_start = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-            option_label = text[match.end():next_start].strip(" ：:、，,；;。.")
+            option_label = text[match.end():next_start].strip(" ：:=、，,；;。.（）()【】[]-")
             if not option_label or re.fullmatch(r"-?\d+(?:\.\d+)?", option_label):
                 continue
             value = cls.cast_enum_value(match.group("value"), platform_type)

@@ -50,10 +50,23 @@ class SendNotice:
             # 测试套种只=没有发送的才发送
             if not self.test_suite.is_notice == TestSuiteNoticeEnum.NOT_SENT.value:
                 return
+            updated = TestSuite.objects.filter(
+                id=self.test_suite.id,
+                is_notice=TestSuiteNoticeEnum.NOT_SENT.value,
+            ).update(is_notice=TestSuiteNoticeEnum.SENDING.value)
+            if updated == 0:
+                return
+            self.test_suite.is_notice = TestSuiteNoticeEnum.SENDING.value
             log.system.info(f'成功开始发送通知：{self.test_suite.id}')
-            NoticeMain(self.test_suite.tasks.notice_group_id).notice_main(self.test_suite.id)
-            self.test_suite.is_notice = StatusEnum.SUCCESS.value
-            self.test_suite.save()
+            try:
+                NoticeMain(self.test_suite.tasks.notice_group_id).notice_main(self.test_suite.id)
+            except Exception:
+                self.test_suite.is_notice = TestSuiteNoticeEnum.NOT_SENT.value
+                self.test_suite.save(update_fields=['is_notice', 'update_time'])
+                raise
+            else:
+                self.test_suite.is_notice = TestSuiteNoticeEnum.SENT.value
+                self.test_suite.save(update_fields=['is_notice', 'update_time'])
 
     @classmethod
     def send_monitoring(cls, task_id, send_text, base_msg):

@@ -13,19 +13,22 @@ from pydantic import ValidationError
 
 from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import TestObject
-from src.auto_test.auto_system.service.factory import func_mysql_config, func_test_object_value
+from src.auto_test.auto_system.service.factory import func_test_object_value, get_enabled_databases
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.models import *
 from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+from src.auto_test.auto_data_factory.service.datasource import DataFactoryDatasourceResolver
 from src.auto_test.auto_data_factory.service.runtime_cache import DataFactoryRuntimeCache
 from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum, TaskEnum
+from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.ui_model import *
 from src.auto_test.auto_ui.service.test_case.case_data_factory import UiCaseDataFactory
+from src.tools.database import DatabaseConnectionFactory
 
 
 class TestCase:
@@ -169,7 +172,7 @@ class TestCase:
         for custom in case.front_custom:
             self.test_data.set_cache(custom.get('key'), self.test_data.replace(custom.get('value')))
         self.__set_parametrize_cache(parametrize)
-        self.case_data_factory = UiCaseDataFactory(test_object.id, self.test_data, case)
+        self.case_data_factory = UiCaseDataFactory(test_object.id, self.test_data, case, user_id=self.user_id)
         self.case_data_factory.run_front()
 
     def __set_parametrize_cache(self, parametrize: list[dict] | list | None):
@@ -373,20 +376,54 @@ class TestCase:
     def __environment_config(self, project_product_id: int, ) -> EnvironmentConfigModel:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)
         mysql_config = None
+        databases = list(get_enabled_databases(test_object.id))
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
-            mysql_config = func_mysql_config(test_object.id)
+            if len(databases) == 1:
+                mysql_config = DatabaseConnectionFactory.build_config(databases[0])
         return EnvironmentConfigModel(
             id=test_object.id,
             test_object_value=test_object.value,
             db_c_status=bool(test_object.db_c_status),
             db_rud_status=bool(test_object.db_rud_status),
             mysql_config=mysql_config,
+            database_connections=[
+                {
+                    'id': database.id,
+                    'db_type': database.db_type,
+                    'name': database.name,
+                    'host': database.host,
+                    'port': database.port,
+                }
+                for database in databases
+            ],
         )
 
     @classmethod
     def __public_data(cls, project_product_id, test_env) -> list[UiPublicModel]:
+        test_object = func_test_object_value(test_env, project_product_id, AutoTypeEnum.UI.value)
         ui_public_list = UiPublic \
             .objects \
             .filter(project_product=project_product_id, test_env=test_env, status=StatusEnum.SUCCESS.value) \
             .order_by('type', 'test_env', 'id')
-        return [UiPublicModel(type=i.type, key=i.key, value=i.value) for i in ui_public_list]
+        public_data = []
+        for item in ui_public_list:
+            mysql_config = None
+            db_type = None
+            if item.type == UiPublicTypeEnum.SQL.value and item.datasource_alias_id:
+                database = DataFactoryDatasourceResolver.resolve_alias(
+                    item.datasource_alias_id,
+                    test_object.id,
+                )
+                db_type = database.db_type
+                mysql_config = DatabaseConnectionFactory.build_config(database)
+            public_data.append(
+                UiPublicModel(
+                    type=item.type,
+                    key=item.key,
+                    value=item.value,
+                    datasource_alias=item.datasource_alias_id,
+                    db_type=db_type,
+                    mysql_config=mysql_config,
+                )
+            )
+        return public_data

@@ -13,15 +13,16 @@ DEFAULT_ALLOWED_HOSTS = [
     "127.0.0.1:*",
     "localhost:*",
     "[::1]:*",
-    "43.142.161.61:8000",
-    "43.142.161.61:*",
+    "qfei-auto-platform-dev.internal.qtech.cn",
+    "qfei-auto-platform-test.internal.qtech.cn",
 ]
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://127.0.0.1:*",
     "http://localhost:*",
     "http://[::1]:*",
-    "http://43.142.161.61:8000",
+    "https://qfei-auto-platform-dev.internal.qtech.cn",
+    "https://qfei-auto-platform-test.internal.qtech.cn",
 ]
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
@@ -163,6 +164,11 @@ def _mcp_tool_write_operation(tool_name: str) -> str | None:
         "run_api_info",
         "run_api_case",
         "run_api_case_batch",
+        "run_ui_case",
+        "run_ui_case_batch",
+        "run_ui_page_step",
+        "test_ui_element",
+        "run_pytest_case",
         "retry_test_report_case",
         "retry_test_report",
         "test_data_factory_datasource_connection",
@@ -192,6 +198,8 @@ def _mcp_tool_write_operation(tool_name: str) -> str | None:
         "sort_",
         "refresh_",
         "auto_generate_",
+        "sync_",
+        "push_",
     )
     if tool_name.startswith(delete_prefixes):
         return "delete"
@@ -283,6 +291,9 @@ def _platform_capabilities() -> dict:
                         "list_project_products",
                         "list_product_modules",
                         "create_product_module",
+                        "update_product_module",
+                        "preview_delete_product_module_impact",
+                        "delete_product_module",
                         "list_case_owners",
                     ],
                 },
@@ -290,19 +301,132 @@ def _platform_capabilities() -> dict:
                     "name": "api_automation",
                     "description": "API 接口、请求头、用例、场景、文件参数引用、执行和结果分析",
                     "tools": [
+                        "list_api_headers",
+                        "preview_create_api_header_impact",
                         "create_api_header",
+                        "update_api_header",
                         "list_api_public_variables",
                         "create_api_public_variable",
                         "update_api_public_variable",
                         "set_api_public_variable_status",
+                        "search_api_infos",
+                        "get_api_info_detail",
                         "create_api_info",
+                        "create_api_info_from_curl",
+                        "update_api_info",
                         "create_api_case",
+                        "search_api_cases",
+                        "get_api_case_detail_full",
+                        "update_api_case",
+                        "preview_delete_api_case_impact",
+                        "delete_api_case",
                         "add_api_case_step",
+                        "list_api_case_steps",
+                        "sort_api_case_steps",
+                        "refresh_api_case_step_from_api_info",
+                        "list_api_case_scenarios",
+                        "create_api_case_scenario",
                         "update_api_case_scenario",
+                        "copy_api_case_scenario",
                         "get_api_assertion_methods",
+                        "get_api_assertion_schema",
+                        "generate_api_case_scenario_assertions",
+                        "generate_api_case_scenario_extractors",
+                        "auto_generate_api_case_scenario_schema",
                         "create_complete_api_case",
+                        "run_api_info",
                         "run_api_case",
+                        "run_api_case_batch",
                         "get_api_case_run_result",
+                        "analyze_api_case_failure",
+                        "get_api_case_schema",
+                    ],
+                },
+                {
+                    "name": "ui_automation",
+                    "description": "UI 页面、元素、页面步骤、UI case、方法树、执行和结果分析",
+                    "tools": [
+                        "get_ui_automation_schema",
+                        "get_ui_operation_methods",
+                        "get_ui_assertion_methods",
+                        "get_ui_public_assertion_methods",
+                        "list_ui_public_variables",
+                        "create_ui_public_variable",
+                        "update_ui_public_variable",
+                        "set_ui_public_variable_status",
+                        "search_ui_pages",
+                        "get_ui_page_detail",
+                        "create_ui_page",
+                        "update_ui_page",
+                        "search_ui_elements",
+                        "get_ui_element_detail",
+                        "create_ui_element",
+                        "update_ui_element",
+                        "set_ui_element_iframe",
+                        "test_ui_element",
+                        "search_ui_page_steps",
+                        "get_ui_page_step_detail_full",
+                        "create_ui_page_step",
+                        "update_ui_page_step",
+                        "copy_ui_page_step",
+                        "run_ui_page_step",
+                        "list_ui_page_step_details",
+                        "create_ui_page_step_detail",
+                        "update_ui_page_step_detail",
+                        "sort_ui_page_step_details",
+                        "search_ui_cases",
+                        "get_ui_case_detail_full",
+                        "create_ui_case",
+                        "update_ui_case",
+                        "copy_ui_case",
+                        "add_ui_case_step",
+                        "list_ui_case_steps",
+                        "sort_ui_case_steps",
+                        "refresh_ui_case_step_cache_data",
+                        "run_ui_case",
+                        "run_ui_case_batch",
+                        "get_ui_case_run_result",
+                        "preview_delete_ui_page_impact",
+                        "delete_ui_page",
+                        "preview_delete_ui_element_impact",
+                        "delete_ui_element",
+                        "preview_delete_ui_page_step_impact",
+                        "delete_ui_page_step",
+                        "preview_delete_ui_page_step_detail_impact",
+                        "delete_ui_page_step_detail",
+                        "preview_delete_ui_case_impact",
+                        "delete_ui_case",
+                        "preview_delete_ui_case_step_impact",
+                        "delete_ui_case_step",
+                    ],
+                },
+                {
+                    "name": "pytest_automation",
+                    "description": "单元自动化 Pytest 项目绑定、仓库同步、文件读写、执行和安全推送",
+                    "tools": [
+                        "get_pytest_automation_schema",
+                        "list_pytest_products",
+                        "get_pytest_product_detail",
+                        "create_pytest_product",
+                        "update_pytest_product",
+                        "sync_pytest_products_from_repo",
+                        "read_pytest_product_init_file",
+                        "preview_update_pytest_product_init_file_impact",
+                        "update_pytest_product_init_file",
+                        "preview_push_pytest_repo_impact",
+                        "push_pytest_repo",
+                        "search_pytest_cases",
+                        "get_pytest_case_detail",
+                        "sync_pytest_cases",
+                        "read_pytest_case_file",
+                        "preview_update_pytest_case_file_impact",
+                        "update_pytest_case_file",
+                        "run_pytest_case",
+                        "get_pytest_case_run_result",
+                        "preview_delete_pytest_product_impact",
+                        "delete_pytest_product",
+                        "preview_delete_pytest_case_impact",
+                        "delete_pytest_case",
                     ],
                 },
                 {
@@ -410,6 +534,8 @@ def mcp_asgi_app():
     from src.mcp_server.tools.system_file import register_system_file_tools
     from src.mcp_server.tools.system_variable import register_system_variable_tools
     from src.mcp_server.tools.test_report import register_test_report_tools
+    from src.mcp_server.tools.ui_automation import register_ui_automation_tools
+    from src.mcp_server.tools.pytest_automation import register_pytest_automation_tools
 
     try:
         mcp = FastMCP(
@@ -525,6 +651,53 @@ def mcp_asgi_app():
         )
         return {"items": [_case_config_summary(item) for item in queryset.order_by("sort", "id")]}
 
+    @mcp.resource("mango://ui-page/{page_id}")
+    def get_ui_page_resource(page_id: str) -> dict:
+        """读取 UI 页面和元素资源。"""
+        from django.forms import model_to_dict
+        from src.auto_test.auto_ui.models import Page, PageElement
+
+        page = Page.objects.get(id=int(page_id))
+        elements = [
+            model_to_dict(item)
+            for item in PageElement.objects.filter(page_id=page.id).order_by("id")
+        ]
+        return {"page": model_to_dict(page), "elements": elements}
+
+    @mcp.resource("mango://ui-page-step/{page_step_id}")
+    def get_ui_page_step_resource(page_step_id: str) -> dict:
+        """读取 UI 页面步骤、流程图和步骤详情资源。"""
+        from django.forms import model_to_dict
+        from src.auto_test.auto_ui.models import PageSteps, PageStepsDetailed
+
+        page_step = PageSteps.objects.get(id=int(page_step_id))
+        details = [
+            model_to_dict(item)
+            for item in PageStepsDetailed.objects.filter(page_step_id=page_step.id).order_by("step_sort", "id")
+        ]
+        return {"page_step": model_to_dict(page_step), "details": details}
+
+    @mcp.resource("mango://ui-case/{case_id}")
+    def get_ui_case_resource(case_id: str) -> dict:
+        """读取完整 UI case 树资源。"""
+        from src.mcp_server.tools.ui_automation import _case_tree
+
+        return _case_tree(int(case_id), include_result_data=True)
+
+    @mcp.resource("mango://pytest-product/{product_id}")
+    def get_pytest_product_resource(product_id: str) -> dict:
+        """读取 Pytest 项目绑定资源。"""
+        from src.mcp_server.tools.pytest_automation import _product_detail
+
+        return _product_detail(int(product_id))
+
+    @mcp.resource("mango://pytest-case/{case_id}")
+    def get_pytest_case_resource(case_id: str) -> dict:
+        """读取 Pytest case 元信息资源，不直接返回文件内容。"""
+        from src.mcp_server.tools.pytest_automation import _case_detail
+
+        return _case_detail(int(case_id))
+
     @mcp.prompt()
     def api_case_from_curl(curl_command: str, project_product_name: str = "", module_name: str = "") -> str:
         """生成根据 curl 创建 API case 的标准提示词。"""
@@ -571,6 +744,8 @@ def mcp_asgi_app():
 
     register_project_context_tools(mcp)
     register_api_automation_tools(mcp)
+    register_ui_automation_tools(mcp)
+    register_pytest_automation_tools(mcp)
     register_api_auth_config_tools(mcp)
     register_data_factory_tools(mcp)
     register_system_variable_tools(mcp)

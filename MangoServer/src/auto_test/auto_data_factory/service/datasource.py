@@ -5,11 +5,12 @@
 from urllib.parse import quote_plus
 
 from src.auto_test.auto_data_factory.models import DataFactoryDatasourceBinding
-from src.auto_test.auto_system.models import Database
+from src.auto_test.auto_system.models import Database, TestObject
 from src.auto_test.auto_system.service.factory import func_test_object_value
 from src.enums.tools_enum import AutoTypeEnum, StatusEnum
 from src.enums.tools_enum import DatabaseTypeEnum
 from src.exceptions import ToolsError
+from src.tools.database import SqlPermissionGuard
 
 
 def is_missing_value(value) -> bool:
@@ -50,8 +51,9 @@ class DataFactoryDatasource:
         except ImportError as error:
             raise ToolsError(300, "请先安装 SQLAlchemy 依赖后再使用数据工厂") from error
 
-        engine = cls.create_engine(database)
+        engine = None
         try:
+            engine = cls.create_engine(database)
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
             return {
@@ -65,7 +67,8 @@ class DataFactoryDatasource:
         except Exception as error:
             raise ToolsError(300, f"数据源连接失败：{error}") from error
         finally:
-            engine.dispose()
+            if engine:
+                engine.dispose()
 
 
 class DataFactoryDatasourceResolver:
@@ -86,6 +89,18 @@ class DataFactoryDatasourceResolver:
             auto_type=AutoTypeEnum.API.value,
         )
         return test_object.id
+
+    @classmethod
+    def require_permission(cls, test_object_id: int | None, write: bool = False) -> None:
+        if not test_object_id:
+            raise ToolsError(300, "需要指定测试环境后才能校验数据库权限")
+        test_object = TestObject.objects.get(id=test_object_id)
+        sql = "INSERT INTO data_factory_permission_check VALUES (1)" if write else "SELECT 1"
+        SqlPermissionGuard.check(
+            sql,
+            allow_query=test_object.db_c_status == StatusEnum.SUCCESS.value,
+            allow_write=test_object.db_rud_status == StatusEnum.SUCCESS.value,
+        )
 
     @classmethod
     def resolve_by_env(cls, entity, test_env: int | None) -> Database:

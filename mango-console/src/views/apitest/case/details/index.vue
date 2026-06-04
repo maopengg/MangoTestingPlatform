@@ -72,6 +72,7 @@
                           label: 'Key',
                           placeholder: '请输入缓存key,示例：key1,key2',
                         },
+                        sqlDatasourceField,
                         { field: 'value', label: 'Sql语句', placeholder: '请输入sql语句' },
                       ]"
                       :on-delete-item="(index) => removeFrontSql1(pageData.record.front_sql, index)"
@@ -180,6 +181,7 @@
                           label: 'Key（不会显示到缓存数据中）',
                           placeholder: '请输入key，可以为空',
                         },
+                        sqlDatasourceField,
                         { field: 'value', label: 'Sql语句', placeholder: '请输入sql语句' },
                       ]"
                       :on-delete-item="
@@ -301,6 +303,7 @@
                                         label: 'Key',
                                         placeholder: '请输入缓存key',
                                       },
+                                      sqlDatasourceField,
                                       {
                                         field: 'value',
                                         label: 'Sql语句',
@@ -483,9 +486,16 @@
                                       }}
                                       秒</span
                                     >
-                                    <span v-if="item.result_data?.error_message"
-                                      >失败原因：{{ item.result_data?.error_message }}</span
+                                    <a-tooltip
+                                      v-if="item.result_data?.error_message"
+                                      :content="item.result_data?.error_message"
+                                      position="top"
+                                      mini
                                     >
+                                      <span class="api-case-failure-reason">
+                                        失败原因：{{ item.result_data?.error_message }}
+                                      </span>
+                                    </a-tooltip>
                                   </a-space>
                                 </div>
                               </a-tab-pane>
@@ -699,6 +709,7 @@
                                         label: 'Key',
                                         placeholder: '请输入缓存key，示例：key1,key2',
                                       },
+                                      sqlDatasourceField,
                                       {
                                         field: 'value',
                                         label: 'Sql语句',
@@ -1039,13 +1050,11 @@
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'module'">
-            <a-cascader
+            <ProductModuleSelect
               v-model="item.value"
-              :options="data.productModuleName"
+              :project-product-id="pageData.record.project_product?.id || route.query.project_product"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              @change="getModuleApi(item.value)"
+              @change="getModuleApi"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'api_info'">
@@ -1104,7 +1113,6 @@
     putApiPutRefreshApiInfo,
   } from '@/api/apitest/case_detailed'
   import { getApiInfoName } from '@/api/apitest/info'
-  import { getUserProductAllModuleName } from '@/api/system/product'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
@@ -1123,7 +1131,8 @@
   import TipMessage from '@/components/feedback/TipMessage.vue' // 引入断言结果组件
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
-  import { getDataFactoryCaseConfig } from '@/api/data-factory'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import { getDataFactoryCaseConfig, getDataFactoryDatasourceAlias } from '@/api/data-factory'
 
   const userStore = useUserStore()
   const FRONT_FUNC_TEMPLATE = `def func(self, request):
@@ -1177,7 +1186,6 @@
     results: null,
     selectDataObj: [],
     data: [],
-    productModuleName: [],
     apiList: [],
     ass: [],
     textAss: [],
@@ -1198,6 +1206,7 @@
     collapseLoading: false, // 列表整体 loading
     caseDetailTabLoading: false,
     expandingIndex: -1, // 正在展开中的 item index，-1 表示无
+    datasourceAliasOptions: [],
   })
 
   const caseRunning = ref(false)
@@ -1222,6 +1231,14 @@
   })
   const dataFactoryConfigCache = new Map<number, boolean>()
   const codeEditorSnapshots = new Map<string, string>()
+
+  const sqlDatasourceField = computed(() => ({
+    field: 'datasource_alias',
+    label: '数据源',
+    type: 'select',
+    placeholder: '单库可不选',
+    options: data.datasourceAliasOptions,
+  }))
 
   function formatMethodTitle(method: any) {
     const methods = Array.isArray(enumStore.method) ? enumStore.method : []
@@ -1485,7 +1502,7 @@
 
   function clickAdd(item: any = null) {
     if ('10' === data.tabsKey) {
-      item['front_sql'].push({ key: '', value: '' })
+      item['front_sql'].push({ key: '', value: '', datasource_alias: null })
     } else if ('31' === data.tabsKey) {
       item['ass_jsonpath'].push({ actual: '', method: '', expect: null })
     } else if ('32' === data.tabsKey) {
@@ -1493,7 +1510,7 @@
     } else if ('40' === data.tabsKey) {
       item['posterior_response'].push({ key: '', value: '' })
     } else if ('41' === data.tabsKey) {
-      item['posterior_sql'].push({ key: '', value: '' })
+      item['posterior_sql'].push({ key: '', value: '', datasource_alias: null })
     } else if ('44' === data.tabsKey) {
       item['posterior_response_text'].push({ key: '', value: '' })
     } else if ('12' === data.tabsKey) {
@@ -1509,11 +1526,11 @@
     if (data.apiSonType === '11') {
       pageData.record.front_custom.push({ key: '', value: '' })
     } else if (data.apiSonType === '12') {
-      pageData.record.front_sql.push({ key: '', value: '' })
+      pageData.record.front_sql.push({ key: '', value: '', datasource_alias: null })
     } else if (data.apiSonType === '14') {
       dataFactoryPanelRef.value?.open()
     } else if (data.apiSonType === '31') {
-      pageData.record.posterior_sql.push({ key: '', value: '' })
+      pageData.record.posterior_sql.push({ key: '', value: '', datasource_alias: null })
     }
   }
 
@@ -1929,18 +1946,24 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  function onProductModuleName() {
-    getUserProductAllModuleName(pageData.record.project_product?.project?.id)
-      .then((res) => {
-        data.productModuleName = res.data
-      })
-      .catch(console.log)
-  }
-
   function getModuleApi(moduleId: number) {
     getApiInfoName(moduleId)
       .then((res) => {
         data.apiList = res.data
+      })
+      .catch(console.log)
+  }
+
+  function loadDatasourceAliases() {
+    getDataFactoryDatasourceAlias({
+      project_product: route.query.project_product,
+      status: 1,
+    })
+      .then((res) => {
+        data.datasourceAliasOptions = (res.data || []).map((item: any) => ({
+          label: item.name,
+          value: item.id,
+        }))
       })
       .catch(console.log)
   }
@@ -2094,8 +2117,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     nextTick(async () => {
       doRefresh()
       doRefreshHeaders(route.query.project_product)
-      onProductModuleName()
       getCacheDataKeyValue()
+      loadDatasourceAliases()
     })
   })
 
@@ -2223,6 +2246,16 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   .api-case-panel-body :deep(.arco-tabs-content) {
     min-height: 0;
+  }
+
+  .api-case-failure-reason {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--m-text-2);
+    line-height: 22px;
+    word-break: break-word;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   .scenario-actions {

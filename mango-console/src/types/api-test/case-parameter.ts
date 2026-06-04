@@ -10,6 +10,7 @@ export interface ApiSqlAssertionItem {
   actual: string
   method: string
   expect: string
+  datasource_alias?: number | null
 }
 
 export interface ApiGeneralAssertionParameter {

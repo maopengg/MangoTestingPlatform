@@ -210,13 +210,20 @@ export const tableColumns = useTableColumn([
     width: 110,
   },
   {
+    title: '授权来源',
+    key: 'auth_source',
+    dataIndex: 'auth_source',
+    align: 'left',
+    width: 220,
+  },
+  {
     title: '刷新方式',
     key: 'refresh_mode',
     dataIndex: 'refresh_mode',
     width: 160,
   },
   {
-    title: '定时策略',
+    title: '刷新策略',
     key: 'time_task',
     dataIndex: 'time_task',
     align: 'left',

@@ -35,6 +35,10 @@ class ToolsError(MangoServerError):
     pass
 
 
+class DataFactoryError(MangoServerError):
+    pass
+
+
 class PerfError(MangoServerError):
     pass
 

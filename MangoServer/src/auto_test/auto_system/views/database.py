@@ -3,17 +3,15 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
-from mangotools.database import MysqlConnect
-from mangotools.exceptions import MangoToolsError
-from mangotools.models import MysqlConingModel
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.auto_test.auto_data_factory.service.datasource import DataFactoryDatasource
 from src.auto_test.auto_system.models import Database
 from src.auto_test.auto_system.views.test_object import TestObjectSerializersC
-from src.enums.tools_enum import DatabaseTypeEnum, StatusEnum
+from src.enums.tools_enum import StatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -65,13 +63,6 @@ class DatabaseViews(ViewSet):
         :param request:
         :return:
         """
-        if request.data.get('status') == StatusEnum.SUCCESS.value:
-            obj = self.model.objects.filter(test_object=request.data.get('environment')).values('status')
-            if any(item['status'] == 1 for item in obj):
-                # if self.model.objects \
-                #         .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value) \
-                #         and request.data.get('status') == StatusEnum.SUCCESS.value:
-                return ResponseData.fail(RESPONSE_MSG_0119, )
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         obj.save()
@@ -81,21 +72,8 @@ class DatabaseViews(ViewSet):
     @error_response('system')
     def test(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('id'))
-        if obj.db_type != DatabaseTypeEnum.MYSQL.value:
-            db_type_name = DatabaseTypeEnum.obj().get(obj.db_type, obj.db_type)
-            return ResponseData.fail((300, f'{db_type_name} 连接测试暂未支持'))
-
         try:
-            mysql_conn = MysqlConnect(MysqlConingModel(
-                host=obj.host,
-                port=obj.port,
-                user=obj.user,
-                password=obj.password,
-                database=obj.name
-            ))
-        except MangoToolsError:
+            DataFactoryDatasource.test_connection(obj)
+        except Exception:
             return ResponseData.fail(RESPONSE_MSG_0123, )
-        if mysql_conn.connection.open:
-            return ResponseData.success(RESPONSE_MSG_0127, )
-        else:
-            return ResponseData.fail(RESPONSE_MSG_0123, )
+        return ResponseData.success(RESPONSE_MSG_0127, )

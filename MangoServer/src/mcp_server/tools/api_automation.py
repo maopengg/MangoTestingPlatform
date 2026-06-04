@@ -31,7 +31,13 @@ from src.enums.tools_enum import (
     StatusEnum,
     TestCaseTypeEnum,
 )
-from src.mcp_server.common import current_user, fail, ok
+from src.mcp_server.common import (
+    create_dangerous_action_preview,
+    current_user,
+    fail,
+    ok,
+    validate_dangerous_action_confirmation,
+)
 
 
 FILE_UPLOAD_USAGE = {
@@ -110,6 +116,22 @@ def _validate_file_payload(file_payload: Any) -> str | None:
                 return "file 中的请求文件字段名不能为空。"
             if not _validate_file_value(field_value):
                 return "file 字段值必须使用 ${{get_file(已上传文件名)}} 格式，不能直接传本地路径、URL、裸文件名或二进制内容。"
+    return None
+
+
+def _validate_api_info_url_path(url: str | None) -> str | None:
+    if url is None:
+        return None
+    if not isinstance(url, str) or not url.strip():
+        return "ApiInfo.url 必须是非空路径字符串，例如 /clm/api/category/update。"
+    value = url.strip()
+    parsed = urlparse(value)
+    if parsed.scheme or parsed.netloc or value.startswith("//"):
+        return "ApiInfo.url 只允许保存路径，不允许包含协议、域名或端口；请传 /path，例如 /clm/api/category/update。"
+    if not value.startswith("/"):
+        return "ApiInfo.url 必须以 / 开头，只保存请求路径，例如 /clm/api/category/update。"
+    if parsed.query or parsed.fragment:
+        return "ApiInfo.url 只保存路径，不保存 query 或 fragment；query 参数请放到 params 字段。"
     return None
 
 
@@ -308,6 +330,59 @@ def _case_tree(case_id: int, include_result_data: bool = True) -> dict:
     return {"case": case_data, "steps": steps}
 
 
+def _api_case_delete_impact(case_id: int) -> dict:
+    from src.auto_test.auto_data_factory.models import DataFactoryCaseConfig
+    from src.auto_test.auto_system.models import TasksDetails, TestSuiteDetails
+    from src.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+
+    case = ApiCase.objects.select_related("project_product", "module", "case_people").get(id=case_id)
+    step_ids = list(ApiCaseDetailed.objects.filter(case_id=case_id).values_list("id", flat=True))
+    scenario_ids = list(
+        ApiCaseDetailedParameter.objects.filter(case_detailed_id__in=step_ids).values_list("id", flat=True)
+    )
+    case_factory_count = DataFactoryCaseConfig.objects.filter(
+        source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
+        source_id=case_id,
+    ).count()
+    scenario_factory_count = DataFactoryCaseConfig.objects.filter(
+        source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+        source_id__in=scenario_ids,
+    ).count()
+    task_detail_count = TasksDetails.objects.filter(api_case_id=case_id).count()
+    report_detail_count = TestSuiteDetails.objects.filter(
+        type=TestCaseTypeEnum.API.value,
+        case_id=case_id,
+    ).count()
+    return {
+        "case": {
+            "id": case.id,
+            "name": case.name,
+            "project_product_id": case.project_product_id,
+            "project_product_name": case.project_product.name if case.project_product else None,
+            "module_id": case.module_id,
+            "module_name": case.module.name if case.module else None,
+            "case_people_id": case.case_people_id,
+            "case_people_name": case.case_people.name if case.case_people else None,
+            "status": case.status,
+        },
+        "will_delete": {
+            "api_case": 1,
+            "api_case_steps": len(step_ids),
+            "api_case_scenarios": len(scenario_ids),
+            "case_data_factory_configs": case_factory_count,
+            "scenario_data_factory_configs": scenario_factory_count,
+        },
+        "references": {
+            "task_detail_count": task_detail_count,
+            "historical_report_detail_count": report_detail_count,
+        },
+        "blocking_risks": [
+            "如果 task_detail_count > 0，模型会阻止删除，请先解除定时任务详情绑定。",
+            "历史测试报告明细按 case_id 保存，不会随 case 删除自动删除。",
+        ],
+    }
+
+
 def _create_case_step(case_id: int, api_info_id: int, case_sort: int | None = None) -> dict:
     api_info_obj = ApiInfo.objects.get(id=api_info_id)
     if case_sort is None:
@@ -367,6 +442,28 @@ def _find_json_paths(data: Any, prefix: str = "$", limit: int = 20) -> list[tupl
     return paths[:limit]
 
 
+def _find_same_api_header(project_product_id: int, key: str) -> ApiHeaders | None:
+    return (
+        ApiHeaders.objects.select_related("project_product")
+        .filter(project_product_id=project_product_id, key__iexact=key)
+        .order_by("-status", "-id")
+        .first()
+    )
+
+
+def _api_header_summary(header: ApiHeaders) -> dict:
+    project_product = header.project_product
+    return {
+        "id": header.id,
+        "project_product_id": header.project_product_id,
+        "project_product_name": project_product.name if project_product else None,
+        "api_client_type": getattr(project_product, "api_client_type", None) if project_product else None,
+        "key": header.key,
+        "value": header.value,
+        "status": header.status,
+    }
+
+
 def register_api_automation_tools(mcp):
     @mcp.tool()
     def list_api_headers(project_product_id: int, enabled_only: bool = False) -> dict:
@@ -389,8 +486,101 @@ def register_api_automation_tools(mcp):
         )
 
     @mcp.tool()
-    def create_api_header(project_product_id: int, key: str, value: str, status: int = 0) -> dict:
-        """创建项目产品公共请求头。"""
+    def preview_create_api_header_impact(project_product_id: int, key: str, value: str, status: int = 0) -> dict:
+        """预览创建项目产品公共请求头的影响。
+
+        公共请求头会被 API case/front_headers 或场景 headers 复用。只有接口执行必需的认证、租户、
+        CSRF、业务网关等请求头才允许创建；accept-language、user-agent、sec-*、traceparent 等
+        非必须浏览器噪声请求头不要添加。预览后必须由用户手动确认，才能调用 create_api_header。
+        创建前会按同一项目产品和请求头 key 做查重；已存在时应复用已有 header_id，不再新增。
+        """
+        duplicate = _find_same_api_header(project_product_id, key)
+        if duplicate and duplicate.value == value:
+            return ok(
+                {
+                    "action": "reuse_existing_header",
+                    "header": _api_header_summary(duplicate),
+                    "next_step": "该项目产品下已存在相同请求头，请直接复用这个 header_id，不要重复创建。",
+                },
+                "公共请求头已存在，无需新增",
+            )
+        if duplicate:
+            return fail(
+                "该项目产品下已存在相同 key 的公共请求头，请优先复用已有 header_id；如确需变更，请人工确认后使用 update_api_header。",
+                "API_HEADER_ALREADY_EXISTS",
+                {
+                    "existing_header": _api_header_summary(duplicate),
+                    "requested": {
+                        "project_product_id": project_product_id,
+                        "key": key,
+                        "value_preview": value[:80],
+                        "status": status,
+                    },
+                },
+            )
+        return ok(
+            create_dangerous_action_preview(
+                "create_api_header",
+                f"{project_product_id}:{key}",
+                f"CREATE_API_HEADER:{project_product_id}:{key}",
+                {
+                    "project_product_id": project_product_id,
+                    "key": key,
+                    "value_preview": value[:80],
+                    "status": status,
+                    "duplicate_header": None,
+                    "manual_check_required": [
+                        "请确认该请求头是接口执行必需项。",
+                        "非必须请求头不允许添加到 ApiHeaders 公共请求头池。",
+                        "浏览器自动生成的 sec-*、priority、traceparent、user-agent 等通常不要添加。",
+                    ],
+                },
+            ),
+            "已生成公共请求头创建预览，请用户确认后再创建",
+        )
+
+    @mcp.tool()
+    def create_api_header(
+        project_product_id: int,
+        key: str,
+        value: str,
+        status: int = 0,
+        preview_token: str | None = None,
+        confirm_text: str | None = None,
+    ) -> dict:
+        """确认后创建项目产品公共请求头。
+
+        必须先调用 preview_create_api_header_impact，并由用户确认该 header 是接口执行必需请求头。
+        非必须请求头不允许创建；不要把浏览器噪声请求头写入公共请求头池。
+        """
+        error = validate_dangerous_action_confirmation(
+            "create_api_header",
+            f"{project_product_id}:{key}",
+            preview_token,
+            confirm_text,
+        )
+        if error:
+            return error
+        duplicate = _find_same_api_header(project_product_id, key)
+        if duplicate and duplicate.value == value:
+            return ok(
+                {
+                    "header_id": duplicate.id,
+                    **_api_header_summary(duplicate),
+                    "action": "reuse_existing_header",
+                },
+                "公共请求头已存在，已返回已有 header_id，未重复创建",
+            )
+        if duplicate:
+            return fail(
+                "创建前发现该项目产品下已存在相同 key 的公共请求头，已阻止重复创建。",
+                "API_HEADER_ALREADY_EXISTS",
+                {
+                    "existing_header": _api_header_summary(duplicate),
+                    "requested_value_preview": value[:80],
+                    "next_step": "请复用 existing_header.id；如确需修改公共请求头，请使用 update_api_header。",
+                },
+            )
         data = ApiHeadersCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -430,7 +620,7 @@ def register_api_automation_tools(mcp):
         page_size: int = 50,
     ) -> dict:
         """查询 API 全局变量。type: 0=自定义, 1=SQL。"""
-        queryset = ApiPublic.objects.select_related("project_product").filter(project_product_id=project_product_id)
+        queryset = ApiPublic.objects.select_related("project_product", "datasource_alias").filter(project_product_id=project_product_id)
         if enabled_only:
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
         if type is not None:
@@ -457,6 +647,8 @@ def register_api_automation_tools(mcp):
                 "name": item.name,
                 "key": item.key,
                 "value": item.value,
+                "datasource_alias_id": item.datasource_alias_id,
+                "datasource_alias_name": item.datasource_alias.name if item.datasource_alias_id else None,
                 "status": item.status,
             }
             for item in queryset.order_by("test_env", "type", "-id")[offset : offset + page_size]
@@ -471,11 +663,14 @@ def register_api_automation_tools(mcp):
         name: str,
         key: str,
         value: str,
+        datasource_alias_id: int | None = None,
         status: int = 0,
     ) -> dict:
-        """创建 API 全局变量。test_env_id 必填；创建前可调用 list_test_environments 查询可用环境。type: 0=自定义, 1=SQL。"""
+        """创建 API 全局变量。type: 0=自定义, 1=SQL；SQL 类型必须先调用 list_data_factory_datasource_aliases 查询 datasource_alias_id。"""
         if type not in ApiPublicTypeEnum.get_key_list():
             return fail("API 全局变量类型只支持 0=自定义、1=SQL。", "API_PUBLIC_TYPE_INVALID")
+        if type == ApiPublicTypeEnum.SQL.value and not datasource_alias_id:
+            return fail("SQL API 全局变量必须传 datasource_alias_id。", "API_PUBLIC_DATASOURCE_ALIAS_REQUIRED")
         data = ApiPublicCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -484,6 +679,7 @@ def register_api_automation_tools(mcp):
                 "name": name,
                 "key": key,
                 "value": value,
+                "datasource_alias": datasource_alias_id,
                 "status": status,
             }
         )
@@ -497,9 +693,10 @@ def register_api_automation_tools(mcp):
         name: str | None = None,
         key: str | None = None,
         value: str | None = None,
+        datasource_alias_id: int | None = None,
         status: int | None = None,
     ) -> dict:
-        """更新 API 全局变量。"""
+        """更新 API 全局变量。SQL 类型需要 datasource_alias_id；自定义类型可传空清除。"""
         payload: dict[str, Any] = {"id": public_variable_id}
         for field, field_value in {
             "type": type,
@@ -507,6 +704,7 @@ def register_api_automation_tools(mcp):
             "name": name,
             "key": key,
             "value": value,
+            "datasource_alias": datasource_alias_id,
             "status": status,
         }.items():
             if field_value is not None:
@@ -574,7 +772,7 @@ def register_api_automation_tools(mcp):
         file: dict | list | None = None,
         type: int = 1,
     ) -> dict:
-        """创建 API 接口定义。params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
+        """创建 API 接口定义。url 只能传路径，不能传域名；params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
 
         文件上传接口的 file 字段必须先调用 upload_system_file 上传真实文件，再使用
         [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用。
@@ -584,6 +782,9 @@ def register_api_automation_tools(mcp):
         """
         if method not in MethodEnum.get_key_list():
             return fail("请求方法不存在", "METHOD_NOT_FOUND", {"method": method})
+        url_error = _validate_api_info_url_path(url)
+        if url_error:
+            return fail(url_error, "INVALID_API_INFO_URL", {"url": url})
         file_error = _validate_file_payload(file)
         if file_error:
             return fail(file_error, "INVALID_FILE_FORMAT")
@@ -618,6 +819,9 @@ def register_api_automation_tools(mcp):
         parsed = parse(curl_command)
         url_components = urlparse(parsed.url)
         path = url_components.path
+        url_error = _validate_api_info_url_path(path)
+        if url_error:
+            return fail(url_error, "INVALID_API_INFO_URL", {"parsed_url": parsed.url, "path": path})
         payload: dict[str, Any] = {
             "project_product": project_product_id,
             "module": module_id,
@@ -644,6 +848,7 @@ def register_api_automation_tools(mcp):
     def update_api_info(
         api_info_id: int,
         name: str | None = None,
+        module_id: int | None = None,
         url: str | None = None,
         method: int | None = None,
         params: str | dict | list | None = None,
@@ -651,18 +856,22 @@ def register_api_automation_tools(mcp):
         json_body: str | dict | list | None = None,
         file: dict | list | None = None,
     ) -> dict:
-        """更新 API 接口定义。
+        """更新 API 接口定义。module_id 可修改接口所属模块；url 只能传路径，不能传域名。
 
         文件上传接口的 file 字段必须先调用 upload_system_file 上传真实文件，再使用
         [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；不能直接传本地路径、URL、裸文件名或二进制内容。
         详细格式见 get_api_case_schema.file_upload_usage。
         """
+        url_error = _validate_api_info_url_path(url)
+        if url_error:
+            return fail(url_error, "INVALID_API_INFO_URL", {"url": url})
         file_error = _validate_file_payload(file)
         if file_error:
             return fail(file_error, "INVALID_FILE_FORMAT")
         payload: dict[str, Any] = {"id": api_info_id}
         for key, value in {
             "name": name,
+            "module": module_id,
             "url": url,
             "method": method,
             "params": _json_string(params),
@@ -764,6 +973,7 @@ def register_api_automation_tools(mcp):
         scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端。
         接口/组件层用于单接口、组件能力、契约、边界、异常校验，Integration用于跨模块/跨服务/数据库/消息/第三方协作验证，
         E2E用于核心用户路径和完整业务闭环验证。scenario_tags 只放冒烟、回归、主流程等辅助标签。
+        如果用例不涉及 SQL 前后置、SQL 断言或数据工厂造数/清理，可默认把 6=线上巡检 加入 scenario_tags。
         未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
         """
         tag_error = _validate_scenario_tags(scenario_tags)
@@ -794,6 +1004,8 @@ def register_api_automation_tools(mcp):
     def update_api_case(
         case_id: int,
         name: str | None = None,
+        module_id: int | None = None,
+        case_people_id: int | None = None,
         level: int | None = None,
         scenario_layer: int | None = None,
         scenario_type: int | None = None,
@@ -804,13 +1016,15 @@ def register_api_automation_tools(mcp):
         front_headers: list[int] | None = None,
         posterior_sql: list | None = None,
     ) -> dict:
-        """更新 API case 主体配置。复杂字段格式见 get_api_case_schema.api_case_fields。"""
+        """更新 API case 主体配置。module_id 可修改所属模块，case_people_id 可修改负责人；复杂字段格式见 get_api_case_schema.api_case_fields。"""
         tag_error = _validate_scenario_tags(scenario_tags)
         if tag_error:
             return fail(tag_error, "INVALID_SCENARIO_TAGS")
         payload: dict[str, Any] = {"id": case_id}
         for key, value in {
             "name": name,
+            "module": module_id,
+            "case_people": case_people_id,
             "level": level,
             "scenario_layer": scenario_layer,
             "scenario_type": scenario_type,
@@ -825,6 +1039,43 @@ def register_api_automation_tools(mcp):
                 payload[key] = value
         data_obj = ApiCaseCRUD.inside_put(case_id, payload)
         return ok({"case_id": data_obj["id"], **data_obj}, "API case 更新成功")
+
+    @mcp.tool()
+    def preview_delete_api_case_impact(case_id: int) -> dict:
+        """预览删除 API case 的影响。删除属于危险操作，必须先预览，再由用户二次确认。"""
+        return ok(
+            create_dangerous_action_preview(
+                "delete_api_case",
+                case_id,
+                f"DELETE_API_CASE:{case_id}",
+                _api_case_delete_impact(case_id),
+            ),
+            "已生成 API case 删除影响预览",
+        )
+
+    @mcp.tool()
+    def delete_api_case(
+        case_id: int,
+        preview_token: str | None = None,
+        confirm_text: str | None = None,
+    ) -> dict:
+        """确认后删除 API case。
+
+        必须先调用 preview_delete_api_case_impact。确认后会删除该 case 下的步骤、场景参数，
+        并通过模型 delete 逻辑清理 API case 与场景级数据工厂绑定；如果仍有关联定时任务详情，删除会被阻止。
+        """
+        error = validate_dangerous_action_confirmation("delete_api_case", case_id, preview_token, confirm_text)
+        if error:
+            return error
+        try:
+            with transaction.atomic():
+                before = _api_case_delete_impact(case_id)
+                for step in ApiCaseDetailed.objects.filter(case_id=case_id).order_by("id"):
+                    step.delete()
+                ApiCaseCRUD.inside_delete(case_id)
+        except Exception as exc:
+            return fail(str(exc), "DELETE_API_CASE_FAILED")
+        return ok({"case_id": case_id, "deleted": before.get("will_delete", {})}, "API case 删除成功")
 
     @mcp.tool()
     def add_api_case_step(case_id: int, api_info_id: int, case_sort: int | None = None) -> dict:
@@ -1101,19 +1352,41 @@ def register_api_automation_tools(mcp):
         test_env_id: int | None = None,
         user_id: int | None = None,
     ) -> dict:
-        """一键创建公共请求头、接口定义、API case、步骤、场景，并可选立即执行。
+        """一键创建接口定义、API case、步骤、场景，并可选立即执行。
 
         未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
-        headers 会创建 ApiHeaders 记录；case_front_headers 为空时默认把本次创建的 headers 全部绑定为 case.front_headers。
+        出于公共请求头安全控制，本工具不再直接创建 ApiHeaders。需要请求头时，请先对每个必需 header
+        调用 preview_create_api_header_impact 并由用户手动确认，再调用 create_api_header 创建，最后把返回 id
+        通过 case_front_headers 或 scenarios[].headers 传入。
         如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
         api.file 和 scenarios[].file 如需上传文件，必须先调用 upload_system_file 上传真实文件，再使用
         [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；不能直接传本地路径、URL、裸文件名或二进制内容。
         详细格式见 get_api_case_schema.file_upload_usage。
         scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端；scenario_tags 只放辅助标签。
+        如果完整用例不涉及 SQL 前后置、SQL 断言或数据工厂造数/清理，可默认把 6=线上巡检 加入 scenario_tags。
         """
         tag_error = _validate_scenario_tags(scenario_tags)
         if tag_error:
             return fail(tag_error, "INVALID_SCENARIO_TAGS")
+        if headers:
+            return fail(
+                "create_complete_api_case 不允许直接创建公共请求头。请先逐个调用 preview_create_api_header_impact，"
+                "由用户确认是接口执行必需请求头后，再调用 create_api_header 创建，并通过 case_front_headers 或 scenarios[].headers 绑定。",
+                "API_HEADER_CONFIRM_REQUIRED",
+                {
+                    "headers_count": len(headers),
+                    "required_flow": [
+                        "list_api_headers 查询是否已有可复用请求头",
+                        "preview_create_api_header_impact 预览新增请求头影响",
+                        "用户确认该请求头为接口执行必需项",
+                        "create_api_header 传回 preview_token/confirm_text 创建",
+                        "create_complete_api_case 使用 case_front_headers 绑定已创建请求头 ID",
+                    ],
+                },
+            )
+        api_url_error = _validate_api_info_url_path(api.get("url"))
+        if api_url_error:
+            return fail(api_url_error, "INVALID_API_INFO_URL", {"url": api.get("url")})
         file_error = _validate_file_payload(api.get("file"))
         if file_error:
             return fail(f"api.file 格式错误：{file_error}", "INVALID_FILE_FORMAT")
@@ -1127,18 +1400,6 @@ def register_api_automation_tools(mcp):
         try:
             caller_user = current_user(user_id)
             with transaction.atomic():
-                header_ids: list[int] = []
-                for header in headers or []:
-                    created_header = ApiHeadersCRUD.inside_post(
-                        {
-                            "project_product": project_product_id,
-                            "key": header["key"],
-                            "value": header["value"],
-                            "status": header.get("status", 0),
-                        }
-                    )
-                    header_ids.append(created_header["id"])
-
                 api_payload = {
                     "project_product": project_product_id,
                     "module": module_id,
@@ -1164,7 +1425,7 @@ def register_api_automation_tools(mcp):
                         "scenario_type": scenario_type,
                         "scenario_tags": scenario_tags or [],
                         "scenario_description": scenario_description,
-                        "front_headers": case_front_headers or header_ids,
+                        "front_headers": case_front_headers or [],
                         "front_custom": [],
                         "front_sql": [],
                         "posterior_sql": [],
@@ -1201,7 +1462,7 @@ def register_api_automation_tools(mcp):
                         "api_info_id": api_info["id"],
                         "case_id": api_case["id"],
                         "step_id": step["step_id"],
-                        "header_ids": header_ids,
+                        "header_ids": case_front_headers or [],
                         "scenario_ids": scenario_ids,
                         "run_result": run_result,
                     },
@@ -1392,6 +1653,18 @@ def register_api_automation_tools(mcp):
             "format": [{"key": "缓存key或名称", "value": "值、SQL、JSONPath、正则或表达式"}],
             "variable_support": "value 通常支持 ${{变量}}、${{随机方法()}}、${{数据工厂.字段}} 等表达式，执行前由测试数据引擎替换。",
         }
+        sql_key_value_schema = {
+            "type": "list[object]",
+            "format": [{"key": "缓存key或名称", "value": "SQL语句", "datasource_alias": "逻辑数据源ID，可为空"}],
+            "datasource_alias": {
+                "field": "datasource_alias",
+                "type": "int | null",
+                "source": "数据工厂逻辑数据源 DataFactoryDatasourceAlias.id",
+                "lookup_tool": "list_data_factory_datasource_aliases(project_product_id=当前产品ID)",
+                "rule": "多数据库测试环境下，API case/场景的 SQL 前置或后置必须传 datasource_alias；单库老数据可为空并由后端兜底。",
+            },
+            "variable_support": "value 支持 ${{变量}}、${{随机方法()}}、${{数据工厂.字段}} 等表达式，执行前由测试数据引擎替换。",
+        }
         file_example = [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}]
         return ok(
             {
@@ -1403,8 +1676,29 @@ def register_api_automation_tools(mcp):
                     "name",
                     "key",
                     "value",
+                    "datasource_alias_id",
                     "status",
                 ],
+                "api_public_sql": {
+                    "fields": ["project_product_id", "test_env_id", "type", "name", "key", "value", "datasource_alias_id", "status"],
+                    "format": {
+                        "type": "0=自定义公共变量，1=SQL 公共变量。",
+                        "value": "SQL 类型时填写 SQL 语句，自定义类型时填写普通值。",
+                        "datasource_alias_id": "SQL 类型必填，传逻辑数据源 DataFactoryDatasourceAlias.id；自定义类型可不传。",
+                    },
+                    "lookup_rule": "创建或更新 SQL 公共变量前，先调用 list_data_factory_datasource_aliases(project_product_id=当前产品ID) 查询逻辑数据源 ID，然后把返回的 datasource_alias_id 传给本字段。",
+                    "query_rule": "已有 API 公共变量可调用 list_api_public_variables(project_product_id=当前产品ID, type=1) 查询，返回 datasource_alias_id 和 datasource_alias_name。",
+                    "example": {
+                        "project_product_id": 1,
+                        "test_env_id": 0,
+                        "type": 1,
+                        "name": "查询用户",
+                        "key": "user",
+                        "value": "SELECT id,name FROM user WHERE id=${{user_id}}",
+                        "datasource_alias_id": 2,
+                        "status": 1,
+                    },
+                },
                 "api_case": [
                     "project_product",
                     "module",
@@ -1446,6 +1740,18 @@ def register_api_automation_tools(mcp):
                     "posterior_func",
                 ],
                 "api_info_fields": {
+                    "url": {
+                        "type": "str",
+                        "model_field": "ApiInfo.url",
+                        "description": "只保存接口路径，不允许包含协议、域名、端口、query 或 fragment。",
+                        "required_format": "/clm/api/category/update",
+                        "forbidden": [
+                            "https://test-contract.qtech.cn/clm/api/category/update",
+                            "http://127.0.0.1:8000/api/demo",
+                            "/api/demo?page=1",
+                        ],
+                        "query_rule": "query 参数请放到 params 字段，不要拼在 url 中。",
+                    },
                     "file": {
                         "type": "list[object] | dict | null",
                         "model_field": "ApiInfo.file",
@@ -1512,6 +1818,7 @@ def register_api_automation_tools(mcp):
                             "冒烟用于每次发布前必须快速验证的关键路径。",
                             "回归用于版本变更后需要持续覆盖的稳定能力。",
                             "主流程/核心链路用于标记业务重要路径，高频/阻塞/线上巡检用于执行优先级或风险标识。",
+                            "如果 case 不涉及 SQL 前后置、SQL 断言或数据工厂造数/清理，可默认增加 6=线上巡检，方便后续做生产/准生产巡检集合。",
                             "API/Integration/E2E 属于 scenario_layer，不属于 scenario_tags。",
                         ],
                     },
@@ -1527,10 +1834,10 @@ def register_api_automation_tools(mcp):
                         "example": [{"key": "tenant_id", "value": "896684654038353011"}],
                     },
                     "front_sql": {
-                        **key_value_schema,
+                        **sql_key_value_schema,
                         "default": [],
                         "description": "用例执行前执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
-                        "example": [{"key": "user", "value": "SELECT id,name FROM user WHERE id=${{user_id}}"}],
+                        "example": [{"key": "user", "value": "SELECT id,name FROM user WHERE id=${{user_id}}", "datasource_alias": 2}],
                     },
                     "front_headers": {
                         "type": "list[int]",
@@ -1540,10 +1847,10 @@ def register_api_automation_tools(mcp):
                         "example": [1, 2, 3],
                     },
                     "posterior_sql": {
-                        **key_value_schema,
+                        **sql_key_value_schema,
                         "default": [],
                         "description": "整个 API case 执行结束后执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
-                        "example": [{"key": "order", "value": "SELECT id,status FROM orders WHERE id=${{order_id}}"}],
+                        "example": [{"key": "order", "value": "SELECT id,status FROM orders WHERE id=${{order_id}}", "datasource_alias": 2}],
                     },
                     "parametrize": {
                         "type": "list[object]",
@@ -1607,7 +1914,7 @@ def register_api_automation_tools(mcp):
                         "example": file_example,
                     },
                     "front_sql": {
-                        **key_value_schema,
+                        **sql_key_value_schema,
                         "default": [],
                         "description": "场景请求前执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
                     },
@@ -1658,7 +1965,7 @@ def register_api_automation_tools(mcp):
                         "example": [{"key": "order_id", "value": "orderId=(\\d+)"}],
                     },
                     "posterior_sql": {
-                        **key_value_schema,
+                        **sql_key_value_schema,
                         "default": [],
                         "description": "响应后执行 SQL。value 是 SQL；查询结果第一行写入 SQL 缓存 key。",
                     },
@@ -1721,7 +2028,7 @@ def register_api_automation_tools(mcp):
                         "scenario_tags": [0, 1],
                         "scenario_description": "验证编辑合同类型成功",
                         "front_custom": [{"key": "tenant_id", "value": "896684654038353011"}],
-                        "front_sql": [{"key": "category", "value": "SELECT id FROM contract_category WHERE valid=1 LIMIT 1"}],
+                        "front_sql": [{"key": "category", "value": "SELECT id FROM contract_category WHERE valid=1 LIMIT 1", "datasource_alias": 2}],
                         "front_headers": [10, 11],
                         "posterior_sql": [],
                     },
@@ -1766,8 +2073,10 @@ def register_api_automation_tools(mcp):
                 "notes": [
                     "创建 API 全局变量时 test_env_id 必填，对应 api_public.test_env。",
                     "API case 的 scenario_layer 默认 0=接口/组件层；scenario_type 默认 0=正常场景；scenario_tags 保存辅助标签整数数组；scenario_description 可为空。",
+                    "当 API case 不依赖 SQL 或数据工厂时，推荐把 scenario_tags 默认加上 6=线上巡检；依赖数据准备、数据库断言或清理的数据型用例不要默认加线上巡检。",
                     "API 文件上传参数不要直接传本地路径；先用 upload_system_file 上传，再在 file 字段中通过 ${{get_file(文件名)}} 引用。",
                     "创建或编辑复杂场景前，建议先调用 get_api_assertion_schema 和 get_api_assertion_methods 获取断言格式和可选 method。",
+                    "API case/场景的 front_sql、posterior_sql 如在多数据库测试环境中使用，先调用 list_data_factory_datasource_aliases(project_product_id) 查询逻辑数据源 ID，再写入 datasource_alias。",
                 ],
             }
         )

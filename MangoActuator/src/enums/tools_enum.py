@@ -213,4 +213,3 @@ class ActuatorTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "pytest", 1: "web_ui", 2: "android_ui", 3: "ios_ui", 4: "pc_ui"}
-

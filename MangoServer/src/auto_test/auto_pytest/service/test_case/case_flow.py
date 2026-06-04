@@ -8,6 +8,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 
+from django.db.models import F
 from django.utils import timezone
 
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
@@ -57,30 +58,65 @@ class PyCaseFlow:
     @async_task_db_connection()
     def get_case(cls, data):
         with cls._get_case_lock:
-            test_suite_details = TestSuiteDetails.objects.filter(
-                status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=RETRY_FREQUENCY + 1,
-                type=TestCaseTypeEnum.PYTEST.value
-            ).first()
-            if test_suite_details:
-                try:
-                    test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-                    case_model = ConsumerCaseModel(
-                        test_suite_details=test_suite_details.id,
-                        test_suite=test_suite_details.test_suite.id,
-                        case_id=test_suite_details.case_id,
-                        case_name=test_suite_details.case_name,
-                        test_env=test_suite_details.test_env,
-                        user_id=test_suite.user.id,
-                        tasks_id=test_suite.tasks.id if test_suite.tasks else None,
-                        parametrize=test_suite_details.parametrize,
-                    )
-                    cls.send_case(case_model, data.username)
-                    cls.update_status_proceed(test_suite, test_suite_details)
-                except MangoServerError as error:
-                    log.system.debug(f'执行器主动拉取任务失败：{error}')
-                    test_suite_details.status = TaskEnum.FAIL.value
-                    test_suite_details.save()
+            case_model = None
+            try:
+                case_model = cls.claim_case()
+                if not case_model:
+                    return
+                cls.send_case(case_model, data.username)
+            except MangoServerError as error:
+                log.system.debug(f'执行器主动拉取任务失败：{error}')
+                if case_model:
+                    cls.mark_claim_failed(case_model.test_suite_details)
+            except Exception as error:
+                log.system.error(f'执行器主动拉取任务失败：{error}')
+                if case_model:
+                    cls.mark_claim_failed(case_model.test_suite_details)
+
+    @classmethod
+    def claim_case(cls) -> ConsumerCaseModel | None:
+        test_suite_details = TestSuiteDetails.objects.filter(
+            status=TaskEnum.STAY_BEGIN.value,
+            retry__lt=RETRY_FREQUENCY + 1,
+            type=TestCaseTypeEnum.PYTEST.value
+        ).order_by('id').first()
+        if not test_suite_details:
+            return None
+
+        now = timezone.now()
+        updated = TestSuiteDetails.objects.filter(
+            id=test_suite_details.id,
+            status=TaskEnum.STAY_BEGIN.value,
+            retry__lt=RETRY_FREQUENCY + 1,
+            type=TestCaseTypeEnum.PYTEST.value
+        ).update(
+            status=TaskEnum.PROCEED.value,
+            retry=F('retry') + 1,
+            push_time=now,
+            update_time=now
+        )
+        if updated != 1:
+            return None
+
+        test_suite = TestSuite.objects.get(id=test_suite_details.test_suite_id)
+        TestSuite.objects.filter(id=test_suite.id).update(status=TaskEnum.PROCEED.value, update_time=now)
+        return ConsumerCaseModel(
+            test_suite_details=test_suite_details.id,
+            test_suite=test_suite_details.test_suite_id,
+            case_id=test_suite_details.case_id,
+            case_name=test_suite_details.case_name,
+            test_env=test_suite_details.test_env,
+            user_id=test_suite.user_id,
+            tasks_id=test_suite.tasks_id,
+            parametrize=test_suite_details.parametrize,
+        )
+
+    @classmethod
+    def mark_claim_failed(cls, test_suite_details_id: int):
+        TestSuiteDetails.objects.filter(id=test_suite_details_id).update(
+            status=TaskEnum.FAIL.value,
+            update_time=timezone.now()
+        )
 
     @classmethod
     def send_case(cls, case_model, send_case_user):

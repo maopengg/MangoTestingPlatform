@@ -64,9 +64,14 @@ class PytestProductViews(ViewSet):
     @error_response('pytest')
     def pytest_update(self, request: Request):
         repo = git_obj()
-        repo.pull()
+        if os.path.isdir(repo.local_dir):
+            repo.pull()
+        else:
+            repo.clone()
         # 遍历所有项目目录
         auto_tests_dir = os.path.join(repo.local_dir, 'auto_tests')
+        if not os.path.isdir(auto_tests_dir):
+            return ResponseData.fail(RESPONSE_MSG_0091_1, {'path': auto_tests_dir})
         for item in os.listdir(auto_tests_dir):
             item_path = os.path.join(auto_tests_dir, item)
             if os.path.isdir(item_path) and not '.' in item and '__pycache__' != item:

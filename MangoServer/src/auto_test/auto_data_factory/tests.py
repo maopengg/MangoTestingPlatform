@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from types import SimpleNamespace
+
 from django.test import SimpleTestCase
 from rest_framework import serializers
 
@@ -10,7 +12,9 @@ from src.auto_test.auto_data_factory.service.generator import DataFactoryValueGe
 from src.auto_test.auto_data_factory.service.runner import DataFactoryRunner
 from src.auto_test.auto_data_factory.service.type_cast import DataFactoryTypeCast
 from src.auto_test.auto_data_factory.views.field import DataFactoryFieldSerializer
+from src.auto_test.auto_data_factory.views.template import DataFactoryTemplateSerializer
 from src.enums.data_factory_enum import DataFactoryGeneratorTypeEnum
+from src.exceptions import DataFactoryError
 from src.models.data_factory_model import DataFactoryFieldOverrideRules, validate_data_factory_scene_overrides
 
 
@@ -101,6 +105,39 @@ class DataFactoryCleanupTests(SimpleTestCase):
         self.assertEqual(cleanup_sql_params, {"id_1": 12})
         engine.dispose()
 
+    def test_delete_without_matching_row_is_not_successful(self):
+        item = SimpleNamespace(id=99)
+        result = SimpleNamespace(rowcount=0)
+
+        with self.assertRaises(Exception) as error:
+            DataFactoryCleanup.validate_delete_result(item, result, "contract_category", "_id", 12)
+
+        self.assertIn("未命中任何记录", str(error.exception))
+
+    def test_force_cleanup_allows_already_missing_row(self):
+        item = SimpleNamespace(id=99)
+        result = SimpleNamespace(rowcount=0)
+
+        DataFactoryCleanup.validate_delete_result(
+            item,
+            result,
+            "contract_category",
+            "_id",
+            12,
+            allow_missing=True,
+        )
+
+    def test_cleanup_across_databases_is_rejected(self):
+        items = [
+            SimpleNamespace(database_id=1),
+            SimpleNamespace(database_id=2),
+        ]
+
+        with self.assertRaises(Exception) as error:
+            DataFactoryCleanup.cleanup_items_in_database_transaction(items)
+
+        self.assertIn("跨库事务一致性", str(error.exception))
+
 
 class DataFactoryPreviewTests(SimpleTestCase):
     def test_build_dependency_tree_includes_fields_and_status(self):
@@ -139,6 +176,22 @@ class DataFactoryPreviewTests(SimpleTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["field"], "role_id")
         self.assertEqual(result[0]["path"], "合同类型 / 合同类型角色")
+
+
+class DataFactoryTemplateSerializerTests(SimpleTestCase):
+    def test_entity_module_mismatch_raises_data_factory_error(self):
+        serializer = DataFactoryTemplateSerializer()
+        attrs = {
+            "project_product": SimpleNamespace(id=3),
+            "module": SimpleNamespace(id=217, project_product_id=3),
+            "entity": SimpleNamespace(id=18, project_product_id=3, module_id=213),
+            "name": "文件信息表场景",
+        }
+
+        with self.assertRaises(DataFactoryError) as error:
+            serializer.validate(attrs)
+
+        self.assertEqual(error.exception.msg, "实体不属于当前模块")
 
 
 class DataFactoryFieldSerializerTests(SimpleTestCase):
@@ -239,6 +292,31 @@ class DataFactoryDiscoverTests(SimpleTestCase):
                 {"label": "不是", "value": 0},
                 {"label": "是", "value": 1},
                 {"label": "未知", "value": 2},
+            ],
+        )
+
+    def test_extract_comment_enum_options_with_parentheses_and_equals(self):
+        self.assertEqual(
+            DataFactoryDiscover.extract_comment_enum_options("状态（0=无效，1=有效）", "integer"),
+            [
+                {"label": "无效", "value": 0},
+                {"label": "有效", "value": 1},
+            ],
+        )
+        self.assertEqual(
+            DataFactoryDiscover.extract_comment_enum_options("状态 0（无效） 1（有效）", "integer"),
+            [
+                {"label": "无效", "value": 0},
+                {"label": "有效", "value": 1},
+            ],
+        )
+
+    def test_db_enum_options_use_comment_labels(self):
+        self.assertEqual(
+            DataFactoryDiscover.extract_enum_options("ENUM('0','1')", "状态：0无效，1有效", "enum"),
+            [
+                {"label": "无效", "value": "0"},
+                {"label": "有效", "value": "1"},
             ],
         )
 

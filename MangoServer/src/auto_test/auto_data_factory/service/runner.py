@@ -262,6 +262,7 @@ class DataFactoryRunner:
         if not entity.table_name:
             raise ToolsError(300, f"实体 {entity.name} 未配置表名")
         database = DataFactoryDatasourceResolver.resolve(entity, test_object_id)
+        DataFactoryDatasourceResolver.require_permission(test_object_id, write=False)
 
         fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
         merged_overrides = {**(template.field_overrides or {}), **overrides}
@@ -820,6 +821,7 @@ class DataFactoryRunner:
         if not entity.table_name:
             raise ToolsError(300, f"实体 {entity.name} 未配置表名")
         database = DataFactoryDatasourceResolver.resolve(entity, test_object_id)
+        DataFactoryDatasourceResolver.require_permission(test_object_id, write=True)
 
         fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
         merged_overrides = {**(template.field_overrides or {}), **overrides}

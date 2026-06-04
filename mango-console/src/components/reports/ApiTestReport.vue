@@ -48,7 +48,9 @@
     <div v-if="resultData?.status === 0" class="mango-api-report__error">
       <div>
         <span>失败提示</span>
-        <strong>{{ resultData?.error_message || '接口调用失败，请检查响应结果与断言数据。' }}</strong>
+        <a-tooltip :content="failureMessage" position="top" mini>
+          <strong>{{ failureMessage }}</strong>
+        </a-tooltip>
       </div>
     </div>
 
@@ -158,6 +160,9 @@
   const requestMethod = computed(() => props.resultData?.request?.method || '-')
   const requestUrl = computed(() => props.resultData?.request?.url || '-')
   const statusCode = computed(() => props.resultData?.response?.code || '-')
+  const failureMessage = computed(
+    () => props.resultData?.error_message || '接口调用失败，请检查响应结果与断言数据。'
+  )
 
   const responseTime = computed(() => {
     const value = props.resultData?.response?.time
@@ -506,13 +511,16 @@
   }
 
   .mango-api-report__error strong {
-    display: block;
+    display: -webkit-box;
     margin-top: 4px;
+    overflow: hidden;
     color: var(--m-text);
     font-size: 13px;
     font-weight: 500;
     line-height: 22px;
     word-break: break-word;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   .mango-api-report__tabs {

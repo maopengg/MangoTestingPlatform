@@ -62,9 +62,21 @@ class ProductModuleViews(ViewSet):
         @return:
         """
         project_product_id = request.query_params.get('project_product_id')
+        queryset = self.model.objects.values(
+            'id',
+            'name',
+            'superior_module_1',
+            'superior_module_2',
+        )
         if project_product_id:
-            res = self.model.objects.values_list('id', 'name').filter(project_product=project_product_id)
-        else:
-            res = self.model.objects.values_list('id', 'name').all()
-        data = [{'key': _id, 'title': name} for _id, name in res]
+            queryset = queryset.filter(project_product=project_product_id)
+        data = [
+            {
+                'key': item['id'],
+                'title': item['name'],
+                'superior_module_1': item['superior_module_1'],
+                'superior_module_2': item['superior_module_2'],
+            }
+            for item in queryset
+        ]
         return ResponseData.success(RESPONSE_MSG_0031, data)

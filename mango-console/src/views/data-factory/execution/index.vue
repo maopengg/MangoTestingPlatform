@@ -10,28 +10,27 @@
               :label="item.label"
             >
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
-                  :options="projectInfo.projectProduct"
                   :placeholder="item.placeholder"
                   allow-clear
-                  allow-search
-                  value-key="key"
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
                   @change="onSearchProjectChange(item.value)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
+                <ProductModuleSelect
                   v-model="item.value"
-                  :field-names="enumFieldNames"
-                  :options="productModule.data"
+                  :project-product-id="getSearchItemValue('project_product')"
                   :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
+                  :auto-clear="false"
                   @change="doRefresh"
                 />
               </template>
@@ -84,6 +83,7 @@
         :loading="table.tableLoading.value"
         :pagination="false"
         :row-key="'id'"
+        :scroll="{ x: 1420 }"
       >
         <template #columns>
           <a-table-column
@@ -101,11 +101,20 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
-              }}{{ record?.module?.name }}
+              {{ formatModulePath(record?.module) }}
+            </template>
+            <template v-else-if="item.key === 'source_display'" #cell="{ record }">
+              <div class="execution-source-cell">
+                <a-tooltip :content="record.source_display || '-'" position="top" mini>
+                  <span class="execution-source-cell__title">{{ record.source_display || '-' }}</span>
+                </a-tooltip>
+                <span class="execution-source-cell__meta">
+                  {{ formatSourceMeta(record.source_info) }}
+                </span>
+              </div>
             </template>
             <template v-else-if="item.key === 'stage'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.stage]" size="small">
@@ -131,7 +140,7 @@
                     onClick: () => openDetail(record),
                   },
                   {
-                    label: '清理',
+                    label: record.cleanup_status === 1 ? '重试清理' : '清理',
                     danger: true,
                     loading: actionLoading === `cleanup-${record.id}`,
                     onClick: () => cleanup(record),
@@ -149,6 +158,70 @@
 
   <a-drawer v-model:visible="detailVisible" title="执行详情" width="860px">
     <a-tabs>
+      <a-tab-pane key="source" title="来源">
+        <div class="execution-source-detail">
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">来源类型</span>
+            <span class="execution-source-detail__value">
+              {{ detail.execution?.source_info?.source_type_name || '-' }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">执行人</span>
+            <span class="execution-source-detail__value">
+              {{ formatUserName(detail.execution?.source_info?.executor_name, detail.execution?.source_info?.executor_username) }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">用例责任人</span>
+            <span class="execution-source-detail__value">
+              {{ formatUserName(detail.execution?.source_info?.case_owner_name, detail.execution?.source_info?.case_owner_username) }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">触发用例</span>
+            <span class="execution-source-detail__value">
+              {{ detail.execution?.source_info?.case_name || '-' }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">所属模块</span>
+            <span class="execution-source-detail__value">
+              {{ detail.execution?.source_info?.ui_module_name || '-' }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">接口</span>
+            <span class="execution-source-detail__value">
+              {{ detail.execution?.source_info?.api_info_name || '-' }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item execution-source-detail__item--wide">
+            <span class="execution-source-detail__label">接口地址</span>
+            <span class="execution-source-detail__value">
+              {{ formatApiInfo(detail.execution?.source_info) }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">接口场景</span>
+            <span class="execution-source-detail__value">
+              {{ detail.execution?.source_info?.scenario_name || '-' }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">场景模板</span>
+            <span class="execution-source-detail__value">
+              {{ detail.execution?.source_info?.template_name || '-' }}
+            </span>
+          </div>
+          <div class="execution-source-detail__item">
+            <span class="execution-source-detail__label">来源ID</span>
+            <span class="execution-source-detail__value">
+              {{ formatSourceId(detail.execution?.source_info) }}
+            </span>
+          </div>
+        </div>
+      </a-tab-pane>
       <a-tab-pane key="context" title="上下文">
         <JsonDisplay :data="detail.context || {}" />
       </a-tab-pane>
@@ -178,38 +251,77 @@
                 {{ enumTitle(enumStore.data_factory_cleanup_status, record.cleanup_status) }}
               </template>
               <template v-else-if="item.key === 'cleanup_sql'" #cell="{ record }">
-                <a-space v-if="record.cleanup_sql" direction="vertical" fill>
-                  <a-typography-paragraph copyable>{{ record.cleanup_sql }}</a-typography-paragraph>
-                  <a-typography-paragraph
-                    v-if="
-                      record.cleanup_sql_params && Object.keys(record.cleanup_sql_params).length
-                    "
-                    copyable
-                    >{{ JSON.stringify(record.cleanup_sql_params) }}</a-typography-paragraph
+                <div v-if="record.cleanup_sql" class="execution-detail-cell-stack">
+                  <div class="execution-detail-cell-line">
+                    <a-tooltip :content="record.cleanup_sql" position="top" mini>
+                      <span class="execution-detail-cell-text">{{ record.cleanup_sql }}</span>
+                    </a-tooltip>
+                    <a-tooltip content="复制清理SQL" position="top" mini>
+                      <a-button
+                        class="execution-detail-copy-button"
+                        type="text"
+                        size="mini"
+                        @click="copyCellValue(record.cleanup_sql, '清理SQL')"
+                      >
+                        <template #icon>
+                          <icon-copy />
+                        </template>
+                      </a-button>
+                    </a-tooltip>
+                  </div>
+                  <a-tooltip
+                    v-if="hasObjectValue(record.cleanup_sql_params)"
+                    :content="stringifyCellValue(record.cleanup_sql_params)"
+                    position="top"
+                    mini
                   >
-                </a-space>
+                    <span class="execution-detail-cell-text execution-detail-cell-text--muted">
+                      参数：{{ stringifyCellValue(record.cleanup_sql_params) }}
+                    </span>
+                  </a-tooltip>
+                </div>
                 <span v-else>-</span>
               </template>
               <template v-else-if="item.key === 'insert_sql'" #cell="{ record }">
-                <a-space v-if="record.insert_sql" direction="vertical" fill>
-                  <a-typography-paragraph copyable>{{ record.insert_sql }}</a-typography-paragraph>
-                  <a-typography-paragraph
-                    v-if="record.insert_sql_params && Object.keys(record.insert_sql_params).length"
-                    copyable
-                    >{{ JSON.stringify(record.insert_sql_params) }}</a-typography-paragraph
-                  >
-                </a-space>
+                <div v-if="record.insert_sql" class="execution-detail-cell-line">
+                  <a-tooltip :content="record.insert_sql" position="top" mini>
+                    <span class="execution-detail-cell-text">{{ record.insert_sql }}</span>
+                  </a-tooltip>
+                  <a-tooltip content="复制插入SQL" position="top" mini>
+                    <a-button
+                      class="execution-detail-copy-button"
+                      type="text"
+                      size="mini"
+                      @click="copyCellValue(record.insert_sql, '插入SQL')"
+                    >
+                      <template #icon>
+                        <icon-copy />
+                      </template>
+                    </a-button>
+                  </a-tooltip>
+                </div>
                 <span v-else>-</span>
               </template>
-              <template v-else-if="item.key === 'insert_data'" #cell="{ record }">
-                <a-typography-paragraph copyable>{{
-                  JSON.stringify(record.insert_data || {})
-                }}</a-typography-paragraph>
-              </template>
               <template v-else-if="item.key === 'data'" #cell="{ record }">
-                <a-typography-paragraph copyable>{{
-                  JSON.stringify(record.data)
-                }}</a-typography-paragraph>
+                <div class="execution-detail-cell-line">
+                  <a-tooltip :content="stringifyCellValue(record.data)" position="top" mini>
+                    <span class="execution-detail-cell-text">
+                      {{ stringifyCellValue(record.data) }}
+                    </span>
+                  </a-tooltip>
+                  <a-tooltip content="复制创建数据" position="top" mini>
+                    <a-button
+                      class="execution-detail-copy-button"
+                      type="text"
+                      size="mini"
+                      @click="copyCellValue(record.data, '创建数据')"
+                    >
+                      <template #icon>
+                        <icon-copy />
+                      </template>
+                    </a-button>
+                  </a-tooltip>
+                </div>
               </template>
             </a-table-column>
           </template>
@@ -233,10 +345,15 @@
   } from '@/api/data-factory'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
-  import { useProject } from '@/store/modules/get-project'
-  import { useProductModule } from '@/store/modules/project_module'
   import { getFormItems } from '@/utils/datacleaning'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import {
+    formatModulePath,
+    formatProjectProductPath,
+    getItemValue,
+  } from '@/utils/business-format'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref } from 'vue'
   import { executionConditionItems, executionItemColumns, executionTableColumns } from './config'
@@ -244,8 +361,6 @@
   const table = useTable()
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
-  const projectInfo = useProject()
-  const productModule = useProductModule()
   const enumFieldNames = { value: 'key', label: 'title' }
   const detailVisible = ref(false)
   const detail = ref<any>({})
@@ -260,8 +375,85 @@
     return value?.id ?? value
   }
 
+  function stringifyCellValue(value: any) {
+    if (typeof value === 'string') return value
+    if (typeof value === 'undefined' || value === null) return '-'
+    return JSON.stringify(value)
+  }
+
+  function hasObjectValue(value: any) {
+    return value && typeof value === 'object' && Object.keys(value).length > 0
+  }
+
+  function formatSourceMeta(sourceInfo: any) {
+    if (!sourceInfo) return '-'
+    const parts = [
+      sourceInfo.executor_name ? `执行人 ${sourceInfo.executor_name}` : '',
+      !sourceInfo.executor_name && sourceInfo.case_owner_name
+        ? `责任人 ${sourceInfo.case_owner_name}`
+        : '',
+      sourceInfo.case_id ? `用例ID ${sourceInfo.case_id}` : '',
+      sourceInfo.scenario_id ? `场景ID ${sourceInfo.scenario_id}` : '',
+      sourceInfo.template_id ? `模板ID ${sourceInfo.template_id}` : '',
+    ].filter(Boolean)
+    return parts.join(' / ') || formatSourceId(sourceInfo)
+  }
+
+  function formatSourceId(sourceInfo: any) {
+    if (!sourceInfo) return '-'
+    const parts = [
+      sourceInfo.source_id ? `来源 ${sourceInfo.source_id}` : '',
+      sourceInfo.template_id ? `模板 ${sourceInfo.template_id}` : '',
+    ].filter(Boolean)
+    return parts.join(' / ') || '-'
+  }
+
+  function formatUserName(name?: string, username?: string) {
+    if (name && username) return `${name}（${username}）`
+    return name || username || '-'
+  }
+
+  function formatApiInfo(sourceInfo: any) {
+    if (!sourceInfo?.api_info_url) return '-'
+    const method = sourceInfo.api_info_method_name ? `${sourceInfo.api_info_method_name} ` : ''
+    return `${method}${sourceInfo.api_info_url}`
+  }
+
+  function fallbackCopy(text: string) {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', 'readonly')
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    textarea.style.top = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    textarea.setSelectionRange(0, textarea.value.length)
+    const success = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return success
+  }
+
+  async function copyCellValue(value: any, label: string) {
+    const text = stringifyCellValue(value)
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+      } else if (!fallbackCopy(text)) {
+        throw new Error('copy failed')
+      }
+      Message.success(`复制${label}成功`)
+    } catch {
+      Message.error(`复制${label}失败`)
+    }
+  }
+
   function getSearchItem(key: string) {
     return executionConditionItems.find((item) => item.key === key)
+  }
+
+  function getSearchItemValue(key: string) {
+    return getItemValue(executionConditionItems, key)
   }
 
   function onSearchProjectChange(value: any) {
@@ -269,7 +461,6 @@
     if (moduleItem) {
       moduleItem.value = ''
     }
-    productModule.getProjectModule(getOptionId(value))
     doRefresh()
   }
 
@@ -308,16 +499,15 @@
   }
 
   function cleanup(record: any) {
-    if (record.cleanup_status === 1) {
-      Message.info('当前执行记录已清理，无需重复清理')
-      return
-    }
+    const forceCleanup = record.cleanup_status === 1
     Modal.confirm({
-      title: '清理执行数据',
-      content: `确认清理 ${record.execution_no} 创建的数据？`,
+      title: forceCleanup ? '重试清理执行数据' : '清理执行数据',
+      content: forceCleanup
+        ? `该执行记录已标记为清理完成，确认重新按执行明细清理 ${record.execution_no} 创建的数据？`
+        : `确认清理 ${record.execution_no} 创建的数据？`,
       onBeforeOk: () => {
         actionLoading.value = `cleanup-${record.id}`
-        return postDataFactoryExecutionCleanup({ execution_id: record.id })
+        return postDataFactoryExecutionCleanup({ execution_id: record.id, force_cleanup: forceCleanup })
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -331,13 +521,109 @@
 
   onMounted(() => {
     enumStore.getEnum()
-    projectInfo.projectProductName()
-    productModule.getProjectModule()
     doRefresh()
   })
 </script>
 <style scoped>
+  .execution-source-cell {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .execution-source-cell__title {
+    overflow: hidden;
+    color: var(--m-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .execution-source-cell__meta {
+    overflow: hidden;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .execution-source-detail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+
+  .execution-source-detail__item {
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--m-border);
+    border-radius: 6px;
+    background: var(--m-bg);
+  }
+
+  .execution-source-detail__item--wide {
+    grid-column: 1 / -1;
+  }
+
+  .execution-source-detail__label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .execution-source-detail__value {
+    display: block;
+    min-height: 22px;
+    overflow: hidden;
+    color: var(--m-text);
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .execution-empty {
     min-height: 120px;
+  }
+
+  .execution-detail-cell-stack {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .execution-detail-cell-line {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .execution-detail-cell-text {
+    display: -webkit-box;
+    flex: 1;
+    min-width: 0;
+    max-height: 40px;
+    overflow: hidden;
+    color: var(--m-text);
+    font-size: 12px;
+    line-height: 20px;
+    word-break: break-all;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .execution-detail-cell-text--muted {
+    color: var(--m-muted);
+  }
+
+  .execution-detail-copy-button {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
   }
 </style>

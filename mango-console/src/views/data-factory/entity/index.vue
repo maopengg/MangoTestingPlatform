@@ -6,28 +6,27 @@
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of entityConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
-                  :options="projectInfo.projectProduct"
                   :placeholder="item.placeholder"
                   allow-clear
-                  allow-search
-                  value-key="key"
+                  @blur="doRefresh"
+                  @clear="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
                   @change="onSearchProjectChange(item.value)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
+                <ProductModuleSelect
                   v-model="item.value"
-                  :field-names="enumFieldNames"
-                  :options="productModule.data"
+                  :project-product-id="getSearchItemValue('project_product')"
                   :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
+                  :auto-clear="false"
                   @change="doRefresh"
                 />
               </template>
@@ -94,11 +93,13 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
-              }}{{ record?.module?.name }}
+              {{ formatModulePath(record?.module) }}
+            </template>
+            <template v-else-if="item.key === 'datasource_alias'" #cell="{ record }">
+              {{ record?.datasource_alias?.name || '-' }}
             </template>
             <template v-else-if="item.key === 'create_type'" #cell="{ record }">
               <a-tag color="arcoblue" size="small">
@@ -144,23 +145,18 @@
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
           <a-form-item label="产品" required>
-            <a-cascader
+            <ProjectProductSelect
               v-model="batchForm.project_product"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
               @change="onBatchProjectChange"
             />
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
           <a-form-item label="模块" required>
-            <a-select
+            <ProductModuleSelect
               v-model="batchForm.module"
-              :field-names="enumFieldNames"
-              :options="productModule.data"
-              allow-clear
-              allow-search
+              :project-product-id="batchForm.project_product"
+              :auto-clear="false"
             />
           </a-form-item>
         </a-grid-item>
@@ -255,23 +251,18 @@
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
           <a-form-item label="产品" required>
-            <a-cascader
+            <ProjectProductSelect
               v-model="entityForm.project_product"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
               @change="onEntityProjectChange"
             />
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
           <a-form-item label="模块" required>
-            <a-select
+            <ProductModuleSelect
               v-model="entityForm.module"
-              :field-names="enumFieldNames"
-              :options="productModule.data"
-              allow-clear
-              allow-search
+              :project-product-id="entityForm.project_product"
+              :auto-clear="false"
             />
           </a-form-item>
         </a-grid-item>
@@ -523,12 +514,14 @@
   } from '@/api/data-factory'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
-  import { useProject } from '@/store/modules/get-project'
   import { useProductModule } from '@/store/modules/project_module'
   import useUserStore from '@/store/modules/user'
   import { getFormItems } from '@/utils/datacleaning'
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, reactive, ref } from 'vue'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import { formatModulePath, formatProjectProductPath, getItemValue } from '@/utils/business-format'
   import {
     batchEntityTableColumns,
     entityConditionItems,
@@ -539,7 +532,6 @@
   const table = useTable()
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
-  const projectInfo = useProject()
   const productModule = useProductModule()
   const userStore = useUserStore()
   const enumFieldNames = { value: 'key', label: 'title' }
@@ -629,6 +621,9 @@
   }
 
   function getOptionId(value: any) {
+    if (Array.isArray(value)) {
+      return value[value.length - 1] ?? null
+    }
     return value?.id ?? value
   }
 
@@ -640,12 +635,20 @@
     return entityConditionItems.find((item) => item.key === key)
   }
 
+  function getSearchItemValue(key: string) {
+    return getItemValue(entityConditionItems, key)
+  }
+
   function onSearchProjectChange(value: any) {
     const moduleItem = getSearchItem('module')
     if (moduleItem) {
       moduleItem.value = ''
     }
-    productModule.getProjectModule(getOptionId(value))
+    const datasourceAliasItem = getSearchItem('datasource_alias')
+    if (datasourceAliasItem) {
+      datasourceAliasItem.value = ''
+    }
+    loadDatasourceAliases(value)
     doRefresh()
   }
 
@@ -655,12 +658,15 @@
     entityForm.table_name = ''
     entityDiscoveredColumns.value = []
     entityTableOptions.value = []
-    productModule.getProjectModule(getOptionId(value))
+    loadDatasourceAliases(value)
   }
 
   function onBatchProjectChange(value: any) {
     batchForm.module = null
-    productModule.getProjectModule(getOptionId(value))
+    batchForm.datasource_alias = null
+    batchRows.value = []
+    batchSelectedKeys.value = []
+    loadDatasourceAliases(value)
   }
 
   function getGeneratorTypeTitle(option: any) {
@@ -706,13 +712,26 @@
     entityConditionItems.forEach((it) => {
       it.value = ''
     })
+    datasourceAliasOptions.value = []
     doRefresh()
   }
 
-  function loadOptions() {
-    getDataFactoryDatasourceAlias({}).then((res) => {
+  function loadDatasourceAliases(projectProduct: any) {
+    const projectProductId = getOptionId(projectProduct)
+    datasourceAliasOptions.value = []
+    if (!projectProductId) {
+      return Promise.resolve()
+    }
+    return getDataFactoryDatasourceAlias({ project_product: projectProductId }).then((res) => {
       datasourceAliasOptions.value = res.data || []
     })
+  }
+
+  function loadOptions() {
+    const searchProjectProduct = getSearchItemValue('project_product')
+    if (searchProjectProduct) {
+      loadDatasourceAliases(searchProjectProduct)
+    }
   }
 
   function loadDependencyTemplates(record?: any) {
@@ -735,6 +754,7 @@
 
   function openEntity(record?: any) {
     resetEntityForm(record)
+    loadDatasourceAliases(entityForm.project_product)
     syncFieldsAfterSave.value = !record?.id
     entityDiscoveredColumns.value = []
     entityTableOptions.value = record?.table_name
@@ -742,9 +762,6 @@
       : []
     if (record?.datasource_alias && userStore.selected_environment != null) {
       loadEntityTables(record.datasource_alias?.id || record.datasource_alias)
-    }
-    if (entityForm.project_product) {
-      productModule.getProjectModule(getOptionId(entityForm.project_product))
     }
     entityVisible.value = true
   }
@@ -757,9 +774,7 @@
     batchForm.skip_exists = true
     batchRows.value = []
     batchSelectedKeys.value = []
-    if (batchForm.project_product) {
-      productModule.getProjectModule(getOptionId(batchForm.project_product))
-    }
+    loadDatasourceAliases(batchForm.project_product)
     batchVisible.value = true
   }
 
@@ -1489,8 +1504,10 @@
     if (!module) {
       return '未分配模块'
     }
-    const name = module.name || module.title || module.id || module
-    return module.superior_module ? `${module.superior_module}/${name}` : String(name)
+    return formatModulePath({
+      ...module,
+      name: module.name || module.title || module.id || module,
+    })
   }
 
   function getDependencyCascaderValue(row: any) {
@@ -1728,8 +1745,6 @@
 
   onMounted(() => {
     enumStore.getEnum()
-    projectInfo.projectProductName()
-    productModule.getProjectModule()
     loadOptions()
     doRefresh()
   })

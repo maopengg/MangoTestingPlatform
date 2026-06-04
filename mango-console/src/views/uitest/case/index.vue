@@ -4,40 +4,35 @@
       <TableHeader
         :show-filter="true"
         title="测试用例"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  @blur="() => doRefresh()"
+                  allow-clear
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <ProjectProductSelect
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                  @change="doRefresh(item.value, true)"
+                  @change="onSearchProjectProductChange"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
+                <ProductModuleSelect
                   v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="productModule.data"
+                  :project-product-id="getConditionValue('project_product')"
                   :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="doRefresh"
+                  :auto-clear="false"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
@@ -49,7 +44,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
@@ -61,7 +56,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'level'">
@@ -73,7 +68,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
@@ -85,7 +80,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
@@ -97,7 +92,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
@@ -110,7 +105,7 @@
                   allow-search
                   multiple
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
             </a-form-item>
@@ -186,11 +181,10 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
-              }}{{ record?.module?.name }}
+              {{ formatModulePath(record?.module) }}
             </template>
             <template v-else-if="item.key === 'scenario_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.scenario_type]" size="small">
@@ -270,24 +264,18 @@
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
-              :options="projectInfo.projectProduct"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              @change="onModuleSelect(item.value)"
+              @change="onFormProjectProductChange"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <a-select
+            <ProductModuleSelect
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="productModule.data"
+              :project-product-id="getFormItemValue('project_product')"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
+              :auto-clear="false"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_people'">
@@ -361,15 +349,21 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { FormItem, ModalDialogType } from '@/types/components'
+  import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
-  import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { useRouter } from 'vue-router'
-  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import {
+    formatModulePath,
+    formatProjectProductPath,
+    getItemValue,
+    setItemValue,
+  } from '@/utils/business-format'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
     deleteUiCase,
@@ -388,8 +382,6 @@
 
   const enumStore = useEnum()
 
-  const productModule = useProductModule()
-  const projectInfo = useProject()
   const userStore = useUserStore()
   const router = useRouter()
 
@@ -405,7 +397,7 @@
     updateId: 0,
     actionTitle: '新增',
     userList: [],
-    moduleList: productModule.data,
+    moduleList: [],
     systemStatus: [],
     scheduledName: [],
     value: null,
@@ -424,8 +416,32 @@
     }
   }
 
-  function doRefresh(projectProductId: number | null = null, bool_ = false) {
+  function getConditionValue(key: string) {
+    return getItemValue(conditionItems, key)
+  }
+
+  function getFormItemValue(key: string) {
+    return getItemValue(formItems, key)
+  }
+
+  function onSearchProjectProductChange(value: any) {
+    setItemValue(conditionItems, 'module', null)
+    doRefresh(value, true, true)
+  }
+
+  function onFormProjectProductChange() {
+    setItemValue(formItems, 'module', null)
+  }
+
+  function onSearchRefresh() {
+    doRefresh(null, false, true)
+  }
+
+  function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
     clearPollingTimer()
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     let value = getFormItems(conditionItems)
     if (!Array.isArray(value.scenario_tags) || !value.scenario_tags.length) {
       delete value.scenario_tags
@@ -434,7 +450,6 @@
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
-      productModule.getProjectModule(projectProductId)
     }
     getUiCase(value)
       .then((res) => {
@@ -446,22 +461,29 @@
         if (hasRunningItem) {
           // 5秒后再次刷新
           pollingTimer.value = setInterval(() => {
-            doRefresh(projectProductId, bool_)
+            doRefresh(projectProductId, bool_, false)
           }, 5000)
         }
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      if (it.reset) {
+      if (it.key === 'project_product' || it.key === 'module') {
+        it.value = null
+      } else if (it.reset) {
         it.reset()
       } else {
         it.value = ''
       }
     })
-    doRefresh()
+    doRefresh(null, false, true)
   }
 
   function getEnumTitle(options: any[] | null, value: any) {
@@ -525,7 +547,6 @@
     data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
-    productModule.getProjectModule(item.project_product.id)
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
@@ -722,21 +743,11 @@
       .catch(console.log)
   }
 
-  function onModuleSelect(projectProductId: number | string) {
-    productModule.getProjectModule(projectProductId)
-    formItems.forEach((item: FormItem) => {
-      if (item.key === 'module') {
-        item.value = ''
-      }
-    })
-  }
-
   onMounted(() => {
     nextTick(async () => {
       await getNickName()
       await scheduledName()
       doRefresh()
-      productModule.getProjectModule(null)
     })
   })
   onUnmounted(() => {

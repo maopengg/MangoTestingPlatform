@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.middleware.auth import JwtQueryParamsAuthentication
 from src.auto_test.auto_system.models import Tasks
 from src.auto_test.auto_system.service.tasks.run_tasks import RunTasks
 from src.auto_test.auto_system.views.notice_group import NoticeGroupSerializers
@@ -81,8 +82,22 @@ class TasksNoPermissionViews(ViewSet):
     serializer_class = TasksSerializers
     authentication_classes = []
 
+    @staticmethod
+    def _get_request_user_id(request: Request):
+        try:
+            auth_result = JwtQueryParamsAuthentication().authenticate(request)
+        except Exception:
+            return None
+        if not auth_result:
+            return None
+        payload, _ = auth_result
+        return payload.get('id')
+
     @action(methods=['get'], detail=False)
     @error_response('system')
     def trigger_timing(self, request: Request):
-        RunTasks.trigger(request.query_params.get('id'))
+        RunTasks.trigger(
+            request.query_params.get('id'),
+            user_id=self._get_request_user_id(request),
+        )
         return ResponseData.success(RESPONSE_MSG_0100)

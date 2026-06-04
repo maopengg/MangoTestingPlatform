@@ -4,24 +4,26 @@
       <TableHeader
         :show-filter="true"
         title="公共方法"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  value-key="key"
                   allow-clear
-                  allow-search
-                  @change="doRefresh(item.value, true)"
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="onSearchRefresh"
                 />
               </template>
             </a-form-item>
@@ -70,7 +72,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'client'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.project_product.api_client_type]" size="small"
@@ -119,12 +121,9 @@
             />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
-              :options="projectInfo.projectProduct"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
             />
           </template>
         </a-form-item>
@@ -138,10 +137,11 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useProject } from '@/store/modules/get-project'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { tableColumns, formItems, conditionItems } from './config'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
   import {
     deleteApiHeaders,
     getApiHeaders,
@@ -152,7 +152,6 @@
 
   const enumStore = useEnum()
 
-  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -166,7 +165,14 @@
     moduleList: [],
   })
 
-  function doRefresh() {
+  function onSearchRefresh() {
+    doRefresh(true)
+  }
+
+  function doRefresh(showLoading = false) {
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -176,13 +182,18 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    doRefresh(true)
   }
 
   function onAdd() {

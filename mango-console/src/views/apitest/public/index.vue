@@ -4,24 +4,26 @@
       <TableHeader
         :show-filter="true"
         title="公共方法"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  value-key="key"
                   allow-clear
-                  allow-search
-                  @change="doRefresh(item.value, true)"
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'client'">
@@ -33,7 +35,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'test_env'">
@@ -45,7 +47,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
             </a-form-item>
@@ -94,7 +96,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.test_env]" size="small">
@@ -105,6 +107,12 @@
               <a-tag :color="enumStore.colors[record.type]" size="small"
                 >{{ enumStore.api_public_type[record.type]?.title }}
               </a-tag>
+            </template>
+            <template v-else-if="item.key === 'datasource_alias'" #cell="{ record }">
+              <a-tag v-if="record.datasource_alias" size="small">
+                {{ record.datasource_alias.name }}
+              </a-tag>
+              <span v-else>-</span>
             </template>
 
             <template v-else-if="item.key === 'status'" #cell="{ record }">
@@ -134,6 +142,7 @@
       <a-form :model="formModel">
         <a-form-item
           v-for="item of formItems"
+          v-show="isFormItemVisible(item)"
           :key="item.key"
           :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
@@ -149,12 +158,10 @@
             />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
-              :options="projectInfo.projectProduct"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
+              @change="onProjectProductChange"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'type'">
@@ -166,6 +173,7 @@
               allow-clear
               allow-search
               value-key="key"
+              @change="onTypeChange"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'test_env'">
@@ -179,6 +187,17 @@
               value-key="key"
             />
           </template>
+          <template v-else-if="item.type === 'select' && item.key === 'datasource_alias'">
+            <a-select
+              v-if="isSqlPublicType"
+              v-model="item.value"
+              :options="datasourceAliasOptions"
+              :field-names="{ value: 'id', label: 'name' }"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+            />
+          </template>
         </a-form-item>
       </a-form>
     </template>
@@ -189,12 +208,13 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useProject } from '@/store/modules/get-project'
+  import { computed, onMounted, ref, nextTick, reactive } from 'vue'
   import useUserStore from '@/store/modules/user'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { tableColumns, formItems, conditionItems } from './config'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
   import {
     deleteApiPublic,
     getApiPublic,
@@ -203,17 +223,18 @@
     putApiPublicPutStatus,
   } from '@/api/apitest/public'
   import { useEnum } from '@/store/modules/get-enum'
+  import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
 
   const enumStore = useEnum()
   const userStore = useUserStore()
 
-  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
+  const datasourceAliasOptions = ref<any[]>([])
   const data = reactive({
     actionTitle: '新增',
     isAdd: false,
@@ -221,7 +242,64 @@
     moduleList: [],
   })
 
-  function doRefresh() {
+  const isSqlPublicType = computed(() => Number(getFormValue('type')) === 1)
+
+  function getFormValue(key: string) {
+    return formItems.find((it) => it.key === key)?.value
+  }
+
+  function setFormValue(key: string, value: any) {
+    const item = formItems.find((it) => it.key === key)
+    if (item) {
+      item.value = value
+    }
+  }
+
+  function getFormNumberValue(key: string) {
+    const value = getFormValue(key)
+    return value === '' || value == null ? null : Number(value)
+  }
+
+  function isFormItemVisible(item: any) {
+    return item.key !== 'datasource_alias' || isSqlPublicType.value
+  }
+
+  function loadDatasourceAliasOptions(projectProductId?: any) {
+    const productId = projectProductId ?? getFormValue('project_product')
+    datasourceAliasOptions.value = []
+    if (!productId && productId !== 0) {
+      return Promise.resolve()
+    }
+    return getDataFactoryDatasourceAlias({
+      project_product: productId,
+      page: 1,
+      pageSize: 999,
+    }).then((res) => {
+      datasourceAliasOptions.value = res.data || []
+    })
+  }
+
+  function onProjectProductChange(value: any) {
+    setFormValue('datasource_alias', '')
+    loadDatasourceAliasOptions(value)
+  }
+
+  function onTypeChange(value: any) {
+    if (Number(value) !== 1) {
+      setFormValue('datasource_alias', '')
+    } else {
+      loadDatasourceAliasOptions()
+    }
+  }
+
+  function onSearchRefresh() {
+    doRefresh(true)
+  }
+
+  function doRefresh(showLoading = false) {
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -231,13 +309,18 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    doRefresh(true)
   }
 
   function onAdd() {
@@ -255,6 +338,7 @@
     if (envItem && userStore.selected_environment != null) {
       envItem.value = userStore.selected_environment
     }
+    datasourceAliasOptions.value = []
   }
 
   function onDelete(record: any) {
@@ -292,6 +376,7 @@
     data.updateId = item.id
     modalDialogRef.value?.toggle()
     nextTick(() => {
+      loadDatasourceAliasOptions(item?.project_product?.id || item?.project_product)
       formItems.forEach((it) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
@@ -306,6 +391,14 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
+      if (Number(value.type) === 1 && !getFormNumberValue('datasource_alias')) {
+        Message.error('SQL公共变量必须选择逻辑数据源')
+        modalDialogRef.value?.setConfirmLoading(false)
+        return
+      }
+      if (Number(value.type) !== 1) {
+        value.datasource_alias = null
+      }
       if (data.isAdd) {
         value['status'] = 1
         postApiPublic(value)

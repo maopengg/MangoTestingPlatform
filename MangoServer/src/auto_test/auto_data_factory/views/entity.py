@@ -153,6 +153,8 @@ class DataFactoryEntityViews(ViewSet):
             project_product,
             test_env,
         )
+        test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(project_product, test_env)
+        DataFactoryDatasourceResolver.require_permission(test_object_id, write=False)
         result_items = []
         success = 0
         skipped = 0

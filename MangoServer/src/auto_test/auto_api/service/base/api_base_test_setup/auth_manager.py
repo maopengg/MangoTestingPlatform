@@ -51,6 +51,8 @@ class ApiAuthManager:
         if self._is_cache_available(config):
             self.inject_cache(config)
             return
+        if config.refresh_mode == ApiAuthRefreshModeEnum.MANUAL.value:
+            raise ApiError(300, f'API授权缓存不可用，请手动刷新：{config.name}')
         self.refresh(config.id, self.test_setup, force=False, raise_error=True)
         config.refresh_from_db()
         if self._is_cache_available(config, allow_refresh_window=True):

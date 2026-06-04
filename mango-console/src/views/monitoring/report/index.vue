@@ -4,21 +4,27 @@
       <TableHeader
         :show-filter="true"
         title="预警监控报告"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form layout="inline" :model="{}" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="enumStore.monitoring_log_status"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -26,14 +32,10 @@
                 />
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <ProjectProductSelect
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
             </a-form-item>
@@ -148,10 +150,9 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, tableColumns } from './config'
   import { getMonitoringReportList, MonitoringReport } from '@/api/monitoring/report'
-  import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
 
-  const projectInfo = useProject()
   const pagination = usePagination(doRefresh)
   const table = useTable()
   const rowKey = useRowKey('id')
@@ -163,7 +164,14 @@
     data: null as MonitoringReport | null,
   })
 
-  function doRefresh() {
+  function onSearchRefresh() {
+    doRefresh(true)
+  }
+
+  function doRefresh(showLoading = false) {
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -173,13 +181,18 @@
         pagination.setTotalSize((res as any).totalSize || 0)
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    doRefresh(true)
   }
 
   function onViewDetail(record: MonitoringReport) {

@@ -79,10 +79,11 @@ export const executionTableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '来源',
+    title: '触发来源',
     key: 'source_display',
     dataIndex: 'source_display',
     align: 'left',
+    width: 360,
     ellipsis: true,
     tooltip: true,
   },
@@ -160,6 +161,8 @@ export const executionItemColumns = useTableColumn([
     dataIndex: 'cleanup_sql',
     width: 320,
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '插入SQL',
@@ -167,13 +170,8 @@ export const executionItemColumns = useTableColumn([
     dataIndex: 'insert_sql',
     width: 320,
     align: 'left',
-  },
-  {
-    title: '插入数据',
-    key: 'insert_data',
-    dataIndex: 'insert_data',
-    width: 260,
-    align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '创建数据',
@@ -181,5 +179,7 @@ export const executionItemColumns = useTableColumn([
     dataIndex: 'data',
     width: 260,
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
 ])

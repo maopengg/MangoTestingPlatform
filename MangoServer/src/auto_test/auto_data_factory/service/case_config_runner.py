@@ -25,6 +25,7 @@ class DataFactoryCaseConfigRunner:
             test_object_id: int,
             test_data,
             logger,
+            user_id: int | None = None,
     ):
         self.source_type = source_type
         self.source_id = source_id
@@ -32,9 +33,16 @@ class DataFactoryCaseConfigRunner:
         self.test_object_id = test_object_id
         self.test_data = test_data
         self.logger = logger
-        self.context: dict[str, Any] = {}
+        self.user_id = user_id
+        self.context: dict[str, Any] = self.build_context()
         self.execution_ids: list[int] = []
         self.auto_cleanup_execution_ids: list[int] = []
+
+    def build_context(self) -> dict[str, Any]:
+        context: dict[str, Any] = {}
+        if self.user_id:
+            context["__executor"] = {"user_id": self.user_id}
+        return context
 
     def run_front(self):
         configs = DataFactoryCaseConfig.objects.select_related(

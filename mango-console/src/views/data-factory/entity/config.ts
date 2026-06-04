@@ -77,6 +77,15 @@ export const entityTableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '逻辑数据源',
+    key: 'datasource_alias',
+    dataIndex: 'datasource_alias',
+    align: 'left',
+    width: 160,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '名称',
     key: 'name',
     dataIndex: 'name',

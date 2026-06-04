@@ -193,6 +193,14 @@ class ApiPublic(models.Model):
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128)
     value = models.TextField(verbose_name="值")
+    datasource_alias = models.ForeignKey(
+        to='auto_data_factory.DataFactoryDatasourceAlias',
+        to_field="id",
+        verbose_name="逻辑数据源",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
     status = models.SmallIntegerField(verbose_name="状态", default=0, db_index=True)
 
     class Meta:

@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import asyncio
 import json
+import sqlite3
 import traceback
 from datetime import datetime
 from functools import partial
@@ -18,6 +19,7 @@ from mangoautomation.models import ElementResultModel
 from mangoautomation.uidrives import AsyncElement
 from mangoautomation.uidrives import BaseData, DriverObject
 from mangotools.exceptions import MangoToolsError
+from mangotools.database import MysqlConnect
 from mangotools.models import MethodModel
 from playwright._impl._errors import TargetClosedError
 from playwright.async_api import Request, Route, Error
@@ -34,6 +36,36 @@ from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 from src.tools.send_global_msg import send_global_msg
 from src.tools.set_config import SetConfig
+
+
+class SQLitePublicConnect:
+    def __init__(self, database_config, is_c: bool = True, is_rud: bool = False):
+        self.database_config = database_config
+        self.is_c = is_c
+        self.is_rud = is_rud
+        self.connection = sqlite3.connect(database_config.database)
+        self.connection.row_factory = sqlite3.Row
+
+    @staticmethod
+    def is_query(sql: str):
+        return sql.strip().upper().startswith(('SELECT', 'WITH', 'SHOW', 'DESC', 'DESCRIBE', 'PRAGMA', 'EXPLAIN'))
+
+    def condition_execute(self, sql: str):
+        if not sql or not sql.strip():
+            return None
+        if self.is_query(sql) and not self.is_c:
+            return None
+        if not self.is_query(sql) and not self.is_rud:
+            return None
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        if self.is_query(sql):
+            return [dict(row) for row in cursor.fetchall()]
+        self.connection.commit()
+        return cursor.rowcount
+
+    def close(self):
+        self.connection.close()
 
 
 class PageSteps:
@@ -84,15 +116,35 @@ class PageSteps:
                 log.debug(f'设置UI自定义值key-2：{cache_data.key}，value：{cache_data.value}')
                 self.base_data.test_data.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
-                if self.base_data.mysql_connect:
+                mysql_connect = self.base_data.mysql_connect
+                should_close_mysql = False
+                if cache_data.mysql_config:
+                    if cache_data.db_type == 2:
+                        mysql_connect = SQLitePublicConnect(
+                            cache_data.mysql_config,
+                            self.page_steps_model.environment_config.db_c_status,
+                            self.page_steps_model.environment_config.db_rud_status,
+                        )
+                    else:
+                        mysql_connect = MysqlConnect(
+                            cache_data.mysql_config,
+                            self.page_steps_model.environment_config.db_c_status,
+                            self.page_steps_model.environment_config.db_rud_status,
+                        )
+                    should_close_mysql = True
+                if mysql_connect:
                     send_global_msg(f'UI-设置全局变量-SQL成功')
                     sql = self.base_data.test_data.replace(cache_data.value)
-                    result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
-                    if isinstance(result_list, list) and len(result_list) > 0:
-                        log.debug(f'设置UI自定义值key-3：{cache_data.key}，value：{result_list[0]}')
-                        self.base_data.test_data.set_sql_cache(cache_data.key, result_list[0])
-                        if not result_list:
-                            raise UiError(*ERROR_MSG_0036, value=(sql,))
+                    try:
+                        result_list: list[dict] = mysql_connect.condition_execute(sql)
+                        if isinstance(result_list, list) and len(result_list) > 0:
+                            log.debug(f'设置UI自定义值key-3：{cache_data.key}，value：{result_list[0]}')
+                            self.base_data.test_data.set_sql_cache(cache_data.key, result_list[0])
+                            if not result_list:
+                                raise UiError(*ERROR_MSG_0036, value=(sql,))
+                    finally:
+                        if should_close_mysql:
+                            mysql_connect.close()
 
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0

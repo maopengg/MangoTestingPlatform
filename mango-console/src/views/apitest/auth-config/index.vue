@@ -4,24 +4,26 @@
       <TableHeader
         :show-filter="true"
         title="Token授权管理"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
-                  :options="projectInfo.projectProduct"
                   :placeholder="item.placeholder"
                   allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="doRefresh"
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'test_env'">
@@ -33,7 +35,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
             </a-form-item>
@@ -80,7 +82,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.test_env]" size="small">
@@ -92,13 +94,24 @@
                 {{ enumStore.api_auth_type[record.auth_type]?.title }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'auth_source'" #cell="{ record }">
+              <a-tooltip :content="getAuthSourceText(record)">
+                <div class="auth-source-text">
+                  {{ getAuthSourceText(record) }}
+                </div>
+              </a-tooltip>
+            </template>
             <template v-else-if="item.key === 'refresh_mode'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.refresh_mode]" size="small">
                 {{ enumStore.api_auth_refresh_mode[record.refresh_mode]?.title }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'time_task'" #cell="{ record }">
-              {{ record.time_task?.name || '-' }}
+              <a-tooltip :content="getRefreshStrategyText(record)">
+                <div class="auth-source-text">
+                  {{ getRefreshStrategyText(record) }}
+                </div>
+              </a-tooltip>
             </template>
             <template v-else-if="item.key === 'last_refresh_status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.last_refresh_status]" size="small">
@@ -114,7 +127,7 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '缓存', onClick: () => onPreview(record) },
+                  { label: '查看', onClick: () => onPreview(record) },
                   { label: '刷新', onClick: () => onRefresh(record) },
                   { label: '编辑', onClick: () => onUpdate(record) },
                   { label: '清空', onClick: () => onClear(record) },
@@ -147,12 +160,10 @@
             <a-input-number v-model="item.value" :min="0" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
-              :options="projectInfo.projectProduct"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
+              @change="item.key === 'project_product' ? onFormProjectProductChange() : undefined"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'test_env'">
@@ -255,11 +266,12 @@
   import { ModalDialogType } from '@/types/components'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
   import { getApiInfo } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
   import { conditionItems, formItems, tableColumns } from './config'
@@ -275,7 +287,6 @@
   } from '@/api/apitest/auth-config'
 
   const enumStore = useEnum()
-  const projectInfo = useProject()
   const userStore = useUserStore()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -308,6 +319,8 @@
 
   const authTypeItem = computed(() => formItems.find((it) => it.key === 'auth_type'))
   const refreshModeItem = computed(() => formItems.find((it) => it.key === 'refresh_mode'))
+  const projectProductItem = computed(() => formItems.find((it) => it.key === 'project_product'))
+  const isExecutionCheckRefreshMode = computed(() => [0, 2].includes(refreshModeItem.value?.value))
   const visibleFormItems = computed(() => {
     return formItems.filter((it) => {
       if (it.key === 'api_info') {
@@ -316,6 +329,9 @@
       if (it.key === 'custom_code') {
         return authTypeItem.value?.value === 1
       }
+      if (it.key === 'token_ttl' || it.key === 'refresh_margin') {
+        return isExecutionCheckRefreshMode.value
+      }
       if (it.key === 'time_task') {
         return [1, 2].includes(refreshModeItem.value?.value)
       }
@@ -323,7 +339,14 @@
     })
   })
 
-  function doRefresh() {
+  function onSearchRefresh() {
+    doRefresh(true)
+  }
+
+  function doRefresh(showLoading = false) {
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -333,6 +356,11 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function refreshTable() {
@@ -344,7 +372,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    doRefresh(true)
   }
 
   function resetFormItems() {
@@ -367,6 +395,7 @@
     if (envItem && userStore.selected_environment != null) {
       envItem.value = userStore.selected_environment
     }
+    data.apiInfoList = []
   }
 
   function onAdd() {
@@ -399,6 +428,17 @@
           it.value = propName
         }
       })
+      getApiInfoList(item.project_product?.id || item.project_product)
+    })
+  }
+
+  function onFormProjectProductChange() {
+    nextTick(() => {
+      const apiInfoItem = formItems.find((it) => it.key === 'api_info')
+      if (apiInfoItem) {
+        apiInfoItem.value = ''
+      }
+      getApiInfoList(projectProductItem.value?.value)
     })
   }
 
@@ -430,6 +470,40 @@
       value.time_task = null
     }
     return value
+  }
+
+  function getAuthSourceText(record: any) {
+    if (record.auth_type === 0) {
+      const apiInfo = record.api_info
+      if (!apiInfo) return '-'
+      const method = apiInfo.method !== undefined && apiInfo.method !== null
+        ? enumStore.api_method?.[apiInfo.method]?.title || apiInfo.method
+        : ''
+      const url = apiInfo.url ? ` ${apiInfo.url}` : ''
+      return `${apiInfo.name || '-'}${method ? ` / ${method}` : ''}${url}`
+    }
+    if (record.auth_type === 1) {
+      return record.custom_code || '-'
+    }
+    return '-'
+  }
+
+  function getRefreshStrategyText(record: any) {
+    const tokenStrategy = `有效期${record.token_ttl ?? '-'}分钟，提前${record.refresh_margin ?? '-'}分钟刷新`
+    const timeTaskStrategy = record.time_task?.name ? `定时策略：${record.time_task.name}` : '定时策略：-'
+    if (record.refresh_mode === 0) {
+      return tokenStrategy
+    }
+    if (record.refresh_mode === 1) {
+      return timeTaskStrategy
+    }
+    if (record.refresh_mode === 2) {
+      return `${timeTaskStrategy}；${tokenStrategy}`
+    }
+    if (record.refresh_mode === 3) {
+      return '手动刷新'
+    }
+    return '-'
   }
 
   function onDataForm() {
@@ -534,8 +608,12 @@
     })
   }
 
-  function getApiInfoList() {
-    getApiInfo({ page: 1, pageSize: 10000 })
+  function getApiInfoList(projectProductId?: any) {
+    if (!projectProductId) {
+      data.apiInfoList = []
+      return
+    }
+    getApiInfo({ project_product: projectProductId, page: 1, pageSize: 10000 })
       .then((res) => {
         data.apiInfoList = (res.data || []).map((item: any) => ({
           label: `${item.id} - ${item.name}`,
@@ -567,7 +645,6 @@
 
   onMounted(() => {
     nextTick(() => {
-      getApiInfoList()
       getTiming()
       doRefresh()
     })
@@ -588,5 +665,12 @@
     margin-bottom: 8px;
     color: var(--m-text);
     font-weight: 500;
+  }
+
+  .auth-source-text {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

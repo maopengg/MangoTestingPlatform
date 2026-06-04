@@ -26,7 +26,7 @@ class ClientNameEnum(BaseEnum):
     DRIVER = '测试平台执行器'
     SERVER = '测试平台服务器'
     WEB = '测试平台用户端'
-    PLATFORM_CHINESE = '芒果测试平台'
+    PLATFORM_CHINESE = '智书测试平台'
     PLATFORM_ENGLISH = 'MangoTestPlatform'
 
     @classmethod
@@ -74,6 +74,15 @@ class CacheDataKeyEnum(BaseEnum):
 
 class CacheDataKey2Enum(BaseEnum):
     """缓存KEY的名称，不在系统设置页面展示"""
+    PLAYWRIGHT_OPERATION_METHOD = 'playwright_operation_method'
+    UIAUTOMATOR_OPERATION_METHOD = 'uiautomator_operation_method'
+    DESKTOP_OPERATION_METHOD = 'desktop_operation_method'
+    IOS_OPERATION_METHOD = 'ios_operation_method'
+    PLAYWRIGHT_ASSERTION_METHOD = 'playwright_assertion_method'
+    UIAUTOMATOR_ASSERTION_METHOD = 'uiautomator_assertion_method'
+    PUBLIC_ASSERTION_METHOD = 'public_assertion_method'
+    SQL_ASSERTION_METHOD = 'sql_assertion_method'
+    ASSERTION_METHOD = 'assertion_method'
     SELECT_VALUE = 'select_value'
     ASS_SELECT_VALUE = 'ass_select_value'
 
@@ -87,7 +96,13 @@ class TestSuiteNoticeEnum(BaseEnum):
     NOT_SENT = 0
     SENT = 1
     EXPIRED = 2
+    SENDING = 3
 
     @classmethod
     def obj(cls):
-        return {cls.NOT_SENT.value: "等待发送", cls.SENT.value: "发送成功", cls.EXPIRED.value: "无需发送"}
+        return {
+            cls.NOT_SENT.value: "等待发送",
+            cls.SENT.value: "发送成功",
+            cls.EXPIRED.value: "无需发送",
+            cls.SENDING.value: "发送中",
+        }

@@ -4,36 +4,35 @@
       <TableHeader
         :show-filter="true"
         title="调试页面步骤"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <a-input
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  value-key="key"
                   allow-clear
-                  allow-search
-                  @change="doRefresh(item.value, true)"
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="onSearchProjectProductChange"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
+                <ProductModuleSelect
                   v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="productModule.data"
+                  :project-product-id="getConditionValue('project_product')"
                   :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="onModulePage(item.value, true)"
+                  :auto-clear="false"
+                  @change="onSearchModuleChange"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'page_id'">
@@ -45,7 +44,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
@@ -57,7 +56,7 @@
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-if="item.type === 'date'">
@@ -119,11 +118,10 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
-              }}{{ record?.module?.name }}
+              {{ formatModulePath(record?.module) }}
             </template>
             <template v-else-if="item.key === 'page'" #cell="{ record }">
               {{ record.page.name }}
@@ -164,25 +162,18 @@
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
-              :options="projectInfo.projectProduct"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-              @change="onModuleSelect(item.value)"
+              @change="onFormProjectProductChange"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <a-select
+            <ProductModuleSelect
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="productModule.data"
+              :project-product-id="getFormItemValue('project_product')"
               :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
+              :auto-clear="false"
               @change="onModulePage(item.value, false)"
             />
           </template>
@@ -205,15 +196,21 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { FormItem, ModalDialogType } from '@/types/components'
+  import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import {
+    formatModulePath,
+    formatProjectProductPath,
+    getItemValue,
+    setItemValue,
+  } from '@/utils/business-format'
   import {
     deleteUiSteps,
     getUiPageStepsCopy,
@@ -227,8 +224,6 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
 
-  const productModule = useProductModule()
-  const projectInfo = useProject()
   const enumStore = useEnum()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -254,14 +249,46 @@
     }
   }
 
-  function doRefresh(projectProductId: number | null = null, bool_ = false) {
+  function getConditionValue(key: string) {
+    return getItemValue(conditionItems, key)
+  }
+
+  function getFormItemValue(key: string) {
+    return getItemValue(formItems, key)
+  }
+
+  function onSearchProjectProductChange(value: any) {
+    setItemValue(conditionItems, 'module', '')
+    setItemValue(conditionItems, 'page_id', '')
+    data.pageName = []
+    doRefresh(value, true, true)
+  }
+
+  function onSearchModuleChange(value: any) {
+    setItemValue(conditionItems, 'page_id', '')
+    onModulePage(value, true)
+  }
+
+  function onFormProjectProductChange() {
+    setItemValue(formItems, 'module', '')
+    setItemValue(formItems, 'page', '')
+    data.pageName = []
+  }
+
+  function onSearchRefresh() {
+    doRefresh(null, false, true)
+  }
+
+  function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
     clearPollingTimer()
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
-      productModule.getProjectModule(projectProductId)
     }
     getUiSteps(value)
       .then((res) => {
@@ -273,18 +300,23 @@
         if (hasRunningItem) {
           // 5秒后再次刷新
           pollingTimer.value = setInterval(() => {
-            doRefresh(projectProductId, bool_)
+            doRefresh(projectProductId, bool_, false)
           }, 5000)
         }
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    doRefresh(null, false, true)
   }
 
   function onAdd() {
@@ -334,7 +366,6 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    productModule.getProjectModule(item.project_product.id)
     onModulePage(item.module.id, false)
     nextTick(() => {
       formItems.forEach((it) => {
@@ -419,7 +450,7 @@
 
   function onModulePage(moduleId: any, refresh: boolean) {
     if (refresh) {
-      doRefresh()
+      doRefresh(null, false, true)
     }
     getUiPageName(moduleId)
       .then((res) => {
@@ -427,11 +458,7 @@
       })
       .catch(() => {
         data.pageName = []
-        formItems.forEach((obj: FormItem) => {
-          if (obj.key == 'page') {
-            obj.value = null
-          }
-        })
+        setItemValue(formItems, 'page', null)
       })
   }
 
@@ -442,15 +469,6 @@
         doRefresh()
       })
       .catch(console.log)
-  }
-
-  function onModuleSelect(projectProductId: number) {
-    productModule.getProjectModule(projectProductId)
-    formItems.forEach((item: FormItem) => {
-      if (item.key === 'module') {
-        item.value = ''
-      }
-    })
   }
 
   onMounted(() => {

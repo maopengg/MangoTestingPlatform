@@ -13,6 +13,9 @@ class UiPublicModel(BaseModel):
     type: int
     key: str
     value: str
+    datasource_alias: int | None = None
+    db_type: int | None = None
+    mysql_config: MysqlConingModel | None = None
 
 
 class RecordingModel(BaseModel):

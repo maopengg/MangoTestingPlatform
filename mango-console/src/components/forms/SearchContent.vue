@@ -26,7 +26,6 @@
   import { RouteRecordRaw, useRouter } from 'vue-router'
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
-  import { useProductModule } from '@/store/modules/project_module'
 
   interface InnerSearchItem {
     title: string
@@ -82,13 +81,10 @@
       }
       const enumStore = useEnum()
       const projectInfo = useProject()
-      const productModule = useProductModule()
       onMounted(() => {
         searchList.value = transformRoutes(permissionStore.getPermissionSideBar)
         enumStore.getEnum()
-        productModule.getProjectModule()
         projectInfo.getProject()
-        projectInfo.projectProductName()
       })
       return {
         visible,

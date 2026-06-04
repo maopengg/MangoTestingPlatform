@@ -12,7 +12,7 @@
           <a-button size="small" type="primary" :loading="saving" @click="saveTemplateConfig">
             保存字段配置
           </a-button>
-          <a-button size="small" :loading="syncLoading" @click="syncTemplateFields">
+          <a-button size="small" :loading="syncLoading" @click="confirmSyncTemplateFields">
             同步实体规则
           </a-button>
           <a-button
@@ -177,7 +177,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import { usePageData } from '@/store/page-data'
-  import { Message } from '@arco-design/web-vue'
+  import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
@@ -439,7 +439,7 @@
       return
     }
     syncLoading.value = true
-    postDataFactoryTemplateSyncFields({
+    return postDataFactoryTemplateSyncFields({
       id: templateForm.id,
       test_env: route.query.test_env || userStore.selected_environment,
     })
@@ -452,6 +452,20 @@
       .finally(() => {
         syncLoading.value = false
       })
+  }
+
+  function confirmSyncTemplateFields() {
+    if (!templateForm.id) {
+      Message.error('场景模板不存在，请返回后重试')
+      return
+    }
+    Modal.confirm({
+      title: '同步实体规则',
+      content: '同步后会使用当前实体字段规则覆盖场景模板字段配置，确认继续？',
+      okText: '确认同步',
+      cancelText: '取消',
+      onBeforeOk: () => syncTemplateFields(),
+    })
   }
 
   function loadDependencyTemplateOptions(row: any) {

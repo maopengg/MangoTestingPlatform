@@ -74,7 +74,7 @@
                 <span class="report-id-cell">{{ record.id }}</span>
               </template>
               <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+                {{ formatProjectProductPath(record?.project_product) }}
               </template>
               <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                 <a-tag :color="enumStore.status_colors[record.test_env]" size="small"
@@ -135,6 +135,7 @@
   import Title from '@/views/index/components/Title.vue'
   import StatusChart from '@/components/chart/StatusChart.vue'
   import BarChart from '@/components/chart/barChart.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
 
   const enumStore = useEnum()
 
@@ -249,13 +250,14 @@
 <style lang="less" scoped>
   .report-chart-grid {
     display: grid;
-    min-height: 280px;
+    height: 280px;
     margin-bottom: 12px;
     grid-template-columns: minmax(360px, 0.8fr) minmax(520px, 1.2fr);
     gap: 12px;
   }
 
   .report-chart-card {
+    height: 280px;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -266,9 +268,10 @@
     width: 110px;
   }
 
-  .status-card :deep(.status-chart),
-  .trend-card :deep(.report-trend-chart) {
+  .status-card :deep(.mango-status-chart),
+  .trend-card :deep(.mango-report-trend-chart) {
     flex: 1;
+    min-height: 0;
   }
 
   @media (max-width: 1px) {

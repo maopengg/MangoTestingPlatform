@@ -27,8 +27,8 @@ class APIBaseTestSetup(PublicBase):
                     ) -> ResponseModel:
         api_info = ApiInfo.objects.get(id=api_info_id)
         log.api.debug(f'执行API接口-1->ID:{api_info_id},name:{api_info.name}')
-        self.init_public(api_info.project_product_id, test_env)
         self.init_test_object(api_info.project_product_id, test_env)
+        self.init_public(api_info.project_product_id, test_env)
         # API info的请求
         if request_model is None:
             if api_info.headers is not None:

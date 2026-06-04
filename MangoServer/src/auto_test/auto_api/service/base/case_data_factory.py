@@ -16,9 +16,10 @@ from src.tools.log_collector import log
 class CaseDataFactory:
     """执行API用例前置中的数据工厂配置。"""
 
-    def __init__(self, test_setup: APIBaseTestSetup, api_case: ApiCase):
+    def __init__(self, test_setup: APIBaseTestSetup, api_case: ApiCase, user_id: int | None = None):
         self.test_setup = test_setup
         self.api_case = api_case
+        self.user_id = user_id
         self.runner: DataFactoryCaseConfigRunner | None = None
 
     def run_front(self):
@@ -31,6 +32,7 @@ class CaseDataFactory:
             test_object_id=self.test_setup.test_object.id,
             test_data=self.test_setup.test_data,
             logger=log.api,
+            user_id=self.user_id,
         )
         self.runner.run_front()
 
@@ -42,9 +44,10 @@ class CaseDataFactory:
 class ParameterDataFactory:
     """执行API接口场景前置中的数据工厂配置。"""
 
-    def __init__(self, test_setup: APIBaseTestSetup, parameter: ApiCaseDetailedParameter):
+    def __init__(self, test_setup: APIBaseTestSetup, parameter: ApiCaseDetailedParameter, user_id: int | None = None):
         self.test_setup = test_setup
         self.parameter = parameter
+        self.user_id = user_id
         self.runner: DataFactoryCaseConfigRunner | None = None
 
     def run_front(self):
@@ -57,6 +60,7 @@ class ParameterDataFactory:
             test_object_id=self.test_setup.test_object.id,
             test_data=self.test_setup.test_data,
             logger=log.api,
+            user_id=self.user_id,
         )
         self.runner.run_front()
 

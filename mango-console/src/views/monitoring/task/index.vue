@@ -4,17 +4,19 @@
       <TableHeader
         :show-filter="true"
         title="python脚本运行器（预警监控&Mock服务）"
-        @search="doRefresh"
+        @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  @blur="() => doRefresh()"
+                  allow-clear
+                  @blur="onSearchRefresh"
+                  @clear="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select'">
@@ -26,18 +28,14 @@
                   value-key="key"
                   allow-clear
                   allow-search
-                  @change="doRefresh"
+                  @change="onSearchRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <a-cascader
+                <ProjectProductSelect
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                  @change="doRefresh(item.value, true)"
+                  @change="(value) => doRefresh(value, true, true)"
                 />
               </template>
             </a-form-item>
@@ -84,7 +82,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.status]" size="small"
@@ -140,12 +138,9 @@
             />
           </template>
           <template v-else-if="item.type === 'cascader'">
-            <a-cascader
+            <ProjectProductSelect
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
               @change="onProjectChange(item.value)"
             />
           </template>
@@ -241,7 +236,8 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
-  import { useProject } from '@/store/modules/get-project'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath } from '@/utils/business-format'
   import {
     deleteMonitoringTask,
     downloadMonitoringTaskLog,
@@ -257,7 +253,6 @@
   import { fieldNames } from '@/setting'
   import { getSystemNoticeName } from '@/api/system/notice_group'
 
-  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
 
   const fileEditorRef = ref<any>(null)
@@ -300,7 +295,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    doRefresh(null, false, true)
   }
 
   function onAdd() {
@@ -442,7 +437,14 @@
       .catch(console.log)
   }
 
-  function doRefresh(projectProductId: number | string | null = null, bool_ = false) {
+  function onSearchRefresh() {
+    doRefresh(null, false, true)
+  }
+
+  function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
+    if (showLoading) {
+      table.tableLoading.value = true
+    }
     const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -455,6 +457,11 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+      .finally(() => {
+        if (showLoading) {
+          table.tableLoading.value = false
+        }
+      })
   }
 
   function onStart(record: any) {

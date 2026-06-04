@@ -47,7 +47,7 @@ class TestCase:
                     ERROR_MSG_0057[1]
                 )
             raise ApiError(*ERROR_MSG_0057)
-        self.case_base = CaseBase(self.test_setup, self.api_case)
+        self.case_base = CaseBase(self.test_setup, self.api_case, user_id=self.user_id)
 
         self.api_case.status = TaskEnum.PROCEED.value
         self.api_case.save()
@@ -101,19 +101,22 @@ class TestCase:
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
             self.api_case.status = StatusEnum.FAIL.value
             self.api_case.save()
-        self.case_base.case_posterior_main()
-        self.update_test_case(self.case_id, self.api_case_result.status)
-        if self.test_suite and self.test_suite_details:
-            UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
-                id=self.test_suite_details,
-                type=TestCaseTypeEnum.API,
-                test_suite=self.test_suite,
-                status=self.api_case_result.status,
-                error_message=self.api_case_result.error_message,
-                result_data=self.api_case_result
-            ))
-        log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
-        return self.api_case_result
+        try:
+            self.case_base.case_posterior_main()
+            self.update_test_case(self.case_id, self.api_case_result.status)
+            if self.test_suite and self.test_suite_details:
+                UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
+                    id=self.test_suite_details,
+                    type=TestCaseTypeEnum.API,
+                    test_suite=self.test_suite,
+                    status=self.api_case_result.status,
+                    error_message=self.api_case_result.error_message,
+                    result_data=self.api_case_result
+                ))
+            log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
+            return self.api_case_result
+        finally:
+            self.test_setup.close_db_connections()
 
     @staticmethod
     def normalize_parametrize(parametrize: dict | list) -> dict:
@@ -166,7 +169,7 @@ class TestCase:
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
             while error_retry < retry and status != StatusEnum.SUCCESS.value:
                 error_retry += 1
-                parameter_data_factory = ParameterDataFactory(self.test_setup, parameter)
+                parameter_data_factory = ParameterDataFactory(self.test_setup, parameter, user_id=self.user_id)
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
                     url=case_detailed.api_info.url,
@@ -208,6 +211,7 @@ class TestCase:
                     res_model.data_factory_cache_data = self.test_setup.test_data.get_data_factory_all()
                     res_model.status = StatusEnum.FAIL.value
                     res_model.error_message = error.msg
+                    self.api_case_result.steps.append(res_model)
                     if res_model.response:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,
                                              res_model.status)
@@ -217,13 +221,14 @@ class TestCase:
                     res_model.cache_data = self.test_setup.test_data.get_all()
                     res_model.data_factory_cache_data = self.test_setup.test_data.get_data_factory_all()
                     res_model.status = StatusEnum.FAIL.value
+                    msg = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                    res_model.error_message = msg
+                    self.api_case_result.steps.append(res_model)
                     if res_model.response:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,
                                              res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     log.api.error(f'API请求发生未知错误：{traceback.print_exc()}')
-                    msg = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
-                    res_model.error_message = msg
                     return StatusEnum.FAIL.value, msg
                 finally:
                     parameter_data_factory.cleanup()

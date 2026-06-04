@@ -15,10 +15,11 @@ from src.tools.log_collector import log
 class UiCaseDataFactory:
     """执行UI用例前置中的数据工厂配置。"""
 
-    def __init__(self, test_object_id: int | None, test_data, ui_case: UiCase):
+    def __init__(self, test_object_id: int | None, test_data, ui_case: UiCase, user_id: int | None = None):
         self.test_object_id = test_object_id
         self.test_data = test_data
         self.ui_case = ui_case
+        self.user_id = user_id
         self.runner: DataFactoryCaseConfigRunner | None = None
 
     def run_front(self):
@@ -31,6 +32,7 @@ class UiCaseDataFactory:
             test_object_id=self.test_object_id,
             test_data=self.test_data,
             logger=log.ui,
+            user_id=self.user_id,
         )
         self.runner.run_front()
 

@@ -16,14 +16,11 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
-from rest_framework.documentation import include_docs_urls
 
 from src.auto_test.auto_user.views.user import LoginViews
 from src.settings import IS_MINIO
 
 urlpatterns = [
-    path('docs', include_docs_urls(title='src', authentication_classes=[])),
-    #
     path("login", LoginViews.as_view({'post': 'login'})),  # 登录
     path("register", LoginViews.as_view({'post': 'register'})),  # 登录
     path("menu", LoginViews.as_view({'post': 'menu'})),
@@ -40,6 +37,15 @@ urlpatterns = [
     path('monitoring/', include("src.auto_test.monitoring.urls")),
 ]
 
+try:
+    import coreapi  # noqa: F401
+    import coreschema  # noqa: F401
+except ImportError:
+    pass
+else:
+    from rest_framework.documentation import include_docs_urls
+
+    urlpatterns.insert(0, path('docs', include_docs_urls(title='src', authentication_classes=[])))
+
 if not IS_MINIO:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-

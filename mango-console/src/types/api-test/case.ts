@@ -7,6 +7,7 @@ export interface JsonObject {
 export interface ApiKeyValueItem {
   key: string
   value: string
+  datasource_alias?: number | null
 }
 
 export interface ApiParametrizeItem {

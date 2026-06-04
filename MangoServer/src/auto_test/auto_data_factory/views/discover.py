@@ -53,6 +53,17 @@ class DataFactoryDiscoverViews(ViewSet):
         return Database.objects.get(id=database_id)
 
     @staticmethod
+    def _get_test_object_id(request: Request, database: Database) -> int:
+        test_object_id = DataFactoryDiscoverViews._get_param(request, 'test_object_id')
+        test_env = DataFactoryDiscoverViews._get_param(request, 'test_env')
+        project_product_id = DataFactoryDiscoverViews._get_param(request, 'project_product')
+        if not is_missing_value(test_object_id):
+            return int(test_object_id)
+        if not is_missing_value(test_env) and not is_missing_value(project_product_id):
+            return DataFactoryDatasourceResolver.resolve_test_object_id(project_product_id, test_env)
+        return database.test_object_id
+
+    @staticmethod
     def _is_refresh(request: Request) -> bool:
         value = request.data.get('refresh', request.query_params.get('refresh'))
         return value in [True, 'true', 'True', '1', 1]
@@ -66,12 +77,14 @@ class DataFactoryDiscoverViews(ViewSet):
     @error_response('system')
     def test_connection(self, request: Request):
         database = self._get_database(request)
+        DataFactoryDatasourceResolver.require_permission(self._get_test_object_id(request, database), write=False)
         return ResponseData.success(RESPONSE_MSG_0001, DataFactoryDatasource.test_connection(database))
 
     @action(methods=['post'], detail=False)
     @error_response('system')
     def tables(self, request: Request):
         database = self._get_database(request)
+        DataFactoryDatasourceResolver.require_permission(self._get_test_object_id(request, database), write=False)
         cache_key = self._tables_cache_key(database)
         if self._is_refresh(request):
             cache.delete(cache_key)
@@ -85,5 +98,6 @@ class DataFactoryDiscoverViews(ViewSet):
     @error_response('system')
     def table(self, request: Request):
         database = self._get_database(request)
+        DataFactoryDatasourceResolver.require_permission(self._get_test_object_id(request, database), write=False)
         table_name = request.data.get('table_name')
         return ResponseData.success(RESPONSE_MSG_0001, DataFactoryDiscover.get_table_schema(database, table_name))

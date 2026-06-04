@@ -182,7 +182,7 @@
           </div>
           <div class="toolbar-actions">
             <a-radio-group v-model="caseStatus" type="button" size="small" @change="reloadCases">
-              <a-radio :value="null">全部</a-radio>
+              <a-radio value="all">全部</a-radio>
               <a-radio :value="0">失败</a-radio>
               <a-radio :value="1">成功</a-radio>
               <a-radio :value="3">进行中</a-radio>
@@ -308,7 +308,7 @@
   const summary = ref<any>({})
   const cases = ref<any[]>([])
   const activeType = ref('0')
-  const caseStatus = ref<number | null>(null)
+  const caseStatus = ref<number | 'all'>('all')
   const summaryLoading = ref(false)
   const caseLoading = ref(false)
   const drawerVisible = ref(false)
@@ -410,7 +410,7 @@
       2: '只看待开始',
       3: '只看进行中',
     }
-    return caseStatus.value === null ? '全部结果' : map[caseStatus.value] || '全部结果'
+    return caseStatus.value === 'all' ? '全部结果' : map[caseStatus.value] || '全部结果'
   })
 
   function ratio(value = 0, total = 0) {
@@ -457,7 +457,7 @@
       page: pagination.page,
       pageSize: pagination.pageSize,
     }
-    if (caseStatus.value !== null) {
+    if (caseStatus.value !== 'all') {
       data.status = caseStatus.value
     }
     return data

@@ -11,6 +11,7 @@ class StrictSchema(BaseModel):
 class ApiKeyValueItem(StrictSchema):
     key: str = ''
     value: str = ''
+    datasource_alias: int | None = None
 
 
 class ApiParametrizeItem(StrictSchema):
@@ -33,6 +34,7 @@ class ApiSqlAssertionItem(StrictSchema):
     actual: str = ''
     method: str = ''
     expect: str = ''
+    datasource_alias: int | None = None
 
 
 class ApiGeneralAssertionParameter(StrictSchema):

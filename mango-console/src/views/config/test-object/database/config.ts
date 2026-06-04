@@ -18,6 +18,21 @@ export const conditionItems: Array<FormItem> = reactive([
 ])
 export const formItems: FormItem[] = reactive([
   {
+    label: '逻辑数据源',
+    key: 'datasource_alias',
+    value: ref(''),
+    type: 'select',
+    required: true,
+    placeholder: '请选择逻辑数据源',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '数据库类型',
     key: 'db_type',
     value: 0,
@@ -132,6 +147,12 @@ export const tableColumns = useTableColumn([
     title: '主库',
     key: 'name',
     dataIndex: 'name',
+  },
+  {
+    title: '绑定逻辑数据源',
+    key: 'datasource_alias',
+    dataIndex: 'datasource_alias',
+    width: 180,
   },
   {
     title: '用户名',
