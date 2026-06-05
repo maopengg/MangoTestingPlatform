@@ -232,8 +232,11 @@
     </section>
 
     <a-drawer v-model:visible="drawerVisible" :width="1000" title="测试用例详情">
+      <div v-if="!selectedCaseHasDetail" class="report-detail-empty">
+        暂无详细执行结果
+      </div>
       <section
-        v-if="selectedCase.case_type === 0"
+        v-else-if="selectedCase.case_type === 0"
         class="mango-section-card report-detail-drawer-card"
       >
         <div class="mango-section-title">
@@ -441,6 +444,36 @@
   function getTotal(res: any) {
     return Number(res?.totalSize || res?.total || res?.count || 0)
   }
+
+  const selectedCaseHasDetail = computed(() => {
+    const record = selectedCase.value || {}
+    const caseType = Number(record?.case_type ?? activeType.value)
+    if (caseType === 0) {
+      return (
+        (Array.isArray(record?.element_result_list) && record.element_result_list.length > 0) ||
+        (Array.isArray(record?.children) && record.children.length > 0)
+      )
+    }
+    if (caseType === 1) {
+      return !!(
+        record?.request ||
+        record?.response ||
+        record?.ass ||
+        record?.error_message ||
+        record?.name
+      )
+    }
+    if (caseType === 2) {
+      return !!(
+        record?.attachments ||
+        record?.statusDetails ||
+        record?.fullName ||
+        record?.description ||
+        record?.name
+      )
+    }
+    return false
+  })
 
   function showDetails(record: any) {
     selectedCase.value = {
@@ -668,6 +701,15 @@
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-lg);
     box-shadow: var(--m-shadow);
+  }
+
+  .report-detail-empty {
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--m-muted);
+    font-size: 14px;
   }
 
   .report-head {

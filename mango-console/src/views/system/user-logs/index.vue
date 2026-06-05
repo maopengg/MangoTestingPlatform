@@ -101,7 +101,7 @@
             </template>
             <template v-else-if="item.key === 'source_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.source_type]" size="small"
-                >{{ enumStore.cline_type[record.source_type]?.title || '-' }}
+                >{{ sourceTypeText(record.source_type) }}
               </a-tag>
             </template>
           </a-table-column>
@@ -164,6 +164,11 @@
         data.userList = res.data
       })
       .catch(console.log)
+  }
+
+  function sourceTypeText(sourceType: number | string) {
+    if (sourceType === 'MCP') return 'MCP'
+    return enumStore.cline_type[sourceType]?.title || '-'
   }
 
   onMounted(() => {

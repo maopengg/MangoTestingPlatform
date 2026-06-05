@@ -53,7 +53,12 @@ export function postSystemTasksBatchSetCases(
   })
 }
 
-export function getSystemTasksTypeCaseName(type: any, moduleId?: number | string, projectProductId?: any) {
+export function getSystemTasksTypeCaseName(
+  type: any,
+  moduleId?: number | string,
+  projectProductId?: any,
+  moduleIds?: Array<number | string>
+) {
   return get({
     url: 'system/tasks/details/type/case/name',
     data: () => {
@@ -61,6 +66,7 @@ export function getSystemTasksTypeCaseName(type: any, moduleId?: number | string
         type: type,
         module_id: moduleId,
         project_product_id: projectProductId,
+        module_ids: moduleIds?.join(','),
       }
     },
   })

@@ -235,7 +235,7 @@ export const tableColumns = useTableColumn([
     title: '过期时间',
     key: 'expires_at',
     dataIndex: 'expires_at',
-    width: 170,
+    width: 180,
   },
   {
     title: '刷新状态',

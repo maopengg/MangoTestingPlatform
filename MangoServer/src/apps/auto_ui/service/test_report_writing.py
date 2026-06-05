@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description:
+# @Time   : 2023-06-04 12:24
+# @Author : 毛鹏
+from src.apps.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
+from src.apps.auto_data_factory.service.cleanup import DataFactoryCleanup
+from src.common.exceptions import *
+from src.common.models.ui_model import UiCaseResultModel, PageStepsResultModel
+
+
+class TestReportWriting:
+
+    @classmethod
+    def update_page_step_status(cls, data: PageStepsResultModel) -> None:
+        try:
+            log.ui.debug(f'开始写入步骤测试结果，步骤数据是：{data.model_dump_json()}')
+            res = PageSteps.objects.get(id=data.id)
+            res.status = data.status
+            res.result_data = data.model_dump()
+            res.save()
+        except PageSteps.DoesNotExist:
+            log.ui.error(
+                '忽略这个报错，如果是在步骤详情中没有查到，可以忽略这个错误，步骤详情中的调试不会修改整个步骤状态')
+
+    @classmethod
+    def update_test_case(cls, data: UiCaseResultModel):
+        log.ui.debug(f'开始写入用例测试结果，用例的测试状态是：{data.status}')
+        case = UiCase.objects.get(id=data.id)
+        case.status = data.status
+        case.save()
+        for i in data.steps:
+            cls.update_step(i)
+        cls.cleanup_data_factory(data)
+
+    @classmethod
+    def update_step(cls, step_data: PageStepsResultModel):
+        log.ui.debug(f'开始写入用例中步骤测试结果，步骤数据是：{step_data.model_dump_json()}')
+
+        case_step_detailed = UiCaseStepsDetailed.objects.get(id=step_data.case_step_details_id)
+        case_step_detailed.status = step_data.status
+        case_step_detailed.error_message = step_data.error_message
+        case_step_detailed.result_data = step_data.model_dump()
+        case_step_detailed.save()
+
+        page_step = PageSteps.objects.get(id=step_data.id)
+        page_step.status = step_data.status
+        page_step.result_data = step_data.model_dump()
+        page_step.save()
+
+    @classmethod
+    def cleanup_data_factory(cls, data: UiCaseResultModel):
+        for execution_id in data.data_factory_auto_cleanup_execution_ids:
+            try:
+                result = DataFactoryCleanup.cleanup_execution(execution_id, allow_missing=True)
+                log.ui.info(f'UI用例数据工厂自动清理完成，execution_id:{execution_id}，结果:{result}')
+            except Exception as error:
+                log.ui.error(f'UI用例数据工厂自动清理失败，execution_id:{execution_id}，错误:{error}')

@@ -168,7 +168,7 @@ export const tableColumns = useTableColumn([
     title: '最近登录时间',
     key: 'last_login_time',
     dataIndex: 'last_login_time',
-    width: 170,
+    width: 180,
   },
   {
     title: '操作',

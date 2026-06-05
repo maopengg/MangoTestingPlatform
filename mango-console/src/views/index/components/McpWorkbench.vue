@@ -193,7 +193,12 @@
 
   const docsUrl =
     'http://43.142.161.61:8002/pages/MCP%E6%9C%8D%E5%8A%A1/%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.html'
-  const backendBaseUrl = computed(() => (baseURL || window.location.origin).replace(/\/+$/, ''))
+  const backendBaseUrl = computed(() => {
+    if (!baseURL || baseURL.startsWith('/')) {
+      return window.location.origin.replace(/\/+$/, '')
+    }
+    return baseURL.replace(/\/+$/, '')
+  })
   const mcpUrl = computed(() => `${backendBaseUrl.value}/mcp`)
   const modeText = computed(() => import.meta.env.MODE || '-')
   const activePrompt = computed(() => prompts[promptIndex.value])
@@ -545,5 +550,94 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     color: var(--m-text-2);
     font-size: 12px;
     line-height: 20px;
+  }
+
+  @media (max-width: 1440px), (max-height: 820px) {
+    .mango-mcp-workbench,
+    .mango-mcp-scroll-area {
+      gap: 6px;
+    }
+
+    .mango-mcp-workbench {
+      padding-top: 4px;
+      padding-bottom: 3px;
+    }
+
+    .mango-mcp-head p {
+      margin-top: 2px;
+      line-height: 16px;
+    }
+
+    .mango-mcp-endpoint-box,
+    .mango-mcp-api-key-box {
+      padding: 7px 8px;
+    }
+
+    .mango-mcp-status-grid,
+    .mango-mcp-capability-grid,
+    .mango-mcp-action-row {
+      gap: 6px;
+    }
+
+    .mango-mcp-status-item {
+      padding: 6px;
+    }
+
+    .mango-mcp-capability-item {
+      gap: 6px;
+      padding: 6px;
+    }
+
+    .mango-mcp-prompt-panel {
+      min-height: 76px;
+      padding: 7px;
+    }
+
+    .mango-mcp-prompt-text {
+      min-height: 38px;
+      padding: 6px 7px;
+      line-height: 16px;
+    }
+  }
+
+  @media (max-width: 1280px), (max-height: 760px) {
+    .mango-mcp-head {
+      align-items: center;
+    }
+
+    .mango-mcp-head p,
+    .mango-mcp-capability-item span {
+      display: none;
+    }
+
+    .mango-mcp-status-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mango-mcp-status-item:last-child {
+      grid-column: 1 / -1;
+    }
+
+    .mango-mcp-capability-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mango-mcp-capability-item {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .mango-mcp-capability-item strong {
+      font-size: 11px;
+    }
+
+    .mango-mcp-capability-icon {
+      font-size: 15px;
+    }
+
+    .mango-mcp-action-row {
+      grid-template-columns: 1fr;
+      padding-top: 2px;
+    }
   }
 </style>

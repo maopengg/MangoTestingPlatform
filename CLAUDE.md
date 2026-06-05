@@ -20,13 +20,13 @@ mango-console/     # Vue 3 + TypeScript web frontend
 
 ```bash
 cd MangoServer
-# Start dev server (Uvicorn + ASGI)
-python start_server.py
+# Start dev services
+sh scripts/start_dev_services.sh
+# Start core-api only
+python manage.py runserver --env=dev 0.0.0.0:8000
 # Django management commands
 python manage.py migrate
 python manage.py createsuperuser
-# Run Django dev server (alternative)
-python manage.py runserver --env=dev 0.0.0.0:8000
 ```
 
 ### MangoActuator (desktop executor)
@@ -52,14 +52,14 @@ npm run tsc        # Type-check
 ### Docker (full stack)
 
 ```bash
-docker compose up -d    # Starts MySQL, MinIO, mango_server, mango-console, mango_actuator
+docker compose up -d    # Starts core-api, scheduler, dispatcher, api workers, MCP, frontend, actuator
 ```
 
 ## Architecture
 
 ### MangoServer — Django Backend
 
-- **Entry point**: `start_server.py` runs `uvicorn src.asgi:application` after calling `migrate` and `createcachetable`
+- **Entry point**: Docker starts `uvicorn src.asgi:application`; local multi-service startup uses `scripts/start_dev_services.sh`
 - **ASGI app**: `src/asgi.py` — ProtocolTypeRouter dispatching HTTP (Django) and WebSocket (Channels)
 - **Settings**: `DJANGO_ENV` environment variable selects `src/settings/{dev,test,prod,master}.py`; defaults to `master`
 - **Database**: MySQL by default (`IS_SQLITE = False`); connection config in `src/settings/database.json` or directly in the env-specific setting file

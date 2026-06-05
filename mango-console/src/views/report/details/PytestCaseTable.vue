@@ -41,7 +41,7 @@
               v-if="!record.children"
               type="text"
               size="mini"
-              @click="$emit('show-details', record)"
+              @click="$emit('show-details', record.__detailRecord || record)"
             >
               查看详细报告
             </a-button>
@@ -97,6 +97,12 @@
         __caseRowSpan: index === 0 ? rowSpan : 0,
         __caseSourceId: item?.id,
         __isFirstCaseRow: index === 0,
+        __detailRecord: {
+          ...row,
+          error_message: row?.statusDetails?.message || row?.error_message,
+          case_type: row?.case_type ?? 2,
+          name: row?.name || item?.case_name || item?.name,
+        },
       }))
     })
   )

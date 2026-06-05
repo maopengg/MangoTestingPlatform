@@ -46,13 +46,13 @@ export const uiColumns: any = reactive([
     title: '开始时间',
     dataIndex: 'test_time',
     key: 'test_time',
-    width: 142,
+    width: 180,
   },
   {
     title: '结束时间',
     dataIndex: 'stop_time',
     key: 'stop_time',
-    width: 142,
+    width: 180,
   },
   {
     title: '测试环境',
@@ -144,7 +144,7 @@ export const apiColumns: any = reactive([
     title: '响应时间',
     dataIndex: 'response_time',
     key: 'response_time',
-    width: 90,
+    width: 180,
   },
   {
     title: '测试结果',
@@ -210,13 +210,13 @@ export const pytestColumns: any = reactive([
     title: '开始时间',
     dataIndex: 'start',
     key: 'start',
-    width: 142,
+    width: 180,
   },
   {
     title: '结束时间',
     dataIndex: 'stop',
     key: 'stop',
-    width: 142,
+    width: 180,
   },
   {
     title: '测试结果',

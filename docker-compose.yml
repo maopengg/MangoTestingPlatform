@@ -1,3 +1,20 @@
+x-mango-server-common: &mango-server-common
+  image: mango-server:${DJANGO_ENV}
+  restart: unless-stopped
+  volumes:
+    - /etc/localtime:/etc/localtime:ro
+  environment:
+    DJANGO_SETTINGS_MODULE: src.settings
+    DJANGO_ENV: ${DJANGO_ENV}
+    MINIO_STORAGE_ENDPOINT: minio:9000
+    MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+    MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    MINIO_STORAGE_USE_HTTPS: "false"
+    MINIO_STORAGE_MEDIA_BUCKET_NAME: mango-file
+    MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET: "true"
+  networks:
+    - app_network
+
 services:
   db:
     image: mysql:8.0.40-debian
@@ -34,9 +51,9 @@ services:
     volumes:
       - /mango_data/minio:/data
       - /etc/localtime:/etc/localtime:ro
-    command: server /data --console-address ":${MINIO_CONSOLE_PORT}"
+    command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${MINIO_API_PORT}/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 10s
       retries: 5
@@ -45,27 +62,80 @@ services:
         aliases: [minio]
 
   mango_server:
+    <<: *mango-server-common
     build:
       context: ./MangoServer
       dockerfile: Dockerfile
       args:
         DJANGO_ENV: ${DJANGO_ENV}
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
       minio:
-        condition: service_healthy
-    environment:
-      - DJANGO_SETTINGS_MODULE=src.settings
+        condition: service_started
     networks:
       app_network:
         aliases: [server]
     hostname: server
+
+  scheduler_service:
+    <<: *mango-server-common
+    command: python manage.py run_scheduler --env=${DJANGO_ENV} --node-name=scheduler-1
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  task_dispatcher:
+    <<: *mango-server-common
+    command: python manage.py run_dispatcher --env=${DJANGO_ENV} --node-name=dispatcher-1
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  api_worker_1:
+    <<: *mango-server-common
+    command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-1 --concurrency=5 --db-idle-seconds=1800
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  api_worker_2:
+    <<: *mango-server-common
+    command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-2 --concurrency=5 --db-idle-seconds=1800
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  mcp_service:
+    <<: *mango-server-common
+    command: python manage.py run_mcp_service --env=${DJANGO_ENV} --host=0.0.0.0 --port=8010
+    expose:
+      - "8010"
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  mango_gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./deploy/nginx/mango-server.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      mango_server:
+        condition: service_started
+      mcp_service:
+        condition: service_started
+      mango-console:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - app_network
 
   mango-console:
     build:
@@ -74,8 +144,8 @@ services:
       args:
         VUE_ENV: ${VUE_ENV}
     restart: unless-stopped
-    ports:
-      - "8001:80"
+    expose:
+      - "80"
     volumes:
       - /etc/localtime:/etc/localtime:ro
     networks: [app_network]

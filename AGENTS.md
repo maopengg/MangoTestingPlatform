@@ -31,8 +31,8 @@ mango-console/     # Vue 3 + TypeScript 前端
 
 ```bash
 cd MangoServer
-python start_server.py
 python manage.py runserver --env=dev 0.0.0.0:8000
+sh scripts/start_dev_services.sh
 ```
 
 后端开发约束：
@@ -40,18 +40,18 @@ python manage.py runserver --env=dev 0.0.0.0:8000
 1. 业务逻辑尽量放在 `service/`，ViewSet 只负责入参、权限、序列化和响应。
 2. 返回结构沿用 `ResponseData.success/error`。
 3. 业务异常优先使用现有 `ToolsError` 或模块异常。
-4. 通过 `ResponseData.fail` 返回给前端的错误响应文案，必须先定义在 `src/tools/view/response_msg.py`，代码中引用常量，不直接写散落字符串。
-5. 通过 `ToolsError` 或异常抛出的业务错误文案，必须先定义在 `src/exceptions/error_msg.py`，代码中引用常量，不直接写散落字符串。
+4. 通过 `ResponseData.fail` 返回给前端的错误响应文案，必须先定义在 `src/common/tools/view/response_msg.py`，代码中引用常量，不直接写散落字符串。
+5. 通过 `ToolsError` 或异常抛出的业务错误文案，必须先定义在 `src/common/exceptions/error_msg.py`，代码中引用常量，不直接写散落字符串。
 6. 模型改动要同步检查 serializer、service、MCP、前端返回字段。
 7. `JSONField` 必须有明确结构约定，不随意存任意 JSON。
 8. 列表接口注意 `select_related`、`prefetch_related`，避免 N+1。
-9. 枚举统一放在 `src/enums/` 或模块既有枚举位置。
+9. 枚举统一放在 `src/common/enums/` 或模块既有枚举位置。
 10. Service 中尽量引用枚举，不要散落数字魔法值。
 11. 开发过程中不允许执行生成迁移脚本命令。
 12. 开发过程中不允许执行迁移命令。
 13. 迁移脚本由用户自己生成和执行。
 14. 如模型发生变化，只说明需要迁移，不要运行 `makemigrations` 或 `migrate`。
-15. 新增 MCP 增删改工具时，必须确认是否会被 `src/mcp_server/app.py` 的演示环境写操作拦截识别；如属于新增、修改、删除、清理、上传、绑定、执行落库等写操作，工具命名应使用既有前缀或同步更新 MCP 写操作分类规则。
+15. 新增 MCP 增删改工具时，必须确认是否会被 `src/services/mcp_server/app.py` 的演示环境写操作拦截识别；如属于新增、修改、删除、清理、上传、绑定、执行落库等写操作，工具命名应使用既有前缀或同步更新 MCP 写操作分类规则。
 
 ## 前端 mango-console
 

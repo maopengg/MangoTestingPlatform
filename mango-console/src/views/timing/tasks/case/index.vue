@@ -30,7 +30,7 @@
 
         <div class="mango-soft-panel mango-timing-case-filter">
           <a-form :model="addForm" layout="vertical">
-            <a-form-item label="测试类型">
+            <a-form-item class="mango-timing-case-filter-main" label="测试类型">
               <a-select
                 v-model="addForm.type"
                 :field-names="fieldNames"
@@ -40,40 +40,46 @@
                 @change="changeType"
               />
             </a-form-item>
-            <a-form-item label="项目/产品">
+            <a-form-item class="mango-timing-case-filter-main" label="项目/产品">
               <ProjectProductSelect
                 v-model="addForm.projectProduct"
                 placeholder="请选择项目/产品"
                 @change="onProjectProductChange"
               />
             </a-form-item>
-            <a-form-item label="模块名称">
-              <ProductModuleSelect
-                v-if="!isPytestCaseType"
-                v-model="addForm.module"
-                :auto-clear="false"
-                :project-product-id="addForm.projectProduct || route.query.project_product_id"
-                placeholder="请选择测试模块"
-                @change="tasksTypeCaseName"
-              />
+            <a-form-item class="mango-timing-case-filter-module" label="一级模块">
               <a-select
-                v-else
-                v-model="addForm.module"
-                :field-names="fieldNames"
-                :options="data.moduleList"
+                v-model="addForm.moduleLevel1"
+                :loading="moduleLoading"
+                :options="moduleLevel1Options"
                 allow-clear
                 allow-search
-                placeholder="请选择测试模块"
-                value-key="key"
-                @change="tasksTypeCaseName"
+                placeholder="全部一级模块"
+                @change="onAddModuleLevel1Change"
               />
             </a-form-item>
-            <a-form-item label="关键词">
-              <a-input
-                v-model="addForm.keyword"
+            <a-form-item class="mango-timing-case-filter-module" label="二级模块">
+              <a-select
+                v-model="addForm.moduleLevel2"
+                :disabled="!addForm.moduleLevel1"
+                :loading="moduleLoading"
+                :options="moduleLevel2Options"
                 allow-clear
-                placeholder="搜索用例名称"
-                @clear="addForm.keyword = ''"
+                allow-search
+                placeholder="全部二级模块"
+                @change="onAddModuleLevel2Change"
+              />
+            </a-form-item>
+            <a-form-item class="mango-timing-case-filter-module" label="三级模块">
+              <a-select
+                v-model="addForm.moduleLevel3"
+                :disabled="!addForm.moduleLevel1"
+                :loading="moduleLoading"
+                :options="moduleLevel3Options"
+                allow-clear
+                allow-search
+                placeholder="全部三级模块"
+                @change="onAddModuleLevel3Change"
               />
             </a-form-item>
           </a-form>
@@ -89,45 +95,51 @@
             可添加用例
           </a-checkbox>
           <small>
-            已加载 {{ filteredCandidateCases.length }} / {{ candidateCases.length }}
+            已加载 {{ candidateCases.length }}
           </small>
         </div>
-        <a-table
-          class="mango-timing-case-table"
-          :bordered="false"
-          :columns="candidateColumns"
-          :data="filteredCandidateCases"
-          :loading="candidateLoading"
-          :pagination="false"
-          :row-key="'key'"
-          size="small"
-          :scroll="{ y: '100%' }"
-        >
-          <template #columns>
-            <a-table-column title="" data-index="selected" :width="54" align="center">
-              <template #cell="{ record }">
-                <a-checkbox
-                  :disabled="isCaseBound(record.key)"
-                  :model-value="addSelectionKeys.includes(record.key)"
-                  @change="(checked) => toggleCandidateCase(record.key, checked as boolean)"
-                />
-              </template>
-            </a-table-column>
-            <a-table-column title="用例名称" data-index="title" :ellipsis="true" :tooltip="true">
-              <template #cell="{ record }">
-                <span :class="{ 'mango-muted-text': isCaseBound(record.key) }">
-                  {{ record.title }}
-                </span>
-              </template>
-            </a-table-column>
-            <a-table-column title="状态" data-index="status" :width="86" align="center">
-              <template #cell="{ record }">
-                <a-tag v-if="isCaseBound(record.key)" size="small">已添加</a-tag>
-                <a-tag v-else color="green" size="small">可添加</a-tag>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
+        <div class="mango-timing-case-candidate-table">
+          <a-table
+            class="mango-timing-case-table mango-timing-case-scroll-table"
+            :bordered="false"
+            :columns="candidateColumns"
+            :data="pagedCandidateCases"
+            :loading="candidateLoading || moduleLoading || boundCaseKeysLoading"
+            :pagination="false"
+            :row-key="'key'"
+            size="small"
+            :scroll="{ y: '100%' }"
+          >
+            <template #columns>
+              <a-table-column title="" data-index="selected" :width="54" align="center">
+                <template #cell="{ record }">
+                  <a-checkbox
+                    :disabled="isCaseBound(record.key)"
+                    :model-value="addSelectionKeys.includes(record.key)"
+                    @change="(checked) => toggleCandidateCase(record.key, checked as boolean)"
+                  />
+                </template>
+              </a-table-column>
+              <a-table-column title="用例名称" data-index="title" :ellipsis="true" :tooltip="true">
+                <template #cell="{ record }">
+                  <span :class="{ 'mango-muted-text': isCaseBound(record.key) }">
+                    {{ record.title }}
+                  </span>
+                </template>
+              </a-table-column>
+              <a-table-column title="状态" data-index="status" :width="86" align="center">
+                <template #cell="{ record }">
+                  <a-tag v-if="isCaseBound(record.key)" size="small">已添加</a-tag>
+                  <a-tag v-else color="green" size="small">可添加</a-tag>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+          <TableFooter
+            class="mango-timing-case-footer"
+            :pagination="candidatePagination"
+          />
+        </div>
       </section>
 
       <section class="mango-section-card mango-timing-case-bound">
@@ -218,7 +230,10 @@
 
         <div class="mango-timing-case-bound-table">
           <a-table
-            class="mango-timing-case-table"
+            :class="[
+              'mango-timing-case-table',
+              { 'mango-timing-case-scroll-table': boundNeedsVerticalScroll },
+            ]"
             :bordered="false"
             :columns="tableColumns"
             :data="table.dataList"
@@ -228,7 +243,7 @@
             :row-selection="{ selectedRowKeys, showCheckedAll }"
             :row-key="rowKey"
             size="small"
-            :scroll="{ x: 1160, y: '100%' }"
+            :scroll="boundTableScroll"
             @selection-change="onSelectionChange"
           >
             <template #columns>
@@ -283,7 +298,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useRoute } from 'vue-router'
   import { fieldNames } from '@/setting'
@@ -298,6 +313,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getPytestProductName } from '@/api/pytest/product'
   import { getUserName } from '@/api/user/user'
+  import { getUserModuleName } from '@/api/system/module'
   import TableFooter from '@/components/table/TableFooter.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
@@ -307,27 +323,39 @@
     title: string
   }
 
+  type ProductModuleOption = {
+    key: string | number
+    title: string
+    superior_module_1?: string | null
+    superior_module_2?: string | null
+  }
+
   const enumStore = useEnum()
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const pagination = usePagination(doRefresh)
+  const candidatePagination = usePagination(() => loadCandidateCases(false))
   const rowKey = useRowKey('id')
   const route = useRoute()
 
   const addForm = reactive({
-    type: Number(route.query.type ?? 0),
+    type: Number(route.query.type ?? 1),
     projectProduct: route.query.project_product_id || '',
-    module: '',
-    keyword: '',
+    moduleLevel1: '',
+    moduleLevel2: '',
+    moduleLevel3: '',
   })
   const data: any = reactive({
-    moduleList: [],
     boundModuleList: [],
     nickname: [],
   })
   const candidateCases = ref<CandidateCase[]>([])
+  const moduleOptions = ref<ProductModuleOption[]>([])
   const addSelectionKeys = ref<Array<string | number>>([])
   const candidateLoading = ref(false)
+  const moduleLoading = ref(false)
+  const boundCaseKeysLoading = ref(false)
+  const boundCaseKeySet = ref<Set<string>>(new Set())
   const addLoading = ref(false)
   const deleteLoading = ref(false)
   const boundFilter = reactive({
@@ -348,24 +376,66 @@
     const name = route.query.name || '-'
     return `定时任务用例配置 / ${id} / ${name}`
   })
-  const isPytestCaseType = computed(() => Number(addForm.type) === 2)
   const isBoundPytestCaseType = computed(() => Number(boundFilter.type) === 2)
-  const boundCaseKeySet = computed(() => {
-    const currentType = Number(addForm.type)
-    return new Set(
-      table.dataList
-        .filter((item: any) => Number(item.type) === currentType)
-        .map((item: any) => String(getBoundCaseId(item)))
+  const normalizedModuleOptions = computed(() => {
+    return moduleOptions.value.map((item) => ({
+      ...item,
+      level1: normalizeModuleName(item.superior_module_1),
+      level2: normalizeModuleName(item.superior_module_2),
+      level3: normalizeModuleName(item.title),
+    }))
+  })
+  const moduleLevel1Options = computed(() => {
+    return uniqueOptions(
+      normalizedModuleOptions.value
+        .map((item) => item.level1)
         .filter(Boolean)
     )
   })
-  const filteredCandidateCases = computed(() => {
-    const keyword = addForm.keyword.trim().toLowerCase()
-    if (!keyword) return candidateCases.value
-    return candidateCases.value.filter((item) => String(item.title || '').toLowerCase().includes(keyword))
+  const moduleLevel2Options = computed(() => {
+    return uniqueOptions(
+      normalizedModuleOptions.value
+        .filter((item) => !addForm.moduleLevel1 || item.level1 === addForm.moduleLevel1)
+        .map((item) => item.level2)
+        .filter(Boolean)
+    )
+  })
+  const moduleLevel3Options = computed(() => {
+    return normalizedModuleOptions.value
+      .filter((item) => {
+        return (
+          (!addForm.moduleLevel1 || item.level1 === addForm.moduleLevel1)
+          && (!addForm.moduleLevel2 || item.level2 === addForm.moduleLevel2)
+        )
+      })
+      .map((item) => ({
+        value: item.key,
+        label: item.level3,
+      }))
+      .filter((item) => item.label)
+  })
+  const selectedCandidateModuleIds = computed(() => {
+    if (addForm.moduleLevel3) {
+      return [addForm.moduleLevel3]
+    }
+    if (!addForm.moduleLevel1 && !addForm.moduleLevel2) {
+      return []
+    }
+    return normalizedModuleOptions.value
+      .filter((item) => {
+        return (
+          (!addForm.moduleLevel1 || item.level1 === addForm.moduleLevel1)
+          && (!addForm.moduleLevel2 || item.level2 === addForm.moduleLevel2)
+        )
+      })
+      .map((item) => item.key)
+  })
+  const pagedCandidateCases = computed(() => {
+    const start = (candidatePagination.page - 1) * candidatePagination.pageSize
+    return candidateCases.value.slice(start, start + candidatePagination.pageSize)
   })
   const selectableCandidateCases = computed(() =>
-    filteredCandidateCases.value.filter((item) => !isCaseBound(item.key))
+    candidateCases.value.filter((item) => !isCaseBound(item.key))
   )
   const candidateAllChecked = computed(() => {
     if (selectableCandidateCases.value.length === 0) return false
@@ -389,6 +459,29 @@
       { total: 0, ui: 0, api: 0, pytest: 0 }
     )
   })
+  const boundNeedsVerticalScroll = computed(() => table.dataList.length > 8)
+  const boundTableScroll = computed(() => {
+    return boundNeedsVerticalScroll.value ? { x: 1160, y: '100%' } : { x: 1160 }
+  })
+
+  watch(
+    () => candidateCases.value.length,
+    (total) => {
+      candidatePagination.setTotalSize(total)
+      const maxPage = Math.max(1, Math.ceil(total / candidatePagination.pageSize))
+      if (candidatePagination.page > maxPage) {
+        candidatePagination.page = maxPage
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => candidatePagination.pageSize,
+    () => {
+      candidatePagination.page = 1
+    }
+  )
 
   function getBoundCaseName(record: any) {
     return record.ui_case?.name || record.api_case?.name || record.pytest_case?.name || '-'
@@ -399,6 +492,17 @@
       return value[value.length - 1] ?? ''
     }
     return value || ''
+  }
+
+  function normalizeModuleName(value: string | null | undefined) {
+    return value?.trim() || ''
+  }
+
+  function uniqueOptions(values: string[]) {
+    return Array.from(new Set(values)).map((item) => ({
+      value: item,
+      label: item,
+    }))
   }
 
   function getBoundCase(record: any) {
@@ -461,16 +565,13 @@
   function clearCandidateCases() {
     candidateCases.value = []
     addSelectionKeys.value = []
+    candidatePagination.page = 1
   }
 
   function onProjectProductChange() {
-    addForm.module = ''
-    data.moduleList = []
+    resetAddModuleSelection()
     clearCandidateCases()
-    if (isPytestCaseType.value) {
-      onPytestProductModuleName(addForm.projectProduct || route.query.project_product_id)
-    }
-    loadCandidateCases()
+    loadAddModuleOptions().then(loadCandidateCases)
   }
 
   function onBoundFilterChange() {
@@ -501,32 +602,93 @@
 
   function changeType(value: number) {
     addForm.type = value
-    addForm.module = ''
+    resetAddModuleSelection()
     clearCandidateCases()
-    if (Number(value) === 2) {
-      onPytestProductModuleName(addForm.projectProduct || route.query.project_product_id)
-    }
+    loadBoundCaseKeys()
     loadCandidateCases()
   }
 
-  function tasksTypeCaseName(value: number) {
-    addForm.module = value || ''
+  function resetAddModuleSelection() {
+    addForm.moduleLevel1 = ''
+    addForm.moduleLevel2 = ''
+    addForm.moduleLevel3 = ''
+  }
+
+  function onAddModuleLevel1Change() {
+    addForm.moduleLevel2 = ''
+    addForm.moduleLevel3 = ''
     loadCandidateCases()
   }
 
-  function loadCandidateCases() {
-    clearCandidateCases()
+  function onAddModuleLevel2Change() {
+    addForm.moduleLevel3 = ''
+    loadCandidateCases()
+  }
+
+  function onAddModuleLevel3Change() {
+    loadCandidateCases()
+  }
+
+  function loadAddModuleOptions() {
     const projectProductId = getLeafValue(addForm.projectProduct || route.query.project_product_id)
-    const moduleId = getLeafValue(addForm.module)
-    if (!moduleId && !projectProductId) return
+    moduleOptions.value = []
+    if (!projectProductId) {
+      return Promise.resolve()
+    }
+    moduleLoading.value = true
+    return getUserModuleName(projectProductId)
+      .then((res) => {
+        moduleOptions.value = Array.isArray(res.data) ? res.data : []
+      })
+      .catch(console.log)
+      .finally(() => {
+        moduleLoading.value = false
+      })
+  }
+
+  function loadCandidateCases(resetPage = true) {
+    if (resetPage) {
+      clearCandidateCases()
+    }
+    const projectProductId = getLeafValue(addForm.projectProduct || route.query.project_product_id)
+    const moduleIds = selectedCandidateModuleIds.value
+    if (!moduleIds.length && !projectProductId) return
     candidateLoading.value = true
-    getSystemTasksTypeCaseName(addForm.type, moduleId || undefined, projectProductId || undefined)
+    getSystemTasksTypeCaseName(
+      addForm.type,
+      undefined,
+      projectProductId || undefined,
+      moduleIds.length ? moduleIds : undefined
+    )
       .then((res) => {
         candidateCases.value = res.data || []
       })
       .catch(console.log)
       .finally(() => {
         candidateLoading.value = false
+      })
+  }
+
+  function loadBoundCaseKeys() {
+    if (!route.query.id) {
+      boundCaseKeySet.value = new Set()
+      return Promise.resolve()
+    }
+    boundCaseKeysLoading.value = true
+    return getSystemTasksRunCase({
+      task_id: route.query.id,
+      type: addForm.type,
+    })
+      .then((res) => {
+        boundCaseKeySet.value = new Set(
+          (res.data || [])
+            .map((item: any) => String(getBoundCaseId(item)))
+            .filter(Boolean)
+        )
+      })
+      .catch(console.log)
+      .finally(() => {
+        boundCaseKeysLoading.value = false
       })
   }
 
@@ -546,6 +708,7 @@
       .then((res) => {
         Message.success(res.msg)
         addSelectionKeys.value = []
+        loadBoundCaseKeys()
         doRefresh()
       })
       .catch(console.log)
@@ -573,6 +736,7 @@
           })
           .catch(console.log)
           .finally(() => {
+            loadBoundCaseKeys()
             doRefresh()
             deleteLoading.value = false
             if (batch) selectedRowKeys.value = []
@@ -628,22 +792,12 @@
       .catch(console.log)
   }
 
-  function onPytestProductModuleName(projectProductId: any) {
-    if (!projectProductId) return
-    getPytestProductName(projectProductId)
-      .then((res) => {
-        data.moduleList = res.data
-      })
-      .catch(console.log)
-  }
-
   onMounted(() => {
     nextTick(async () => {
+      await loadAddModuleOptions()
+      await loadBoundCaseKeys()
       doRefresh()
       getNickName()
-      if (isPytestCaseType.value) {
-        onPytestProductModuleName(addForm.projectProduct || route.query.project_product_id)
-      }
       loadCandidateCases()
     })
   })
@@ -668,7 +822,7 @@
     height: auto;
     min-height: 0;
     margin-top: 8px;
-    grid-template-columns: minmax(360px, 0.7fr) minmax(720px, 1.6fr);
+    grid-template-columns: minmax(520px, 1fr) minmax(680px, 1.35fr);
     gap: 12px;
     align-items: stretch;
   }
@@ -692,6 +846,13 @@
     min-height: 0;
   }
 
+  .mango-timing-case-candidate-table {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+  }
+
   .mango-timing-case-bound-table {
     display: flex;
     flex: 1;
@@ -708,15 +869,15 @@
     height: 42px;
   }
 
-  .mango-timing-case-table :deep(.arco-table-container),
-  .mango-timing-case-table :deep(.arco-table),
-  .mango-timing-case-table :deep(.arco-spin),
-  .mango-timing-case-table :deep(.arco-spin-children) {
+  .mango-timing-case-scroll-table :deep(.arco-table-container),
+  .mango-timing-case-scroll-table :deep(.arco-table),
+  .mango-timing-case-scroll-table :deep(.arco-spin),
+  .mango-timing-case-scroll-table :deep(.arco-spin-children) {
     height: 100%;
     min-height: 0;
   }
 
-  .mango-timing-case-table :deep(.arco-table-body) {
+  .mango-timing-case-scroll-table :deep(.arco-table-body) {
     height: calc(100% - 28px) !important;
   }
 
@@ -776,8 +937,16 @@
 
   .mango-timing-case-filter :deep(.arco-form) {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0 10px;
+  }
+
+  .mango-timing-case-filter :deep(.mango-timing-case-filter-main) {
+    grid-column: span 3;
+  }
+
+  .mango-timing-case-filter :deep(.mango-timing-case-filter-module) {
+    grid-column: span 2;
   }
 
   .mango-timing-case-filter :deep(.arco-form-item) {

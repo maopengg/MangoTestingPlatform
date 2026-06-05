@@ -35,12 +35,12 @@ export const columns = reactive([
   {
     title: '创建时间',
     dataIndex: 'create_time',
-    width: 170,
+    width: 180,
   },
   {
     title: '更新时间',
     dataIndex: 'update_time',
-    width: 170,
+    width: 180,
   },
   {
     title: '操作',

@@ -8,7 +8,7 @@ function currentWebSocketURL(): string {
     return ''
   }
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${window.location.host}/web/socket?`
+  return `${protocol}//${window.location.host}/api/web/socket?`
 }
 
 export const baseURL = import.meta.env.VITE_APP_BASE_URL || ''

@@ -95,7 +95,7 @@
 
   .mango-activity-rank__row {
     display: grid;
-    grid-template-columns: minmax(64px, 82px) minmax(0, 1fr) 42px;
+    grid-template-columns: 4.25em minmax(0, 1fr) 38px;
     align-items: center;
     gap: 8px;
     color: var(--m-text-2);
@@ -133,5 +133,12 @@
   .mango-activity-rank__empty {
     flex: 1;
     min-height: 120px;
+  }
+
+  @media (max-width: 1280px) {
+    .mango-activity-rank__row {
+      grid-template-columns: 3.75em minmax(0, 1fr) 34px;
+      gap: 6px;
+    }
   }
 </style>

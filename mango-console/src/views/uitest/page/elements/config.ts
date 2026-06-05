@@ -19,7 +19,7 @@ export const tableColumns = useTableColumn([
     title: '等待时间(秒)',
     key: 'sleep',
     dataIndex: 'sleep',
-    width: 120,
+    width: 180,
   },
   {
     title: '类型-1',

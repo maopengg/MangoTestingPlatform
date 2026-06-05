@@ -19,7 +19,7 @@ django.setup()
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from . import routing
-from src.mcp_server.app import mcp_asgi_app
+from src.services.mcp_server.app import mcp_asgi_app
 
 django_channels_application = ProtocolTypeRouter({
     'http': get_asgi_application(),
@@ -101,8 +101,7 @@ class LifespanManagedApp:
 
 mcp_lifespan_managed_application = LifespanManagedApp(mcp_application)
 
-MCP_PRIMARY_PATH = '/system/mcp'
-MCP_LEGACY_PATH = '/mcp'
+MCP_PATH = '/mcp'
 
 
 def _mount_mcp_scope(scope, mount_path):
@@ -117,10 +116,7 @@ async def application(scope, receive, send):
     if scope.get('type') == 'lifespan':
         return await mcp_lifespan_managed_application(scope, receive, send)
     path = scope.get('path') or ''
-    if path == MCP_PRIMARY_PATH or path.startswith(f'{MCP_PRIMARY_PATH}/'):
-        scope = _mount_mcp_scope(scope, MCP_PRIMARY_PATH)
-        return await mcp_lifespan_managed_application(scope, receive, send)
-    if path == MCP_LEGACY_PATH or path.startswith(f'{MCP_LEGACY_PATH}/'):
-        scope = _mount_mcp_scope(scope, MCP_LEGACY_PATH)
+    if path == MCP_PATH or path.startswith(f'{MCP_PATH}/'):
+        scope = _mount_mcp_scope(scope, MCP_PATH)
         return await mcp_lifespan_managed_application(scope, receive, send)
     return await django_channels_application(scope, receive, send)

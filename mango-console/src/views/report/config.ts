@@ -55,7 +55,7 @@ export const tableColumns = useTableColumn([
     title: '创建时间',
     key: 'create_time',
     dataIndex: 'create_time',
-    width: 170,
+    width: 180,
   },
   {
     title: '执行人',

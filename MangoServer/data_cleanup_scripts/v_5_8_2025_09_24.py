@@ -8,10 +8,10 @@ import uuid
 
 from mangotools.mangos import get_execution_order_with_config_ids
 
-from src.auto_test.auto_system.models import CacheData
-from src.auto_test.auto_ui.models import PageStepsDetailed, PageSteps, UiCaseStepsDetailed
-from src.enums.ui_enum import ElementOperationEnum
-from src.models.ui_model import *
+from src.apps.auto_system.models import CacheData
+from src.apps.auto_ui.models import PageStepsDetailed, PageSteps, UiCaseStepsDetailed
+from src.common.enums.ui_enum import ElementOperationEnum
+from src.common.models.ui_model import *
 
 node_types = {0: '元素操作',
               1: '断言操作',

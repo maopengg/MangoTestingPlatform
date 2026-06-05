@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description: 
+# @Time   : 2024-07-25 上午9:55
+# @Author : 毛鹏
+import traceback
+
+from rest_framework.request import Request
+
+from mangotools.exceptions import MangoToolsError
+from mangotools.mangos import Mango
+from src.common.exceptions import MangoServerError
+from src.common.exceptions.error_msg import ERROR_MSG_0000, ERROR_MSG_0058
+from src.settings import IS_SEND_MAIL
+from src.common.tools.log_collector import log
+from src.common.tools.view import RESPONSE_MSG_0107
+from src.common.tools.view.response_data import ResponseData
+from django.db import close_old_connections, utils
+
+log_dict = {
+    'ui': log.ui,
+    'api': log.api,
+    'system': log.system,
+    'user': log.user,
+    'pytest': log.pytest
+}
+
+
+def error_response(app: str):
+    """
+    接口异常处理装饰器
+    @return:
+    """
+
+    def decorator(func):
+        def wrapper(self, request: Request, *args, **kwargs):
+            try:
+                return func(self, request, *args, **kwargs)
+            except MangoServerError as error:
+                return ResponseData.fail((error.code, error.msg))
+            except MangoToolsError as error:
+                return ResponseData.fail((error.code, error.msg))
+            except FileNotFoundError as error:
+                log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{traceback.format_exc()}')
+                return ResponseData.fail(RESPONSE_MSG_0107)
+            except utils.OperationalError as error:
+                traceback.print_exc()
+                close_old_connections()
+                return ResponseData.fail(ERROR_MSG_0058, data=str(error))
+            except Exception as error:
+                close_old_connections()
+                try:
+                    username = request.user.get('username')
+                except AttributeError:
+                    username = None
+                trace = traceback.format_exc()
+                log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{trace}')
+                if IS_SEND_MAIL:
+                    from src.settings import VERSION
+                    kwargs['version'] = VERSION
+                    Mango.s(func, error, trace, username, args, kwargs)
+                return ResponseData.fail(ERROR_MSG_0000, data=str(error))
+
+        return wrapper
+
+    return decorator

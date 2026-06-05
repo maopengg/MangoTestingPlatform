@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 import re
 
-from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiInfo, ApiPublic
-from src.auto_test.auto_ui.models import PageElement, PageStepsDetailed, UiCase, UiCaseStepsDetailed
+from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiInfo, ApiPublic
+from src.apps.auto_ui.models import PageElement, PageStepsDetailed, UiCase, UiCaseStepsDetailed
 
 
 def replace_json_field(field):

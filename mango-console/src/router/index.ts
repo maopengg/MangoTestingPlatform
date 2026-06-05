@@ -128,6 +128,22 @@ export const extraRoutes = [
           breadcrumb: [{ title: '定时任务', path: '/timing/tasks' }],
         },
       },
+      {
+        path: 'fire-record/index',
+        component: () => import('@/views/timing/fire-record/index.vue'),
+        meta: {
+          title: '触发记录',
+          breadcrumb: [{ title: '定时任务', path: '/timing/tasks/index' }],
+        },
+      },
+      {
+        path: 'system-jobs/index',
+        component: () => import('@/views/timing/system-jobs/index.vue'),
+        meta: {
+          title: '系统任务',
+          breadcrumb: [{ title: '定时任务', path: '/timing/tasks/index' }],
+        },
+      },
     ],
   },
 

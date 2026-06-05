@@ -1,0 +1,288 @@
+from django.db import models
+
+from src.apps.auto_system.models import ProjectProduct, ProductModule, TimeTasks
+from src.apps.auto_user.models import User
+from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum, ApiPublicTypeEnum
+from src.common.enums.tools_enum import EnvironmentEnum, StatusEnum
+from src.common.exceptions import ToolsError
+
+"""
+     1.python manage.py makemigrations
+     2.python manage.py migrate
+"""
+
+
+class ApiInfo(models.Model):
+    """api用例表"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
+    # 0和空等于录制，1等于本期接口，2是调试完成
+    type = models.SmallIntegerField(verbose_name='接口的类型', default=1, db_index=True)
+    name = models.CharField(verbose_name="接口名称", max_length=1024)
+
+    url = models.CharField(verbose_name="请求url", max_length=1024)
+    method = models.SmallIntegerField(verbose_name="请求方法")
+    headers = models.JSONField(verbose_name="请求头", null=True)
+    params = models.TextField(verbose_name="参数", null=True)
+    is_text_params = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
+    data = models.TextField(verbose_name="data", null=True)
+    is_text_data = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
+    json = models.TextField(verbose_name="json", null=True)
+    is_text_json = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
+    file = models.JSONField(verbose_name="file", null=True)
+
+    posterior_json_path = models.JSONField(verbose_name="后置jsonpath提取", default=list)
+    posterior_re = models.JSONField(verbose_name="后置正则提取", default=list)
+    posterior_func = models.TextField(verbose_name='后置自定义', null=True)
+    posterior_file = models.CharField(verbose_name="下载文件名称key", max_length=1024, null=True)
+    is_schema = models.SmallIntegerField(verbose_name="schema状态，是否给这个接口全用例开启", default=0)
+    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
+
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
+
+    class Meta:
+        db_table = 'api_info'
+        ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if ApiCaseDetailed.objects.filter(api_info=self).exists():
+            raise ToolsError(300, "测试用例详情-有关联数据，请先删除绑定的数据后再删除！")
+        super().delete(*args, **kwargs)
+
+
+class ApiCase(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
+    name = models.CharField(verbose_name="测试用例名称", max_length=64)
+    case_flow = models.TextField(verbose_name="步骤顺序", null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
+
+    parametrize = models.JSONField(verbose_name="参数化", default=list)
+    level = models.SmallIntegerField(verbose_name="用例级别", default=1)
+    scenario_layer = models.SmallIntegerField(verbose_name="场景层级", default=0)
+    scenario_type = models.SmallIntegerField(verbose_name="场景类型", default=0)
+    scenario_tags = models.JSONField(verbose_name="场景标签", default=list)
+    scenario_description = models.TextField(verbose_name="场景描述", null=True, blank=True)
+    front_custom = models.JSONField(verbose_name="前置方法", default=list)
+    front_sql = models.JSONField(verbose_name="前置sql", default=list)
+    front_headers = models.JSONField(verbose_name="前置请求头", default=list)
+    posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
+
+    class Meta:
+        db_table = 'api_case'
+        ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if ApiCaseDetailed.objects.filter(case=self).exists():
+            raise ToolsError(300, "测试用例详情-有关联数据，请先删除绑定的数据后再删除！")
+        from src.apps.auto_system.models import TasksDetails
+        if TasksDetails.objects.filter(api_case=self).exists():
+            raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
+        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+        DataFactoryCaseConfig.objects.filter(
+            source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
+            source_id=self.id,
+        ).delete()
+        super().delete(*args, **kwargs)
+
+
+class ApiCaseDetailed(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.PROTECT)
+    api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.PROTECT)
+    case_sort = models.IntegerField(verbose_name="用例排序", null=True)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
+    error_message = models.TextField(verbose_name="失败提示", null=True)
+
+    class Meta:
+        db_table = 'api_case_detailed'
+
+    def delete(self, *args, **kwargs):
+        if ApiCaseDetailedParameter.objects.filter(case_detailed=self).exists():
+            for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed=self):
+                parameter.delete()
+        super().delete(*args, **kwargs)
+
+
+class ApiCaseDetailedParameter(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.PROTECT)
+    error_retry = models.SmallIntegerField(verbose_name="失败重试", null=True)
+    retry_interval = models.SmallIntegerField(verbose_name="重试间隔", null=True)
+    name = models.CharField(verbose_name="步骤名称", max_length=128)
+    headers = models.JSONField(verbose_name="请求头", default=list)
+    is_case_headers = models.SmallIntegerField(verbose_name="是否使用用例headers", default=StatusEnum.SUCCESS.value)
+    params = models.TextField(verbose_name="参数", null=True)
+    data = models.TextField(verbose_name="data", null=True)
+    json = models.TextField(verbose_name="json", null=True)
+    file = models.JSONField(verbose_name="file", null=True)
+
+    # 前置
+    front_sql = models.JSONField(verbose_name="前置sql", default=list)
+    front_func = models.TextField(verbose_name='前置自定义函数', null=True)
+    # 断言
+    ass_general = models.JSONField(verbose_name="sql断言", default=list)
+    ass_sql = models.JSONField(verbose_name="sql断言", default=list)
+    ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)
+    ass_text_all = models.TextField(verbose_name="响应文本全匹配断言", null=True)
+    ass_jsonpath = models.JSONField(verbose_name="响应jsonpath断言", default=list)
+    ass_schema = models.JSONField(verbose_name="schema配置", null=True)
+    # 后置
+    posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
+    posterior_response = models.JSONField(verbose_name="后置响应处理", default=list)
+    posterior_response_text = models.JSONField(verbose_name="后置响应文本处理", default=list)
+    posterior_sleep = models.SmallIntegerField(verbose_name="强制等待", null=True)
+    posterior_file = models.JSONField(verbose_name="文件下载", default=dict)
+    posterior_func = models.TextField(verbose_name='后置自定义', null=True)
+    status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
+
+    class Meta:
+        db_table = 'api_case_detailed_parameter'
+
+    def delete(self, *args, **kwargs):
+        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+        DataFactoryCaseConfig.objects.filter(
+            source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+            source_id=self.id,
+        ).delete()
+        super().delete(*args, **kwargs)
+
+
+class ApiHeaders(models.Model):
+    """api公共"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    key = models.CharField(verbose_name="键", max_length=128)
+    value = models.TextField(verbose_name="值")
+    status = models.SmallIntegerField(verbose_name="是否默认开启", default=0, db_index=True)
+
+    class Meta:
+        db_table = 'api_headers'
+        ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        # if ApiCaseSuiteDetailed.objects.filter(case_suite=self).exists():
+        #     raise ToolsError(300, "有关联数据，请先删除绑定的用例套件详情后再删除！")
+        super().delete(*args, **kwargs)
+
+
+class ApiPublic(models.Model):
+    """api公共"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    test_env = models.SmallIntegerField(verbose_name="测试环境", null=True, blank=True, default=None)
+    type = models.SmallIntegerField(
+        verbose_name="自定义变量类型",
+        choices=ApiPublicTypeEnum.choices(),
+        default=ApiPublicTypeEnum.CUSTOM.value,
+        db_index=True,
+    )
+    name = models.CharField(verbose_name="名称", max_length=64)
+    key = models.CharField(verbose_name="键", max_length=128)
+    value = models.TextField(verbose_name="值")
+    datasource_alias = models.ForeignKey(
+        to='auto_data_factory.DataFactoryDatasourceAlias',
+        to_field="id",
+        verbose_name="逻辑数据源",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
+    status = models.SmallIntegerField(verbose_name="状态", default=0, db_index=True)
+
+    class Meta:
+        db_table = 'api_public'
+        ordering = ['-id']
+
+
+class ApiAuthConfig(models.Model):
+    """API授权Token配置"""
+
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    test_env = models.SmallIntegerField(
+        verbose_name="测试环境",
+        choices=EnvironmentEnum.choices(),
+        null=True,
+        blank=True,
+        default=None,
+    )
+    name = models.CharField(verbose_name="授权名称", max_length=64)
+    status = models.SmallIntegerField(
+        verbose_name="状态",
+        choices=StatusEnum.choices(),
+        default=StatusEnum.SUCCESS.value,
+        db_index=True,
+    )
+
+    # 0=接口登录，1=自定义代码
+    auth_type = models.SmallIntegerField(
+        verbose_name="授权方式",
+        choices=ApiAuthTypeEnum.choices(),
+        default=ApiAuthTypeEnum.API.value,
+        db_index=True,
+    )
+    api_info = models.ForeignKey(
+        to=ApiInfo,
+        to_field="id",
+        verbose_name="登录接口",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    custom_code = models.TextField(verbose_name="自定义授权代码", null=True, blank=True)
+
+    cache_keys = models.JSONField(verbose_name="缓存变量名", default=list)
+    cache_data = models.JSONField(verbose_name="授权缓存数据", default=dict)
+    token_ttl = models.IntegerField(verbose_name="Token有效期(分钟)", default=1440)
+    refresh_margin = models.IntegerField(verbose_name="提前刷新时间(分钟)", default=5)
+    expires_at = models.DateTimeField(verbose_name="过期时间", null=True, blank=True)
+
+    last_refresh_time = models.DateTimeField(verbose_name="最近刷新时间", null=True, blank=True)
+    last_refresh_status = models.SmallIntegerField(
+        verbose_name="最近刷新状态",
+        choices=ApiAuthRefreshStatusEnum.choices(),
+        default=ApiAuthRefreshStatusEnum.INIT.value,
+    )
+    last_refresh_error = models.TextField(verbose_name="最近刷新错误", null=True, blank=True)
+
+    # 0=执行时检测刷新，1=定时刷新，2=执行时检测+定时刷新
+    refresh_mode = models.SmallIntegerField(
+        verbose_name="刷新方式",
+        choices=ApiAuthRefreshModeEnum.choices(),
+        default=ApiAuthRefreshModeEnum.PASSIVE.value,
+        db_index=True,
+    )
+    time_task = models.ForeignKey(
+        to=TimeTasks,
+        to_field="id",
+        verbose_name="定时策略",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    refreshing = models.BooleanField(verbose_name="是否刷新中", default=False)
+    refresh_lock_until = models.DateTimeField(verbose_name="刷新锁过期时间", null=True, blank=True)
+
+    class Meta:
+        db_table = 'api_auth_config'
+        ordering = ['-id']
+        unique_together = ('project_product', 'test_env', 'name')
+
+    def __str__(self):
+        return f"{self.project_product_id}:{self.test_env}:{self.name}"

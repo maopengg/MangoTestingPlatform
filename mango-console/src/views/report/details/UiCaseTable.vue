@@ -35,7 +35,7 @@
               v-if="!record.children"
               type="text"
               size="mini"
-              @click="$emit('show-details', record)"
+              @click="$emit('show-details', record.__detailRecord || record)"
             >
               查看详细报告
             </a-button>
@@ -79,6 +79,18 @@
       const rowSpan = rows.length
       const caseId = item?.case_id || item?.id || '-'
       const caseName = item?.case_name || item?.name || '未命名用例'
+      const detailRecord = {
+        ...item,
+        case_type: 0,
+        name: caseName,
+        status: item?.status ?? rows.find((row: any) => row?.status === 0)?.status ?? rows[0]?.status,
+        test_time: item?.test_time || rows[0]?.test_time,
+        test_object: item?.test_object || rows[0]?.test_object,
+        video_path: item?.video_path || rows.find((row: any) => row?.video_path)?.video_path,
+        error_message: item?.error_message || rows.find((row: any) => row?.error_message)?.error_message,
+        element_result_list: rows,
+        children: rows,
+      }
       return rows.map((row: any, index: number) => ({
         ...row,
         case_type: row?.case_type ?? 0,
@@ -90,6 +102,7 @@
         __caseRowSpan: index === 0 ? rowSpan : 0,
         __caseSourceId: item?.id,
         __isFirstCaseRow: index === 0,
+        __detailRecord: detailRecord,
       }))
     })
   )

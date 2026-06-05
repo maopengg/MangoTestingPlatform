@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from mangotools.models import MethodModel
-from src.auto_test.auto_ui.models import PageStepsDetailed
+from src.apps.auto_ui.models import PageStepsDetailed
 
 
 def page_steps_detailed():

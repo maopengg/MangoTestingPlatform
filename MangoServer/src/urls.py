@@ -17,7 +17,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 
-from src.auto_test.auto_user.views.user import LoginViews
+from src.apps.auto_user.views.user import LoginViews
 from src.settings import IS_MINIO
 
 urlpatterns = [
@@ -27,14 +27,14 @@ urlpatterns = [
     path("test", LoginViews.as_view({'get': 'test'})),
     path("download", LoginViews.as_view({'get': 'get_download'})),
     #
-    path('system/', include("src.auto_test.auto_system.urls")),
-    path('data-factory/', include("src.auto_test.auto_data_factory.urls")),
-    path('api/', include("src.auto_test.auto_api.urls")),
-    path('ui/', include("src.auto_test.auto_ui.urls")),
-    path('perf/', include("src.auto_test.auto_perf.urls")),
-    path('user/', include("src.auto_test.auto_user.urls")),
-    path('pytest/', include("src.auto_test.auto_pytest.urls")),
-    path('monitoring/', include("src.auto_test.monitoring.urls")),
+    path('system/', include("src.apps.auto_system.urls")),
+    path('data-factory/', include("src.apps.auto_data_factory.urls")),
+    path('api/', include("src.apps.auto_api.urls")),
+    path('ui/', include("src.apps.auto_ui.urls")),
+    path('perf/', include("src.apps.auto_perf.urls")),
+    path('user/', include("src.apps.auto_user.urls")),
+    path('pytest/', include("src.apps.auto_pytest.urls")),
+    path('monitoring/', include("src.apps.monitoring.urls")),
 ]
 
 try:

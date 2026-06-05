@@ -57,3 +57,32 @@ export function getSystemTasksName() {
     },
   })
 }
+
+export function getSystemTaskFireRecord(data: object) {
+  return get({
+    url: 'system/tasks/fire-record',
+    data: () => {
+      return data
+    },
+  })
+}
+
+export function getSystemTaskSystemJobs(data: object = {}) {
+  return get({
+    url: 'system/tasks/system/jobs',
+    data: () => {
+      return data
+    },
+  })
+}
+
+export function postSystemTaskSystemJobTrigger(jobKey: string) {
+  return post({
+    url: 'system/tasks/system/jobs/trigger',
+    data: () => {
+      return {
+        job_key: jobKey,
+      }
+    },
+  })
+}

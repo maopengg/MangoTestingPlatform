@@ -9,15 +9,15 @@ MangoServer 是芒果测试平台 Django 后端。本文件约定后端开发规
 3. 业务逻辑尽量放在 `service/`，ViewSet 只负责入参、权限、序列化和响应。
 4. 返回结构使用项目已有 `ResponseData.success/error` 风格。
 5. 业务异常优先使用现有 `ToolsError` 或对应模块异常。
-6. 通过 `ResponseData.fail` 返回给前端的错误响应文案，必须先定义在 `src/tools/view/response_msg.py`，代码中引用常量，不直接写散落字符串。
-7. 通过 `ToolsError` 或异常抛出的业务错误文案，必须先定义在 `src/exceptions/error_msg.py`，代码中引用常量，不直接写散落字符串。
+6. 通过 `ResponseData.fail` 返回给前端的错误响应文案，必须先定义在 `src/common/tools/view/response_msg.py`，代码中引用常量，不直接写散落字符串。
+7. 通过 `ToolsError` 或异常抛出的业务错误文案，必须先定义在 `src/common/exceptions/error_msg.py`，代码中引用常量，不直接写散落字符串。
 8. 不要修改无关模块，不要顺手重构老代码。
 9. 遇到用户已有改动，先兼容，不要回滚。
 
 ## 命令边界
 
 10. 后端目录是 `MangoServer/`。
-11. 常用启动命令：`python start_server.py`。
+11. 常用启动命令：`python manage.py runserver --env=dev 0.0.0.0:8000`；多服务本地启动使用 `sh scripts/start_dev_services.sh`。
 12. 本地虚拟环境通常是 `.venv/`，Windows 下可用 `.\.venv\Scripts\python.exe`。
 13. 开发过程中不允许执行生成迁移脚本命令。
 14. 开发过程中不允许执行迁移命令。
@@ -45,7 +45,7 @@ MangoServer 是芒果测试平台 Django 后端。本文件约定后端开发规
 
 ## 枚举规范
 
-30. 枚举统一放在 `src/enums/` 或模块既有枚举位置。
+30. 枚举统一放在 `src/common/enums/` 或模块既有枚举位置。
 31. 枚举值变更要同步前端枚举接口、展示文案和测试。
 32. Service 中尽量引用枚举，不要散落数字魔法值。
 33. 数据工厂执行状态语义：`0 失败，1 通过，2 待开始，3 进行中`。
@@ -74,7 +74,7 @@ MangoServer 是芒果测试平台 Django 后端。本文件约定后端开发规
 50. MCP 应明确工厂实体是单表规则，场景模板是完整业务对象。
 51. MCP 入参示例必须和后端校验结构一致。
 52. 前端能力变更时，MCP 文案和参数也要同步。
-53. 新增 MCP 写操作工具时，必须走 `src/mcp_server/app.py` 统一演示环境写操作校验；工具名优先使用既有写操作前缀：`create_`、`add_`、`copy_`、`upload_`、`bind_`、`batch_generate_`、`execute_`、`debug_run_`、`update_`、`set_`、`sort_`、`refresh_`、`auto_generate_`、`delete_`、`cleanup_`、`clear_`。
+53. 新增 MCP 写操作工具时，必须走 `src/services/mcp_server/app.py` 统一演示环境写操作校验；工具名优先使用既有写操作前缀：`create_`、`add_`、`copy_`、`upload_`、`bind_`、`batch_generate_`、`execute_`、`debug_run_`、`update_`、`set_`、`sort_`、`refresh_`、`auto_generate_`、`delete_`、`cleanup_`、`clear_`。
 54. 如果新增 MCP 工具会写库、改配置、上传文件、绑定关系、清理数据或真实执行落库，但工具名无法使用上述前缀，必须同步更新 `_mcp_tool_write_operation`；如果是查询、预览、分析或允许演示环境执行的测试任务，确认不需要加入写操作分类。
 
 ## API 与兼容

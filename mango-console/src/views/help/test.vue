@@ -715,7 +715,7 @@
     { title: '接口名称', key: 'apiName' },
     { title: '执行环境', key: 'env' },
     { title: '测试结果', key: 'status' },
-    { title: '更新时间', key: 'updatedAt' },
+    { title: '更新时间', key: 'updatedAt', width: 180 },
   ]
 
   visibleCustomColumns.value = [...customColumns]
@@ -804,7 +804,7 @@
     { title: '维护人', dataIndex: 'owner', width: 110 },
     { title: '状态', slotName: 'status', width: 110 },
     { title: '启用', slotName: 'enabled', width: 90 },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 170 },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 180 },
     { title: '说明', dataIndex: 'description', ellipsis: true, tooltip: true, align: 'left' },
     { title: '操作', slotName: 'actions', fixed: 'right', width: 170 },
   ]
