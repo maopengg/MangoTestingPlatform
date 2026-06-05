@@ -5,6 +5,9 @@ cd "$(dirname "$0")"
 
 COMPOSE="docker compose"
 
+echo "拉取最新代码..."
+git pull
+
 echo "启动数据库和对象存储..."
 $COMPOSE up -d db minio
 
