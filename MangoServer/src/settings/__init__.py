@@ -20,7 +20,7 @@ def set_env():
 
 
 set_env()
-VERSION = '6.1.4'
+VERSION = '6.2.0'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
