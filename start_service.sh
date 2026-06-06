@@ -6,9 +6,15 @@ cd "$(dirname "$0")"
 COMPOSE="docker compose"
 
 echo "拉取最新代码..."
+BEFORE_REV="$(git rev-parse HEAD)"
 git pull
+AFTER_REV="$(git rev-parse HEAD)"
 
 BUILD_FRONTEND="${BUILD_FRONTEND:-0}"
+FRONTEND_CHANGED=0
+if [ "$BEFORE_REV" != "$AFTER_REV" ] && git diff --name-only "$BEFORE_REV" "$AFTER_REV" | grep -q '^mango-console/package.json$'; then
+  FRONTEND_CHANGED=1
+fi
 
 echo "停止当前芒果业务服务，释放内存..."
 $COMPOSE stop mango_gateway mango_server scheduler_service task_dispatcher api_worker_1 api_worker_2 mcp_service mango_actuator mango-console || true
@@ -23,7 +29,7 @@ echo "执行数据库迁移..."
 $COMPOSE run --rm mango_server python manage.py migrate --noinput
 $COMPOSE run --rm mango_server python manage.py createcachetable django_cache || true
 
-if [ "$BUILD_FRONTEND" = "1" ] || [ -z "$($COMPOSE images -q mango-console 2>/dev/null || true)" ]; then
+if [ "$BUILD_FRONTEND" = "1" ] || [ "$FRONTEND_CHANGED" = "1" ] || [ -z "$($COMPOSE images -q mango-console 2>/dev/null || true)" ]; then
   echo "构建前端镜像..."
   $COMPOSE build mango-console
 else
@@ -54,5 +60,5 @@ $COMPOSE logs --tail=120 mango_server scheduler_service task_dispatcher api_work
 echo ""
 echo "异常摘要："
 $COMPOSE logs --tail=200 mango_gateway mango_server scheduler_service task_dispatcher api_worker_1 api_worker_2 mcp_service mango_actuator \
-  | grep -E "CRITICAL|ERROR|Traceback|Exception| 5[0-9][0-9] " \
+  | grep -E "CRITICAL|ERROR|Traceback|Exception|HTTP/[0-9.]+\" 5[0-9][0-9] " \
   || echo "最近日志中未发现关键异常"
