@@ -6,41 +6,61 @@
 import json
 import os
 
-# ************************ 数据源类型 ************************ #
+# ************************ 数据库配置 ************************ #
+# dev 是本地/开发环境配置。
+# 开源用户可以直接改这里，或在 src/settings/database.json 中覆盖下面的 MySQL 配置。
+# IS_SQLITE=True 时使用 MangoServer/db.sqlite3；IS_SQLITE=False 时使用下面的 MySQL。
+IS_SQLITE = False
 
-IS_SQLITE = False  # 是否选用sqlite作为数据源，默认使用mysql
-
-# ************************ Mysql配置 ************************ #
+# MySQL 连接信息：如果使用 docker-compose，host 通常填 db；如果连接外部数据库，填数据库域名/IP。
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'dev_mango_server'
-MYSQL_USER = 'root'
-MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.30.32.217'
+MYSQL_DB_NAME = 'dev_qfei_auto_platform'
+MYSQL_USER = 'dev'
+MYSQL_PASSWORD = 'Acronym0-Sheep-Wish'
+MYSQL_IP = 'mysql389bd1693b39.rds.ivolces.com'
 
-# ************************ DEBUG配置 ************************ #
-# 控制django是否debug
+# ************************ 调试与日志 ************************ #
+# DEBUG 控制 Django 调试模式；生产/公网环境不要开启。
 DEBUG = True
-# 控制日志是否输出debug
+# IS_DEBUG_LOG 控制业务日志是否输出 debug 级别。
 IS_DEBUG_LOG = True
-# ************************ REDIS配置 ************************ #
 
+# ************************ Redis配置 ************************ #
+# 当前项目默认不依赖 Redis；如后续启用缓存/队列，可在这里扩展配置。
 REDIS = False
-# ************************ Minio配置 ************************ #
-IS_MINIO = False
-if IS_MINIO:
-    MINIO_STORAGE_ENDPOINT = '192.168.1.100:9000'
-    MINIO_STORAGE_ACCESS_KEY = 'R3SrN5q9XGWj1n28wpG9'  # ACCESS_KEY
-    MINIO_STORAGE_SECRET_KEY = 'LliOFBMjp19jFTUw3byUGxgaj6GnmUdsEpRyFjw4'  # SECRET_KEY
-    MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
-    MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
-    MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
+
+# ************************ MCP配置 ************************ #
+# MCP 有 Host/Origin 安全校验。dev 默认只允许本机访问。
+# 如果本地通过局域网 IP 调试，例如 http://192.168.1.10:8000，需要把 192.168.1.10:8000 加到 HOSTS，
+# 并把 http://192.168.1.10:8000 加到 ORIGINS。
+MCP_ALLOWED_HOSTS = ['127.0.0.1:*', 'localhost:*', '[::1]:*']
+MCP_ALLOWED_ORIGINS = ['http://127.0.0.1:*', 'http://localhost:*', 'http://[::1]:*']
+
+# ************************ 文件存储配置 ************************ #
+# FILE_STORAGE_BACKEND 支持：
+#   local：本地文件，保存到 MangoServer/mango-file，适合开发环境。
+#   minio：S3/MinIO 兼容对象存储，适合开源 docker-compose demo。
+#   tos：火山 TOS，适合公司测试环境。
+FILE_STORAGE_BACKEND = 'local'
 
 # ************************ 是否允许删除 ************************ #
+# IS_DELETE=False 表示演示环境限制删除/新增/修改；IS_DELETE=True 表示按正常权限执行。
 IS_DELETE = True
-# *************** 是否发送error日志协助芒果修复问题 *************** #
+
+# ************************ 错误日志上报 ************************ #
+# 开源用户建议保持 False，避免误配置后发送内部错误邮件。
 IS_SEND_MAIL = False
 
-# **************** 个人配置，开源用户忽略这部分代码 **************** #
+# ************************ 本地私有覆盖 ************************ #
+# 可选：创建 src/settings/database.json 覆盖数据库配置，避免把个人数据库信息提交到代码仓库。
+# 示例：
+# {
+#   "mysql_port": 3306,
+#   "mysql_db_name": "mango_server",
+#   "mysql_user": "root",
+#   "mysql_password": "password",
+#   "mysql_ip": "127.0.0.1"
+# }
 IS_TRUE = True
 file_name = 'src/settings/database.json'
 if os.path.exists(file_name) and IS_TRUE:

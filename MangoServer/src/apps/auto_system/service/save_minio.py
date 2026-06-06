@@ -13,13 +13,8 @@ from minio.commonconfig import Filter
 from minio.lifecycleconfig import LifecycleConfig, Rule, Expiration
 
 from src.common.exceptions import MangoServerError, ERROR_MSG_0004
-from src.settings import IS_MINIO
 from src.common.tools.log_collector import log
-
-if IS_MINIO:
-    from src.settings import MINIO_STORAGE_ENDPOINT, MINIO_STORAGE_ACCESS_KEY, \
-        MINIO_STORAGE_SECRET_KEY, MINIO_STORAGE_MEDIA_BUCKET_NAME, MINIO_STORAGE_USE_HTTPS
-    from django.conf import settings
+from django.conf import settings
 
 
 class SaveMinio:
@@ -27,10 +22,10 @@ class SaveMinio:
 
     def __init__(self, directory_name="screenshot"):
         self.client = Minio(
-            MINIO_STORAGE_ENDPOINT,
-            access_key=MINIO_STORAGE_ACCESS_KEY,
-            secret_key=MINIO_STORAGE_SECRET_KEY,
-            secure=MINIO_STORAGE_USE_HTTPS
+            settings.MINIO_STORAGE_ENDPOINT,
+            access_key=settings.MINIO_STORAGE_ACCESS_KEY,
+            secret_key=settings.MINIO_STORAGE_SECRET_KEY,
+            secure=settings.MINIO_STORAGE_USE_HTTPS
         )
         if getattr(settings, 'MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE', False):
             self.client._base_url.virtual_style_flag = True
@@ -63,19 +58,19 @@ class SaveMinio:
             # 只在第一次调用时设置生命周期规则
             if not SaveMinio._lifecycle_set:
                 try:
-                    self.client.set_bucket_lifecycle(MINIO_STORAGE_MEDIA_BUCKET_NAME, self.lifecycle_config)
+                    self.client.set_bucket_lifecycle(settings.MINIO_STORAGE_MEDIA_BUCKET_NAME, self.lifecycle_config)
                 except Exception as error:
                     log.system.warning(f'MinIO生命周期规则设置失败，已跳过，不影响文件上传：{error}')
                 SaveMinio._lifecycle_set = True
             # 上传文件到MinIO
             self.client.fput_object(
-                MINIO_STORAGE_MEDIA_BUCKET_NAME,
+                settings.MINIO_STORAGE_MEDIA_BUCKET_NAME,
                 object_name,
                 temp_file_path
             )
             # 删除临时文件
             os.unlink(temp_file_path)
-            return f'{MINIO_STORAGE_MEDIA_BUCKET_NAME}/{object_name}'
+            return f'{settings.MINIO_STORAGE_MEDIA_BUCKET_NAME}/{object_name}'
         except Exception as e:
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)

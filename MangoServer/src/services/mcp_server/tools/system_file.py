@@ -4,10 +4,9 @@ import base64
 import binascii
 
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
-
 from src.apps.auto_system.models import FileData, ProjectProduct
 from src.apps.auto_system.views.file_data import FileDataCRUD
+from src.common.tools.storage import build_public_file_url
 from src.services.mcp_server.common import fail, ok
 
 
@@ -23,7 +22,7 @@ def _file_item(item: FileData, include_download_url: bool = False) -> dict:
         "update_time": item.update_time.strftime("%Y-%m-%d %H:%M:%S") if item.update_time else None,
     }
     if include_download_url:
-        data["download_url"] = default_storage.url(item.test_file.name) if item.test_file else None
+        data["download_url"] = build_public_file_url(item.test_file.name) if item.test_file else None
     return data
 
 

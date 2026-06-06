@@ -8,7 +8,6 @@ import socket
 
 import minio
 import urllib3
-from django.core.files.storage import default_storage
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -17,7 +16,8 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_system.models import FileData
 from src.apps.auto_system.service.save_minio import SaveMinio
 from src.apps.auto_system.views.project_product import ProjectProductSerializersC
-from src.settings import IS_MINIO
+from src.common.tools.storage import build_public_file_url
+from src.settings import OBJECT_STORAGE_ENABLED
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.log_collector import log
 from src.common.tools.view.model_crud import ModelCRUD
@@ -60,7 +60,7 @@ class FileDataCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
-        if request.data.get('screenshot', False) and IS_MINIO:
+        if request.data.get('screenshot', False) and OBJECT_STORAGE_ENABLED:
             uploaded_file = request.FILES.get('failed_screenshot')
             if not uploaded_file:
                 return ResponseData.fail(RESPONSE_MSG_0030, )
@@ -99,7 +99,7 @@ class FileDataViews(ViewSet):
             file_data = FileData.objects.get(id=file_id)
             if not file_data.test_file:
                 return ResponseData.fail(RESPONSE_MSG_0030)
-            return ResponseData.success(RESPONSE_MSG_0001, default_storage.url(file_data.test_file.name))
+            return ResponseData.success(RESPONSE_MSG_0001, build_public_file_url(file_data.test_file.name))
         except FileData.DoesNotExist:
             return ResponseData.fail(RESPONSE_MSG_0029)
         except (

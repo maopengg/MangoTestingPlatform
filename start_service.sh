@@ -54,11 +54,12 @@ echo "  MCP服务:  http://127.0.0.1:8000/mcp"
 echo ""
 echo "关键启动日志："
 $COMPOSE logs --tail=120 mango_server scheduler_service task_dispatcher api_worker_1 api_worker_2 mcp_service mango_actuator \
-  | grep -E "启动：|Application startup complete|Uvicorn running|WebSocket连接成功|握手成功|POST /api/login|Applying .* OK" \
+  | grep -E "启动：|Application startup complete|Uvicorn running|WebSocket连接成功|握手成功|Applying .* OK" \
   || echo "未找到关键启动日志，请执行：docker compose logs --tail=120 查看完整日志"
 
 echo ""
 echo "异常摘要："
 $COMPOSE logs --tail=200 mango_gateway mango_server scheduler_service task_dispatcher api_worker_1 api_worker_2 mcp_service mango_actuator \
+  | grep -v 'GET /api/web/socket' \
   | grep -E "CRITICAL|ERROR|Traceback|Exception|HTTP/[0-9.]+\" 5[0-9][0-9] " \
   || echo "最近日志中未发现关键异常"

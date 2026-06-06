@@ -8,21 +8,8 @@ from datetime import datetime
 
 
 MCP_HTTP_PATH = "/mcp"
-DEFAULT_ALLOWED_HOSTS = [
-    "127.0.0.1:*",
-    "localhost:*",
-    "[::1]:*",
-    "qfei-auto-platform-dev.internal.qtech.cn",
-    "qfei-auto-platform-test.internal.qtech.cn",
-]
-
-DEFAULT_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:*",
-    "http://localhost:*",
-    "http://[::1]:*",
-    "https://qfei-auto-platform-dev.internal.qtech.cn",
-    "https://qfei-auto-platform-test.internal.qtech.cn",
-]
+LOCAL_ALLOWED_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+LOCAL_ALLOWED_ORIGINS = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
@@ -56,7 +43,8 @@ def _mcp_server_info() -> dict:
         "base_url": base_url,
         "mcp_url": f"{base_url}{MCP_HTTP_PATH}" if base_url else None,
         "mcp_path": MCP_HTTP_PATH,
-        "allowed_hosts": _split_env_list("MANGO_MCP_ALLOWED_HOSTS", DEFAULT_ALLOWED_HOSTS),
+        "allowed_hosts": _mcp_allowed_hosts(),
+        "allowed_origins": _mcp_allowed_origins(),
         "server_time": now.strftime("%Y-%m-%d %H:%M:%S"),
         "server_timestamp": int(now.timestamp()),
         "timezone": getattr(settings, "TIME_ZONE", None),
@@ -68,6 +56,21 @@ def _split_env_list(name: str, default: list[str]) -> list[str]:
     if not value:
         return default
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _mcp_allowed_hosts() -> list[str]:
+    from django.conf import settings
+
+    return _split_env_list("MANGO_MCP_ALLOWED_HOSTS", getattr(settings, "MCP_ALLOWED_HOSTS", LOCAL_ALLOWED_HOSTS))
+
+
+def _mcp_allowed_origins() -> list[str]:
+    from django.conf import settings
+
+    return _split_env_list(
+        "MANGO_MCP_ALLOWED_ORIGINS",
+        getattr(settings, "MCP_ALLOWED_ORIGINS", LOCAL_ALLOWED_ORIGINS),
+    )
 
 
 def _env_bool(name: str, default: bool = True) -> bool:
@@ -244,8 +247,8 @@ def _transport_security_settings():
 
     return TransportSecuritySettings(
         enable_dns_rebinding_protection=_env_bool("MANGO_MCP_ENABLE_DNS_REBINDING_PROTECTION", True),
-        allowed_hosts=_split_env_list("MANGO_MCP_ALLOWED_HOSTS", DEFAULT_ALLOWED_HOSTS),
-        allowed_origins=_split_env_list("MANGO_MCP_ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS),
+        allowed_hosts=_mcp_allowed_hosts(),
+        allowed_origins=_mcp_allowed_origins(),
     )
 
 

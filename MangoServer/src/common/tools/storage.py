@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
 import posixpath
+from urllib.parse import quote
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from minio_storage.storage import MinioMediaStorage
 
 
@@ -70,3 +72,23 @@ class MangoMinioMediaStorage(MinioMediaStorage):
             if super(MangoMinioMediaStorage, self).exists(candidate):
                 return super().url(candidate, *args, **kwargs)
         return super().url(self._prefix_name(name), *args, **kwargs)
+
+    def public_url(self, name: str) -> str:
+        public_base_url = getattr(settings, 'MINIO_PUBLIC_BASE_URL', '').strip()
+        if not public_base_url:
+            return self.url(name)
+        object_name = self._prefix_name(name)
+        for candidate in self._name_candidates(name):
+            if super(MangoMinioMediaStorage, self).exists(candidate):
+                object_name = candidate
+                break
+        encoded_name = quote(object_name.replace('\\', '/').lstrip('/'), safe='/')
+        return f"{public_base_url.rstrip('/')}/{encoded_name}"
+
+
+def build_public_file_url(name: str) -> str:
+    if not name:
+        return ''
+    if hasattr(default_storage, 'public_url'):
+        return default_storage.public_url(name)
+    return default_storage.url(name)

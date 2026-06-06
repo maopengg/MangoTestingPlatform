@@ -18,7 +18,7 @@ from django.conf.urls.static import static
 from django.urls import path, include
 
 from src.apps.auto_user.views.user import LoginViews
-from src.settings import IS_MINIO
+from src.settings import OBJECT_STORAGE_ENABLED
 
 urlpatterns = [
     path("api/login", LoginViews.as_view({'post': 'login'})),
@@ -46,5 +46,5 @@ else:
 
     urlpatterns.insert(0, path('api/docs', include_docs_urls(title='src', authentication_classes=[])))
 
-if not IS_MINIO:
+if not OBJECT_STORAGE_ENABLED:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

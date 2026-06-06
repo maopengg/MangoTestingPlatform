@@ -4,11 +4,9 @@
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",
-    "prod": "vite --mode prod --host",
     "master": "vite --mode master --host",
     "build:dev": "vite build --mode dev",
     "build:test": "vite build --mode test",
-    "build:prod": "vite build --mode prod",
     "build:master": "vite build --mode master",
     "staging": "vite build --mode staging",
     "tsc": "vue-tsc --noEmit",
