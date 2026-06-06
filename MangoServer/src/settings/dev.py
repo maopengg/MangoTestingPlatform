@@ -14,10 +14,10 @@ IS_SQLITE = False
 
 # MySQL 连接信息：如果使用 docker-compose，host 通常填 db；如果连接外部数据库，填数据库域名/IP。
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'dev_qfei_auto_platform'
-MYSQL_USER = 'dev'
-MYSQL_PASSWORD = 'Acronym0-Sheep-Wish'
-MYSQL_IP = 'mysql389bd1693b39.rds.ivolces.com'
+MYSQL_DB_NAME = 'dev_mango_server'
+MYSQL_USER = 'root'
+MYSQL_PASSWORD = 'mP123456&'
+MYSQL_IP = '127.0.0.1'
 
 # ************************ 调试与日志 ************************ #
 # DEBUG 控制 Django 调试模式；生产/公网环境不要开启。

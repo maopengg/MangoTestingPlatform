@@ -9,10 +9,10 @@
 IS_SQLITE = False
 
 # MySQL 连接信息：docker-compose 会通过 .env 注入数据库容器；如果不使用容器，请改为自己的数据库地址。
-MYSQL_DB_NAME = 'test_qfei_auto_platform'
-MYSQL_USER = 'test'
-MYSQL_PASSWORD = '84q9Q85uzXFtd5b'
-MYSQL_IP = 'mysql389bd1693b39.rds.ivolces.com'
+MYSQL_DB_NAME = 'mango_server'
+MYSQL_USER = 'root'
+MYSQL_PASSWORD = 'mP123456&'
+MYSQL_IP = 'db'
 MYSQL_PORT = 3306
 
 # ************************ 调试与日志 ************************ #
