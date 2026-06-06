@@ -30,11 +30,11 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                             }, status=200)
                         elif request.method == 'POST':
                             if request.path not in [
-                                '/api/case/batch',
-                                '/ui/case/batch',
-                                '/ui/element/test',
-                                '/menu',
-                                '/login'
+                                '/api/api/case/batch',
+                                '/api/ui/case/batch',
+                                '/api/ui/element/test',
+                                '/api/menu',
+                                '/api/login'
                             ]:
                                 return JsonResponse({
                                     "code": 300,
@@ -43,8 +43,8 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                                 }, status=200)
                         elif request.method == 'PUT':
                             if request.path not in [
-                                '/user/info/project',
-                                '/user/info/environment',
+                                '/api/user/info/project',
+                                '/api/user/info/environment',
                             ]:
                                 return JsonResponse({
                                     "code": 300,
