@@ -9,6 +9,16 @@ from src.enums.system_enum import ClientTypeEnum
 from src.tools.set_config import SetConfig
 from src.tools.log_collector import log
 
+
+def get_api_base_url() -> str:
+    host = (SetConfig.get_host() or '').rstrip('/')
+    if not host:
+        return ''
+    if host.endswith('/api'):
+        return f'{host}/'
+    return f'{host}/api/'
+
+
 class AuthManager:
     """Token 管理器，全局维护鉴权状态"""
 
@@ -44,7 +54,7 @@ def reinit_client():
     """base_url / token 变更后重新初始化客户端（登录成功后调用）"""
     global _client
     _client = BaseHttpClient(
-        base_url=SetConfig.get_host() or '',
+        base_url=get_api_base_url(),
         headers=auth_manager.get_headers(),
         proxy=SetConfig.get_proxy_url(),
         logger=log

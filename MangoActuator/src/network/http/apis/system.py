@@ -106,7 +106,7 @@ class SystemApi(BaseApi):
             base_url = SetConfig.get_host() or ''
             resp = await self.client.raw_request(
                 'POST',
-                urljoin(base_url, '/login'),
+                urljoin(base_url, '/api/login'),
                 data={
                     'username': username,
                     'password': EncryptionTool.md5_32_small(password),
@@ -139,7 +139,13 @@ class SystemApi(BaseApi):
     async def user_register(self, json_data: dict) -> ResponseModel:
         """用户注册，返回 ResponseModel"""
         try:
-            resp = await self.client.post('/register', json=json_data)
+            base_url = SetConfig.get_host() or ''
+            resp = await self.client.raw_request(
+                'POST',
+                urljoin(base_url, '/api/register'),
+                json=json_data,
+                return_json=True,
+            )
             return ResponseModel(**resp) if isinstance(resp, dict) else resp
         except Exception as e:
             return ResponseModel(code=-300, msg=str(e))

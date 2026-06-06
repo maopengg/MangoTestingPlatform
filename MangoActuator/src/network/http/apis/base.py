@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 import httpx
+from httpx import URL
 
 class ApiError(Exception):
     pass
@@ -47,6 +48,12 @@ class BaseHttpClient:
         if self.log:
             self.log.debug(msg)
 
+    @staticmethod
+    def _normalize_relative_url(url: str) -> str:
+        if URL(url).is_absolute_url:
+            return url
+        return url.lstrip("/")
+
     async def request(
             self,
             method: str,
@@ -60,7 +67,7 @@ class BaseHttpClient:
             return_json: bool = True,
             **kwargs
     ):
-
+        url = self._normalize_relative_url(url)
         self._log(f"[HTTP] {method} {url} params={params} json={json}")
 
         try:
