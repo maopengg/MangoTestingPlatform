@@ -321,7 +321,6 @@
   import useUserStore from '@/store/modules/user'
   import { strJson } from '@/utils/tools'
   import { getSystemSocketNewBrowser } from '@/api/system/socket_api'
-  import { baseURL } from '@/api/axios.config'
   import TipMessage from '@/components/feedback/TipMessage.vue'
 
   const router = useRouter()
@@ -491,7 +490,7 @@
     if (downloadLoading.value) return
     downloadLoading.value = true
     const file_name = '接口批量上传模版.xlsx'
-    const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
+    const file_path = `/api/download?file_name=${encodeURIComponent(file_name)}`
     let aLink = document.createElement('a')
     aLink.href = file_path
     aLink.download = file_name

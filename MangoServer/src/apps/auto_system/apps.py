@@ -4,23 +4,15 @@
 # @Time   : 2023/1/17 10:20
 # @Author : 毛鹏
 import threading
-import os
-from datetime import timedelta
 
 import atexit
 import time
-from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
-from django.db import transaction
-from django.utils import timezone
 from src.common.tools.obtain_assertion import func_info
 from mangotools.enums import CacheValueTypeEnum
 
-from src.common.enums.system_enum import CacheDataKeyEnum, TestSuiteNoticeEnum
-from src.common.enums.tools_enum import TaskEnum
-from src.settings import RETRY_FREQUENCY
+from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.tools import is_main_process
-from src.common.tools.decorator.retry import async_task_db_connection
 from src.common.tools.log_collector import log
 
 
@@ -39,10 +31,6 @@ class AutoSystemConfig(AppConfig):
                 self.save_cache()
                 self.populate_time_tasks()
                 self.init_ass()
-
-                if self._legacy_scheduler_enabled():
-                    self.delayed_task()
-                    self.setup_scheduler()
             except (RuntimeError, SystemError) as e:
                 # 忽略进程关闭时的错误（开发服务器重载时常见）
                 error_msg = str(e).lower()
@@ -64,18 +52,6 @@ class AutoSystemConfig(AppConfig):
         if not hasattr(AutoSystemConfig, '_shutdown_registered'):
             atexit.register(self.shutdown)
             AutoSystemConfig._shutdown_registered = True
-
-    @staticmethod
-    def _legacy_scheduler_enabled():
-        return os.environ.get('MANGO_ENABLE_LEGACY_WEB_SCHEDULER', '').lower() in {'1', 'true', 'yes', 'on'}
-
-    @staticmethod
-    def delayed_task():
-        try:
-            from src.apps.auto_system.service.tasks.run_tasks import RunTasks
-            RunTasks.create_jobs()
-        except Exception as e:
-            log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
 
     @staticmethod
     def save_cache():
@@ -150,15 +126,7 @@ class AutoSystemConfig(AppConfig):
             raise
 
     def shutdown(self):
-        # 不再需要停止消费者线程，因为不再启动它
-        # 停止全局调度器
-        self.stop_scheduler()
-        # 停止 RunTasks 调度器
-        try:
-            from src.apps.auto_system.service.tasks.run_tasks import RunTasks
-            RunTasks.shutdown_scheduler()
-        except Exception as e:
-            log.system.error(f'关闭 RunTasks 调度器异常: {e}')
+        pass
 
     def init_ass(self):
         try:
@@ -187,170 +155,3 @@ class AutoSystemConfig(AppConfig):
                 CacheDataCRUD.inside_put(cache_data.id, data)
         except Exception as e:
             log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
-
-    def setup_scheduler(self):
-        """设置定时任务调度器"""
-        try:
-            log.system.info('开始设置定时任务调度器...')
-            # 创建调度器实例（使用 daemon 线程，确保在服务关闭时能够快速退出）
-            self.scheduler = BackgroundScheduler(daemon=True)
-
-            # 添加定时任务
-            self.scheduler.add_job(
-                self.set_case_status,
-                'interval',
-                minutes=5,
-                id='set_case_status'
-            )
-            log.system.info('已添加定时任务: set_case_status (每5分钟)')
-
-            # 添加任务状态检查任务，每1分钟执行一次
-            self.scheduler.add_job(
-                self.check_task_status,
-                'interval',
-                minutes=1,
-                id='check_task_status'
-            )
-            log.system.info('已添加定时任务: check_task_status (每1分钟)')
-
-            self.scheduler.start()
-            log.system.info('定时任务调度器已启动成功！')
-            
-            # 只在主进程中注册退出处理函数，避免在开发服务器重载时被意外触发
-            # 使用模块级别的标志确保只注册一次
-            if not hasattr(AutoSystemConfig, '_scheduler_shutdown_registered'):
-                atexit.register(self.stop_scheduler)
-                AutoSystemConfig._scheduler_shutdown_registered = True
-        except Exception as e:
-            log.system.error(f'定时任务调度器设置异常: {e}')
-            import traceback
-            traceback.print_exc()
-
-    @async_task_db_connection()
-    def check_task_status(self):
-        """检查所有任务状态，每1分钟执行一次"""
-        log.system.info('========== 开始执行 check_task_status 定时任务 ==========')
-        try:
-            from src.apps.auto_system.service.test_suite.send_notice import SendNotice
-
-            reset_time = 30
-            # 检查全部执行完，没有修改测试套结果的，和没有发送测试报告的
-            from src.apps.auto_system.models import TestSuiteDetails, TestSuite
-            test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
-            log.system.debug(f'查询到 {test_suite.count()} 个进行中或待开始的测试套件')
-            
-            for i in test_suite:
-                status_list = TestSuiteDetails \
-                    .objects \
-                    .filter(test_suite=i).values_list('status', flat=True)
-                if TaskEnum.STAY_BEGIN.value not in status_list and TaskEnum.PROCEED.value not in status_list:
-                    if TaskEnum.FAIL.value in status_list:
-                        i.status = TaskEnum.FAIL.value
-                    else:
-                        i.status = TaskEnum.SUCCESS.value
-                    i.save()
-            test_suite = TestSuite.objects.filter(is_notice=TestSuiteNoticeEnum.NOT_SENT.value,
-                                                  status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value])
-            log.system.debug(f'查询到 {test_suite.count()} 个需要发送通知的测试套件')
-            
-            for i in test_suite:
-                try:
-                    SendNotice(i.id).send_test_suite()
-                except Exception:
-                    pass
-            # 把进行中的，修改为待开始,或者失败
-            test_suite_details_list = TestSuiteDetails \
-                .objects \
-                .filter(status=TaskEnum.PROCEED.value, retry__lt=RETRY_FREQUENCY + 1)
-            
-            for test_suite_detail in test_suite_details_list:
-                if test_suite_detail.push_time and (
-                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
-                    test_suite_detail.status = TaskEnum.STAY_BEGIN.value
-                    test_suite_detail.save()
-                    log.system.info(
-                        f'推送时间超过{reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
-
-            # 把重试次数满的，修改为0，只有未知错误才会设置为失败
-            test_suite_details_list = TestSuiteDetails \
-                .objects \
-                .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value],
-                        retry__gte=RETRY_FREQUENCY + 1)
-            
-            log.system.debug(f'查询到 {test_suite_details_list.count()} 个重试次数已满的测试套件详情（重试次数 >= {RETRY_FREQUENCY + 1}）')
-            
-            for test_suite_detail in test_suite_details_list:
-                if test_suite_detail.push_time and (
-                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=reset_time)):
-                    test_suite_detail.status = TaskEnum.FAIL.value
-                    test_suite_detail.save()
-                    log.system.info(
-                        f'重试次数超过{RETRY_FREQUENCY + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
-            
-            log.system.info('========== check_task_status 定时任务执行完成 ==========')
-
-        except (RuntimeError, SystemError) as e:
-            # 忽略进程关闭时的错误（开发服务器重载时常见）
-            error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in
-                   ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
-                log.system.debug(f'检查任务状态时忽略关闭错误: {e}')
-                return
-            log.system.error(f'检查任务状态时发生异常: {e}')
-            import traceback
-            traceback.print_exc()
-        except Exception as e:
-            log.system.error(f'检查任务状态时发生异常: {e}')
-            import traceback
-            traceback.print_exc()
-
-    def stop_scheduler(self):
-        """停止调度器"""
-        try:
-            if hasattr(self, 'scheduler') and self.scheduler and getattr(self.scheduler, 'running', False):
-                self.scheduler.shutdown(wait=False)  # 不等待，快速关闭
-        except (RuntimeError, SystemError) as e:
-            # 忽略关闭时的正常错误
-            error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in
-                   ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
-                return
-            log.system.debug(f'停止调度器时忽略错误: {e}')
-        except Exception as e:
-            log.system.error(f'停止调度器异常: {e}')
-
-    @async_task_db_connection()
-    def set_case_status(self):
-        try:
-            from src.apps.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
-            from src.apps.auto_pytest.models import PytestCase
-            from src.apps.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
-            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
-            models_to_update = [
-                UiCase,
-                UiCaseStepsDetailed,
-                PageSteps,
-                PytestCase,
-                ApiInfo,
-                ApiCase,
-                ApiCaseDetailed
-            ]
-
-            for model in models_to_update:
-                model.objects.filter(
-                    status=TaskEnum.PROCEED.value,
-                    update_time__lt=ten_minutes_ago
-                ).update(status=TaskEnum.FAIL.value)
-
-            # 确保事务提交
-            transaction.commit()
-        except (RuntimeError, SystemError) as e:
-            # 忽略进程关闭时的错误（开发服务器重载时常见）
-            error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in
-                   ['shutdown', 'interpreter', 'cannot schedule', 'after shutdown']):
-                log.system.debug(f'设置用例状态时忽略关闭错误: {e}')
-                return
-            log.system.error(f'设置用例状态时发生异常: {e}')
-        except Exception as e:
-            log.system.error(f'设置用例状态时发生异常: {e}')

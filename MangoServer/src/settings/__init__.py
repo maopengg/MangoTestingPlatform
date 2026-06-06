@@ -21,7 +21,7 @@ def set_env():
 
 set_env()
 VERSION = '6.1.4'
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
 # 只在主进程（实际运行服务器的进程）中打印，避免Django自动重载导致的重复打印
@@ -57,6 +57,17 @@ MONITORING_NOTICE_MAIN = "src.apps.auto_system.service.notice.NoticeMain"
 RETRY_FREQUENCY = 3
 # **********************************************************************************************************************
 # **********************************************************************************************************************
+
+for log_dir in [
+    BASE_DIR / 'logs',
+    BASE_DIR / 'logs/auto_api',
+    BASE_DIR / 'logs/auto_ui',
+    BASE_DIR / 'logs/auto_system',
+    BASE_DIR / 'logs/auto_perf',
+    BASE_DIR / 'logs/auto_pytest',
+    BASE_DIR / 'logs/monitoring',
+]:
+    os.makedirs(log_dir, exist_ok=True)
 
 if not IS_MINIO:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'

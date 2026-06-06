@@ -12,7 +12,7 @@ from mangotools.data_processor import EncryptionTool, SqlCache
 from websockets.exceptions import ConnectionClosed
 from websockets.legacy.client import WebSocketClientProtocol
 
-from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
+from src.enums.system_enum import ClientTypeEnum, ClientNameEnum, SocketEnum
 from src.enums.tools_enum import CacheKeyEnum, MessageEnum
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.system_model import SetUserOpenSatusModel
@@ -81,9 +81,10 @@ class WebSocketClient:
     # ==========================
     @classmethod
     async def client_run(cls):
+        websocket_base_url = str(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)).rstrip("/")
         server_url = (
-            f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}"
-            f"client/socket?"
+            f"{websocket_base_url}"
+            f"{SocketEnum.CLIENT_PATH.value}?"
             f"username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}"
             f"&password={EncryptionTool.md5_32_small(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value))}"
         )

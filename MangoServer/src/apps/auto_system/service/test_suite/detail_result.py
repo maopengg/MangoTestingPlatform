@@ -20,9 +20,6 @@ class TestSuiteDetailResultService:
                 'result_size': result_size,
             },
         )
-        if getattr(detail, 'result_data', None) is not None:
-            detail.result_data = None
-            detail.save(update_fields=['result_data', 'update_time'])
 
     @classmethod
     def get_result_data(cls, detail: TestSuiteDetails):
@@ -32,7 +29,7 @@ class TestSuiteDetailResultService:
                 return payload.result_data
         except TestSuiteDetailResult.DoesNotExist:
             pass
-        return detail.result_data
+        return None
 
     @classmethod
     def result_map(cls, detail_ids: list[int]) -> dict[int, TestSuiteDetailResult]:
@@ -47,16 +44,9 @@ class TestSuiteDetailResultService:
     def attach_children(cls, data_list: list[dict]):
         detail_ids = [item['id'] for item in data_list if item.get('id')]
         payload_map = cls.result_map(detail_ids)
-        legacy_result_map = {
-            item.id: item.result_data
-            for item in TestSuiteDetails.objects.filter(
-                id__in=detail_ids,
-                result_data__isnull=False,
-            ).only('id', 'result_data')
-        }
         for item in data_list:
             payload = payload_map.get(item.get('id'))
-            result_data = payload.result_data if payload else legacy_result_map.get(item.get('id'))
+            result_data = payload.result_data if payload else None
             item.pop('result_data', None)
             item['result_size'] = payload.result_size if payload else cls.calc_result_size(result_data)
             item['has_result_data'] = bool(result_data)
@@ -70,10 +60,6 @@ class TestSuiteDetailResultService:
     def clear_result(cls, detail_ids: list[int]):
         if not detail_ids:
             return 0
-        TestSuiteDetails.objects.filter(id__in=detail_ids, result_data__isnull=False).update(
-            result_data=None,
-            update_time=timezone.now(),
-        )
         return TestSuiteDetailResult.objects.filter(test_suite_detail_id__in=detail_ids).delete()[0]
 
     @classmethod

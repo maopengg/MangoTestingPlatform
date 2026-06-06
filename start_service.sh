@@ -6,16 +6,9 @@ cd "$(dirname "$0")"
 COMPOSE="docker compose"
 
 echo "拉取最新代码..."
-OLD_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
 git pull
-NEW_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
 
-FRONTEND_CHANGED=0
-if [ -n "$OLD_HEAD" ] && [ -n "$NEW_HEAD" ] && [ "$OLD_HEAD" != "$NEW_HEAD" ]; then
-  if git diff --name-only "$OLD_HEAD" "$NEW_HEAD" | grep -q '^mango-console/'; then
-    FRONTEND_CHANGED=1
-  fi
-fi
+BUILD_FRONTEND="${BUILD_FRONTEND:-0}"
 
 echo "启动数据库和对象存储..."
 $COMPOSE up -d db minio
@@ -27,11 +20,11 @@ $COMPOSE run --rm mango_server python manage.py createcachetable django_cache ||
 echo "构建后端和执行器镜像..."
 $COMPOSE build mango_server mango_actuator
 
-if [ "$FRONTEND_CHANGED" = "1" ] || [ -z "$($COMPOSE images -q mango-console 2>/dev/null || true)" ]; then
-  echo "检测到前端变更或前端镜像不存在，构建前端镜像..."
+if [ "$BUILD_FRONTEND" = "1" ] || [ -z "$($COMPOSE images -q mango-console 2>/dev/null || true)" ]; then
+  echo "构建前端镜像..."
   $COMPOSE build mango-console
 else
-  echo "未检测到前端变更，跳过前端镜像构建。"
+  echo "跳过前端镜像构建。如需构建前端，请执行：BUILD_FRONTEND=1 sh start_service.sh"
 fi
 
 echo "启动全部芒果服务..."

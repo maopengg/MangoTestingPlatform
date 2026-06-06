@@ -248,7 +248,6 @@
   import { opeForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import { baseURL } from '@/api/axios.config'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
@@ -632,7 +631,7 @@
 
   function onDownload() {
     const file_name = '元素批量上传模版.xlsx'
-    const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
+    const file_path = `/api/download?file_name=${encodeURIComponent(file_name)}`
     let aLink = document.createElement('a')
     aLink.href = file_path
     aLink.download = file_name

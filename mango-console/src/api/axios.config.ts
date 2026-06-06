@@ -28,9 +28,18 @@ const service = Axios.create({
   timeout: 10 * 60 * 1000,
 })
 
+function normalizeApiUrl(url?: string): string | undefined {
+  if (!url || /^(https?:)?\/\//.test(url)) {
+    return url
+  }
+  const normalizedUrl = url.startsWith('/') ? url : `/${url}`
+  return `/api${normalizedUrl}`
+}
+
 // 在正式发送请求之前进行拦截配置
 service.interceptors.request.use(
   (config) => {
+    config.url = normalizeApiUrl(config.url)
     !config.headers && (config.headers = {})
     if (!config.headers[CONTENT_TYPE]) {
       config.headers[CONTENT_TYPE] = APPLICATION_JSON

@@ -904,29 +904,6 @@ def register_data_factory_tools(mcp):
         return ok(_data_factory_result_with_cache_keys(result, template), "场景模板执行完成")
 
     @mcp.tool()
-    def debug_run_data_factory_template(
-        template_id: int,
-        overrides: dict | None = None,
-        context: dict | None = None,
-        test_object_id: int | None = None,
-        test_env: int | None = None,
-        user_id: int | None = None,
-        preview_token: str | None = None,
-        confirm_text: str | None = None,
-    ) -> dict:
-        """兼容旧名称：调试运行场景模板。会真实落库，必须先调用 preview_run_data_factory_template_impact。"""
-        return execute_data_factory_template(
-            template_id=template_id,
-            overrides=overrides,
-            context=context,
-            test_object_id=test_object_id,
-            test_env=test_env,
-            user_id=user_id,
-            preview_token=preview_token,
-            confirm_text=confirm_text,
-        )
-
-    @mcp.tool()
     def set_data_factory_template_status(template_id: int, status: Literal[0, 1]) -> dict:
         """启用或停用数据工厂场景模板。"""
         template = DataFactoryTemplate.objects.get(id=template_id)
@@ -1050,33 +1027,6 @@ def register_data_factory_tools(mcp):
             status=status,
         )
         return ok(_case_config_summary(config), "数据工厂前置配置绑定成功")
-
-    @mcp.tool()
-    def bind_data_factory_to_api_case(
-        source_id: int,
-        template_id: int,
-        source_type: Literal[1, 3] = DataFactoryCaseSourceTypeEnum.API_CASE.value,
-        name: str | None = None,
-        stage: int = 1,
-        sort: int = 0,
-        field_overrides: dict | None = None,
-        cleanup_strategy: int | None = DataFactoryCleanupStrategyEnum.MANUAL.value,
-        status: int = StatusEnum.SUCCESS.value,
-        deduplicate: bool = True,
-    ) -> dict:
-        """兼容旧 API：给 API case 或 API 接口场景绑定数据工厂前置配置。"""
-        return bind_data_factory_to_case_source(
-            source_type=source_type,
-            source_id=source_id,
-            template_id=template_id,
-            name=name,
-            stage=stage,
-            sort=sort,
-            field_overrides=field_overrides,
-            cleanup_strategy=cleanup_strategy,
-            status=status,
-            deduplicate=deduplicate,
-        )
 
     @mcp.tool()
     def update_data_factory_case_config(
@@ -1299,7 +1249,7 @@ def register_data_factory_tools(mcp):
                         "用户确认后调用 delete_data_factory_template，并原样传回 preview_token 和 confirm_text。",
                         "如果模板已被用例或场景绑定，删除会被阻止；推荐先停用 set_data_factory_template_status(status=0)。",
                     ],
-                    "safety_rule": "真实执行和清理都属于危险操作，不允许跳过预览确认。debug_run_data_factory_template 是兼容旧名称，也必须传二次确认 token。",
+                    "safety_rule": "真实执行和清理都属于危险操作，不允许跳过预览确认。",
                 },
                 "field_rule_payload": {
                     "required": ["name"],

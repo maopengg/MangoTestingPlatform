@@ -312,7 +312,6 @@ class TestSuiteDetails(models.Model):
     # 2待开始，3是进行中，0是失败，1是成功
     status = models.SmallIntegerField(verbose_name="测试结果", db_index=True)
     error_message = models.TextField(verbose_name="错误提示", null=True)
-    result_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     retry = models.SmallIntegerField(verbose_name="重试次数")
     push_time = models.DateTimeField(verbose_name="修改时间", null=True)
     case_sum = models.SmallIntegerField(verbose_name="用例数", default=0)
