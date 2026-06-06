@@ -10,6 +10,9 @@ git pull
 
 BUILD_FRONTEND="${BUILD_FRONTEND:-0}"
 
+echo "停止当前芒果业务服务，释放内存..."
+$COMPOSE stop mango_gateway mango_server scheduler_service task_dispatcher api_worker_1 api_worker_2 mcp_service mango_actuator mango-console || true
+
 echo "启动数据库和对象存储..."
 $COMPOSE up -d db minio
 
