@@ -9,6 +9,7 @@ from threading import RLock
 
 from dulwich.repo import Repo
 from mangotools.mangos import GitRepoOperator
+from src.apps.auto_system.service.system_config import SystemConfigService
 from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.exceptions import PytestError, ERROR_MSG_0043
 from src.common.tools import project_dir
@@ -77,12 +78,10 @@ class MangoPytestGitRepoOperator(GitRepoOperator):
 
 
 def git_obj() -> GitRepoOperator:
-    from src.apps.auto_system.models import CacheData
-
     with _git_lock:
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
-        username = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_USERNAME.name).value
-        password = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name).value
+        repo_url = SystemConfigService.get(CacheDataKeyEnum.PYTEST_GIT_URL.name)
+        username = SystemConfigService.get(CacheDataKeyEnum.PYTEST_GIT_USERNAME.name)
+        password = SystemConfigService.get(CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name)
         if repo_url is None or repo_url == "":
             raise PytestError(*ERROR_MSG_0043)
         repo = MangoPytestGitRepoOperator(repo_url, project_dir.root_path(), log.pytest, username, password)

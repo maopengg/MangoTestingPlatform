@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from src.apps.auto_system.models import Tasks, TimeTasks
 from src.common.enums.tools_enum import StatusEnum
+from src.apps.task_center.services.dispatch_service import ScheduleDispatchService
 from src.apps.task_center.services.schedule_fire_service import ScheduleFireService
 from src.common.tools.decorator.retry import async_task_db_connection
 from src.common.tools.log_collector import log
@@ -14,14 +15,21 @@ from src.services.runtime.scheduler.system_jobs import SchedulerSystemJobService
 
 
 class ScheduleRunner:
-    def __init__(self, node_name: str | None = None, poll_interval: int = 30, lookback_minutes: int = 1):
+    def __init__(
+            self,
+            node_name: str | None = None,
+            poll_interval: int = 30,
+            lookback_minutes: int = 1,
+            dispatch_batch_size: int = 50,
+    ):
         self.node_name = node_name or socket.gethostname()
         self.poll_interval = poll_interval
         self.lookback_minutes = lookback_minutes
+        self.dispatch_batch_size = dispatch_batch_size
         self.running = True
 
     def run_forever(self):
-        log.system.info(f'scheduler-service 启动：node={self.node_name}')
+        log.system.info(f'scheduler-service 启动：node={self.node_name}，已合并定时触发和任务分发')
         while self.running:
             self.tick()
             time.sleep(self.poll_interval)
@@ -33,6 +41,14 @@ class ScheduleRunner:
             planned_at = now - timedelta(minutes=offset)
             self.create_due_time_task_fires(planned_at)
             self.run_due_system_jobs(planned_at)
+        self.dispatch_pending_fires()
+
+    def dispatch_pending_fires(self):
+        for _ in range(self.dispatch_batch_size):
+            fire = ScheduleDispatchService.claim_pending_fire(self.node_name)
+            if not fire:
+                return
+            ScheduleDispatchService.dispatch_fire(fire, self.node_name)
 
     def create_due_time_task_fires(self, planned_at: datetime):
         time_tasks = TimeTasks.objects.filter(cron__isnull=False)

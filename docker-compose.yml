@@ -84,14 +84,7 @@ services:
 
   scheduler_service:
     <<: *mango-server-common
-    command: python manage.py run_scheduler --env=${DJANGO_ENV} --node-name=scheduler-1
-    depends_on:
-      mango_server:
-        condition: service_started
-
-  task_dispatcher:
-    <<: *mango-server-common
-    command: python manage.py run_dispatcher --env=${DJANGO_ENV} --node-name=dispatcher-1
+    command: python manage.py run_scheduler --env=${DJANGO_ENV} --node-name=scheduler-1 --dispatch-batch-size=50
     depends_on:
       mango_server:
         condition: service_started

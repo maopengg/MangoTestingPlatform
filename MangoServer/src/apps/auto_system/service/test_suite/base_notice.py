@@ -7,7 +7,8 @@
 from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel
 from mangotools.notice import EmailSend, WeChatSend, FeiShuSend
 
-from src.apps.auto_system.models import NoticeGroup, CacheData, TestSuite, TestSuiteDetails
+from src.apps.auto_system.models import NoticeGroup, TestSuite, TestSuiteDetails
+from src.apps.auto_system.service.system_config import SystemConfigService
 from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.enums.tools_enum import EnvironmentEnum, TestCaseTypeEnum
 from src.common.exceptions import *
@@ -204,10 +205,10 @@ class NoticeMain:
     @staticmethod
     def __mail_config():
         try:
-            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_SEND_USER.name).value
-            email_host = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_EMAIL_HOST.name).value
-            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_STAMP_KET.name).value
-        except CacheData.DoesNotExist:
+            send_user = SystemConfigService.get(CacheDataKeyEnum.SYSTEM_SEND_USER.name)
+            email_host = SystemConfigService.get(CacheDataKeyEnum.SYSTEM_EMAIL_HOST.name)
+            stamp_key = SystemConfigService.get(CacheDataKeyEnum.SYSTEM_STAMP_KET.name)
+        except SystemEError:
             raise SystemEError(*ERROR_MSG_0031)
         else:
             if send_user is None or email_host is None or stamp_key is None:
@@ -226,11 +227,7 @@ class NoticeMain:
     @staticmethod
     def __get_domain_name():
         domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.value}，此处才会显示跳转连接'
-        try:
-            cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.name)
-        except CacheData.DoesNotExist:
-            pass
-        else:
-            if cache_data_obj.value:
-                domain_name = cache_data_obj.value
+        value = SystemConfigService.get(CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.name, default='')
+        if value:
+            domain_name = value
         return domain_name

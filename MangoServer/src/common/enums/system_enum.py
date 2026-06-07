@@ -50,7 +50,7 @@ class CacheDataKeyEnum(BaseEnum):
     SYSTEM_EMAIL_HOST = '邮箱域名'
     SYSTEM_STAMP_KET = '邮箱的stamp_key'
     API_TIMEOUT = 'API请求超时时间'
-    PYTEST_GIT_URL = 'git的请求url示例>https://gitee.com/mao-peng/MangoPytest'
+    PYTEST_GIT_URL = 'git仓库地址'
     PYTEST_GIT_USERNAME = 'git账号'
     PYTEST_GIT_PASSWORD = 'git密码'
 
@@ -69,8 +69,8 @@ class CacheDataKeyEnum(BaseEnum):
 
     @classmethod
     def get_cache_value(cls, key):
-        from src.apps.auto_system.models import CacheData
-        return CacheData.objects.get(key=key.name).value
+        from src.apps.auto_system.service.system_config import SystemConfigService
+        return SystemConfigService.get(key.name)
 
 
 class CacheDataKey2Enum(BaseEnum):

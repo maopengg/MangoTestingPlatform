@@ -8,6 +8,7 @@ import json
 from mangotools.enums import CacheValueTypeEnum
 from src.apps.auto_pytest.service.test_case.case_flow import PyCaseFlow
 from src.apps.auto_system.models import CacheData
+from src.apps.auto_system.service.system_config import SystemConfigService
 from src.apps.auto_system.views.cache_data import CacheDataCRUD
 from src.apps.auto_ui.service.test_case.case_flow import UiCaseFlow
 from src.common.enums.system_enum import CacheDataKey2Enum, ClientTypeEnum
@@ -27,6 +28,9 @@ class SystemConsumer:
             'key': CacheDataKey2Enum.SELECT_VALUE.value,
             'value': json.dumps(data.get('data'), ensure_ascii=False),
             'value_type': CacheValueTypeEnum.DICT.value,
+            'group': 'internal',
+            'is_public': False,
+            'is_enabled': True,
         }
         try:
             cache_data = CacheData.objects.get(key=CacheDataKey2Enum.SELECT_VALUE.value)
@@ -39,6 +43,7 @@ class SystemConsumer:
             for cache_data in cache_data_list:
                 cache_data.delete()
             CacheDataCRUD.inside_post(data)
+        SystemConfigService.invalidate(CacheDataKey2Enum.SELECT_VALUE.value)
 
     @classmethod
     @async_task_db_connection()

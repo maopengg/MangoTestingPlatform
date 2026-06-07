@@ -11,7 +11,7 @@ from django.forms import model_to_dict
 from genson import SchemaBuilder
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter, ApiHeaders, ApiInfo, ApiPublic
-from src.apps.auto_system.models import CacheData
+from src.apps.auto_system.service.cache_data_value import CacheDataValue
 from src.apps.auto_api.service.test_case.test_api_info import TestApiInfo
 from src.apps.auto_api.service.test_case.test_case import TestCase
 from src.apps.auto_api.views.api_case import ApiCaseCRUD, ApiCaseSerializersC
@@ -226,8 +226,7 @@ def _find_assertion_method(method_value: str) -> dict | None:
 
 
 def _api_assertion_method_groups() -> list[dict]:
-    cache_data = CacheData.objects.get(key=CacheDataKey2Enum.ASS_SELECT_VALUE.value)
-    return jsonlib.loads(cache_data.value)
+    return CacheDataValue.get_cache_value(key=CacheDataKey2Enum.ASS_SELECT_VALUE.value)
 
 
 def _flatten_assertion_methods(groups: list[dict]) -> list[dict]:

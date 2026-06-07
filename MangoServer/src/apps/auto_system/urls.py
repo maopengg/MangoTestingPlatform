@@ -86,6 +86,7 @@ urlpatterns = [
     path('index/statistics', cache_page(60 * 3)(IndexViews.as_view({'get': 'statistics'}))),
     #
     path('cache/data', CacheDataCRUD.as_view()),
+    path('cache/data/grouped', CacheDataViews.as_view({'get': 'grouped'})),
     path('cache/data/key/value', CacheDataViews.as_view({'get': 'get_key_value'})),
     #
     path('test/object', TestObjectCRUD.as_view()),

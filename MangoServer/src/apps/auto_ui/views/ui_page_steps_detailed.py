@@ -3,8 +3,6 @@
 # @Description: 
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
-import json
-
 from django.core.exceptions import FieldError
 from mangotools.mangos import get_execution_order_with_config_ids
 from rest_framework import serializers
@@ -13,7 +11,6 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.common.exceptions import ToolsError
-from src.apps.auto_system.models import CacheData
 from src.apps.auto_system.service.cache_data_value import CacheDataValue
 from src.apps.auto_ui.models import PageStepsDetailed, PageSteps
 from src.apps.auto_ui.service.query_ope_key_name import get_by_object
@@ -110,7 +107,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
             pass
         else:
             run_flow = ''
-            select_value = json.loads(CacheData.objects.get(key='select_value').value)
+            select_value = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.SELECT_VALUE.value)
             for __id in flow_data:
                 try:
                     flow = self.model.objects.get(id=__id)

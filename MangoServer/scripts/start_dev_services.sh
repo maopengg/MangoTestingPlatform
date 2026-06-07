@@ -9,7 +9,7 @@ LOG_DIR="${LOG_DIR:-$ROOT_DIR/logs/dev-services}"
 CORE_API_HOST="${CORE_API_HOST:-127.0.0.1}"
 CORE_API_PORT="${CORE_API_PORT:-8000}"
 SCHEDULER_NODE="${SCHEDULER_NODE:-scheduler-1}"
-DISPATCHER_NODE="${DISPATCHER_NODE:-dispatcher-1}"
+SCHEDULER_DISPATCH_BATCH_SIZE="${SCHEDULER_DISPATCH_BATCH_SIZE:-50}"
 API_WORKER_COUNT="${API_WORKER_COUNT:-2}"
 API_WORKER_CONCURRENCY="${API_WORKER_CONCURRENCY:-5}"
 API_WORKER_DB_IDLE_SECONDS="${API_WORKER_DB_IDLE_SECONDS:-1800}"
@@ -55,10 +55,7 @@ start_service core-api \
   "$PYTHON_BIN" manage.py runserver "$CORE_API_HOST:$CORE_API_PORT" "--env=$ENV_NAME"
 
 start_service scheduler-service \
-  "$PYTHON_BIN" manage.py run_scheduler "--env=$ENV_NAME" --node-name "$SCHEDULER_NODE"
-
-start_service task-dispatcher \
-  "$PYTHON_BIN" manage.py run_dispatcher "--env=$ENV_NAME" --node-name "$DISPATCHER_NODE"
+  "$PYTHON_BIN" manage.py run_scheduler "--env=$ENV_NAME" --node-name "$SCHEDULER_NODE" --dispatch-batch-size "$SCHEDULER_DISPATCH_BATCH_SIZE"
 
 for worker_index in $(seq 1 "$API_WORKER_COUNT"); do
   api_worker_name="api-worker-$worker_index"

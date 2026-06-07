@@ -29,6 +29,15 @@ export function getSystemCacheData() {
   })
 }
 
+export function getSystemCacheDataGrouped() {
+  return get({
+    url: 'system/cache/data/grouped',
+    data: () => {
+      return {}
+    },
+  })
+}
+
 export function putSystemCacheData(data: object) {
   return put({
     url: 'system/cache/data',

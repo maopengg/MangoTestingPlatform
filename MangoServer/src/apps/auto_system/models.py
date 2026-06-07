@@ -271,6 +271,13 @@ class CacheData(models.Model):
     key = models.CharField(verbose_name="key", max_length=128, unique=True)
     value = models.TextField(verbose_name="value", null=True)
     value_type = models.SmallIntegerField(verbose_name="value的类型枚举", null=True)
+    group = models.CharField(verbose_name="配置分组", max_length=64, default="system")
+    sort = models.IntegerField(verbose_name="排序", default=100)
+    required = models.BooleanField(verbose_name="是否必填", default=False)
+    is_enabled = models.BooleanField(verbose_name="是否启用", default=True)
+    is_secret = models.BooleanField(verbose_name="是否敏感配置", default=False)
+    is_public = models.BooleanField(verbose_name="是否在系统设置展示", default=True)
+    placeholder = models.CharField(verbose_name="输入提示", max_length=255, null=True, blank=True)
 
     class Meta:
         db_table = 'cache_data'

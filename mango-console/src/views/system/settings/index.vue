@@ -5,151 +5,83 @@
     </template>
     <template #default>
       <div class="settings-container">
-        <!-- 第一组：后端服务设置 和 邮箱配置 -->
-        <div class="settings-row">
-          <!-- 后端服务设置 -->
+        <div class="settings-grid">
           <div class="settings-card">
             <div class="card-header">
               <h3 class="card-title">后端服务设置</h3>
             </div>
-            <div class="card-content">
+            <div class="card-content compact-content">
               <div class="debug-setting">
                 <span class="setting-label">设置系统debug级别日志</span>
                 <a-switch
                   v-model="settingsData.isDebug"
-                  @change="doPostSystemSetDebugLog"
                   size="small"
+                  @change="doPostSystemSetDebugLog"
                 />
               </div>
             </div>
           </div>
 
-          <!-- 邮箱配置 -->
-          <div class="settings-card">
+          <div v-for="group in settingsGroups" :key="group.key" class="settings-card">
             <div class="card-header">
-              <h3 class="card-title">邮箱配置</h3>
+              <h3 class="card-title">{{ group.title }}</h3>
               <a-button
                 size="small"
                 type="primary"
-                @click="handleEditToggle('email')"
-                :loading="loading.email"
+                :loading="groupLoading(group.key)"
                 class="edit-btn"
+                @click="handleEditToggle(group)"
               >
-                {{ editingStates.email ? '保存配置' : '修改配置' }}
+                {{ groupEditing(group.key) ? '保存配置' : '修改配置' }}
               </a-button>
             </div>
             <div class="card-content">
-              <div v-for="item in filteredConfig('email')" :key="item.key" class="setting-item">
-                <div class="setting-row">
-                  <!-- 将域名配置改名为测试报告地址 -->
-                  <span class="setting-label" v-if="item.key === 'SYSTEM_DOMAIN_NAME'"
-                    >测试报告地址</span
-                  >
-                  <span class="setting-label" v-else>{{ item.describe }}</span>
-                  <div class="setting-control">
-                    <a-input
-                      v-if="editingStates.email"
-                      v-model="item.value"
-                      :placeholder="`请输入${item.describe}`"
-                      allow-clear
-                      size="small"
-                      class="setting-input"
-                    />
-                    <span v-else class="setting-value">{{ item.value || '未配置' }}</span>
-                  </div>
-                </div>
+              <div v-if="group.items.length === 0" class="mango-empty-state empty-placeholder">
+                暂无配置项
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 第二组：接口自动化配置 和 界面自动化配置 -->
-        <div class="settings-row">
-          <!-- 接口自动化配置 -->
-          <div class="settings-card">
-            <div class="card-header">
-              <h3 class="card-title">接口自动化配置</h3>
-              <a-button
-                size="small"
-                type="primary"
-                @click="handleEditToggle('api')"
-                :loading="loading.api"
-                class="edit-btn"
-              >
-                {{ editingStates.api ? '保存配置' : '修改配置' }}
-              </a-button>
-            </div>
-            <div class="card-content">
-              <div v-for="item in filteredConfig('api')" :key="item.key" class="setting-item">
+              <div v-for="item in group.items" :key="item.key" class="setting-item">
                 <div class="setting-row">
                   <span class="setting-label">{{ item.describe }}</span>
                   <div class="setting-control">
-                    <a-input
-                      v-if="editingStates.api"
+                    <a-input-number
+                      v-if="groupEditing(group.key) && isNumberType(item)"
                       v-model="item.value"
-                      :placeholder="`请输入${item.describe}`"
+                      :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
+                      :placeholder="getPlaceholder(item)"
+                      size="small"
+                      class="setting-input"
+                    />
+                    <a-switch
+                      v-else-if="groupEditing(group.key) && isBoolType(item)"
+                      v-model="item.value"
+                      size="small"
+                    />
+                    <a-textarea
+                      v-else-if="groupEditing(group.key) && isLongTextType(item)"
+                      v-model="item.value"
+                      :placeholder="getPlaceholder(item)"
+                      allow-clear
+                      auto-size
+                      size="small"
+                      class="setting-input"
+                    />
+                    <a-input-password
+                      v-else-if="groupEditing(group.key) && item.is_secret"
+                      v-model="item.value"
+                      :placeholder="getPlaceholder(item)"
                       allow-clear
                       size="small"
                       class="setting-input"
                     />
-                    <span v-else class="setting-value">{{ item.value || '未配置' }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 界面自动化配置 -->
-          <div class="settings-card">
-            <div class="card-header">
-              <h3 class="card-title">界面自动化配置</h3>
-              <a-button
-                size="small"
-                type="primary"
-                @click="handleEditToggle('ui')"
-                :loading="loading.ui"
-                class="edit-btn"
-              >
-                {{ editingStates.ui ? '保存配置' : '修改配置' }}
-              </a-button>
-            </div>
-            <div class="card-content empty-content">
-              <!-- 留空，后续添加设置项 -->
-              <div class="mango-empty-state empty-placeholder">暂无配置项</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 第三组：单元自动化配置（独自占用一行） -->
-        <div class="settings-row full-width">
-          <!-- 单元自动化配置 -->
-          <div class="settings-card">
-            <div class="card-header">
-              <h3 class="card-title">单元自动化配置</h3>
-              <a-button
-                size="small"
-                type="primary"
-                @click="handleEditToggle('pytest')"
-                :loading="loading.pytest"
-                class="edit-btn"
-              >
-                {{ editingStates.pytest ? '保存配置' : '修改配置' }}
-              </a-button>
-            </div>
-            <div class="card-content">
-              <div v-for="item in filteredConfig('pytest')" :key="item.key" class="setting-item">
-                <div class="setting-row">
-                  <span class="setting-label">{{ item.describe }}</span>
-                  <div class="setting-control">
                     <a-input
-                      v-if="editingStates.pytest"
+                      v-else-if="groupEditing(group.key)"
                       v-model="item.value"
-                      :placeholder="`请输入${item.describe}`"
+                      :placeholder="getPlaceholder(item)"
                       allow-clear
                       size="small"
                       class="setting-input"
                     />
-                    <span v-else class="setting-value">{{ item.value || '未配置' }}</span>
+                    <span v-else class="setting-value">{{ displayValue(item) }}</span>
                   </div>
                 </div>
               </div>
@@ -160,97 +92,125 @@
     </template>
   </TableBody>
 </template>
+
 <script lang="ts" setup>
-  import { onMounted, reactive } from 'vue'
+  import { onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import { getSystemCacheData, putSystemCacheData } from '@/api/system/cache_data'
+  import { getSystemCacheDataGrouped, putSystemCacheData } from '@/api/system/cache_data'
   import { postSystemSetDebugLog } from '@/api/system/system'
 
-  const loading = reactive({
-    host: false,
-    email: false,
-    api: false,
-    pytest: false,
-    ui: false,
-  })
+  const VALUE_TYPE_INT = 1
+  const VALUE_TYPE_FLOAT = 2
+  const VALUE_TYPE_BOOL = 3
+  const VALUE_TYPE_LIST = 5
+  const VALUE_TYPE_DICT = 6
+  const VALUE_TYPE_JSON = 8
 
-  const editingStates = reactive({
-    host: false,
-    email: false,
-    api: false,
-    pytest: false,
-    ui: false,
-  })
+  interface ConfigItem {
+    id: number
+    key: string
+    describe: string
+    value: any
+    value_type: number
+    is_secret: boolean
+    has_value: boolean
+    placeholder?: string
+  }
+
+  interface ConfigGroup {
+    key: string
+    title: string
+    items: ConfigItem[]
+  }
+
+  const settingsGroups = ref<ConfigGroup[]>([])
+  const loading = reactive<Record<string, boolean>>({})
+  const editingStates = reactive<Record<string, boolean>>({})
 
   const settingsData = reactive({
-    host: ['SYSTEM_DOMAIN_NAME'],
-    email: ['SYSTEM_SEND_USER', 'SYSTEM_EMAIL_HOST', 'SYSTEM_STAMP_KET', 'SYSTEM_DOMAIN_NAME'],
-    api: ['API_TIMEOUT'],
-    pytest: [
-      'PYTEST_GIT_URL',
-      'PYTEST_GIT_USERNAME',
-      'PYTEST_GIT_PASSWORD',
-      'PYTEST_ACT',
-      'PYTEST_TESTCASE',
-      'PYTEST_TOOLS',
-      'PYTEST_UPLOAD',
-    ],
-    ui: [],
-    data: [],
     isDebug: false,
   })
 
-  // 检查是否有某类配置
-  const hasConfig = (type) => {
-    return settingsData.data.some((item) => settingsData[type].includes(item.key))
-  }
+  const groupLoading = (key: string) => loading[key] === true
+  const groupEditing = (key: string) => editingStates[key] === true
+  const isNumberType = (item: ConfigItem) =>
+    item.value_type === VALUE_TYPE_INT || item.value_type === VALUE_TYPE_FLOAT
+  const isBoolType = (item: ConfigItem) => item.value_type === VALUE_TYPE_BOOL
+  const isLongTextType = (item: ConfigItem) =>
+    [VALUE_TYPE_LIST, VALUE_TYPE_DICT, VALUE_TYPE_JSON].includes(item.value_type)
+  const getPlaceholder = (item: ConfigItem) => item.placeholder || `请输入${item.describe}`
 
-  // 过滤出某类配置
-  const filteredConfig = (type) => {
-    return settingsData.data.filter((item) => settingsData[type].includes(item.key))
-  }
-
-  // 处理编辑状态切换和保存
-  const handleEditToggle = async (type) => {
-    if (editingStates[type]) {
-      // 保存配置
-      loading[type] = true
-      try {
-        // 只保存当前类型的配置
-        const currentTypeConfigs = filteredConfig(type)
-        currentTypeConfigs.forEach((item) => {
-          if (item.value === '') {
-            item.value = null
-          }
-        })
-
-        const res = await putSystemCacheData(currentTypeConfigs)
-        Message.success(res.msg)
-        await doRefresh()
-      } catch (error) {
-        console.error(error)
-      } finally {
-        loading[type] = false
-      }
+  const displayValue = (item: ConfigItem) => {
+    if (item.is_secret) {
+      return item.has_value ? '已配置' : '未配置'
     }
-    // 切换编辑状态
-    editingStates[type] = !editingStates[type]
+    if (item.value === null || item.value === undefined || item.value === '') {
+      return '未配置'
+    }
+    if (isBoolType(item)) {
+      return item.value ? '开启' : '关闭'
+    }
+    return String(item.value)
+  }
+
+  const normalizeEditValue = (item: ConfigItem) => {
+    if (isLongTextType(item) && typeof item.value !== 'string') {
+      return JSON.stringify(item.value, null, 2)
+    }
+    return item.value
+  }
+
+  const ensureGroupState = (groups: ConfigGroup[]) => {
+    groups.forEach((group) => {
+      loading[group.key] = loading[group.key] || false
+      editingStates[group.key] = editingStates[group.key] || false
+    })
+  }
+
+  const buildPayload = (group: ConfigGroup) => {
+    return group.items.map((item) => ({
+      id: item.id,
+      key: item.key,
+      value: item.value === '' ? null : item.value,
+    }))
+  }
+
+  const handleEditToggle = async (group: ConfigGroup) => {
+    if (!groupEditing(group.key)) {
+      group.items.forEach((item) => {
+        item.value = normalizeEditValue(item)
+      })
+      editingStates[group.key] = true
+      return
+    }
+
+    loading[group.key] = true
+    try {
+      const res = await putSystemCacheData(buildPayload(group))
+      Message.success(res.msg)
+      editingStates[group.key] = false
+      await doRefresh()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      loading[group.key] = false
+    }
   }
 
   async function doRefresh() {
     try {
-      const res = await getSystemCacheData()
-      settingsData.data = res.data
+      const res = await getSystemCacheDataGrouped()
+      settingsGroups.value = res.data || []
+      ensureGroupState(settingsGroups.value)
     } catch (error) {
       console.error(error)
     }
   }
 
-  async function doPostSystemSetDebugLog(isDebug) {
+  async function doPostSystemSetDebugLog(isDebug: boolean) {
     try {
       const res = await postSystemSetDebugLog(isDebug)
       settingsData.isDebug = res.data.is_debug
-      // 显示接口返回的提示信息
       Message.success(res.msg)
     } catch (error) {
       console.error(error)
@@ -264,108 +224,83 @@
 
 <style scoped>
   .settings-container {
-    padding: 20px;
+    padding: 16px;
     background-color: var(--m-bg);
-    border-radius: 8px;
   }
 
-  .settings-row {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-
-  .settings-row.full-width {
-    flex-direction: column;
-  }
-
-  .settings-row.full-width .settings-card {
-    width: 100%;
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .settings-card {
-    flex: 1;
+    min-width: 0;
     background-color: var(--m-surface);
+    border: 1px solid var(--m-border);
     border-radius: 8px;
-    box-shadow: var(--m-shadow);
     overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .settings-card:hover {
-    box-shadow: var(--m-shadow);
-    transform: translateY(-2px);
   }
 
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    gap: 12px;
+    min-height: 48px;
+    padding: 10px 14px;
     background-color: var(--m-surface-soft);
     border-bottom: 1px solid var(--m-border);
   }
 
   .card-title {
     margin: 0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--m-text);
   }
 
   .edit-btn {
-    font-size: 12px;
-    padding: 4px 12px;
+    flex: 0 0 auto;
   }
 
   .card-content {
-    padding: 20px;
-    min-height: 150px;
+    padding: 14px;
+    min-height: 126px;
   }
 
-  .empty-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 150px;
-  }
-
-  .empty-placeholder {
-    width: 100%;
-    text-align: center;
-    color: var(--m-muted);
+  .compact-content {
+    min-height: auto;
   }
 
   .debug-setting {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--m-border);
+    gap: 12px;
+    min-height: 32px;
   }
 
-  .setting-item {
-    margin-bottom: 16px;
-  }
-
-  .setting-item:last-child {
-    margin-bottom: 0;
+  .setting-item + .setting-item {
+    margin-top: 12px;
   }
 
   .setting-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(128px, 180px) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
   }
 
   .setting-label {
+    min-width: 0;
     font-size: 14px;
+    line-height: 20px;
     color: var(--m-text);
-    font-weight: 500;
   }
 
   .setting-control {
-    width: 100%;
+    min-width: 0;
   }
 
   .setting-input {
@@ -374,23 +309,38 @@
 
   .setting-value {
     display: block;
-    padding: 6px 12px;
-    background-color: var(--m-surface-soft);
-    border-radius: 4px;
-    font-size: 14px;
+    min-height: 30px;
+    padding: 5px 10px;
+    overflow: hidden;
     color: var(--m-text-2);
-    min-height: 32px;
-    line-height: 1.5;
+    font-size: 14px;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background-color: var(--m-surface-soft);
+    border: 1px solid var(--m-border);
+    border-radius: 6px;
   }
 
-  /* 响应式设计 */
-  @media (max-width: 1px) {
-    .settings-row {
-      flex-direction: column;
-    }
+  .empty-placeholder {
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--m-muted);
+  }
 
-    .settings-card {
-      width: 100%;
+  @media (max-width: 960px) {
+    .settings-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .setting-row {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+      gap: 6px;
     }
   }
 </style>

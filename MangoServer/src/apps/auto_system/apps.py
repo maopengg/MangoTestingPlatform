@@ -11,7 +11,6 @@ from django.apps import AppConfig
 from src.common.tools.obtain_assertion import func_info
 from mangotools.enums import CacheValueTypeEnum
 
-from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.tools import is_main_process
 from src.common.tools.log_collector import log
 
@@ -56,18 +55,8 @@ class AutoSystemConfig(AppConfig):
     @staticmethod
     def save_cache():
         try:
-            from src.apps.auto_system.views.cache_data import CacheDataSerializers, CacheData
-            key_list = [{'describe': i.value, 'key': i.name} for i in CacheDataKeyEnum]
-            for key in key_list:
-                try:
-                    CacheData.objects.get(key=key.get('key'))
-                except CacheData.DoesNotExist:
-                    for i, value in CacheDataKeyEnum.obj().items():
-                        if i == key.get('key') and value:
-                            key['value'] = value
-                    serializer = CacheDataSerializers(data=key)
-                    if serializer.is_valid():
-                        serializer.save()
+            from src.apps.auto_system.service.system_config import SystemConfigService
+            SystemConfigService.sync_registered_configs()
         except Exception as e:
             log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
 
@@ -133,6 +122,7 @@ class AutoSystemConfig(AppConfig):
             import json
 
             from src.apps.auto_system.models import CacheData
+            from src.apps.auto_system.service.system_config import SystemConfigService
             from src.apps.auto_system.views.cache_data import CacheDataCRUD
             from src.common.enums.system_enum import CacheDataKey2Enum
 
@@ -141,6 +131,9 @@ class AutoSystemConfig(AppConfig):
                 'key': CacheDataKey2Enum.ASS_SELECT_VALUE.value,
                 'value': json.dumps(func_info, ensure_ascii=False),
                 'value_type': CacheValueTypeEnum.DICT.value,
+                'group': 'internal',
+                'is_public': False,
+                'is_enabled': True,
             }
             try:
                 cache_data = CacheData.objects.get(key=CacheDataKey2Enum.ASS_SELECT_VALUE.value)
@@ -153,5 +146,6 @@ class AutoSystemConfig(AppConfig):
                 CacheDataCRUD.inside_post(data)
             else:
                 CacheDataCRUD.inside_put(cache_data.id, data)
+            SystemConfigService.invalidate(CacheDataKey2Enum.ASS_SELECT_VALUE.value)
         except Exception as e:
             log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')

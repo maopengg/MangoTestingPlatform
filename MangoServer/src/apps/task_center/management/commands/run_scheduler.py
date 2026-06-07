@@ -10,6 +10,7 @@ class Command(BaseCommand):
         parser.add_argument('--node-name', default=None)
         parser.add_argument('--poll-interval', type=int, default=30)
         parser.add_argument('--lookback-minutes', type=int, default=1)
+        parser.add_argument('--dispatch-batch-size', type=int, default=50)
 
     def handle(self, *args, **options):
         try:
@@ -17,6 +18,7 @@ class Command(BaseCommand):
                 node_name=options['node_name'],
                 poll_interval=options['poll_interval'],
                 lookback_minutes=options['lookback_minutes'],
+                dispatch_batch_size=options['dispatch_batch_size'],
             ).run_forever()
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING('scheduler-service 已停止'))

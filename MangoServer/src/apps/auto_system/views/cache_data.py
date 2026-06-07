@@ -3,9 +3,6 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
-import json
-
-from django.core.cache import cache
 from django.core.exceptions import FieldError
 from django.db import ProgrammingError
 from rest_framework import serializers
@@ -14,14 +11,16 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_system.models import CacheData
+from src.apps.auto_system.service.system_config import CONFIG_GROUP_TITLES, SystemConfigService
 from src.apps.auto_system.views.project import ProjectSerializers
 from src.apps.auto_system.views.test_object import TestObjectSerializers
-from src.common.enums.system_enum import CacheDataKeyEnum
-from src.common.exceptions import SystemEError, ERROR_MSG_0038
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.view.model_crud import ModelCRUD
 from src.common.tools.view.response_data import ResponseData
 from src.common.tools.view.response_msg import *
+
+
+SECRET_VALUE_MASK = "__KEEP_SECRET__"
 
 
 class CacheDataSerializers(serializers.ModelSerializer):
@@ -59,7 +58,8 @@ class CacheDataCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
-        books = self.model.objects.filter(key__in=CacheDataKeyEnum.get_key_list())
+        SystemConfigService.sync_registered_configs()
+        books = self.model.objects.filter(is_public=True, is_enabled=True).order_by('group', 'sort', 'id')
         try:
             return ResponseData.success(RESPONSE_MSG_0001,
                                         self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
@@ -74,23 +74,48 @@ class CacheDataCRUD(ModelCRUD):
     @error_response('system')
     def put(self, request: Request):
         for i in request.data:
-            cache_data = self.model.objects.get(pk=i.get('id'))
-            serializer = self.serializer(
-                instance=cache_data,
-                data=i
-            )
+            cache_data = self.__get_config(i)
+            data = {
+                **self.serializer(instance=cache_data).data,
+                **i,
+            }
+            if cache_data.is_secret and i.get('value') == SECRET_VALUE_MASK:
+                data['value'] = cache_data.value
+            serializer = self.serializer(instance=cache_data, data=data)
             if serializer.is_valid():
                 serializer.save()
-                cache_key = f"cache_data_{cache_data.key}"
-                cache.delete(cache_key)
+                SystemConfigService.invalidate(cache_data.key)
             else:
                 return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
         return ResponseData.success(RESPONSE_MSG_0082, )
+
+    @staticmethod
+    def __get_config(data):
+        if data.get('id'):
+            return CacheData.objects.get(pk=data.get('id'))
+        return CacheData.objects.get(key=data.get('key'))
 
 
 class CacheDataViews(ViewSet):
     model = CacheData
     serializer_class = CacheDataSerializers
+
+    @error_response('system')
+    @action(methods=['GET'], detail=False)
+    def grouped(self, request: Request):
+        SystemConfigService.sync_registered_configs()
+        queryset = self.model.objects.filter(is_public=True, is_enabled=True).order_by('group', 'sort', 'id')
+        grouped_data = {}
+        for item in queryset:
+            group_key = item.group or 'system'
+            grouped_data.setdefault(group_key, {
+                'key': group_key,
+                'title': CONFIG_GROUP_TITLES.get(group_key, group_key),
+                'items': [],
+            })
+            grouped_data[group_key]['items'].append(self.__serialize_item(item))
+        data = list(grouped_data.values())
+        return ResponseData.success(RESPONSE_MSG_0001, data, len(data))
 
     @error_response('system')
     @action(methods=['GET'], detail=False)
@@ -100,22 +125,16 @@ class CacheDataViews(ViewSet):
         @param request:
         @return:
         """
-        # 尝试从缓存中获取数据
-        cache_key = f"cache_data_{request.query_params.get('key')}"
         try:
-            cached_value = cache.get(cache_key)
+            value = SystemConfigService.get(request.query_params.get('key'))
         except ProgrammingError:
             return ResponseData.fail(RESPONSE_MSG_0141)
-
-        if cached_value is not None:
-            return ResponseData.success(RESPONSE_MSG_0031, cached_value)
-        
-        # 缓存中没有数据，从数据库获取
-        try:
-            model = self.model.objects.get(key=request.query_params.get('key'))
-            value = json.loads(model.value)
-            # 将数据存入缓存，设置5分钟过期时间
-            cache.set(cache_key, value, 300)
-        except CacheData.DoesNotExist:
-            raise SystemEError(*ERROR_MSG_0038)
         return ResponseData.success(RESPONSE_MSG_0031, value)
+
+    @staticmethod
+    def __serialize_item(item):
+        data = CacheDataSerializers(instance=item).data
+        data['has_value'] = item.value not in (None, '')
+        if item.is_secret:
+            data['value'] = SECRET_VALUE_MASK if data['has_value'] else None
+        return data
