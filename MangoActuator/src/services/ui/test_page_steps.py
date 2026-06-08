@@ -16,6 +16,7 @@ from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, PageStepsResultModel, RecordingModel
 from src.network import socket_conn, UiSocketEnum
+from src.services.runtime_config import get_ai_config
 from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
@@ -35,8 +36,14 @@ class TestPageSteps:
         self.test_data = ObtainTestData()
         self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot())
-        if SetConfig.get_is_agent():
-            self.base_data = self.base_data.set_agent(SetConfig.get_is_agent(), SetConfig.get_agent())
+        ai_config = get_ai_config()
+        if ai_config.can_locate():
+            self.base_data = self.base_data.set_agent(
+                True,
+                ai_config.api_key,
+                base_url=ai_config.base_url,
+                model=ai_config.model,
+            )
 
         self.lock = asyncio.Lock()
 

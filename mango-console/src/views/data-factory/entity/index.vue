@@ -398,6 +398,7 @@
               v-model="record.generator_type"
               :options="dataFactoryGeneratorOptions"
               :field-names="enumFieldNames"
+              @change="() => changeGeneratorType(record)"
             />
           </template>
           <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
@@ -1323,7 +1324,7 @@
     } else if (!isReadonlyGeneratorConfig(row)) {
       const value = row.generator_config_value ?? ''
       if (row.generator_type === GENERATOR_TYPE_FIXED) {
-        generatorConfig.value = value
+        generatorConfig = { value }
       } else if (row.generator_type === GENERATOR_TYPE_FUNCTION) {
         generatorConfig = { value }
       } else if (value === '') {
@@ -1345,6 +1346,40 @@
       }
       return result
     }, {})
+  }
+
+  function changeGeneratorType(row: any) {
+    row.generator_config = getDefaultGeneratorConfig(row)
+    row.generator_config_value = getGeneratorConfigValue(row)
+    row.preview_value = undefined
+    row.preview_valid = true
+    row.preview_message = ''
+  }
+
+  function getDefaultGeneratorConfig(row: any) {
+    if (row.generator_type === GENERATOR_TYPE_RANDOM_STRING) {
+      return { prefix: '', length: 8 }
+    }
+    if (row.generator_type === GENERATOR_TYPE_RANDOM_INTEGER) {
+      return { min: 1, max: 100 }
+    }
+    if (row.generator_type === GENERATOR_TYPE_RANDOM_DECIMAL) {
+      return { min: 1, max: 100, precision: 2 }
+    }
+    if (row.generator_type === GENERATOR_TYPE_UUID) {
+      return { dash: false }
+    }
+    if (row.generator_type === GENERATOR_TYPE_ENUM) {
+      const values = row.enum_values || []
+      return values.length ? { values, value: values[0], mode: 'fixed' } : {}
+    }
+    if (row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD) {
+      return { field: 'id' }
+    }
+    if (row.generator_type === GENERATOR_TYPE_FIXED || row.generator_type === GENERATOR_TYPE_FUNCTION) {
+      return { value: '' }
+    }
+    return {}
   }
 
   function getEnumOptionRows(row: any) {

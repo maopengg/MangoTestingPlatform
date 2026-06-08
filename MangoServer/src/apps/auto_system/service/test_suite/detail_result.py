@@ -37,7 +37,7 @@ class TestSuiteDetailResultService:
             return {}
         return {
             item.test_suite_detail_id: item
-            for item in TestSuiteDetailResult.objects.filter(test_suite_detail_id__in=detail_ids)
+            for item in TestSuiteDetailResult.objects.filter(test_suite_detail_id__in=detail_ids).order_by()
         }
 
     @classmethod

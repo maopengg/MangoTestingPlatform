@@ -3,7 +3,6 @@
 # @Description:
 # @Time   : 2023-03-05 11:34
 # @Author : 毛鹏
-import os
 import sys
 import traceback
 
@@ -14,8 +13,6 @@ from src.pages.login.login_window import LoginLogic
 from src.tools import project_dir
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
-
-os.environ["QT_FONT_DPI"] = "96"
 
 
 def main():

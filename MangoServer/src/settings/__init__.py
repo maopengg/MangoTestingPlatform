@@ -37,7 +37,7 @@ def set_env():
 set_env()
 
 # 当前平台版本号，会用于页面展示、接口返回以及 SECRET_KEY 生成。
-VERSION = '6.2.0'
+VERSION = '6.2.1'
 
 # 项目根目录：MangoServer。
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -66,9 +66,12 @@ def apply_object_storage_env_overrides() -> None:
     global MINIO_STORAGE_ACCESS_KEY
     global MINIO_STORAGE_SECRET_KEY
     global MINIO_PUBLIC_BASE_URL
+    global MINIO_STORAGE_REGION
     global MINIO_STORAGE_USE_HTTPS
     global MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET
     global MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE
+    global MINIO_STORAGE_ASSUME_MEDIA_BUCKET_EXISTS
+    global MINIO_STORAGE_MEDIA_USE_PRESIGNED
 
     FILE_STORAGE_BACKEND = os.getenv("FILE_STORAGE_BACKEND", globals().get("FILE_STORAGE_BACKEND", "local"))
     if FILE_STORAGE_BACKEND == "local":
@@ -81,6 +84,7 @@ def apply_object_storage_env_overrides() -> None:
         "MINIO_STORAGE_ACCESS_KEY": "MINIO_STORAGE_ACCESS_KEY",
         "MINIO_STORAGE_SECRET_KEY": "MINIO_STORAGE_SECRET_KEY",
         "MINIO_PUBLIC_BASE_URL": "MINIO_PUBLIC_BASE_URL",
+        "MINIO_STORAGE_REGION": "MINIO_STORAGE_REGION",
     }
     for setting_name, env_name in string_overrides.items():
         value = os.getenv(env_name)
@@ -98,6 +102,14 @@ def apply_object_storage_env_overrides() -> None:
     MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE = env_bool(
         "MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE",
         globals().get("MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE", False),
+    )
+    MINIO_STORAGE_ASSUME_MEDIA_BUCKET_EXISTS = env_bool(
+        "MINIO_STORAGE_ASSUME_MEDIA_BUCKET_EXISTS",
+        globals().get("MINIO_STORAGE_ASSUME_MEDIA_BUCKET_EXISTS", False),
+    )
+    MINIO_STORAGE_MEDIA_USE_PRESIGNED = env_bool(
+        "MINIO_STORAGE_MEDIA_USE_PRESIGNED",
+        globals().get("MINIO_STORAGE_MEDIA_USE_PRESIGNED", False),
     )
 
 

@@ -7,11 +7,34 @@ function currentWebSocketURL(): string {
   if (typeof window === 'undefined') {
     return ''
   }
+  const host = currentApiHost()
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${window.location.host}/api/web/socket?`
+  return `${protocol}//${host}/api/web/socket?`
 }
 
-export const baseURL = import.meta.env.VITE_APP_BASE_URL || ''
+function currentApiHost(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+  if (window.location.port === '5173') {
+    return `${window.location.hostname}:8000`
+  }
+  return window.location.host
+}
+
+function currentBaseURL(): string {
+  const envBaseURL = import.meta.env.VITE_APP_BASE_URL || ''
+  if (typeof window === 'undefined') {
+    return envBaseURL
+  }
+  if (window.location.port === '5173' && (!envBaseURL || envBaseURL.startsWith('/'))) {
+    const protocol = window.location.protocol
+    return `${protocol}//${currentApiHost()}${envBaseURL || '/api'}`
+  }
+  return envBaseURL
+}
+
+export const baseURL = currentBaseURL()
 export const minioURL = import.meta.env.VITE_APP_MINIO_URL
 export const webSocketURL = import.meta.env.VITE_APP_SOCKET_URL || currentWebSocketURL()
 

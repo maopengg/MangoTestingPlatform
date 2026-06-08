@@ -150,6 +150,15 @@ SYSTEM_CONFIG_REGISTRY = [
         sort=70,
     ),
     SystemConfigDefinition(
+        key="AI_UI_LOCATOR_ENABLED",
+        describe="是否开启AI元素定位",
+        group="ui",
+        value_type=CacheValueTypeEnum.INT.value,
+        default_value=0,
+        sort=10,
+        placeholder="0=关闭，1=开启",
+    ),
+    SystemConfigDefinition(
         key="AI_PROVIDER_TYPE",
         describe="AI供应商类型",
         group="ai",
@@ -194,93 +203,20 @@ SYSTEM_CONFIG_REGISTRY = [
         sort=40,
         placeholder="请输入 AI 请求超时时间",
     ),
-    SystemConfigDefinition(
-        key="AI_TEMPERATURE",
-        describe="AI随机性temperature",
-        group="ai",
-        value_type=CacheValueTypeEnum.FLOAT.value,
-        default_value=0.2,
-        is_public=False,
-        sort=50,
-        placeholder="请输入 0 到 2 之间的小数",
-    ),
-    SystemConfigDefinition(
-        key="AI_TOP_P",
-        describe="AI采样范围top_p",
-        group="ai",
-        value_type=CacheValueTypeEnum.FLOAT.value,
-        default_value=1,
-        is_public=False,
-        sort=60,
-        placeholder="请输入 0 到 1 之间的小数",
-    ),
-    SystemConfigDefinition(
-        key="AI_MAX_TOKENS",
-        describe="AI最大输出Token数",
-        group="ai",
-        value_type=CacheValueTypeEnum.INT.value,
-        default_value=4096,
-        is_public=False,
-        sort=70,
-        placeholder="请输入最大输出 Token 数",
-    ),
-    SystemConfigDefinition(
-        key="AI_STREAM",
-        describe="AI是否启用流式输出",
-        group="ai",
-        value_type=CacheValueTypeEnum.BOOL.value,
-        default_value=False,
-        is_public=False,
-        sort=80,
-    ),
-    SystemConfigDefinition(
-        key="AI_API_VERSION",
-        describe="AI接口版本",
-        group="ai",
-        value_type=CacheValueTypeEnum.STR.value,
-        is_public=False,
-        sort=90,
-        placeholder="Azure OpenAI 等供应商需要时填写",
-    ),
-    SystemConfigDefinition(
-        key="AI_ORGANIZATION",
-        describe="AI组织ID",
-        group="ai",
-        value_type=CacheValueTypeEnum.STR.value,
-        is_public=False,
-        sort=100,
-        placeholder="OpenAI 组织 ID，非必填",
-    ),
-    SystemConfigDefinition(
-        key="AI_PROJECT",
-        describe="AI项目ID",
-        group="ai",
-        value_type=CacheValueTypeEnum.STR.value,
-        is_public=False,
-        sort=110,
-        placeholder="OpenAI 项目 ID，非必填",
-    ),
-    SystemConfigDefinition(
-        key="AI_EXTRA_HEADERS",
-        describe="AI额外请求头(JSON)",
-        group="ai",
-        value_type=CacheValueTypeEnum.JSON.value,
-        default_value={},
-        is_public=False,
-        sort=120,
-        placeholder='例如 {"HTTP-Referer":"https://example.com"}',
-    ),
-    SystemConfigDefinition(
-        key="AI_EXTRA_BODY",
-        describe="AI额外请求体(JSON)",
-        group="ai",
-        value_type=CacheValueTypeEnum.JSON.value,
-        default_value={},
-        is_public=False,
-        sort=130,
-        placeholder='例如 {"reasoning_effort":"medium"}',
-    ),
 ]
+
+
+DEPRECATED_SYSTEM_CONFIG_KEYS = {
+    "AI_TEMPERATURE",
+    "AI_TOP_P",
+    "AI_MAX_TOKENS",
+    "AI_STREAM",
+    "AI_API_VERSION",
+    "AI_ORGANIZATION",
+    "AI_PROJECT",
+    "AI_EXTRA_HEADERS",
+    "AI_EXTRA_BODY",
+}
 
 
 SYSTEM_INTERNAL_CONFIG_REGISTRY = [
@@ -310,6 +246,7 @@ def get_config_definition_map():
 class SystemConfigService:
     @classmethod
     def sync_registered_configs(cls):
+        CacheData.objects.filter(key__in=DEPRECATED_SYSTEM_CONFIG_KEYS, is_enabled=True).update(is_enabled=False)
         for item in [*SYSTEM_CONFIG_REGISTRY, *SYSTEM_INTERNAL_CONFIG_REGISTRY]:
             defaults = cls._definition_defaults(item)
             obj, created = CacheData.objects.get_or_create(key=item.key, defaults=defaults)
@@ -325,6 +262,21 @@ class SystemConfigService:
             if changed_fields:
                 changed_fields.append("update_time")
                 obj.save(update_fields=changed_fields)
+        cls.normalize_ai_locator_enabled()
+
+    @classmethod
+    def normalize_ai_locator_enabled(cls):
+        try:
+            obj = CacheData.objects.get(key="AI_UI_LOCATOR_ENABLED")
+        except CacheData.DoesNotExist:
+            return
+        if obj.value in (True, "true", "True", "1", 1):
+            normalized_value = "1"
+        else:
+            normalized_value = "0"
+        if obj.value != normalized_value:
+            obj.value = normalized_value
+            obj.save(update_fields=["value", "update_time"])
 
     @classmethod
     def _definition_defaults(cls, item: SystemConfigDefinition):

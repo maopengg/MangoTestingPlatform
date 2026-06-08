@@ -43,6 +43,7 @@ class AuthManager:
 auth_manager = AuthManager()
 
 _client: BaseHttpClient = BaseHttpClient(logger=log)
+_api_base_url: str | None = None
 
 
 def get_client() -> BaseHttpClient:
@@ -50,11 +51,16 @@ def get_client() -> BaseHttpClient:
     return _client
 
 
+def set_api_base_url(base_url: str | None):
+    global _api_base_url
+    _api_base_url = base_url
+
+
 def reinit_client():
     """base_url / token 变更后重新初始化客户端（登录成功后调用）"""
     global _client
     _client = BaseHttpClient(
-        base_url=get_api_base_url(),
+        base_url=_api_base_url or get_api_base_url(),
         headers=auth_manager.get_headers(),
         proxy=SetConfig.get_proxy_url(),
         logger=log

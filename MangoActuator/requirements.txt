@@ -1,6 +1,6 @@
 mangotools==2.0.4
-mangoautomation==2.0.3
-mangoui==4.0.4
+mangoautomation==2.0.4
+mangoui==4.1.1
 pyinstaller
 
 websockets==10.4

@@ -15,12 +15,19 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from django.urls import path, include
 
 from src.apps.auto_user.views.user import LoginViews
 from src.settings import OBJECT_STORAGE_ENABLED
 
+
+def management_health(request):
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
+    path("management/health", management_health),
     path("api/login", LoginViews.as_view({'post': 'login'})),
     path("api/register", LoginViews.as_view({'post': 'register'})),
     path("api/menu", LoginViews.as_view({'post': 'menu'})),

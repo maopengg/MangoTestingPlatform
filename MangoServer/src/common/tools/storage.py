@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
 import posixpath
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from django.conf import settings
 from django.core.files.storage import default_storage
+from minio import Minio
 from minio_storage.storage import MinioMediaStorage
 
 
@@ -73,15 +74,41 @@ class MangoMinioMediaStorage(MinioMediaStorage):
                 return super().url(candidate, *args, **kwargs)
         return super().url(self._prefix_name(name), *args, **kwargs)
 
+    def _public_presigned_url(self, name: str) -> str:
+        public_base_url = getattr(settings, 'MINIO_PUBLIC_BASE_URL', '').strip()
+        public_url = urlsplit(public_base_url)
+        if not public_url.scheme or not public_url.netloc:
+            return super().url(name)
+
+        endpoint = public_url.netloc
+        bucket_prefix = f'{self.bucket_name}.'
+        if endpoint.startswith(bucket_prefix):
+            endpoint = endpoint[len(bucket_prefix):]
+
+        client_kwargs = {
+            'access_key': settings.MINIO_STORAGE_ACCESS_KEY,
+            'secret_key': settings.MINIO_STORAGE_SECRET_KEY,
+            'secure': public_url.scheme == 'https',
+        }
+        region = getattr(settings, 'MINIO_STORAGE_REGION', None)
+        if region:
+            client_kwargs['region'] = region
+        client = Minio(endpoint, **client_kwargs)
+        if getattr(settings, 'MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE', False):
+            client._base_url.virtual_style_flag = True
+        return client.presigned_get_object(self.bucket_name, name)
+
     def public_url(self, name: str) -> str:
         public_base_url = getattr(settings, 'MINIO_PUBLIC_BASE_URL', '').strip()
-        if not public_base_url:
-            return self.url(name)
         object_name = self._prefix_name(name)
         for candidate in self._name_candidates(name):
             if super(MangoMinioMediaStorage, self).exists(candidate):
                 object_name = candidate
                 break
+        if getattr(settings, 'MINIO_STORAGE_MEDIA_USE_PRESIGNED', False):
+            return self._public_presigned_url(object_name)
+        if not public_base_url:
+            return self.url(name)
         encoded_name = quote(object_name.replace('\\', '/').lstrip('/'), safe='/')
         return f"{public_base_url.rstrip('/')}/{encoded_name}"
 

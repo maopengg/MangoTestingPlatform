@@ -5,83 +5,177 @@
     </template>
     <template #default>
       <div class="settings-container">
-        <div class="settings-grid">
-          <div class="settings-card">
-            <div class="card-header">
-              <h3 class="card-title">后端服务设置</h3>
+        <div class="settings-columns">
+          <div class="settings-column">
+            <div class="settings-card">
+              <div class="card-header">
+                <h3 class="card-title">后端服务设置</h3>
+              </div>
+              <div class="card-content compact-content">
+                <div class="debug-setting">
+                  <span class="setting-label">设置系统debug级别日志</span>
+                  <a-switch
+                    v-model="settingsData.isDebug"
+                    size="small"
+                    @change="doPostSystemSetDebugLog"
+                  />
+                </div>
+              </div>
             </div>
-            <div class="card-content compact-content">
-              <div class="debug-setting">
-                <span class="setting-label">设置系统debug级别日志</span>
-                <a-switch
-                  v-model="settingsData.isDebug"
-                  size="small"
-                  @change="doPostSystemSetDebugLog"
-                />
+
+            <div v-for="group in leftGroups" :key="group.key" class="settings-card">
+              <div class="card-header">
+                <h3 class="card-title">{{ group.title }}</h3>
+                <div class="card-actions">
+                  <a-button
+                    v-if="isAiGroup(group)"
+                    size="small"
+                    :loading="aiTestLoading"
+                    :disabled="groupEditing(group.key)"
+                    @click="handleAiTest"
+                  >
+                    测试配置
+                  </a-button>
+                  <a-button
+                    size="small"
+                    type="primary"
+                    :loading="groupLoading(group.key)"
+                    class="edit-btn"
+                    @click="handleEditToggle(group)"
+                  >
+                    {{ groupEditing(group.key) ? '保存配置' : '修改配置' }}
+                  </a-button>
+                </div>
+              </div>
+              <div class="card-content">
+                <div v-if="group.items.length === 0" class="mango-empty-state empty-placeholder">
+                  暂无配置项
+                </div>
+                <div v-for="item in group.items" :key="item.key" class="setting-item">
+                  <div class="setting-row">
+                    <span class="setting-label">{{ item.describe }}</span>
+                    <div class="setting-control">
+                      <a-switch
+                        v-if="groupEditing(group.key) && isSwitchType(item)"
+                        :model-value="switchValue(item)"
+                        size="small"
+                        @change="(value) => setSwitchValue(item, value)"
+                      />
+                      <a-input-number
+                        v-else-if="groupEditing(group.key) && isNumberType(item)"
+                        v-model="item.value"
+                        :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
+                        :placeholder="getPlaceholder(item)"
+                        size="small"
+                        class="setting-input"
+                      />
+                      <a-textarea
+                        v-else-if="groupEditing(group.key) && isLongTextType(item)"
+                        v-model="item.value"
+                        :placeholder="getPlaceholder(item)"
+                        allow-clear
+                        auto-size
+                        size="small"
+                        class="setting-input"
+                      />
+                      <a-input-password
+                        v-else-if="groupEditing(group.key) && item.is_secret"
+                        v-model="item.value"
+                        :placeholder="getPlaceholder(item)"
+                        allow-clear
+                        size="small"
+                        class="setting-input"
+                      />
+                      <a-input
+                        v-else-if="groupEditing(group.key)"
+                        v-model="item.value"
+                        :placeholder="getPlaceholder(item)"
+                        allow-clear
+                        size="small"
+                        class="setting-input"
+                      />
+                      <span v-else class="setting-value">{{ displayValue(item) }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div v-for="group in settingsGroups" :key="group.key" class="settings-card">
-            <div class="card-header">
-              <h3 class="card-title">{{ group.title }}</h3>
-              <a-button
-                size="small"
-                type="primary"
-                :loading="groupLoading(group.key)"
-                class="edit-btn"
-                @click="handleEditToggle(group)"
-              >
-                {{ groupEditing(group.key) ? '保存配置' : '修改配置' }}
-              </a-button>
-            </div>
-            <div class="card-content">
-              <div v-if="group.items.length === 0" class="mango-empty-state empty-placeholder">
-                暂无配置项
+          <div class="settings-column">
+            <div v-for="group in rightGroups" :key="group.key" class="settings-card">
+              <div class="card-header">
+                <h3 class="card-title">{{ group.title }}</h3>
+                <div class="card-actions">
+                  <a-button
+                    v-if="isAiGroup(group)"
+                    size="small"
+                    :loading="aiTestLoading"
+                    :disabled="groupEditing(group.key)"
+                    @click="handleAiTest"
+                  >
+                    测试配置
+                  </a-button>
+                  <a-button
+                    size="small"
+                    type="primary"
+                    :loading="groupLoading(group.key)"
+                    class="edit-btn"
+                    @click="handleEditToggle(group)"
+                  >
+                    {{ groupEditing(group.key) ? '保存配置' : '修改配置' }}
+                  </a-button>
+                </div>
               </div>
-              <div v-for="item in group.items" :key="item.key" class="setting-item">
-                <div class="setting-row">
-                  <span class="setting-label">{{ item.describe }}</span>
-                  <div class="setting-control">
-                    <a-input-number
-                      v-if="groupEditing(group.key) && isNumberType(item)"
-                      v-model="item.value"
-                      :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
-                      :placeholder="getPlaceholder(item)"
-                      size="small"
-                      class="setting-input"
-                    />
-                    <a-switch
-                      v-else-if="groupEditing(group.key) && isBoolType(item)"
-                      v-model="item.value"
-                      size="small"
-                    />
-                    <a-textarea
-                      v-else-if="groupEditing(group.key) && isLongTextType(item)"
-                      v-model="item.value"
-                      :placeholder="getPlaceholder(item)"
-                      allow-clear
-                      auto-size
-                      size="small"
-                      class="setting-input"
-                    />
-                    <a-input-password
-                      v-else-if="groupEditing(group.key) && item.is_secret"
-                      v-model="item.value"
-                      :placeholder="getPlaceholder(item)"
-                      allow-clear
-                      size="small"
-                      class="setting-input"
-                    />
-                    <a-input
-                      v-else-if="groupEditing(group.key)"
-                      v-model="item.value"
-                      :placeholder="getPlaceholder(item)"
-                      allow-clear
-                      size="small"
-                      class="setting-input"
-                    />
-                    <span v-else class="setting-value">{{ displayValue(item) }}</span>
+              <div class="card-content">
+                <div v-if="group.items.length === 0" class="mango-empty-state empty-placeholder">
+                  暂无配置项
+                </div>
+                <div v-for="item in group.items" :key="item.key" class="setting-item">
+                  <div class="setting-row">
+                    <span class="setting-label">{{ item.describe }}</span>
+                    <div class="setting-control">
+                      <a-switch
+                        v-if="groupEditing(group.key) && isSwitchType(item)"
+                        :model-value="switchValue(item)"
+                        size="small"
+                        @change="(value) => setSwitchValue(item, value)"
+                      />
+                      <a-input-number
+                        v-else-if="groupEditing(group.key) && isNumberType(item)"
+                        v-model="item.value"
+                        :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
+                        :placeholder="getPlaceholder(item)"
+                        size="small"
+                        class="setting-input"
+                      />
+                      <a-textarea
+                        v-else-if="groupEditing(group.key) && isLongTextType(item)"
+                        v-model="item.value"
+                        :placeholder="getPlaceholder(item)"
+                        allow-clear
+                        auto-size
+                        size="small"
+                        class="setting-input"
+                      />
+                      <a-input-password
+                        v-else-if="groupEditing(group.key) && item.is_secret"
+                        v-model="item.value"
+                        :placeholder="getPlaceholder(item)"
+                        allow-clear
+                        size="small"
+                        class="setting-input"
+                      />
+                      <a-input
+                        v-else-if="groupEditing(group.key)"
+                        v-model="item.value"
+                        :placeholder="getPlaceholder(item)"
+                        allow-clear
+                        size="small"
+                        class="setting-input"
+                      />
+                      <span v-else class="setting-value">{{ displayValue(item) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -94,8 +188,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
+  import { postSystemAiTest } from '@/api/system/ai'
   import { getSystemCacheDataGrouped, putSystemCacheData } from '@/api/system/cache_data'
   import { postSystemSetDebugLog } from '@/api/system/system'
 
@@ -124,21 +219,42 @@
   }
 
   const settingsGroups = ref<ConfigGroup[]>([])
+  const aiTestLoading = ref(false)
   const loading = reactive<Record<string, boolean>>({})
   const editingStates = reactive<Record<string, boolean>>({})
+  const hiddenConfigKeys = ['AI_PROVIDER_TYPE']
+  const integerSwitchKeys = ['AI_UI_LOCATOR_ENABLED']
 
   const settingsData = reactive({
     isDebug: false,
   })
 
+  const visibleGroups = computed(() =>
+    settingsGroups.value
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !hiddenConfigKeys.includes(item.key)),
+      }))
+      .filter((group) => group.items.length > 0),
+  )
+  const leftGroups = computed(() => visibleGroups.value.filter((_, index) => index % 2 === 1))
+  const rightGroups = computed(() => visibleGroups.value.filter((_, index) => index % 2 === 0))
   const groupLoading = (key: string) => loading[key] === true
   const groupEditing = (key: string) => editingStates[key] === true
+  const isAiGroup = (group: ConfigGroup) => group.key === 'ai'
   const isNumberType = (item: ConfigItem) =>
     item.value_type === VALUE_TYPE_INT || item.value_type === VALUE_TYPE_FLOAT
   const isBoolType = (item: ConfigItem) => item.value_type === VALUE_TYPE_BOOL
+  const isIntegerSwitchType = (item: ConfigItem) => integerSwitchKeys.includes(item.key)
+  const isSwitchType = (item: ConfigItem) => isBoolType(item) || isIntegerSwitchType(item)
   const isLongTextType = (item: ConfigItem) =>
     [VALUE_TYPE_LIST, VALUE_TYPE_DICT, VALUE_TYPE_JSON].includes(item.value_type)
   const getPlaceholder = (item: ConfigItem) => item.placeholder || `请输入${item.describe}`
+  const isEnabledValue = (value: any) => [true, 1, '1', 'true', 'True'].includes(value)
+  const switchValue = (item: ConfigItem) => isEnabledValue(item.value)
+  const setSwitchValue = (item: ConfigItem, value: boolean | string | number) => {
+    item.value = isEnabledValue(value)
+  }
 
   const displayValue = (item: ConfigItem) => {
     if (item.is_secret) {
@@ -147,17 +263,27 @@
     if (item.value === null || item.value === undefined || item.value === '') {
       return '未配置'
     }
-    if (isBoolType(item)) {
-      return item.value ? '开启' : '关闭'
+    if (isSwitchType(item)) {
+      return switchValue(item) ? '开启' : '关闭'
     }
     return String(item.value)
   }
 
   const normalizeEditValue = (item: ConfigItem) => {
+    if (isSwitchType(item)) {
+      return switchValue(item)
+    }
     if (isLongTextType(item) && typeof item.value !== 'string') {
       return JSON.stringify(item.value, null, 2)
     }
     return item.value
+  }
+
+  const normalizePayloadValue = (item: ConfigItem) => {
+    if (isIntegerSwitchType(item)) {
+      return switchValue(item) ? 1 : 0
+    }
+    return item.value === '' ? null : item.value
   }
 
   const ensureGroupState = (groups: ConfigGroup[]) => {
@@ -171,7 +297,7 @@
     return group.items.map((item) => ({
       id: item.id,
       key: item.key,
-      value: item.value === '' ? null : item.value,
+      value: normalizePayloadValue(item),
     }))
   }
 
@@ -194,6 +320,22 @@
       console.error(error)
     } finally {
       loading[group.key] = false
+    }
+  }
+
+  const handleAiTest = async () => {
+    aiTestLoading.value = true
+    try {
+      const res = await postSystemAiTest()
+      if (res.data?.status) {
+        Message.success(res.data.message || res.msg)
+      } else {
+        Message.error(res.data?.message || 'AI配置测试失败')
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      aiTestLoading.value = false
     }
   }
 
@@ -228,10 +370,18 @@
     background-color: var(--m-bg);
   }
 
-  .settings-grid {
+  .settings-columns {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
     gap: 16px;
+  }
+
+  .settings-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
   }
 
   .settings-card {
@@ -261,6 +411,13 @@
   }
 
   .edit-btn {
+    flex: 0 0 auto;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex: 0 0 auto;
   }
 
@@ -331,7 +488,7 @@
   }
 
   @media (max-width: 960px) {
-    .settings-grid {
+    .settings-columns {
       grid-template-columns: 1fr;
     }
   }

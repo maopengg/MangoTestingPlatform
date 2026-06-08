@@ -103,7 +103,6 @@ class HomePage(MangoWidget):
         self.server_config_card = MangoCard(self.server_config_layout, '环境信息')
         self.server_config_layout.addRow('服务地址', MangoLabel(f'{SetConfig.get_host()}', self))
         self.server_config_layout.addRow('WS链接', MangoLabel(f'{SetConfig.get_ws()}', self))
-        self.server_config_layout.addRow('minio地址', MangoLabel(f'{SetConfig.get_minio_url()}', self))
         self.link = MangoLabel('🟢 正常', self)
         self.server_config_layout.addRow('链接状态', self.link)
         self.right_layout.addWidget(self.server_config_card, 2)

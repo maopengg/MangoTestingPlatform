@@ -332,6 +332,8 @@ class TestSuiteDetails(models.Model):
         indexes = [
             models.Index(fields=['type', 'status'], name='idx_type_status'),
             models.Index(fields=['test_suite_id', 'type', 'status'], name='idx_suite_type_status'),
+            models.Index(fields=['test_suite_id', 'type', '-id'], name='idx_suite_type_id_desc'),
+            models.Index(fields=['test_suite_id', 'type', 'status', '-id'], name='idx_suite_type_status_id_desc'),
         ]
 
 

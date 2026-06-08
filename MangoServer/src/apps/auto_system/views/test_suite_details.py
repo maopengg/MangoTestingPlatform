@@ -66,7 +66,7 @@ class TestSuiteDetailsCRUD(ModelCRUD):
                 query_dict[k] = v[0]
         del query_dict['pageSize']
         del query_dict['page']
-        books = self.model.objects.filter(**query_dict)
+        books = self.model.objects.filter(**query_dict).order_by('-id')
         data_list, count = self.paging_list(
             request.query_params.get("pageSize"),
             request.query_params.get("page"),
@@ -356,7 +356,7 @@ class TestSuiteDetailsShareViews(ViewSet):
                 if not str(value).isdigit():
                     return ResponseData.success(RESPONSE_MSG_0001, [], 0)
                 query_dict[key] = value
-        books = self.model.objects.filter(**query_dict)
+        books = self.model.objects.filter(**query_dict).order_by('-id')
         data_list, count = TestSuiteDetailsCRUD.paging_list(
             request.query_params.get("pageSize", 10000),
             request.query_params.get("page", 1),

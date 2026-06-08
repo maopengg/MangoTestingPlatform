@@ -50,23 +50,10 @@ class SettingPage(QWidget):
         card_layout1.addWidget(self.toggle3, 1, 1)
         card_layout1.addWidget(MangoLabel('开启之后则会获取其他用户和定时任务的用例！'), 1, 2)
 
-        self.toggle2 = MangoToggle()
-        self.toggle2.set_value(SetConfig.get_is_minio())  # type: ignore
-        self.toggle2.clicked.connect(SetConfig.set_is_minio)  # type: ignore
-        card_layout1.addWidget(MangoLabel('是否开启MINIO：'), 2, 0)
-        card_layout1.addWidget(self.toggle2, 2, 1)
-        card_layout1.addWidget(MangoLabel('用于测试文件上传和失败截图上传'), 2, 2)
-
-        self.minio = MangoLineEdit('请输入minio的url', SetConfig.get_minio_url())  # type: ignore
-        self.minio.setFixedWidth(250)
-        self.minio.click.connect(SetConfig.set_minio_url)  # type: ignore
-        card_layout1.addWidget(MangoLabel('请输入MinioUrl：'), 3, 0)
-        card_layout1.addWidget(self.minio, 3, 1)
-
         self.but_test = MangoPushButton('测试')
         self.but_test.clicked.connect(self.test)
-        card_layout1.addWidget(MangoLabel('测试按钮：'), 4, 0)
-        card_layout1.addWidget(self.but_test, 4, 1)
+        card_layout1.addWidget(MangoLabel('测试按钮：'), 2, 0)
+        card_layout1.addWidget(self.but_test, 2, 1)
 
         h_layout.addLayout(card_layout1)
         h_layout.addStretch()
@@ -75,28 +62,15 @@ class SettingPage(QWidget):
         card_layout2 = MangoGridLayout()
         card_widget5 = MangoCard(card_layout5, '界面自动化配置')
 
-        self.toggle3 = MangoToggle()
-        self.toggle3.set_value(SetConfig.get_is_agent())
-        self.toggle3.clicked.connect(SetConfig.set_is_agent)
-        card_layout2.addWidget(MangoLabel('是否开启AI元素定位：'), 0, 0)
-        card_layout2.addWidget(self.toggle3, 0, 1)
-        card_layout2.addWidget(MangoLabel('用于在正常元素定位失败后，使用AI来协助定位元素！'), 0, 2)
-
-        self.agent = MangoLineEdit('请输入siliconflow的key', SetConfig.get_agent())  # type: ignore
-        self.agent.setFixedWidth(250)
-        self.agent.click.connect(SetConfig.set_agent)  # type: ignore
-        card_layout2.addWidget(MangoLabel('AI的key：'), 1, 0)
-        card_layout2.addWidget(self.agent, 1, 1)
-        card_layout2.addWidget(MangoLabel('用于在正常元素定位失败后，使用AI来协助定位元素'), 1, 2)
         if SetConfig.get_failed_retry_time() == 'None':
             self.failed_retry_time = MangoLineEdit('请输入重试时间', )  # type: ignore
         else:
             self.failed_retry_time = MangoLineEdit('请输入重试时间', SetConfig.get_failed_retry_time())  # type: ignore
         self.failed_retry_time.setFixedWidth(250)
         self.failed_retry_time.click.connect(self.set_failed_retry_time)
-        card_layout2.addWidget(MangoLabel('失败重试时间：'), 2, 0)
-        card_layout2.addWidget(self.failed_retry_time, 2, 1)
-        card_layout2.addWidget(MangoLabel('元素定位失败，或操作失败时进行重试时间，默认为25秒'), 2, 2)
+        card_layout2.addWidget(MangoLabel('失败重试时间：'), 0, 0)
+        card_layout2.addWidget(self.failed_retry_time, 0, 1)
+        card_layout2.addWidget(MangoLabel('元素定位失败，或操作失败时进行重试时间，默认为25秒'), 0, 2)
 
         card_layout5.addLayout(card_layout2)
         card_layout5.addStretch()
@@ -128,9 +102,6 @@ class SettingPage(QWidget):
                 username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
                 debug=bool(settings.IS_DEBUG), )
         )
-
-    def test_but(self):
-        print(type(SetConfig.get_is_minio()), SetConfig.get_is_minio())
 
     def handle_output(self, output):
         mango_label = MangoLabel(output)

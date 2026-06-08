@@ -262,6 +262,40 @@ class DataFactoryFieldViews(ViewSet):
         generator_type = field_data.get("generator_type")
         generator_config = field_data.get("generator_config") or {}
         enum_values = field_data.get("enum_values") or []
+        if generator_type == DataFactoryGeneratorTypeEnum.FIXED.value:
+            field_data["generator_config"] = {"value": generator_config.get("value")}
+        if generator_type == DataFactoryGeneratorTypeEnum.RANDOM_STRING.value:
+            field_data["generator_config"] = {
+                key: generator_config[key]
+                for key in ["prefix", "length"]
+                if key in generator_config and generator_config[key] not in [None, ""]
+            }
+        if generator_type == DataFactoryGeneratorTypeEnum.RANDOM_INTEGER.value:
+            field_data["generator_config"] = {
+                key: generator_config[key]
+                for key in ["min", "max"]
+                if key in generator_config and generator_config[key] not in [None, ""]
+            }
+        if generator_type == DataFactoryGeneratorTypeEnum.RANDOM_DECIMAL.value:
+            field_data["generator_config"] = {
+                key: generator_config[key]
+                for key in ["min", "max", "precision"]
+                if key in generator_config and generator_config[key] not in [None, ""]
+            }
+        if generator_type == DataFactoryGeneratorTypeEnum.NOW.value:
+            field_data["generator_config"] = {}
+        if generator_type == DataFactoryGeneratorTypeEnum.RELATIVE_TIME.value:
+            field_data["generator_config"] = {
+                key: generator_config[key]
+                for key in ["days", "hours", "minutes"]
+                if key in generator_config and generator_config[key] not in [None, ""]
+            }
+        if generator_type == DataFactoryGeneratorTypeEnum.UUID.value:
+            field_data["generator_config"] = {
+                key: generator_config[key]
+                for key in ["dash"]
+                if key in generator_config and generator_config[key] not in [None, ""]
+            }
         if generator_type == DataFactoryGeneratorTypeEnum.ENUM.value:
             values = generator_config.get("values") or enum_values
             if not values:

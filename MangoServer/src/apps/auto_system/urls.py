@@ -24,6 +24,7 @@ from ..auto_system.views.system_api import SystemViews, SystemShareViews
 from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 from src.apps.task_center.views.schedule_fire import ScheduleFireCRUD
 from src.apps.task_center.views.system_job import SystemJobViews
+from src.apps.auto_system.views.ai import AiViews
 
 urlpatterns = [
     #
@@ -60,6 +61,7 @@ urlpatterns = [
     path("enum", SystemViews.as_view({'get': 'enum_api'})),
     path("enum/share", SystemShareViews.as_view({'get': 'enum_api'})),
     path("set/debug/log", SystemViews.as_view({'post': 'set_debug_log'})),
+    path("ai/test", AiViews.as_view({'post': 'test'})),
     #
     path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),
     path("socket/all/user/sum", SocketApiViews.as_view({'get': 'get_all_user_sum'})),

@@ -164,8 +164,6 @@ class CacheKeyEnum(BaseEnum):
     HOST = 'host'
     WS = 'ws'
     PROXY_URL = 'proxy_url'
-    MINIO_URL = 'minio_url'
-    IS_MINIO = 'is_minio'
 
     REMEMBER_USERNAME = 'remember_username'
     USERNAME = 'username'
@@ -186,8 +184,6 @@ class CacheKeyEnum(BaseEnum):
     WIN_PATH = 'win_path'
     WIN_TITLE = 'win_title'
 
-    IS_AGENT = 'is_agent'
-    AGENT = 'agent'
     FAILED_RETRY_TIME = 'failed_retry_time'
 
     @classmethod
@@ -196,9 +192,8 @@ class CacheKeyEnum(BaseEnum):
         return {
             'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
             'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
-            'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,
+            'web_type': CacheValueTypeEnum.INT,
             'web_default': CacheValueTypeEnum.BOOL,
-            'is_agent': CacheValueTypeEnum.BOOL,
         }
 
 

@@ -86,6 +86,7 @@ class LoginLogic(LoginWindow):
             if response.code == 200:
                 # 先刷新客户端（reinit_client 已在 login 中执行，这里重建 user API 引用）
                 HTTP.refresh()
+                await HTTP.system.refresh_runtime_config()
                 self.main_window = MainWindow(self.loop)
                 self.close()
                 self.main_window.show()
