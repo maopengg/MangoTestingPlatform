@@ -77,11 +77,11 @@ class PytestCaseViews(ViewSet):
         """
         project_id = request.data.get('project_id')
         if not project_id:
-            return ResponseData.error(RESPONSE_MSG_0079)
+            return ResponseData.fail(RESPONSE_MSG_0166)
 
         product = PytestProduct.objects.filter(id=project_id).first()
         if not product:
-            return ResponseData.error(RESPONSE_MSG_0080)
+            return ResponseData.fail(RESPONSE_MSG_0167)
 
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []

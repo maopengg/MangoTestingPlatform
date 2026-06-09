@@ -618,13 +618,13 @@ def register_api_automation_tools(mcp):
         page: int = 1,
         page_size: int = 50,
     ) -> dict:
-        """查询 API 全局变量。type: 0=自定义, 1=SQL。"""
+        """查询 API 全局变量。type: 0=自定义, 1=SQL, 2=代码变量。"""
         queryset = ApiPublic.objects.select_related("project_product", "datasource_alias").filter(project_product_id=project_product_id)
         if enabled_only:
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
         if type is not None:
             if type not in ApiPublicTypeEnum.get_key_list():
-                return fail("API 全局变量类型只支持 0=自定义、1=SQL。", "API_PUBLIC_TYPE_INVALID")
+                return fail("API 全局变量类型只支持 0=自定义、1=SQL、2=代码变量。", "API_PUBLIC_TYPE_INVALID")
             queryset = queryset.filter(type=type)
         if test_env_id is not None:
             queryset = queryset.filter(test_env=test_env_id)
@@ -665,9 +665,9 @@ def register_api_automation_tools(mcp):
         datasource_alias_id: int | None = None,
         status: int = 0,
     ) -> dict:
-        """创建 API 全局变量。type: 0=自定义, 1=SQL；SQL 类型必须先调用 list_data_factory_datasource_aliases 查询 datasource_alias_id。"""
+        """创建 API 全局变量。type: 0=自定义, 1=SQL, 2=代码变量；代码变量 value 必须定义 variable(context) 并返回 dict。"""
         if type not in ApiPublicTypeEnum.get_key_list():
-            return fail("API 全局变量类型只支持 0=自定义、1=SQL。", "API_PUBLIC_TYPE_INVALID")
+            return fail("API 全局变量类型只支持 0=自定义、1=SQL、2=代码变量。", "API_PUBLIC_TYPE_INVALID")
         if type == ApiPublicTypeEnum.SQL.value and not datasource_alias_id:
             return fail("SQL API 全局变量必须传 datasource_alias_id。", "API_PUBLIC_DATASOURCE_ALIAS_REQUIRED")
         data = ApiPublicCRUD.inside_post(
@@ -695,7 +695,7 @@ def register_api_automation_tools(mcp):
         datasource_alias_id: int | None = None,
         status: int | None = None,
     ) -> dict:
-        """更新 API 全局变量。SQL 类型需要 datasource_alias_id；自定义类型可传空清除。"""
+        """更新 API 全局变量。SQL 类型需要 datasource_alias_id；自定义和代码变量可传空清除。"""
         payload: dict[str, Any] = {"id": public_variable_id}
         for field, field_value in {
             "type": type,
@@ -1709,9 +1709,9 @@ def register_api_automation_tools(mcp):
                 "api_public_sql": {
                     "fields": ["project_product_id", "test_env_id", "type", "name", "key", "value", "datasource_alias_id", "status"],
                     "format": {
-                        "type": "0=自定义公共变量，1=SQL 公共变量。",
-                        "value": "SQL 类型时填写 SQL 语句，自定义类型时填写普通值。",
-                        "datasource_alias_id": "SQL 类型必填，传逻辑数据源 DataFactoryDatasourceAlias.id；自定义类型可不传。",
+                        "type": "0=自定义公共变量，1=SQL 公共变量，2=代码变量。",
+                        "value": "SQL 类型填写 SQL 语句；自定义类型填写普通值；代码变量必须定义 variable(context) 并返回 dict。",
+                        "datasource_alias_id": "SQL 类型必填，传逻辑数据源 DataFactoryDatasourceAlias.id；自定义和代码变量可不传。",
                     },
                     "lookup_rule": "创建或更新 SQL 公共变量前，先调用 list_data_factory_datasource_aliases(project_product_id=当前产品ID) 查询逻辑数据源 ID，然后把返回的 datasource_alias_id 传给本字段。",
                     "query_rule": "已有 API 公共变量可调用 list_api_public_variables(project_product_id=当前产品ID, type=1) 查询，返回 datasource_alias_id 和 datasource_alias_name。",

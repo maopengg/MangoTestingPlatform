@@ -81,6 +81,6 @@ class TestObjectViews(ViewSet):
             if db_rud_status is not None:
                 obj.db_rud_status = db_rud_status
             obj.save()
-            return ResponseData.success(RESPONSE_MSG_0096)
+            return ResponseData.success(RESPONSE_MSG_0098)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))

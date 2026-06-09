@@ -68,7 +68,7 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '测试对象',
+    label: '被测对象',
     key: 'value',
     value: ref(''),
     type: 'input',
@@ -84,7 +84,7 @@ export const formItems: FormItem[] = reactive([
   },
 
   {
-    label: '部署环境',
+    label: '被测环境',
     key: 'environment',
     value: ref(''),
     type: 'select',

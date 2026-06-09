@@ -127,10 +127,18 @@
           v-show="isFormItemVisible(item)"
           :key="item.key"
           :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
+          :label="getFormItemLabel(item)"
         >
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
+          </template>
+          <template v-else-if="item.type === 'textarea' && item.key === 'value' && isCodePublicType">
+            <CodeEditor
+              v-model="item.value"
+              :line-height="260"
+              :placeholder="item.placeholder"
+              :code-style="{ width: '100%' }"
+            />
           </template>
           <template v-else-if="item.type === 'textarea'">
             <a-textarea
@@ -196,6 +204,7 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, tableColumns, formItems } from './config'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
   import { formatProjectProductPath } from '@/utils/business-format'
   import {
     deleteUiPublic,
@@ -226,6 +235,18 @@
   })
 
   const isSqlPublicType = computed(() => Number(getFormValue('type')) === 1)
+  const isCodePublicType = computed(() => Number(getFormValue('type')) === 2)
+  const codeVariableExample = `def variable(context):
+    """
+    函数名字和参数不可以改。
+    必须返回 dict。
+    dict 的 key 会作为变量 key，value 会作为变量值。
+    UI 执行时可以通过 \${tenant_id}、\${user_id} 引用。
+    """
+    return {
+        "tenant_id": "14",
+        "user_id": 123
+    }`
 
   function getFormValue(key: string) {
     return formItems.find((it) => it.key === key)?.value
@@ -245,6 +266,27 @@
 
   function isFormItemVisible(item: any) {
     return item.key !== 'datasource_alias' || isSqlPublicType.value
+  }
+
+  function getFormItemLabel(item: any) {
+    if (item.key === 'value' && isCodePublicType.value) {
+      return '自定义代码'
+    }
+    return item.label
+  }
+
+  function fillCodeVariableExample() {
+    const valueItem = formItems.find((it) => it.key === 'value')
+    if (valueItem && !valueItem.value) {
+      valueItem.value = codeVariableExample
+    }
+  }
+
+  function clearCodeVariableExample() {
+    const valueItem = formItems.find((it) => it.key === 'value')
+    if (valueItem?.value === codeVariableExample) {
+      valueItem.value = ''
+    }
   }
 
   function loadDatasourceAliasOptions(projectProductId?: any) {
@@ -272,6 +314,11 @@
       setFormValue('datasource_alias', '')
     } else {
       loadDatasourceAliasOptions()
+    }
+    if (Number(value) === 2) {
+      fillCodeVariableExample()
+    } else {
+      clearCodeVariableExample()
     }
   }
 
@@ -345,6 +392,9 @@
       envItem.value = userStore.selected_environment
     }
     datasourceAliasOptions.value = []
+    if (Number(getFormValue('type')) === 2) {
+      fillCodeVariableExample()
+    }
   }
 
   function onDelete(record: any) {
@@ -394,6 +444,9 @@
       }
       if (Number(value.type) !== 1) {
         value.datasource_alias = null
+      }
+      if (Number(value.type) === 2 && !value.value) {
+        value.value = codeVariableExample
       }
       if (data.isAdd) {
         value['status'] = 1

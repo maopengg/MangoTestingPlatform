@@ -55,17 +55,22 @@ class ScheduleRunner:
         for time_task in time_tasks:
             if not time_task.cron or not self.is_due(time_task.cron, planned_at):
                 continue
-            token_fire, token_created = ScheduleFireService.create_token_refresh_fire(
-                time_task=time_task,
-                planned_at=planned_at,
-                node_name=self.node_name,
-            )
-            if token_created:
-                try:
-                    self.refresh_api_auth(time_task.id)
-                    ScheduleFireService.mark_success(token_fire.id, self.node_name)
-                except Exception as error:
-                    ScheduleFireService.mark_failed(token_fire.id, str(error), self.node_name)
+            if self.has_api_auth_to_refresh(time_task.id):
+                token_fire, token_created = ScheduleFireService.create_token_refresh_fire(
+                    time_task=time_task,
+                    planned_at=planned_at,
+                    node_name=self.node_name,
+                )
+                if token_created:
+                    try:
+                        refresh_count = self.refresh_api_auth(time_task.id)
+                        ScheduleFireService.mark_success(
+                            token_fire.id,
+                            self.node_name,
+                            extra_data={'refresh_count': refresh_count},
+                        )
+                    except Exception as error:
+                        ScheduleFireService.mark_failed(token_fire.id, str(error), self.node_name)
             tasks = Tasks.objects.select_related('timing_strategy').filter(
                 status=StatusEnum.SUCCESS.value,
                 timing_strategy_id=time_task.id,
@@ -107,10 +112,15 @@ class ScheduleRunner:
     def refresh_api_auth(timing_strategy_id: int):
         try:
             from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
-            ApiAuthManager.refresh_by_time_task(timing_strategy_id)
+            return ApiAuthManager.refresh_by_time_task(timing_strategy_id)
         except Exception as error:
             log.system.error(f'scheduler-service 执行 API 授权 Token 定时刷新异常：time_task={timing_strategy_id}, error={error}')
             raise
+
+    @staticmethod
+    def has_api_auth_to_refresh(timing_strategy_id: int) -> bool:
+        from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
+        return ApiAuthManager.has_timing_refresh_config(timing_strategy_id)
 
     @staticmethod
     def is_due(cron: str, planned_at: datetime) -> bool:

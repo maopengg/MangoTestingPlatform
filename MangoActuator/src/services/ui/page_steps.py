@@ -7,8 +7,10 @@ import asyncio
 import json
 import sqlite3
 import traceback
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+from typing import Any
 from urllib import parse
 from urllib.parse import urljoin
 
@@ -36,6 +38,15 @@ from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 from src.tools.send_global_msg import send_global_msg
 from src.tools.set_config import SetConfig
+
+
+@dataclass
+class UiPublicCodeContext:
+    test_data: Any
+    environment_config: Any
+    mysql_connect: Any = None
+    driver_object: Any = None
+    base_data: Any = None
 
 
 class SQLitePublicConnect:
@@ -145,6 +156,28 @@ class PageSteps:
                     finally:
                         if should_close_mysql:
                             mysql_connect.close()
+            elif cache_data.type == UiPublicTypeEnum.CODE.value:
+                send_global_msg(f'UI-设置全局变量-代码变量成功')
+                namespace = {}
+                exec(cache_data.value, namespace)
+                variable_func = namespace.get('variable')
+                if not callable(variable_func):
+                    raise UiError(300, f'代码变量【{cache_data.key}】必须定义 variable(context) 函数')
+                result = variable_func(UiPublicCodeContext(
+                    test_data=self.base_data.test_data,
+                    environment_config=self.page_steps_model.environment_config,
+                    mysql_connect=self.base_data.mysql_connect,
+                    driver_object=self.driver_object,
+                    base_data=self.base_data,
+                ))
+                if not isinstance(result, dict):
+                    raise UiError(300, f'代码变量【{cache_data.key}】的 variable(context) 必须返回 dict')
+                cache_values = {key: value for key, value in result.items() if value is not None}
+                if not cache_values:
+                    raise UiError(300, f'代码变量【{cache_data.key}】返回数据为空')
+                for key, value in cache_values.items():
+                    self.base_data.test_data.set_cache(key, value)
+                log.debug(f'设置UI代码变量key-4：{list(cache_values.keys())}')
 
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0

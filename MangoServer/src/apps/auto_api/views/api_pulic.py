@@ -29,7 +29,7 @@ class ApiPublicSerializers(serializers.ModelSerializer):
 
     def validate_type(self, value):
         if value not in ApiPublicTypeEnum.get_key_list():
-            raise serializers.ValidationError('公共变量类型只支持自定义和SQL')
+            raise serializers.ValidationError('公共变量类型只支持自定义、SQL和代码变量')
         return value
 
     def validate(self, attrs):
@@ -44,6 +44,8 @@ class ApiPublicSerializers(serializers.ModelSerializer):
         )
         if public_type == ApiPublicTypeEnum.SQL.value and not datasource_alias:
             raise serializers.ValidationError('SQL公共变量必须选择逻辑数据源')
+        if public_type != ApiPublicTypeEnum.SQL.value:
+            attrs['datasource_alias'] = None
         if datasource_alias and project_product and datasource_alias.project_product_id != project_product.id:
             raise serializers.ValidationError('逻辑数据源不属于当前项目产品')
         return attrs

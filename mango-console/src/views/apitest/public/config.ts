@@ -126,7 +126,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入缓存的key,sql则使用逗号隔开保存多个key',
+    placeholder: '请输入缓存key；代码变量key仅作标识，不参与变量注入',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
@@ -152,7 +152,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请根据规则输入value值',
+    placeholder: '自定义变量请输入变量值，SQL变量请输入查询语句',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')

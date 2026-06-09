@@ -4,6 +4,8 @@
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
 import mimetypes
+from dataclasses import dataclass
+from typing import Any
 from typing import Optional
 
 from src.apps.auto_api.models import ApiHeaders
@@ -18,6 +20,16 @@ from src.common.tools.database import DatabaseConnection
 from src.common.tools.obtain_test_data import ObtainTestData
 
 mimetypes.init()
+
+
+@dataclass
+class ApiPublicCodeContext:
+    test_data: Any
+    test_env: int
+    project_product_id: int
+    test_object: TestObject | None = None
+    mysql_connect: DatabaseConnection | None = None
+    get_db_connection: Any = None
 
 
 class PublicBase(BaseRequest):
@@ -113,6 +125,8 @@ class PublicBase(BaseRequest):
                 self.__sql(i)
             elif i.type == ApiPublicTypeEnum.CUSTOM.value:
                 self.__custom(i)
+            elif i.type == ApiPublicTypeEnum.CODE.value:
+                self.__code(i, project_product_id, test_env)
         if not self.skip_auth_load:
             from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
             ApiAuthManager.load(project_product_id, test_env, self)
@@ -131,6 +145,30 @@ class PublicBase(BaseRequest):
             self.test_data.set_sql_cache(api_public_obj.key, result_list[0])
             if not result_list:
                 raise ApiError(*ERROR_MSG_0033, value=(sql,))
+
+    def __code(self, api_public_obj: ApiPublic, project_product_id: int, test_env: int):
+        context = ApiPublicCodeContext(
+            test_data=self.test_data,
+            test_env=test_env,
+            project_product_id=project_product_id,
+            test_object=self.test_object,
+            mysql_connect=self.mysql_connect,
+            get_db_connection=self.get_db_connection,
+        )
+        namespace = {}
+        exec(api_public_obj.value, namespace)
+        variable_func = namespace.get('variable')
+        if not callable(variable_func):
+            raise ApiError(300, f'代码变量【{api_public_obj.name}】必须定义 variable(context) 函数')
+        result = variable_func(context)
+        if not isinstance(result, dict):
+            raise ApiError(300, f'代码变量【{api_public_obj.name}】的 variable(context) 必须返回 dict')
+        cache_data = {key: value for key, value in result.items() if value is not None}
+        if not cache_data:
+            raise ApiError(300, f'代码变量【{api_public_obj.name}】返回数据为空')
+        for key, value in cache_data.items():
+            self.test_data.set_cache(key, value)
+        log.api.debug(f'全局变量-3->name：{api_public_obj.name}，keys：{list(cache_data.keys())}')
 
     @staticmethod
     def update_dict_case_insensitive(original_dict: dict[str], new_dict: dict[str]):

@@ -298,11 +298,22 @@ class ApiAuthManager:
         return config
 
     @classmethod
+    def has_timing_refresh_config(cls, time_task_id: int) -> bool:
+        return ApiAuthConfig.objects.filter(
+            status=StatusEnum.SUCCESS.value,
+            time_task_id=time_task_id,
+            refresh_mode__in=[ApiAuthRefreshModeEnum.TIMING.value, ApiAuthRefreshModeEnum.BOTH.value],
+        ).exists()
+
+    @classmethod
     def refresh_by_time_task(cls, time_task_id: int):
         configs = ApiAuthConfig.objects.filter(
             status=StatusEnum.SUCCESS.value,
             time_task_id=time_task_id,
             refresh_mode__in=[ApiAuthRefreshModeEnum.TIMING.value, ApiAuthRefreshModeEnum.BOTH.value],
         )
+        refresh_count = 0
         for config in configs:
             cls.refresh(config.id, force=False, raise_error=False)
+            refresh_count += 1
+        return refresh_count
