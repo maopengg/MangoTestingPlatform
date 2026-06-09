@@ -224,9 +224,10 @@ class ApiInfoViews(ViewSet):
     @error_response('api')
     def put_auto_schema(self, request):
         model = ApiInfo.objects.get(id=request.data.get('id'))
-        response = model.result_data.get('json')
-        if response is None:
+        result_data = model.result_data or {}
+        if 'json' not in result_data:
             return ResponseData.fail(RESPONSE_MSG_0156)
+        response = result_data.get('json')
         builder = SchemaBuilder()
         builder.add_object(response)
         schema = builder.to_schema()

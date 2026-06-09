@@ -16,6 +16,7 @@ from src.apps.auto_api.service.base.api_base_test_setup.public_base import Publi
 from src.common.enums.api_enum import MethodEnum
 from src.common.exceptions import *
 from src.common.models.api_model import RequestModel, ResponseModel
+from src.common.tools.json_response import ensure_jsonpath_source
 
 
 class APIBaseTestSetup(PublicBase):
@@ -96,8 +97,7 @@ class APIBaseTestSetup(PublicBase):
 
     def api_info_posterior_json_path(self, posterior_json_path: list[dict], response: ResponseModel):
         log.api.debug(f'执行API接口-4->后置jsonpath:{posterior_json_path}')
-        if response.json is None:
-            raise ApiError(*ERROR_MSG_0023)
+        ensure_jsonpath_source(response.json)
         for i in posterior_json_path:
             key: str = self.test_data.replace(i.get('key'))
             value: str = self.test_data.replace(i.get('value'))

@@ -1745,10 +1745,10 @@
         return
       }
       if (
-        typeof item.result_data.response.json !== 'object' &&
-        !Array.isArray(item.result_data.response.json)
+        !Array.isArray(item.result_data.response.json) &&
+        typeof item.result_data.response.json !== 'object'
       ) {
-        Message.error('响应JSON格式不正确，无法进行测试！')
+        Message.error('响应JSON不是对象或数组，无法进行JSONPath测试！')
         return
       }
     } else {

@@ -15,6 +15,7 @@ from src.apps.auto_api.models import ApiAuthConfig
 from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum
 from src.common.enums.tools_enum import StatusEnum
 from src.common.exceptions import ApiError
+from src.common.tools.json_response import ensure_jsonpath_source
 from src.common.tools.log_collector import log
 
 
@@ -236,6 +237,7 @@ class ApiAuthManager:
         for item in (api_info.posterior_json_path or []) + (api_info.posterior_re or []):
             key = test_setup.test_data.replace(item.get('key'))
             if key and key.startswith('$.') and response and response.json is not None:
+                ensure_jsonpath_source(response.json)
                 key = test_setup.test_data.get_json_path_value(response.json, key)
             if key in after_cache and after_cache.get(key) is not None:
                 cache_data[key] = after_cache.get(key)

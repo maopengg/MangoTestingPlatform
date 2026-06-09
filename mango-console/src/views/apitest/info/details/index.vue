@@ -282,9 +282,7 @@
                 <div class="response-item">
                   <span class="response-label">响应体</span>
                   <div class="response-value">
-                    <JsonDisplay
-                      :data="data.api_info.result_data?.json || data.api_info.result_data?.text"
-                    />
+                    <JsonDisplay :data="responseBodyData" />
                   </div>
                 </div>
               </div>
@@ -457,6 +455,14 @@
     if (data.api_info?.result_data?.error_msg) return 'red'
     if (data.api_info?.result_data?.code) return 'green'
     return 'gray'
+  })
+  const responseBodyData = computed(() => {
+    const result = data.api_info?.result_data
+    if (!result) return undefined
+    if (Object.prototype.hasOwnProperty.call(result, 'json')) {
+      return result.json
+    }
+    return result.text
   })
 
   function switchType(key: any) {

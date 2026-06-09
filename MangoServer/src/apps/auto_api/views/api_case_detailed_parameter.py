@@ -25,6 +25,7 @@ from src.apps.auto_api.schemas.case_schema import (
     validate_model_list,
 )
 from src.common.exceptions import ApiError, ERROR_MSG_0017
+from src.common.tools.json_response import ensure_jsonpath_source
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.view.model_crud import ModelCRUD
 from src.common.tools.view.response_data import ResponseData
@@ -155,6 +156,7 @@ class ApiCaseDetailedParameterViews(ViewSet):
             key = expression.get('key')
             value = expression.get('value')
         if _type == 'jsonpath':
+            ensure_jsonpath_source(response)
             if key and key.startswith('$.'):
                 key = JsonTool.get_json_path_value(response, key)
             value = JsonTool.get_json_path_value(response, value)
@@ -169,9 +171,11 @@ class ApiCaseDetailedParameterViews(ViewSet):
     @error_response('api')
     def put_auto_schema(self, request):
         model = self.model.objects.get(id=request.data.get('id'))
-        response = model.result_data.get('response', {}).get('json')
-        if response is None:
+        result_data = model.result_data or {}
+        response_data = result_data.get('response') or {}
+        if 'json' not in response_data:
             return ResponseData.fail(RESPONSE_MSG_0156)
+        response = response_data.get('json')
         builder = SchemaBuilder()
         builder.add_object(response)
         schema = builder.to_schema()

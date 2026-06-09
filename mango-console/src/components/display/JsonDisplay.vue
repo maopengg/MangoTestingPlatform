@@ -224,6 +224,12 @@
     }
   })
 
+  const isJsonpathCompatibleString = computed(() => {
+    if (!isString.value || !isValidJson.value) return false
+    const value = jsonFromString.value
+    return typeof value === 'object' && value !== null
+  })
+
   /**
    * 最终渲染的数据（处理 Date 等特殊情况）
    */
@@ -242,7 +248,7 @@
    * 判断是否显示JSONPath按钮
    */
   const showJsonpathButton = computed(() => {
-    return props.jsonpath && (isObjectOrArray.value || (isString.value && isValidJson.value))
+    return props.jsonpath && (isObjectOrArray.value || isJsonpathCompatibleString.value)
   })
 
   const canPreviewJson = computed(() => {
@@ -362,7 +368,7 @@
 
     const jsonData = isObjectOrArray.value ? props.data : jsonFromString.value
     if (jsonData === null || (typeof jsonData !== 'object' && !Array.isArray(jsonData))) {
-      Message.error('响应JSON是空或者不是JSON格式，无法进行测试！')
+      Message.error('响应JSON不是对象或数组，无法进行JSONPath测试！')
       return
     }
 

@@ -76,7 +76,7 @@ class ScheduleRunner:
     def run_due_system_jobs(self, planned_at: datetime):
         jobs = [
             ('repair_test_suite_status', '*/10 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_test_suite_status),
-            ('send_pending_test_suite_notice', '* * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.send_pending_test_suite_notice),
+            ('send_pending_test_suite_notice', '*/3 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.send_pending_test_suite_notice),
             ('repair_api_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_api_case_status),
             ('repair_ui_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_ui_case_status),
             ('repair_pytest_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_pytest_case_status),
@@ -116,7 +116,7 @@ class ScheduleRunner:
     def is_due(cron: str, planned_at: datetime) -> bool:
         try:
             trigger = CronTrigger.from_crontab(cron)
-            previous = planned_at - timedelta(minutes=1)
+            previous = planned_at - timedelta(seconds=1)
             next_fire = trigger.get_next_fire_time(None, previous)
             if next_fire is None:
                 return False

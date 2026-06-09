@@ -166,6 +166,12 @@ export const tableColumns = useTableColumn([
     dataIndex: 'password',
   },
   {
+    title: '状态',
+    key: 'status',
+    dataIndex: 'status',
+    width: 100,
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',

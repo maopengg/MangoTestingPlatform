@@ -73,6 +73,12 @@
             <template v-else-if="item.key === 'password'" #cell="{ record }">
               {{ record.password }}
             </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-switch
+                :beforeChange="(newValue) => onModifyDatabaseStatus(newValue, record)"
+                :default-checked="record.status === STATUS_ENABLED"
+              />
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :max-inline="3"
@@ -143,6 +149,7 @@
     getSystemDatabaseTest,
     postSystemDatabase,
     putSystemDatabase,
+    putSystemDatabaseStatus,
   } from '@/api/system/database'
   import {
     deleteDataFactoryDatasourceBinding,
@@ -175,6 +182,8 @@
   const datasourceAliasOptions = ref<any[]>([])
   const datasourceBindings = ref<any[]>([])
   const testingDatabaseIds = ref<any[]>([])
+  const STATUS_DISABLED = 0
+  const STATUS_ENABLED = 1
 
   const datasourceDetailTitle = computed(() => {
     const id = pageData.record?.id || route.query.id || '-'
@@ -375,6 +384,25 @@
       })
   }
 
+  function onModifyDatabaseStatus(newValue: boolean, record: any) {
+    return new Promise<boolean>((resolve, reject) => {
+      const status = newValue ? STATUS_ENABLED : STATUS_DISABLED
+      putSystemDatabaseStatus({
+        id: record.id,
+        status,
+      })
+        .then((res) => {
+          record.status = status
+          Message.success(res.msg)
+          resolve(res.code === 200)
+        })
+        .catch((error) => {
+          console.log(error)
+          reject(error)
+        })
+    })
+  }
+
   function onUpdate(item: any) {
     data.actionTitle = '编辑'
     modalDialogRef.value?.toggle()
@@ -446,6 +474,7 @@
       }
       if (data.isAdd) {
         value['test_object'] = testObjectId.value
+        value['status'] = STATUS_ENABLED
         postSystemDatabase(value)
           .then(async (res) => {
             await syncDatasourceBinding(res.data?.id, datasourceAliasId)

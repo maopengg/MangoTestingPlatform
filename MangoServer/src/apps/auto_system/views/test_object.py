@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_system.models import TestObject
+from src.apps.auto_system.models import Database, TestObject
 from src.apps.auto_system.views.project_product import ProjectProductSerializersC
 from src.apps.auto_system.service.factory import get_enabled_databases
 from src.apps.auto_user.views.user import UserSerializers
@@ -72,8 +72,10 @@ class TestObjectViews(ViewSet):
         try:
             obj = self.model.objects.get(id=request.data.get('id'))
             if db_c_status == StatusEnum.SUCCESS.value or db_rud_status == StatusEnum.SUCCESS.value:
-                if not get_enabled_databases(request.data.get('id')).exists():
-                    return ResponseData.fail(RESPONSE_MSG_0123)
+                if not Database.objects.filter(test_object=obj.id).exists():
+                    return ResponseData.fail(RESPONSE_MSG_0164)
+                if not get_enabled_databases(obj.id).exists():
+                    return ResponseData.fail(RESPONSE_MSG_0165)
             if db_c_status is not None:
                 obj.db_c_status = db_c_status
             if db_rud_status is not None:

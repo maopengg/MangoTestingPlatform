@@ -1628,6 +1628,7 @@ def register_api_automation_tools(mcp):
                     "如果 method.parameter 里包含 {f:\"expect\"}，expect 传预期值；如果 parameter 只有 {f:\"actual\"} 或不包含 expect，expect 必须传 null。",
                     "如果响应字段值是 JSON null，不要使用 p_is_equal_to + expect:null，应使用 p_is_none + expect:null。",
                     "如果响应字段值是空字符串，使用 p_is_equal_to + expect:\"\" 或 p_is_empty，不能按 null 处理。",
+                    "response.json 可为 object/array/string/number/boolean/null，但 JSONPath 断言只支持 object/array 响应。",
                     "通用断言保存的是前端级联选项对象，建议先用 get_api_assertion_schema 查看结构。",
                 ],
             }
@@ -1643,8 +1644,8 @@ def register_api_automation_tools(mcp):
         return ok(
             {
                 "assertion_types": {
-                    "ass_json_all": "JSON一致断言。保存基础、固定的期望 JSON 片段，后端用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言；已在这里断言的字段无需再重复写入 ass_jsonpath。",
-                    "ass_jsonpath": "JSONPath断言。actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value；expect 是否需要传值取决于该 method 的 parameter，包含 f=expect 时传预期值，不包含 f=expect 时传 null。",
+                    "ass_json_all": "JSON一致断言。仅适用于 object/array 响应；保存基础、固定的期望 JSON 片段，后端用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言；已在这里断言的字段无需再重复写入 ass_jsonpath。",
+                    "ass_jsonpath": "JSONPath断言。仅适用于 object/array 响应；actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value；expect 是否需要传值取决于该 method 的 parameter，包含 f=expect 时传预期值，不包含 f=expect 时传 null。",
                     "ass_text_all": "文本一致断言。保存完整预期响应文本，后端用 response.text.strip() == expect.strip()。",
                     "ass_general": "通用断言。外层 value 保存前端级联选中的完整对象；parameter[].v 面向 textarea 保存，dict/list 应保存为 JSON 字符串，执行 SQL 断言时会自动反序列化。",
                     "ass_schema": "结构化断言。保存 JSON Schema 对象；也可调用 auto_generate_api_case_scenario_schema 自动生成。",
@@ -1953,7 +1954,7 @@ def register_api_automation_tools(mcp):
                         "type": "list[object]",
                         "default": [],
                         "format": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
-                        "description": "JSONPath 断言。actual 是响应 JSONPath；method 必须来自 get_api_assertion_methods 的叶子 value，不能写 eq。",
+                        "description": "JSONPath 断言。仅适用于 object/array 响应；actual 是响应 JSONPath；method 必须来自 get_api_assertion_methods 的叶子 value，不能写 eq。",
                         "expect_rule": "所选 method 的 parameter 包含 f=expect 时传预期值；不包含 expect 时传 null。",
                     },
                     "ass_general": {
@@ -1965,7 +1966,7 @@ def register_api_automation_tools(mcp):
                     "ass_json_all": {
                         "type": "dict | list | null",
                         "default": None,
-                        "description": "JSON 一致断言，用于断言基础、固定的响应 JSON 片段；使用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言。已在 ass_json_all 中断言的字段无需再重复添加到 ass_jsonpath。",
+                        "description": "JSON 一致断言，仅适用于 object/array 响应；用于断言基础、固定的响应 JSON 片段；使用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言。已在 ass_json_all 中断言的字段无需再重复添加到 ass_jsonpath。",
                         "example": {"code": 0, "data": {"status": 1}},
                     },
                     "ass_text_all": {
@@ -1981,7 +1982,7 @@ def register_api_automation_tools(mcp):
                     "posterior_response": {
                         **key_value_schema,
                         "default": [],
-                        "description": "响应 JSON 提取。value 是 JSONPath，提取到的值写入普通缓存 key。",
+                        "description": "响应 JSON 提取。仅适用于 object/array 响应；value 是 JSONPath，提取到的值写入普通缓存 key。",
                         "example": [{"key": "token", "value": "$.data.token"}],
                     },
                     "posterior_response_text": {

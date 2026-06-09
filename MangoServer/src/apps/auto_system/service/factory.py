@@ -4,7 +4,7 @@
 # @Time   : 2024-07-25 上午11:56
 # @Author : 毛鹏
 from src.apps.auto_system.models import Database, TestObject
-from src.common.enums.tools_enum import AutoTypeEnum
+from src.common.enums.tools_enum import AutoTypeEnum, StatusEnum
 from src.common.exceptions import *
 from src.common.tools.database import DatabaseConnection, DatabaseConnectionFactory
 
@@ -12,7 +12,7 @@ from src.common.tools.database import DatabaseConnection, DatabaseConnectionFact
 def get_enabled_databases(test_object_id: int):
     return Database.objects.filter(
         test_object=test_object_id,
-        status=1,
+        status=StatusEnum.SUCCESS.value,
     ).order_by('id')
 
 

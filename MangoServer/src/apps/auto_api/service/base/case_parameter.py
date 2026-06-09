@@ -18,6 +18,7 @@ from src.common.enums.tools_enum import StatusEnum
 from src.common.exceptions import *
 from src.common.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.common.tools import project_dir
+from src.common.tools.json_response import ensure_jsonpath_source, is_jsonpath_source, json_value_type
 from src.common.tools.obtain_assertion import ObtainAssertion
 from ...models import ApiCaseDetailedParameter, ApiHeaders, ApiInfo
 
@@ -117,6 +118,7 @@ class CaseParameter:
                 self.test_setup.test_data.set_sql_cache(key, res[0])
 
     def __posterior_response(self, response_dict: dict, posterior_response: list[dict]):
+        ensure_jsonpath_source(response_dict)
         for i in posterior_response:
             key: str = i.get('key')
             value: str = i.get('value')
@@ -152,6 +154,7 @@ class CaseParameter:
 
     def __ass_jsonpath(self, response_data, ass_jsonpath):
         if ass_jsonpath:
+            ensure_jsonpath_source(response_data)
             for i in ass_jsonpath:
                 actual = self.test_setup.test_data.replace(i.get('actual'))
                 expect = self.test_setup.test_data.replace(i.get('expect'))
@@ -201,10 +204,18 @@ class CaseParameter:
         )
         try:
             assert actual is not None, f'实际={actual}, 预期={ass_result.expect}'
+            if not is_jsonpath_source(actual):
+                raise ApiError(*ERROR_MSG_0067, value=(json_value_type(actual),))
             ass_result.actual = json.dumps(actual, ensure_ascii=False)
             ass_result.ass_msg = ObtainAssertion(mysql_conn=None, test_data=self.test_data).p_in_dict(
                 actual, expect)
             self.ass_result.append(ass_result)
+        except ApiError:
+            ass_result.status = StatusEnum.FAIL.value
+            ass_result.actual = json.dumps(actual, ensure_ascii=False)
+            ass_result.ass_msg = ERROR_MSG_0067[1].format(json_value_type(actual))
+            self.ass_result.append(ass_result)
+            raise
         except AssertionError as error:
             ass_result.status = StatusEnum.FAIL.value
             ass_result.ass_msg = str(error.args[0]) if error.args else ''

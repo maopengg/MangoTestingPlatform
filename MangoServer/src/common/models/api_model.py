@@ -28,7 +28,7 @@ class RequestModel(BaseModel):
     headers: dict | None = None
     params: str | None = None
     data: str | None = None
-    json: str | None = None
+    json: Any | None = None
     file: list[dict] | Any | None = None
     posterior_file: str | None = None
 
@@ -36,11 +36,13 @@ class RequestModel(BaseModel):
         for field in ['data', 'json', 'params']:
             field_value = getattr(self, field)
             if field_value is not None:
-                if isinstance(field_value, (dict, list)):
+                if field == 'json' and not isinstance(field_value, str):
+                    continue
+                if field != 'json' and isinstance(field_value, (dict, list)):
                     continue
                 try:
                     parsed = json.loads(field_value, strict=False)
-                    if not isinstance(parsed, (dict, list)):
+                    if field != 'json' and not isinstance(parsed, (dict, list)):
                         log.api.info(f'序列化失败-1：{parsed}')
                         raise ApiError(*ERROR_MSG_0003, value=(_a.get(field),))
                     setattr(self, field, parsed)
@@ -55,10 +57,10 @@ class ResponseModel(BaseModel):
     request_headers: dict | None = None
     request_params: dict | list | str | None = None
     request_data: dict | list | None = None
-    request_json: dict | list | None = None
+    request_json: Any | None = None
     request_file: list[dict] | Any | None = None
     headers: dict
-    json: dict | list | None = None
+    json: Any | None = None
     text: str | None = None
     error_msg: str | None = None
 

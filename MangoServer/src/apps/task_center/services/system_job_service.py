@@ -38,8 +38,8 @@ class SystemJobService:
         SystemJobDefinition(
             key='send_pending_test_suite_notice',
             name='测试报告通知补偿',
-            description='每分钟发送未发送的测试报告通知。',
-            cron='* * * * *',
+            description='每 3 分钟发送未发送的测试报告通知。',
+            cron='*/3 * * * *',
             source_type=ScheduleFireSourceTypeEnum.SYSTEM_JOB.value,
             handler=SchedulerSystemJobService.send_pending_test_suite_notice,
         ),
