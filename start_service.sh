@@ -4,6 +4,11 @@ set -eu
 cd "$(dirname "$0")"
 
 COMPOSE="docker compose"
+COMPOSE_SERVICES="$($COMPOSE config --services)"
+
+has_service() {
+  echo "$COMPOSE_SERVICES" | grep -qx "$1"
+}
 
 echo "拉取最新代码..."
 BEFORE_REV="$(git rev-parse HEAD)"
@@ -24,8 +29,19 @@ if [ -n "$TASK_DISPATCHER_CONTAINERS" ]; then
   docker rm -f $TASK_DISPATCHER_CONTAINERS || true
 fi
 
-echo "启动数据库和对象存储..."
-$COMPOSE up -d db minio
+echo "启动基础依赖服务..."
+BASE_SERVICES=""
+if has_service db; then
+  BASE_SERVICES="$BASE_SERVICES db"
+fi
+if has_service minio; then
+  BASE_SERVICES="$BASE_SERVICES minio"
+fi
+if [ -n "$BASE_SERVICES" ]; then
+  $COMPOSE up -d $BASE_SERVICES
+else
+  echo "未配置 docker-compose 基础依赖服务，跳过。"
+fi
 
 echo "构建后端和执行器镜像..."
 $COMPOSE build mango_server mango_actuator
