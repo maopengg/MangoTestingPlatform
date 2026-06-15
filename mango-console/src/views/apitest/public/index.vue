@@ -42,7 +42,7 @@
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
-                  :options="enumStore.environment_type"
+                  :options="environmentOptions"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -99,7 +99,8 @@
               {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.test_env]" size="small">
+              <a-tag v-if="isCommonEnvironment(record.test_env)" size="small">环境通用</a-tag>
+              <a-tag v-else :color="enumStore.colors[record.test_env]" size="small">
                 {{ enumStore.environment_type[record.test_env]?.title }}
               </a-tag>
             </template>
@@ -188,7 +189,7 @@
             <a-select
               v-model="item.value"
               :field-names="fieldNames"
-              :options="enumStore.environment_type"
+              :options="environmentOptions"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -217,7 +218,6 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, ref, nextTick, reactive } from 'vue'
-  import useUserStore from '@/store/modules/user'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { tableColumns, formItems, conditionItems } from './config'
@@ -235,7 +235,7 @@
   import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
 
   const enumStore = useEnum()
-  const userStore = useUserStore()
+  const COMMON_ENV_VALUE = '__common__'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -253,6 +253,10 @@
 
   const isSqlPublicType = computed(() => Number(getFormValue('type')) === 1)
   const isCodePublicType = computed(() => Number(getFormValue('type')) === 2)
+  const environmentOptions = computed(() => [
+    { key: COMMON_ENV_VALUE, title: '环境通用' },
+    ...enumStore.environment_type,
+  ])
   const codeVariableExample = `def variable(context):
     """
     函数名字和参数不可以改。
@@ -279,6 +283,18 @@
   function getFormNumberValue(key: string) {
     const value = getFormValue(key)
     return value === '' || value == null ? null : Number(value)
+  }
+
+  function isCommonEnvironment(value: any) {
+    return value === null || value === undefined || value === ''
+  }
+
+  function normalizeEnvironmentValue(value: any) {
+    return value === COMMON_ENV_VALUE || value === '' || value === undefined ? null : value
+  }
+
+  function toEnvironmentSelectValue(value: any) {
+    return isCommonEnvironment(value) ? COMMON_ENV_VALUE : value
   }
 
   function isFormItemVisible(item: any) {
@@ -348,6 +364,12 @@
       table.tableLoading.value = true
     }
     let value = getFormItems(conditionItems)
+    if (value.test_env === COMMON_ENV_VALUE) {
+      delete value.test_env
+      value.test_env__isnull = true
+    } else {
+      value.test_env = normalizeEnvironmentValue(value.test_env)
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getApiPublic(value)
@@ -381,10 +403,7 @@
         it.value = ''
       }
     })
-    const envItem = formItems.find((it) => it.key === 'test_env')
-    if (envItem && userStore.selected_environment != null) {
-      envItem.value = userStore.selected_environment
-    }
+    setFormValue('test_env', COMMON_ENV_VALUE)
     datasourceAliasOptions.value = []
     if (Number(getFormValue('type')) === 2) {
       fillCodeVariableExample()
@@ -431,6 +450,8 @@
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
+        } else if (it.key === 'test_env') {
+          it.value = toEnvironmentSelectValue(propName)
         } else {
           it.value = propName
         }
@@ -441,6 +462,7 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
+      value.test_env = normalizeEnvironmentValue(value.test_env)
       if (Number(value.type) === 1 && !getFormNumberValue('datasource_alias')) {
         Message.error('SQL公共变量必须选择逻辑数据源')
         modalDialogRef.value?.setConfirmLoading(false)

@@ -401,10 +401,17 @@ class TestCase:
     @classmethod
     def __public_data(cls, project_product_id, test_env) -> list[UiPublicModel]:
         test_object = func_test_object_value(test_env, project_product_id, AutoTypeEnum.UI.value)
-        ui_public_list = UiPublic \
+        common_public_list = UiPublic \
             .objects \
-            .filter(project_product=project_product_id, test_env=test_env, status=StatusEnum.SUCCESS.value) \
-            .order_by('type', 'test_env', 'id')
+            .filter(project_product=project_product_id, test_env__isnull=True, status=StatusEnum.SUCCESS.value) \
+            .order_by('type', 'id')
+        ui_public_list = list(common_public_list)
+        if test_env is not None:
+            env_public_list = UiPublic \
+                .objects \
+                .filter(project_product=project_product_id, test_env=test_env, status=StatusEnum.SUCCESS.value) \
+                .order_by('type', 'id')
+            ui_public_list.extend(env_public_list)
         public_data = []
         for item in ui_public_list:
             mysql_config = None

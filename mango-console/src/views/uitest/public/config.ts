@@ -93,14 +93,13 @@ export const formItems: FormItem[] = reactive([
     key: 'test_env',
     value: ref(''),
     type: 'select',
-    required: true,
+    required: false,
     placeholder: '请选择绑定环境',
     validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
       return true
+    },
+    reset: function () {
+      this.value = ''
     },
   },
   {

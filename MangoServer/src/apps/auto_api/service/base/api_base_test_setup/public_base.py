@@ -114,11 +114,19 @@ class PublicBase(BaseRequest):
         if self.is_public == scope_key:
             return
         self.is_public = scope_key
-        api_public = ApiPublic.objects.filter(
+        common_public = ApiPublic.objects.filter(
             status=StatusEnum.SUCCESS.value,
             project_product=project_product_id,
-            test_env=test_env,
-        ).order_by('type', 'test_env', 'id')
+            test_env__isnull=True,
+        ).order_by('type', 'id')
+        api_public = list(common_public)
+        if test_env is not None:
+            env_public = ApiPublic.objects.filter(
+                status=StatusEnum.SUCCESS.value,
+                project_product=project_product_id,
+                test_env=test_env,
+            ).order_by('type', 'id')
+            api_public.extend(env_public)
         log.api.debug(f'开始初始化全局变量！')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:

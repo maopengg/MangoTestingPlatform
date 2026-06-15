@@ -55,6 +55,9 @@ class ModelCRUD(GenericAPIView):
         def query() -> dict:
             query_dict = {}
             for k, v in dict(request.query_params.lists()).items():
+                if k.endswith('__isnull'):
+                    query_dict[k] = str(v[0]).lower() == 'true'
+                    continue
                 if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
                     query_dict[f'{k}__contains'] = v[0]
                 else:
