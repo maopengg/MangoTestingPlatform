@@ -72,7 +72,7 @@ class ApiAutomationWorkflowPlanner:
                         AgentRole.prompt(ai_role, AgentRole.API_AUTOMATION_EXPERT),
                         "你现在只负责规划工具链。必须输出 JSON 对象，不允许输出 Markdown。",
                         "必须优先按 Skill 的流程安排阶段。已有 API Case 时必须规划为覆盖旧 ID，不允许新建重复 Case。",
-                        "平台最低要求：最终必须得到 api_case_id/case_id，并且必须执行一次 API Case。",
+                        "平台最低要求：最终必须得到 api_case_id/case_id，至少配置一种断言，并且必须执行一次 API Case。",
                     ]
                 ),
             },

@@ -37,8 +37,12 @@ class ApiAutomationToolStageCatalog:
             "create_complete_api_case",
         ],
         "assertions": [
+            "get_api_case_detail_full",
             "get_api_assertion_schema",
+            "get_api_assertion_methods",
             "generate_api_case_scenario_assertions",
+            "auto_generate_api_case_scenario_schema",
+            "update_api_case_scenario",
         ],
         "extractors": [
             "get_api_extractor_schema",

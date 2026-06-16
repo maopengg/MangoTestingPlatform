@@ -153,7 +153,7 @@ class AiAssistantService:
             session.title = content[:32]
             session.save(update_fields=["title", "update_time"])
         messages = cls._build_messages(session, content, status)
-        tools = cls._build_tools(status["server_id"])
+        tools = cls._build_tools(status["server_id"], content)
         response = (
             AiService.chat_with_tools(messages=messages, tools=tools, tool_choice="auto", max_tokens=1600)
             if tools
@@ -247,7 +247,7 @@ class AiAssistantService:
         yield {"event": "session", "data": {"session_id": session.id, "title": session.title}}
 
         messages = cls._build_messages(session, content, status)
-        tools = cls._build_tools(status["server_id"])
+        tools = cls._build_tools(status["server_id"], content)
         assistant_content = ""
         tool_calls: dict[int, dict] = {}
 
@@ -400,10 +400,18 @@ class AiAssistantService:
         return messages
 
     @classmethod
-    def _build_tools(cls, server_id: int | None) -> list[dict]:
+    def _build_tools(cls, server_id: int | None, content: str = "") -> list[dict]:
         if not server_id:
             return []
-        tools = AiMcpTool.objects.filter(server_id=server_id, tool_type="tool", enabled=True).order_by("id")[: cls.TOOL_LIMIT]
+        categories = McpService.assistant_tool_categories(content)
+        raw_tools = AiMcpTool.objects.filter(server_id=server_id, tool_type="tool", enabled=True).order_by("id")
+        tools = [
+            tool
+            for tool in raw_tools
+            if McpService.tool_category(tool.name)["key"] in categories
+        ][: cls.TOOL_LIMIT]
+        if not tools:
+            tools = [tool for tool in raw_tools if not tool.write_operation][: min(cls.TOOL_LIMIT, 12)]
         return [
             {
                 "type": "function",

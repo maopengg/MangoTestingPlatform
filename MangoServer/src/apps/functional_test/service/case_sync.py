@@ -44,6 +44,14 @@ class FunctionalTestCaseSyncService:
         rendered = FunctionalTestContextResourceService.render_suite_context(suite, selected_keys)
         if FunctionalTestContextKeyEnum.PLATFORM_CASE.value in selected_keys:
             rendered[FunctionalTestContextKeyEnum.PLATFORM_CASE.value] = cls.render_platform_cases(suite)
+        suite_scope_context = "\n".join(
+            [
+                "当前需求信息：",
+                f"suite_id：{suite.id}",
+                f"requirement_name：{suite.requirement_name or ''}",
+                "只需要生成测试用例内容字段，不需要输出项目产品和模块；平台落库时会自动使用当前需求的项目产品和模块。",
+            ]
+        )
         raw_case_context = rendered.get(FunctionalTestContextKeyEnum.RAW_CASE_DOC.value, "")
         selected_context = []
         for key in selected_keys:
@@ -52,7 +60,7 @@ class FunctionalTestCaseSyncService:
             content = rendered.get(key) or ""
             if content:
                 selected_context.append(f"{enum_label(FunctionalTestContextKeyEnum, key)}：\n{content}")
-        context_parts = [part for part in [raw_case_context, *selected_context] if part]
+        context_parts = [part for part in [suite_scope_context, raw_case_context, *selected_context] if part]
         context_text = "\n\n".join(context_parts)
         context_hash = _hash_text(
             json.dumps(
@@ -77,10 +85,6 @@ class FunctionalTestCaseSyncService:
             .values(
                 "id",
                 "case_no",
-                "project_product_id",
-                "project_product__name",
-                "module_id",
-                "module__name",
                 "title",
                 "precondition",
                 "test_point",
@@ -106,10 +110,6 @@ class FunctionalTestCaseSyncService:
                     [
                         f"- id：{item.get('id')}",
                         f"  case_no：{item.get('case_no') or ''}",
-                        f"  project_product_id：{item.get('project_product_id') or ''}",
-                        f"  project_product_name：{item.get('project_product__name') or ''}",
-                        f"  module_id：{item.get('module_id') or ''}",
-                        f"  module_name：{item.get('module__name') or ''}",
                         f"  title：{item.get('title') or ''}",
                         f"  precondition：{item.get('precondition') or ''}",
                         f"  test_point：{item.get('test_point') or ''}",
@@ -141,8 +141,6 @@ class FunctionalTestCaseSyncService:
                     case = ManualTestCase.objects.get(id=case_id, suite=suite)
                     for field in (
                         "case_no",
-                        "project_product_id",
-                        "module_id",
                         "title",
                         "test_types",
                         "priority",

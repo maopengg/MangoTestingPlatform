@@ -303,6 +303,8 @@ class McpService:
 
     BUILTIN_TOOL_GROUPS = [
         {
+            "key": "project_context",
+            "title": "项目上下文",
             "description": "项目、用户、测试环境上下文",
             "tools": [
                 "get_current_user_context",
@@ -314,11 +316,18 @@ class McpService:
             ],
         },
         {
+            "key": "api_automation",
+            "title": "API自动化",
             "description": "API 接口、用例、场景、执行和结果分析",
             "tools": [
                 "list_api_headers",
+                "preview_create_api_header_impact",
                 "create_api_header",
                 "update_api_header",
+                "list_api_public_variables",
+                "create_api_public_variable",
+                "update_api_public_variable",
+                "set_api_public_variable_status",
                 "search_api_infos",
                 "get_api_info_detail",
                 "create_api_info",
@@ -328,14 +337,21 @@ class McpService:
                 "search_api_cases",
                 "get_api_case_detail_full",
                 "update_api_case",
+                "preview_delete_api_case_impact",
+                "delete_api_case",
                 "add_api_case_step",
                 "list_api_case_steps",
+                "sort_api_case_steps",
+                "refresh_api_case_step_from_api_info",
                 "list_api_case_scenarios",
                 "create_api_case_scenario",
                 "update_api_case_scenario",
+                "copy_api_case_scenario",
                 "get_api_assertion_schema",
+                "get_api_assertion_methods",
                 "get_api_extractor_schema",
                 "generate_api_case_scenario_assertions",
+                "auto_generate_api_case_scenario_schema",
                 "generate_api_case_scenario_extractors",
                 "create_complete_api_case",
                 "run_api_case",
@@ -345,6 +361,8 @@ class McpService:
             ],
         },
         {
+            "key": "data_factory",
+            "title": "数据工厂",
             "description": "数据工厂实体、字段、模板、预览、绑定和清理",
             "tools": [
                 "get_data_factory_schema",
@@ -375,13 +393,92 @@ class McpService:
                 "list_data_factory_executions",
                 "get_data_factory_execution_detail",
                 "get_data_factory_execution_context",
+                "preview_cleanup_data_factory_execution_impact",
+                "cleanup_data_factory_execution",
             ],
         },
         {
+            "key": "ui_automation",
+            "title": "UI自动化",
             "description": "UI 自动化查询与手动绑定辅助",
             "tools": [
                 "search_ui_cases",
                 "get_ui_case_detail",
+            ],
+        },
+        {
+            "key": "functional_test",
+            "title": "功能测试",
+            "description": "功能测试需求、用例、上下文资料、自动化绑定、统计和模块导航",
+            "tools": [
+                "list_functional_test_suites",
+                "get_functional_test_suite_detail",
+                "create_functional_test_suite",
+                "update_functional_test_suite",
+                "delete_functional_test_suite",
+                "list_functional_test_cases",
+                "get_functional_test_case_detail",
+                "create_functional_test_case",
+                "update_functional_test_case",
+                "delete_functional_test_case",
+                "batch_delete_functional_test_cases",
+                "list_functional_test_context_resources",
+                "get_functional_test_context_resource_detail",
+                "create_functional_test_context_resource",
+                "update_functional_test_context_resource",
+                "delete_functional_test_context_resource",
+                "list_functional_test_automation_bindings",
+                "bind_functional_test_automation_case",
+                "list_functional_test_case_modules",
+                "get_functional_test_suite_stats",
+            ],
+        },
+        {
+            "key": "scheduled_task",
+            "title": "定时任务",
+            "description": "定时任务和任务明细绑定",
+            "tools": [
+                "preview_bind_cases_to_scheduled_task_impact",
+                "bind_cases_to_scheduled_task",
+            ],
+        },
+        {
+            "key": "ai_platform",
+            "title": "AI平台",
+            "description": "AI、Skill、MCP 服务和任务记录查询",
+            "tools": [
+                "list_ai_skills",
+                "get_ai_skill_detail",
+                "list_ai_mcp_servers",
+                "get_ai_mcp_server_detail",
+                "list_ai_mcp_tools",
+                "list_ai_agent_tasks",
+                "get_ai_agent_task_detail",
+                "list_ai_agent_tool_calls",
+                "list_ai_assistant_sessions",
+                "list_ai_assistant_messages",
+            ],
+        },
+        {
+            "key": "system_assets",
+            "title": "系统资源",
+            "description": "系统变量、文件和认证配置",
+            "tools": [
+                "list_system_variables",
+                "create_system_variable",
+                "update_system_variable",
+                "set_system_variable_status",
+                "upload_system_file_from_url",
+                "list_system_files",
+                "list_api_auth_configs",
+                "create_api_auth_config",
+                "update_api_auth_config",
+                "refresh_api_auth_config",
+                "preview_clear_api_auth_config_cache_impact",
+                "clear_api_auth_config_cache",
+                "preview_delete_api_auth_config_impact",
+                "delete_api_auth_config",
+                "list_api_auth_time_tasks",
             ],
         },
     ]
@@ -404,6 +501,49 @@ class McpService:
         "clear_",
     )
     ONLINE_CACHE_SECONDS = 120
+
+    @classmethod
+    def tool_category(cls, tool_name: str) -> dict:
+        for group in cls.BUILTIN_TOOL_GROUPS:
+            if tool_name in group["tools"]:
+                return {
+                    "key": group["key"],
+                    "title": group["title"],
+                    "description": group["description"],
+                }
+        if tool_name.startswith(("get_mcp_", "list_ai_", "get_ai_")):
+            return {"key": "ai_platform", "title": "AI平台", "description": "AI、Skill、MCP 服务和任务记录查询"}
+        if "data_factory" in tool_name:
+            return {"key": "data_factory", "title": "数据工厂", "description": "数据工厂实体、字段、模板、预览、绑定和清理"}
+        if tool_name.startswith(("search_api_", "get_api_", "create_api_", "update_api_", "delete_api_", "run_api_", "analyze_api_", "add_api_", "sort_api_", "refresh_api_", "copy_api_", "auto_generate_api_", "generate_api_")):
+            return {"key": "api_automation", "title": "API自动化", "description": "API 接口、用例、场景、执行和结果分析"}
+        if "_ui_" in tool_name or tool_name.startswith(("search_ui_", "get_ui_", "create_ui_", "update_ui_", "delete_ui_")):
+            return {"key": "ui_automation", "title": "UI自动化", "description": "UI 自动化查询与手动绑定辅助"}
+        if "functional_test" in tool_name:
+            return {"key": "functional_test", "title": "功能测试", "description": "功能测试需求、用例、上下文资料、自动化绑定、统计和模块导航"}
+        if "scheduled_task" in tool_name or "time_task" in tool_name:
+            return {"key": "scheduled_task", "title": "定时任务", "description": "定时任务和任务明细绑定"}
+        return {"key": "other", "title": "其他", "description": "未归类工具"}
+
+    @classmethod
+    def assistant_tool_categories(cls, content: str) -> set[str]:
+        text = (content or "").lower()
+        categories = {"project_context"}
+        if any(keyword in text for keyword in ("数据工厂", "造数", "数据库", "sql", "表结构", "实体", "字段", "datasource", "factory")):
+            categories.add("data_factory")
+        if any(keyword in text for keyword in ("api", "接口", "case", "用例", "请求", "响应", "断言", "提取", "header", "curl")):
+            categories.add("api_automation")
+        if any(keyword in text for keyword in ("ui", "页面", "元素", "定位", "界面自动化")):
+            categories.add("ui_automation")
+        if any(keyword in text for keyword in ("功能测试", "需求列表", "需求文档", "原始case", "手工测试", "手工用例", "测试用例", "用例同步")):
+            categories.add("functional_test")
+        if any(keyword in text for keyword in ("定时任务", "任务明细", "绑定任务", "scheduled")):
+            categories.add("scheduled_task")
+        if any(keyword in text for keyword in ("mcp", "skill", "技能", "ai任务", "执行记录", "助手", "工具")):
+            categories.add("ai_platform")
+        if any(keyword in text for keyword in ("系统变量", "公共变量", "文件", "上传", "token", "鉴权", "认证")):
+            categories.add("system_assets")
+        return categories
 
     @classmethod
     def infer_risk(cls, tool_name: str) -> tuple[str, bool, bool]:

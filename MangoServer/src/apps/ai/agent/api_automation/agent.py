@@ -262,7 +262,11 @@ class ApiAutomationAgent(BaseAgent):
             AiAgentTaskStepService.finish_step(task, "plan_api_case", {"api_case_id": plan.get("api_case_id")})
             AiAgentTaskStepService.finish_step(task, "execute_mcp_tools", {"tool_call_count": len(plan.get("tool_calls") or [])})
             AiAgentTaskStepService.start_step(task, "validate_result")
-            AiAgentTaskStepService.finish_step(task, "validate_result", {"api_case_id": plan.get("api_case_id")})
+            AiAgentTaskStepService.finish_step(
+                task,
+                "validate_result",
+                {"api_case_id": plan.get("api_case_id"), "assertion_summary": plan.get("assertion_summary") or {}},
+            )
             AiAgentTaskStepService.start_step(task, "bind_result")
             AiAgentTaskStepService.finish_step(task, "bind_result", {"binding_id": plan.get("binding_id")})
             AiAgentTaskStepService.start_step(task, "run_api_case")

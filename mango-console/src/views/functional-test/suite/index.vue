@@ -68,7 +68,7 @@
             :loading="suiteLoading"
             :pagination="false"
             :row-key="'id'"
-            :scroll="{ x: 1380 }"
+            :scroll="{ x: 1580 }"
           >
             <template #columns>
               <a-table-column v-for="item of suiteColumns" :key="item.key" v-bind="item">
@@ -76,10 +76,10 @@
                   <a-link @click="goSuite(record)">{{ record.requirement_name || '-' }}</a-link>
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.name || '-' }}
+                  {{ formatProjectProductPath(record.project_product) }}
                 </template>
                 <template v-else-if="item.key === 'module'" #cell="{ record }">
-                  {{ record.module?.name || '-' }}
+                  {{ formatModulePath(record.module) }}
                 </template>
                 <template v-else-if="item.key === 'owner'" #cell="{ record }">
                   {{ record.owner?.name || '-' }}
@@ -205,12 +205,24 @@
               :loading="caseLoading"
               :pagination="false"
               :row-key="'id'"
-              :scroll="{ x: 2520 }"
+              :scroll="{ x: 3060 }"
             >
               <template #columns>
                 <a-table-column v-for="item of caseColumns" :key="item.key" v-bind="item">
                   <template v-if="item.key === 'title'" #cell="{ record }">
-                    <a-link @click="goSuite({ id: record.suite_id })">{{ record.title || '-' }}</a-link>
+                    <a-link @click="goSuite({ id: record.suite?.id || record.suite })">{{ record.title || '-' }}</a-link>
+                  </template>
+                  <template v-else-if="item.key === 'suite'" #cell="{ record }">
+                    {{ record.suite?.requirement_name || '-' }}
+                  </template>
+                  <template v-else-if="item.key === 'suite_iteration'" #cell="{ record }">
+                    {{ record.suite?.iteration || '-' }}
+                  </template>
+                  <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                    {{ formatProjectProductPath(record.project_product) }}
+                  </template>
+                  <template v-else-if="item.key === 'module'" #cell="{ record }">
+                    {{ formatModulePath(record.module) }}
                   </template>
                   <template v-else-if="item.key === 'test_types'" #cell="{ record }">
                     <a-space wrap :size="4">
@@ -220,7 +232,7 @@
                     </a-space>
                   </template>
                   <template v-else-if="item.key === 'owner'" #cell="{ record }">
-                    {{ record.owner_name || record.owner?.name || '-' }}
+                    {{ record.owner?.name || '-' }}
                   </template>
                   <template v-else-if="item.key === 'priority'" #cell="{ record }">
                     <a-tag :color="enumColor(record.priority)" size="small">{{ enumTitle(enumStore.case_level, record.priority) }}</a-tag>
@@ -369,6 +381,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { usePagination } from '@/hooks/table'
   import { getUserName } from '@/api/user/user'
+  import { formatModulePath, formatProjectProductPath } from '@/utils/business-format'
   import {
     getManualCase,
     getManualCaseModules,
@@ -428,8 +441,8 @@
 
   const suiteColumns = [
     { title: 'ID', key: 'id', dataIndex: 'id', width: 72 },
-    { title: '项目产品', key: 'project_product', dataIndex: 'project_product', width: 160, ellipsis: true, tooltip: true },
-    { title: '模块', key: 'module', dataIndex: 'module', width: 140, ellipsis: true, tooltip: true },
+    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 180, ellipsis: true, tooltip: true },
+    { title: '模块名称', key: 'module', dataIndex: 'module', width: 220, ellipsis: true, tooltip: true },
     { title: '需求名称', key: 'requirement_name', dataIndex: 'requirement_name', width: 220, ellipsis: true, tooltip: true },
     { title: '所属迭代', key: 'iteration', dataIndex: 'iteration', width: 140, ellipsis: true, tooltip: true },
     { title: '测试负责人', key: 'owner', dataIndex: 'owner', width: 120 },
@@ -441,7 +454,10 @@
     { title: '操作', key: 'actions', dataIndex: 'actions', align: 'center', fixed: 'right', width: 160 },
   ]
   const caseColumns = [
-    { title: '需求名称', key: 'suite_requirement_name', dataIndex: 'suite_requirement_name', width: 220, ellipsis: true, tooltip: true },
+    { title: 'ID', key: 'id', dataIndex: 'id', width: 72 },
+    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 180, ellipsis: true, tooltip: true },
+    { title: '模块名称', key: 'module', dataIndex: 'module', width: 260, ellipsis: true, tooltip: true },
+    { title: '需求名称', key: 'suite', dataIndex: 'suite', width: 220, ellipsis: true, tooltip: true },
     { title: '所属迭代', key: 'suite_iteration', dataIndex: 'suite_iteration', width: 140, ellipsis: true, tooltip: true },
     { title: '用例编号', key: 'case_no', dataIndex: 'case_no', width: 130, ellipsis: true, tooltip: true },
     { title: '标题', key: 'title', dataIndex: 'title', width: 220, ellipsis: true, tooltip: true },
@@ -784,12 +800,13 @@
   }
   function buildExportRows(rows: any[]) {
     return rows.map((record) => ({
+      ID: record.id || '',
+      '项目/产品': formatProjectProductPath(record.project_product),
+      模块名称: formatModulePath(record.module),
       用例编号: record.case_no || '',
       标题: record.title || '',
-      需求名称: record.suite_requirement_name || '',
-      项目产品: record.project_product_name || '',
-      模块: record.module_name || '',
-      所属迭代: record.suite_iteration || '',
+      需求名称: record.suite?.requirement_name || '',
+      所属迭代: record.suite?.iteration || '',
       前置条件: record.precondition || '',
       测试点: record.test_point || '',
       测试数据: record.test_data || '',
@@ -873,9 +890,10 @@
     Object.keys(caseForm).forEach((key) => delete caseForm[key])
     Object.assign(caseForm, {
       ...record,
-      project_product: record.project_product?.id || record.project_product || record.project_product_id,
-      module: record.module?.id || record.module || record.module_id,
-      owner: record.owner || record.owner_id || undefined,
+      suite: record.suite?.id || record.suite,
+      project_product: record.project_product?.id || record.project_product,
+      module: record.module?.id || record.module,
+      owner: record.owner?.id || record.owner,
     })
     caseVisible.value = true
   }
@@ -918,7 +936,7 @@
   }
   async function saveCase() {
     if (!validateCaseForm()) return
-    await putManualCase({ ...caseForm, suite: caseForm.suite_id || caseForm.suite })
+    await putManualCase({ ...caseForm, suite: caseForm.suite?.id || caseForm.suite })
     Message.success('保存成功')
     caseVisible.value = false
     await loadCases()

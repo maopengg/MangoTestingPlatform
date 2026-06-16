@@ -11,8 +11,6 @@ CASE_SCHEMA_PROMPT = """输出必须是 JSON object。
 
 cases 每一项必须包含：
 - case_no: string，用例编号。统一按 FT-{四位序号} 生成，例如 FT-0001、FT-0002；不要使用模块缩写，不要使用原始文档中的 TC-* 编号。
-- project_product_id: number，项目产品ID。默认使用需求所属项目产品ID；只有原始文档明确指出该用例属于其他项目产品时才填写其他ID。
-- module_id: number，模块ID。默认使用需求所属模块ID；只有原始文档明确指出该用例属于其他模块时才填写其他ID。
 - title: string，用例标题。
 - precondition: string，前置条件。
 - test_point: string，测试点。
@@ -35,7 +33,6 @@ cases 每一项必须包含：
 重要规则：
 - 必须完整生成，不允许只生成前 10 条，不允许示例化，不允许省略。
 - 如果原文已有 80 条用例，最终 cases 应接近或等于原文数量；如认为合并，必须在 warnings 说明。
-- 如果无法判断单条用例模块归属，project_product_id 和 module_id 使用当前需求默认值，不要留空。
 - 每条用例都必须可落库，不能使用中文枚举、英文枚举或 null 写入数字枚举字段。
 """
 

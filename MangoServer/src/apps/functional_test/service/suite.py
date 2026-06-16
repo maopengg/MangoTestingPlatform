@@ -45,12 +45,22 @@ class ManualTestSuiteService:
         )
 
     @staticmethod
+    def normalize_case_scope(suite: ManualTestSuite, item: dict) -> dict:
+        item = dict(item or {})
+        item["project_product"] = suite.project_product_id
+        item["project_product_id"] = suite.project_product_id
+        item["module"] = suite.module_id
+        item["module_id"] = suite.module_id
+        return item
+
+    @staticmethod
     def create_case_from_payload(suite: ManualTestSuite, item: dict, user_id: int | None = None) -> ManualTestCase:
+        item = ManualTestSuiteService.normalize_case_scope(suite, item)
         priority = item.get("priority") if item.get("priority") in CaseLevelEnum.get_key_list() else CaseLevelEnum.P1.value
         scenario_layer = item.get("scenario_layer") if item.get("scenario_layer") in ApiCaseScenarioLayerEnum.get_key_list() else ApiCaseScenarioLayerEnum.API.value
         scenario_type = item.get("scenario_type") if item.get("scenario_type") in ApiCaseScenarioTypeEnum.get_key_list() else ApiCaseScenarioTypeEnum.NORMAL.value
-        project_product_id = item.get("project_product") or item.get("project_product_id") or suite.project_product_id
-        module_id = item.get("module") or item.get("module_id") or suite.module_id
+        project_product_id = item.get("project_product")
+        module_id = item.get("module")
         used_case_numbers = set(
             ManualTestCase.objects.filter(suite=suite)
             .exclude(case_no__isnull=True)
@@ -108,10 +118,7 @@ class ManualTestSuiteService:
         matched_ids = set()
         changes = []
         for item in normalized["cases"]:
-            item["project_product"] = item.get("project_product") or item.get("project_product_id") or suite.project_product_id
-            item["project_product_id"] = item["project_product"]
-            item["module"] = item.get("module") or item.get("module_id") or suite.module_id
-            item["module_id"] = item["module"]
+            item = cls.normalize_case_scope(suite, item)
             target = by_hash.get(item.get("source_hash")) or by_no.get(item.get("case_no"))
             if target and not item.get("case_no") and target.case_no:
                 item["case_no"] = target.case_no

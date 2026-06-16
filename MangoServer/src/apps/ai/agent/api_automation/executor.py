@@ -11,7 +11,7 @@ from src.apps.ai.agent.mcp.tool_runner import AgentMcpToolRunner
 from src.apps.ai.agent.roles import AgentRole
 from src.apps.ai.models import AiAgentTask, AiMcpServer, AiMcpTool, AiSkill
 from src.apps.ai.service.core import AiTaskService, mask_sensitive
-from src.apps.auto_api.models import ApiCase
+from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter
 from src.apps.functional_test.models import ManualTestAutomationBinding, ManualTestCase, ManualTestSuite
 from src.apps.functional_test.service.automation import ManualAutomationService
 from src.apps.system.service.ai.client import AiService
@@ -20,7 +20,7 @@ from src.common.enums.manual_test_enum import ManualTestAutomationTypeEnum, Manu
 
 class ApiAutomationExecutor:
     TOOL_LIMIT = 300
-    MAX_ROUNDS = 8
+    MAX_ROUNDS = 20
     STAGE_MAX_ROUNDS = 4
     API_CREATE_TOOLS = {"create_api_case", "create_complete_api_case"}
     API_UPDATE_TOOLS = {
@@ -65,7 +65,7 @@ class ApiAutomationExecutor:
         if not tools:
             raise ValueError("选中的MCP服务没有可用工具，请先同步MCP工具")
 
-        use_builtin_workflow = cls.should_use_builtin_workflow(skill, mcp_servers)
+        use_builtin_workflow = False
         workflow_plan = {}
         tool_calls: list[dict] = []
         api_case_id: int | None = None
@@ -243,7 +243,7 @@ class ApiAutomationExecutor:
         if not tool_calls:
             raise ValueError("AI未调用MCP工具。请检查技能是否明确要求使用MCP创建或更新API自动化Case")
         if exhausted_rounds and (not api_case_id or not used_write_tool):
-            raise ValueError("AI工具调用已达到最大轮次，但仍未完成API自动化Case创建或更新。请检查技能流程是否过于宽泛，或将技能/MCP标记为内置后使用分阶段工具链")
+            raise ValueError("AI工具调用已达到最大轮次，但仍未完成API自动化Case创建或更新。请检查技能流程是否过于宽泛，或补充更明确的生成要求")
         if existing_api_case_id:
             api_case_id = api_case_id or existing_api_case_id
             if int(api_case_id) != int(existing_api_case_id):
@@ -267,6 +267,8 @@ class ApiAutomationExecutor:
         if not used_run_tool:
             raise ValueError("API Case 已生成，但没有可用 MCP 工具执行一次 API Case")
 
+        assertion_summary = cls.validate_api_case_assertions(int(api_case_id))
+
         binding = ManualAutomationService.bind(
             manual_case,
             ManualTestAutomationTypeEnum.API.value,
@@ -280,6 +282,7 @@ class ApiAutomationExecutor:
             "tool_calls": tool_calls,
             "workflow_plan": workflow_plan,
             "stage_results": stage_results,
+            "assertion_summary": assertion_summary,
             "assistant_message": cls.message_content(final_message),
             "selected_context_keys": context_package["context_keys"],
             "context_hash": context_package["context_hash"],
@@ -386,10 +389,11 @@ class ApiAutomationExecutor:
                 action_rule,
                 "必须调用 MCP 工具，不能只返回文字计划。",
                 "调用工具前必须先阅读 mcp_servers 中每个 MCP 的 prompt 和 description，根据 MCP 职责选择工具；不要把飞书、代码检索、平台写入等不同 MCP 的用途混用。",
-                "如果 builtin_workflow=true，只允许完成 current_stage 描述的工作，不要跳到其他阶段；如果当前阶段确实无需操作，请说明原因并结束本阶段。",
-                "如果 builtin_workflow=false，请按用户选择的角色提示词、Skill 规则和 MCP 工具能力自行完成工具链。",
+                "你会看到当前已选 MCP 服务经过安全过滤后的全部可用工具。不要等待平台分阶段授权，请根据 Skill、当前功能用例、上下文和工具描述自主决定调用顺序。",
                 "Skill 是强制流程，请按 Skill 中描述的接口、断言、数据工厂、执行、结果查询等步骤推进。",
-                "如果 Skill 没有要求某一步，可以不做；但平台最低要求是最终有 api_case_id/case_id，并且 API Case 被执行一次。",
+                "生成断言时不能只调用生成草稿工具；必须把断言通过 create_api_case_scenario 或 update_api_case_scenario 落库到具体场景。",
+                "如果响应不是 JSON，也必须添加可执行的文本断言、通用断言或其他适合当前响应的断言；不要留下零断言场景。",
+                "如果 Skill 没有要求某一步，可以不做；但平台最低要求是最终有 api_case_id/case_id、至少配置一种断言，并且 API Case 被执行一次。",
                 "最终回复必须包含 JSON：{\"api_case_id\": 数字, \"summary\": \"...\"}。",
             ],
         }
@@ -498,6 +502,58 @@ class ApiAutomationExecutor:
     @classmethod
     def try_run_api_case(cls, task: AiAgentTask, tools: list[dict], tool_map: dict[str, AiMcpTool], api_case_id: int, user_id: int | None) -> dict | None:
         return ApiCaseExecutionService.try_run_api_case(task, tool_map, api_case_id, user_id)
+
+    @classmethod
+    def validate_api_case_assertions(cls, api_case_id: int) -> dict:
+        details = list(ApiCaseDetailed.objects.select_related("api_info").filter(case_id=api_case_id))
+        if not details:
+            raise ValueError(f"API Case {api_case_id} 没有步骤，无法作为有效 API 自动化用例")
+
+        detail_ids = [detail.id for detail in details]
+        parameters = list(ApiCaseDetailedParameter.objects.filter(case_detailed_id__in=detail_ids))
+        if not parameters:
+            raise ValueError(f"API Case {api_case_id} 没有场景参数，无法作为有效 API 自动化用例")
+
+        summary = {
+            "api_case_id": api_case_id,
+            "step_count": len(details),
+            "scenario_count": len(parameters),
+            "ass_jsonpath_count": 0,
+            "ass_general_count": 0,
+            "ass_json_all_count": 0,
+            "ass_text_all_count": 0,
+            "ass_schema_count": 0,
+            "api_info_schema_count": 0,
+        }
+        for detail in details:
+            api_info = detail.api_info
+            if api_info and api_info.is_schema == 1 and api_info.ass_schema:
+                summary["api_info_schema_count"] += 1
+        for parameter in parameters:
+            summary["ass_jsonpath_count"] += len(parameter.ass_jsonpath or [])
+            summary["ass_general_count"] += len(parameter.ass_general or [])
+            if parameter.ass_json_all:
+                summary["ass_json_all_count"] += 1
+            if (parameter.ass_text_all or "").strip():
+                summary["ass_text_all_count"] += 1
+            if parameter.ass_schema:
+                summary["ass_schema_count"] += 1
+
+        total_assertions = (
+            summary["ass_jsonpath_count"]
+            + summary["ass_general_count"]
+            + summary["ass_json_all_count"]
+            + summary["ass_text_all_count"]
+            + summary["ass_schema_count"]
+            + summary["api_info_schema_count"]
+        )
+        summary["total_assertion_count"] = total_assertions
+        if total_assertions <= 0:
+            raise ValueError(
+                f"API Case {api_case_id} 已生成并执行一次，但没有配置任何断言。"
+                "请让 AI 按 Skill 补充状态码、JSONPath、文本、Schema 或业务字段断言后重新生成"
+            )
+        return summary
 
     @staticmethod
     def safe_tool_name(name: str, used_names: set[str]) -> str:

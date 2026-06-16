@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.urls import path
 
-from src.apps.functional_test.views.manual import (
-    FunctionalTestContextResourceCRUD,
-    ManualTestAutomationViews,
-    ManualTestCaseCRUD,
-    ManualTestCaseViews,
-    ManualTestSuiteCRUD,
-)
+from src.apps.functional_test.views.automation_binding import ManualTestAutomationViews
+from src.apps.functional_test.views.case import ManualTestCaseCRUD, ManualTestCaseViews
+from src.apps.functional_test.views.context_resource import FunctionalTestContextResourceCRUD
+from src.apps.functional_test.views.suite import ManualTestSuiteCRUD
 
 urlpatterns = [
     path("suite", ManualTestSuiteCRUD.as_view()),

@@ -4,6 +4,7 @@
 # @Time   : 2023-01-19 19:21
 # @Author : 毛鹏
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from src.apps.auto_ui.views.ui_case import UiCaseCRUD, UiCaseViews
 from src.apps.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD, UiCaseStepsDetailedViews
@@ -16,11 +17,11 @@ from src.apps.auto_ui.views.ui_public import UiPublicCRUD, UiPublicViews
 urlpatterns = [
     #
     path("page", PageCRUD.as_view()),
-    path("page/name", PageViews.as_view({'get': 'page_name'})),
+    path("page/name", cache_page(5)(PageViews.as_view({'get': 'page_name'}))),
     path("page/copy", PageViews.as_view({'post': 'page_copy'})),
     #
     path("element", PageElementCRUD.as_view()),
-    path("element/name", PageElementViews.as_view({'get': 'get_element_name'})),
+    path("element/name", cache_page(5)(PageElementViews.as_view({'get': 'get_element_name'}))),
     path("element/iframe", PageElementViews.as_view({'put': 'put_is_iframe'})),
     path("element/test", PageElementViews.as_view({'post': 'test_element'})),
     path("element/upload", PageElementViews.as_view({'post': 'post_upload_element'})),
@@ -30,7 +31,7 @@ urlpatterns = [
     #
     path("page/steps", PageStepsCRUD.as_view()),
     path("page/steps/test", PageStepsViews.as_view({'get': 'ui_steps_run'})),
-    path("page/steps/name", PageStepsViews.as_view({'get': 'get_page_steps_name'})),
+    path("page/steps/name", cache_page(5)(PageStepsViews.as_view({'get': 'get_page_steps_name'}))),
     path("page/steps/copy", PageStepsViews.as_view({'post': 'copy_page_steps'})),
     #
     path("public", UiPublicCRUD.as_view()),

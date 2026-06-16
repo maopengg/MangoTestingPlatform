@@ -44,7 +44,7 @@ urlpatterns = [
     path('time/name', TimeTasksViews.as_view({'get': 'get_time_obj_name'})),
     #
     path('tasks', TasksCRUD.as_view()),
-    path('tasks/name', TasksViews.as_view({'get': 'get_id_name'})),
+    path('tasks/name', cache_page(5)(TasksViews.as_view({'get': 'get_id_name'}))),
     path('tasks/trigger/timing', TasksNoPermissionViews.as_view({'get': 'trigger_timing'})),
     path('tasks/fire-record', ScheduleFireCRUD.as_view()),
     path('tasks/system/jobs', SystemJobViews.as_view({'get': 'list'})),
@@ -58,8 +58,8 @@ urlpatterns = [
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
     path("assertion/list", SystemViews.as_view({'get': 'assertion_list'})),
     path("assertion/test", SystemViews.as_view({'post': 'assertion_test'})),
-    path("enum", SystemViews.as_view({'get': 'enum_api'})),
-    path("enum/share", SystemShareViews.as_view({'get': 'enum_api'})),
+    path("enum", cache_page(60 * 5)(SystemViews.as_view({'get': 'enum_api'}))),
+    path("enum/share", cache_page(60 * 5)(SystemShareViews.as_view({'get': 'enum_api'}))),
     path("set/debug/log", SystemViews.as_view({'post': 'set_debug_log'})),
     path("ai/test", AiViews.as_view({'post': 'test'})),
     #
@@ -95,15 +95,15 @@ urlpatterns = [
     path('test/object/status', TestObjectViews.as_view({'put': 'put_status'})),
     #
     path("project", ProjectCRUD.as_view()),
-    path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
-    path("project/product/name", ProjectViews.as_view({'get': 'project_product_name'})),
-    path("project/environment/name", ProjectViews.as_view({'get': 'project_environment_name'})),
+    path("project/all", cache_page(10)(ProjectViews.as_view({'get': 'get_all_items'}))),
+    path("project/product/name", cache_page(5)(ProjectViews.as_view({'get': 'project_product_name'}))),
+    path("project/environment/name", cache_page(5)(ProjectViews.as_view({'get': 'project_environment_name'}))),
     path("project/pytest/name", ProjectViews.as_view({'get': 'project_pytest_name'})),
     #
     path("product", ProjectProductCRUD.as_view()),
-    path("product/name", ProjectProductViews.as_view({'get': 'get_product_name'})),
-    path("product/all/module/name", ProjectProductViews.as_view({'get': 'product_all_module_name'})),
+    path("product/name", cache_page(5)(ProjectProductViews.as_view({'get': 'get_product_name'}))),
+    path("product/all/module/name", cache_page(5)(ProjectProductViews.as_view({'get': 'product_all_module_name'}))),
     #
     path("module", ProductModuleCRUD.as_view()),
-    path("module/name", ProductModuleViews.as_view({'get': 'get_module_name'})),
+    path("module/name", cache_page(5)(ProductModuleViews.as_view({'get': 'get_module_name'}))),
 ]

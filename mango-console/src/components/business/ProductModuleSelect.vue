@@ -14,6 +14,18 @@
   />
 </template>
 
+<script lang="ts">
+  type SharedModuleOption = {
+    key: string | number
+    title: string
+    superior_module_1?: string | null
+    superior_module_2?: string | null
+  }
+
+  const moduleOptionsCache = new Map<string, SharedModuleOption[]>()
+  const pendingModuleRequests = new Map<string, Promise<SharedModuleOption[]>>()
+</script>
+
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue'
   import { fieldNames } from '@/setting'
@@ -66,6 +78,7 @@
   const emit = defineEmits(['update:modelValue', 'change', 'loaded'])
   const options = ref<ModuleOption[]>([])
   const loading = ref(false)
+  const loadVersion = ref(0)
   const cascaderOptions = computed(() => buildModuleTree(options.value))
 
   onMounted(() => {
@@ -90,6 +103,33 @@
       return value[value.length - 1] ?? null
     }
     return value ?? null
+  }
+
+  function getCacheKey(value: any) {
+    const leafValue = getLeafValue(value)
+    return leafValue === undefined || leafValue === null || leafValue === '' ? '__all__' : String(leafValue)
+  }
+
+  function fetchModuleOptions(projectProductId: any) {
+    const key = getCacheKey(projectProductId)
+    if (moduleOptionsCache.has(key)) {
+      return Promise.resolve(moduleOptionsCache.get(key) || [])
+    }
+    const pending = pendingModuleRequests.get(key)
+    if (pending) {
+      return pending
+    }
+    const request = getUserModuleName(getLeafValue(projectProductId))
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : []
+        moduleOptionsCache.set(key, list)
+        return list
+      })
+      .finally(() => {
+        pendingModuleRequests.delete(key)
+      })
+    pendingModuleRequests.set(key, request)
+    return request
   }
 
   function normalizeName(value: string | null | undefined) {
@@ -149,15 +189,23 @@
   }
 
   function loadOptions() {
+    const version = loadVersion.value + 1
+    loadVersion.value = version
+    const cacheKey = getCacheKey(props.projectProductId)
     loading.value = true
-    return getUserModuleName(getLeafValue(props.projectProductId))
-      .then((res) => {
-        options.value = Array.isArray(res.data) ? res.data : []
+    return fetchModuleOptions(props.projectProductId)
+      .then((list) => {
+        if (loadVersion.value !== version || getCacheKey(props.projectProductId) !== cacheKey) {
+          return
+        }
+        options.value = list
         emit('loaded', cascaderOptions.value)
       })
       .catch(console.log)
       .finally(() => {
-        loading.value = false
+        if (loadVersion.value === version) {
+          loading.value = false
+        }
       })
   }
 

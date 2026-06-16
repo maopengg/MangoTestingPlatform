@@ -1499,6 +1499,8 @@ def register_api_automation_tools(mcp):
         通过 case_front_headers 或 scenarios[].headers 传入。
         如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
         请求体使用 api.body_type/api.body_config 和 scenarios[].body_type/body_config。
+        scenarios[] 可以直接传断言字段 ass_jsonpath、ass_general、ass_json_all、ass_text_all、ass_schema。
+        复杂断言格式请先调用 get_api_assertion_schema / get_api_assertion_methods；生成草稿后必须把断言字段保存到场景。
         文件上传使用 body_type=multipart 和 body_config.files[].file_id；不能直接传本地路径、URL、裸文件名或二进制内容。
         详细格式见 get_api_case_schema.file_upload_usage。
         scenarios[].front_sql/scenarios[].posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。

@@ -4,6 +4,7 @@
 # @Time   : 2023-01-19 19:12
 # @Author : 毛鹏
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from src.apps.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from src.apps.auto_api.views.api_case_data_factory import ApiCaseDataFactoryCRUD, ApiCaseDataFactoryViews
@@ -18,7 +19,7 @@ from src.apps.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
 urlpatterns = [
     path("info", ApiInfoCRUD.as_view()),
     path("info/test", ApiInfoViews.as_view({'get': 'get_api_info_run'})),
-    path("info/name", ApiInfoViews.as_view({'get': 'get_api_name'})),
+    path("info/name", cache_page(5)(ApiInfoViews.as_view({'get': 'get_api_name'}))),
     path("info/type", ApiInfoViews.as_view({'put': 'put_api_info_type'})),
     path("info/copy", ApiInfoViews.as_view({'post': 'copy_api_info'})),
     path("info/import/api", ApiInfoViews.as_view({'post': 'import_api'})),
@@ -30,7 +31,7 @@ urlpatterns = [
     path("case/batch", ApiCaseViews.as_view({'post': 'api_test_case_batch'})),
     # path("case/synchronous", ApiCaseViews.as_view({'get': 'api_synchronous_interface'})),
     path("case/copy", ApiCaseViews.as_view({'post': 'copy_case'})),
-    path("case/name", ApiCaseViews.as_view({'get': 'case_name'})),
+    path("case/name", cache_page(5)(ApiCaseViews.as_view({'get': 'case_name'}))),
     path("case/data-factory", ApiCaseDataFactoryCRUD.as_view()),
     path("case/data-factory/sort", ApiCaseDataFactoryViews.as_view({'put': 'put_case_sort'})),
     path("case/data-factory/preview", ApiCaseDataFactoryViews.as_view({'post': 'preview'})),

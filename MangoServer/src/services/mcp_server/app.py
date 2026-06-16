@@ -179,6 +179,7 @@ def _mcp_tool_write_operation(tool_name: str) -> str | None:
 
     delete_prefixes = (
         "delete_",
+        "batch_delete_",
         "cleanup_",
         "clear_",
     )
@@ -530,6 +531,48 @@ def _platform_capabilities() -> dict:
                         "retry_test_report",
                     ],
                 },
+                {
+                    "name": "functional_test",
+                    "description": "功能测试需求、用例、上下文资料、自动化绑定、统计和模块导航",
+                    "tools": [
+                        "list_functional_test_suites",
+                        "get_functional_test_suite_detail",
+                        "create_functional_test_suite",
+                        "update_functional_test_suite",
+                        "delete_functional_test_suite",
+                        "list_functional_test_cases",
+                        "get_functional_test_case_detail",
+                        "create_functional_test_case",
+                        "update_functional_test_case",
+                        "delete_functional_test_case",
+                        "batch_delete_functional_test_cases",
+                        "list_functional_test_context_resources",
+                        "get_functional_test_context_resource_detail",
+                        "create_functional_test_context_resource",
+                        "update_functional_test_context_resource",
+                        "delete_functional_test_context_resource",
+                        "list_functional_test_automation_bindings",
+                        "bind_functional_test_automation_case",
+                        "list_functional_test_case_modules",
+                        "get_functional_test_suite_stats",
+                    ],
+                },
+                {
+                    "name": "ai_query",
+                    "description": "AI Skill、MCP 服务、工具快照、Agent 任务、阶段、工具调用和上下文历史只读查询",
+                    "tools": [
+                        "list_ai_skills",
+                        "get_ai_skill_detail",
+                        "list_ai_mcp_servers",
+                        "get_ai_mcp_server_detail",
+                        "list_ai_mcp_tools",
+                        "list_ai_agent_tasks",
+                        "get_ai_agent_task_detail",
+                        "list_ai_agent_task_steps",
+                        "list_ai_agent_tool_calls",
+                        "list_ai_agent_contexts",
+                    ],
+                },
             ]
         },
         "warnings": [],
@@ -544,7 +587,9 @@ def mcp_asgi_app():
 
     from src.services.mcp_server.tools.api_automation import register_api_automation_tools
     from src.services.mcp_server.tools.api_auth_config import register_api_auth_config_tools
+    from src.services.mcp_server.tools.ai_query import register_ai_query_tools
     from src.services.mcp_server.tools.data_factory import register_data_factory_tools
+    from src.services.mcp_server.tools.functional_test import register_functional_test_tools
     from src.services.mcp_server.tools.project_context import register_project_context_tools
     from src.services.mcp_server.tools.system_file import register_system_file_tools
     from src.services.mcp_server.tools.system_variable import register_system_variable_tools
@@ -700,6 +745,88 @@ def mcp_asgi_app():
 
         return _case_tree(int(case_id), include_result_data=True)
 
+    @mcp.resource("mango://functional-test/suite/{suite_id}")
+    def get_functional_test_suite_resource(suite_id: str) -> dict:
+        """读取功能测试需求资源。"""
+        from src.apps.functional_test.models import FunctionalTestContextResource, ManualTestCase, ManualTestSuite
+        from src.apps.ai.service.core import mask_sensitive
+        from src.apps.functional_test.views.case import ManualTestCaseListSerializer
+        from src.apps.functional_test.views.context_resource import FunctionalTestContextResourceSerializerC
+        from src.apps.functional_test.views.suite import ManualTestSuiteSerializerC
+
+        suite = ManualTestSuiteSerializerC.setup_eager_loading(ManualTestSuite.objects.all()).get(id=int(suite_id))
+        cases = ManualTestCaseListSerializer.setup_eager_loading(ManualTestCase.objects.filter(suite_id=suite.id))
+        resources = FunctionalTestContextResourceSerializerC.setup_eager_loading(
+            FunctionalTestContextResource.objects.filter(suite_id=suite.id)
+        )
+        data = ManualTestSuiteSerializerC(instance=suite).data
+        data["cases"] = ManualTestCaseListSerializer(instance=cases, many=True).data
+        data["context_resources"] = FunctionalTestContextResourceSerializerC(instance=resources, many=True).data
+        return mask_sensitive(data)
+
+    @mcp.resource("mango://functional-test/case/{case_id}")
+    def get_functional_test_case_resource(case_id: str) -> dict:
+        """读取功能测试用例资源。"""
+        from src.apps.ai.service.core import mask_sensitive
+        from src.apps.functional_test.models import ManualTestCase
+        from src.apps.functional_test.views.case import ManualTestCaseSerializerC
+
+        case = ManualTestCaseSerializerC.setup_eager_loading(ManualTestCase.objects.all()).get(id=int(case_id))
+        return mask_sensitive(ManualTestCaseSerializerC(instance=case).data)
+
+    @mcp.resource("mango://functional-test/context-resource/{resource_id}")
+    def get_functional_test_context_resource(resource_id: str) -> dict:
+        """读取功能测试上下文资料资源。"""
+        from src.apps.ai.service.core import mask_sensitive
+        from src.apps.functional_test.models import FunctionalTestContextResource
+        from src.apps.functional_test.views.context_resource import FunctionalTestContextResourceSerializerC
+
+        resource = FunctionalTestContextResourceSerializerC.setup_eager_loading(
+            FunctionalTestContextResource.objects.all()
+        ).get(id=int(resource_id))
+        return mask_sensitive(FunctionalTestContextResourceSerializerC(instance=resource).data)
+
+    @mcp.resource("mango://ai/task/{task_id}")
+    def get_ai_task_resource(task_id: str) -> dict:
+        """读取 AI Agent 任务、阶段和工具调用资源。"""
+        from src.apps.ai.models import AiAgentTask, AiAgentTaskStep, AiAgentToolCall
+        from src.apps.ai.service.core import mask_sensitive
+        from src.apps.ai.views.agent_task import AiAgentTaskSerializer
+        from src.apps.ai.views.agent_task_step import AiAgentTaskStepSerializer
+        from src.apps.ai.views.agent_tool_call import AiAgentToolCallSerializer
+
+        task = AiAgentTaskSerializer.setup_eager_loading(AiAgentTask.objects.all()).get(id=int(task_id))
+        steps = AiAgentTaskStepSerializer.setup_eager_loading(AiAgentTaskStep.objects.filter(task_id=task.id))
+        tool_calls = AiAgentToolCallSerializer.setup_eager_loading(AiAgentToolCall.objects.filter(task_id=task.id))
+        data = AiAgentTaskSerializer(instance=task).data
+        data["input_data"] = mask_sensitive(data.get("input_data") or {})
+        data["output_data"] = mask_sensitive(data.get("output_data") or {})
+        data["steps"] = AiAgentTaskStepSerializer(instance=steps, many=True).data
+        data["tool_calls"] = [
+            {
+                **item,
+                "arguments": mask_sensitive(item.get("arguments") or {}),
+                "result": mask_sensitive(item.get("result") or {}),
+            }
+            for item in AiAgentToolCallSerializer(instance=tool_calls, many=True).data
+        ]
+        return data
+
+    @mcp.resource("mango://ai/context/{context_id}")
+    def get_ai_context_resource(context_id: str) -> dict:
+        """读取 AI Agent 上下文历史资源。"""
+        from src.apps.ai.models import AiAgentContext
+        from src.apps.ai.service.core import mask_sensitive
+        from src.apps.ai.views.agent_context import AiAgentContextSerializer
+
+        context = AiAgentContextSerializer.setup_eager_loading(AiAgentContext.objects.all()).get(id=int(context_id))
+        data = AiAgentContextSerializer(instance=context).data
+        data["source_snapshot"] = mask_sensitive(data.get("source_snapshot") or {})
+        data["result_snapshot"] = mask_sensitive(data.get("result_snapshot") or {})
+        data["skill_snapshot"] = mask_sensitive(data.get("skill_snapshot") or {})
+        data["mcp_snapshot"] = mask_sensitive(data.get("mcp_snapshot") or {})
+        return data
+
     @mcp.resource("mango://pytest-product/{product_id}")
     def get_pytest_product_resource(product_id: str) -> dict:
         """读取 Pytest 项目绑定资源。"""
@@ -768,6 +895,8 @@ def mcp_asgi_app():
     register_system_variable_tools(mcp)
     register_system_file_tools(mcp)
     register_test_report_tools(mcp)
+    register_functional_test_tools(mcp)
+    register_ai_query_tools(mcp)
     return mcp.streamable_http_app()
 
 

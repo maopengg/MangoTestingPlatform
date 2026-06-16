@@ -168,11 +168,11 @@
                       <template v-if="item.key === 'title'" #cell="{ record }">
                         <a-link @click="openCase(record)">{{ record.title }}</a-link>
                       </template>
-                      <template v-else-if="item.key === 'project_product_name'" #cell="{ record }">
-                        {{ record.project_product_name || record.project_product?.name || '-' }}
+                      <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                        {{ formatProjectProductPath(record.project_product) }}
                       </template>
-                      <template v-else-if="item.key === 'module_name'" #cell="{ record }">
-                        {{ record.module_name || record.module?.name || '-' }}
+                      <template v-else-if="item.key === 'module'" #cell="{ record }">
+                        {{ formatModulePath(record.module) }}
                       </template>
                       <template v-else-if="item.key === 'priority'" #cell="{ record }">
                         <a-tag :color="enumColor(record.priority)" size="small">{{ enumTitle(enumStore.case_level, record.priority) }}</a-tag>
@@ -889,6 +889,7 @@
   } from '@/api/functional-test'
   import { postUserFile } from '@/api/system/file_data'
   import { getUserName } from '@/api/user/user'
+  import { formatModulePath, formatProjectProductPath } from '@/utils/business-format'
 
   const route = useRoute()
   const router = useRouter()
@@ -1195,8 +1196,8 @@
 
   const caseColumns = [
     { title: '用例编号', key: 'case_no', dataIndex: 'case_no', width: 120, ellipsis: true, tooltip: true },
-    { title: '项目产品', key: 'project_product_name', dataIndex: 'project_product_name', width: 140, ellipsis: true, tooltip: true },
-    { title: '模块', key: 'module_name', dataIndex: 'module_name', width: 140, ellipsis: true, tooltip: true },
+    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 160, ellipsis: true, tooltip: true },
+    { title: '模块名称', key: 'module', dataIndex: 'module', width: 220, ellipsis: true, tooltip: true },
     { title: '标题', key: 'title', dataIndex: 'title', width: 240, ellipsis: true, tooltip: true },
     { title: '前置条件', key: 'precondition', dataIndex: 'precondition', width: 220, ellipsis: true, tooltip: true },
     { title: '测试点', key: 'test_point', dataIndex: 'test_point', width: 260, ellipsis: true, tooltip: true },
@@ -2364,8 +2365,8 @@
       record
         ? {
             ...record,
-            project_product: record.project_product?.id || record.project_product || record.project_product_id,
-            module: record.module?.id || record.module || record.module_id,
+            project_product: record.project_product?.id || record.project_product,
+            module: record.module?.id || record.module,
             owner: record.owner?.id || record.owner,
           }
         : {

@@ -116,18 +116,29 @@
         </a-button>
       </div>
     </template>
+    <div class="mango-ai-mcp-tool-filter">
+      <a-radio-group v-model="toolCategory" type="button" size="small">
+        <a-radio value="all">全部 {{ tools.length }}</a-radio>
+        <a-radio v-for="item in toolCategories" :key="item.key" :value="item.key">
+          {{ item.title }} {{ item.count }}
+        </a-radio>
+      </a-radio-group>
+    </div>
     <a-table
       :bordered="false"
       :columns="toolColumns"
-      :data="tools"
+      :data="filteredTools"
       :loading="toolLoading"
       :pagination="false"
       :row-key="'id'"
-      :scroll="{ x: 760 }"
+      :scroll="{ x: 920 }"
     >
       <template #columns>
         <a-table-column v-for="item of toolColumns" :key="item.key" v-bind="item">
-          <template v-if="item.key === 'risk_level'" #cell="{ record }">
+          <template v-if="item.key === 'category_title'" #cell="{ record }">
+            <a-tag size="small">{{ record.category_title || '其他' }}</a-tag>
+          </template>
+          <template v-else-if="item.key === 'risk_level'" #cell="{ record }">
             <a-tag :color="enumColor(record.risk_level)" size="small">
               {{ enumTitle(enumStore.ai_mcp_tool_risk_level, record.risk_level) }}
             </a-tag>
@@ -150,7 +161,7 @@
 
 <script setup lang="ts">
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, reactive, ref } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { usePagination } from '@/hooks/table'
   import {
@@ -178,6 +189,7 @@
   const toolLoading = ref(false)
   const visible = ref(false)
   const toolVisible = ref(false)
+  const toolCategory = ref('all')
   const refreshLoading = ref(false)
   const actionLoading = ref('')
   const form = reactive<any>({})
@@ -193,11 +205,26 @@
     { title: '操作', key: 'actions', dataIndex: 'actions', align: 'center', fixed: 'right', width: 170 },
   ]
   const toolColumns = [
+    { title: '分类', key: 'category_title', dataIndex: 'category_title', width: 130 },
     { title: '工具', key: 'name', dataIndex: 'name', ellipsis: true, tooltip: true },
     { title: '风险', key: 'risk_level', dataIndex: 'risk_level', width: 120 },
     { title: '启用', key: 'enabled', dataIndex: 'enabled', width: 90 },
     { title: '确认', key: 'require_confirm', dataIndex: 'require_confirm', width: 90 },
   ]
+  const toolCategories = computed(() => {
+    const categoryMap = new Map<string, { key: string; title: string; count: number }>()
+    tools.value.forEach((tool) => {
+      const key = tool.category || 'other'
+      const current = categoryMap.get(key) || { key, title: tool.category_title || '其他', count: 0 }
+      current.count += 1
+      categoryMap.set(key, current)
+    })
+    return Array.from(categoryMap.values()).sort((a, b) => b.count - a.count)
+  })
+  const filteredTools = computed(() => {
+    if (toolCategory.value === 'all') return tools.value
+    return tools.value.filter((tool) => (tool.category || 'other') === toolCategory.value)
+  })
   function enumTitle(options: any[] = [], value: any) {
     return options.find((item) => item.key === value)?.title || value || '-'
   }
@@ -219,6 +246,7 @@
   }
   async function loadTools(record: any) {
     selectedServer.value = record
+    toolCategory.value = 'all'
     toolLoading.value = true
     try {
       tools.value = (await getAiMcpTool({ server: record.id })).data || []
@@ -235,7 +263,17 @@
     Object.assign(
       form,
       record
-        ? { ...record, auth_config: { ...(record.auth_config || {}) } }
+        ? {
+            id: record.id,
+            name: record.name,
+            server_url: record.server_url,
+            transport_type: record.transport_type,
+            auth_type: record.auth_type,
+            auth_config: { ...(record.auth_config || {}) },
+            description: record.description,
+            prompt: record.prompt,
+            status: record.status,
+          }
         : { transport_type: MCP_TRANSPORT_STREAMABLE_HTTP, auth_type: MCP_AUTH_NONE, status: 1, auth_config: {} }
     )
     ensureAuthConfig()
@@ -322,5 +360,9 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+  }
+
+  .mango-ai-mcp-tool-filter {
+    margin-bottom: 12px;
   }
 </style>

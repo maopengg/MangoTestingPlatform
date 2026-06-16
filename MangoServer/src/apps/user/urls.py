@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 from django.urls import path
+from django.views.decorators.cache import cache_page
 
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
@@ -15,12 +16,12 @@ from .views.user_logs import UserLogsCRUD
 urlpatterns = [
     #
     path("role", RoleCRUD.as_view()),
-    path("role/all", RoleViews.as_view({'get': 'get_all_role'})),
+    path("role/all", cache_page(10)(RoleViews.as_view({'get': 'get_all_role'}))),
     #
     path("user/logs", UserLogsCRUD.as_view()),
     #
     path("info", UserCRUD.as_view()),
-    path("info/name", UserViews.as_view({'get': 'get_name'})),
+    path("info/name", cache_page(10)(UserViews.as_view({'get': 'get_name'}))),
     path("info/project", UserViews.as_view({'put': 'put_project'})),
     path("info/environment", UserViews.as_view({'put': 'put_environment'})),
     path("info/password", UserViews.as_view({'put': 'put_password'})),

@@ -28,8 +28,8 @@
                 :default-checked="record.status === 1"
               />
             </template>
-            <template v-else-if="item.key === 'user_name'" #cell="{ record }">
-              {{ record.user_name || userName(record.user) }}
+            <template v-else-if="item.key === 'user'" #cell="{ record }">
+              {{ record.user?.name || userName(record.user) }}
             </template>
             <template v-else-if="item.key === 'is_builtin'" #cell="{ record }">
               <a-switch
@@ -155,7 +155,7 @@
     { title: '名称', key: 'name', dataIndex: 'name', ellipsis: true, tooltip: true },
     { title: '用途', key: 'skill_type', dataIndex: 'skill_type', width: 120 },
     { title: '描述', key: 'description', dataIndex: 'description', ellipsis: true, tooltip: true },
-    { title: '负责人', key: 'user_name', dataIndex: 'user_name', width: 120 },
+    { title: '负责人', key: 'user', dataIndex: 'user', width: 120 },
     { title: '是否内置', key: 'is_builtin', dataIndex: 'is_builtin', width: 110 },
     { title: '状态', key: 'status', dataIndex: 'status', width: 110 },
     { title: '操作', key: 'actions', dataIndex: 'actions', align: 'center', fixed: 'right', width: 170 },
@@ -184,7 +184,7 @@
     Object.assign(form, record ? {
       id: record.id,
       name: record.name,
-      user: record.user,
+      user: record.user?.id || record.user,
       is_builtin: !!record.is_builtin,
       skill_type: record.skill_type ?? 0,
       description: record.description,
@@ -204,7 +204,7 @@
       await putAiSkill({
         id: fileRecord.value.id,
         name: fileRecord.value.name,
-        user: fileRecord.value.user,
+        user: fileRecord.value.user?.id || fileRecord.value.user,
         description: fileRecord.value.description,
         status: fileRecord.value.status,
         is_builtin: !!fileRecord.value.is_builtin,
