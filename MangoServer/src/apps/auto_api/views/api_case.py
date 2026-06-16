@@ -213,6 +213,9 @@ class ApiCaseViews(ViewSet):
                     parameter = model_to_dict(p)
                     source_parameter_id = parameter['id']
                     del parameter['id']
+                    parameter.pop('data', None)
+                    parameter.pop('json', None)
+                    parameter.pop('file', None)
                     parameter['case_detailed'] = res_case_de.get('id')
                     res_parameter = ApiCaseDetailedParameterCRUD.inside_post(parameter)
                     for factory_config in DataFactoryCaseConfig.objects.filter(

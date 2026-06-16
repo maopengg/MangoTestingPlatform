@@ -26,6 +26,7 @@
       const showModal = ref(false)
       const confirmLoading = ref(false)
       const continuousLoading = ref(false)
+      const isComposing = ref(false)
 
       function toggle() {
         showModal.value = !showModal.value
@@ -89,6 +90,10 @@
       }
 
       function handleEnterKey(event: KeyboardEvent) {
+        if (isComposing.value || event.isComposing || event.keyCode === 229) {
+          return
+        }
+
         // 检查是否在特定元素中按回车
         const target = event.target as HTMLElement
         const tagName = target.tagName.toUpperCase()
@@ -117,6 +122,14 @@
         onConfirm()
       }
 
+      function handleCompositionStart() {
+        isComposing.value = true
+      }
+
+      function handleCompositionEnd() {
+        isComposing.value = false
+      }
+
       return {
         showModal,
         confirmLoading,
@@ -132,6 +145,8 @@
         resetLoading,
         handleEnterKey,
         handleKeyDown,
+        handleCompositionStart,
+        handleCompositionEnd,
       }
     },
   })
@@ -143,6 +158,8 @@
     :width="width"
     class="mango-modal-dialog-wrapper"
     @keydown="handleKeyDown"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <Scrollbar wrap-class="mango-modal-dialog__wrap">
       <slot name="content"></slot>

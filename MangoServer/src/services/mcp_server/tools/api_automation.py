@@ -32,6 +32,7 @@ from src.common.enums.tools_enum import (
     StatusEnum,
     TestCaseTypeEnum,
 )
+from src.common.exceptions import ToolsError
 from src.services.mcp_server.common import (
     create_dangerous_action_preview,
     current_user,
@@ -189,6 +190,40 @@ def _validate_api_info_url_path(url: str | None) -> str | None:
     if parsed.query or parsed.fragment:
         return "ApiInfo.url 只保存路径，不保存 query 或 fragment；query 参数请放到 params 字段。"
     return None
+
+
+def _find_duplicate_api_info(
+    project_product_id: int,
+    module_id: int,
+    api_type: int,
+    url: str,
+    method: int,
+    protocol_type: str,
+    exclude_id: int | None = None,
+) -> ApiInfo | None:
+    queryset = ApiInfo.objects.filter(
+        project_product_id=project_product_id,
+        module_id=module_id,
+        type=api_type,
+        url=url,
+        method=method,
+        protocol_type=protocol_type,
+    )
+    if exclude_id:
+        queryset = queryset.exclude(id=exclude_id)
+    return queryset.only("id", "name", "url").first()
+
+
+def _duplicate_api_info_response(duplicate: ApiInfo) -> dict:
+    return fail(
+        f"接口定义已存在相同的项目产品、模块、端类型、请求方法、协议类型和URL，重复接口ID：{duplicate.id}",
+        "API_INFO_DUPLICATE",
+        {"api_info_id": duplicate.id, "name": duplicate.name, "url": duplicate.url},
+    )
+
+
+def _api_info_save_failed_response(error: ToolsError) -> dict:
+    return fail(error.msg, "API_INFO_SAVE_FAILED", {"code": error.code})
 
 
 def _normalize_scenario_payload(payload: dict) -> dict:
@@ -849,22 +884,27 @@ def register_api_automation_tools(mcp):
         if url_error:
             return fail(url_error, "INVALID_API_INFO_URL", {"url": url})
         normalized_body_config = normalize_body_config_by_type(body_type, body_config)
-        data_obj = ApiInfoCRUD.inside_post(
-            {
-                "project_product": project_product_id,
-                "module": module_id,
-                "name": name,
-                "url": url,
-                "method": method,
-                "headers": None,
-                "params": _json_string(params),
-                "protocol_type": protocol_type,
-                "body_type": body_type,
-                "body_config": normalized_body_config,
-                "sse_config": sse_config,
-                "type": type,
-            }
-        )
+        payload = {
+            "project_product": project_product_id,
+            "module": module_id,
+            "name": name,
+            "url": url,
+            "method": method,
+            "headers": None,
+            "params": _json_string(params),
+            "protocol_type": protocol_type,
+            "body_type": body_type,
+            "body_config": normalized_body_config,
+            "sse_config": sse_config,
+            "type": type,
+        }
+        duplicate = _find_duplicate_api_info(project_product_id, module_id, type, url, method, protocol_type)
+        if duplicate:
+            return _duplicate_api_info_response(duplicate)
+        try:
+            data_obj = ApiInfoCRUD.inside_post(payload)
+        except ToolsError as error:
+            return _api_info_save_failed_response(error)
         return ok({"api_info_id": data_obj["id"], **data_obj}, "接口定义创建成功")
 
     @mcp.tool()
@@ -901,7 +941,13 @@ def register_api_automation_tools(mcp):
             data=parsed.data if parsed.json is None else None,
             json_body=parsed.json if parsed.json else None,
         ))
-        data_obj = ApiInfoCRUD.inside_post(payload)
+        duplicate = _find_duplicate_api_info(project_product_id, module_id, type, path, payload["method"], "http")
+        if duplicate:
+            return _duplicate_api_info_response(duplicate)
+        try:
+            data_obj = ApiInfoCRUD.inside_post(payload)
+        except ToolsError as error:
+            return _api_info_save_failed_response(error)
         return ok({"api_info_id": data_obj["id"], **data_obj}, "接口定义创建成功")
 
     @mcp.tool()
@@ -943,7 +989,22 @@ def register_api_automation_tools(mcp):
             effective_body_type = payload.get("body_type", current.body_type)
             effective_body_config = payload.get("body_config", current.body_config)
             payload["body_config"] = normalize_body_config_by_type(effective_body_type, effective_body_config)
-        data_obj = ApiInfoCRUD.inside_put(api_info_id, payload)
+        current = ApiInfo.objects.get(id=api_info_id)
+        duplicate = _find_duplicate_api_info(
+            current.project_product_id,
+            payload.get("module", current.module_id),
+            current.type,
+            payload.get("url", current.url),
+            payload.get("method", current.method),
+            payload.get("protocol_type", current.protocol_type),
+            exclude_id=api_info_id,
+        )
+        if duplicate:
+            return _duplicate_api_info_response(duplicate)
+        try:
+            data_obj = ApiInfoCRUD.inside_put(api_info_id, payload)
+        except ToolsError as error:
+            return _api_info_save_failed_response(error)
         return ok({"api_info_id": data_obj["id"], **data_obj}, "接口定义更新成功")
 
     @mcp.tool()
@@ -1300,6 +1361,9 @@ def register_api_automation_tools(mcp):
         source = ApiCaseDetailedParameter.objects.get(id=scenario_id)
         parameter = model_to_dict(source)
         del parameter["id"]
+        parameter.pop("data", None)
+        parameter.pop("json", None)
+        parameter.pop("file", None)
         parameter["name"] = name or f"(副本){source.name}"
         parameter["error_retry"] = error_retry
         parameter["retry_interval"] = retry_interval
@@ -1485,6 +1549,7 @@ def register_api_automation_tools(mcp):
                     "method": api["method"],
                     "headers": None,
                     "params": _json_string(api.get("params")),
+                    "protocol_type": api.get("protocol_type", "http"),
                     "type": api.get("type", 1),
                 }
                 api_payload.update(_normalize_body_payload(
@@ -1495,7 +1560,20 @@ def register_api_automation_tools(mcp):
                     json_body=api.get("json") or api.get("json_body"),
                     file=api.get("file"),
                 ))
-                api_info = ApiInfoCRUD.inside_post(api_payload)
+                duplicate = _find_duplicate_api_info(
+                    project_product_id,
+                    module_id,
+                    api_payload["type"],
+                    api_payload["url"],
+                    api_payload["method"],
+                    api_payload["protocol_type"],
+                )
+                if duplicate:
+                    return _duplicate_api_info_response(duplicate)
+                try:
+                    api_info = ApiInfoCRUD.inside_post(api_payload)
+                except ToolsError as error:
+                    return _api_info_save_failed_response(error)
                 api_case = ApiCaseCRUD.inside_post(
                     {
                         "project_product": project_product_id,

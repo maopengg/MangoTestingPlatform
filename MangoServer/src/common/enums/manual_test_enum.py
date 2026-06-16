@@ -118,6 +118,8 @@ class FunctionalTestContextKeyEnum(BaseEnum):
     SQL_QUERY = 4
     RAW_CASE_DOC = 5
     PLATFORM_CASE = 6
+    PAGE_DATA = 7
+    TEST_UNDERSTANDING = 8
 
     @classmethod
     def obj(cls):
@@ -126,9 +128,11 @@ class FunctionalTestContextKeyEnum(BaseEnum):
             1: "开发设计",
             2: "接口文档",
             3: "开发代码",
-            4: "SQL查询语句",
+            4: "SQL语句",
             5: "原始Case文档",
             6: "测试平台用例",
+            7: "页面数据",
+            8: "测试理解",
         }
 
 

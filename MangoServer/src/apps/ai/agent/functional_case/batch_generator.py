@@ -53,13 +53,14 @@ class FunctionalCaseBatchGenerator:
             {
                 "role": "user",
                 "content": (
-                    "请根据下面的需求文档和原始用例文档，直接生成测试平台功能用例 JSON。"
-                    "优先保留原始用例文档中的每一条用例；用例编号统一按 FT-{四位序号} 生成，不要沿用原始编号，不要使用模块缩写。"
+                    "请根据下面的需求资料、测试描述和已选择上下文，直接生成测试平台功能用例 JSON。"
+                    "如果上下文中包含原始用例文档，优先保留其中每一条用例；也可以只根据需求文档、页面数据或测试理解直接设计用例。"
+                    "用例编号统一按 FT-{四位序号} 生成，不要沿用原始编号，不要使用模块缩写。"
                     "如果需求文档中包含“测试平台用例”上下文，表示用户要在已有平台用例基础上重新编辑：匹配到已有用例时必须保持已有 case_no 不变，只修改其他字段；只有新增场景才分配新的 FT 编号。"
                     "不要先输出分析过程，不要输出 Markdown，不要只返回示例，不要限制为 10 条。"
                     f"\n补充要求：{user_instruction}"
-                    f"\n需求文档：\n{requirement_context[:30000]}"
-                    f"\n原始用例文档：\n{source_content[:100000]}"
+                    f"\n需求相关上下文：\n{requirement_context[:30000]}"
+                    f"\n测试设计上下文：\n{source_content[:100000]}"
                     f"\n\n{CASE_SCHEMA_PROMPT}"
                 ),
             },
@@ -153,14 +154,15 @@ class FunctionalCaseBatchGenerator:
             {
                 "role": "user",
                 "content": (
-                    f"当前是第 {chunk_index}/{chunk_total} 个原始用例分片。"
-                    "请只把当前分片中的用例转换成测试平台功能用例 JSON，不要生成其他分片内容。"
-                    "优先保留当前分片中每一条原始用例；用例编号统一按 FT-{四位序号} 生成，不要沿用原始编号，不要使用模块缩写。"
+                    f"当前是第 {chunk_index}/{chunk_total} 个上下文资料分片。"
+                    "请只根据当前分片转换或设计测试平台功能用例 JSON，不要生成其他分片内容。"
+                    "如果当前分片包含明确用例，优先保留每一条；也可以根据需求描述、页面数据或测试理解补充应有用例。"
+                    "用例编号统一按 FT-{四位序号} 生成，不要沿用原始编号，不要使用模块缩写。"
                     "如果需求文档摘要中包含“测试平台用例”上下文，表示用户要在已有平台用例基础上重新编辑：匹配到已有用例时必须保持已有 case_no 不变，只修改其他字段；只有新增场景才分配新的 FT 编号。"
                     "不要输出分析过程，不要输出 Markdown，不要只返回示例。"
                     f"\n补充要求：{user_instruction}"
-                    f"\n需求文档摘要：\n{requirement_context[:8000]}"
-                    f"\n当前原始用例分片：\n{chunk}"
+                    f"\n需求相关上下文摘要：\n{requirement_context[:8000]}"
+                    f"\n当前上下文资料分片：\n{chunk}"
                     f"\n\n{CASE_SCHEMA_PROMPT}"
                 ),
             },
@@ -316,7 +318,7 @@ class FunctionalCaseBatchGenerator:
                     "不要生成其他分片内容，不要只返回示例，不要限制为 10 条。"
                     f"\n补充要求：{user_instruction}"
                     f"\n测试设计分析：{json.dumps(outline, ensure_ascii=False)[:24000]}"
-                    f"\n需求文档：\n{requirement_context[:8000]}"
+                    f"\n需求相关上下文：\n{requirement_context[:8000]}"
                     f"\n当前分片资料：\n{chunk}"
                     f"\n\n{CASE_SCHEMA_PROMPT}"
                 ),

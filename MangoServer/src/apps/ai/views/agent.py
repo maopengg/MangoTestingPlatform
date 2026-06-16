@@ -53,19 +53,21 @@ class FunctionalCaseAgentViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def retry(self, request: Request):
+        input_patch = {
+            key: value
+            for key, value in {
+                "selected_context_keys": request.data.get("context_keys"),
+                "ai_role": request.data.get("ai_role"),
+                "deep_check": request.data.get("deep_check"),
+                "user_instruction": request.data.get("user_instruction"),
+            }.items()
+            if value is not None
+        }
+        if "skill_id" in request.data:
+            input_patch["skill_id"] = request.data.get("skill_id") or None
         task = FunctionalCaseAgent.retry(
             request.data.get("id"),
-            {
-                key: value
-                for key, value in {
-                    "selected_context_keys": request.data.get("context_keys"),
-                    "skill_id": request.data.get("skill_id"),
-                    "ai_role": request.data.get("ai_role"),
-                    "deep_check": request.data.get("deep_check"),
-                    "user_instruction": request.data.get("user_instruction"),
-                }.items()
-                if value is not None
-            },
+            input_patch,
         )
         return ResponseData.success(RESPONSE_MSG_0178, AiAgentTaskSerializer(instance=task).data)
 

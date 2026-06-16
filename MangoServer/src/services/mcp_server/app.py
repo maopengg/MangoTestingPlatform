@@ -450,6 +450,14 @@ def _platform_capabilities() -> dict:
                     ],
                 },
                 {
+                    "name": "scheduled_task",
+                    "description": "定时任务明细绑定，支持把 UI/API case 批量追加到定时任务，写入前必须先预览并确认",
+                    "tools": [
+                        "preview_bind_cases_to_scheduled_task_impact",
+                        "bind_cases_to_scheduled_task",
+                    ],
+                },
+                {
                     "name": "data_factory",
                     "description": "数据工厂实体、字段、模板、执行、清理和用例绑定",
                     "tools": [
@@ -543,6 +551,7 @@ def mcp_asgi_app():
     from src.services.mcp_server.tools.test_report import register_test_report_tools
     from src.services.mcp_server.tools.ui_automation import register_ui_automation_tools
     from src.services.mcp_server.tools.pytest_automation import register_pytest_automation_tools
+    from src.services.mcp_server.tools.scheduled_task import register_scheduled_task_tools
 
     try:
         mcp = FastMCP(
@@ -754,6 +763,7 @@ def mcp_asgi_app():
     register_ui_automation_tools(mcp)
     register_pytest_automation_tools(mcp)
     register_api_auth_config_tools(mcp)
+    register_scheduled_task_tools(mcp)
     register_data_factory_tools(mcp)
     register_system_variable_tools(mcp)
     register_system_file_tools(mcp)

@@ -19,6 +19,13 @@
                   @clear="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
                   v-model="item.value"
@@ -167,7 +174,7 @@
   import { ModalDialogType } from '@/types/components'
   import { useProject } from '@/store/modules/get-project'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import { formatProjectProductPath } from '@/utils/business-format'
+  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
 
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
@@ -188,6 +195,10 @@
   })
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    value['project_product'] = getOptionId(value['project_product'])
+    if (value['project_product'] === null || value['project_product'] === '') {
+      delete value['project_product']
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     value['type'] = 0

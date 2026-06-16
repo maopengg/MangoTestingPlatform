@@ -35,6 +35,8 @@ class ApiAutomationWorkflowPlanner:
             "manual_case": {
                 "id": manual_case.id,
                 "case_no": manual_case.case_no,
+                "project_product_id": manual_case.project_product_id,
+                "module_id": manual_case.module_id,
                 "title": manual_case.title,
                 "test_point": manual_case.test_point,
                 "test_data": manual_case.test_data,

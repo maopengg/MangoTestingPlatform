@@ -58,7 +58,7 @@ class ApiAutomationAgent(BaseAgent):
             )
         if not manual_case_id:
             raise ValueError("请选择要生成API自动化的功能用例")
-        manual_case = ManualTestCase.objects.select_related("suite").get(id=manual_case_id)
+        manual_case = ManualTestCase.objects.select_related("suite", "project_product", "module").get(id=manual_case_id)
         if ManualTestTypeEnum.API.value not in (manual_case.test_types or []):
             raise ValueError("当前用例未开启API自动化测试类型")
         if not skill_id:
@@ -205,7 +205,7 @@ class ApiAutomationAgent(BaseAgent):
         input_data = task.input_data or {}
         if input_data.get("mode") == "batch":
             return cls.run_batch(task)
-        manual_case = ManualTestCase.objects.select_related("suite").get(id=input_data.get("manual_case_id"))
+        manual_case = ManualTestCase.objects.select_related("suite", "project_product", "module").get(id=input_data.get("manual_case_id"))
         suite = manual_case.suite
         context_package = AgentContextService.build_api_context_package(
             suite,
@@ -308,7 +308,7 @@ class ApiAutomationAgent(BaseAgent):
         suite = ManualTestSuite.objects.get(id=suite_id)
         manual_case_ids = input_data.get("manual_case_ids") or []
         execute_case_ids = input_data.get("retry_pending_case_ids") or manual_case_ids
-        manual_cases = list(ManualTestCase.objects.select_related("suite").filter(id__in=manual_case_ids, suite_id=suite.id))
+        manual_cases = list(ManualTestCase.objects.select_related("suite", "project_product", "module").filter(id__in=manual_case_ids, suite_id=suite.id))
         case_map = {case.id: case for case in manual_cases}
         ordered_cases = [case_map[case_id] for case_id in manual_case_ids if case_id in case_map]
         execute_cases = [case_map[case_id] for case_id in execute_case_ids if case_id in case_map]
@@ -657,7 +657,7 @@ class ApiAutomationAgent(BaseAgent):
     @classmethod
     def resolve_batch_cases(cls, suite_id: int | None = None, manual_case_ids: list | None = None, scope: str | None = None):
         normalized_ids = cls.normalize_manual_case_ids(manual_case_ids)
-        queryset = ManualTestCase.objects.select_related("suite")
+        queryset = ManualTestCase.objects.select_related("suite", "project_product", "module")
         if normalized_ids:
             cases = list(queryset.filter(id__in=normalized_ids))
             case_map = {case.id: case for case in cases}

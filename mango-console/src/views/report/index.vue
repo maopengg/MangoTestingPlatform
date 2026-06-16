@@ -13,6 +13,13 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <ProjectProductSelect
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
@@ -135,7 +142,8 @@
   import Title from '@/views/index/components/Title.vue'
   import StatusChart from '@/components/chart/StatusChart.vue'
   import BarChart from '@/components/chart/barChart.vue'
-  import { formatProjectProductPath } from '@/utils/business-format'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
 
   const enumStore = useEnum()
 
@@ -163,6 +171,10 @@
   function doRefresh() {
     clearPollingTimer()
     let value = getFormItems(conditionItems)
+    value['project_product'] = getOptionId(value['project_product'])
+    if (value['project_product'] === null || value['project_product'] === '') {
+      delete value['project_product']
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemTestSuite(value)

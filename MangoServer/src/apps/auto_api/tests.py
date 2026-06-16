@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase, TestCase
 
 from src.apps.auto_api.schemas.case_schema import ApiParametrizeSuite
+from src.apps.auto_api.models import ApiInfo
 from src.apps.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
 from src.apps.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.apps.auto_api.service.base.api_base_test_setup.request_body import prepare_request_body
@@ -12,6 +13,7 @@ from src.apps.auto_api.service.base.case_base import CaseBase
 from src.apps.auto_api.service.base.case_parameter import CaseParameter
 from src.apps.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterSerializers
 from src.apps.auto_api.views.api_info import ApiInfoSerializers
+from src.apps.system.models import ProductModule, Project, ProjectProduct
 from src.common.exceptions import ApiError
 from src.common.models.api_model import RequestModel, ResponseModel
 
@@ -22,6 +24,65 @@ class MyTestCase(TestCase):
         url = "/api/case/api/info/run"
         response = self.client.get(url)
         print(response.json())
+
+
+class ApiInfoDuplicateValidationTests(TestCase):
+
+    def setUp(self):
+        project = Project.objects.create(name='重复校验项目')
+        self.product = ProjectProduct.objects.create(project=project, name='主服务')
+        self.module = ProductModule.objects.create(project_product=self.product, name='模块A')
+
+    def make_payload(self, name='接口A'):
+        return {
+            'project_product': self.product.id,
+            'module': self.module.id,
+            'type': 1,
+            'name': name,
+            'url': '/ai/unbox-chat/message',
+            'method': 1,
+            'headers': None,
+            'params': None,
+            'protocol_type': 'http',
+            'body_type': 'none',
+            'body_config': None,
+            'sse_config': None,
+        }
+
+    def test_api_info_rejects_duplicate_route_identity(self):
+        ApiInfo.objects.create(
+            project_product=self.product,
+            module=self.module,
+            type=1,
+            name='已有接口',
+            url='/ai/unbox-chat/message',
+            method=1,
+            headers=None,
+            protocol_type='http',
+            body_type='none',
+        )
+
+        serializer = ApiInfoSerializers(data=self.make_payload('重复接口'))
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('url', serializer.errors)
+
+    def test_api_info_allows_updating_self(self):
+        api_info = ApiInfo.objects.create(
+            project_product=self.product,
+            module=self.module,
+            type=1,
+            name='已有接口',
+            url='/ai/unbox-chat/message',
+            method=1,
+            headers=None,
+            protocol_type='http',
+            body_type='none',
+        )
+
+        serializer = ApiInfoSerializers(instance=api_info, data={'name': '改名'}, partial=True)
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
 
 
 class CaseBaseParametrizeTests(SimpleTestCase):
@@ -205,12 +266,30 @@ class RequestBodyRawTests(SimpleTestCase):
 
         self.assertEqual(headers, {'content-type': 'application/xml'})
 
+    def test_multipart_content_type_header_is_removed(self):
+        headers = BaseRequest._headers_with_content_type(
+            {'Accept': 'application/json', 'Content-Type': 'multipart/form-data'},
+            'multipart/form-data',
+        )
+
+        self.assertEqual(headers, {'Accept': 'application/json'})
+
     def test_api_info_serializer_defaults_raw_content_type(self):
         serializer = ApiInfoSerializers()
 
         attrs = serializer.validate({'body_type': 'raw', 'body_config': {'body_text': 'hello'}})
 
         self.assertEqual(attrs['body_config']['content_type'], 'application/json')
+
+    def test_api_info_serializer_drops_legacy_body_fields(self):
+        serializer = ApiInfoSerializers()
+
+        attrs = serializer.validate({'data': '{"a": 1}', 'json': '{"b": 2}', 'file': [], 'is_text_data': 1})
+
+        self.assertNotIn('data', attrs)
+        self.assertNotIn('json', attrs)
+        self.assertNotIn('file', attrs)
+        self.assertNotIn('is_text_data', attrs)
 
 
 class ApiPosteriorRegexTests(SimpleTestCase):
@@ -239,3 +318,12 @@ class ApiPosteriorRegexTests(SimpleTestCase):
         attrs = serializer.validate({'body_type': 'raw', 'body_config': {'body_text': 'hello'}})
 
         self.assertEqual(attrs['body_config']['content_type'], 'application/json')
+
+    def test_api_case_parameter_serializer_drops_legacy_body_fields(self):
+        serializer = ApiCaseDetailedParameterSerializers()
+
+        attrs = serializer.validate({'data': '{"a": 1}', 'json': '{"b": 2}', 'file': []})
+
+        self.assertNotIn('data', attrs)
+        self.assertNotIn('json', attrs)
+        self.assertNotIn('file', attrs)

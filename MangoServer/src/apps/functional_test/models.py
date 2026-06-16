@@ -54,6 +54,8 @@ class ManualTestCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     suite = models.ForeignKey(to=ManualTestSuite, to_field="id", on_delete=models.CASCADE)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     case_no = models.CharField(verbose_name="用例编号", max_length=128)
     title = models.CharField(verbose_name="用例标题", max_length=256)
     priority = models.SmallIntegerField(verbose_name="优先级", choices=CaseLevelEnum.choices(), default=CaseLevelEnum.P1.value)

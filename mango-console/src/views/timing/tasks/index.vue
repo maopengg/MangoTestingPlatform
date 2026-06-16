@@ -20,7 +20,14 @@
                 />
               </template>
               <template v-else-if="item.type === 'cascader'">
+                <ProjectProductSelect
+                  v-if="item.key === 'project_product'"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @change="doRefresh"
+                />
                 <a-cascader
+                  v-else
                   v-model="item.value"
                   :field-names="fieldNames"
                   :options="enumStore.environment_type"
@@ -274,6 +281,10 @@
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    value['project_product'] = getOptionId(value['project_product'])
+    if (value['project_product'] === null || value['project_product'] === '') {
+      delete value['project_product']
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemTasks(value)

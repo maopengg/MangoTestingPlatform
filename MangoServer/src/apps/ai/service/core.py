@@ -32,7 +32,7 @@ PROCESS_START_TIME = timezone.now()
 def mask_sensitive(value: Any) -> Any:
     if isinstance(value, dict):
         return {
-            key: "***" if key.lower() in SENSITIVE_KEYS else mask_sensitive(item)
+            key: "***" if str(key).lower() in SENSITIVE_KEYS else mask_sensitive(item)
             for key, item in value.items()
         }
     if isinstance(value, list):

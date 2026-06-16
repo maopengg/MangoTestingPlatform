@@ -57,6 +57,8 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
         return validate_body_config(value, 'SSE配置')
 
     def validate(self, attrs):
+        for legacy_field in ('data', 'json', 'file'):
+            attrs.pop(legacy_field, None)
         body_type = attrs.get('body_type', getattr(self.instance, 'body_type', None))
         if 'body_config' in attrs or body_type == 'raw':
             body_config = attrs.get('body_config', getattr(self.instance, 'body_config', None))
@@ -211,6 +213,9 @@ class ApiCaseDetailedParameterViews(ViewSet):
         source = self.model.objects.get(id=source_id)
         parameter = model_to_dict(source)
         del parameter['id']
+        parameter.pop('data', None)
+        parameter.pop('json', None)
+        parameter.pop('file', None)
         parameter['name'] = request.data.get('name') or f"(副本){source.name}"
         parameter['error_retry'] = request.data.get('error_retry')
         parameter['retry_interval'] = request.data.get('retry_interval')

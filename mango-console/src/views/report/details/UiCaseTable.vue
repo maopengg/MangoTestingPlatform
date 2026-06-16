@@ -32,14 +32,6 @@
         <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
           <div class="action-cell">
             <a-button
-              v-if="!record.children && record.__caseId && record.__caseId !== '-'"
-              type="text"
-              size="mini"
-              @click="$emit('open-case-detail', record)"
-            >
-              用例详情
-            </a-button>
-            <a-button
               v-if="!record.children"
               type="text"
               size="mini"
@@ -48,6 +40,15 @@
               详细报告
             </a-button>
             <span v-else></span>
+            <a-button
+              v-if="canRetry && record.__isFirstCaseRow && record.__caseId && record.__caseId !== '-'"
+              type="text"
+              size="mini"
+              @click="$emit('open-case-detail', record)"
+            >
+              用例详情
+            </a-button>
+            <span v-else class="action-placeholder">用例详情</span>
             <a-button
               v-if="canRetry && record.__isFirstCaseRow"
               type="text"

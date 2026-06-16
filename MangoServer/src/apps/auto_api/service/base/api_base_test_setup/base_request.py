@@ -257,6 +257,11 @@ class BaseRequest:
         if not content_type:
             return headers
         normalized = dict(headers or {})
+        if content_type == 'multipart/form-data':
+            for key in list(normalized.keys()):
+                if str(key).lower() == 'content-type':
+                    normalized.pop(key)
+            return normalized
         if any(str(key).lower() == 'content-type' for key in normalized.keys()):
             return normalized
         normalized['Content-Type'] = content_type

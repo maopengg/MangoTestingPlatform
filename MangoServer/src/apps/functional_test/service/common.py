@@ -280,6 +280,14 @@ class ManualTestValidationService:
         if data.get("scenario_type") not in ApiCaseScenarioTypeEnum.get_key_list():
             data["scenario_type"] = ApiCaseScenarioTypeEnum.NORMAL.value
         data["scenario_tags"] = data.get("scenario_tags") or []
+        for field in ("project_product", "project_product_id", "module", "module_id"):
+            value = data.get(field)
+            if value in (None, ""):
+                continue
+            try:
+                data[field] = int(value)
+            except (TypeError, ValueError):
+                warnings.append({"field": field, "raw": value, "message": "项目产品或模块ID需要人工确认"})
         data["case_no"] = str(data.get("case_no") or "").strip()
         source_text = data.get("source_text") or data.get("test_point") or data.get("title") or ""
         data["source_hash"] = _hash_text(source_text)

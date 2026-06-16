@@ -48,11 +48,39 @@ class ApiInfoSerializers(serializers.ModelSerializer):
         return validate_body_config(value, 'SSE配置')
 
     def validate(self, attrs):
+        for legacy_field in ('data', 'json', 'file', 'is_text_data', 'is_text_json'):
+            attrs.pop(legacy_field, None)
         body_type = attrs.get('body_type', getattr(self.instance, 'body_type', None))
         if 'body_config' in attrs or body_type == 'raw':
             body_config = attrs.get('body_config', getattr(self.instance, 'body_config', None))
             attrs['body_config'] = normalize_body_config_by_type(body_type, body_config)
+        self.validate_unique_api_info(attrs)
         return attrs
+
+    def validate_unique_api_info(self, attrs):
+        project_product = attrs.get('project_product', getattr(self.instance, 'project_product', None))
+        module = attrs.get('module', getattr(self.instance, 'module', None))
+        api_type = attrs.get('type', getattr(self.instance, 'type', 1))
+        url = attrs.get('url', getattr(self.instance, 'url', None))
+        method = attrs.get('method', getattr(self.instance, 'method', None))
+        protocol_type = attrs.get('protocol_type', getattr(self.instance, 'protocol_type', 'http'))
+        if not all(value is not None for value in (project_product, module, api_type, url, method, protocol_type)):
+            return
+        queryset = ApiInfo.objects.filter(
+            project_product=project_product,
+            module=module,
+            type=api_type,
+            url=url,
+            method=method,
+            protocol_type=protocol_type,
+        )
+        if self.instance:
+            queryset = queryset.exclude(id=self.instance.id)
+        duplicate = queryset.only('id').first()
+        if duplicate:
+            raise serializers.ValidationError({
+                'url': RESPONSE_MSG_0191[1].format(duplicate.id),
+            })
 
 
 class ApiInfoSerializersC(serializers.ModelSerializer):
@@ -156,6 +184,11 @@ class ApiInfoViews(ViewSet):
         api_info['status'] = StatusEnum.FAIL.value
         api_info['name'] = '(副本)' + api_info.get('name')
         del api_info['id']
+        api_info.pop('data', None)
+        api_info.pop('json', None)
+        api_info.pop('file', None)
+        api_info.pop('is_text_data', None)
+        api_info.pop('is_text_json', None)
         serializer = self.serializer_class(data=api_info)
         if serializer.is_valid():
             serializer.save()

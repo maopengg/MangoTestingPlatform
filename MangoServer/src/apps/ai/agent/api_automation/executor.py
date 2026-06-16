@@ -350,6 +350,8 @@ class ApiAutomationExecutor:
             "manual_case": {
                 "id": manual_case.id,
                 "case_no": manual_case.case_no,
+                "project_product_id": manual_case.project_product_id,
+                "module_id": manual_case.module_id,
                 "title": manual_case.title,
                 "test_types": manual_case.test_types,
                 "priority": manual_case.priority,
@@ -556,8 +558,8 @@ class ApiAutomationExecutor:
         case_name = normalized.get("case_name") or normalized.get("name") or normalized.get("case_title") or manual_case.title or manual_case.case_no
         normalized["case_name"] = str(case_name or "AI生成API自动化Case")[:128]
         normalized.pop("name", None)
-        normalized.setdefault("project_product_id", suite.project_product_id)
-        normalized.setdefault("module_id", suite.module_id)
+        normalized.setdefault("project_product_id", manual_case.project_product_id)
+        normalized.setdefault("module_id", manual_case.module_id)
         owner_id = normalized.get("case_people_id") or manual_case.owner_id or suite.owner_id or user_id
         if owner_id:
             normalized["case_people_id"] = owner_id

@@ -20,11 +20,12 @@ class AgentContextService:
         context_summary = cls.build_context_summary_from_text_map(suite_context, payload["context_keys"])
         history_summary = cls.history_summary(history)
         reuse_context = previous is not None
+        source_content = payload.get("context_text") or payload.get("raw_case_context") or payload.get("selected_context") or ""
         payload.update(
             {
                 "context_summary": context_summary,
                 "history_summary": history_summary,
-                "ai_source_content": payload["raw_case_context"]
+                "ai_source_content": source_content
                 if not reuse_context
                 else f"本次为同一需求下相同上下文的连续追问，不重复发送完整文件。\n上下文摘要：\n{context_summary}\n\n历史对话：\n{history_summary}",
                 "reuse_context": reuse_context,

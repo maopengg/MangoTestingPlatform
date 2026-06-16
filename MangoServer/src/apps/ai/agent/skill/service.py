@@ -69,6 +69,13 @@ class AgentSkillService:
             status=1,
         )
 
+    @classmethod
+    def resolve_functional_case_skill(cls, skill_id: int | None = None) -> AiSkill | DefaultSkill:
+        skill = cls.get_skill(skill_id=skill_id) if skill_id else None
+        if skill and skill.skill_type == AiSkillTypeEnum.FUNCTIONAL_TEST.value:
+            return skill
+        return cls.get_default_functional_case_skill()
+
     @staticmethod
     def build_skill_prompt(skill: AiSkill | DefaultSkill | None) -> str:
         if not skill:

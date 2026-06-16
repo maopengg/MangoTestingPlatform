@@ -49,6 +49,8 @@ class ManualTestSuiteService:
         priority = item.get("priority") if item.get("priority") in CaseLevelEnum.get_key_list() else CaseLevelEnum.P1.value
         scenario_layer = item.get("scenario_layer") if item.get("scenario_layer") in ApiCaseScenarioLayerEnum.get_key_list() else ApiCaseScenarioLayerEnum.API.value
         scenario_type = item.get("scenario_type") if item.get("scenario_type") in ApiCaseScenarioTypeEnum.get_key_list() else ApiCaseScenarioTypeEnum.NORMAL.value
+        project_product_id = item.get("project_product") or item.get("project_product_id") or suite.project_product_id
+        module_id = item.get("module") or item.get("module_id") or suite.module_id
         used_case_numbers = set(
             ManualTestCase.objects.filter(suite=suite)
             .exclude(case_no__isnull=True)
@@ -58,6 +60,8 @@ class ManualTestSuiteService:
         case_no = str(item.get("case_no") or "").strip() or ManualTestSuiteService.next_generated_case_no(used_case_numbers)
         return ManualTestCase.objects.create(
             suite=suite,
+            project_product_id=project_product_id,
+            module_id=module_id,
             case_no=case_no,
             title=item.get("title") or "未命名用例",
             priority=priority,
@@ -104,6 +108,10 @@ class ManualTestSuiteService:
         matched_ids = set()
         changes = []
         for item in normalized["cases"]:
+            item["project_product"] = item.get("project_product") or item.get("project_product_id") or suite.project_product_id
+            item["project_product_id"] = item["project_product"]
+            item["module"] = item.get("module") or item.get("module_id") or suite.module_id
+            item["module_id"] = item["module"]
             target = by_hash.get(item.get("source_hash")) or by_no.get(item.get("case_no"))
             if target and not item.get("case_no") and target.case_no:
                 item["case_no"] = target.case_no
@@ -114,7 +122,20 @@ class ManualTestSuiteService:
                 continue
             matched_ids.add(target.id)
             diff_fields = {}
-            for field in ("case_no", "title", "test_types", "priority", "precondition", "test_point", "test_data", "scenario_layer", "scenario_type", "scenario_tags"):
+            for field in (
+                "case_no",
+                "project_product_id",
+                "module_id",
+                "title",
+                "test_types",
+                "priority",
+                "precondition",
+                "test_point",
+                "test_data",
+                "scenario_layer",
+                "scenario_type",
+                "scenario_tags",
+            ):
                 if getattr(target, field) != item.get(field, getattr(target, field)):
                     diff_fields[field] = {"old": getattr(target, field), "new": item.get(field)}
             changes.append(

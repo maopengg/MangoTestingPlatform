@@ -26,6 +26,15 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择项目/产品',
+    optionItems: [],
+    reset: function () {},
+  },
 ])
 export const formItems: FormItem[] = reactive([
   {

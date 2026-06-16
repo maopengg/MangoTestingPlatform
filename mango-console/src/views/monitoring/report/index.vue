@@ -31,13 +31,6 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <ProjectProductSelect
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  @change="onSearchRefresh"
-                />
-              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -151,7 +144,6 @@
   import { conditionItems, tableColumns } from './config'
   import { getMonitoringReportList, MonitoringReport } from '@/api/monitoring/report'
   import { useEnum } from '@/store/modules/get-enum'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
 
   const pagination = usePagination(doRefresh)
   const table = useTable()

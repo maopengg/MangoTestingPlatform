@@ -11,7 +11,7 @@ from src.apps.ai.service.core import AiTaskService
 from src.apps.functional_test.models import ManualTestSuite
 from src.apps.functional_test.service.case_sync import FunctionalTestCaseSyncService
 from src.apps.functional_test.service.suite import ManualTestSuiteService
-from src.common.enums.ai_enum import AiAgentTaskStatusEnum, AiAgentTaskTypeEnum, AiSkillTypeEnum
+from src.common.enums.ai_enum import AiAgentTaskStatusEnum, AiAgentTaskTypeEnum
 from src.common.enums.manual_test_enum import FunctionalTestContextKeyEnum, ManualTestChangeStatusEnum
 
 
@@ -40,9 +40,7 @@ class FunctionalCaseAgent(BaseAgent):
         suite = ManualTestSuite.objects.get(id=suite_id)
         cls.ensure_no_active_task(suite.id)
         context_payload = AgentContextService.build_functional_suite_context(suite, context_keys)
-        skill = AgentSkillService.get_skill(skill_id=skill_id) if skill_id else AgentSkillService.get_default_functional_case_skill()
-        if getattr(skill, "id", None) and getattr(skill, "skill_type", None) != AiSkillTypeEnum.FUNCTIONAL_TEST.value:
-            raise ValueError("生成功能测试用例只能选择功能测试类型的技能")
+        skill = AgentSkillService.resolve_functional_case_skill(skill_id)
         ai_role = AgentRole.normalize(ai_role, cls.fixed_role)
         task = cls.create_task(
             f"同步功能测试Case：{suite.requirement_name or suite.id}",
@@ -91,9 +89,7 @@ class FunctionalCaseAgent(BaseAgent):
                 },
             )
 
-            skill = AgentSkillService.get_skill(skill_id=input_data.get("skill_id") or None) or AgentSkillService.get_default_functional_case_skill()
-            if getattr(skill, "id", None) and getattr(skill, "skill_type", None) != AiSkillTypeEnum.FUNCTIONAL_TEST.value:
-                raise ValueError("生成功能测试用例只能选择功能测试类型的技能")
+            skill = AgentSkillService.resolve_functional_case_skill(input_data.get("skill_id") or None)
             ai_role = AgentRole.normalize(input_data.get("ai_role"), cls.fixed_role)
 
             AiAgentTaskStepService.start_step(task, "generate_cases", {"source_size": len(doc.get("content") or "")})
@@ -183,26 +179,6 @@ class FunctionalCaseAgent(BaseAgent):
                 error_message=str(exc),
             )
             raise
-
-    @classmethod
-    def retry(cls, task_id: int, input_patch: dict | None = None):
-        task = AiAgentTask.objects.get(id=task_id, task_type=cls.task_type)
-        if task.status == AiAgentTaskStatusEnum.RUNNING.value:
-            raise ValueError("当前任务正在运行中，请等待完成后再操作")
-        if input_patch:
-            input_data = dict(task.input_data or {})
-            input_data.update(input_patch)
-            task.input_data = input_data
-        task.status = AiAgentTaskStatusEnum.RUNNING.value
-        task.error_message = None
-        task.output_data = {}
-        task.save(update_fields=["status", "error_message", "output_data", "input_data", "update_time"])
-        step_defs = list(cls.step_defs)
-        if (task.input_data or {}).get("deep_check"):
-            step_defs.append({"key": "deep_patch", "name": "深度补漏", "order": 3})
-        AiAgentTaskStepService.reset_steps(task, step_defs)
-        cls.dispatch(task.id)
-        return task
 
     @classmethod
     def ensure_no_active_task(cls, suite_id: int | str, exclude_task_id: int | None = None):
@@ -297,9 +273,7 @@ class FunctionalCaseAgent(BaseAgent):
         for key in ("user_instruction", "ai_role", "skill_id"):
             if key in input_patch:
                 input_data[key] = input_patch.get(key)
-        skill = AgentSkillService.get_skill(skill_id=input_data.get("skill_id") or None) or AgentSkillService.get_default_functional_case_skill()
-        if getattr(skill, "id", None) and getattr(skill, "skill_type", None) != AiSkillTypeEnum.FUNCTIONAL_TEST.value:
-            raise ValueError("生成功能测试用例只能选择功能测试类型的技能")
+        skill = AgentSkillService.resolve_functional_case_skill(input_data.get("skill_id") or None)
         ai_role = AgentRole.normalize(input_data.get("ai_role"), cls.fixed_role)
         input_data["skill_id"] = skill.id if skill else None
         input_data["skill_snapshot"] = AgentSkillService.skill_snapshot(skill) if skill else {}

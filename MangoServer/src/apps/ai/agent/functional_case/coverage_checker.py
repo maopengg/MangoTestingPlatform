@@ -103,12 +103,12 @@ class FunctionalCaseCoverageChecker:
             {
                 "role": "user",
                 "content": (
-                    "请检查已生成的测试平台功能用例是否遗漏原始用例文档中的明确用例、重要验收点、异常、边界、权限、数据或流程场景。"
+                    "请检查已生成的测试平台功能用例是否遗漏上下文资料中的明确用例、重要验收点、异常、边界、权限、数据或流程场景。"
                     "只输出需要补充新增的 cases；如果没有遗漏，cases 输出空数组。不要重复输出已生成用例。"
                     f"\n补充要求：{user_instruction}"
                     f"\n已生成用例摘要：{json.dumps(case_digest, ensure_ascii=False)[:50000]}"
-                    f"\n需求文档：\n{cls.text_window(requirement_context, 12000)}"
-                    f"\n原始用例文档：\n{cls.text_window(source_content, 30000)}"
+                    f"\n需求相关上下文：\n{cls.text_window(requirement_context, 12000)}"
+                    f"\n测试设计上下文：\n{cls.text_window(source_content, 30000)}"
                     f"\n\n{CASE_SCHEMA_PROMPT}"
                 ),
             },

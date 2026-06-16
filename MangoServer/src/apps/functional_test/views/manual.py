@@ -78,7 +78,22 @@ class ManualTestCaseSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate(self, attrs):
-        data = {field: getattr(self.instance, field, None) for field in ["case_no", "title", "test_point", "test_types", "priority", "scenario_layer", "scenario_type", "scenario_tags", "owner"]} if self.instance else {}
+        data = {
+            field: getattr(self.instance, field, None)
+            for field in [
+                "case_no",
+                "title",
+                "test_point",
+                "test_types",
+                "priority",
+                "scenario_layer",
+                "scenario_type",
+                "scenario_tags",
+                "owner",
+                "project_product",
+                "module",
+            ]
+        } if self.instance else {}
         data.update(attrs)
         required_text_fields = {
             "case_no": "用例编号不能为空",
@@ -101,6 +116,10 @@ class ManualTestCaseSerializer(serializers.ModelSerializer):
             errors["scenario_tags"] = "场景标签不能为空"
         if not (data.get("owner") or getattr(data.get("owner"), "id", None)):
             errors["owner"] = "负责人不能为空"
+        if not (data.get("project_product") or getattr(data.get("project_product"), "id", None)):
+            errors["project_product"] = "项目产品不能为空"
+        if not (data.get("module") or getattr(data.get("module"), "id", None)):
+            errors["module"] = "模块不能为空"
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
@@ -124,10 +143,10 @@ class ManualTestCaseListSerializer(ManualTestCaseBindingMixin, ManualTestCaseSer
     suite_id = serializers.IntegerField(read_only=True)
     suite_requirement_name = serializers.CharField(source="suite.requirement_name", read_only=True)
     suite_iteration = serializers.CharField(source="suite.iteration", read_only=True)
-    project_product_id = serializers.IntegerField(source="suite.project_product_id", read_only=True)
-    project_product_name = serializers.CharField(source="suite.project_product.name", read_only=True)
-    module_id = serializers.IntegerField(source="suite.module_id", read_only=True)
-    module_name = serializers.CharField(source="suite.module.name", read_only=True)
+    project_product_id = serializers.IntegerField(read_only=True)
+    project_product_name = serializers.CharField(source="project_product.name", read_only=True)
+    module_id = serializers.IntegerField(read_only=True)
+    module_name = serializers.CharField(source="module.name", read_only=True)
     owner_name = serializers.CharField(source="owner.name", read_only=True)
 
     class Meta:
@@ -141,6 +160,9 @@ class ManualTestCaseListSerializer(ManualTestCaseBindingMixin, ManualTestCaseSer
             "suite__project_product",
             "suite__project_product__project",
             "suite__module",
+            "project_product",
+            "project_product__project",
+            "module",
             "owner",
         )
         return ManualTestCaseBindingMixin.setup_eager_loading(queryset)
@@ -149,6 +171,8 @@ class ManualTestCaseListSerializer(ManualTestCaseBindingMixin, ManualTestCaseSer
 class ManualTestCaseSerializerC(ManualTestCaseBindingMixin, ManualTestCaseSerializer):
     bindings = serializers.SerializerMethodField()
     suite = ManualTestSuiteSerializerC(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
     owner = UserSerializers(read_only=True)
 
     @staticmethod
@@ -159,6 +183,9 @@ class ManualTestCaseSerializerC(ManualTestCaseBindingMixin, ManualTestCaseSerial
             "suite__project_product__project",
             "suite__module",
             "suite__owner",
+            "project_product",
+            "project_product__project",
+            "module",
             "owner",
         )
         return ManualTestCaseBindingMixin.setup_eager_loading(queryset)
@@ -204,8 +231,8 @@ class ManualTestCaseCRUD(ModelCRUD):
     serializer = ManualTestCaseSerializer
     not_matching_str = ModelCRUD.not_matching_str + [
         "suite",
-        "suite__module",
-        "suite__project_product",
+        "module",
+        "project_product",
         "test_type",
         "scenario_tag",
         "owner",
@@ -258,9 +285,13 @@ class ManualTestCaseCRUD(ModelCRUD):
     @error_response("system")
     def post(self, request: Request):
         data = dict(request.data)
-        if not data.get("owner") and data.get("suite"):
+        if data.get("suite"):
             suite = ManualTestSuite.objects.filter(id=data.get("suite")).first()
-            data["owner"] = suite.owner_id if suite else None
+            if suite:
+                if not data.get("owner"):
+                    data["owner"] = suite.owner_id
+                data["project_product"] = data.get("project_product") or suite.project_product_id
+                data["module"] = data.get("module") or suite.module_id
         serializer = self.serializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -322,32 +353,32 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def case_modules(self, request: Request):
-        queryset = ManualTestCase.objects.filter(suite__module__isnull=False)
+        queryset = ManualTestCase.objects.filter(module__isnull=False)
         project_product_id = request.query_params.get("project_product_id")
         products_queryset = queryset
         if project_product_id:
-            queryset = queryset.filter(suite__project_product_id=project_product_id)
+            queryset = queryset.filter(project_product_id=project_product_id)
         products = (
-            products_queryset.values("suite__project_product_id", "suite__project_product__name")
+            products_queryset.values("project_product_id", "project_product__name")
             .annotate(case_count=Count("id"))
-            .order_by("suite__project_product__name")
+            .order_by("project_product__name")
         )
         modules = (
             queryset.values(
-                "suite__module_id",
-                "suite__module__name",
-                "suite__module__superior_module_1",
-                "suite__module__superior_module_2",
+                "module_id",
+                "module__name",
+                "module__superior_module_1",
+                "module__superior_module_2",
             )
             .annotate(case_count=Count("id"))
-            .order_by("suite__module__superior_module_1", "suite__module__superior_module_2", "suite__module__name")
+            .order_by("module__superior_module_1", "module__superior_module_2", "module__name")
         )
         data = [
             {
-                "key": item["suite__module_id"],
-                "title": item["suite__module__name"],
-                "superior_module_1": item["suite__module__superior_module_1"],
-                "superior_module_2": item["suite__module__superior_module_2"],
+                "key": item["module_id"],
+                "title": item["module__name"],
+                "superior_module_1": item["module__superior_module_1"],
+                "superior_module_2": item["module__superior_module_2"],
                 "case_count": item["case_count"],
             }
             for item in modules
@@ -357,8 +388,8 @@ class ManualTestCaseViews(ViewSet):
             {
                 "products": [
                     {
-                        "key": item["suite__project_product_id"],
-                        "title": item["suite__project_product__name"],
+                        "key": item["project_product_id"],
+                        "title": item["project_product__name"],
                         "case_count": item["case_count"],
                     }
                     for item in products
