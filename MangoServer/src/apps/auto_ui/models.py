@@ -1,7 +1,7 @@
 from django.db import models
 
-from src.apps.auto_system.models import ProjectProduct, ProductModule
-from src.apps.auto_user.models import User
+from src.apps.system.models import ProjectProduct, ProductModule
+from src.apps.user.models import User
 from src.common.enums.tools_enum import EnvironmentEnum
 from src.common.exceptions import ToolsError
 
@@ -147,10 +147,10 @@ class UiCase(models.Model):
     def delete(self, *args, **kwargs):
         if UiCaseStepsDetailed.objects.filter(case=self).exists():
             raise ToolsError(300, "页面步骤详情-有关联数据，请先删除绑定的数据后再删除！")
-        from src.apps.auto_system.models import TasksDetails
+        from src.apps.system.models import TasksDetails
         if TasksDetails.objects.filter(ui_case=self).exists():
             raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
-        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.apps.data_factory.models import DataFactoryCaseConfig
         from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
         DataFactoryCaseConfig.objects.filter(
             source_type=DataFactoryCaseSourceTypeEnum.UI_CASE.value,

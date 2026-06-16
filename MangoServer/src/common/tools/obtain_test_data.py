@@ -13,7 +13,7 @@ from mangotools.data_processor import DataProcessor
 from mangotools.decorator import data_method
 from mangotools.models import MethodModel
 
-from src.apps.auto_system.models import FileData
+from src.apps.system.models import FileData
 from src.common.exceptions import ERROR_MSG_0024, ToolsError, ERROR_MSG_0019
 from src.common.tools import project_dir
 from src.common.tools.view.snowflake import Snowflake

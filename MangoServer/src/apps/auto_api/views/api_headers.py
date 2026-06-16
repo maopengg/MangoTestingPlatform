@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiHeaders
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.common.tools.view.model_crud import ModelCRUD
 
 

@@ -8,8 +8,8 @@ import random
 from src.common.exceptions import ERROR_MSG_0064
 from src.apps.auto_pytest.models import PytestCase
 from src.apps.auto_pytest.service.base import git_obj
-from src.apps.auto_system.consumers import ChatConsumer
-from src.apps.auto_system.service.socket_link.socket_user import SocketUser
+from src.apps.system.consumers import ChatConsumer
+from src.apps.system.service.socket_link.socket_user import SocketUser
 from src.common.enums.socket_api_enum import PytestSocketEnum
 from src.common.enums.system_enum import ClientNameEnum, ClientTypeEnum
 from src.common.enums.tools_enum import TaskEnum

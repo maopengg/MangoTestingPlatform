@@ -51,7 +51,9 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
+                :max-inline="3"
                 :actions="[
+                  { label: '查询', onClick: () => onOpenQueryDrawer(record) },
                   { label: '编辑', onClick: () => onUpdate(record) },
                   { label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
@@ -97,6 +99,56 @@
       </a-form>
     </template>
   </ModalDialog>
+
+  <a-drawer
+    v-model:visible="queryDrawer.visible"
+    :width="'50%'"
+    :footer="false"
+    unmount-on-close
+  >
+    <template #title>
+      SQL查询 / {{ queryDrawer.datasourceName || '-' }}
+    </template>
+    <div class="mango-sql-query-drawer">
+      <div class="mango-sql-query-editor">
+        <a-textarea
+          v-model="queryDrawer.sql"
+          :auto-size="{ minRows: 6, maxRows: 10 }"
+          placeholder="请输入查询SQL，例如：SELECT * FROM table_name LIMIT 20"
+        />
+        <div class="mango-sql-query-actions">
+          <a-button size="small" @click="queryDrawer.sql = ''">清空</a-button>
+          <a-button
+            size="small"
+            type="primary"
+            :loading="queryDrawer.loading"
+            @click="onQueryDatasource"
+          >
+            查询
+          </a-button>
+        </div>
+      </div>
+      <div class="mango-sql-query-result">
+        <div class="mango-sql-query-summary">
+          <span>结果集</span>
+          <span class="mango-muted-text">
+            {{ queryDrawer.result.rows.length }} 条
+            <template v-if="queryDrawer.result.truncated">，仅展示前 100 条</template>
+          </span>
+        </div>
+        <a-table
+          :bordered="false"
+          :columns="queryResultColumns"
+          :data="queryDrawer.result.rows"
+          :loading="queryDrawer.loading"
+          :pagination="false"
+          :scroll="{ x: 'max-content', y: 360 }"
+          row-key="__row_key"
+          size="small"
+        />
+      </div>
+    </div>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
@@ -104,11 +156,13 @@
     deleteDataFactoryDatasourceAlias,
     getDataFactoryDatasourceAlias,
     postDataFactoryDatasourceAlias,
+    postDataFactoryDatasourceAliasQuery,
     putDataFactoryDatasourceAlias,
   } from '@/api/data-factory'
   import { useRowKey, useTable } from '@/hooks/table'
   import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
   import { ModalDialogType } from '@/types/components'
   import { getFormItems } from '@/utils/datacleaning'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -118,6 +172,7 @@
 
   const route = useRoute()
   const enumStore = useEnum()
+  const userStore = useUserStore()
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
@@ -127,11 +182,33 @@
     isAdd: true,
     updateId: 0,
   })
+  const queryDrawer = reactive({
+    visible: false,
+    loading: false,
+    datasourceId: '',
+    datasourceName: '',
+    sql: '',
+    result: {
+      columns: [] as string[],
+      rows: [] as any[],
+      truncated: false,
+    },
+  })
 
   const datasourceDetailTitle = computed(() => {
     const id = route.query.id || '-'
     const name = route.query.name || '-'
     return `产品逻辑数据源 / ${id} / ${name}`
+  })
+  const queryResultColumns = computed(() => {
+    return queryDrawer.result.columns.map((column) => ({
+      title: column,
+      dataIndex: column,
+      key: column,
+      ellipsis: true,
+      tooltip: true,
+      width: 180,
+    }))
   })
 
   function getDatabaseTypeName(value: number) {
@@ -201,6 +278,53 @@
     })
   }
 
+  function onOpenQueryDrawer(record: any) {
+    queryDrawer.visible = true
+    queryDrawer.datasourceId = record.id
+    queryDrawer.datasourceName = record.name
+    queryDrawer.sql = ''
+    queryDrawer.result = {
+      columns: [],
+      rows: [],
+      truncated: false,
+    }
+  }
+
+  function onQueryDatasource() {
+    const sql = queryDrawer.sql.trim()
+    if (!sql) {
+      Message.error('请输入查询SQL')
+      return
+    }
+    if (userStore.selected_environment == null) {
+      Message.error('请先在顶部选择测试环境')
+      return
+    }
+    queryDrawer.loading = true
+    postDataFactoryDatasourceAliasQuery({
+      datasource_alias_id: queryDrawer.datasourceId,
+      project_product: route.query.id,
+      test_env: userStore.selected_environment,
+      sql,
+    })
+      .then((res) => {
+        const result = res.data || {}
+        queryDrawer.result = {
+          columns: result.columns || [],
+          rows: (result.rows || []).map((row: any, index: number) => ({
+            __row_key: index,
+            ...row,
+          })),
+          truncated: Boolean(result.truncated),
+        }
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+      .finally(() => {
+        queryDrawer.loading = false
+      })
+  }
+
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       const value = getFormItems(formItems)
@@ -250,3 +374,38 @@
     doRefresh()
   })
 </script>
+
+<style scoped>
+  .mango-sql-query-drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+  }
+
+  .mango-sql-query-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mango-sql-query-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .mango-sql-query-result {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .mango-sql-query-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    color: var(--m-text);
+    font-size: 13px;
+  }
+</style>

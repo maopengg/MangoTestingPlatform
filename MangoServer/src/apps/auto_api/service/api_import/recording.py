@@ -7,7 +7,7 @@
 
 from src.apps.auto_api.models import ApiInfo
 from src.apps.auto_api.views.api_info import ApiInfoCRUD
-from src.apps.auto_system.models import ProductModule
+from src.apps.system.models import ProductModule
 from src.common.enums.system_enum import ClientTypeEnum
 from src.common.enums.tools_enum import TaskEnum
 # from src.common.enums.api_enum import MethodEnum
@@ -21,7 +21,7 @@ class Recording:
 
     @classmethod
     def write(cls, data: RecordingApiModel):
-        from src.apps.auto_system.consumers import ChatConsumer
+        from src.apps.system.consumers import ChatConsumer
         username = data.username
         # try:
         #     for i in cls.data:

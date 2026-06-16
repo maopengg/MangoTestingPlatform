@@ -138,7 +138,7 @@ class MonitoringReportViews(ViewSet):
                 if status in [MonitoringLogStatusEnum.ERROR.value, MonitoringLogStatusEnum.WARNING.value]:
                     is_notice = StatusEnum.SUCCESS.value  # 需要发送通知 (1)
                     # TODO: 在这里可以调用通知服务发送实际通知
-                    # from src.apps.auto_system.service.notice import NoticeMain
+                    # from src.apps.system.service.notice import NoticeMain
                     # NoticeMain.notice_main(task.notice_group.id, task.id)
 
             # 创建报告记录

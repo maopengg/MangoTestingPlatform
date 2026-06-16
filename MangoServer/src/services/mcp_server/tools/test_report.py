@@ -6,10 +6,10 @@ from typing import Any
 import django
 from django.db.models import Count, Sum
 
-from src.apps.auto_system.models import TestSuite, TestSuiteDetails
-from src.apps.auto_system.service.test_suite.detail_result import TestSuiteDetailResultService
-from src.apps.auto_system.views.test_suite import TestSuiteCRUD, TestSuiteSerializersC
-from src.apps.auto_system.views.test_suite_details import (
+from src.apps.system.models import TestSuite, TestSuiteDetails
+from src.apps.system.service.test_suite.detail_result import TestSuiteDetailResultService
+from src.apps.system.views.test_suite import TestSuiteCRUD, TestSuiteSerializersC
+from src.apps.system.views.test_suite_details import (
     TestSuiteDetailsCRUD,
     TestSuiteDetailsSerializersC,
     TestSuiteDetailsShareViews,

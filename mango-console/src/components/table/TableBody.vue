@@ -76,6 +76,10 @@
     }
   }
 
+  .mango-table-body.mango-detail-workbench-page .mango-table-body__content {
+    background: color-mix(in srgb, var(--m-bg) 96%, var(--m-surface));
+  }
+
   .mango-table-body__footer {
     padding: 0 8px 8px;
   }

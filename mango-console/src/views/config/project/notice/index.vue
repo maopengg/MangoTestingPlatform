@@ -127,8 +127,9 @@
 
   const route = useRoute()
   const pageData = usePageData()
+  const projectId = computed(() => route.query.id || pageData.record?.id)
   const noticeDetailTitle = computed(() => {
-    const id = pageData.record?.id || route.query.id || '-'
+    const id = projectId.value || '-'
     const name = pageData.record?.name || route.query.name || '-'
     return `通知组配置 / ${id} / ${name}`
   })
@@ -153,7 +154,7 @@
 
   function doRefresh() {
     let value = {}
-    value['project'] = route.query.id
+    value['project'] = projectId.value
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemNotice(value)
@@ -235,7 +236,7 @@
     if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        value['project'] = route.query.id
+        value['project'] = projectId.value
         postSystemNotice(value)
           .then((res) => {
             modalDialogRef.value?.toggle()

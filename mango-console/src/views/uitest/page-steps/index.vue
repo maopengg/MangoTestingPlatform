@@ -442,8 +442,6 @@
       path: '/uitest/page/steps/details',
       query: {
         id: parseInt(record.id, 10),
-        pageId: record.page.id,
-        pageType: record.project_product.ui_client_type,
       },
     })
   }

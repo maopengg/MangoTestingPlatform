@@ -7,9 +7,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_data_factory.models import DataFactoryCaseConfig
-from src.apps.auto_data_factory.service.runner import DataFactoryRunner
-from src.apps.auto_data_factory.views.template import DataFactoryTemplateSerializerC
+from src.apps.data_factory.models import DataFactoryCaseConfig
+from src.apps.data_factory.service.runner import DataFactoryRunner
+from src.apps.data_factory.views.template import DataFactoryTemplateSerializerC
 from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 from src.common.exceptions import ToolsError
 from src.common.tools.decorator.error_response import error_response

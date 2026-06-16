@@ -4,7 +4,7 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 from src.apps.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
-from src.apps.auto_data_factory.service.cleanup import DataFactoryCleanup
+from src.apps.data_factory.service.cleanup import DataFactoryCleanup
 from src.common.exceptions import *
 from src.common.models.ui_model import UiCaseResultModel, PageStepsResultModel
 

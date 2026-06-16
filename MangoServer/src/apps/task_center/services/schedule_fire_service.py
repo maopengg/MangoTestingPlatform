@@ -4,7 +4,7 @@ from uuid import uuid4
 from django.db import IntegrityError
 from django.utils import timezone
 
-from src.apps.auto_system.models import Tasks, TimeTasks
+from src.apps.system.models import Tasks, TimeTasks
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum, ScheduleFireStatusEnum
 from src.apps.task_center.models import ScheduleFire
 from src.common.tools.log_collector import log

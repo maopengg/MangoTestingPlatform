@@ -18,6 +18,7 @@
 3. 定义 Django 各环境共用的应用、中间件、数据库、缓存、日志等基础配置。
 """
 import os
+import socket
 from pathlib import Path
 
 import sys
@@ -37,7 +38,7 @@ def set_env():
 set_env()
 
 # 当前平台版本号，会用于页面展示、接口返回以及 SECRET_KEY 生成。
-VERSION = '6.2.1'
+VERSION = '6.3.1'
 
 # 项目根目录：MangoServer。
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -158,7 +159,7 @@ OBJECT_STORAGE_ENABLED = FILE_STORAGE_BACKEND in {'minio', 'tos'}
 MONITORING_REPORT_MODEL = "src.apps.monitoring.models.MonitoringReport"
 MONITORING_TASK_MODEL = "src.apps.monitoring.models.MonitoringTask"
 MONITORING_LOG_STATUS_ENUM = "src.common.enums.monitoring_enum.MonitoringLogStatusEnum"
-MONITORING_NOTICE_MAIN = "src.apps.auto_system.service.notice.NoticeMain"
+MONITORING_NOTICE_MAIN = "src.apps.system.service.notice.NoticeMain"
 
 RETRY_FREQUENCY = 3
 # ======================================================================================================================
@@ -171,8 +172,8 @@ for log_dir in [
     BASE_DIR / 'logs',
     BASE_DIR / 'logs/auto_api',
     BASE_DIR / 'logs/auto_ui',
-    BASE_DIR / 'logs/auto_system',
-    BASE_DIR / 'logs/auto_perf',
+    BASE_DIR / 'logs/system',
+    BASE_DIR / 'logs/perf',
     BASE_DIR / 'logs/auto_pytest',
     BASE_DIR / 'logs/monitoring',
 ]:
@@ -212,13 +213,15 @@ INSTALLED_APPS = [
 
     'src.apps.auto_ui',
     'src.apps.auto_api',
-    'src.apps.auto_system',
-    'src.apps.auto_data_factory',
-    'src.apps.auto_perf',
-    'src.apps.auto_user',
+    'src.apps.system.apps.SystemConfig',
+    'src.apps.data_factory.apps.DataFactoryConfig',
+    'src.apps.perf.apps.PerfConfig',
+    'src.apps.user.apps.UserConfig',
     'src.apps.auto_pytest',
     'src.apps.monitoring',
     'src.apps.task_center',
+    'src.apps.ai.apps.AiConfig',
+    'src.apps.functional_test',
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
@@ -363,15 +366,35 @@ else:
 # ======================================================================================================================
 # 日志
 # ----------------------------------------------------------------------------------------------------------------------
-# 业务日志统一写入 MangoServer/logs，容器部署时可通过 docker logs 查看控制台关键日志。
-# 文件日志使用 RotatingFileHandler，避免单个日志文件无限增长。
+# 业务 logger 仍按 api/ui/system/pytest 等业务域分类，运行服务由环境变量注入：
+# - MANGO_SERVICE_NAME：core-api、scheduler-service、api-worker、mcp-service 等。
+# - MANGO_SERVICE_INSTANCE：本地实例名、容器名或 K8s Pod 名。
+# 文件日志按服务写入 logs/{service}/，容器部署时仍可通过 docker logs 查看控制台日志。
+MANGO_SERVICE_NAME = os.getenv('MANGO_SERVICE_NAME', 'core-api')
+MANGO_SERVICE_INSTANCE = os.getenv('MANGO_SERVICE_INSTANCE', socket.gethostname())
+SERVICE_LOG_DIR = BASE_DIR / 'logs' / MANGO_SERVICE_NAME
+os.makedirs(SERVICE_LOG_DIR, exist_ok=True)
+
+
+class ServiceLogFilter:
+    def filter(self, record):
+        record.service = MANGO_SERVICE_NAME
+        record.instance = MANGO_SERVICE_INSTANCE
+        return True
+
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'service_context': {
+            '()': ServiceLogFilter,
+        },
+    },
     'formatters': {
         'colored': {
             '()': 'colorlog.ColoredFormatter',
-            'format': '%(log_color)s[%(asctime)s] [%(levelname)s] %(message)s',
+            'format': '%(log_color)s[%(asctime)s] [%(levelname)s] [%(service)s] [%(instance)s] [%(name)s] %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
             'log_colors': {
                 'DEBUG': 'cyan',
@@ -382,10 +405,10 @@ LOGGING = {
             },
         },
         'verbose': {
-            'format': '[%(asctime)s] [%(levelname)s] %(module)s %(process)d %(thread)d %(message)s',
+            'format': '[%(asctime)s] [%(levelname)s] [%(service)s] [%(instance)s] [%(name)s] %(module)s %(process)d %(thread)d %(message)s',
         },
-        'standard': {  # 添加标准格式化器
-            'format': '[%(asctime)s] [%(levelname)s] %(name)s: %(message)s'
+        'standard': {
+            'format': '[%(asctime)s] [%(levelname)s] [%(service)s] [%(instance)s] [%(name)s] %(message)s'
         }
     },
     'handlers': {
@@ -393,66 +416,34 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'colored',
+            'filters': ['service_context'],
         },
-        'api': {
+        'service_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_api/log.log',
+            'filename': SERVICE_LOG_DIR / 'app.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 50,  # 增加到50MB
-            'backupCount': 10,  # 减少备份数量
-            'encoding': 'utf-8',
-        },
-        'ui': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_ui/log.log',
-            'formatter': 'verbose',
+            'filters': ['service_context'],
             'maxBytes': 1024 * 1024 * 50,
             'backupCount': 10,
             'encoding': 'utf-8',
         },
-        'system': {
-            'level': 'INFO',
+        'error_file': {
+            'level': 'ERROR',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_system/log.log',
+            'filename': SERVICE_LOG_DIR / 'error.log',
             'formatter': 'verbose',
+            'filters': ['service_context'],
             'maxBytes': 1024 * 1024 * 50,
             'backupCount': 10,
             'encoding': 'utf-8',
         },
-        'data_producer': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_perf/log.log',
-            'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 50,
-            'backupCount': 10,
-            'encoding': 'utf-8',
-        },
-        'pytest': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_pytest/log.log',
-            'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 50,
-            'backupCount': 10,
-            'encoding': 'utf-8',
-        },
-        'monitoring': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/monitoring/log.log',
-            'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 50,
-            'backupCount': 10,
-            'encoding': 'utf-8',
-        },
-        'django': {  # 添加Django核心日志处理器
+        'django': {
             'level': 'WARNING',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/django.log',
+            'filename': SERVICE_LOG_DIR / 'django.log',
             'formatter': 'standard',
+            'filters': ['service_context'],
             'maxBytes': 1024 * 1024 * 50,
             'backupCount': 5,
             'encoding': 'utf-8',
@@ -465,22 +456,42 @@ LOGGING = {
             'propagate': False,  # 防止重复日志
         },
         'api': {
-            'handlers': ['api', 'console'],
+            'handlers': ['service_file', 'error_file', 'console'],
             'level': 'INFO',
             'propagate': False,
         },
         'ui': {
-            'handlers': ['ui', 'console'],
+            'handlers': ['service_file', 'error_file', 'console'],
             'level': 'INFO',
             'propagate': False,
         },
         'system': {
-            'handlers': ['system', 'console'],
+            'handlers': ['service_file', 'error_file', 'console'],
             'level': 'INFO',
             'propagate': False,
         },
         'data_producer': {
-            'handlers': ['data_producer', 'console'],
+            'handlers': ['service_file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'perf': {
+            'handlers': ['service_file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'pytest': {
+            'handlers': ['service_file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'monitoring': {
+            'handlers': ['service_file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'user': {
+            'handlers': ['service_file', 'error_file', 'console'],
             'level': 'INFO',
             'propagate': False,
         },

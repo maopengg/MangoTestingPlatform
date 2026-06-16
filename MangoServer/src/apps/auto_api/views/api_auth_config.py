@@ -10,8 +10,8 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_api.models import ApiAuthConfig
 from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
 from src.apps.auto_api.views.api_info import ApiInfoSerializersC
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
-from src.apps.auto_system.views.time_tasks import TimeTasksSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
+from src.apps.system.views.time_tasks import TimeTasksSerializers
 from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthTypeEnum
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.view.model_crud import ModelCRUD

@@ -93,72 +93,27 @@
 
             <div v-else-if="data.pageType === '1'" class="config-pane">
               <a-space direction="vertical" fill>
-                <TipMessage message="建议输入json格式的参数" />
+                <TipMessage message='支持 JSON 对象/数组，也支持 query string，例如：case_id=21' />
                 <a-textarea
                   v-model="data.api_info.params"
                   :auto-size="data.textareaAutoSize"
                   allow-clear
-                  placeholder='请输入json格式的数据，例如：{"key": "value"}'
+                  placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
                   @blur="upDate('params', data.api_info.params)"
                 />
               </a-space>
             </div>
 
             <div v-else-if="data.pageType === '2'" class="config-pane">
-              <a-space direction="vertical" fill>
-                <TipMessage message="当前必须输入json格式的请求参数，否则请求时会提示错误" />
-
-                <a-textarea
-                  v-model="data.api_info.data"
-                  :auto-size="data.textareaAutoSize"
-                  allow-clear
-                  placeholder="请输入json格式的表单"
-                  @blur="upDate('data', data.api_info.data)"
-                />
-              </a-space>
-            </div>
-
-            <div v-else-if="data.pageType === '3'" class="config-pane">
-              <a-space direction="vertical" fill>
-                <TipMessage message="当前必须输入json格式的请求参数，否则请求时会提示错误" />
-
-                <a-textarea
-                  v-model="data.api_info.json"
-                  :auto-size="data.textareaAutoSize"
-                  allow-clear
-                  placeholder="请输入json格式的JSON"
-                  @blur="upDate('json', data.api_info.json)"
-                />
-              </a-space>
-            </div>
-
-            <div v-else-if="data.pageType === '4'" class="config-pane">
-              <a-space direction="vertical" fill>
-                <TipMessage message="当前必须输入json格式的请求参数，否则请求时会提示错误" />
-
-                <a-row :gutter="16">
-                  <a-col :span="12">
-                    <a-textarea
-                      v-model="data.file"
-                      :auto-size="data.textareaAutoSize"
-                      allow-clear
-                      placeholder="请输入json格式的上传文件"
-                      class="fill-editor"
-                      @blur="upDate('file', data.file)"
-                    />
-                  </a-col>
-                  <a-col :span="12">
-                    <a-textarea
-                      v-model="data.fileDemo"
-                      :auto-size="data.textareaAutoSize"
-                      allow-clear
-                      placeholder="示例"
-                      class="fill-editor"
-                      disabled
-                    />
-                  </a-col>
-                </a-row>
-              </a-space>
+              <ApiRequestBodyEditor
+                :protocol-type="data.api_info.protocol_type"
+                :body-type="data.api_info.body_type"
+                :body-config="data.api_info.body_config"
+                :sse-config="data.api_info.sse_config"
+                :project-product-id="projectProductId"
+                :saving="requestBodySaving"
+                @save="saveRequestBody"
+              />
             </div>
 
             <div v-else-if="data.pageType === '5'" class="config-pane">
@@ -317,33 +272,25 @@
                     <JsonDisplay :data="data.api_info.result_data.request_params" />
                   </div>
                 </div>
-                <div
-                  v-if="
-                    data.api_info.result_data?.request_data &&
-                    Object.keys(data.api_info.result_data.request_data).length > 0
-                  "
-                  class="response-item"
-                >
-                  <span class="response-label">表单数据</span>
+                <div v-if="hasValue(data.api_info.result_data?.request_body)" class="response-item">
+                  <span class="response-label">请求体</span>
                   <div class="response-value">
-                    <JsonDisplay :data="data.api_info.result_data.request_data" />
+                    <JsonDisplay :data="data.api_info.result_data.request_body" />
                   </div>
                 </div>
-                <div v-if="data.api_info.result_data?.request_json" class="response-item">
-                  <span class="response-label">JSON</span>
-                  <div class="response-value">
-                    <JsonDisplay :data="data.api_info.result_data.request_json" />
-                  </div>
-                </div>
-                <div v-if="data.api_info.result_data?.request_file" class="response-item">
-                  <span class="response-label">文件</span>
-                  <div class="response-value">
-                    <JsonDisplay :data="data.api_info.result_data.request_file" />
-                  </div>
+                <div class="response-item">
+                  <span class="response-label">请求类型</span>
+                  <span class="response-value">
+                    {{ data.api_info.result_data?.request_protocol_type || '-' }} /
+                    {{ data.api_info.result_data?.request_body_type || '-' }}
+                  </span>
                 </div>
               </div>
             </a-tab-pane>
-            <a-tab-pane key="cache" title="缓存">
+            <a-tab-pane v-if="hasValue(data.api_info.result_data?.sse_events)" key="sse" title="SSE">
+              <JsonDisplay :data="data.api_info.result_data?.sse_events" />
+            </a-tab-pane>
+            <a-tab-pane v-if="hasValue(data.api_info.result_data?.cache_all)" key="cache" title="缓存">
               <JsonDisplay :data="data.api_info.result_data?.cache_all" />
             </a-tab-pane>
           </a-tabs>
@@ -355,6 +302,7 @@
 <script lang="ts" setup>
   import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
+  import { useRoute } from 'vue-router'
   import { usePageData } from '@/store/page-data'
   import { getApiCaseInfoRun, getApiInfo, putApiInfo, putSetSchema } from '@/api/apitest/info'
   import useUserStore from '@/store/modules/user'
@@ -362,20 +310,20 @@
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
   const caseRunning = ref(false)
   const requestMetaSaving = ref(false)
+  const requestBodySaving = ref(false)
   const schemaLoading = ref(false)
   const requestMetaSnapshot = ref({ method: null as any, url: '' })
   const posteriorFuncSnapshot = ref('')
   const configNavItems = [
     { key: '0', title: '请求头', description: '维护接口请求 Headers' },
     { key: '1', title: '参数', description: '维护查询参数' },
-    { key: '2', title: '表单', description: '维护 form-data 请求体' },
-    { key: '3', title: 'JSON', description: '维护 JSON 请求体' },
-    { key: '4', title: '文件', description: '维护上传文件配置' },
+    { key: '2', title: '请求体', description: '维护协议类型和 Body 配置' },
     { key: '5', title: '后置jsonpath提取', description: '提取响应 JSON 到缓存' },
     { key: '6', title: '后置正则提取', description: '通过正则提取响应内容' },
     { key: '7', title: '后置函数', description: '编写自定义后置函数' },
@@ -394,22 +342,60 @@
     return response`
 
   const pageData: any = usePageData()
+  const props = withDefaults(
+    defineProps<{
+      apiInfoId?: string | number
+      embedded?: boolean
+    }>(),
+    {
+      apiInfoId: '',
+      embedded: false,
+    }
+  )
+  const emit = defineEmits<{
+    (event: 'close'): void
+  }>()
+  const route = useRoute()
+  const apiInfoId = computed(() => props.apiInfoId || route.query.id || pageData.record?.id || '')
+  const defaultApiInfoRecord = () => ({
+    id: apiInfoId.value,
+    name: '',
+    method: null,
+    url: '',
+    headers: null,
+    params: null,
+    protocol_type: 'http',
+    body_type: 'none',
+    body_config: null,
+    sse_config: null,
+    posterior_json_path: [],
+    posterior_re: [],
+    posterior_func: '',
+    ass_schema: null,
+    result_data: null,
+  })
+  if (!pageData.record) {
+    pageData.setRecord(defaultApiInfoRecord())
+  }
+  function normalizeApiInfoRecord(record: any) {
+    return {
+      ...defaultApiInfoRecord(),
+      ...(record || {}),
+      posterior_json_path: Array.isArray(record?.posterior_json_path)
+        ? record.posterior_json_path
+        : [],
+      posterior_re: Array.isArray(record?.posterior_re) ? record.posterior_re : [],
+    }
+  }
+  const initialApiInfoRecord = normalizeApiInfoRecord(pageData.record)
   const data: any = reactive({
     id: 0,
     pageType: '0',
     addButton: false,
-    api_info: pageData.record,
-    headers: formatJson(pageData.record.headers),
-    file: formatJson(pageData.record.file),
-    ass_schema: formatJson(pageData.record.ass_schema),
+    api_info: initialApiInfoRecord,
+    headers: formatJson(initialApiInfoRecord.headers),
+    ass_schema: formatJson(initialApiInfoRecord.ass_schema),
     textareaAutoSize: { minRows: 16, maxRows: 22 },
-    fileDemo:
-      '示例：' +
-      formatJson([
-        {
-          file: '${{get_file(数据订阅新增模板.xlsx)}}',
-        },
-      ]),
   })
   const currentNavItem = computed(
     () =>
@@ -420,9 +406,13 @@
       }
   )
   const apiDetailTitle = computed(() => {
-    const id = data.api_info?.id || pageData.record?.id || '-'
+    const id = data.api_info?.id || apiInfoId.value || '-'
     const name = data.api_info?.name || pageData.record?.name || '-'
     return `接口配置工作台 / ${id} / ${name}`
+  })
+  const projectProductId = computed(() => {
+    const projectProduct = data.api_info?.project_product
+    return projectProduct?.id || projectProduct || ''
   })
   const methodOptions = computed(() => {
     const methods = Array.isArray(enumStore.method) ? enumStore.method : []
@@ -464,6 +454,13 @@
     }
     return result.text
   })
+
+  const hasValue = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return false
+    if (Array.isArray(value)) return value.length > 0
+    if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0
+    return true
+  }
 
   function switchType(key: any) {
     const navItem = configNavItems.find((item) => item.key === key)
@@ -520,18 +517,18 @@
     const record = data.api_info || pageData.record || {}
     if (hasConfigValue(record.params)) {
       data.pageType = '1'
-    } else if (hasConfigValue(record.data)) {
+    } else if (hasConfigValue(record.body_config) || record.body_type !== 'none') {
       data.pageType = '2'
-    } else if (hasConfigValue(record.json)) {
-      data.pageType = '3'
-    } else if (hasConfigValue(record.file)) {
-      data.pageType = '4'
     } else {
-      data.pageType = '3'
+      data.pageType = '2'
     }
   }
 
   function doResetSearch() {
+    if (props.embedded) {
+      emit('close')
+      return
+    }
     window.history.back()
   }
 
@@ -589,7 +586,7 @@
     requestMetaSaving.value = true
     try {
       const res = await putApiInfo({
-        id: pageData.record.id,
+        id: apiInfoId.value,
         method: data.api_info.method,
         url: data.api_info.url.trim(),
       })
@@ -605,7 +602,7 @@
 
   function upDate(key: string, value1: string) {
     let value = ''
-    if (key === 'headers' || key === 'file' || key === 'ass_schema') {
+    if (key === 'headers' || key === 'ass_schema') {
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
@@ -629,14 +626,30 @@
         value = value1
       }
     }
-    putApiInfo({ id: pageData.record.id, [key]: value })
+    if (!apiInfoId.value) return
+    putApiInfo({ id: apiInfoId.value, [key]: value })
       .then((res) => {
         Message.success(res.msg)
       })
       .catch(console.log)
   }
 
+  async function saveRequestBody(value: any) {
+    if (!apiInfoId.value || requestBodySaving.value) return
+    requestBodySaving.value = true
+    try {
+      const res = await putApiInfo({ id: apiInfoId.value, ...value })
+      Message.success(res.msg)
+      await doRefresh()
+    } catch (error) {
+      console.log(error)
+    } finally {
+      requestBodySaving.value = false
+    }
+  }
+
   const onRunCase = async () => {
+    if (!apiInfoId.value) return
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
@@ -645,7 +658,7 @@
     caseRunning.value = true
     Message.loading('接口开始执行中~')
     try {
-      const res = await getApiCaseInfoRun(pageData.record.id, userStore.selected_environment)
+      const res = await getApiCaseInfoRun(apiInfoId.value, userStore.selected_environment)
       data.caseResult = res.data
       if (res.data.error_msg) {
         Message.error(res.data.error_msg)
@@ -661,12 +674,15 @@
   }
 
   function doRefresh() {
-    getApiInfo({ id: pageData.record.id })
+    if (!apiInfoId.value) return Promise.resolve()
+    return getApiInfo({ id: apiInfoId.value })
       .then((res) => {
-        const res_data = res.data[0]
+        const res_data = normalizeApiInfoRecord(res.data[0])
+        if (!props.embedded) {
+          pageData.setRecord(res_data)
+        }
         data.api_info = res_data
         data.headers = formatJson(res_data.headers)
-        data.file = formatJson(res_data.file)
         data.ass_schema = formatJson(res_data.ass_schema)
         syncRequestMetaSnapshot()
       })
@@ -689,7 +705,7 @@
 
   onMounted(() => {
     nextTick(async () => {
-      doRefresh()
+      await doRefresh()
       switchPageType()
       syncRequestMetaSnapshot()
     })

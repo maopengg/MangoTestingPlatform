@@ -1,19 +1,22 @@
+x-mango-server-env: &mango-server-env
+  DJANGO_SETTINGS_MODULE: src.settings
+  DJANGO_ENV: ${DJANGO_ENV}
+  FILE_STORAGE_BACKEND: ${FILE_STORAGE_BACKEND:-minio}
+  MINIO_STORAGE_ENDPOINT: minio:9000
+  MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+  MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  MINIO_STORAGE_USE_HTTPS: "false"
+  MINIO_STORAGE_MEDIA_BUCKET_NAME: mango-file
+  MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET: "true"
+  MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-/minio/mango-file}
+
 x-mango-server-common: &mango-server-common
   image: mango-server:${DJANGO_ENV}
   restart: unless-stopped
   volumes:
     - /etc/localtime:/etc/localtime:ro
   environment:
-    DJANGO_SETTINGS_MODULE: src.settings
-    DJANGO_ENV: ${DJANGO_ENV}
-    FILE_STORAGE_BACKEND: ${FILE_STORAGE_BACKEND:-minio}
-    MINIO_STORAGE_ENDPOINT: minio:9000
-    MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
-    MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-    MINIO_STORAGE_USE_HTTPS: "false"
-    MINIO_STORAGE_MEDIA_BUCKET_NAME: mango-file
-    MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET: "true"
-    MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-/minio/mango-file}
+    <<: *mango-server-env
   networks:
     - app_network
 
@@ -65,6 +68,10 @@ services:
 
   mango_server:
     <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: core-api
+      MANGO_SERVICE_INSTANCE: core-api-1
     build:
       context: ./MangoServer
       dockerfile: Dockerfile
@@ -84,6 +91,10 @@ services:
 
   scheduler_service:
     <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: scheduler-service
+      MANGO_SERVICE_INSTANCE: scheduler-1
     command: python manage.py run_scheduler --env=${DJANGO_ENV} --node-name=scheduler-1 --dispatch-batch-size=50
     depends_on:
       mango_server:
@@ -91,6 +102,10 @@ services:
 
   api_worker_1:
     <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: api-worker
+      MANGO_SERVICE_INSTANCE: api-worker-1
     command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-1 --concurrency=5 --db-idle-seconds=1800
     depends_on:
       mango_server:
@@ -98,6 +113,10 @@ services:
 
   api_worker_2:
     <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: api-worker
+      MANGO_SERVICE_INSTANCE: api-worker-2
     command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-2 --concurrency=5 --db-idle-seconds=1800
     depends_on:
       mango_server:
@@ -105,6 +124,10 @@ services:
 
   mcp_service:
     <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: mcp-service
+      MANGO_SERVICE_INSTANCE: mcp-1
     command: python manage.py run_mcp_service --env=${DJANGO_ENV} --host=0.0.0.0 --port=8010
     expose:
       - "8010"

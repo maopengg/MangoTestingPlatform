@@ -133,7 +133,7 @@
                             v-model="item.value"
                             :default-value="item.value"
                             :options="
-                              route.query.pageType === '0'
+                              currentPageType === '0'
                                 ? useSelectValue.webOpe
                                 : useSelectValue.androidOpe
                             "
@@ -155,7 +155,7 @@
                             v-model="item.value"
                             :default-value="item.value"
                             :options="
-                              route.query.pageType === '0'
+                              currentPageType === '0'
                                 ? useSelectValue.assWeb
                                 : useSelectValue.assAndroid
                             "
@@ -286,6 +286,23 @@
   const userStore = useUserStore()
   const useSelectValue = useSelectValueStore()
 
+  const props = withDefaults(
+    defineProps<{
+      pageStepsId?: string | number
+      pageId?: string | number
+      pageType?: string | number
+      embedded?: boolean
+    }>(),
+    {
+      pageStepsId: '',
+      pageId: '',
+      pageType: '',
+      embedded: false,
+    }
+  )
+  const emit = defineEmits<{
+    (event: 'close'): void
+  }>()
   const route = useRoute()
   const formModel = ref({})
   const PYTHON_CODE_TEMPLATE = `def func(self):
@@ -307,7 +324,9 @@
     return nodeTypes.find((item) => item.type === selectedNode.value?.type)?.label || '未知节点'
   })
 
-  const currentPageStepsId = computed(() => pageData.record?.id || route.query.id)
+  const currentPageStepsId = computed(() => props.pageStepsId || route.query.id || pageData.record?.id)
+  const currentPageId = computed(() => props.pageId || route.query.pageId || currentStepRecord.value?.page?.id || currentStepRecord.value?.page || '')
+  const currentPageType = computed(() => String(props.pageType || route.query.pageType || currentStepRecord.value?.project_product?.ui_client_type || '0'))
   const stepsTitle = computed(() => {
     const record = currentStepRecord.value || {}
     const id = record.id || currentPageStepsId.value || '-'
@@ -352,8 +371,8 @@
     if (flowSaving.value) return
     flowSaving.value = true
     const value = {}
-    value['id'] = pageData.record?.id || route.query.id
-    value['parent_id'] = pageData.record?.id || route.query.id
+    value['id'] = currentPageStepsId.value
+    value['parent_id'] = currentPageStepsId.value
     value['flow_data'] = flowData.value
     putUiSteps(value)
       .then((res) => {
@@ -382,11 +401,16 @@
   }
 
   function doResetSearch() {
+    if (props.embedded) {
+      emit('close')
+      return
+    }
     window.history.back()
   }
 
   function doRefresh() {
-    getUiPageStepsDetailed(route.query.id)
+    if (!currentPageStepsId.value) return
+    getUiPageStepsDetailed(currentPageStepsId.value)
       .then((res) => {
         data.dataList = res.data || []
       })
@@ -394,7 +418,8 @@
   }
 
   function getEleName() {
-    getUiUiElementName(route.query.pageId)
+    if (!currentPageId.value) return
+    getUiUiElementName(currentPageId.value)
       .then((res) => {
         data.uiPageName = res.data
       })
@@ -474,7 +499,7 @@
     if (caseRunning.value) return
     caseRunning.value = true
     try {
-      const res = await getUiStepsTest(route.query.id, userStore.selected_environment)
+      const res = await getUiStepsTest(currentPageStepsId.value, userStore.selected_environment)
       Message.loading(res.msg)
     } catch (e) {
     } finally {
@@ -484,7 +509,8 @@
   }
 
   function doRefreshSteps(pageStepsId: any) {
-    getUiSteps({ id: pageStepsId })
+    if (!pageStepsId) return Promise.resolve()
+    return getUiSteps({ id: pageStepsId })
       .then((res) => {
         currentStepRecord.value = res.data?.[0] || {}
         data.result_data = currentStepRecord.value.result_data
@@ -663,7 +689,7 @@
       }, 100) // 确保flowData已经同步更新
       return
     }
-    deleteUiPageStepsDetailed(node.config.id, route.query.id)
+    deleteUiPageStepsDetailed(node.config.id, currentPageStepsId.value)
       .then((res) => {
         Message.success(res.msg)
         // 等待FlowChart组件数据同步完成后再保存
@@ -740,7 +766,7 @@
     }
 
     let value: any = getFormItems(data.formItems)
-    value['page_step'] = route.query.id
+    value['page_step'] = currentPageStepsId.value
     value['type'] = data.type
     if (data?.selectData?.id) {
       value['id'] = data.selectData.id
@@ -763,7 +789,7 @@
     }
 
     formSaving.value = true
-    postUiPageStepsDetailed({ ...value, ...processOptionData(value) }, route.query.id)
+    postUiPageStepsDetailed({ ...value, ...processOptionData(value) }, currentPageStepsId.value)
       .then((res) => {
         Message.success(res.msg)
         const updatedNode = {
@@ -819,8 +845,8 @@
     return enumStore.element_exp.find((item: any) => item.key === value)?.title || value || '-'
   }
 
-  onMounted(() => {
-    doRefreshSteps(currentPageStepsId.value)
+  onMounted(async () => {
+    await doRefreshSteps(currentPageStepsId.value)
     doRefresh()
     getEleName()
     useSelectValue.getSelectValue()

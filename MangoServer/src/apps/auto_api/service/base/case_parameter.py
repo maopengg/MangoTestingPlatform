@@ -96,12 +96,13 @@ class CaseParameter:
         return response
 
     def __posterior_func(self, posterior_func: str, response: ResponseModel) -> RequestModel:
-        try:
-            log.api.debug(f'用例详情后置-3->函数：{posterior_func}')
-            return self.test_setup.analytic_func(posterior_func)(self, response)
-        except (KeyError, MangoToolsError) as error:
-            log.api.debug(f"数据报错，函数：{posterior_func}, request:{response.model_dump_json()}, error：{error}")
-            raise ApiError(*ERROR_MSG_0013)
+        log.api.debug(f'用例详情后置-3->函数：{posterior_func}')
+        return self.test_setup.execute_analytic_func(
+            posterior_func,
+            self,
+            response,
+            error_msg=ERROR_MSG_0071,
+        )
 
     def __posterior_sql(self, sql_list: list[dict]):
         for sql_obj in sql_list:
@@ -298,9 +299,10 @@ class CaseParameter:
                 self.test_setup.test_data.set_sql_cache(key, res[0])
 
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
-        try:
-            log.api.debug(f'用例详情前置-2->{front_func}')
-            return self.test_setup.analytic_func(front_func)(self, request)
-        except (KeyError, MangoToolsError) as error:
-            log.api.error(f"数据报错，函数：{front_func}, request:{request.model_dump_json()}, error：{error}")
-            raise ApiError(*ERROR_MSG_0010)
+        log.api.debug(f'用例详情前置-2->{front_func}')
+        return self.test_setup.execute_analytic_func(
+            front_func,
+            self,
+            request,
+            error_msg=ERROR_MSG_0070,
+        )

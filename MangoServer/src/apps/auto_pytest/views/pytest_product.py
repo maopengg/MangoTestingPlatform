@@ -12,8 +12,8 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_pytest.service.base import git_obj
 from src.apps.auto_pytest.models import PytestProduct
 from src.apps.auto_pytest.service.base.update_file import UpdateFile
-from src.apps.auto_system.models import ProductModule, CacheData
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.system.models import ProductModule, CacheData
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.tools import project_dir
 from src.common.tools.decorator.error_response import error_response

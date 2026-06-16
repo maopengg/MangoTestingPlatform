@@ -14,7 +14,7 @@ from django.db.models.query import QuerySet
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
-from src.apps.auto_system.models import ProjectProduct
+from src.apps.system.models import ProjectProduct
 from src.apps.auto_pytest.models import PytestProduct
 from src.common.exceptions import ToolsError
 from src.common.tools.decorator.error_response import error_response

@@ -19,6 +19,8 @@ from src.apps.auto_api.schemas.case_schema import (
     ApiJsonPathAssertionItem,
     ApiKeyValueItem,
     ApiSqlAssertionItem,
+    normalize_body_config_by_type,
+    validate_body_config,
     validate_file_payload,
     validate_int_list,
     validate_json_object,
@@ -48,8 +50,18 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
     def validate_headers(self, value):
         return validate_int_list(value, '请求头')
 
-    def validate_file(self, value):
-        return validate_file_payload(value, 'file')
+    def validate_body_config(self, value):
+        return validate_body_config(value, '请求体配置')
+
+    def validate_sse_config(self, value):
+        return validate_body_config(value, 'SSE配置')
+
+    def validate(self, attrs):
+        body_type = attrs.get('body_type', getattr(self.instance, 'body_type', None))
+        if 'body_config' in attrs or body_type == 'raw':
+            body_config = attrs.get('body_config', getattr(self.instance, 'body_config', None))
+            attrs['body_config'] = normalize_body_config_by_type(body_type, body_config)
+        return attrs
 
     def validate_front_sql(self, value):
         return validate_model_list(value, ApiKeyValueItem, '前置sql')
@@ -105,9 +117,10 @@ class ApiCaseDetailedParameterCRUD(ModelCRUD):
         api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
         data['url'] = api_info_obj.url
         data['params'] = api_info_obj.params
-        data['data'] = api_info_obj.data
-        data['json'] = api_info_obj.json
-        data['file'] = api_info_obj.file
+        data['protocol_type'] = api_info_obj.protocol_type
+        data['body_type'] = api_info_obj.body_type
+        data['body_config'] = api_info_obj.body_config
+        data['sse_config'] = api_info_obj.sse_config
         return_data = self.inside_post(data)
         self.refresh_case_flow(return_data.get('case_detailed'))
         return ResponseData.success(RESPONSE_MSG_0024, return_data)
@@ -162,7 +175,10 @@ class ApiCaseDetailedParameterViews(ViewSet):
             value = JsonTool.get_json_path_value(response, value)
             return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})
         else:
-            value = re.findall(value, response)
+            try:
+                value = re.findall(value, response)
+            except re.error as error:
+                raise ApiError(*ERROR_MSG_0091, value=(value, str(error))) from error
             if len(value) <= 0:
                 raise ApiError(*ERROR_MSG_0017)
             return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})
@@ -187,8 +203,8 @@ class ApiCaseDetailedParameterViews(ViewSet):
     @error_response('api')
     @transaction.atomic
     def copy_parameter(self, request: Request):
-        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
-        from src.apps.auto_data_factory.views.case_config import DataFactoryCaseConfigCRUD
+        from src.apps.data_factory.models import DataFactoryCaseConfig
+        from src.apps.data_factory.views.case_config import DataFactoryCaseConfigCRUD
         from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 
         source_id = request.data.get('id')

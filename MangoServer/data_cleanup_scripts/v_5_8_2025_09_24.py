@@ -8,7 +8,7 @@ import uuid
 
 from mangotools.mangos import get_execution_order_with_config_ids
 
-from src.apps.auto_system.models import CacheData
+from src.apps.system.models import CacheData
 from src.apps.auto_ui.models import PageStepsDetailed, PageSteps, UiCaseStepsDetailed
 from src.common.enums.ui_enum import ElementOperationEnum
 from src.common.models.ui_model import *

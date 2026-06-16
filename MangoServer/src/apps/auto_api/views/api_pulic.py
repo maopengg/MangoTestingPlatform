@@ -9,8 +9,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiPublic
-from src.apps.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasSerializerC
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.data_factory.views.datasource_alias import DataFactoryDatasourceAliasSerializerC
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.common.enums.api_enum import ApiPublicTypeEnum
 from src.common.enums.tools_enum import StatusEnum
 from src.common.tools.decorator.error_response import error_response

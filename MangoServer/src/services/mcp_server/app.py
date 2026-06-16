@@ -330,6 +330,7 @@ def _platform_capabilities() -> dict:
                         "copy_api_case_scenario",
                         "get_api_assertion_methods",
                         "get_api_assertion_schema",
+                        "get_api_extractor_schema",
                         "generate_api_case_scenario_assertions",
                         "generate_api_case_scenario_extractors",
                         "auto_generate_api_case_scenario_schema",
@@ -457,6 +458,7 @@ def _platform_capabilities() -> dict:
                         "list_data_factory_datasource_bindings",
                         "list_data_factory_database_tables",
                         "get_data_factory_table_schema",
+                        "query_data_factory_datasource_sql",
                         "list_data_factory_entities",
                         "get_data_factory_entity_detail",
                         "create_data_factory_entity",
@@ -466,15 +468,22 @@ def _platform_capabilities() -> dict:
                         "preview_data_factory_field_values",
                         "list_data_factory_templates",
                         "get_data_factory_template_detail",
+                        "create_data_factory_template",
+                        "update_data_factory_template",
+                        "set_data_factory_template_status",
                         "preview_data_factory_template",
                         "preview_run_data_factory_template_impact",
                         "execute_data_factory_template",
                         "preview_delete_data_factory_template_impact",
                         "delete_data_factory_template",
                         "list_data_factory_case_configs",
+                        "update_data_factory_case_config",
+                        "sort_data_factory_case_configs",
+                        "preview_data_factory_case_config",
                         "bind_data_factory_to_case_source",
                         "list_data_factory_executions",
                         "get_data_factory_execution_detail",
+                        "get_data_factory_execution_context",
                         "preview_cleanup_data_factory_execution_impact",
                         "cleanup_data_factory_execution",
                     ],
@@ -572,7 +581,7 @@ def mcp_asgi_app():
     @mcp.resource("mango://project-product/{project_product_id}")
     def get_project_product_resource(project_product_id: str) -> dict:
         """读取项目产品上下文资源。"""
-        from src.apps.auto_system.models import ProjectProduct
+        from src.apps.system.models import ProjectProduct
 
         item = ProjectProduct.objects.select_related("project").get(id=int(project_product_id))
         return {
@@ -602,7 +611,7 @@ def mcp_asgi_app():
     def get_data_factory_entity_resource(entity_id: str) -> dict:
         """读取数据工厂实体和字段规则资源。"""
         from django.forms import model_to_dict
-        from src.apps.auto_data_factory.models import DataFactoryEntity, DataFactoryField
+        from src.apps.data_factory.models import DataFactoryEntity, DataFactoryField
 
         entity = DataFactoryEntity.objects.get(id=int(entity_id))
         fields = [
@@ -614,7 +623,7 @@ def mcp_asgi_app():
     @mcp.resource("mango://data-factory/template/{template_id}")
     def get_data_factory_template_resource(template_id: str) -> dict:
         """读取数据工厂状态模板、实体、字段和缓存变量资源。"""
-        from src.apps.auto_data_factory.models import DataFactoryField, DataFactoryTemplate
+        from src.apps.data_factory.models import DataFactoryField, DataFactoryTemplate
         from src.services.mcp_server.tools.data_factory import _cache_keys_for_template, _template_summary
         from django.forms import model_to_dict
 
@@ -640,7 +649,7 @@ def mcp_asgi_app():
     @mcp.resource("mango://data-factory/case-config/{source_type}/{source_id}")
     def get_data_factory_case_config_resource(source_type: str, source_id: str) -> dict:
         """读取某个用例来源绑定的数据工厂配置资源。"""
-        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.apps.data_factory.models import DataFactoryCaseConfig
         from src.services.mcp_server.tools.data_factory import _case_config_summary
 
         queryset = DataFactoryCaseConfig.objects.select_related("template", "template__entity").filter(

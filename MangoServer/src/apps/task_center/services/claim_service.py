@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db.models import F, Q
 from django.utils import timezone
 
-from src.apps.auto_system.models import TestSuite, TestSuiteDetails
+from src.apps.system.models import TestSuite, TestSuiteDetails
 from src.common.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.common.models.system_model import ConsumerCaseModel
 from src.settings import RETRY_FREQUENCY

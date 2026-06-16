@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from apscheduler.triggers.cron import CronTrigger
 from django.utils import timezone
 
-from src.apps.auto_system.models import Tasks, TimeTasks
+from src.apps.system.models import Tasks, TimeTasks
 from src.common.enums.tools_enum import StatusEnum
 from src.apps.task_center.services.dispatch_service import ScheduleDispatchService
 from src.apps.task_center.services.schedule_fire_service import ScheduleFireService
@@ -85,6 +85,7 @@ class ScheduleRunner:
             ('repair_api_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_api_case_status),
             ('repair_ui_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_ui_case_status),
             ('repair_pytest_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_pytest_case_status),
+            ('sync_ai_mcp_tools', '*/30 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.sync_ai_mcp_tools),
             ('scan_data_factory_entity_field_updates', '0 8 * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.scan_data_factory_entity_field_updates),
             ('clean_test_suite_detail_result', '0 0 * * *', ScheduleFireService.create_data_cleanup_fire, SchedulerSystemJobService.clean_test_suite_detail_result),
             ('clean_data_factory_executions', '30 0 * * *', ScheduleFireService.create_data_cleanup_fire, SchedulerSystemJobService.clean_data_factory_executions),

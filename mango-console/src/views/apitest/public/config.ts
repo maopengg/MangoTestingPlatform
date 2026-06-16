@@ -97,7 +97,6 @@ export const formItems: FormItem[] = reactive([
     required: false,
     placeholder: '请选择绑定环境',
     validator: function () {
-      // @ts-ignore
       return true
     },
     reset: function () {

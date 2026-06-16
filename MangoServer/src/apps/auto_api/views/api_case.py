@@ -12,7 +12,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiCase
-from src.apps.auto_system.models import ProjectProduct
+from src.apps.system.models import ProjectProduct
 from src.apps.auto_api.schemas.case_schema import (
     ApiKeyValueItem,
     ApiParametrizeSuite,
@@ -20,10 +20,10 @@ from src.apps.auto_api.schemas.case_schema import (
     validate_model_list,
 )
 from src.apps.auto_api.service.test_case.test_case import TestCase
-from src.apps.auto_system.service.tasks.add_tasks import AddTasks
-from src.apps.auto_system.views.product_module import ProductModuleSerializers
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
-from src.apps.auto_user.views.user import UserSerializers
+from src.apps.system.service.tasks.add_tasks import AddTasks
+from src.apps.system.views.product_module import ProductModuleSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
+from src.apps.user.views.user import UserSerializers
 from src.common.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.common.models.api_model import ApiCaseResultModel
 from src.common.tools.decorator.error_response import error_response
@@ -187,10 +187,10 @@ class ApiCaseViews(ViewSet):
     @transaction.atomic
     def copy_case(self, request: Request):
         from src.apps.auto_api.models import ApiCaseDetailed, ApiCaseDetailedParameter
-        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.apps.data_factory.models import DataFactoryCaseConfig
         from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
         from src.apps.auto_api.views.api_case_data_factory import ApiCaseDataFactoryCRUD
-        from src.apps.auto_data_factory.views.case_config import DataFactoryCaseConfigCRUD
+        from src.apps.data_factory.views.case_config import DataFactoryCaseConfigCRUD
         from src.apps.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
         from src.apps.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
         case_id = request.data.get('case_id')

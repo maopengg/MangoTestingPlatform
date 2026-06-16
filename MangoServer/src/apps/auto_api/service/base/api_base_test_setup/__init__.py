@@ -7,7 +7,6 @@ import re
 import traceback
 from urllib.parse import urlparse, urljoin
 
-import filetype
 from mangotools.exceptions import MangoToolsError
 
 from src.apps.auto_api.models import ApiInfo
@@ -41,19 +40,20 @@ class APIBaseTestSetup(PublicBase):
                 url=api_info.url,
                 headers=headers,
                 params=api_info.params,
-                data=api_info.data,
-                json=api_info.json,
-                file=api_info.file,
+                protocol_type=api_info.protocol_type,
+                body_type=api_info.body_type,
+                body_config=api_info.body_config,
+                sse_config=api_info.sse_config,
                 posterior_file=api_info.posterior_file,
             )
-        response = self.http(self.request_data_clean(request_model))
+        response = self.http(self.request_data_clean(request_model), api_info.project_product_id)
         try:
             if api_info.posterior_re:
                 self.api_info_posterior_json_re(api_info.posterior_re, response)
             if api_info.posterior_json_path:
                 self.api_info_posterior_json_path(api_info.posterior_json_path, response)
             if api_info.posterior_func:
-                self.analytic_func(api_info.posterior_func)(self, response)
+                self.execute_analytic_func(api_info.posterior_func, self, response, error_msg=ERROR_MSG_0069)
             return response
         except (MangoServerError, MangoToolsError) as error:
             response.error_msg = error.msg
@@ -68,21 +68,8 @@ class APIBaseTestSetup(PublicBase):
                     if value and isinstance(value, str):
                         value = self.test_data.loads(value) if value else value
                     setattr(request_data_model, key, value)
-                elif key == 'file':
-                    if request_data_model.file:
-                        file = []
-                        for i in request_data_model.file:
-                            if not isinstance(i, dict):
-                                raise ApiError(*ERROR_MSG_0025)
-                            for k, v in i.items():
-                                file_path = self.test_data.replace(v)
-                                file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                                kind = filetype.guess(file_path)
-                                if kind is not None:
-                                    file.append((k, (file_name, open(file_path, 'rb'), kind.mime)))
-                                else:
-                                    file.append((k, (file_name, open(file_path, 'rb'),)))
-                        request_data_model.file = file
+                elif key in {'body_config', 'sse_config', 'request_body', 'request_files', 'request_content_type'}:
+                    continue
                 else:
                     value = self.test_data.replace(value)
                     setattr(request_data_model, key, value)
@@ -116,7 +103,10 @@ class APIBaseTestSetup(PublicBase):
             value: str = self.test_data.replace(i.get('value'))
             if not key or not value:
                 raise ApiError(*ERROR_MSG_0018)
-            res = re.findall(value, response.text)
+            try:
+                res = re.findall(value, response.text)
+            except re.error as error:
+                raise ApiError(*ERROR_MSG_0091, value=(value, str(error))) from error
             if len(res) <= 0:
                 raise ApiError(*ERROR_MSG_0017)
             self.test_data.set_cache(key, res[0])
@@ -134,3 +124,15 @@ class APIBaseTestSetup(PublicBase):
             log.api.error(
                 f'自定义函数执行失败，函数字符串：{func_str}，失败类型：{error}，失败明细：{traceback.format_exc()}')
             raise ToolsError(*ERROR_MSG_0014)
+
+    def execute_analytic_func(self, func_str, *args, error_msg=ERROR_MSG_0014):
+        try:
+            return self.analytic_func(func_str)(*args)
+        except MangoServerError as error:
+            raise ApiError(*error_msg, value=(error.msg,)) from error
+        except MangoToolsError as error:
+            raise ApiError(*error_msg, value=(error.msg,)) from error
+        except Exception as error:
+            log.api.error(
+                f'自定义函数执行失败，函数字符串：{func_str}，失败类型：{error}，失败明细：{traceback.format_exc()}')
+            raise ApiError(*error_msg, value=(str(error),)) from error

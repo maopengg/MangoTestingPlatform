@@ -42,18 +42,21 @@
       <a-back-top target-container=".mango-main-base-style" />
     </component>
     <a-back-top target-container=".mango-main-layout-container" />
+    <AiAssistantWidget />
   </div>
 </template>
 
 <script lang="ts">
-  import { defineComponent, onMounted } from 'vue'
+  import { defineComponent, onBeforeUnmount, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useTitle } from '@vueuse/core'
   import { projectName } from '@/setting'
   import useAppConfigStore from '@/store/modules/app-config'
+  import AiAssistantWidget from '@/components/ai/AiAssistantWidget.vue'
 
   export default defineComponent({
     name: 'MainLayout',
+    components: { AiAssistantWidget },
     props: {
       showNavBar: {
         type: Boolean,
@@ -71,7 +74,49 @@
       onMounted(() => {
         const mainEl = document.querySelector('.mango-main-section') as HTMLDivElement
         appStore.setMainHeight(mainEl.clientHeight || mainEl.offsetHeight)
+        window.addEventListener('wheel', handleTableWheel, { passive: false })
       })
+      onBeforeUnmount(() => {
+        window.removeEventListener('wheel', handleTableWheel)
+      })
+
+      function findScrollableParent(el: HTMLElement | null) {
+        let current = el
+        while (current) {
+          const style = window.getComputedStyle(current)
+          if (
+            /(auto|scroll)/.test(style.overflowY) &&
+            current.scrollHeight > current.clientHeight
+          ) {
+            return current
+          }
+          current = current.parentElement
+        }
+        return null
+      }
+
+      function handleTableWheel(event: WheelEvent) {
+        if (event.defaultPrevented) return
+        if (!event.deltaY || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+        const target = event.target
+        if (!(target instanceof HTMLElement)) return
+        const table = target.closest('.arco-table')
+        if (!(table instanceof HTMLElement)) return
+        if (table.classList.contains('arco-table-scroll-y')) return
+
+        const scrollParent = findScrollableParent(table.parentElement)
+        if (!scrollParent) return
+        const maxScrollTop = scrollParent.scrollHeight - scrollParent.clientHeight
+        if (maxScrollTop <= 0) return
+        const nextScrollTop = Math.min(
+          Math.max(scrollParent.scrollTop + event.deltaY, 0),
+          maxScrollTop
+        )
+        if (nextScrollTop === scrollParent.scrollTop) return
+
+        event.preventDefault()
+        scrollParent.scrollTop = nextScrollTop
+      }
       return {
         appStore,
         // isShowTabbar,

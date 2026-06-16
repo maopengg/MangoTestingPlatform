@@ -83,7 +83,7 @@ export const uiColumns: any = reactive([
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 170,
+    width: 240,
     fixed: 'right',
   },
 ])
@@ -166,7 +166,7 @@ export const apiColumns: any = reactive([
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 170,
+    width: 240,
     fixed: 'right',
   },
 ])
@@ -238,7 +238,7 @@ export const pytestColumns: any = reactive([
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 170,
+    width: 240,
     fixed: 'right',
   },
 ])

@@ -103,12 +103,12 @@
         <div class="panel-title">
           <div>
             <span>失败原因 Top</span>
-            <p>基于当前已加载失败明细聚合</p>
+            <p>基于当前页失败明细聚合</p>
           </div>
           <em>{{ failureReasons.length }} 类</em>
         </div>
         <div v-if="failureReasons.length === 0" class="reason-empty">
-          当前已加载数据中暂无失败原因
+          当前页数据中暂无失败原因
         </div>
         <div v-else class="reason-list">
           <div
@@ -163,10 +163,16 @@
                 <i></i>
                 <span>{{ currentStatusLabel }}</span>
                 <i></i>
-                <span>已加载 {{ cases.length }} / {{ pagination.total || '未知' }}</span>
+                <span>共 {{ pagination.total || 0 }} 条</span>
               </p>
             </div>
-            <div v-if="visibleTypeTabs.length > 0" class="type-switch">
+          </div>
+        </div>
+
+        <div class="case-group-panel">
+          <div v-if="visibleTypeTabs.length > 0" class="case-group-block">
+            <span class="case-group-label">用例分组</span>
+            <div class="type-switch">
               <button
                 v-for="item in visibleTypeTabs"
                 :key="item.key"
@@ -180,7 +186,8 @@
               </button>
             </div>
           </div>
-          <div class="toolbar-actions">
+          <div class="case-group-block">
+            <span class="case-group-label">测试结果</span>
             <a-radio-group v-model="caseStatus" type="button" size="small" @change="reloadCases">
               <a-radio value="all">全部</a-radio>
               <a-radio :value="0">失败</a-radio>
@@ -200,7 +207,8 @@
             :cases="cases"
             :enum-store="enumStore"
             :can-retry="canRetry"
-            :loading="false"
+            :loading="caseLoading"
+            @open-case-detail="openCaseDetail"
             @show-details="showDetails"
             @retry="onRetry"
           />
@@ -209,7 +217,8 @@
             :cases="cases"
             :enum-store="enumStore"
             :can-retry="canRetry"
-            :loading="false"
+            :loading="caseLoading"
+            @open-case-detail="openCaseDetail"
             @show-details="showDetails"
             @retry="onRetry"
           />
@@ -218,15 +227,24 @@
             :cases="cases"
             :enum-store="enumStore"
             :can-retry="canRetry"
-            :loading="false"
+            :loading="caseLoading"
             @show-details="showDetails"
             @retry="onRetry"
           />
         </a-spin>
 
-        <div ref="loadMoreRef" class="load-more">
-          <a-spin v-if="caseLoading && cases.length > 0" size="small" />
-          <span v-else-if="pagination.finished && cases.length > 0">没有更多了</span>
+        <div class="case-pagination">
+          <a-pagination
+            v-model:current="pagination.page"
+            v-model:page-size="pagination.pageSize"
+            :page-size-options="[20, 50, 100]"
+            :total="pagination.total"
+            show-total
+            show-page-size
+            size="small"
+            @change="onCasePageChange"
+            @page-size-change="onCasePageSizeChange"
+          />
         </div>
       </div>
     </section>
@@ -272,11 +290,36 @@
         <PytestTestReport :resultData="selectedCase" />
       </section>
     </a-drawer>
+
+    <BaseSidePanel
+      :visible="caseDetailDrawer.visible"
+      title="用例详情"
+      width="calc(92vw - 150px)"
+      @update:visible="(val) => { caseDetailDrawer.visible = val }"
+      @cancel="caseDetailDrawer.visible = false"
+    >
+      <div class="mango-report-case-detail-panel">
+        <ApiCaseDetails
+          v-if="caseDetailDrawer.visible && caseDetailDrawer.caseType === 1 && caseDetailDrawer.caseId"
+          :key="`api-${caseDetailDrawer.caseId}`"
+          embedded
+          :case-id="caseDetailDrawer.caseId"
+          @close="caseDetailDrawer.visible = false"
+        />
+        <UiCaseDetails
+          v-else-if="caseDetailDrawer.visible && caseDetailDrawer.caseType === 0 && caseDetailDrawer.caseId"
+          :key="`ui-${caseDetailDrawer.caseId}`"
+          embedded
+          :case-id="caseDetailDrawer.caseId"
+          @close="caseDetailDrawer.visible = false"
+        />
+      </div>
+    </BaseSidePanel>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import {
@@ -291,6 +334,9 @@
   import ElementTestReport from '@/components/reports/ElementTestReport.vue'
   import ApiTestReport from '@/components/reports/ApiTestReport.vue'
   import PytestTestReport from '@/components/reports/PytestTestReport.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
+  import ApiCaseDetails from '@/views/apitest/case/details/index.vue'
+  import UiCaseDetails from '@/views/uitest/case/details/index.vue'
   import UiCaseTable from './UiCaseTable.vue'
   import ApiCaseTable from './ApiCaseTable.vue'
   import PytestCaseTable from './PytestCaseTable.vue'
@@ -316,16 +362,18 @@
   const caseLoading = ref(false)
   const drawerVisible = ref(false)
   const selectedCase = ref<any>({})
-  const loadMoreRef = ref<HTMLElement | null>(null)
+  const caseDetailDrawer = reactive({
+    visible: false,
+    caseId: '',
+    caseType: -1,
+  })
   const isPolling = ref(false)
   const pollingTimer = ref<ReturnType<typeof setInterval> | null>(null)
-  let observer: IntersectionObserver | null = null
 
   const pagination = reactive({
     page: 1,
     pageSize: 20,
     total: 0,
-    finished: false,
   })
 
   const reportId = computed(() =>
@@ -483,6 +531,22 @@
     drawerVisible.value = true
   }
 
+  function openCaseDetail(record: any) {
+    const caseId = record?.__caseId || record?.case_id || record?.id
+    if (!caseId || caseId === '-') {
+      Message.error('未找到用例ID')
+      return
+    }
+    const caseType = Number(record?.case_type ?? activeType.value)
+    if (![0, 1].includes(caseType)) {
+      Message.error('当前用例类型暂不支持打开用例详情')
+      return
+    }
+    caseDetailDrawer.caseId = String(caseId)
+    caseDetailDrawer.caseType = caseType
+    caseDetailDrawer.visible = true
+  }
+
   function buildCaseQuery() {
     const data: any = {
       test_suite_id: reportId.value,
@@ -528,26 +592,18 @@
 
   async function loadCases(reset = false) {
     if (!reportId.value || caseLoading.value) return
-    if (!reset && pagination.finished) return
     if (reset) {
       cases.value = []
       pagination.page = 1
       pagination.total = 0
-      pagination.finished = false
     }
 
     caseLoading.value = true
     try {
       const res = await getSystemTestSuiteDetailsShare(buildCaseQuery())
       const list = Array.isArray(res.data) ? res.data : []
-      cases.value = reset ? list : cases.value.concat(list)
+      cases.value = list
       pagination.total = getTotal(res)
-      pagination.finished =
-        list.length < pagination.pageSize ||
-        (pagination.total > 0 && cases.value.length >= pagination.total)
-      if (!pagination.finished) {
-        pagination.page += 1
-      }
     } catch (error: any) {
       Message.error(error?.msg || '加载报告失败')
     } finally {
@@ -557,6 +613,16 @@
 
   function reloadCases() {
     loadCases(true)
+  }
+
+  function onCasePageChange(page: number) {
+    pagination.page = page
+    loadCases()
+  }
+
+  function onCasePageSizeChange(pageSize: number) {
+    pagination.pageSize = pageSize
+    reloadCases()
   }
 
   function focusFailed() {
@@ -572,26 +638,16 @@
 
   async function refreshLoadedCases() {
     if (!reportId.value || caseLoading.value) return
-    const loadedPageSize = Math.max(cases.value.length, pagination.pageSize)
     const currentPage = pagination.page
-    const wasFinished = pagination.finished
     caseLoading.value = true
     try {
       const query = buildCaseQuery()
-      query.page = 1
-      query.pageSize = loadedPageSize
       const res = await getSystemTestSuiteDetailsShare(query)
       const list = Array.isArray(res.data) ? res.data : []
       cases.value = list
       pagination.total = getTotal(res)
-      pagination.finished =
-        list.length < loadedPageSize || (pagination.total > 0 && list.length >= pagination.total)
-      pagination.page = pagination.finished
-        ? currentPage
-        : Math.floor(list.length / pagination.pageSize) + 1
     } catch (error) {
       pagination.page = currentPage
-      pagination.finished = wasFinished
       throw error
     } finally {
       caseLoading.value = false
@@ -625,21 +681,6 @@
     isPolling.value = false
   }
 
-  function initObserver() {
-    observer?.disconnect()
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          loadCases()
-        }
-      },
-      { root: null, rootMargin: '260px 0px', threshold: 0 }
-    )
-    if (loadMoreRef.value) {
-      observer.observe(loadMoreRef.value)
-    }
-  }
-
   function onRetry(id: any) {
     Modal.confirm({
       title: '提示',
@@ -669,21 +710,17 @@
       activeType.value = firstVisibleType.key
     }
     await loadCases(true)
-    nextTick(initObserver)
   })
 
   onUnmounted(() => {
     stopPolling()
-    observer?.disconnect()
-    observer = null
   })
 </script>
 
 <style scoped lang="less">
   .report-lab {
-    height: 100%;
-    overflow-y: auto;
-    padding: 14px;
+    min-height: 100%;
+    padding: 14px 14px 72px;
     background: var(--m-bg);
     color: var(--m-text);
   }
@@ -1087,7 +1124,7 @@
   }
 
   .case-section {
-    overflow: hidden;
+    overflow: visible;
     padding: 0;
   }
 
@@ -1135,6 +1172,31 @@
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+  }
+
+  .case-group-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--m-border);
+    background: var(--m-surface);
+  }
+
+  .case-group-block {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .case-group-label {
+    flex: 0 0 auto;
+    color: var(--m-muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .type-switch {
@@ -1247,13 +1309,34 @@
     min-height: 220px;
   }
 
-  .empty-state,
-  .load-more {
+  .empty-state {
     min-height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--m-muted);
+  }
+
+  .case-pagination {
+    position: sticky;
+    z-index: 20;
+    bottom: 0;
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 14px;
+    border-top: 1px solid var(--m-border);
+    background: var(--m-surface);
+    box-shadow: 0 -6px 12px color-mix(in srgb, var(--m-surface) 86%, transparent);
+  }
+
+  .mango-report-case-detail-panel {
+    min-height: calc(100vh - 112px);
+
+    :deep(.mango-detail-workbench-page) {
+      min-height: calc(100vh - 136px);
+    }
   }
 
   @media (max-width: 1px) {
@@ -1309,6 +1392,11 @@
 
     .type-switch {
       flex-wrap: wrap;
+    }
+
+    .case-group-panel {
+      align-items: flex-start;
+      flex-direction: column;
     }
 
     h1 {

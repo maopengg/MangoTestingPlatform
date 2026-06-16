@@ -11,7 +11,7 @@ from mangotools.exceptions import MangoToolsError
 
 from src.apps.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiCaseDetailedParameter
 from src.apps.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
-from src.apps.auto_system.service.test_suite.update_test_suite import UpdateTestSuite
+from src.apps.system.service.test_suite.update_test_suite import UpdateTestSuite
 from src.common.enums.api_enum import MethodEnum
 from src.common.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.common.exceptions import *
@@ -176,9 +176,10 @@ class TestCase:
                     url=case_detailed.api_info.url,
                     headers=case_parameter.headers(parameter, self.case_base.case_headers),
                     params=parameter.params,
-                    data=parameter.data,
-                    json=parameter.json,
-                    file=parameter.file,
+                    protocol_type=parameter.protocol_type,
+                    body_type=parameter.body_type,
+                    body_config=parameter.body_config,
+                    sse_config=parameter.sse_config,
                     posterior_file=case_detailed.api_info.posterior_file,
                 )
                 res_model = ApiCaseStepsResultModel(
@@ -258,7 +259,5 @@ class TestCase:
     def update_test_case_detailed_parameter(cls, parameter_id, result_data: ApiCaseStepsResultModel):
         model = ApiCaseDetailedParameter.objects.get(id=parameter_id)
         model.status = result_data.status
-        if result_data.request.file:
-            result_data.request.file = str(result_data.request.file)
         model.result_data = result_data.model_dump()
         model.save()

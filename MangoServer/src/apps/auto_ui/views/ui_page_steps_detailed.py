@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.common.exceptions import ToolsError
-from src.apps.auto_system.service.cache_data_value import CacheDataValue
+from src.apps.system.service.cache_data_value import CacheDataValue
 from src.apps.auto_ui.models import PageStepsDetailed, PageSteps
 from src.apps.auto_ui.service.query_ope_key_name import get_by_object
 from src.apps.auto_ui.views.ui_element import PageElementSerializers

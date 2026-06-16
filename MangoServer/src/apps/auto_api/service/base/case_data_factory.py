@@ -4,7 +4,7 @@
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailedParameter
 from src.apps.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
-from src.apps.auto_data_factory.service.case_config_runner import DataFactoryCaseConfigRunner
+from src.apps.data_factory.service.case_config_runner import DataFactoryCaseConfigRunner
 from src.common.enums.data_factory_enum import (
     DataFactoryCaseSourceTypeEnum,
     DataFactoryExecutionSourceEnum,

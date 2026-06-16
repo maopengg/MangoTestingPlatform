@@ -1,8 +1,8 @@
 from django.db import models
 
-from src.apps.auto_system.models import ProductModule
-from src.apps.auto_system.models import ProjectProduct, TasksDetails
-from src.apps.auto_user.models import User
+from src.apps.system.models import ProductModule
+from src.apps.system.models import ProjectProduct, TasksDetails
+from src.apps.user.models import User
 from src.common.exceptions import ToolsError
 
 

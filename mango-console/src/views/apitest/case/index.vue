@@ -691,8 +691,7 @@
     router.push({
       path: '/apitest/case/details',
       query: {
-        case_id: record.id,
-        project_product: record.project_product.id,
+        id: record.id,
       },
     })
   }

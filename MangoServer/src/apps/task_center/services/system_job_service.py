@@ -68,6 +68,14 @@ class SystemJobService:
             handler=SchedulerSystemJobService.repair_pytest_case_status,
         ),
         SystemJobDefinition(
+            key='sync_ai_mcp_tools',
+            name='AI MCP 工具快照同步',
+            description='每 30 分钟同步一次已启用 MCP 服务的工具列表，避免 Agent 使用过期工具快照。',
+            cron='*/30 * * * *',
+            source_type=ScheduleFireSourceTypeEnum.SYSTEM_JOB.value,
+            handler=SchedulerSystemJobService.sync_ai_mcp_tools,
+        ),
+        SystemJobDefinition(
             key='clean_test_suite_detail_result',
             name='测试详情大结果清理',
             description='每天 00:00 删除超过 30 天的 test_suite_detail_result 数据。',

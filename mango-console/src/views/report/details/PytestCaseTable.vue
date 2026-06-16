@@ -43,7 +43,7 @@
               size="mini"
               @click="$emit('show-details', record.__detailRecord || record)"
             >
-              查看详细报告
+              详细报告
             </a-button>
             <span v-else></span>
             <a-button

@@ -4,9 +4,9 @@ from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
 
-from src.apps.auto_system.models import TestSuite, TestSuiteDetails
-from src.apps.auto_system.service.test_suite.detail_result import TestSuiteDetailResultService
-from src.apps.auto_system.service.test_suite.send_notice import SendNotice
+from src.apps.system.models import TestSuite, TestSuiteDetails
+from src.apps.system.service.test_suite.detail_result import TestSuiteDetailResultService
+from src.apps.system.service.test_suite.send_notice import SendNotice
 from src.common.enums.system_enum import TestSuiteNoticeEnum
 from src.common.enums.tools_enum import TaskEnum
 from src.settings import RETRY_FREQUENCY
@@ -127,6 +127,60 @@ class SchedulerSystemJobService:
             raise
 
     @classmethod
+    @async_task_db_connection()
+    def sync_ai_mcp_tools(cls):
+        try:
+            from src.apps.ai.models import AiMcpServer
+            from src.apps.ai.service.core import McpService
+            from src.apps.user.models import User
+            from src.common.enums.ai_enum import AiMcpStatusEnum
+
+            user = User.objects.exclude(api_key__isnull=True).exclude(api_key='').order_by('id').first()
+            if not user:
+                user = User.objects.order_by('id').first()
+                if user and not user.api_key:
+                    user.api_key = User.unique_api_key()
+                    user.save(update_fields=['api_key'])
+            user_id = user.id if user else None
+            servers = AiMcpServer.objects.filter(status=AiMcpStatusEnum.ENABLED.value).order_by('id')
+            success_count = 0
+            fail_count = 0
+            synced_tool_count = 0
+            results = []
+            for server in servers:
+                try:
+                    result = McpService.sync_tools(server, user_id)
+                    success_count += 1
+                    synced_tool_count += result.get('synced_count', 0)
+                    results.append({
+                        'server_id': server.id,
+                        'server_name': server.name,
+                        'success': True,
+                        **result,
+                    })
+                except Exception as error:
+                    fail_count += 1
+                    server.last_error = str(error)[:1000]
+                    server.save(update_fields=['last_error', 'update_time'])
+                    results.append({
+                        'server_id': server.id,
+                        'server_name': server.name,
+                        'success': False,
+                        'error': str(error)[:300],
+                    })
+                    log.system.error(f'scheduler-service 同步 MCP 工具失败：server={server.id}, error={error}')
+            return {
+                'server_count': servers.count(),
+                'success_count': success_count,
+                'fail_count': fail_count,
+                'synced_tool_count': synced_tool_count,
+                'results': results,
+            }
+        except Exception as error:
+            log.system.error(f'scheduler-service 同步 AI MCP 工具快照失败：{error}')
+            raise
+
+    @classmethod
     def _repair_stuck_models(
             cls,
             models: list[type],
@@ -184,7 +238,7 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def clean_user_logs(cls):
         try:
-            from src.apps.auto_user.models import UserLogs
+            from src.apps.user.models import UserLogs
 
             cutoff_time = timezone.now() - timedelta(days=cls.USER_LOG_RETENTION_DAYS)
             deleted = UserLogs.objects.filter(create_time__lt=cutoff_time).delete()[0]
@@ -203,7 +257,7 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def clean_data_factory_executions(cls):
         try:
-            from src.apps.auto_data_factory.models import DataFactoryExecution
+            from src.apps.data_factory.models import DataFactoryExecution
             from src.common.enums.data_factory_enum import DataFactoryCleanupStatusEnum
 
             cutoff_time = timezone.now() - timedelta(days=cls.DATA_FACTORY_EXECUTION_RETENTION_DAYS)

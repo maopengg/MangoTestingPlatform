@@ -15,10 +15,15 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiInfo
+from src.apps.auto_api.schemas.case_schema import (
+    build_body_from_legacy,
+    normalize_body_config_by_type,
+    validate_body_config,
+)
 from src.apps.auto_api.service.test_case.test_api_info import TestApiInfo
-from src.apps.auto_system.models import ProjectProduct, ProductModule
-from src.apps.auto_system.views.product_module import ProductModuleSerializers
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.system.models import ProjectProduct, ProductModule
+from src.apps.system.views.product_module import ProductModuleSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.common.enums.api_enum import MethodEnum
 from src.common.enums.tools_enum import StatusEnum
 from src.common.tools.decorator.error_response import error_response
@@ -35,6 +40,19 @@ class ApiInfoSerializers(serializers.ModelSerializer):
     class Meta:
         model = ApiInfo
         fields = '__all__'
+
+    def validate_body_config(self, value):
+        return validate_body_config(value, '请求体配置')
+
+    def validate_sse_config(self, value):
+        return validate_body_config(value, 'SSE配置')
+
+    def validate(self, attrs):
+        body_type = attrs.get('body_type', getattr(self.instance, 'body_type', None))
+        if 'body_config' in attrs or body_type == 'raw':
+            body_config = attrs.get('body_config', getattr(self.instance, 'body_config', None))
+            attrs['body_config'] = normalize_body_config_by_type(body_type, body_config)
+        return attrs
 
 
 class ApiInfoSerializersC(serializers.ModelSerializer):
@@ -58,7 +76,7 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
 class ApiInfoListSerializersC(ApiInfoSerializersC):
     class Meta:
         model = ApiInfo
-        exclude = ('result_data', 'data', 'json', 'headers', 'params')
+        exclude = ('result_data', 'headers', 'params', 'data', 'json', 'file', 'body_config', 'sse_config')
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -69,7 +87,7 @@ class ApiInfoListSerializersC(ApiInfoSerializersC):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project_product',
-            'module').defer('result_data')
+            'module').defer('result_data', 'data', 'json', 'file', 'body_config', 'sse_config')
         return queryset
 
 
@@ -167,12 +185,12 @@ class ApiInfoViews(ViewSet):
         params = {k: v[0] if len(v) == 1 else v for k, v in query_params.items()}
         if params:
             result['params'] = json.dumps(params, indent=4, ensure_ascii=False)
-        if parsed.json and parsed.data:
-            result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
-        elif parsed.json is None and parsed.data:
-            result['data'] = json.dumps(parsed.data, indent=4, ensure_ascii=False)
-        elif parsed.json and parsed.data is None:
-            result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
+        body_type, body_config = build_body_from_legacy(
+            data=parsed.data if parsed.json is None else None,
+            json_body=parsed.json if parsed.json else None,
+        )
+        result['body_type'] = body_type
+        result['body_config'] = body_config
         data = ApiInfoCRUD.inside_post(result)
         return ResponseData.success(RESPONSE_MSG_0140, data=data)
 
@@ -193,9 +211,9 @@ class ApiInfoViews(ViewSet):
             '*url': 'url',
             '请求头': 'headers',
             '参数': 'params',
-            '表单': 'data',
-            'JSON': 'json',
-            '文件': 'file',
+            '表单': 'legacy_data',
+            'JSON': 'legacy_json',
+            '文件': 'legacy_file',
         })
         for index, row in df.iterrows():
             record = row.to_dict()
@@ -209,14 +227,21 @@ class ApiInfoViews(ViewSet):
                     ProductModule.DoesNotExist,
                     ProjectProduct.DoesNotExist):
                 return ResponseData.fail(RESPONSE_MSG_0138)
-            for i in ['headers', 'params', 'data', 'json', 'file']:
-                if record[i] == '' or record[i] is None:
+            for i in ['headers', 'params', 'legacy_data', 'legacy_json', 'legacy_file']:
+                if record.get(i) == '' or record.get(i) is None:
                     record[i] = None
-                elif i == 'file':
+                elif i == 'legacy_file':
                     try:
                         record[i] = json.loads(record[i])
                     except json.decoder.JSONDecodeError:
                         return ResponseData.fail(RESPONSE_MSG_0137)
+            body_type, body_config = build_body_from_legacy(
+                data=record.pop('legacy_data', None),
+                json_body=record.pop('legacy_json', None),
+                file_payload=record.pop('legacy_file', None),
+            )
+            record['body_type'] = body_type
+            record['body_config'] = body_config
             ApiInfoCRUD.inside_post(record)
         return ResponseData.success(RESPONSE_MSG_0083)
 

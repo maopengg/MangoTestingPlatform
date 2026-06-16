@@ -15,8 +15,8 @@ from src.apps.auto_pytest.models import PytestCase, PytestProduct
 from src.apps.auto_pytest.service.base.update_file import UpdateFile
 from src.apps.auto_pytest.service.test_case.test_case import TestCase
 from src.apps.auto_pytest.views.pytest_product import PytestProductSerializersC
-from src.apps.auto_system.views.product_module import ProductModuleSerializers
-from src.apps.auto_user.views.user import UserSerializers
+from src.apps.system.views.product_module import ProductModuleSerializers
+from src.apps.user.views.user import UserSerializers
 from src.common.enums.pytest_enum import FileStatusEnum
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.view.model_crud import ModelCRUD

@@ -11,14 +11,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from mangotools.mangos import build_decision_tree
 from pydantic import ValidationError
 
-from src.apps.auto_system.consumers import ChatConsumer
-from src.apps.auto_system.models import TestObject
-from src.apps.auto_system.service.factory import func_test_object_value, get_enabled_databases
-from src.apps.auto_system.service.socket_link.socket_user import SocketUser
+from src.apps.system.consumers import ChatConsumer
+from src.apps.system.models import TestObject
+from src.apps.system.service.factory import func_test_object_value, get_enabled_databases
+from src.apps.system.service.socket_link.socket_user import SocketUser
 from src.apps.auto_ui.models import *
-from src.apps.auto_data_factory.models import DataFactoryCaseConfig
-from src.apps.auto_data_factory.service.datasource import DataFactoryDatasourceResolver
-from src.apps.auto_data_factory.service.runtime_cache import DataFactoryRuntimeCache
+from src.apps.data_factory.models import DataFactoryCaseConfig
+from src.apps.data_factory.service.datasource import DataFactoryDatasourceResolver
+from src.apps.data_factory.service.runtime_cache import DataFactoryRuntimeCache
 from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 from src.common.enums.socket_api_enum import UiSocketEnum
 from src.common.enums.system_enum import ClientTypeEnum, ClientNameEnum

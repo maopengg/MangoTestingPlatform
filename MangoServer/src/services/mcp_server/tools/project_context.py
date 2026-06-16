@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from src.apps.auto_system.models import ProductModule, ProjectProduct, TestObject
-from src.apps.auto_system.views.product_module import ProductModuleCRUD
-from src.apps.auto_user.models import User
+from src.apps.system.models import ProductModule, ProjectProduct, TestObject
+from src.apps.system.views.product_module import ProductModuleCRUD
+from src.apps.user.models import User
 from src.common.enums.tools_enum import EnvironmentEnum
 from src.services.mcp_server.common import (
     create_dangerous_action_preview,
@@ -27,7 +27,7 @@ def _product_module_summary(module: ProductModule) -> dict:
 
 def _product_module_delete_impact(module_id: int) -> dict:
     from src.apps.auto_api.models import ApiCase, ApiInfo
-    from src.apps.auto_data_factory.models import DataFactoryEntity, DataFactoryExecution, DataFactoryTemplate
+    from src.apps.data_factory.models import DataFactoryEntity, DataFactoryExecution, DataFactoryTemplate
     from src.apps.auto_ui.models import Page, PageSteps, UiCase
 
     module = ProductModule.objects.select_related("project_product").get(id=module_id)

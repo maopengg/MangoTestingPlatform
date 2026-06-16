@@ -168,7 +168,8 @@ class ApiCaseScenarioTagEnum(BaseEnum):
     CORE_LINK = 3
     HIGH_FREQUENCY = 4
     BLOCKING = 5
-    ONLINE_INSPECTION = 6
+    PRODUCTION_INSPECTION = 6
+    PRODUCTION_REGRESSION = 10
 
     @classmethod
     def obj(cls):
@@ -179,5 +180,6 @@ class ApiCaseScenarioTagEnum(BaseEnum):
             3: "核心链路",
             4: "高频",
             5: "阻塞",
-            6: "线上巡检",
+            6: "生产巡检",
+            10: "生产回归",
         }

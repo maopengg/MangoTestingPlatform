@@ -445,6 +445,11 @@
     })
       .then((res) => {
         templateForm.field_overrides = res.data?.field_overrides || {}
+        templateForm.items = (templateForm.items || []).map((item: any) => ({
+          ...item,
+          field_overrides: {},
+        }))
+        snapshotSceneItemOverrides(templateForm.items || [])
         snapshotFieldConfig()
         Message.success(res.msg)
         return loadTemplateFields().then(loadPreview)
@@ -461,7 +466,7 @@
     }
     Modal.confirm({
       title: '同步实体规则',
-      content: '同步后会使用当前实体字段规则覆盖场景模板字段配置，确认继续？',
+      content: '同步后会清空当前场景模板字段覆盖，使用实体字段规则作为默认生成方式，确认继续？',
       okText: '确认同步',
       cancelText: '取消',
       onBeforeOk: () => syncTemplateFields(),

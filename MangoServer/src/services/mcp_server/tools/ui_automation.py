@@ -3,8 +3,8 @@ from __future__ import annotations
 from django.forms import model_to_dict
 from django.db.models import Q
 
-from src.apps.auto_system.service.tasks.add_tasks import AddTasks
-from src.apps.auto_system.service.cache_data_value import CacheDataValue
+from src.apps.system.service.tasks.add_tasks import AddTasks
+from src.apps.system.service.cache_data_value import CacheDataValue
 from src.apps.auto_ui.models import Page, PageElement, PageSteps, PageStepsDetailed, UiCase, UiCaseStepsDetailed, UiPublic
 from src.apps.auto_ui.service.test_case.test_case import TestCase
 from src.apps.auto_ui.views.ui_case import UiCaseCRUD
@@ -269,11 +269,11 @@ def register_ui_automation_tools(mcp):
                     "scenario_layer": "与 API case 一致：0=接口/组件层、1=Integration集成、2=E2E端到端。",
                     "scenario_type": "正常/异常/边界/权限/数据/流程。",
                     "scenario_tags": {
-                        "description": "辅助标签：0=冒烟、1=回归、2=主流程、3=核心链路、4=高频、5=阻塞、6=线上巡检。",
+                        "description": "辅助标签：0=冒烟、1=回归、2=主流程、3=核心链路、4=高频、5=阻塞、6=生产巡检、10=生产回归。",
                         "selection_guidance": [
                             "UI case 的 API/Integration/E2E 分层放在 scenario_layer，不放在 scenario_tags。",
-                            "如果 UI case 不涉及 SQL 前后置、页面步骤 SQL、SQL 断言或数据工厂造数/清理，可默认增加 6=线上巡检。",
-                            "依赖数据库状态、数据工厂准备数据或执行后清理的数据型 UI 用例，不建议默认打线上巡检标签。",
+                            "6=生产巡检用于生产只读健康检查；UI case 使用该标签时不允许包含 SQL 前后置、页面步骤 SQL、SQL 断言或数据工厂造数/清理。",
+                            "10=生产回归允许覆盖生产回归流程，但不允许任何数据库操作。",
                         ],
                     },
                     "parametrize": [{"name": "参数组", "parametrize": [{"key": "name", "value": "AUTO"}]}],
@@ -307,7 +307,7 @@ def register_ui_automation_tools(mcp):
                 "case_data": "推荐通过 refresh_ui_case_step_cache_data 生成，不建议 AI 手工拼。",
                 "dangerous_actions": "删除类必须先 preview_delete_*_impact，再传回 preview_token 和 confirm_text。",
                 "notes": [
-                    "创建 UI case 时，如果不涉及 SQL 和数据工厂，推荐把 scenario_tags 默认加上 6=线上巡检，方便后续按巡检集合筛选。",
+                    "6=生产巡检用于生产只读健康检查；10=生产回归允许覆盖生产回归流程；两者都不允许任何数据库操作。",
                     "UI case 的 front_sql、posterior_sql 如在多数据库测试环境中使用，先调用 list_data_factory_datasource_aliases(project_product_id) 查询逻辑数据源 ID，再写入 datasource_alias。",
                     "page_step_detail.type=2 的 sql_execute 目前保持既有格式 [{sql,key_list}]，暂不在 MCP schema 中声明 datasource_alias。",
                     "UI 公共变量 type=1(SQL) 已接入 datasource_alias_id，创建或更新前先查询逻辑数据源并传入 datasource_alias_id。",
@@ -654,7 +654,7 @@ def register_ui_automation_tools(mcp):
 
     @mcp.tool()
     def create_ui_case(project_product_id: int, module_id: int, name: str, case_people_id: int | None = None, level: int = 1, scenario_layer: int = 0, scenario_type: int = 0, scenario_tags: list[int] | None = None, scenario_description: str | None = None, parametrize: list | None = None, front_custom: list | None = None, front_sql: list | None = None, posterior_sql: list | None = None) -> dict:
-        """创建 UI case 主体。负责人未传时使用当前 MCP 用户；不涉及 SQL 和数据工厂时可默认给 scenario_tags 增加 6=线上巡检。"""
+        """创建 UI case 主体。负责人未传时使用当前 MCP 用户；生产巡检/生产回归标签不允许任何数据库操作。"""
         if case_people_id is None:
             case_people_id = current_user().id
         data = UiCaseCRUD.inside_post({"project_product": project_product_id, "module": module_id, "name": name, "case_people": case_people_id, "level": level, "scenario_layer": scenario_layer, "scenario_type": scenario_type, "scenario_tags": scenario_tags or [], "scenario_description": scenario_description, "parametrize": parametrize or [], "front_custom": front_custom or [], "front_sql": front_sql or [], "posterior_sql": posterior_sql or []})

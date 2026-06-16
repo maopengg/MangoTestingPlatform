@@ -89,7 +89,7 @@
   const props = defineProps({
     data: {
       type: [Object, Array, String, Number, Boolean, Date],
-      required: true,
+      default: '',
     },
     jsonpath: {
       type: Boolean,

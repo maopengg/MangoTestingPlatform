@@ -32,12 +32,20 @@
         <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
           <div class="action-cell">
             <a-button
+              v-if="!record.children && record.__caseId && record.__caseId !== '-'"
+              type="text"
+              size="mini"
+              @click="$emit('open-case-detail', record)"
+            >
+              用例详情
+            </a-button>
+            <a-button
               v-if="!record.children"
               type="text"
               size="mini"
               @click="$emit('show-details', record.__detailRecord || record)"
             >
-              查看详细报告
+              详细报告
             </a-button>
             <span v-else></span>
             <a-button
@@ -68,6 +76,7 @@
   }>()
 
   defineEmits<{
+    (event: 'open-case-detail', record: any): void
     (event: 'show-details', record: any): void
     (event: 'retry', id: any): void
   }>()

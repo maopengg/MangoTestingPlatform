@@ -160,6 +160,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
   import { usePageData } from '@/store/page-data'
+  import { getUserTestObject } from '@/api/system/test_object'
   import { ModalDialogType } from '@/types/components'
   import { getFormItems } from '@/utils/datacleaning'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -186,16 +187,16 @@
   const STATUS_ENABLED = 1
 
   const datasourceDetailTitle = computed(() => {
-    const id = pageData.record?.id || route.query.id || '-'
+    const id = testObjectId.value || '-'
     const name = pageData.record?.name || route.query.name || '-'
     return `数据源配置 / ${id} / ${name}`
   })
-  const testObjectId = computed(() => firstQueryValue(pageData.record?.id || route.query.id))
+  const testObjectId = computed(() => firstQueryValue(route.query.id || pageData.record?.id))
   const projectProductId = computed(() => {
     return firstQueryValue(
-      pageData.record?.project_product?.id
+      route.query.project_product
+        || pageData.record?.project_product?.id
         || pageData.record?.project_product
-        || route.query.project_product,
     )
   })
   const data = reactive({
@@ -208,7 +209,20 @@
     return Array.isArray(value) ? value[0] : value
   }
 
+  async function ensureTestObjectRecord() {
+    if (!testObjectId.value) return
+    if (pageData.record?.id && String(pageData.record.id) === String(testObjectId.value)) {
+      return
+    }
+    const res = await getUserTestObject({ id: testObjectId.value, page: 1, pageSize: 1 })
+    const record = (res.data || [])[0]
+    if (record) {
+      pageData.setRecord(record)
+    }
+  }
+
   function doRefresh() {
+    if (!testObjectId.value) return
     const value = getFormItems(conditionItems)
     value['test_object_id'] = testObjectId.value
     value['page'] = pagination.page
@@ -511,7 +525,8 @@
     }
   }
 
-  onMounted(() => {
+  onMounted(async () => {
+    await ensureTestObjectRecord()
     enumStore.getEnum()
     loadDatasourceAliasOptions()
     doRefresh()

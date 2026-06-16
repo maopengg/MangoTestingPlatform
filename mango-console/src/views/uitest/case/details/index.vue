@@ -75,8 +75,8 @@
                   <a-tab-pane key="14" title="数据工厂">
                     <DataFactoryCaseConfigPanel
                       ref="dataFactoryPanelRef"
-                      :case-id="route.query.case_id as string"
-                      :project-product-id="route.query.project_product as string"
+                      :case-id="uiCaseId as string"
+                      :project-product-id="uiProjectProductId as string"
                       :source-type="2"
                     />
                   </a-tab-pane>
@@ -142,6 +142,11 @@
                             },
                             { label: '同步数据', onClick: () => oeFreshSteps(record) },
                             { label: '编辑', onClick: () => onUpdate1(record) },
+                            {
+                              label: '步骤详情',
+                              disabled: !getPageStepId(record),
+                              onClick: () => openPageStepDetail(record),
+                            },
                             { label: '删除', danger: true, onClick: () => onDelete(record) },
                           ]"
                         />
@@ -344,6 +349,26 @@
     </template>
   </TableBody>
 
+  <BaseSidePanel
+    :visible="pageStepDetailPanel.visible"
+    title="页面步骤详情"
+    width="calc(92vw - 150px)"
+    @update:visible="(val) => { pageStepDetailPanel.visible = val }"
+    @cancel="pageStepDetailPanel.visible = false"
+  >
+    <div class="mango-ui-case-page-step-panel">
+      <PageStepsDetails
+        v-if="pageStepDetailPanel.visible && pageStepDetailPanel.pageStepsId"
+        :key="pageStepDetailPanel.pageStepsId"
+        embedded
+        :page-steps-id="pageStepDetailPanel.pageStepsId"
+        :page-id="pageStepDetailPanel.pageId"
+        :page-type="pageStepDetailPanel.pageType"
+        @close="pageStepDetailPanel.visible = false"
+      />
+    </div>
+  </BaseSidePanel>
+
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
@@ -359,7 +384,7 @@
           <template v-else-if="item.type === 'cascader' && item.key === 'module'">
             <ProductModuleSelect
               v-model="item.value"
-              :project-product-id="pageData.record.project_product?.id || route.query.project_product"
+              :project-product-id="uiProjectProductId as string"
               :placeholder="item.placeholder"
               @change="doUiPageNameAll"
             />
@@ -414,8 +439,8 @@
     putUiCasePutCaseSort,
     putUiCaseStepsDetailed,
   } from '@/api/uitest/case-steps-detailed'
-  import { getUiCaseRun, putUiCase } from '@/api/uitest/case'
-  import { getUiStepsPageStepsName, getUiStepsTest } from '@/api/uitest/page-steps'
+  import { getUiCase, getUiCaseRun, putUiCase } from '@/api/uitest/case'
+  import { getUiSteps, getUiStepsPageStepsName, getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiPageName } from '@/api/uitest/page'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
@@ -425,17 +450,60 @@
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
+  import PageStepsDetails from '@/views/uitest/page-steps/details/index.vue'
   import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
 
   const pageData: any = usePageData()
+  const props = withDefaults(
+    defineProps<{
+      caseId?: string | number
+      projectProductId?: string | number
+      embedded?: boolean
+    }>(),
+    {
+      caseId: '',
+      projectProductId: '',
+      embedded: false,
+    }
+  )
+  const emit = defineEmits<{
+    (event: 'close'): void
+  }>()
   const route = useRoute()
+  const uiCaseId = computed(() => props.caseId || route.query.id || route.query.case_id || pageData.record?.id || '')
+  const uiProjectProductId = computed(
+    () =>
+      props.projectProductId ||
+      route.query.project_product ||
+      pageData.record?.project_product?.id ||
+      pageData.record?.project_product ||
+      ''
+  )
+  const defaultCaseRecord = () => ({
+    id: uiCaseId.value,
+    name: '',
+    front_custom: [],
+    front_sql: [],
+    posterior_sql: [],
+    project_product: uiProjectProductId.value ? { id: uiProjectProductId.value } : null,
+  })
+  if (!pageData.record) {
+    pageData.setRecord(defaultCaseRecord())
+  }
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const dataFactoryPanelRef = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
   const tableKey = ref(0)
+  const pageStepDetailPanel = reactive({
+    visible: false,
+    pageStepsId: '',
+    pageId: '',
+    pageType: '',
+  })
   const data: any = reactive({
     isAdd: true,
     updateId: null,
@@ -455,7 +523,7 @@
   const syncAllLoading = ref(false)
   const detailSaving = ref(false)
   const uiCaseDetailTitle = computed(() => {
-    const id = pageData.record?.id || route.query.id || '-'
+    const id = uiCaseId.value || '-'
     const name = pageData.record?.name || '-'
     return `界面用例配置 / ${id} / ${name}`
   })
@@ -575,13 +643,14 @@
 
   function onDataForm() {
     if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
+      if (!uiCaseId.value) return
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        value['case'] = route.query.id
+        value['case'] = uiCaseId.value
         value['case_cache_data'] = []
         value['case_cache_ass'] = []
         value['case_sort'] = data.data.length
-        postUiCaseStepsDetailed(value, route.query.id)
+        postUiCaseStepsDetailed(value, uiCaseId.value)
           .then((res) => {
             modalDialogRef.value?.toggle()
             Message.success(res.msg)
@@ -600,7 +669,7 @@
           })
       } else {
         value['id'] = data.updateId
-        putUiCaseStepsDetailed(value, route.query.id)
+        putUiCaseStepsDetailed(value, uiCaseId.value)
           .then((res) => {
             modalDialogRef.value?.toggle()
             Message.success(res.msg)
@@ -619,14 +688,41 @@
   }
 
   function doResetSearch() {
+    if (props.embedded) {
+      emit('close')
+      return
+    }
     window.history.back()
   }
 
+  function normalizeCaseRecord(record: any) {
+    return {
+      ...defaultCaseRecord(),
+      ...(record || {}),
+      front_custom: Array.isArray(record?.front_custom) ? record.front_custom : [],
+      front_sql: Array.isArray(record?.front_sql) ? record.front_sql : [],
+      posterior_sql: Array.isArray(record?.posterior_sql) ? record.posterior_sql : [],
+    }
+  }
+
+  async function ensureCaseRecord() {
+    const caseId = uiCaseId.value
+    if (!caseId) return
+    if (pageData.record?.id && String(pageData.record.id) === String(caseId)) {
+      pageData.setRecord(normalizeCaseRecord(pageData.record))
+      return
+    }
+    const res = await getUiCase({ id: caseId, page: 1, pageSize: 1 })
+    const record = (res.data || [])[0]
+    pageData.setRecord(normalizeCaseRecord(record || { id: caseId }))
+  }
+
   function doRefresh() {
+    if (!uiCaseId.value) return
     clearPollingTimer()
     stepTableLoading.value = true
 
-    getUiCaseStepsDetailed(route.query.id)
+    getUiCaseStepsDetailed(uiCaseId.value)
       .then((res) => {
         data.data = res.data
         if (data.selectData && res.data) {
@@ -680,7 +776,7 @@
       okText: '同步',
       onBeforeOk: () => {
         syncAllLoading.value = true
-        return getUiCaseStepsRefreshCacheData(null, route.query.id)
+        return getUiCaseStepsRefreshCacheData(null, uiCaseId.value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -710,8 +806,9 @@
   }
 
   function loadDatasourceAliases() {
+    if (!uiProjectProductId.value) return
     getDataFactoryDatasourceAlias({
-      project_product: route.query.project_product,
+      project_product: uiProjectProductId.value,
       status: 1,
     })
       .then((res) => {
@@ -731,7 +828,7 @@
     if (caseRunning.value) return
     caseRunning.value = true
     try {
-      const res = await getUiCaseRun(route.query.id, userStore.selected_environment)
+      const res = await getUiCaseRun(uiCaseId.value, userStore.selected_environment)
       Message.loading(res.msg)
     } catch (e) {
     } finally {
@@ -775,7 +872,7 @@
         id: data.selectData.id,
         case_data: data.selectData.case_data,
       },
-      route.query.id
+      uiCaseId.value
     )
       .then((res) => {
         Message.success(res.msg)
@@ -803,6 +900,42 @@
     }
   }
 
+  function getPageStepId(record: any) {
+    const pageStep = record?.page_step
+    return pageStep?.id || pageStep || ''
+  }
+
+  async function getFullPageStep(record: any) {
+    const pageStepId = getPageStepId(record)
+    if (!pageStepId) return null
+    const pageStep = record?.page_step
+    if (pageStep?.page?.id && pageStep?.project_product?.ui_client_type !== undefined) {
+      return pageStep
+    }
+    const res = await getUiSteps({ id: pageStepId })
+    return res.data?.[0] || pageStep || { id: pageStepId }
+  }
+
+  async function openPageStepDetail(record: any) {
+    const pageStepId = getPageStepId(record)
+    if (!pageStepId) {
+      Message.error('未找到页面步骤ID')
+      return
+    }
+    try {
+      const pageStep = await getFullPageStep(record)
+      const pageId = pageStep?.page?.id || pageStep?.page || ''
+      const pageType = pageStep?.project_product?.ui_client_type ?? ''
+      pageStepDetailPanel.pageStepsId = String(pageStepId)
+      pageStepDetailPanel.pageId = pageId ? String(pageId) : ''
+      pageStepDetailPanel.pageType = pageType !== '' && pageType !== null ? String(pageType) : ''
+      pageStepDetailPanel.visible = true
+    } catch (error) {
+      console.log(error)
+      Message.error('页面步骤信息获取失败')
+    }
+  }
+
   function onModifyStatus(newValue: any, id: number, key: string) {
     let obj: any = {
       id: id,
@@ -814,7 +947,7 @@
       setTimeout(async () => {
         try {
           let value: any = false
-          await putUiCaseStepsDetailed(obj, route.query.id)
+          await putUiCaseStepsDetailed(obj, uiCaseId.value)
             .then((res) => {
               Message.success(res.msg)
               value = res.code === 200
@@ -830,6 +963,7 @@
 
   onMounted(() => {
     nextTick(async () => {
+      await ensureCaseRecord()
       doRefresh()
       useSelectValue.getSelectValue()
       loadDatasourceAliases()
@@ -1144,5 +1278,13 @@
 
   .drag-handle:hover {
     color: var(--m-primary);
+  }
+
+  .mango-ui-case-page-step-panel {
+    min-height: calc(100vh - 112px);
+  }
+
+  .mango-ui-case-page-step-panel :deep(.mango-detail-workbench-page) {
+    min-height: calc(100vh - 136px);
   }
 </style>

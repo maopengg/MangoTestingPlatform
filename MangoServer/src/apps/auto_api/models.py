@@ -1,8 +1,15 @@
 from django.db import models
 
-from src.apps.auto_system.models import ProjectProduct, ProductModule, TimeTasks
-from src.apps.auto_user.models import User
-from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum, ApiPublicTypeEnum
+from src.apps.system.models import ProjectProduct, ProductModule, TimeTasks
+from src.apps.user.models import User
+from src.common.enums.api_enum import (
+    ApiAuthRefreshModeEnum,
+    ApiAuthRefreshStatusEnum,
+    ApiAuthTypeEnum,
+    ApiBodyTypeEnum,
+    ApiProtocolTypeEnum,
+    ApiPublicTypeEnum,
+)
 from src.common.enums.tools_enum import EnvironmentEnum, StatusEnum
 from src.common.exceptions import ToolsError
 
@@ -27,11 +34,16 @@ class ApiInfo(models.Model):
     headers = models.JSONField(verbose_name="请求头", null=True)
     params = models.TextField(verbose_name="参数", null=True)
     is_text_params = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
+    # Deprecated: 仅为 6.3.1 请求体结构迁移保留，运行时读取 body_type/body_config，后续版本删除。
     data = models.TextField(verbose_name="data", null=True)
     is_text_data = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
     json = models.TextField(verbose_name="json", null=True)
     is_text_json = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
     file = models.JSONField(verbose_name="file", null=True)
+    protocol_type = models.CharField(verbose_name="协议类型", max_length=32, default=ApiProtocolTypeEnum.HTTP.value)
+    body_type = models.CharField(verbose_name="请求体类型", max_length=32, default=ApiBodyTypeEnum.NONE.value)
+    body_config = models.JSONField(verbose_name="请求体配置", null=True)
+    sse_config = models.JSONField(verbose_name="SSE配置", null=True)
 
     posterior_json_path = models.JSONField(verbose_name="后置jsonpath提取", default=list)
     posterior_re = models.JSONField(verbose_name="后置正则提取", default=list)
@@ -81,10 +93,10 @@ class ApiCase(models.Model):
     def delete(self, *args, **kwargs):
         if ApiCaseDetailed.objects.filter(case=self).exists():
             raise ToolsError(300, "测试用例详情-有关联数据，请先删除绑定的数据后再删除！")
-        from src.apps.auto_system.models import TasksDetails
+        from src.apps.system.models import TasksDetails
         if TasksDetails.objects.filter(api_case=self).exists():
             raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
-        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.apps.data_factory.models import DataFactoryCaseConfig
         from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
         DataFactoryCaseConfig.objects.filter(
             source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
@@ -122,9 +134,14 @@ class ApiCaseDetailedParameter(models.Model):
     headers = models.JSONField(verbose_name="请求头", default=list)
     is_case_headers = models.SmallIntegerField(verbose_name="是否使用用例headers", default=StatusEnum.SUCCESS.value)
     params = models.TextField(verbose_name="参数", null=True)
+    # Deprecated: 仅为 6.3.1 请求体结构迁移保留，运行时读取 body_type/body_config，后续版本删除。
     data = models.TextField(verbose_name="data", null=True)
     json = models.TextField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
+    protocol_type = models.CharField(verbose_name="协议类型", max_length=32, default=ApiProtocolTypeEnum.HTTP.value)
+    body_type = models.CharField(verbose_name="请求体类型", max_length=32, default=ApiBodyTypeEnum.NONE.value)
+    body_config = models.JSONField(verbose_name="请求体配置", null=True)
+    sse_config = models.JSONField(verbose_name="SSE配置", null=True)
 
     # 前置
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
@@ -150,7 +167,7 @@ class ApiCaseDetailedParameter(models.Model):
         db_table = 'api_case_detailed_parameter'
 
     def delete(self, *args, **kwargs):
-        from src.apps.auto_data_factory.models import DataFactoryCaseConfig
+        from src.apps.data_factory.models import DataFactoryCaseConfig
         from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
         DataFactoryCaseConfig.objects.filter(
             source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,

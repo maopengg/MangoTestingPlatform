@@ -67,6 +67,56 @@ class ApiParameterTypeEnum(BaseEnum):
         return {0: "参数", 1: "表单", 2: "json", 3: "文件"}
 
 
+class ApiProtocolTypeEnum(BaseEnum):
+    """API协议类型"""
+    HTTP = "http"
+    SSE = "sse"
+    JSON_RPC = "json_rpc"
+    XML_RPC = "xml_rpc"
+    SOAP = "soap"
+    GRAPHQL = "graphql"
+    GRPC = "grpc"
+    DUBBO = "dubbo"
+    THRIFT = "thrift"
+    MCP = "mcp"
+    WEBSOCKET = "websocket"
+
+    @classmethod
+    def obj(cls):
+        return {
+            "http": "标准HTTP",
+            "sse": "SSE事件流",
+            "json_rpc": "JSON-RPC",
+            "xml_rpc": "XML-RPC",
+            "soap": "SOAP",
+            "graphql": "GraphQL",
+            "grpc": "gRPC",
+            "dubbo": "Dubbo",
+            "thrift": "Thrift",
+            "mcp": "MCP",
+            "websocket": "WebSocket",
+        }
+
+
+class ApiBodyTypeEnum(BaseEnum):
+    """API请求体类型"""
+    NONE = "none"
+    JSON = "json"
+    FORM = "form"
+    RAW = "raw"
+    MULTIPART = "multipart"
+
+    @classmethod
+    def obj(cls):
+        return {
+            "none": "无请求体",
+            "json": "JSON",
+            "form": "表单",
+            "raw": "Raw文本",
+            "multipart": "Multipart",
+        }
+
+
 class ApiAuthTypeEnum(BaseEnum):
     """API授权方式"""
     API = 0

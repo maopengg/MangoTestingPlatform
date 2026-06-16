@@ -45,6 +45,26 @@ interface EnumState {
   data_factory_execution_stage: StateValueType
   data_factory_execution_status: StateValueType
   data_factory_cleanup_status: StateValueType
+  ai_skill_status: StateValueType
+  ai_skill_type: StateValueType
+  ai_mcp_status: StateValueType
+  ai_mcp_transport_type: StateValueType
+  ai_mcp_auth_type: StateValueType
+  ai_mcp_tool_risk_level: StateValueType
+  ai_agent_task_type: StateValueType
+  ai_agent_task_status: StateValueType
+  manual_test_type: StateValueType
+  manual_test_source_type: StateValueType
+  manual_test_sync_status: StateValueType
+  manual_test_change_status: StateValueType
+  manual_test_automation_impact_status: StateValueType
+  manual_test_automation_type: StateValueType
+  manual_test_relation_type: StateValueType
+  manual_test_optimize_status: StateValueType
+  functional_test_context_key: StateValueType
+  functional_test_context_content_type: StateValueType
+  functional_test_context_url_type: StateValueType
+  functional_test_context_parse_status: StateValueType
   colors: string[]
   status_colors: string[]
 }
@@ -94,6 +114,26 @@ export const useEnum = defineStore('get-enum', {
     data_factory_execution_stage: [],
     data_factory_execution_status: [],
     data_factory_cleanup_status: [],
+    ai_skill_status: [],
+    ai_skill_type: [],
+    ai_mcp_status: [],
+    ai_mcp_transport_type: [],
+    ai_mcp_auth_type: [],
+    ai_mcp_tool_risk_level: [],
+    ai_agent_task_type: [],
+    ai_agent_task_status: [],
+    manual_test_type: [],
+    manual_test_source_type: [],
+    manual_test_sync_status: [],
+    manual_test_change_status: [],
+    manual_test_automation_impact_status: [],
+    manual_test_automation_type: [],
+    manual_test_relation_type: [],
+    manual_test_optimize_status: [],
+    functional_test_context_key: [],
+    functional_test_context_content_type: [],
+    functional_test_context_url_type: [],
+    functional_test_context_parse_status: [],
     colors: [
       'cyan',
       'orangered',
@@ -110,12 +150,17 @@ export const useEnum = defineStore('get-enum', {
       'gray',
       'magenta',
     ],
-    status_colors: ['red', 'green', 'gold', 'gray'],
+    status_colors: ['red', 'green', 'gold', 'gray', 'orange', 'cyan', 'gray'],
   }),
   getters: {},
   actions: {
     hasEnumData() {
-      return Array.isArray(this.method) && this.method.length > 0
+      return (
+        Array.isArray(this.method) &&
+        this.method.length > 0 &&
+        Array.isArray(this.ai_agent_task_type) &&
+        this.ai_agent_task_type.length > 0
+      )
     },
     setEnumData(data: any) {
       this.client = data.client || data.cline_type || []
@@ -159,6 +204,26 @@ export const useEnum = defineStore('get-enum', {
       this.data_factory_execution_stage = data.data_factory_execution_stage || []
       this.data_factory_execution_status = data.data_factory_execution_status || []
       this.data_factory_cleanup_status = data.data_factory_cleanup_status || []
+      this.ai_skill_status = data.ai_skill_status || []
+      this.ai_skill_type = data.ai_skill_type || []
+      this.ai_mcp_status = data.ai_mcp_status || []
+      this.ai_mcp_transport_type = data.ai_mcp_transport_type || []
+      this.ai_mcp_auth_type = data.ai_mcp_auth_type || []
+      this.ai_mcp_tool_risk_level = data.ai_mcp_tool_risk_level || []
+      this.ai_agent_task_type = data.ai_agent_task_type || []
+      this.ai_agent_task_status = data.ai_agent_task_status || []
+      this.manual_test_type = data.manual_test_type || []
+      this.manual_test_source_type = data.manual_test_source_type || []
+      this.manual_test_sync_status = data.manual_test_sync_status || []
+      this.manual_test_change_status = data.manual_test_change_status || []
+      this.manual_test_automation_impact_status = data.manual_test_automation_impact_status || []
+      this.manual_test_automation_type = data.manual_test_automation_type || []
+      this.manual_test_relation_type = data.manual_test_relation_type || []
+      this.manual_test_optimize_status = data.manual_test_optimize_status || []
+      this.functional_test_context_key = data.functional_test_context_key || []
+      this.functional_test_context_content_type = data.functional_test_context_content_type || []
+      this.functional_test_context_url_type = data.functional_test_context_url_type || []
+      this.functional_test_context_parse_status = data.functional_test_context_parse_status || []
     },
     getEnum(force = false) {
       if (!force && this.hasEnumData()) {

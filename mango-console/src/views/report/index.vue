@@ -56,7 +56,7 @@
           :columns="tableColumns"
           :pagination="false"
           :rowKey="rowKey"
-          :scroll="{ x: 1100, y: tableScrollHeight() }"
+          :scroll="{ x: 1100 }"
         >
           <template #columns>
             <a-table-column
@@ -184,12 +184,6 @@
       .catch(console.log)
   }
 
-  function tableScrollHeight() {
-    const headerHeight = 460
-    const footerHeight = 45
-    return `calc(94vh - ${headerHeight}px - ${footerHeight}px)`
-  }
-
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
@@ -257,9 +251,10 @@
   }
 
   .report-chart-card {
-    height: 280px;
-    min-height: 0;
     display: flex;
+    height: 280px;
+    margin-top: 0;
+    min-height: 0;
     flex-direction: column;
   }
 

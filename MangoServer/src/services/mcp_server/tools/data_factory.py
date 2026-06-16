@@ -8,7 +8,7 @@ from django.db import transaction
 from django.forms import model_to_dict
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailedParameter
-from src.apps.auto_data_factory.models import (
+from src.apps.data_factory.models import (
     DataFactoryCaseConfig,
     DataFactoryDatasourceAlias,
     DataFactoryDatasourceBinding,
@@ -19,16 +19,17 @@ from src.apps.auto_data_factory.models import (
     DataFactoryTemplate,
     DataFactoryTemplateItem,
 )
-from src.apps.auto_data_factory.service.cleanup import DataFactoryCleanup
-from src.apps.auto_data_factory.service.datasource import DataFactoryDatasource, DataFactoryDatasourceResolver, is_missing_value
-from src.apps.auto_data_factory.service.discover import DataFactoryDiscover
-from src.apps.auto_data_factory.service.runner import DataFactoryRunner
-from src.apps.auto_data_factory.views.datasource_alias import DataFactoryDatasourceAliasCRUD
-from src.apps.auto_data_factory.views.datasource_binding import DataFactoryDatasourceBindingCRUD
-from src.apps.auto_data_factory.views.entity import DataFactoryEntityCRUD, DataFactoryEntityViews
-from src.apps.auto_data_factory.views.field import DataFactoryFieldCRUD, DataFactoryFieldViews
-from src.apps.auto_data_factory.views.template import DataFactoryTemplateCRUD
-from src.apps.auto_system.models import Database, ProductModule
+from src.apps.data_factory.service.cleanup import DataFactoryCleanup
+from src.apps.data_factory.service.datasource import DataFactoryDatasource, DataFactoryDatasourceResolver, is_missing_value
+from src.apps.data_factory.service.discover import DataFactoryDiscover
+from src.apps.data_factory.service.sql_query import DataFactorySqlQuery
+from src.apps.data_factory.service.runner import DataFactoryRunner
+from src.apps.data_factory.views.datasource_alias import DataFactoryDatasourceAliasCRUD
+from src.apps.data_factory.views.datasource_binding import DataFactoryDatasourceBindingCRUD
+from src.apps.data_factory.views.entity import DataFactoryEntityCRUD, DataFactoryEntityViews
+from src.apps.data_factory.views.field import DataFactoryFieldCRUD, DataFactoryFieldViews
+from src.apps.data_factory.views.template import DataFactoryTemplateCRUD
+from src.apps.system.models import Database, ProductModule
 from src.common.enums.data_factory_enum import (
     DataFactoryCaseSourceTypeEnum,
     DataFactoryCleanupStatusEnum,
@@ -37,7 +38,7 @@ from src.common.enums.data_factory_enum import (
     DataFactoryOperationTypeEnum,
 )
 from src.common.enums.tools_enum import StatusEnum
-from src.common.exceptions import MangoServerError
+from src.common.exceptions import ERROR_MSG_0077, MangoServerError, ToolsError
 from src.services.mcp_server.common import (
     create_dangerous_action_preview,
     current_user,
@@ -417,6 +418,24 @@ def register_data_factory_tools(mcp):
         env = _selected_test_env(user_id, test_env)
         database = _database_from_args(database_id, datasource_alias_id, test_object_id, project_product_id, env)
         return ok(DataFactoryDiscover.get_table_schema(database, table_name))
+
+    @mcp.tool()
+    def query_data_factory_datasource_sql(
+        sql: str,
+        datasource_alias_id: int,
+        project_product_id: int,
+        test_env: int,
+        limit: int = 100,
+    ) -> dict:
+        """通过逻辑数据源执行只读 SQL 查询，并返回字段和结果行。"""
+        if is_missing_value(test_env):
+            raise ToolsError(*ERROR_MSG_0077)
+        database = _database_from_args(
+            datasource_alias_id=datasource_alias_id,
+            project_product_id=project_product_id,
+            test_env=test_env,
+        )
+        return ok(DataFactorySqlQuery.query(database, sql, limit), "SQL查询成功")
 
     @mcp.tool()
     def list_data_factory_entities(
@@ -1227,6 +1246,7 @@ def register_data_factory_tools(mcp):
                     "tools": {
                         "discover_tables": "list_data_factory_database_tables",
                         "discover_schema": "get_data_factory_table_schema",
+                        "query_sql": "query_data_factory_datasource_sql",
                         "create_entity_with_schema_fields": "create_data_factory_entity(sync_fields=True, test_env=...)",
                         "batch_create_entities_with_schema_fields": "batch_generate_data_factory_entities(sync_fields=True)",
                         "save_fields": "batch_save_data_factory_fields",

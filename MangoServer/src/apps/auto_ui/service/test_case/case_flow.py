@@ -9,9 +9,9 @@ import time
 from django.db.models import F
 from django.utils import timezone
 
-from src.apps.auto_system.models import TestSuite, TestSuiteDetails
-from src.apps.auto_system.service.socket_link.socket_user import SocketUser
-from src.apps.auto_user.models import User
+from src.apps.system.models import TestSuite, TestSuiteDetails
+from src.apps.system.service.socket_link.socket_user import SocketUser
+from src.apps.user.models import User
 from src.common.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.common.exceptions import MangoServerError
 from src.common.models.system_model import ConsumerCaseModel, GetTaskModel

@@ -10,8 +10,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_system.views.product_module import ProductModuleSerializers
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.system.views.product_module import ProductModuleSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.apps.auto_ui.models import PageSteps, PageStepsDetailed
 from src.apps.auto_ui.service.test_case.test_case import TestCase
 from src.apps.auto_ui.views.ui_page import PageSerializers

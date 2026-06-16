@@ -88,9 +88,10 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
         data['url'] = api_info_obj.url
         data['params'] = api_info_obj.params
-        data['data'] = api_info_obj.data
-        data['json'] = api_info_obj.json
-        data['file'] = api_info_obj.file
+        data['protocol_type'] = api_info_obj.protocol_type
+        data['body_type'] = api_info_obj.body_type
+        data['body_config'] = api_info_obj.body_config
+        data['sse_config'] = api_info_obj.sse_config
         from src.apps.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
         return_data = self.inside_post(data)
         data['case_detailed'] = return_data['id']
@@ -156,9 +157,10 @@ class ApiCaseDetailedViews(ViewSet):
 
         for i in ApiCaseDetailedParameter.objects.filter(case_detailed_id=model.id):
             i.params = api_info_obj.params
-            i.data = api_info_obj.data
-            i.json = api_info_obj.json
-            i.file = api_info_obj.file
+            i.protocol_type = api_info_obj.protocol_type
+            i.body_type = api_info_obj.body_type
+            i.body_config = api_info_obj.body_config
+            i.sse_config = api_info_obj.sse_config
             # i.header = []
             i.save()
 

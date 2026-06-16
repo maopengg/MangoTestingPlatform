@@ -1,17 +1,20 @@
 <template>
-  <div class="mango-theme-page mango-timing-case-page">
-    <div class="mango-detail-toolbar">
-      <div class="mango-detail-heading">
-        <div class="mango-detail-title">{{ taskCaseDetailTitle }}</div>
-        <div class="mango-detail-subtitle">维护当前定时任务绑定的执行用例和执行顺序</div>
+  <TableBody class="mango-detail-workbench-page mango-timing-case-page">
+    <template #header>
+      <div class="mango-detail-toolbar">
+        <div class="mango-detail-heading">
+          <div class="mango-detail-title">{{ taskCaseDetailTitle }}</div>
+          <div class="mango-detail-subtitle">维护当前定时任务绑定的执行用例和执行顺序</div>
+        </div>
+        <a-space class="mango-detail-actions" wrap>
+          <a-button size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
       </div>
-      <a-space class="mango-detail-actions" wrap>
-        <a-button size="small" @click="doResetSearch">返回</a-button>
-      </a-space>
-    </div>
+    </template>
 
-    <div class="mango-timing-case-workbench">
-      <section class="mango-section-card mango-timing-case-picker">
+    <template #default>
+      <div class="mango-timing-case-workbench">
+        <section class="mango-section-card mango-timing-case-picker">
         <div class="mango-section-title">
           <div>
             <h3>添加用例</h3>
@@ -100,7 +103,7 @@
         </div>
         <div class="mango-timing-case-candidate-table">
           <a-table
-            class="mango-timing-case-table mango-timing-case-scroll-table"
+            class="mango-timing-case-table"
             :bordered="false"
             :columns="candidateColumns"
             :data="pagedCandidateCases"
@@ -108,7 +111,7 @@
             :pagination="false"
             :row-key="'key'"
             size="small"
-            :scroll="{ y: '100%' }"
+            :scroll="{ x: 640 }"
           >
             <template #columns>
               <a-table-column title="" data-index="selected" :width="54" align="center">
@@ -142,7 +145,7 @@
         </div>
       </section>
 
-      <section class="mango-section-card mango-timing-case-bound">
+        <section class="mango-section-card mango-timing-case-bound">
         <div class="mango-section-title">
           <div>
             <h3>已绑定用例</h3>
@@ -230,10 +233,7 @@
 
         <div class="mango-timing-case-bound-table">
           <a-table
-            :class="[
-              'mango-timing-case-table',
-              { 'mango-timing-case-scroll-table': boundNeedsVerticalScroll },
-            ]"
+            class="mango-timing-case-table"
             :bordered="false"
             :columns="tableColumns"
             :data="table.dataList"
@@ -243,7 +243,7 @@
             :row-selection="{ selectedRowKeys, showCheckedAll }"
             :row-key="rowKey"
             size="small"
-            :scroll="boundTableScroll"
+            :scroll="{ x: 1160 }"
             @selection-change="onSelectionChange"
           >
             <template #columns>
@@ -292,9 +292,10 @@
             :show-refresh="false"
           />
         </div>
-      </section>
-    </div>
-  </div>
+        </section>
+      </div>
+    </template>
+  </TableBody>
 </template>
 
 <script lang="ts" setup>
@@ -314,6 +315,7 @@
   import { getPytestProductName } from '@/api/pytest/product'
   import { getUserName } from '@/api/user/user'
   import { getUserModuleName } from '@/api/system/module'
+  import TableBody from '@/components/table/TableBody.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
@@ -459,11 +461,6 @@
       { total: 0, ui: 0, api: 0, pytest: 0 }
     )
   })
-  const boundNeedsVerticalScroll = computed(() => table.dataList.length > 8)
-  const boundTableScroll = computed(() => {
-    return boundNeedsVerticalScroll.value ? { x: 1160, y: '100%' } : { x: 1160 }
-  })
-
   watch(
     () => candidateCases.value.length,
     (total) => {
@@ -805,26 +802,16 @@
 
 <style lang="less" scoped>
   .mango-timing-case-page {
-    display: flex;
-    height: calc(100vh - 120px);
-    min-height: 0;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .mango-timing-case-page > .mango-detail-toolbar {
-    flex: 0 0 auto;
+    background: var(--m-surface);
   }
 
   .mango-timing-case-workbench {
     display: grid;
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 0;
-    margin-top: 8px;
+    min-height: calc(100% - 12px);
+    margin-top: 12px;
     grid-template-columns: minmax(520px, 1fr) minmax(680px, 1.35fr);
     gap: 12px;
-    align-items: stretch;
+    align-items: start;
   }
 
   .mango-timing-case-workbench > .mango-section-card + .mango-section-card {
@@ -835,29 +822,24 @@
   .mango-timing-case-bound {
     display: flex;
     min-width: 0;
-    min-height: 0;
     flex-direction: column;
-    overflow: hidden;
-    height: 100%;
+    overflow: visible;
   }
 
   .mango-timing-case-table {
-    flex: 1;
     min-height: 0;
   }
 
   .mango-timing-case-candidate-table {
     display: flex;
-    flex: 1;
-    min-height: 0;
     flex-direction: column;
+    min-width: 0;
   }
 
   .mango-timing-case-bound-table {
     display: flex;
-    flex: 1;
-    min-height: 0;
     flex-direction: column;
+    min-width: 0;
   }
 
   .mango-timing-case-footer {
@@ -867,18 +849,6 @@
 
   .mango-timing-case-footer.mango-table-mango-footer-container {
     height: 42px;
-  }
-
-  .mango-timing-case-scroll-table :deep(.arco-table-container),
-  .mango-timing-case-scroll-table :deep(.arco-table),
-  .mango-timing-case-scroll-table :deep(.arco-spin),
-  .mango-timing-case-scroll-table :deep(.arco-spin-children) {
-    height: 100%;
-    min-height: 0;
-  }
-
-  .mango-timing-case-scroll-table :deep(.arco-table-body) {
-    height: calc(100% - 28px) !important;
   }
 
   .mango-timing-case-table :deep(.arco-table-header) {

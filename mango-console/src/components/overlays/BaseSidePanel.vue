@@ -3,7 +3,7 @@
     v-model:visible="localVisible"
     :width="width"
     :title="title"
-    :mask-closable="false"
+    :mask-closable="maskClosable"
     unmount-on-close
   >
     <template #title>
@@ -42,6 +42,7 @@
     confirmLoading?: boolean
     confirmButtonText?: string
     cancelButtonText?: string
+    maskClosable?: boolean
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -52,6 +53,7 @@
     confirmLoading: false,
     confirmButtonText: '确定',
     cancelButtonText: '取消',
+    maskClosable: true,
   })
 
   // 使用 defineEmits 定义事件

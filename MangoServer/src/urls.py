@@ -18,7 +18,7 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.urls import path, include
 
-from src.apps.auto_user.views.user import LoginViews
+from src.apps.user.views.user import LoginViews
 from src.settings import OBJECT_STORAGE_ENABLED
 
 
@@ -33,14 +33,16 @@ urlpatterns = [
     path("api/menu", LoginViews.as_view({'post': 'menu'})),
     path("api/test", LoginViews.as_view({'get': 'test'})),
     path("api/download", LoginViews.as_view({'get': 'get_download'})),
-    path('api/system/', include("src.apps.auto_system.urls")),
-    path('api/data-factory/', include("src.apps.auto_data_factory.urls")),
+    path('api/system/', include("src.apps.system.urls")),
+    path('api/data-factory/', include("src.apps.data_factory.urls")),
     path('api/api/', include("src.apps.auto_api.urls")),
     path('api/ui/', include("src.apps.auto_ui.urls")),
-    path('api/perf/', include("src.apps.auto_perf.urls")),
-    path('api/user/', include("src.apps.auto_user.urls")),
+    path('api/perf/', include("src.apps.perf.urls")),
+    path('api/user/', include("src.apps.user.urls")),
     path('api/pytest/', include("src.apps.auto_pytest.urls")),
     path('api/monitoring/', include("src.apps.monitoring.urls")),
+    path('api/ai/', include("src.apps.ai.urls")),
+    path('api/functional-test/', include("src.apps.functional_test.urls")),
 ]
 
 try:

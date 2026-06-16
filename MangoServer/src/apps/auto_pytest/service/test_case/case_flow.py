@@ -11,7 +11,7 @@ from queue import Queue
 from django.db.models import F
 from django.utils import timezone
 
-from src.apps.auto_system.models import TestSuite, TestSuiteDetails
+from src.apps.system.models import TestSuite, TestSuiteDetails
 from src.common.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.common.exceptions import MangoServerError
 from src.common.models.system_model import ConsumerCaseModel

@@ -52,19 +52,23 @@ echo "mcp-service: http://$MCP_HOST:$MCP_PORT/  START_MCP=$START_MCP"
 echo
 
 start_service core-api \
+  env MANGO_SERVICE_NAME=core-api MANGO_SERVICE_INSTANCE=core-api-1 \
   "$PYTHON_BIN" manage.py runserver "$CORE_API_HOST:$CORE_API_PORT" "--env=$ENV_NAME"
 
 start_service scheduler-service \
+  env MANGO_SERVICE_NAME=scheduler-service MANGO_SERVICE_INSTANCE="$SCHEDULER_NODE" \
   "$PYTHON_BIN" manage.py run_scheduler "--env=$ENV_NAME" --node-name "$SCHEDULER_NODE" --dispatch-batch-size "$SCHEDULER_DISPATCH_BATCH_SIZE"
 
 for worker_index in $(seq 1 "$API_WORKER_COUNT"); do
   api_worker_name="api-worker-$worker_index"
   start_service "$api_worker_name" \
+    env MANGO_SERVICE_NAME=api-worker MANGO_SERVICE_INSTANCE="$api_worker_name" \
     "$PYTHON_BIN" manage.py run_api_worker "--env=$ENV_NAME" --worker-name "$api_worker_name" --concurrency "$API_WORKER_CONCURRENCY" --db-idle-seconds "$API_WORKER_DB_IDLE_SECONDS"
 done
 
 if [[ "$START_MCP" == "1" || "$START_MCP" == "true" || "$START_MCP" == "yes" ]]; then
   start_service mcp-service \
+    env MANGO_SERVICE_NAME=mcp-service MANGO_SERVICE_INSTANCE=mcp-1 \
     "$PYTHON_BIN" manage.py run_mcp_service "--env=$ENV_NAME" --host "$MCP_HOST" --port "$MCP_PORT"
 fi
 

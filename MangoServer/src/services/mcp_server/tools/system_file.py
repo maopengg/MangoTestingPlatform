@@ -4,8 +4,8 @@ import base64
 import binascii
 
 from django.core.files.base import ContentFile
-from src.apps.auto_system.models import FileData, ProjectProduct
-from src.apps.auto_system.views.file_data import FileDataCRUD
+from src.apps.system.models import FileData, ProjectProduct
+from src.apps.system.views.file_data import FileDataCRUD
 from src.common.tools.storage import build_public_file_url
 from src.services.mcp_server.common import fail, ok
 

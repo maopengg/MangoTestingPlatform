@@ -173,11 +173,7 @@
                       </a-space>
                       <a-space>
                         <a-tag color="orange">响 应 体</a-tag>
-                        <pre>{{
-                          strJson(
-                            data.caseResult.json ? data.caseResult.json : data.caseResult.text
-                          )
-                        }}</pre>
+                        <pre>{{ strJson(responseBodyValue(data.caseResult)) }}</pre>
                       </a-space>
                     </a-space>
                   </div>
@@ -363,6 +359,14 @@
   const debugInterface = ref(0) // 调试接口开关，默认为0
   const fileInputRef = ref<HTMLInputElement | null>(null)
   const selectedFile = ref<File | null>(null) // 存储选中的文件
+
+  function responseBodyValue(result: any) {
+    if (!result) return ''
+    if (Object.prototype.hasOwnProperty.call(result, 'json')) {
+      return result.json
+    }
+    return result.text
+  }
 
   const handleOk = () => {
     visible.value = false
@@ -777,8 +781,7 @@
     router.push({
       path: '/apitest/info/details',
       query: {
-        case_id: record.id,
-        test_suite_id: record.test_suite_id,
+        id: record.id,
       },
     })
   }

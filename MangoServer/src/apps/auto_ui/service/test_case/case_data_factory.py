@@ -2,7 +2,7 @@
 # @Project: 芒果测试平台
 # @Description: UI用例前置数据工厂
 
-from src.apps.auto_data_factory.service.case_config_runner import DataFactoryCaseConfigRunner
+from src.apps.data_factory.service.case_config_runner import DataFactoryCaseConfigRunner
 from src.apps.auto_ui.models import UiCase
 from src.common.enums.data_factory_enum import (
     DataFactoryCaseSourceTypeEnum,

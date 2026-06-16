@@ -76,6 +76,7 @@
         :loading="table.tableLoading.value"
         :pagination="false"
         :row-key="'id'"
+        :scroll="{ x: 1560 }"
       >
         <template #columns>
           <a-table-column
@@ -444,7 +445,7 @@
           <template v-else-if="item.key === 'preview_value'" #cell="{ record }">
             <a-tooltip v-if="record.preview_message" :content="record.preview_message">
               <a-tag :color="record.preview_valid ? 'green' : 'red'">{{
-                formatPreviewValue(record.preview_value)
+                formatPreviewDisplayValue(record)
               }}</a-tag>
             </a-tooltip>
             <span v-else>{{ formatPreviewValue(record.preview_value) }}</span>
@@ -1225,7 +1226,8 @@
       test_env: userStore.selected_environment,
     })
       .then((res) => {
-        const previewMap = new Map((res.data?.fields || []).map((it: any) => [it.name, it]))
+        const previewFields = res.data?.fields || []
+        const previewMap = new Map(previewFields.map((it: any) => [it.name, it]))
         fieldRows.value = fieldRows.value.map((row) => {
           const preview = previewMap.get(row.name) as any
           return {
@@ -1235,11 +1237,23 @@
             preview_message: preview?.message || '',
           }
         })
-        Message.success('实际值生成完成')
+        const failedCount = previewFields.filter((it: any) => it.valid === false).length
+        if (failedCount > 0) {
+          Message.warning(`实际值生成完成，${failedCount} 个字段生成失败`)
+        } else {
+          Message.success('实际值生成完成')
+        }
       })
       .finally(() => {
         fieldPreviewLoading.value = false
       })
+  }
+
+  function formatPreviewDisplayValue(record: any) {
+    if (record.preview_valid === false && record.preview_message) {
+      return record.preview_message
+    }
+    return formatPreviewValue(record.preview_value)
   }
 
   function formatPreviewValue(value: any) {

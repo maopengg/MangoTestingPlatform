@@ -12,7 +12,7 @@ from django.core.cache import cache
 from django.db import close_old_connections
 from jwt import exceptions
 
-from src.apps.auto_user.models import User
+from src.apps.user.models import User
 
 
 MCP_AUTH_REQUIRED_MESSAGE = (
@@ -262,7 +262,7 @@ def log_mcp_tool_call_async(
 
     def _save():
         try:
-            from src.apps.auto_user.views.user_logs import UserLogsCRUD
+            from src.apps.user.views.user_logs import UserLogsCRUD
             from src.common.enums.system_enum import ClientTypeEnum
 
             response_payload = result

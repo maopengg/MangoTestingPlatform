@@ -7,6 +7,46 @@ const Layout = () => import('@/layouts/Layout.vue')
 
 export const extraRoutes = [
   {
+    path: '/functional-test',
+    name: 'manualTest',
+    component: Layout,
+    meta: {
+      title: '功能测试',
+    },
+    children: [
+      {
+        path: 'suite/index',
+        component: () => import('@/views/functional-test/suite/index.vue'),
+        meta: {
+          title: '需求列表',
+        },
+      },
+      {
+        path: 'case/index',
+        component: () => import('@/views/functional-test/suite/index.vue'),
+        meta: {
+          title: '测试用例',
+        },
+      },
+      {
+        path: 'suite/details',
+        component: () => import('@/views/functional-test/suite/details/index.vue'),
+        meta: {
+          title: '需求详情',
+          breadcrumb: [{ title: '需求列表', path: '/functional-test/suite/index' }],
+        },
+      },
+      {
+        path: 'case/details',
+        component: () => import('@/views/functional-test/case/details/index.vue'),
+        meta: {
+          title: '功能用例详情',
+          breadcrumb: [{ title: '需求列表', path: '/functional-test/suite/index' }],
+        },
+      },
+    ],
+  },
+  {
     path: '/uitest',
     name: 'uiTest',
     component: Layout,

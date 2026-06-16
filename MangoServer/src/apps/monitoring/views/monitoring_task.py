@@ -12,8 +12,8 @@ from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
-from src.apps.auto_system.views.notice_group import NoticeGroupSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
+from src.apps.system.views.notice_group import NoticeGroupSerializers
 from src.apps.monitoring.models import MonitoringTask
 from src.apps.monitoring.service import runner
 from src.common.enums.monitoring_enum import MonitoringTaskStatusEnum

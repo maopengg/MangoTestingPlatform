@@ -14,7 +14,7 @@ from django.utils import timezone
 from src.apps.auto_api.models import ApiAuthConfig
 from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum
 from src.common.enums.tools_enum import StatusEnum
-from src.common.exceptions import ApiError
+from src.common.exceptions import ApiError, ERROR_MSG_0072
 from src.common.tools.json_response import ensure_jsonpath_source
 from src.common.tools.log_collector import log
 
@@ -205,11 +205,17 @@ class ApiAuthManager:
             mysql_connect=test_setup.mysql_connect,
         )
         namespace = {}
-        exec(config.custom_code, namespace)
+        try:
+            exec(config.custom_code, namespace)
+        except Exception as error:
+            raise ApiError(*ERROR_MSG_0072, value=(str(error),)) from error
         auth_func = namespace.get('auth')
         if not callable(auth_func):
             raise ApiError(300, '自定义授权代码必须定义 auth(context) 函数')
-        result = auth_func(context)
+        try:
+            result = auth_func(context)
+        except Exception as error:
+            raise ApiError(*ERROR_MSG_0072, value=(str(error),)) from error
         if not isinstance(result, dict):
             raise ApiError(300, '自定义授权代码 auth(context) 必须返回 dict')
         return self._collect_cache_data(result)

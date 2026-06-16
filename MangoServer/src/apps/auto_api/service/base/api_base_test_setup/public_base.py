@@ -11,8 +11,8 @@ from typing import Optional
 from src.apps.auto_api.models import ApiHeaders
 from src.apps.auto_api.models import ApiPublic
 from src.apps.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
-from src.apps.auto_system.models import TestObject
-from src.apps.auto_system.service.factory import func_test_object_value, get_database_connection
+from src.apps.system.models import TestObject
+from src.apps.system.service.factory import func_test_object_value, get_database_connection
 from src.common.enums.api_enum import ApiPublicTypeEnum
 from src.common.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.common.exceptions import *
@@ -164,11 +164,17 @@ class PublicBase(BaseRequest):
             get_db_connection=self.get_db_connection,
         )
         namespace = {}
-        exec(api_public_obj.value, namespace)
+        try:
+            exec(api_public_obj.value, namespace)
+        except Exception as error:
+            raise ApiError(*ERROR_MSG_0068, value=(api_public_obj.name, str(error))) from error
         variable_func = namespace.get('variable')
         if not callable(variable_func):
             raise ApiError(300, f'代码变量【{api_public_obj.name}】必须定义 variable(context) 函数')
-        result = variable_func(context)
+        try:
+            result = variable_func(context)
+        except Exception as error:
+            raise ApiError(*ERROR_MSG_0068, value=(api_public_obj.name, str(error))) from error
         if not isinstance(result, dict):
             raise ApiError(300, f'代码变量【{api_public_obj.name}】的 variable(context) 必须返回 dict')
         cache_data = {key: value for key, value in result.items() if value is not None}

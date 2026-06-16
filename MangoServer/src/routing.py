@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from django.urls import path
 
-from src.apps.auto_system.consumers import ChatConsumer
+from src.apps.system.consumers import ChatConsumer
 
 websocket_urlpatterns = [
     path('api/web/socket', ChatConsumer.as_asgi()),

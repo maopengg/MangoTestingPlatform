@@ -1,6 +1,6 @@
 from django.db import models
 
-from src.apps.auto_system.models import Tasks, TestSuite, TimeTasks
+from src.apps.system.models import Tasks, TestSuite, TimeTasks
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum, ScheduleFireStatusEnum
 
 

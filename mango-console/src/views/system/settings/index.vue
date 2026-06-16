@@ -65,6 +65,7 @@
                         v-else-if="groupEditing(group.key) && isNumberType(item)"
                         v-model="item.value"
                         :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
+                        :min="numberMin(item)"
                         :placeholder="getPlaceholder(item)"
                         size="small"
                         class="setting-input"
@@ -145,6 +146,7 @@
                         v-else-if="groupEditing(group.key) && isNumberType(item)"
                         v-model="item.value"
                         :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
+                        :min="numberMin(item)"
                         :placeholder="getPlaceholder(item)"
                         size="small"
                         class="setting-input"
@@ -200,6 +202,7 @@
   const VALUE_TYPE_LIST = 5
   const VALUE_TYPE_DICT = 6
   const VALUE_TYPE_JSON = 8
+  const AI_TIMEOUT_MIN_SECONDS = 600
 
   interface ConfigItem {
     id: number
@@ -242,8 +245,11 @@
   const groupLoading = (key: string) => loading[key] === true
   const groupEditing = (key: string) => editingStates[key] === true
   const isAiGroup = (group: ConfigGroup) => group.key === 'ai'
+  const isAiTimeout = (item: ConfigItem) => item.key === 'AI_TIMEOUT'
   const isNumberType = (item: ConfigItem) =>
     item.value_type === VALUE_TYPE_INT || item.value_type === VALUE_TYPE_FLOAT
+  const numberMin = (item: ConfigItem) =>
+    isAiTimeout(item) ? AI_TIMEOUT_MIN_SECONDS : undefined
   const isBoolType = (item: ConfigItem) => item.value_type === VALUE_TYPE_BOOL
   const isIntegerSwitchType = (item: ConfigItem) => integerSwitchKeys.includes(item.key)
   const isSwitchType = (item: ConfigItem) => isBoolType(item) || isIntegerSwitchType(item)
@@ -260,6 +266,9 @@
     if (item.is_secret) {
       return item.has_value ? '已配置' : '未配置'
     }
+    if (isAiTimeout(item) && (item.value === null || item.value === undefined || item.value === '')) {
+      return String(AI_TIMEOUT_MIN_SECONDS)
+    }
     if (item.value === null || item.value === undefined || item.value === '') {
       return '未配置'
     }
@@ -270,6 +279,12 @@
   }
 
   const normalizeEditValue = (item: ConfigItem) => {
+    if (isAiTimeout(item)) {
+      const timeout = Number(item.value)
+      return Number.isFinite(timeout) && timeout >= AI_TIMEOUT_MIN_SECONDS
+        ? timeout
+        : AI_TIMEOUT_MIN_SECONDS
+    }
     if (isSwitchType(item)) {
       return switchValue(item)
     }
@@ -280,6 +295,12 @@
   }
 
   const normalizePayloadValue = (item: ConfigItem) => {
+    if (isAiTimeout(item)) {
+      const timeout = Number(item.value)
+      return Number.isFinite(timeout) && timeout >= AI_TIMEOUT_MIN_SECONDS
+        ? timeout
+        : AI_TIMEOUT_MIN_SECONDS
+    }
     if (isIntegerSwitchType(item)) {
       return switchValue(item) ? 1 : 0
     }
@@ -301,12 +322,29 @@
     }))
   }
 
+  const validateGroup = (group: ConfigGroup) => {
+    const aiTimeout = group.items.find((item) => item.key === 'AI_TIMEOUT')
+    if (!aiTimeout) {
+      return true
+    }
+    const timeout = Number(aiTimeout.value)
+    if (!Number.isFinite(timeout) || timeout < AI_TIMEOUT_MIN_SECONDS) {
+      Message.warning(`AI请求超时时间不能低于${AI_TIMEOUT_MIN_SECONDS}秒`)
+      return false
+    }
+    return true
+  }
+
   const handleEditToggle = async (group: ConfigGroup) => {
     if (!groupEditing(group.key)) {
       group.items.forEach((item) => {
         item.value = normalizeEditValue(item)
       })
       editingStates[group.key] = true
+      return
+    }
+
+    if (!validateGroup(group)) {
       return
     }
 

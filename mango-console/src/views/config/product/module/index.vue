@@ -54,81 +54,83 @@
             </div>
             <a-button size="small" @click="resetFilters">重置筛选</a-button>
           </div>
-          <div class="mango-soft-panel mango-module-filter">
-            <a-form :model="filter" layout="vertical">
-              <a-form-item label="一级模块">
-                <a-select
-                  v-model="filter.level1"
-                  :options="level1Options"
-                  allow-clear
-                  allow-search
-                  placeholder="全部一级模块"
-                  @change="onLevel1Change"
-                />
-              </a-form-item>
-              <a-form-item label="二级模块">
-                <a-select
-                  v-model="filter.level2"
-                  :options="level2Options"
-                  allow-clear
-                  allow-search
-                  placeholder="全部二级模块"
-                  @change="onLevel2Change"
-                />
-              </a-form-item>
-              <a-form-item label="模块名称">
-                <a-input
-                  v-model="filter.tableKeyword"
-                  allow-clear
-                  placeholder="搜索实际模块"
-                  @blur="resetPage"
-                  @clear="resetPage"
-                  @press-enter="resetPage"
-                />
-              </a-form-item>
-            </a-form>
-          </div>
-
-          <a-table
-            class="mango-module-table"
-            :scroll="{ x: 990 }"
-            :bordered="false"
-            :columns="columns"
-            :data="pagedModuleData"
-            :loading="tableLoading"
-            :pagination="false"
-            row-key="id"
-            size="small"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of columns"
-                :key="item.dataIndex"
-                :align="item.align"
-                :data-index="item.dataIndex"
-                :ellipsis="item.ellipsis"
-                :fixed="item.fixed"
-                :title="item.title"
-                :tooltip="item.tooltip"
-                :width="item.width"
-              >
-                <template v-if="item.dataIndex === 'superior_module_1'" #cell="{ record }">
-                  {{ record.superior_module_1 || '-' }}
-                </template>
-                <template v-else-if="item.dataIndex === 'superior_module_2'" #cell="{ record }">
-                  {{ record.superior_module_2 || '-' }}
-                </template>
-                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                  <MangoTableActions
-                    :actions="[
-                      { label: '编辑', onClick: () => onUpdate(record) },
-                      { label: '删除', danger: true, onClick: () => onDelete(record) },
-                    ]"
+          <div class="mango-module-content">
+            <div class="mango-soft-panel mango-module-filter">
+              <a-form :model="filter" layout="vertical">
+                <a-form-item label="一级模块">
+                  <a-select
+                    v-model="filter.level1"
+                    :options="level1Options"
+                    allow-clear
+                    allow-search
+                    placeholder="全部一级模块"
+                    @change="onLevel1Change"
                   />
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+                </a-form-item>
+                <a-form-item label="二级模块">
+                  <a-select
+                    v-model="filter.level2"
+                    :options="level2Options"
+                    allow-clear
+                    allow-search
+                    placeholder="全部二级模块"
+                    @change="onLevel2Change"
+                  />
+                </a-form-item>
+                <a-form-item label="模块名称">
+                  <a-input
+                    v-model="filter.tableKeyword"
+                    allow-clear
+                    placeholder="搜索实际模块"
+                    @blur="resetPage"
+                    @clear="resetPage"
+                    @press-enter="resetPage"
+                  />
+                </a-form-item>
+              </a-form>
+            </div>
+
+            <a-table
+              class="mango-module-table"
+              :scroll="{ x: 1190 }"
+              :bordered="false"
+              :columns="columns"
+              :data="pagedModuleData"
+              :loading="tableLoading"
+              :pagination="false"
+              row-key="id"
+              size="small"
+            >
+              <template #columns>
+                <a-table-column
+                  v-for="item of columns"
+                  :key="item.dataIndex"
+                  :align="item.align"
+                  :data-index="item.dataIndex"
+                  :ellipsis="item.ellipsis"
+                  :fixed="item.fixed"
+                  :title="item.title"
+                  :tooltip="item.tooltip"
+                  :width="item.width"
+                >
+                  <template v-if="item.dataIndex === 'superior_module_1'" #cell="{ record }">
+                    {{ record.superior_module_1 || '-' }}
+                  </template>
+                  <template v-else-if="item.dataIndex === 'superior_module_2'" #cell="{ record }">
+                    {{ record.superior_module_2 || '-' }}
+                  </template>
+                  <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                    <MangoTableActions
+                      :actions="[
+                        { label: '编辑', onClick: () => onUpdate(record) },
+                        { label: '删除', danger: true, onClick: () => onDelete(record) },
+                      ]"
+                    />
+                  </template>
+                </a-table-column>
+              </template>
+            </a-table>
+          </div>
           <div class="mango-module-pagination">
             <a-pagination
               v-model:current="pagination.page"
@@ -639,6 +641,13 @@
     padding: 10px 10px 0;
   }
 
+  .mango-module-content {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   .mango-module-filter :deep(.arco-form) {
     display: grid;
     grid-template-columns: repeat(3, minmax(160px, 1fr));
@@ -658,7 +667,9 @@
     display: flex;
     flex: none;
     justify-content: flex-end;
-    padding-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--m-border);
+    background: var(--m-surface);
   }
 
   @media (max-width: 960px) {

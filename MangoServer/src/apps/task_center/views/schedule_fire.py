@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from src.apps.auto_system.views.tasks import TasksSerializers
-from src.apps.auto_system.views.test_suite import TestSuiteSerializers
-from src.apps.auto_system.views.time_tasks import TimeTasksSerializers
+from src.apps.system.views.tasks import TasksSerializers
+from src.apps.system.views.test_suite import TestSuiteSerializers
+from src.apps.system.views.time_tasks import TimeTasksSerializers
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum
 from src.apps.task_center.models import ScheduleFire
 from src.apps.task_center.services.system_job_service import SystemJobService

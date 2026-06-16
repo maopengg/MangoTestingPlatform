@@ -1,8 +1,8 @@
 from django.db import transaction
 from django.utils import timezone
 
-from src.apps.auto_system.models import Tasks, TasksDetails
-from src.apps.auto_system.service.tasks.add_tasks import AddTasks
+from src.apps.system.models import Tasks, TasksDetails
+from src.apps.system.service.tasks.add_tasks import AddTasks
 from src.common.enums.tools_enum import TestCaseTypeEnum
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum, ScheduleFireStatusEnum
 from src.apps.task_center.models import ScheduleFire

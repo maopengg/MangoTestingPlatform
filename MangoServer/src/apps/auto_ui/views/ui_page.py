@@ -9,8 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_system.views.product_module import ProductModuleSerializers
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.system.views.product_module import ProductModuleSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.apps.auto_ui.models import Page, PageElement
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.view.model_crud import ModelCRUD

@@ -776,6 +776,39 @@ body {
     box-shadow: var(--m-shadow);
 }
 
+.arco-table .arco-table-content,
+.arco-table .arco-scrollbar-container {
+    scrollbar-width: thin;
+    scrollbar-color: var(--m-scrollbar-thumb) transparent;
+}
+
+.arco-table .arco-table-content::-webkit-scrollbar,
+.arco-table .arco-scrollbar-container::-webkit-scrollbar {
+    width: 0;
+    height: 6px;
+}
+
+.arco-table .arco-table-content::-webkit-scrollbar-track,
+.arco-table .arco-scrollbar-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.arco-table .arco-table-content::-webkit-scrollbar-thumb,
+.arco-table .arco-scrollbar-container::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--m-scrollbar-thumb);
+}
+
+.arco-table:not(.arco-table-scroll-y) .arco-scrollbar-track-direction-vertical,
+.arco-table:not(.arco-table-scroll-y) .arco-scrollbar-thumb-direction-vertical,
+.arco-table:not(.arco-table-scroll-y) .arco-scrollbar.arco-scrollbar-type-embed:hover .arco-scrollbar-thumb-direction-vertical,
+.arco-table:not(.arco-table-scroll-y) .arco-scrollbar-track-direction-vertical::after {
+    display: none !important;
+    width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 .arco-table-cell {
     min-width: 0;
 }

@@ -163,9 +163,9 @@
     height: 100%;
     min-height: 0;
     grid-template-columns: minmax(360px, 420px) minmax(0, 1fr) minmax(340px, 400px);
-    gap: 15px;
+    gap: 10px;
     overflow: hidden;
-    padding: 15px;
+    padding: 6px;
 
     .panel {
       display: flex;
@@ -193,7 +193,7 @@
       min-width: 0;
       min-height: 0;
       flex-direction: column;
-      gap: 15px;
+      gap: 10px;
 
       .item {
         border-radius: 8px;
@@ -231,7 +231,7 @@
       min-width: 0;
       min-height: 0;
       grid-template-rows: 360px minmax(0, 1fr);
-      gap: 15px;
+      gap: 10px;
     }
 
     .trend-panel {
@@ -242,7 +242,7 @@
       display: grid;
       min-height: 0;
       grid-template-columns: minmax(0, 1fr) 280px;
-      gap: 15px;
+      gap: 10px;
     }
 
     .pending-panel {
@@ -260,7 +260,7 @@
       min-width: 0;
       min-height: 0;
       grid-template-rows: 190px minmax(0, 1fr);
-      gap: 15px;
+      gap: 10px;
     }
 
     .resource-panel,
@@ -281,8 +281,8 @@
   @media (max-width: 1440px) {
     .main-container {
       grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.22fr) minmax(280px, 0.82fr);
-      gap: 10px;
-      padding: 10px;
+      gap: 8px;
+      padding: 6px;
 
       .panel {
         padding: 8px 10px 10px;
@@ -294,7 +294,7 @@
       }
 
       .left {
-        gap: 10px;
+        gap: 8px;
 
         .item {
           padding: 9px;
@@ -303,17 +303,17 @@
 
       .center-workspace {
         grid-template-rows: 320px minmax(0, 1fr);
-        gap: 10px;
+        gap: 8px;
       }
 
       .center-bottom {
         grid-template-columns: minmax(0, 1fr) minmax(210px, 240px);
-        gap: 10px;
+        gap: 8px;
       }
 
       .right-rail {
         grid-template-rows: 168px minmax(0, 1fr);
-        gap: 10px;
+        gap: 8px;
       }
     }
   }
@@ -322,7 +322,7 @@
     .main-container {
       grid-template-columns: minmax(270px, 0.85fr) minmax(320px, 1.2fr) minmax(240px, 0.75fr);
       gap: 8px;
-      padding: 8px;
+      padding: 6px;
 
       .left {
         gap: 8px;
@@ -351,11 +351,11 @@
 
   @media (max-height: 820px) {
     .main-container {
-      gap: 10px;
-      padding: 10px;
+      gap: 8px;
+      padding: 6px;
 
       .left {
-        gap: 10px;
+        gap: 8px;
 
         .item {
           padding: 8px;
@@ -364,12 +364,12 @@
 
       .center-workspace {
         grid-template-rows: 300px minmax(0, 1fr);
-        gap: 10px;
+        gap: 8px;
       }
 
       .right-rail {
         grid-template-rows: 158px minmax(0, 1fr);
-        gap: 10px;
+        gap: 8px;
       }
     }
   }

@@ -10,8 +10,8 @@ import threading
 from django.utils.deprecation import MiddlewareMixin
 from django.core.handlers.asgi import ASGIRequest
 from rest_framework.response import Response
-from src.apps.auto_user.models import User
-from src.apps.auto_user.views.user_logs import UserLogsCRUD
+from src.apps.user.models import User
+from src.apps.user.views.user_logs import UserLogsCRUD
 from django.db import close_old_connections
 
 

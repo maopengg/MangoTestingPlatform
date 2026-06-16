@@ -173,6 +173,7 @@
   })
 
   const responseType = computed(() => {
+    if (hasValue(props.resultData?.response?.sse_events)) return 'SSE'
     if (hasValue(props.resultData?.response?.json)) return 'JSON'
     if (hasValue(props.resultData?.response?.text)) return 'Text'
     if (hasValue(props.resultData?.response?.headers)) return 'Headers'
@@ -209,36 +210,31 @@
 
   const requestSections = computed<EvidenceSection[]>(() => {
     const request = props.resultData?.request || {}
+    const response = props.resultData?.response || {}
     const sections: EvidenceSection[] = [
       {
         key: 'headers',
         title: '请求头',
         description: 'Headers 信息，常用于排查鉴权、租户和内容类型。',
-        data: request.headers,
+        data: response.request_headers ?? request.headers,
       },
       {
         key: 'params',
         title: '参数',
         description: 'Query 参数，适合检查分页、过滤和路径查询。',
-        data: request.params,
+        data: response.request_params ?? request.params,
       },
       {
-        key: 'data',
-        title: '表单',
-        description: 'Form Data 请求体。',
-        data: request.data,
-      },
-      {
-        key: 'json',
-        title: 'JSON',
-        description: 'JSON 请求体，默认展示第一层便于快速定位字段。',
-        data: request.json,
+        key: 'body',
+        title: '请求体',
+        description: '实际发送的 Body，包含 JSON、Form、Raw 或 Multipart 字段。',
+        data: response.request_body ?? request.request_body ?? request.data ?? request.json,
       },
       {
         key: 'file',
         title: '文件',
         description: '上传文件相关配置。',
-        data: request.file,
+        data: response.request_file ?? request.request_files ?? request.file,
       },
     ]
     return sections.filter((item) => hasValue(item.data))
@@ -267,6 +263,13 @@
         description: '响应 Headers 默认收起，按需查看服务端元信息。',
         data: response.headers,
         defaultExpanded: false,
+      },
+      {
+        key: 'sse',
+        title: 'SSE事件',
+        description: '事件流响应中已收集的事件列表。',
+        data: response.sse_events,
+        wide: true,
       },
     ]
     const visibleSections = sections.filter((item) => hasValue(item.data))

@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from src.apps.auto_system.models import Database, TestObject
+from src.apps.system.models import Database, TestObject
 from src.common.tools.database import DatabaseConnection, DatabaseConnectionFactory
 
 
@@ -36,7 +36,7 @@ class WorkerDbContext:
             cached.last_used_at = timezone.now()
             return cached.value
 
-        from src.apps.auto_data_factory.service.datasource import DataFactoryDatasource
+        from src.apps.data_factory.service.datasource import DataFactoryDatasource
         engine = DataFactoryDatasource.create_engine(database)
         self.data_factory_engines[database.id] = _CachedResource(engine, timezone.now())
         return engine

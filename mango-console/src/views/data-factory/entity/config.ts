@@ -90,12 +90,18 @@ export const entityTableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '表名',
     key: 'table_name',
     dataIndex: 'table_name',
     align: 'left',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '描述',

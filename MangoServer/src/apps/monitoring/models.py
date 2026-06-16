@@ -2,7 +2,7 @@
 # @Description: 预警监控任务模型
 from django.db import models
 
-from src.apps.auto_system.models import ProjectProduct, NoticeGroup
+from src.apps.system.models import ProjectProduct, NoticeGroup
 from src.common.enums.monitoring_enum import MonitoringTaskStatusEnum, MonitoringLogStatusEnum
 from src.common.enums.tools_enum import StatusEnum
 

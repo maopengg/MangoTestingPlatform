@@ -5,8 +5,13 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase, TestCase
 
 from src.apps.auto_api.schemas.case_schema import ApiParametrizeSuite
+from src.apps.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
+from src.apps.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
+from src.apps.auto_api.service.base.api_base_test_setup.request_body import prepare_request_body
 from src.apps.auto_api.service.base.case_base import CaseBase
 from src.apps.auto_api.service.base.case_parameter import CaseParameter
+from src.apps.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterSerializers
+from src.apps.auto_api.views.api_info import ApiInfoSerializers
 from src.common.exceptions import ApiError
 from src.common.models.api_model import RequestModel, ResponseModel
 
@@ -113,11 +118,17 @@ class ApiResponseJsonScalarTests(SimpleTestCase):
             self.assertEqual(response.json, value)
 
     def test_request_model_allows_json_scalar_body(self):
-        request = RequestModel(method='POST', url='https://example.test', json='true')
+        request = RequestModel(
+            method='POST',
+            url='https://example.test',
+            body_type='json',
+            body_config={'source_type': 'template', 'body_text': 'true'},
+        )
 
         request.serialize()
 
-        self.assertIs(request.json, True)
+        self.assertEqual(request.body_type, 'json')
+        self.assertEqual(request.body_config['body_text'], 'true')
 
     def test_jsonpath_assertion_rejects_scalar_response_with_business_error(self):
         case_parameter = self.make_case_parameter()
@@ -135,3 +146,96 @@ class ApiResponseJsonScalarTests(SimpleTestCase):
         case_parameter._CaseParameter__ass_test_all('true', 'true')
 
         self.assertEqual(case_parameter.ass_result[0].status, 1)
+
+
+class RequestModelParamsTests(SimpleTestCase):
+
+    def test_params_allows_query_string(self):
+        request = RequestModel(method='GET', url='https://example.test', params='case_id=21')
+
+        request.serialize()
+
+        self.assertEqual(request.params, 'case_id=21')
+
+    def test_params_keeps_json_scalar_as_query_string(self):
+        request = RequestModel(method='GET', url='https://example.test', params='21')
+
+        request.serialize()
+
+        self.assertEqual(request.params, '21')
+
+    def test_params_still_parses_json_object_and_array(self):
+        request = RequestModel(method='GET', url='https://example.test', params='{"case_id": 21}')
+        request.serialize()
+        self.assertEqual(request.params, {'case_id': 21})
+
+        request = RequestModel(method='GET', url='https://example.test', params='[["case_id", 21]]')
+        request.serialize()
+        self.assertEqual(request.params, [['case_id', 21]])
+
+    def test_params_rejects_malformed_json_object(self):
+        request = RequestModel(method='GET', url='https://example.test', params='{"case_id":')
+
+        with self.assertRaises(ApiError):
+            request.serialize()
+
+
+class RequestBodyRawTests(SimpleTestCase):
+
+    def test_raw_body_defaults_to_application_json(self):
+        request = RequestModel(
+            method='POST',
+            url='https://example.test',
+            body_type='raw',
+            body_config={'body_text': '{"ok": true}'},
+        )
+
+        prepared_body = prepare_request_body(request, None)
+
+        self.assertEqual(prepared_body.content_type, 'application/json')
+        self.assertEqual(prepared_body.kwargs, {'content': '{"ok": true}'})
+
+    def test_content_type_header_is_added_when_missing(self):
+        headers = BaseRequest._headers_with_content_type({'Accept': 'application/json'}, 'application/json')
+
+        self.assertEqual(headers, {'Accept': 'application/json', 'Content-Type': 'application/json'})
+
+    def test_content_type_header_keeps_user_value(self):
+        headers = BaseRequest._headers_with_content_type({'content-type': 'application/xml'}, 'application/json')
+
+        self.assertEqual(headers, {'content-type': 'application/xml'})
+
+    def test_api_info_serializer_defaults_raw_content_type(self):
+        serializer = ApiInfoSerializers()
+
+        attrs = serializer.validate({'body_type': 'raw', 'body_config': {'body_text': 'hello'}})
+
+        self.assertEqual(attrs['body_config']['content_type'], 'application/json')
+
+
+class ApiPosteriorRegexTests(SimpleTestCase):
+
+    class FakeTestData:
+
+        def replace(self, value):
+            return value
+
+    def test_invalid_regex_raises_business_error(self):
+        test_setup = APIBaseTestSetup.__new__(APIBaseTestSetup)
+        test_setup.test_data = self.FakeTestData()
+        response = ResponseModel(code=200, time=0.1, headers={}, text='hello')
+
+        with self.assertRaises(ApiError) as context:
+            test_setup.api_info_posterior_json_re(
+                [{'key': 'token', 'value': '(?<=a+)b'}],
+                response,
+            )
+
+        self.assertIn('后置正则表达式错误', context.exception.msg)
+
+    def test_api_case_parameter_serializer_defaults_raw_content_type(self):
+        serializer = ApiCaseDetailedParameterSerializers()
+
+        attrs = serializer.validate({'body_type': 'raw', 'body_config': {'body_text': 'hello'}})
+
+        self.assertEqual(attrs['body_config']['content_type'], 'application/json')

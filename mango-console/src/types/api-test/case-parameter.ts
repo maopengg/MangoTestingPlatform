@@ -47,9 +47,10 @@ export interface ApiCaseParameterPayload {
   headers?: number[]
   is_case_headers?: number
   params?: string | null
-  data?: string | null
-  json?: string | null
-  file?: ApiRequestFileItem[] | JsonObject | null
+  protocol_type?: string
+  body_type?: string
+  body_config?: JsonObject | null
+  sse_config?: JsonObject | null
   front_sql?: ApiKeyValueItem[]
   front_func?: string | null
   ass_general?: ApiGeneralAssertionItem[]
@@ -81,23 +82,34 @@ export interface ApiRequestResult {
   url?: string | null
   headers?: JsonObject | null
   params?: JsonObject | JsonValue[] | string | null
-  data?: JsonObject | JsonValue[] | null
-  json?: JsonObject | JsonValue[] | null
-  file?: ApiRequestFileItem[] | JsonObject | string | null
+  protocol_type?: string | null
+  body_type?: string | null
+  body_config?: JsonObject | null
+  sse_config?: JsonObject | null
+  request_body?: unknown
+  request_files?: ApiRequestFileItem[] | JsonObject | string | null
   posterior_file?: string | null
 }
 
 export interface ApiResponseResult {
   code: number
   time: number
+  url?: string | null
+  response_mode?: string | null
+  request_protocol_type?: string | null
+  request_body_type?: string | null
   request_headers?: JsonObject | null
   request_params?: JsonObject | JsonValue[] | string | null
-  request_data?: JsonObject | JsonValue[] | null
+  request_data?: unknown
   request_json?: JsonObject | JsonValue[] | null
   request_file?: ApiRequestFileItem[] | JsonObject | string | null
+  request_body?: unknown
+  request_content_type?: string | null
   headers: JsonObject
   json?: JsonObject | JsonValue[] | null
   text?: string | null
+  sse_events?: JsonObject[] | null
+  sse_stop_reason?: string | null
   error_msg?: string | null
 }
 

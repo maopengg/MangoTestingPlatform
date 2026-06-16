@@ -155,22 +155,11 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="
-                  String(pageData.record.project_product.ui_client_type === '0')
-                    ? useSelectValue.webOpe
-                    : useSelectValue.androidOpe
-                "
+                :options="activeOperationOptions"
                 :default-value="item.value"
                 expand-trigger="hover"
                 :placeholder="item.placeholder"
-                @change="
-                  upDataOpeValue(
-                    String(pageData.record.project_product.ui_client_type === '0')
-                      ? useSelectValue.webOpe
-                      : useSelectValue.androidOpe,
-                    item.value
-                  )
-                "
+                @change="upDataOpeValue(activeOperationOptions, item.value)"
                 value-key="key"
                 class="operation-select"
                 allow-search
@@ -191,22 +180,11 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="
-                  String(pageData.record.project_product.ui_client_type === '0')
-                    ? useSelectValue.assWeb
-                    : useSelectValue.assAndroid
-                "
+                :options="activeAssertOptions"
                 :default-value="item.value"
                 expand-trigger="hover"
                 :placeholder="item.placeholder"
-                @change="
-                  upDataOpeValue(
-                    String(pageData.record.project_product.ui_client_type === '0')
-                      ? useSelectValue.assWeb
-                      : useSelectValue.assAndroid,
-                    item.value
-                  )
-                "
+                @change="upDataOpeValue(activeAssertOptions, item.value)"
                 value-key="key"
                 class="operation-select"
                 allow-search
@@ -244,6 +222,7 @@
     putUiUiElementPutIsIframe,
     putUiUiElementTest,
   } from '@/api/uitest/element'
+  import { getUiPage } from '@/api/uitest/page'
 
   import { opeForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
@@ -264,8 +243,38 @@
   const pageData: any = usePageData()
 
   const route = useRoute()
+  function firstQueryValue(value: any) {
+    return Array.isArray(value) ? value[0] : value
+  }
+
+  const currentPageId = computed(() => firstQueryValue(route.query.id || pageData.record?.id) || '')
+  const defaultPageRecord = () => ({
+    id: currentPageId.value,
+    name: '',
+    project_product: {
+      id: '',
+      ui_client_type: '0',
+    },
+  })
+  if (!pageData.record) {
+    pageData.setRecord(defaultPageRecord())
+  }
+  const currentProjectProductId = computed(
+    () =>
+      firstQueryValue(pageData.record?.project_product?.id || pageData.record?.project_product) ||
+      ''
+  )
+  const isWebClient = computed(
+    () => String(pageData.record?.project_product?.ui_client_type) === '0'
+  )
+  const activeOperationOptions = computed(() =>
+    isWebClient.value ? useSelectValue.webOpe : useSelectValue.androidOpe
+  )
+  const activeAssertOptions = computed(() =>
+    isWebClient.value ? useSelectValue.assWeb : useSelectValue.assAndroid
+  )
   const pageElementDetailTitle = computed(() => {
-    const id = pageData.record?.id || route.query.id || '-'
+    const id = currentPageId.value || '-'
     const name = pageData.record?.name || '-'
     return `页面元素配置 / ${id} / ${name}`
   })
@@ -313,7 +322,7 @@
         onBeforeOk: () => {
           const formData = new FormData()
           formData.append('file', file)
-          formData.append('page_id', route.query.id)
+          formData.append('page_id', currentPageId.value)
           formData.append('name', file.name)
           return getUiElementUpload(formData)
             .then((res) => {
@@ -377,7 +386,7 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
-      value['page'] = route.query.id
+      value['page'] = currentPageId.value
       if (data.isAdd) {
         value['is_iframe'] = 0
         postUiElement(value)
@@ -416,11 +425,31 @@
     window.history.back()
   }
 
+  async function ensurePageRecord() {
+    if (!currentPageId.value) return
+    if (pageData.record?.id && String(pageData.record.id) === String(currentPageId.value)) {
+      pageData.setRecord({
+        ...defaultPageRecord(),
+        ...pageData.record,
+        project_product: pageData.record.project_product || defaultPageRecord().project_product,
+      })
+      return
+    }
+    const res = await getUiPage({ id: currentPageId.value, page: 1, pageSize: 1 })
+    const record = (res.data || [])[0]
+    pageData.setRecord({
+      ...defaultPageRecord(),
+      ...(record || {}),
+      project_product: record?.project_product || defaultPageRecord().project_product,
+    })
+  }
+
   function doRefresh() {
+    if (!currentPageId.value) return
     let value = {}
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    value['page_id'] = route.query.id
+    value['page_id'] = currentPageId.value
     getUiElement(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -514,12 +543,8 @@
         if (key.includes('-ope_value')) {
           const newKey = key.replace('-ope_value', '')
           if (newKey && data.type === 0) {
-            findItemByValue(
-              String(pageData.record.project_product.ui_client_type === '0')
-                ? useSelectValue.webOpe
-                : useSelectValue.androidOpe,
-              value.ope_key
-            ).parameter.forEach((item: any) => {
+            const option = findItemByValue(activeOperationOptions.value, value.ope_key)
+            option?.parameter?.forEach((item: any) => {
               if (newKey === 'locating') {
                 value['ele_name'] = value[key]
               }
@@ -532,12 +557,8 @@
               }
             })
           } else {
-            findItemByValue(
-              String(pageData.record.project_product.ui_client_type === '0')
-                ? useSelectValue.assWeb
-                : useSelectValue.assAndroid,
-              value.ope_key
-            ).parameter.forEach((item: any) => {
+            const option = findItemByValue(activeAssertOptions.value, value.ope_key)
+            option?.parameter?.forEach((item: any) => {
               if (newKey === 'actual') {
                 value['ele_name'] = value[key]
               }
@@ -560,8 +581,8 @@
       }
       value['test_env'] = userStore.selected_environment
       value['id'] = data.id
-      value['page_id'] = pageData.record.id
-      value['project_product_id'] = pageData.record.project_product.id
+      value['page_id'] = currentPageId.value
+      value['project_product_id'] = currentProjectProductId.value
       value['type'] = data.type
       value['is_send'] = true
       putUiUiElementTest(value)
@@ -644,7 +665,7 @@
   function onContinuousSubmit() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
-      value['page'] = route.query.id
+      value['page'] = currentPageId.value
       if (data.isAdd) {
         value['is_iframe'] = 0
         postUiElement(value)
@@ -671,6 +692,7 @@
 
   onMounted(() => {
     nextTick(async () => {
+      await ensurePageRecord()
       doRefresh()
       useSelectValue.getSelectValue()
     })

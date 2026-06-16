@@ -9,7 +9,7 @@ from threading import RLock
 
 from dulwich.repo import Repo
 from mangotools.mangos import GitRepoOperator
-from src.apps.auto_system.service.system_config import SystemConfigService
+from src.apps.system.service.system_config import SystemConfigService
 from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.exceptions import PytestError, ERROR_MSG_0043
 from src.common.tools import project_dir

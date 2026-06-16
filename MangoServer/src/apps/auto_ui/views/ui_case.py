@@ -10,14 +10,14 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_system.service.tasks.add_tasks import AddTasks
-from src.apps.auto_system.models import ProjectProduct
-from src.apps.auto_system.views.product_module import ProductModuleSerializers
-from src.apps.auto_system.views.project_product import ProjectProductSerializersC
+from src.apps.system.service.tasks.add_tasks import AddTasks
+from src.apps.system.models import ProjectProduct
+from src.apps.system.views.product_module import ProductModuleSerializers
+from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.apps.auto_api.schemas.case_schema import validate_int_list
 from src.apps.auto_ui.models import UiCase
 from src.apps.auto_ui.service.test_case.test_case import TestCase
-from src.apps.auto_user.views.user import UserSerializers
+from src.apps.user.views.user import UserSerializers
 from src.common.enums.system_enum import ClientNameEnum
 from src.common.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.common.tools.decorator.error_response import error_response

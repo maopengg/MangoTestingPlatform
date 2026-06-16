@@ -1,6 +1,6 @@
 from django.utils import timezone
 
-from src.apps.auto_system.models import TestSuite, TestSuiteDetails
+from src.apps.system.models import TestSuite, TestSuiteDetails
 from src.common.enums.tools_enum import TaskEnum
 from src.apps.task_center.enums import ScheduleFireStatusEnum
 from src.apps.task_center.models import ScheduleFire

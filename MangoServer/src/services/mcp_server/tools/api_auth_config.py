@@ -8,7 +8,7 @@ from django.utils import timezone
 from src.apps.auto_api.models import ApiAuthConfig
 from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
 from src.apps.auto_api.views.api_auth_config import ApiAuthConfigCRUD
-from src.apps.auto_system.models import TimeTasks
+from src.apps.system.models import TimeTasks
 from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum
 from src.common.enums.tools_enum import EnvironmentEnum, StatusEnum
 from src.services.mcp_server.common import (

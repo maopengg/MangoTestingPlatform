@@ -94,8 +94,8 @@
                     <DataFactoryCaseConfigPanel
                       v-if="data.apiType === '1' && data.apiSonType === '14'"
                       ref="dataFactoryPanelRef"
-                      :case-id="route.query.case_id as string"
-                      :project-product-id="route.query.project_product as string"
+                      :case-id="apiCaseId as string"
+                      :project-product-id="apiProjectProductId as string"
                       :source-type="1"
                     />
                   </a-tab-pane>
@@ -162,6 +162,11 @@
                               onClick: () => caseRun(record.case_sort),
                             },
                             { label: '同步', onClick: () => refresh(record.id) },
+                            {
+                              label: '接口详情',
+                              disabled: !getApiInfoId(record),
+                              onClick: () => openApiInfoDetail(record),
+                            },
                             { label: '删除', danger: true, onClick: () => onDelete(record) },
                           ]"
                         />
@@ -352,7 +357,7 @@
                                     v-if="isActiveCaseDetailTab('1', '12')"
                                     :ref="(el) => setParameterDataFactoryPanelRef(item.id, el)"
                                     :case-id="item.id"
-                                    :project-product-id="route.query.project_product as string"
+                                    :project-product-id="apiProjectProductId as string"
                                     :source-type="3"
                                   />
                                 </div>
@@ -401,68 +406,20 @@
                                     v-model="item.params"
                                     allow-clear
                                     :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入参数"
+                                    placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
                                     @blur="blurSave('params', item.params, item.id)"
                                   />
                                 </div>
                               </a-tab-pane>
-                              <a-tab-pane key="02" title="表单">
+                              <a-tab-pane key="02" title="请求体">
                                 <div class="m-2">
-                                  <div class="request-editor-actions">
-                                    <a-button
-                                      size="small"
-                                      type="outline"
-                                      @click="openJsonEditDrawer('data', '表单', item)"
-                                    >
-                                      展开编辑
-                                    </a-button>
-                                  </div>
-                                  <a-textarea
-                                    v-model="item.data"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入表单"
-                                    @blur="blurSave('data', item.data, item.id)"
-                                  />
-                                </div>
-                              </a-tab-pane>
-                              <a-tab-pane key="03" title="JSON">
-                                <div class="m-2">
-                                  <div class="request-editor-actions">
-                                    <a-button
-                                      size="small"
-                                      type="outline"
-                                      @click="openJsonEditDrawer('json', 'JSON', item)"
-                                    >
-                                      展开编辑
-                                    </a-button>
-                                  </div>
-                                  <a-textarea
-                                    v-model="item.json"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入JSON"
-                                    @blur="blurSave('json', item.json, item.id)"
-                                  />
-                                </div>
-                              </a-tab-pane>
-                              <a-tab-pane key="04" title="文件">
-                                <div class="m-2">
-                                  <div class="request-editor-actions">
-                                    <a-button
-                                      size="small"
-                                      type="outline"
-                                      @click="openJsonEditDrawer('file', '文件', item)"
-                                    >
-                                      展开编辑
-                                    </a-button>
-                                  </div>
-                                  <a-textarea
-                                    v-model="item.file"
-                                    allow-clear
-                                    :auto-size="{ minRows: 6 }"
-                                    placeholder="请输入file，json格式数据"
-                                    @blur="blurSave('file', item.file, item.id)"
+                                  <ApiRequestBodyEditor
+                                    :protocol-type="item.protocol_type"
+                                    :body-type="item.body_type"
+                                    :body-config="item.body_config"
+                                    :sse-config="item.sse_config"
+                                    :project-product-id="apiProjectProductId"
+                                    @save="(value) => saveScenarioRequestBody(item, value)"
                                   />
                                 </div>
                               </a-tab-pane>
@@ -508,28 +465,22 @@
                                 </div>
                               </a-tab-pane>
                               <a-tab-pane key="25" title="请求数据">
-                                <div class="m-2" v-if="item.result_data?.request?.data">
+                                <div class="m-2" v-if="hasDisplayValue(getResultRequestBody(item))">
                                   <JsonDisplay
                                     v-if="isActiveCaseDetailTab('2', '25')"
-                                    :data="item.result_data?.request?.data"
+                                    :data="getResultRequestBody(item)"
                                   />
                                 </div>
-                                <div class="m-2" v-if="item.result_data?.request?.json">
+                                <div class="m-2" v-if="hasDisplayValue(getResultRequestParams(item))">
                                   <JsonDisplay
                                     v-if="isActiveCaseDetailTab('2', '25')"
-                                    :data="item.result_data?.request?.json"
+                                    :data="getResultRequestParams(item)"
                                   />
                                 </div>
-                                <div class="m-2" v-if="item.result_data?.request?.params">
+                                <div class="m-2" v-if="hasDisplayValue(getResultRequestFiles(item))">
                                   <JsonDisplay
                                     v-if="isActiveCaseDetailTab('2', '25')"
-                                    :data="item.result_data?.request?.params"
-                                  />
-                                </div>
-                                <div class="m-2" v-if="item.result_data?.request?.file">
-                                  <JsonDisplay
-                                    v-if="isActiveCaseDetailTab('2', '25')"
-                                    :data="item.result_data?.request?.file"
+                                    :data="getResultRequestFiles(item)"
                                   />
                                 </div>
                               </a-tab-pane>
@@ -556,6 +507,14 @@
                                   <JsonDisplay
                                     v-if="isActiveCaseDetailTab('2', '24')"
                                     :data="item.result_data?.response?.text"
+                                  />
+                                </div>
+                              </a-tab-pane>
+                              <a-tab-pane key="26" title="SSE事件">
+                                <div class="m-2">
+                                  <JsonDisplay
+                                    v-if="isActiveCaseDetailTab('2', '26')"
+                                    :data="item.result_data?.response?.sse_events"
                                   />
                                 </div>
                               </a-tab-pane>
@@ -1037,6 +996,23 @@
     :saving="jsonEditSaving"
     @save="saveJsonEditDrawer"
   />
+  <BaseSidePanel
+    :visible="apiInfoDetailPanel.visible"
+    title="接口管理详情"
+    width="calc(92vw - 150px)"
+    @update:visible="(val) => { apiInfoDetailPanel.visible = val }"
+    @cancel="apiInfoDetailPanel.visible = false"
+  >
+    <div class="mango-api-case-api-info-panel">
+      <ApiInfoDetails
+        v-if="apiInfoDetailPanel.visible && apiInfoDetailPanel.apiInfoId"
+        :key="apiInfoDetailPanel.apiInfoId"
+        embedded
+        :api-info-id="apiInfoDetailPanel.apiInfoId"
+        @close="apiInfoDetailPanel.visible = false"
+      />
+    </div>
+  </BaseSidePanel>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
@@ -1052,7 +1028,7 @@
           <template v-else-if="item.type === 'cascader' && item.key === 'module'">
             <ProductModuleSelect
               v-model="item.value"
-              :project-product-id="pageData.record.project_product?.id || route.query.project_product"
+              :project-product-id="apiProjectProductId as string"
               :placeholder="item.placeholder"
               @change="getModuleApi"
             />
@@ -1104,7 +1080,7 @@
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj } from '@/utils/tools'
   import { columns, formItems, formParameterItems } from './config'
-  import { getApiCaseRun, putApiCase } from '@/api/apitest/case'
+  import { getApiCase, getApiCaseRun, putApiCase } from '@/api/apitest/case'
   import {
     deleteApiCaseDetailed,
     getApiCaseDetailed,
@@ -1132,7 +1108,10 @@
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
+  import ApiInfoDetails from '@/views/apitest/info/details/index.vue'
   import { getDataFactoryCaseConfig, getDataFactoryDatasourceAlias } from '@/api/data-factory'
+  import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
 
   const userStore = useUserStore()
   const FRONT_FUNC_TEMPLATE = `def func(self, request):
@@ -1142,9 +1121,9 @@
     url = request.url  # 获取请求的url
     headers = request.headers  # 获取headers
     params = request.params  # 获取参数
-    data = request.data  # 获取表单
-    json = request.json  # 获取json
-    file = request.file  # 获取file
+    protocol_type = request.protocol_type  # 获取协议类型
+    body_type = request.body_type  # 获取请求体类型
+    body_config = request.body_config  # 获取请求体配置
     return request`
 
   const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
@@ -1168,6 +1147,43 @@
   const formModel = ref({})
   const formParameterModel = ref({})
   const pageData: any = usePageData()
+  const props = withDefaults(
+    defineProps<{
+      caseId?: string | number
+      projectProductId?: string | number
+      embedded?: boolean
+    }>(),
+    {
+      caseId: '',
+      projectProductId: '',
+      embedded: false,
+    }
+  )
+  const emit = defineEmits<{
+    (event: 'close'): void
+  }>()
+  const route = useRoute()
+  const apiCaseId = computed(() => props.caseId || route.query.case_id || route.query.id || pageData.record?.id || '')
+  const apiProjectProductId = computed(
+    () =>
+      props.projectProductId ||
+      route.query.project_product ||
+      pageData.record?.project_product?.id ||
+      pageData.record?.project_product ||
+      ''
+  )
+  const defaultCaseRecord = () => ({
+    id: apiCaseId.value,
+    name: '',
+    front_custom: [],
+    front_sql: [],
+    front_headers: [],
+    posterior_sql: [],
+    project_product: apiProjectProductId.value ? { id: apiProjectProductId.value } : null,
+  })
+  if (!pageData.record) {
+    pageData.setRecord(defaultCaseRecord())
+  }
   const enumStore = useEnum()
   const jsonEditDrawer = reactive({
     visible: false,
@@ -1177,8 +1193,11 @@
     value: '',
     item: null as any,
   })
+  const apiInfoDetailPanel = reactive({
+    visible: false,
+    apiInfoId: '',
+  })
 
-  const route = useRoute()
   const data: any = reactive({
     actionTitle: '新增',
 
@@ -1215,7 +1234,7 @@
   const jsonEditSaving = ref(false)
   const showCaseAddButton = computed(() => !(data.apiType === '1' && data.apiSonType === '13'))
   const apiCaseDetailTitle = computed(() => {
-    const id = pageData.record?.id || route.query.case_id || route.query.id || '-'
+    const id = apiCaseId.value || '-'
     const name = pageData.record?.name || '-'
     return `组合用例场景配置 / ${id} / ${name}`
   })
@@ -1378,6 +1397,33 @@
     return Boolean(value)
   }
 
+  function hasDisplayValue(value: any) {
+    if (value === undefined || value === null || value === '') return false
+    if (Array.isArray(value)) return value.length > 0
+    if (typeof value === 'object') return Object.keys(value).length > 0
+    return true
+  }
+
+  function getResultRequestParams(item: any) {
+    const result = item?.result_data || {}
+    return result.response?.request_params ?? result.request?.params
+  }
+
+  function getResultRequestBody(item: any) {
+    const result = item?.result_data || {}
+    return (
+      result.response?.request_body ??
+      result.request?.request_body ??
+      result.request?.data ??
+      result.request?.json
+    )
+  }
+
+  function getResultRequestFiles(item: any) {
+    const result = item?.result_data || {}
+    return result.response?.request_file ?? result.request?.request_files ?? result.request?.file
+  }
+
   async function switchApiInfoType(key: any, item: any) {
     if (data.caseDetailTabLoading) {
       return
@@ -1389,14 +1435,10 @@
           data.tabsKey = '00'
         } else if (hasConfigValue(item?.params)) {
           data.tabsKey = '01'
-        } else if (hasConfigValue(item?.data)) {
+        } else if (hasConfigValue(item?.body_config) || item?.body_type !== 'none') {
           data.tabsKey = '02'
-        } else if (hasConfigValue(item?.json)) {
-          data.tabsKey = '03'
-        } else if (hasConfigValue(item?.file)) {
-          data.tabsKey = '04'
         } else {
-          data.tabsKey = '03'
+          data.tabsKey = '02'
         }
       } else if (key === '1') {
         await switchFrontProcessTab(item)
@@ -1535,6 +1577,10 @@
   }
 
   function doResetSearch() {
+    if (props.embedded) {
+      emit('close')
+      return
+    }
     window.history.back()
   }
 
@@ -1688,11 +1734,11 @@
       'posterior_func',
       'front_func',
       'ass_text_all',
-      'data',
-      'json',
       'params',
+      'protocol_type',
+      'body_type',
     ]
-    const in_serialize = ['file', 'ass_json_all', 'ass_schema']
+    const in_serialize = ['ass_json_all', 'ass_schema']
     const payload: any = {
       id: id,
       [key]: null,
@@ -1709,11 +1755,25 @@
       } else {
         payload[key] = formatJsonObj(key, item)
       }
+    } else if (key === 'ass_general') {
+      payload[key] = normalizeAssGeneral(item)
     } else {
       payload[key] = item
     }
 
     return putApiCaseDetailedParameter(payload)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+
+  function saveScenarioRequestBody(item: any, value: any) {
+    item.protocol_type = value.protocol_type
+    item.body_type = value.body_type
+    item.body_config = value.body_config
+    item.sse_config = value.sse_config
+    return putApiCaseDetailedParameter({ id: item.id, ...value })
       .then((res) => {
         Message.success(res.msg)
       })
@@ -1820,20 +1880,48 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       .catch(console.log)
   }
 
+  function normalizeCaseRecord(record: any) {
+    return {
+      ...defaultCaseRecord(),
+      ...(record || {}),
+      front_custom: Array.isArray(record?.front_custom) ? record.front_custom : [],
+      front_sql: Array.isArray(record?.front_sql) ? record.front_sql : [],
+      front_headers: Array.isArray(record?.front_headers) ? record.front_headers : [],
+      posterior_sql: Array.isArray(record?.posterior_sql) ? record.posterior_sql : [],
+    }
+  }
+
+  async function ensureCaseRecord() {
+    const caseId = apiCaseId.value
+    if (!caseId) return
+    if (pageData.record?.id && String(pageData.record.id) === String(caseId)) {
+      pageData.setRecord(normalizeCaseRecord(pageData.record))
+      return
+    }
+    const res = await getApiCase({ id: caseId, page: 1, pageSize: 1 } as any)
+    const record = (res.data || [])[0]
+    pageData.setRecord(normalizeCaseRecord(record || { id: caseId }))
+  }
+
   function doRefresh() {
+    if (!apiCaseId.value) return
     stepTableLoading.value = true
     data.caseHeadersList = pageData.record.front_headers
-    getApiCaseDetailed(route.query.case_id)
+    getApiCaseDetailed(apiCaseId.value)
       .then((res) => {
-        data.data = res.data
-        if (data.tabelJson && res.data) {
-          res.data.forEach((item: any) => {
+        const rows = Array.isArray(res.data) ? res.data : []
+        data.data = rows
+        if (data.tabelJson && rows.length) {
+          rows.forEach((item: any) => {
             if (item.id === data.tabelJson.id) {
               select(item)
             }
           })
-        } else if (res.data) {
-          select(res.data[0])
+        } else if (rows.length) {
+          select(rows[0])
+        } else {
+          data.tabelJson = null
+          data.selectDataObj = []
         }
       })
       .catch(console.log)
@@ -1930,6 +2018,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   const caseRun = async (param) => {
+    if (!apiCaseId.value) return
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
@@ -1937,7 +2026,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     if (caseRunning.value) return
     caseRunning.value = true
     try {
-      const res = await getApiCaseRun(route.query.case_id, userStore.selected_environment, param)
+      const res = await getApiCaseRun(apiCaseId.value, userStore.selected_environment, param)
       Message.success(res.msg)
     } catch (e) {
     } finally {
@@ -1955,8 +2044,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function loadDatasourceAliases() {
+    if (!apiProjectProductId.value) return
     getDataFactoryDatasourceAlias({
-      project_product: route.query.project_product,
+      project_product: apiProjectProductId.value,
       status: 1,
     })
       .then((res) => {
@@ -1986,10 +2076,11 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      if (!apiCaseId.value) return
       let value = getFormItems(formItems)
-      value['case'] = route.query.case_id
+      value['case'] = apiCaseId.value
       value['case_sort'] = data.data.length
-      postApiCaseDetailed(value, route.query.case_id)
+      postApiCaseDetailed(value, apiCaseId.value)
         .then((res) => {
           modalDialogRef.value?.toggle()
           Message.success(res.msg)
@@ -2048,7 +2139,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       cancelText: '取消',
       okText: '删除',
       onBeforeOk: () => {
-        return deleteApiCaseDetailed(record.id, route.query.case_id)
+        return deleteApiCaseDetailed(record.id, apiCaseId.value)
           .then((res) => {
             Message.success(res.msg)
           })
@@ -2104,7 +2195,27 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     })
   }
 
+  function getApiInfoId(record: any) {
+    const apiInfo = record?.api_info
+    return apiInfo?.id || apiInfo || ''
+  }
+
+  function openApiInfoDetail(record: any) {
+    const apiInfoId = getApiInfoId(record)
+    if (!apiInfoId) {
+      Message.error('未找到接口ID')
+      return
+    }
+    apiInfoDetailPanel.apiInfoId = String(apiInfoId)
+    apiInfoDetailPanel.visible = true
+  }
+
   function select(record: any) {
+    if (!record?.api_info) {
+      data.tabelJson = record || null
+      data.selectDataObj = []
+      return
+    }
     data.tabelJson = record
     doRefreshHeaders(record.api_info.project_product, true)
     doRefreshParameter(data.tabelJson.id).then(() => {
@@ -2115,8 +2226,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   onMounted(() => {
     nextTick(async () => {
+      await ensureCaseRecord()
       doRefresh()
-      doRefreshHeaders(route.query.project_product)
+      doRefreshHeaders(apiProjectProductId.value)
       getCacheDataKeyValue()
       loadDatasourceAliases()
     })
@@ -2164,6 +2276,32 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     return parameters.some((param: any) => param.f === 'expect')
   }
 
+  function normalizeAssGeneral(assGeneral: any) {
+    if (!Array.isArray(assGeneral)) {
+      return []
+    }
+    return assGeneral.map((assItem: any) => ({
+      method: assItem?.method || assItem?.value?.value || '',
+      value: normalizeAssGeneralValue(assItem?.value),
+    }))
+  }
+
+  function normalizeAssGeneralValue(value: any) {
+    return {
+      value: value?.value || '',
+      label: value?.label || '',
+      parameter: Array.isArray(value?.parameter)
+        ? value.parameter.map((param: any) => ({
+            f: param?.f || '',
+            n: param?.n || '',
+            p: param?.p || '',
+            d: Boolean(param?.d),
+            v: param?.v ?? '',
+          }))
+        : [],
+    }
+  }
+
   function handleGeneralMethodChange(
     value: any,
     currentItem: any,
@@ -2182,7 +2320,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         }
       })
     }
-    item.ass_general[currentIndex].value = inputItem
+    item.ass_general[currentIndex].value = normalizeAssGeneralValue(inputItem)
     // 保存更改
     blurSave('ass_general', item.ass_general, item.id)
   }
@@ -2410,6 +2548,14 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     align-items: center;
     justify-content: center;
     color: var(--m-muted);
+  }
+
+  .mango-api-case-api-info-panel {
+    min-height: calc(100vh - 112px);
+  }
+
+  .mango-api-case-api-info-panel :deep(.mango-detail-workbench-page) {
+    min-height: calc(100vh - 136px);
   }
 
   :deep(.assertion-parameters-inline) {

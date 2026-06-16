@@ -17,3 +17,6 @@ def data_cleanup(v):
     elif v == '6.0':
         from data_cleanup_scripts.v_5_9_2026_03_07_timezone import main_timezone
         main_timezone()
+    elif v == '6.3.1':
+        from data_cleanup_scripts.v_6_3_1_2026_06_16_api_body import main_6_3_1
+        main_6_3_1()

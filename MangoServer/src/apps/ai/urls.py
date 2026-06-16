@@ -1,0 +1,53 @@
+# -*- coding: utf-8 -*-
+from django.urls import path
+
+from src.apps.ai.views.ai import (
+    AiAgentContextCRUD,
+    AiAgentTaskCRUD,
+    AiAgentTaskViews,
+    AiAssistantViews,
+    AiMcpServerCRUD,
+    AiMcpServerViews,
+    AiMcpToolCRUD,
+    AiMcpToolViews,
+    AiSkillCRUD,
+    AiSkillViews,
+)
+from src.apps.ai.views.agent import ApiAutomationAgentViews, FunctionalCaseAgentViews
+
+urlpatterns = [
+    path("skill", AiSkillCRUD.as_view()),
+    path("skill/publish", AiSkillViews.as_view({"post": "publish"})),
+    path("skill/disable", AiSkillViews.as_view({"post": "disable"})),
+    path("skill/archive", AiSkillViews.as_view({"post": "archive"})),
+    path("mcp/server", AiMcpServerCRUD.as_view()),
+    path("mcp/server/test", AiMcpServerViews.as_view({"post": "test"})),
+    path("mcp/server/refresh-status", AiMcpServerViews.as_view({"post": "refresh_status"})),
+    path("mcp/server/builtin", AiMcpServerViews.as_view({"post": "builtin"})),
+    path("mcp/server/sync-tools", AiMcpServerViews.as_view({"post": "sync_tools"})),
+    path("mcp/tool", AiMcpToolCRUD.as_view()),
+    path("mcp/tool/status", AiMcpToolViews.as_view({"put": "status"})),
+    path("mcp/tool/call", AiMcpToolViews.as_view({"post": "call"})),
+    path("task", AiAgentTaskCRUD.as_view()),
+    path("task/detail", AiAgentTaskViews.as_view({"get": "task_detail"})),
+    path("task/step", AiAgentTaskViews.as_view({"get": "step"})),
+    path("task/tool-call", AiAgentTaskViews.as_view({"get": "tool_call"})),
+    path("task/retry", AiAgentTaskViews.as_view({"post": "retry"})),
+    path("agent/context", AiAgentContextCRUD.as_view()),
+    path("assistant/status", AiAssistantViews.as_view({"get": "status"})),
+    path("assistant/session", AiAssistantViews.as_view({"get": "session"})),
+    path("assistant/session/list", AiAssistantViews.as_view({"get": "sessions"})),
+    path("assistant/session/create", AiAssistantViews.as_view({"post": "create_session"})),
+    path("assistant/message", AiAssistantViews.as_view({"get": "messages", "post": "message"})),
+    path("assistant/message/stream", AiAssistantViews.as_view({"post": "message_stream"})),
+    path("assistant/tool-confirm", AiAssistantViews.as_view({"post": "tool_confirm"})),
+    path("assistant/clear", AiAssistantViews.as_view({"post": "clear"})),
+    path("agent/functional-case/start", FunctionalCaseAgentViews.as_view({"post": "start"})),
+    path("agent/functional-case/status", FunctionalCaseAgentViews.as_view({"get": "status"})),
+    path("agent/functional-case/steps", FunctionalCaseAgentViews.as_view({"get": "steps"})),
+    path("agent/functional-case/retry", FunctionalCaseAgentViews.as_view({"post": "retry"})),
+    path("agent/api-automation/start", ApiAutomationAgentViews.as_view({"post": "start"})),
+    path("agent/api-automation/status", ApiAutomationAgentViews.as_view({"get": "status"})),
+    path("agent/api-automation/steps", ApiAutomationAgentViews.as_view({"get": "steps"})),
+    path("agent/api-automation/retry", ApiAutomationAgentViews.as_view({"post": "retry"})),
+]

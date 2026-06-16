@@ -16,6 +16,10 @@ export function deleteDataFactoryDatasourceAlias(id: number | string[] | number[
   return deleted({ url: '/data-factory/datasource-alias', data: () => ({ id }) })
 }
 
+export function postDataFactoryDatasourceAliasQuery(data: object) {
+  return post({ url: '/data-factory/datasource-alias/query', data: () => data })
+}
+
 export function getDataFactoryDatasourceBinding(data: object) {
   return get({ url: '/data-factory/datasource-binding', data: () => data })
 }

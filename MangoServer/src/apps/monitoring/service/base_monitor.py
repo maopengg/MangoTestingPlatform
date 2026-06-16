@@ -7,7 +7,7 @@ from datetime import datetime
 
 from mangotools.monitoring import MonitorBase as Mb
 
-from src.apps.auto_system.service.test_suite.send_notice import SendNotice
+from src.apps.system.service.test_suite.send_notice import SendNotice
 from src.apps.monitoring.models import MonitoringReport
 from src.common.enums.monitoring_enum import MonitoringLogStatusEnum
 from src.common.tools.decorator.retry import async_task_db_connection

@@ -11,16 +11,17 @@ from django.forms import model_to_dict
 from genson import SchemaBuilder
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter, ApiHeaders, ApiInfo, ApiPublic
-from src.apps.auto_system.service.cache_data_value import CacheDataValue
+from src.apps.system.service.cache_data_value import CacheDataValue
 from src.apps.auto_api.service.test_case.test_api_info import TestApiInfo
 from src.apps.auto_api.service.test_case.test_case import TestCase
+from src.apps.auto_api.schemas.case_schema import build_body_from_legacy, normalize_body_config_by_type
 from src.apps.auto_api.views.api_case import ApiCaseCRUD, ApiCaseSerializersC
 from src.apps.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
 from src.apps.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
 from src.apps.auto_api.views.api_headers import ApiHeadersCRUD
 from src.apps.auto_api.views.api_info import ApiInfoCRUD
 from src.apps.auto_api.views.api_pulic import ApiPublicCRUD
-from src.apps.auto_user.models import User
+from src.apps.user.models import User
 from src.common.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from src.common.enums.system_enum import CacheDataKey2Enum
 from src.common.enums.tools_enum import (
@@ -41,19 +42,19 @@ from src.services.mcp_server.common import (
 
 
 FILE_UPLOAD_USAGE = {
-    "description": "API 接口定义和 API case 场景参数中的 file 字段用于描述 multipart/form-data 文件参数。",
-    "required_format": [{"请求文件字段名": "${{get_file(已上传文件名)}}" }],
-    "strict_rule": "只要 api_info.file 或 api_case 场景 file 非空，每个文件字段值都必须使用 ${{get_file(文件名)}} 表达式；不能直接传本地路径、URL、裸文件名或二进制内容。",
+    "description": "API 接口定义和 API case 场景参数中的 multipart.files 用于描述 multipart/form-data 文件参数。",
+    "required_format": {"body_type": "multipart", "body_config": {"fields": [], "files": [{"key": "请求文件字段名", "file_id": 1, "file_name": "可选发送文件名"}]}},
+    "strict_rule": "文件必须来自测试配置-测试文件中的 FileData.id，不能直接传本地路径、URL、裸文件名或二进制内容。",
     "workflow": [
         "先调用 system_file 分组的 upload_system_file 上传真实文件，记录返回的 file.name 或上传时传入的 name。",
-        "在 api_info.file 或 api_case_detailed_parameter.file 中使用 ${{get_file(文件名)}} 引用已上传文件。",
-        "get_file 是系统自定义随机/变量方法，执行时会按文件名查找上传文件并转换成实际请求文件。",
+        "在 body_config.files 中写入 file_id，并把 key 设置为接口要求的文件字段名。",
+        "执行时后端会按 file_id 读取 FileData.test_file 并发送文件。",
     ],
-    "example": [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}],
+    "example": {"body_type": "multipart", "body_config": {"fields": [{"key": "name", "value": "demo"}], "files": [{"key": "file", "file_id": 1}]}},
     "notes": [
-        "示例中的 file 是请求参数名；如果接口字段名叫 upload_file，则写成 [{'upload_file': '${{get_file(数据订阅新增模板.xlsx)}}'}]。",
-        "括号内必须是实际上传文件名，建议先用 list_system_files 查询确认。",
-        "不要把本地文件路径直接写入 file 字段；远程 MCP 服务通常无法读取调用者本机路径。",
+        "示例中的 key 是请求参数名；如果接口字段名叫 upload_file，则 key 写 upload_file。",
+        "建议先用 list_system_files 查询确认 file_id 和项目产品是否匹配。",
+        "远程 MCP 服务通常无法读取调用者本机路径，因此只接受 FileData.id。",
     ],
 }
 
@@ -119,6 +120,61 @@ def _validate_file_payload(file_payload: Any) -> str | None:
     return None
 
 
+def _normalize_body_payload(
+        body_type: str | None = None,
+        body_config: dict | None = None,
+        sse_config: dict | None = None,
+        data: Any = None,
+        json_body: Any = None,
+        file: Any = None,
+) -> dict:
+    if body_type:
+        body_config = normalize_body_config_by_type(body_type, body_config)
+        return {
+            "body_type": body_type,
+            "body_config": body_config,
+            "sse_config": sse_config,
+        }
+    legacy_body_type, legacy_body_config = build_body_from_legacy(data=data, json_body=json_body, file_payload=file)
+    legacy_body_config = normalize_body_config_by_type(legacy_body_type, legacy_body_config)
+    return {
+        "body_type": legacy_body_type,
+        "body_config": legacy_body_config,
+        "sse_config": sse_config,
+    }
+
+
+def _validate_sql_rows_datasource_alias(rows: Any, field_name: str) -> str | None:
+    if not rows:
+        return None
+    if not isinstance(rows, list):
+        return f"{field_name} 必须是数组。"
+    for index, row in enumerate(rows, start=1):
+        if _is_empty_value(row):
+            continue
+        if not isinstance(row, dict):
+            return f"{field_name}[{index}] 必须是对象，格式为 {{key, value, datasource_alias}}。"
+        sql = row.get("value")
+        if _is_empty_value(sql):
+            continue
+        datasource_alias = row.get("datasource_alias") or row.get("datasource_alias_id")
+        if datasource_alias in [None, "", "null", "undefined"]:
+            return (
+                f"{field_name}[{index}] 已配置 SQL，但未选择数据源类型。"
+                "请先调用 list_data_factory_datasource_aliases(project_product_id) 查询逻辑数据源，"
+                "必要时调用 list_data_factory_datasource_bindings(project_product_id, test_object_id) 确认测试环境绑定，"
+                "然后在 SQL 项中写入 datasource_alias。"
+            )
+    return None
+
+
+def _validate_api_case_sql_datasources(front_sql: Any = None, posterior_sql: Any = None, prefix: str = "") -> str | None:
+    front_error = _validate_sql_rows_datasource_alias(front_sql, f"{prefix}front_sql")
+    if front_error:
+        return front_error
+    return _validate_sql_rows_datasource_alias(posterior_sql, f"{prefix}posterior_sql")
+
+
 def _validate_api_info_url_path(url: str | None) -> str | None:
     if url is None:
         return None
@@ -137,9 +193,18 @@ def _validate_api_info_url_path(url: str | None) -> str | None:
 
 def _normalize_scenario_payload(payload: dict) -> dict:
     normalized = dict(payload)
-    for key in ("params", "data", "json"):
+    for key in ("params",):
         if key in normalized:
             normalized[key] = _json_string(normalized[key])
+    if any(key in normalized for key in ("body_type", "body_config", "sse_config", "data", "json", "json_body", "file")):
+        normalized.update(_normalize_body_payload(
+            body_type=normalized.get("body_type"),
+            body_config=normalized.get("body_config"),
+            sse_config=normalized.get("sse_config"),
+            data=normalized.pop("data", None),
+            json_body=normalized.pop("json", None) or normalized.pop("json_body", None),
+            file=normalized.pop("file", None),
+        ))
     for key in (
         "headers",
         "front_sql",
@@ -330,8 +395,8 @@ def _case_tree(case_id: int, include_result_data: bool = True) -> dict:
 
 
 def _api_case_delete_impact(case_id: int) -> dict:
-    from src.apps.auto_data_factory.models import DataFactoryCaseConfig
-    from src.apps.auto_system.models import TasksDetails, TestSuiteDetails
+    from src.apps.data_factory.models import DataFactoryCaseConfig
+    from src.apps.system.models import TasksDetails, TestSuiteDetails
     from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
 
     case = ApiCase.objects.select_related("project_product", "module", "case_people").get(id=case_id)
@@ -399,9 +464,10 @@ def _create_case_step(case_id: int, api_info_id: int, case_sort: int | None = No
             "name": api_info_obj.name,
             "headers": [],
             "params": api_info_obj.params,
-            "data": api_info_obj.data,
-            "json": api_info_obj.json,
-            "file": api_info_obj.file,
+            "protocol_type": api_info_obj.protocol_type,
+            "body_type": api_info_obj.body_type,
+            "body_config": api_info_obj.body_config,
+            "sse_config": api_info_obj.sse_config,
         }
     )
     ApiCaseDetailedCRUD().callback(case_id)
@@ -766,27 +832,23 @@ def register_api_automation_tools(mcp):
         url: str,
         method: int,
         params: str | dict | list | None = None,
-        data: str | dict | list | None = None,
-        json_body: str | dict | list | None = None,
-        file: dict | list | None = None,
+        protocol_type: str = "http",
+        body_type: str = "none",
+        body_config: dict | None = None,
+        sse_config: dict | None = None,
         type: int = 1,
     ) -> dict:
-        """创建 API 接口定义。url 只能传路径，不能传域名；params/data/json_body 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
+        """创建 API 接口定义。url 只能传路径，不能传域名；params 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
 
-        文件上传接口的 file 字段必须先调用 upload_system_file 上传真实文件，再使用
-        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用。
-        其中 file 是请求文件字段名；如果字段名是 upload_file，则写成
-        [{"upload_file": "${{get_file(数据订阅新增模板.xlsx)}}"}]。
-        不能直接传本地路径、URL、裸文件名或二进制内容；详细格式见 get_api_case_schema.file_upload_usage。
+        protocol_type 一期只执行 http/sse；其他协议是保留枚举。body_type 支持 none/json/form/raw/multipart。
+        body_type=raw 时 body_config.content_type 默认 application/json。文件上传使用 body_type=multipart，并在 body_config.files 中传 FileData.id。
         """
         if method not in MethodEnum.get_key_list():
             return fail("请求方法不存在", "METHOD_NOT_FOUND", {"method": method})
         url_error = _validate_api_info_url_path(url)
         if url_error:
             return fail(url_error, "INVALID_API_INFO_URL", {"url": url})
-        file_error = _validate_file_payload(file)
-        if file_error:
-            return fail(file_error, "INVALID_FILE_FORMAT")
+        normalized_body_config = normalize_body_config_by_type(body_type, body_config)
         data_obj = ApiInfoCRUD.inside_post(
             {
                 "project_product": project_product_id,
@@ -796,9 +858,10 @@ def register_api_automation_tools(mcp):
                 "method": method,
                 "headers": None,
                 "params": _json_string(params),
-                "data": _json_string(data),
-                "json": _json_string(json_body),
-                "file": file,
+                "protocol_type": protocol_type,
+                "body_type": body_type,
+                "body_config": normalized_body_config,
+                "sse_config": sse_config,
                 "type": type,
             }
         )
@@ -834,12 +897,10 @@ def register_api_automation_tools(mcp):
         params = {k: v[0] if len(v) == 1 else v for k, v in query_params.items()}
         if params:
             payload["params"] = _json_string(params)
-        if parsed.json and parsed.data:
-            payload["json"] = _json_string(parsed.json)
-        elif parsed.json is None and parsed.data:
-            payload["data"] = _json_string(parsed.data)
-        elif parsed.json and parsed.data is None:
-            payload["json"] = _json_string(parsed.json)
+        payload.update(_normalize_body_payload(
+            data=parsed.data if parsed.json is None else None,
+            json_body=parsed.json if parsed.json else None,
+        ))
         data_obj = ApiInfoCRUD.inside_post(payload)
         return ok({"api_info_id": data_obj["id"], **data_obj}, "接口定义创建成功")
 
@@ -851,22 +912,18 @@ def register_api_automation_tools(mcp):
         url: str | None = None,
         method: int | None = None,
         params: str | dict | list | None = None,
-        data: str | dict | list | None = None,
-        json_body: str | dict | list | None = None,
-        file: dict | list | None = None,
+        protocol_type: str | None = None,
+        body_type: str | None = None,
+        body_config: dict | None = None,
+        sse_config: dict | None = None,
     ) -> dict:
         """更新 API 接口定义。module_id 可修改接口所属模块；url 只能传路径，不能传域名。
 
-        文件上传接口的 file 字段必须先调用 upload_system_file 上传真实文件，再使用
-        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；不能直接传本地路径、URL、裸文件名或二进制内容。
-        详细格式见 get_api_case_schema.file_upload_usage。
+        如需更新请求体，请同时传 body_type/body_config；body_type=raw 时 body_config.content_type 默认 application/json；文件上传使用 body_config.files[].file_id。
         """
         url_error = _validate_api_info_url_path(url)
         if url_error:
             return fail(url_error, "INVALID_API_INFO_URL", {"url": url})
-        file_error = _validate_file_payload(file)
-        if file_error:
-            return fail(file_error, "INVALID_FILE_FORMAT")
         payload: dict[str, Any] = {"id": api_info_id}
         for key, value in {
             "name": name,
@@ -874,12 +931,18 @@ def register_api_automation_tools(mcp):
             "url": url,
             "method": method,
             "params": _json_string(params),
-            "data": _json_string(data),
-            "json": _json_string(json_body),
-            "file": file,
+            "protocol_type": protocol_type,
+            "body_type": body_type,
+            "body_config": body_config,
+            "sse_config": sse_config,
         }.items():
             if value is not None:
                 payload[key] = value
+        if "body_type" in payload or "body_config" in payload:
+            current = ApiInfo.objects.get(id=api_info_id)
+            effective_body_type = payload.get("body_type", current.body_type)
+            effective_body_config = payload.get("body_config", current.body_config)
+            payload["body_config"] = normalize_body_config_by_type(effective_body_type, effective_body_config)
         data_obj = ApiInfoCRUD.inside_put(api_info_id, payload)
         return ok({"api_info_id": data_obj["id"], **data_obj}, "接口定义更新成功")
 
@@ -969,15 +1032,20 @@ def register_api_automation_tools(mcp):
 
         复杂字段格式见 get_api_case_schema.api_case_fields。front_headers 只传 ApiHeaders.id 数组，
         表示用例级默认请求头；如果某个场景参数 headers 非空，执行时会完全覆盖 front_headers，不会合并。
+        front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端。
         接口/组件层用于单接口、组件能力、契约、边界、异常校验，Integration用于跨模块/跨服务/数据库/消息/第三方协作验证，
         E2E用于核心用户路径和完整业务闭环验证。scenario_tags 只放冒烟、回归、主流程等辅助标签。
-        如果用例不涉及 SQL 前后置、SQL 断言或数据工厂造数/清理，可默认把 6=线上巡检 加入 scenario_tags。
+        6=生产巡检 仅用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。
+        10=生产回归 可包含增删改接口，但不允许任何数据库操作。
         未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
         """
         tag_error = _validate_scenario_tags(scenario_tags)
         if tag_error:
             return fail(tag_error, "INVALID_SCENARIO_TAGS")
+        sql_error = _validate_api_case_sql_datasources(front_sql, posterior_sql)
+        if sql_error:
+            return fail(sql_error, "DATASOURCE_ALIAS_REQUIRED")
         if case_people_id is None:
             case_people_id = current_user().id
         data_obj = ApiCaseCRUD.inside_post(
@@ -1015,10 +1083,16 @@ def register_api_automation_tools(mcp):
         front_headers: list[int] | None = None,
         posterior_sql: list | None = None,
     ) -> dict:
-        """更新 API case 主体配置。module_id 可修改所属模块，case_people_id 可修改负责人；复杂字段格式见 get_api_case_schema.api_case_fields。"""
+        """更新 API case 主体配置。module_id 可修改所属模块，case_people_id 可修改负责人；复杂字段格式见 get_api_case_schema.api_case_fields。
+
+        front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
+        """
         tag_error = _validate_scenario_tags(scenario_tags)
         if tag_error:
             return fail(tag_error, "INVALID_SCENARIO_TAGS")
+        sql_error = _validate_api_case_sql_datasources(front_sql, posterior_sql)
+        if sql_error:
+            return fail(sql_error, "DATASOURCE_ALIAS_REQUIRED")
         payload: dict[str, Any] = {"id": case_id}
         for key, value in {
             "name": name,
@@ -1115,14 +1189,15 @@ def register_api_automation_tools(mcp):
 
     @mcp.tool()
     def refresh_api_case_step_from_api_info(step_id: int) -> dict:
-        """从接口定义同步 params/data/json/file 到步骤下所有场景。"""
+        """从接口定义同步 params/protocol_type/body_type/body_config/sse_config 到步骤下所有场景。"""
         detail = ApiCaseDetailed.objects.select_related("api_info").get(id=step_id)
         api_info = detail.api_info
         count = ApiCaseDetailedParameter.objects.filter(case_detailed_id=step_id).update(
             params=api_info.params,
-            data=api_info.data,
-            json=api_info.json,
-            file=api_info.file,
+            protocol_type=api_info.protocol_type,
+            body_type=api_info.body_type,
+            body_config=api_info.body_config,
+            sse_config=api_info.sse_config,
         )
         return ok({"step_id": step_id, "updated_scenarios": count}, "步骤参数同步成功")
 
@@ -1140,9 +1215,10 @@ def register_api_automation_tools(mcp):
         retry_interval: int | None = None,
         headers: list[int] | None = None,
         params: str | dict | list | None = None,
-        data: str | dict | list | None = None,
-        json_body: str | dict | list | None = None,
-        file: dict | list | None = None,
+        protocol_type: str = "http",
+        body_type: str = "none",
+        body_config: dict | None = None,
+        sse_config: dict | None = None,
         front_sql: list | None = None,
         front_func: str | None = None,
         ass_jsonpath: list | None = None,
@@ -1160,14 +1236,14 @@ def register_api_automation_tools(mcp):
 
         复杂字段格式见 get_api_case_schema.api_case_scenario_fields。
         headers 只传 ApiHeaders.id 数组；只要 headers 非空，就会完全覆盖 API case 的 front_headers，不会合并。
+        front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         ass_jsonpath 中 actual 是 JSONPath；method 使用 get_api_assertion_methods 返回的叶子 value。
         如果 method 的参数只有 actual、没有 expect，例如 p_is_none/p_is_true/p_is_false，expect 传 null。
-        文件上传参数 file 必须使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件；
-        file 是请求文件字段名，不能直接传本地路径、URL、裸文件名或二进制内容。
+        请求体使用 body_type/body_config；文件上传使用 body_type=multipart 和 body_config.files[].file_id。
         """
-        file_error = _validate_file_payload(file)
-        if file_error:
-            return fail(file_error, "INVALID_FILE_FORMAT")
+        sql_error = _validate_api_case_sql_datasources(front_sql, posterior_sql)
+        if sql_error:
+            return fail(sql_error, "DATASOURCE_ALIAS_REQUIRED")
         payload = {
             "case_detailed": step_id,
             "name": name,
@@ -1175,9 +1251,10 @@ def register_api_automation_tools(mcp):
             "retry_interval": retry_interval,
             "headers": headers or [],
             "params": _json_string(params),
-            "data": _json_string(data),
-            "json": _json_string(json_body),
-            "file": file,
+            "protocol_type": protocol_type,
+            "body_type": body_type,
+            "body_config": body_config,
+            "sse_config": sse_config,
             "front_sql": front_sql or [],
             "front_func": front_func,
             "ass_jsonpath": _normalize_ass_jsonpath(ass_jsonpath),
@@ -1200,14 +1277,13 @@ def register_api_automation_tools(mcp):
         """更新场景参数。fields 使用 ApiCaseDetailedParameter 字段名。
 
         字段格式见 get_api_case_schema.api_case_scenario_fields。fields.headers 非空时会覆盖 API case 的 front_headers。
+        fields.front_sql/fields.posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         fields.ass_jsonpath 的规则同 create_api_case_scenario：单参数断言方法 expect 传 null。
-        fields.file 如需上传文件，必须使用 [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 格式引用已上传文件；
-        file 是请求文件字段名，不能直接传本地路径、URL、裸文件名或二进制内容。
+        fields 中请求体使用 protocol_type/body_type/body_config/sse_config；文件上传使用 body_config.files[].file_id。
         """
-        if "file" in fields:
-            file_error = _validate_file_payload(fields.get("file"))
-            if file_error:
-                return fail(file_error, "INVALID_FILE_FORMAT")
+        sql_error = _validate_api_case_sql_datasources(fields.get("front_sql"), fields.get("posterior_sql"))
+        if sql_error:
+            return fail(sql_error, "DATASOURCE_ALIAS_REQUIRED")
         payload = {"id": scenario_id, **fields}
         payload = _normalize_scenario_payload(payload)
         data_obj = ApiCaseDetailedParameterCRUD.inside_put(scenario_id, payload)
@@ -1358,11 +1434,13 @@ def register_api_automation_tools(mcp):
         调用 preview_create_api_header_impact 并由用户手动确认，再调用 create_api_header 创建，最后把返回 id
         通过 case_front_headers 或 scenarios[].headers 传入。
         如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
-        api.file 和 scenarios[].file 如需上传文件，必须先调用 upload_system_file 上传真实文件，再使用
-        [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}] 这种格式引用；不能直接传本地路径、URL、裸文件名或二进制内容。
+        请求体使用 api.body_type/api.body_config 和 scenarios[].body_type/body_config。
+        文件上传使用 body_type=multipart 和 body_config.files[].file_id；不能直接传本地路径、URL、裸文件名或二进制内容。
         详细格式见 get_api_case_schema.file_upload_usage。
+        scenarios[].front_sql/scenarios[].posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端；scenario_tags 只放辅助标签。
-        如果完整用例不涉及 SQL 前后置、SQL 断言或数据工厂造数/清理，可默认把 6=线上巡检 加入 scenario_tags。
+        6=生产巡检 仅用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。
+        10=生产回归 可包含增删改接口，但不允许任何数据库操作。
         """
         tag_error = _validate_scenario_tags(scenario_tags)
         if tag_error:
@@ -1386,14 +1464,14 @@ def register_api_automation_tools(mcp):
         api_url_error = _validate_api_info_url_path(api.get("url"))
         if api_url_error:
             return fail(api_url_error, "INVALID_API_INFO_URL", {"url": api.get("url")})
-        file_error = _validate_file_payload(api.get("file"))
-        if file_error:
-            return fail(f"api.file 格式错误：{file_error}", "INVALID_FILE_FORMAT")
         for index, scenario in enumerate(scenarios or [], start=1):
-            if "file" in scenario:
-                file_error = _validate_file_payload(scenario.get("file"))
-                if file_error:
-                    return fail(f"scenarios[{index}].file 格式错误：{file_error}", "INVALID_FILE_FORMAT")
+            sql_error = _validate_api_case_sql_datasources(
+                scenario.get("front_sql"),
+                scenario.get("posterior_sql"),
+                prefix=f"scenarios[{index}].",
+            )
+            if sql_error:
+                return fail(sql_error, "DATASOURCE_ALIAS_REQUIRED")
         if case_people_id is None:
             case_people_id = current_user(user_id).id
         try:
@@ -1407,11 +1485,16 @@ def register_api_automation_tools(mcp):
                     "method": api["method"],
                     "headers": None,
                     "params": _json_string(api.get("params")),
-                    "data": _json_string(api.get("data")),
-                    "json": _json_string(api.get("json") or api.get("json_body")),
-                    "file": api.get("file"),
                     "type": api.get("type", 1),
                 }
+                api_payload.update(_normalize_body_payload(
+                    body_type=api.get("body_type"),
+                    body_config=api.get("body_config"),
+                    sse_config=api.get("sse_config"),
+                    data=api.get("data"),
+                    json_body=api.get("json") or api.get("json_body"),
+                    file=api.get("file"),
+                ))
                 api_info = ApiInfoCRUD.inside_post(api_payload)
                 api_case = ApiCaseCRUD.inside_post(
                     {
@@ -1479,7 +1562,7 @@ def register_api_automation_tools(mcp):
     ) -> dict:
         """异步执行已保存 API case。不传 test_env_id 时使用当前用户 selected_environment。"""
         try:
-            from src.apps.auto_system.service.tasks.add_tasks import AddTasks
+            from src.apps.system.service.tasks.add_tasks import AddTasks
 
             if case_sort is not None:
                 return fail("异步执行暂不支持 case_sort；请执行完整 API case。", "ASYNC_CASE_SORT_UNSUPPORTED")
@@ -1513,7 +1596,7 @@ def register_api_automation_tools(mcp):
     ) -> dict:
         """批量执行 API case。当前实现复用任务队列创建逻辑，返回任务创建结果。"""
         try:
-            from src.apps.auto_system.service.tasks.add_tasks import AddTasks
+            from src.apps.system.service.tasks.add_tasks import AddTasks
 
             user = current_user(user_id)
             env_id = _selected_env(user.id, test_env_id)
@@ -1682,20 +1765,23 @@ def register_api_automation_tools(mcp):
         }
         sql_key_value_schema = {
             "type": "list[object]",
-            "format": [{"key": "缓存key或名称", "value": "SQL语句", "datasource_alias": "逻辑数据源ID，可为空"}],
+            "format": [{"key": "缓存key或名称", "value": "SQL语句", "datasource_alias": "逻辑数据源ID，MCP 保存时必填"}],
             "datasource_alias": {
                 "field": "datasource_alias",
-                "type": "int | null",
+                "type": "int",
                 "source": "数据工厂逻辑数据源 DataFactoryDatasourceAlias.id",
-                "lookup_tool": "list_data_factory_datasource_aliases(project_product_id=当前产品ID)",
-                "rule": "多数据库测试环境下，API case/场景的 SQL 前置或后置必须传 datasource_alias；单库老数据可为空并由后端兜底。",
+                "lookup_tools": [
+                    "list_data_factory_datasource_aliases(project_product_id=当前产品ID)",
+                    "list_data_factory_datasource_bindings(project_product_id=当前产品ID, test_object_id=当前测试对象ID)",
+                ],
+                "rule": "MCP 创建或更新 API case/场景的 front_sql、posterior_sql 时，只要 value 有 SQL，就必须传 datasource_alias；不要依赖后端默认库兜底。",
             },
             "variable_support": "value 支持 ${{变量}}、${{随机方法()}}、${{数据工厂.字段}} 等表达式，执行前由测试数据引擎替换。",
         }
-        file_example = [{"file": "${{get_file(数据订阅新增模板.xlsx)}}"}]
+        file_example = {"body_type": "multipart", "body_config": {"fields": [], "files": [{"key": "file", "file_id": 1}]}}
         return ok(
             {
-                "api_info": ["project_product", "module", "name", "url", "method", "params", "data", "json", "file"],
+                "api_info": ["project_product", "module", "name", "url", "method", "params", "protocol_type", "body_type", "body_config", "sse_config"],
                 "api_public": [
                     "project_product",
                     "test_env",
@@ -1749,9 +1835,10 @@ def register_api_automation_tools(mcp):
                     "retry_interval",
                     "headers",
                     "params",
-                    "data",
-                    "json",
-                    "file",
+                    "protocol_type",
+                    "body_type",
+                    "body_config",
+                    "sse_config",
                     "front_sql",
                     "front_func",
                     "ass_jsonpath",
@@ -1779,13 +1866,25 @@ def register_api_automation_tools(mcp):
                         ],
                         "query_rule": "query 参数请放到 params 字段，不要拼在 url 中。",
                     },
-                    "file": {
-                        "type": "list[object] | dict | null",
-                        "model_field": "ApiInfo.file",
-                        "description": "接口定义层的 multipart/form-data 文件参数。只要 file 非空，就必须使用 ${{get_file(已上传文件名)}} 引用。",
-                        "required_format": file_example,
-                        "field_name_rule": "对象 key 是请求文件字段名，例如 file/upload_file/test_file；对象 value 必须是 ${{get_file(已上传文件名)}}。",
-                        "forbidden": ["本地路径", "URL", "裸文件名", "base64/二进制内容"],
+                    "protocol_type": {
+                        "type": "str",
+                        "default": "http",
+                        "enabled": ["http", "sse"],
+                        "reserved_disabled": ["json_rpc", "xml_rpc", "soap", "graphql", "grpc", "dubbo", "thrift", "mcp", "websocket"],
+                    },
+                    "body_type": {
+                        "type": "str",
+                        "default": "none",
+                        "enum": ["none", "json", "form", "raw", "multipart"],
+                    },
+                    "body_config": {
+                        "type": "object | null",
+                        "description": "请求体配置。json 支持 source_type=value/body 或 source_type=template/body_text；form 使用 fields；raw 使用 body_text/content_type，content_type 缺省为 application/json；multipart 使用 fields/files，其中 files[].file_id 来自 FileData.id。",
+                        "multipart_example": file_example,
+                    },
+                    "sse_config": {
+                        "type": "object | null",
+                        "description": "protocol_type=sse 时可配置 max_duration_seconds、max_event_count、end_event、end_jsonpath。",
                     },
                 },
                 "api_case_fields": {
@@ -1840,12 +1939,13 @@ def register_api_automation_tools(mcp):
                         "default": [],
                         "enum_source": "ApiCaseScenarioTagEnum",
                         "enum": ApiCaseScenarioTagEnum.obj(),
-                        "description": "场景标签，只表示执行策略或业务重要性，例如冒烟、回归、主流程、核心链路、高频、阻塞、线上巡检；不要把 API/Integration/E2E 放在这里。",
+                        "description": "场景标签，只表示执行策略或业务重要性，例如冒烟、回归、主流程、核心链路、高频、阻塞、生产巡检、生产回归；不要把 API/Integration/E2E 放在这里。",
                         "selection_guidance": [
                             "冒烟用于每次发布前必须快速验证的关键路径。",
                             "回归用于版本变更后需要持续覆盖的稳定能力。",
-                            "主流程/核心链路用于标记业务重要路径，高频/阻塞/线上巡检用于执行优先级或风险标识。",
-                            "如果 case 不涉及 SQL 前后置、SQL 断言或数据工厂造数/清理，可默认增加 6=线上巡检，方便后续做生产/准生产巡检集合。",
+                            "主流程/核心链路用于标记业务重要路径，高频/阻塞用于执行优先级或风险标识。",
+                            "6=生产巡检：仅适用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。",
+                            "10=生产回归：可以包含增删改接口，但不允许任何数据库操作，包括 SQL 前后置、SQL 断言和数据工厂造数/清理。",
                             "API/Integration/E2E 属于 scenario_layer，不属于 scenario_tags。",
                         ],
                     },
@@ -1920,25 +2020,25 @@ def register_api_automation_tools(mcp):
                         "description": "URL query 参数。MCP 传对象/数组会序列化为 JSON 字符串；执行前做变量替换。",
                         "example": {"page": 1, "name": "${{name}}"},
                     },
-                    "data": {
-                        "type": "str | dict | list | null",
-                        "saved_as": "TextField JSON 字符串或原字符串",
-                        "description": "表单/body data。MCP 传对象/数组会序列化为 JSON 字符串；执行前做变量替换。",
-                        "example": {"username": "${{username}}", "password": "${{password}}"},
+                    "protocol_type": {
+                        "type": "str",
+                        "default": "http",
+                        "enabled": ["http", "sse"],
+                        "reserved_disabled": ["json_rpc", "xml_rpc", "soap", "graphql", "grpc", "dubbo", "thrift", "mcp", "websocket"],
                     },
-                    "json_body": {
-                        "type": "str | dict | list | null",
-                        "model_field": "json",
-                        "saved_as": "TextField JSON 字符串或原字符串",
-                        "description": "JSON 请求体。工具入参叫 json_body，后端模型字段叫 json；执行前做变量替换。",
-                        "example": {"categoryName": "AUTO_${{random_str(8)}}", "enabled": True},
+                    "body_type": {
+                        "type": "str",
+                        "default": "none",
+                        "enum": ["none", "json", "form", "raw", "multipart"],
                     },
-                    "file": {
-                        "type": "list[object] | dict | null",
-                        "description": "multipart/form-data 文件参数。必须先用 upload_system_file 上传，再用 ${{get_file(文件名)}} 引用文件名；不能直接传本地路径、URL、裸文件名或二进制内容。",
-                        "required_format": file_example,
-                        "field_name_rule": "对象 key 是请求文件字段名，例如 file/upload_file/test_file；对象 value 必须是 ${{get_file(已上传文件名)}}。",
-                        "example": file_example,
+                    "body_config": {
+                        "type": "object | null",
+                        "description": "请求体配置。json/form/raw/multipart 结构同 api_info_fields.body_config；raw.content_type 缺省为 application/json；multipart.files[].file_id 来自测试配置-测试文件 FileData.id。",
+                        "multipart_example": file_example,
+                    },
+                    "sse_config": {
+                        "type": "object | null",
+                        "description": "protocol_type=sse 时可配置 max_duration_seconds、max_event_count、end_event、end_jsonpath。",
                     },
                     "front_sql": {
                         **sql_key_value_schema,
@@ -2034,9 +2134,9 @@ def register_api_automation_tools(mcp):
                         "API case 全部结束后执行 api_case.posterior_sql，并清理 case 级数据工厂。",
                     ],
                     "request_payload": [
-                        "params/data/json_body/file 都以场景参数为准；添加步骤时默认从 ApiInfo 同步一份到默认场景。",
-                        "refresh_api_case_step_from_api_info 会把 ApiInfo 的 params/data/json/file 同步到该步骤下所有场景。",
-                        "params/data/json_body 传对象或数组时 MCP 会保存为 JSON 字符串；执行时再做变量替换和请求序列化。",
+                        "params/protocol_type/body_type/body_config/sse_config 都以场景参数为准；添加步骤时默认从 ApiInfo 同步一份到默认场景。",
+                        "refresh_api_case_step_from_api_info 会把 ApiInfo 的 params/protocol_type/body_type/body_config/sse_config 同步到该步骤下所有场景。",
+                        "body_type=json 且需要未加引号数字变量时，请使用 body_config.source_type=template 和 body_text。",
                     ],
                     "assertions": [
                         "ass_jsonpath.method 必须使用 get_api_assertion_methods 返回的叶子 value，例如 p_is_equal_to，不能使用 eq。",
@@ -2065,8 +2165,8 @@ def register_api_automation_tools(mcp):
                         "headers": [],
                         "params": None,
                         "data": None,
-                        "json_body": {"categoryId": "${{category.id}}", "categoryName": "AUTO_${{random_str(8)}}"},
-                        "file": file_example,
+                        "body_type": "json",
+                        "body_config": {"source_type": "template", "body_text": "{\"categoryId\": ${{category.id}}, \"categoryName\": \"AUTO_${{random_str(8)}}\"}"},
                         "ass_jsonpath": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
                         "posterior_response": [{"key": "category_id", "value": "$.data.id"}],
                     },
@@ -2094,13 +2194,16 @@ def register_api_automation_tools(mcp):
                         "回归接口或组件用例": {"scenario_layer": 0, "scenario_tags": [1]},
                         "跨服务集成用例": {"scenario_layer": 1, "scenario_tags": [1]},
                         "核心链路闭环用例": {"scenario_layer": 2, "scenario_tags": [3]},
+                        "生产只读巡检用例": {"scenario_layer": 0, "scenario_tags": [6]},
+                        "生产回归用例": {"scenario_layer": 0, "scenario_tags": [10]},
                     },
                 },
                 "file_upload_usage": FILE_UPLOAD_USAGE,
                 "notes": [
                     "创建 API 全局变量时 test_env_id 必填，对应 api_public.test_env。",
                     "API case 的 scenario_layer 默认 0=接口/组件层；scenario_type 默认 0=正常场景；scenario_tags 保存辅助标签整数数组；scenario_description 可为空。",
-                    "当 API case 不依赖 SQL 或数据工厂时，推荐把 scenario_tags 默认加上 6=线上巡检；依赖数据准备、数据库断言或清理的数据型用例不要默认加线上巡检。",
+                    "6=生产巡检 仅用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。",
+                    "10=生产回归 可以包含增删改接口，但不允许任何数据库操作，包括 SQL 前后置、SQL 断言和数据工厂造数/清理。",
                     "API 文件上传参数不要直接传本地路径；先用 upload_system_file 上传，再在 file 字段中通过 ${{get_file(文件名)}} 引用。",
                     "创建或编辑复杂场景前，建议先调用 get_api_assertion_schema 和 get_api_assertion_methods 获取断言格式和可选 method。",
                     "API case/场景的 front_sql、posterior_sql 如在多数据库测试环境中使用，先调用 list_data_factory_datasource_aliases(project_product_id) 查询逻辑数据源 ID，再写入 datasource_alias。",

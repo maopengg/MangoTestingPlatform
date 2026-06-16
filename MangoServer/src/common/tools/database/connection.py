@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from pymysql.cursors import DictCursor
 from pymysql.err import InternalError, OperationalError, ProgrammingError
 
-from src.apps.auto_system.models import Database, TestObject
+from src.apps.system.models import Database, TestObject
 from src.common.enums.tools_enum import DatabaseTypeEnum, StatusEnum
 from src.common.exceptions import ToolsError
 from src.settings import MYSQL_IP
