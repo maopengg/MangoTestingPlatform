@@ -21,3 +21,5 @@ browser_cache/
 main.build/
 main.dist/
 nuitka-crash-report.xml
+.DS_Store
+**/.DS_Store

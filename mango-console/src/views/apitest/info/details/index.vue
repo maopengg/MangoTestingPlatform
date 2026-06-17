@@ -331,14 +331,33 @@
     { key: '10', title: '结构化断言配置', description: '维护结构化断言规则' },
   ]
   const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
-    print(response.model_dump_json())
-    # 可以从response中获取值，然后修改完成之后重新赋值给response，最后进行返回
-    code = response.code  # 获取响应code码
-    time = response.time  # 获取响应时间
-    headers = response.headers  # 获取响应头
-    print(response.headers.get('Set-Cookie'))
-    json = response.json  # 获取响应的json
-    text = response.text  # 获取响应的文本
+    # self 是当前执行上下文，常用能力：
+    # self.test_setup.test_data：变量/缓存工具，支持 get_cache、set_cache、replace 等
+    test_data = self.test_setup.test_data
+
+    # response 是本次接口响应模型，常用字段：
+    code = response.code  # HTTP 状态码
+    time = response.time  # 响应耗时，单位秒
+    url = response.url  # 实际请求 URL
+    headers = response.headers or {}  # 响应头
+    json_body = response.json  # 解析后的 JSON，可能是 dict/list/str/number/bool/null
+    text = response.text  # 原始响应文本，非 JSON 或文本断言可使用
+    response_mode = response.response_mode  # 响应模式：http/sse
+    sse_events = response.sse_events  # SSE 事件列表，仅 SSE 场景有值
+    sse_stop_reason = response.sse_stop_reason  # SSE 停止原因
+    request_body = response.request_body  # 实际发送的请求体
+    request_headers = response.request_headers  # 实际发送的请求头
+
+    # 提取响应数据到缓存示例
+    if isinstance(json_body, dict):
+        data = json_body.get('data') or {}
+        if isinstance(data, dict) and data.get('id'):
+            test_data.set_cache('response_id', data.get('id'))
+
+    # 修改响应示例：追加自定义错误信息
+    if code >= 400 and not response.error_msg:
+        response.error_msg = text
+
     return response`
 
   const pageData: any = usePageData()

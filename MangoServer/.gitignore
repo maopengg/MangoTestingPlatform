@@ -14,4 +14,6 @@ upload/
 monitoring_scripts/
 __pycache__/
 allure-report/
-allure-results/
+allure-results
+/.DS_Store
+**/.DS_Store

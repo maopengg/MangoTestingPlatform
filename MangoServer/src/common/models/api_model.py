@@ -38,6 +38,85 @@ class RequestModel(BaseModel):
     request_files: list[dict] | None = None
     request_content_type: str | None = None
 
+    @property
+    def json(self):
+        if self.body_type != ApiBodyTypeEnum.JSON.value:
+            return None
+        body_config = self.body_config or {}
+        if body_config.get('source_type') == 'template':
+            return body_config.get('body_text')
+        return body_config.get('body')
+
+    @json.setter
+    def json(self, value):
+        if value is None:
+            if self.body_type == ApiBodyTypeEnum.JSON.value:
+                self.body_type = ApiBodyTypeEnum.NONE.value
+                self.body_config = None
+            return
+        self.body_type = ApiBodyTypeEnum.JSON.value
+        if isinstance(value, str):
+            self.body_config = {'source_type': 'template', 'body_text': value}
+        else:
+            self.body_config = {'source_type': 'value', 'body': value}
+
+    @property
+    def data(self):
+        body_config = self.body_config or {}
+        if self.body_type == ApiBodyTypeEnum.FORM.value:
+            fields = body_config.get('fields') or []
+            if isinstance(fields, list):
+                return {item.get('key'): item.get('value') for item in fields if isinstance(item, dict)}
+            return fields
+        if self.body_type == ApiBodyTypeEnum.RAW.value:
+            return body_config.get('body_text')
+        if self.body_type == ApiBodyTypeEnum.MULTIPART.value:
+            fields = body_config.get('fields') or []
+            return {item.get('key'): item.get('value') for item in fields if isinstance(item, dict)}
+        return None
+
+    @data.setter
+    def data(self, value):
+        if value is None:
+            if self.body_type in {ApiBodyTypeEnum.FORM.value, ApiBodyTypeEnum.RAW.value}:
+                self.body_type = ApiBodyTypeEnum.NONE.value
+                self.body_config = None
+            return
+        if isinstance(value, dict):
+            fields = [{'key': key, 'value': item} for key, item in value.items()]
+            self.body_type = ApiBodyTypeEnum.FORM.value
+            self.body_config = {'fields': fields}
+        elif isinstance(value, list):
+            self.body_type = ApiBodyTypeEnum.FORM.value
+            self.body_config = {'fields': value}
+        else:
+            self.body_type = ApiBodyTypeEnum.RAW.value
+            self.body_config = {'body_text': value, 'content_type': 'application/json'}
+
+    @property
+    def file(self):
+        if self.body_type != ApiBodyTypeEnum.MULTIPART.value:
+            return None
+        return (self.body_config or {}).get('files')
+
+    @file.setter
+    def file(self, value):
+        if value in [None, '', [], {}]:
+            if self.body_type == ApiBodyTypeEnum.MULTIPART.value:
+                fields = (self.body_config or {}).get('fields') or []
+                if fields:
+                    self.body_config = {'fields': fields, 'files': []}
+                else:
+                    self.body_type = ApiBodyTypeEnum.NONE.value
+                    self.body_config = None
+            return
+        body_config = self.body_config or {}
+        self.body_type = ApiBodyTypeEnum.MULTIPART.value
+        self.body_config = {
+            'fields': body_config.get('fields') or [],
+            'files': value if isinstance(value, list) else [value],
+        }
+
     @field_validator('protocol_type')
     @classmethod
     def validate_protocol_type(cls, value):
