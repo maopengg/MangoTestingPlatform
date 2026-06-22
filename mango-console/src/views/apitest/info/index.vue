@@ -134,20 +134,19 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'method'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.method]" size="small"
-                >{{ enumStore.method[record.method]?.title || '-' }}
+              <a-tag :color="enumStore.colors[record.method]" size="small">
+                {{ enumStore.method[record.method]?.title || '-' }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'protocol_type'" #cell="{ record }">
+              <a-tag :color="protocolTagColor(record.protocol_type)" size="small">
+                {{ protocolTagText(record.protocol_type) }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.status]" size="small"
                 >{{ enumStore.task_status[record.status]?.title || '-' }}
               </a-tag>
-            </template>
-            <template v-else-if="item.key === 'is_schema'" #cell="{ record }">
-              <a-switch
-                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'is_schema')"
-                :default-checked="record.is_schema === 1"
-              />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <template>
@@ -270,6 +269,14 @@
               value-key="key"
             />
           </template>
+          <template v-else-if="item.key === 'protocol_type'">
+            <a-select
+              v-model="item.value"
+              :options="item.optionItems"
+              :placeholder="item.placeholder"
+              allow-search
+            />
+          </template>
           <template v-else-if="item.key === 'curl_command'">
             <a-textarea
               v-model="item.value"
@@ -366,6 +373,17 @@
       return result.json
     }
     return result.text
+  }
+
+  function protocolTagText(protocolType?: string) {
+    return String(protocolType || 'http').toUpperCase()
+  }
+
+  function protocolTagColor(protocolType?: string) {
+    const value = String(protocolType || 'http').toLowerCase()
+    if (value === 'sse') return 'orange'
+    if (value === 'http') return 'blue'
+    return 'gray'
   }
 
   const handleOk = () => {
@@ -567,25 +585,6 @@
     } else {
       selectedFile.value = null
     }
-  }
-
-  const onModifyStatus = async (newValue: boolean, id: number, is_schema: number) => {
-    return new Promise<any>((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          let value: any = false
-          await putApiInfo({ id: id, [is_schema]: newValue ? 1 : 0 })
-            .then((res) => {
-              Message.success(res.msg)
-              value = res.code === 200
-            })
-            .catch(reject)
-          resolve(value)
-        } catch (error) {
-          reject(error)
-        }
-      }, 300)
-    })
   }
 
   function onBatchUpload() {

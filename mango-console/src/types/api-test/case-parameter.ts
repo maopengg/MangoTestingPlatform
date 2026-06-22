@@ -118,6 +118,9 @@ export interface ApiAssertionResult {
   expect?: unknown
   actual?: unknown
   ass_msg?: string | null
+  group_name?: string | null
+  group_logic?: string | null
+  group_result?: boolean | null
   status: number
 }
 

@@ -35,6 +35,12 @@ class ApiPublicCodeContext:
 class PublicBase(BaseRequest):
     """全局变量设置"""
 
+    PUBLIC_LOAD_ORDER = {
+        ApiPublicTypeEnum.CUSTOM.value: 0,
+        ApiPublicTypeEnum.SQL.value: 1,
+        ApiPublicTypeEnum.CODE.value: 2,
+    }
+
     def __init__(self, db_context=None):
         self.test_data = ObtainTestData()
         super().__init__(self.test_data)
@@ -127,6 +133,7 @@ class PublicBase(BaseRequest):
                 test_env=test_env,
             ).order_by('type', 'id')
             api_public.extend(env_public)
+        api_public.sort(key=lambda item: (self.PUBLIC_LOAD_ORDER.get(item.type, 99), item.id))
         log.api.debug(f'开始初始化全局变量！')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:

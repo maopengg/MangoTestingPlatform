@@ -56,6 +56,7 @@ npm run theme:audit
 - 删除/移除/清理必须 `danger: true`。
 - 表格内执行、调试保持文本按钮；表格外主执行按钮才用成功绿色。
 - 长字段必须 `ellipsis: true`、`tooltip: true`。
+- 表格默认允许用户拖拽调整列宽；确有交互冲突的小型嵌入表格才允许显式设置 `:column-resizable="false"`。
 - 固定操作列时必须设置 `scroll.x`。
 - 新增或修改表格后必须执行 `npm run table:audit`，确认常规表格没有遗漏 `scroll.x`。
 - 除非明确需要，不固定名称列。

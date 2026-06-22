@@ -5,6 +5,20 @@ import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
 
+export const apiProtocolOptions = [
+  { label: '标准HTTP', value: 'http' },
+  { label: 'SSE事件流', value: 'sse' },
+  { label: 'JSON-RPC', value: 'json_rpc', disabled: true },
+  { label: 'XML-RPC', value: 'xml_rpc', disabled: true },
+  { label: 'SOAP', value: 'soap', disabled: true },
+  { label: 'GraphQL', value: 'graphql', disabled: true },
+  { label: 'gRPC', value: 'grpc', disabled: true },
+  { label: 'Dubbo', value: 'dubbo', disabled: true },
+  { label: 'Thrift', value: 'thrift', disabled: true },
+  { label: 'MCP', value: 'mcp', disabled: true },
+  { label: 'WebSocket', value: 'websocket', disabled: true },
+]
+
 export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'id',
@@ -143,6 +157,25 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '协议',
+    key: 'protocol_type',
+    value: ref('http'),
+    type: 'select',
+    required: true,
+    placeholder: '请选择协议类型',
+    optionItems: apiProtocolOptions,
+    reset: function () {
+      this.value = 'http'
+    },
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
 ])
 export const formItemsImport: FormItem[] = reactive([
   {
@@ -270,16 +303,16 @@ export const tableColumns = useTableColumn([
     width: 70,
   },
   {
+    title: '协议',
+    key: 'protocol_type',
+    dataIndex: 'protocol_type',
+    width: 70,
+  },
+  {
     title: '状态',
     key: 'status',
     dataIndex: 'status',
     width: 70,
-  },
-  {
-    title: '结构化断言',
-    key: 'is_schema',
-    dataIndex: 'is_schema',
-    width: 120,
   },
   {
     title: '操作',

@@ -72,6 +72,7 @@ class TestCase:
         log.api.info(f'开始执行用例ID：{self.case_id}')
         res = None
         try:
+            self.update_test_case_detailed_proceed(self.case_id, case_sort)
             self.test_setup.init_test_object(self.api_case.project_product_id, self.test_env)
             self.test_setup.init_public(self.api_case.project_product_id, self.test_env)
             self.case_base.case_front_main()
@@ -82,8 +83,13 @@ class TestCase:
                     self.normalize_parametrize(parametrize)
                 )
             elif self.api_case.parametrize and isinstance(self.api_case.parametrize, list):
+                parametrize_failures = []
                 for i in self.api_case.parametrize:
-                    res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort, i)
+                    parametrize_res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort, i)
+                    if parametrize_res and isinstance(parametrize_res, tuple):
+                        parametrize_failures.append(parametrize_res[1])
+                if parametrize_failures:
+                    res = StatusEnum.FAIL.value, self.format_parametrize_failure_message(parametrize_failures)
             else:
                 res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort)
             if res and isinstance(res, tuple):
@@ -95,6 +101,7 @@ class TestCase:
             traceback.print_exc()
             self.api_case_result.error_message = e.msg
             self.api_case.status = StatusEnum.FAIL.value
+            self.update_test_case_detailed_unfinished(self.case_id, case_sort, e.msg)
         except Exception as error:
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
@@ -102,6 +109,7 @@ class TestCase:
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
             self.api_case.status = StatusEnum.FAIL.value
             self.api_case.save()
+            self.update_test_case_detailed_unfinished(self.case_id, case_sort, self.api_case_result.error_message)
         try:
             self.case_base.case_posterior_main()
             self.update_test_case(self.case_id, self.api_case_result.status)
@@ -125,25 +133,45 @@ class TestCase:
             return parametrize
         return {'parametrize': parametrize}
 
+    @staticmethod
+    def get_case_detailed_queryset(case_id: int, case_sort: int | None):
+        if case_sort is not None and str(case_sort) != '':
+            return ApiCaseDetailed \
+                .objects \
+                .filter(case=case_id, case_sort__lte=case_sort) \
+                .order_by('case_sort')
+        return ApiCaseDetailed \
+            .objects \
+            .filter(case=case_id) \
+            .order_by('case_sort')
+
+    @classmethod
+    def update_test_case_detailed_proceed(cls, case_id: int, case_sort: int | None):
+        cls.get_case_detailed_queryset(case_id, case_sort).update(
+            status=TaskEnum.PROCEED.value,
+            error_message=None,
+        )
+
+    @classmethod
+    def update_test_case_detailed_unfinished(cls, case_id: int, case_sort: int | None, error_message: str):
+        cls.get_case_detailed_queryset(case_id, case_sort) \
+            .filter(status=TaskEnum.PROCEED.value) \
+            .update(
+                status=StatusEnum.FAIL.value,
+                error_message=error_message,
+            )
+
     def case_detailed(self,
                       case_id: int,
                       case_sort: int | None,
                       parametrize: dict | None = None
                       ) -> tuple[int, str] | None:
-        if case_sort is not None and str(case_sort) != '':
-            case_detailed_list = ApiCaseDetailed \
-                .objects \
-                .filter(case=case_id, case_sort__lte=case_sort) \
-                .order_by('case_sort')
-        else:
-            case_detailed_list = ApiCaseDetailed \
-                .objects \
-                .filter(case=case_id) \
-                .order_by('case_sort')
+        case_detailed_list = list(self.get_case_detailed_queryset(case_id, case_sort))
         if not case_detailed_list:
             raise ApiError(*ERROR_MSG_0008)
         self.case_base.case_parametrize(parametrize)
-        for case_detailed in case_detailed_list:
+        failed_case_detailed_list = []
+        for index, case_detailed in enumerate(case_detailed_list):
             case_detailed.status = TaskEnum.PROCEED.value
             case_detailed.save()
             res: tuple[int, str] | None = self.detailed_parameter(case_detailed)
@@ -151,14 +179,90 @@ class TestCase:
                 case_detailed.status = res[0]
                 case_detailed.error_message = res[1] if len(res) > 1 else None
                 case_detailed.save()
-                return res
+                failed_case_detailed_list.append({
+                    'id': case_detailed.id,
+                    'case_sort': case_detailed.case_sort,
+                    'name': self.get_case_detailed_name(case_detailed),
+                    'error_message': case_detailed.error_message,
+                })
+                self.api_case_result.steps.extend(
+                    self.write_following_case_detailed_warning_results(
+                        case_detailed_list[index + 1:]
+                    )
+                )
+                break
             else:
                 case_detailed.status = StatusEnum.SUCCESS.value
                 case_detailed.error_message = None
                 case_detailed.save()
+        if failed_case_detailed_list:
+            return StatusEnum.FAIL.value, self.format_case_detailed_failure_message(failed_case_detailed_list)
+
+    @classmethod
+    def write_following_case_detailed_warning_results(
+            cls, case_detailed_list: list[ApiCaseDetailed]
+    ):
+        if not case_detailed_list:
+            return []
+        skip_message = '该用例前置步骤失败，未被执行'
+        warning_results = []
+        for case_detailed in case_detailed_list:
+            case_detailed.status = TaskEnum.WARNING.value
+            case_detailed.error_message = skip_message
+            case_detailed.save()
+            for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
+                step_name = parameter.name or cls.get_case_detailed_name(case_detailed)
+                request_model = RequestModel(
+                    method=MethodEnum(case_detailed.api_info.method).name,
+                    url=case_detailed.api_info.url,
+                    headers={},
+                    params=parameter.params,
+                    protocol_type=case_detailed.api_info.protocol_type,
+                    body_type=case_detailed.api_info.body_type,
+                    body_config=parameter.body_config,
+                    sse_config=parameter.sse_config,
+                    posterior_file=case_detailed.api_info.posterior_file,
+                )
+                res_model = ApiCaseStepsResultModel(
+                    id=case_detailed.id,
+                    api_info_id=case_detailed.api_info.id,
+                    api_info_name=case_detailed.api_info.name,
+                    name=step_name,
+                    status=TaskEnum.WARNING.value,
+                    request=request_model,
+                    cache_data={},
+                    test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    error_message=skip_message,
+                )
+                cls.update_test_case_detailed_parameter(parameter.id, res_model)
+                warning_results.append(res_model)
+        return warning_results
+
+    @staticmethod
+    def get_case_detailed_name(case_detailed: ApiCaseDetailed) -> str:
+        api_info_name = getattr(getattr(case_detailed, 'api_info', None), 'name', None)
+        if api_info_name:
+            return str(api_info_name)
+        return f'场景ID:{case_detailed.id}'
+
+    @staticmethod
+    def format_case_detailed_failure_message(failures: list[dict]) -> str:
+        lines = [f'共 {len(failures)} 个场景失败：']
+        for index, failure in enumerate(failures, start=1):
+            name = failure.get('name') or f"场景ID:{failure.get('id')}"
+            error_message = failure.get('error_message') or '未返回失败原因'
+            lines.append(f'{index}. {name}：{error_message}')
+        return '\n'.join(lines)
+
+    @staticmethod
+    def format_parametrize_failure_message(error_messages: list[str]) -> str:
+        lines = [f'共 {len(error_messages)} 组参数化执行失败：']
+        for index, error_message in enumerate(error_messages, start=1):
+            lines.append(f'{index}. {error_message or "未返回失败原因"}')
+        return '\n'.join(lines)
 
     def detailed_parameter(self, case_detailed: ApiCaseDetailed) -> tuple[int, str] | None:
-        res_list = []
+        failed_parameter_list = []
         for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
             case_parameter = CaseParameter(self.test_setup, parameter, case_detailed.api_info)
             self.test_setup.init_test_object(case_detailed.api_info.project_product_id, self.test_env)
@@ -176,8 +280,8 @@ class TestCase:
                     url=case_detailed.api_info.url,
                     headers=case_parameter.headers(parameter, self.case_base.case_headers),
                     params=parameter.params,
-                    protocol_type=parameter.protocol_type,
-                    body_type=parameter.body_type,
+                    protocol_type=case_detailed.api_info.protocol_type,
+                    body_type=case_detailed.api_info.body_type,
                     body_config=parameter.body_config,
                     sse_config=parameter.sse_config,
                     posterior_file=case_detailed.api_info.posterior_file,
@@ -218,7 +322,9 @@ class TestCase:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,
                                              res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
-                    return StatusEnum.FAIL.value, error.msg
+                    status = StatusEnum.FAIL.value
+                    error_message = error.msg
+                    break
                 except Exception as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
                     res_model.data_factory_cache_data = self.test_setup.test_data.get_data_factory_all()
@@ -231,13 +337,19 @@ class TestCase:
                                              res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     log.api.error(f'API请求发生未知错误：{traceback.print_exc()}')
-                    return StatusEnum.FAIL.value, msg
+                    status = StatusEnum.FAIL.value
+                    error_message = msg
+                    break
                 finally:
                     parameter_data_factory.cleanup()
-            res_list.append({'status': status, 'error_message': error_message})
-        for i in res_list:
-            if i.get('status') == StatusEnum.FAIL.value:
-                return i.get('status'), i.get('error_message')
+            if status == StatusEnum.FAIL.value:
+                failed_parameter_list.append({
+                    'id': parameter.id,
+                    'name': parameter.name,
+                    'error_message': error_message,
+                })
+        if failed_parameter_list:
+            return StatusEnum.FAIL.value, self.format_parameter_failure_message(failed_parameter_list)
 
     def update_api_info(self, _id: int, result_data: ResponseModel, status: int):
         model = ApiInfo.objects.get(id=_id)
@@ -261,3 +373,12 @@ class TestCase:
         model.status = result_data.status
         model.result_data = result_data.model_dump()
         model.save()
+
+    @staticmethod
+    def format_parameter_failure_message(failures: list[dict]) -> str:
+        lines = [f'共 {len(failures)} 个参数场景失败：']
+        for index, failure in enumerate(failures, start=1):
+            name = failure.get('name') or f"参数ID:{failure.get('id')}"
+            error_message = failure.get('error_message') or '未返回失败原因'
+            lines.append(f'{index}. {name}：{error_message}')
+        return '\n'.join(lines)

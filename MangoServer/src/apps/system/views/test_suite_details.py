@@ -3,15 +3,21 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+import os
 from typing import Any
+
 import django
+from django.http import FileResponse
 from django.db import OperationalError
+from django.db.models import Sum
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.common.tools.log_collector import log
 from src.apps.system.models import TestSuiteDetails, TestSuite
+from src.apps.system.service.test_suite.api_report_export import ApiReportExportService
 from src.apps.system.service.test_suite.detail_result import TestSuiteDetailResultService
 from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.apps.system.views.test_suite import TestSuiteSerializers, TestSuiteSerializersC
@@ -73,6 +79,7 @@ class TestSuiteDetailsCRUD(ModelCRUD):
             books,
             self.get_serializer_class()
         )
+        count = books.aggregate(total=Sum('case_sum'))['total'] or count
         TestSuiteDetailResultService.attach_children(data_list)
         return ResponseData.success(
             RESPONSE_MSG_0001,
@@ -224,12 +231,11 @@ class TestSuiteDetailsViews(ViewSet):
             test_suite_id = request.query_params.get('test_suite_id')
             model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
 
-            # 使用聚合函数计算总和
-            from django.db.models import Sum
             aggregates = model.aggregate(
                 total_case_sum=Sum('case_sum'),
                 total_fail=Sum('fail'),
-                total_success=Sum('success')
+                total_success=Sum('success'),
+                total_warning=Sum('warning')
             )
 
             # 计算各种类型的case_sum总和
@@ -270,6 +276,7 @@ class TestSuiteDetailsViews(ViewSet):
                 'count': aggregates['total_case_sum'] or 0,
                 'fail_count': aggregates['total_fail'] or 0,
                 'success_count': aggregates['total_success'] or 0,
+                'warning_count': aggregates['total_warning'] or 0,
                 'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).aggregate(
                     total=Sum('case_sum')
                 )['total'] or 0,
@@ -293,11 +300,11 @@ class TestSuiteDetailsShareViews(ViewSet):
     @staticmethod
     def _summary_data(test_suite_id):
         model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
-        from django.db.models import Sum
         aggregates = model.aggregate(
             total_case_sum=Sum('case_sum'),
             total_fail=Sum('fail'),
-            total_success=Sum('success')
+            total_success=Sum('success'),
+            total_warning=Sum('warning')
         )
         api_case_sum = model.filter(type=TestCaseTypeEnum.API.value).aggregate(total=Sum('case_sum'))['total'] or 0
         ui_case_sum = model.filter(type=TestCaseTypeEnum.UI.value).aggregate(total=Sum('case_sum'))['total'] or 0
@@ -318,6 +325,7 @@ class TestSuiteDetailsShareViews(ViewSet):
             'count': aggregates['total_case_sum'] or 0,
             'fail_count': aggregates['total_fail'] or 0,
             'success_count': aggregates['total_success'] or 0,
+            'warning_count': aggregates['total_warning'] or 0,
             'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).aggregate(
                 total=Sum('case_sum')
             )['total'] or 0,
@@ -363,6 +371,7 @@ class TestSuiteDetailsShareViews(ViewSet):
             books,
             TestSuiteDetailsSerializersC
         )
+        count = books.aggregate(total=Sum('case_sum'))['total'] or count
         TestSuiteDetailResultService.attach_children(data_list)
         return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
 
@@ -373,3 +382,47 @@ class TestSuiteDetailsShareViews(ViewSet):
         if not test_suite_id:
             return ResponseData.fail((300, '缺少测试报告ID'))
         return ResponseData.success(RESPONSE_MSG_0065, self._summary_data(test_suite_id))
+
+    @action(methods=['post'], detail=False)
+    @error_response('system')
+    def post_api_export(self, request: Request):
+        test_suite_id = request.data.get('test_suite_id')
+        status = request.data.get('status')
+        if not test_suite_id or not str(test_suite_id).isdigit():
+            return ResponseData.fail((300, '缺少测试报告ID'))
+        if not TestSuite.objects.filter(id=test_suite_id).exists():
+            return ResponseData.fail((300, '测试报告不存在'))
+        status_value = None
+        if status not in [None, '', 'all']:
+            if not str(status).isdigit():
+                return ResponseData.fail((300, '测试结果筛选值不正确'))
+            status_value = int(status)
+        task = ApiReportExportService.start(int(test_suite_id), status_value)
+        return ResponseData.success(RESPONSE_MSG_0192, task)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_api_export_status(self, request: Request):
+        task_id = request.query_params.get('task_id')
+        task = ApiReportExportService.get(task_id)
+        if not task:
+            return ResponseData.fail(RESPONSE_MSG_0194)
+        return ResponseData.success(RESPONSE_MSG_0193, task)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def download_api_export(self, request: Request):
+        task_id = request.query_params.get('task_id')
+        task = ApiReportExportService.get(task_id)
+        if not task:
+            return ResponseData.fail(RESPONSE_MSG_0194)
+        if task.get('status') != 'success':
+            return ResponseData.fail(RESPONSE_MSG_0195)
+        file_path = task.get('file_path')
+        if not file_path or not os.path.exists(file_path):
+            return ResponseData.fail(RESPONSE_MSG_0196)
+        return FileResponse(
+            open(file_path, 'rb'),
+            as_attachment=True,
+            filename=task.get('file_name') or os.path.basename(file_path),
+        )

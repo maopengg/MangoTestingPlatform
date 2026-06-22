@@ -1,40 +1,58 @@
 <template>
   <div class="mango-api-body-editor">
     <div class="mango-api-body-editor__toolbar">
-      <a-select
-        v-model="local.protocol_type"
-        class="mango-api-body-editor__select"
-        :options="protocolOptions"
-        placeholder="协议类型"
-      />
-      <a-select
-        v-model="local.body_type"
-        class="mango-api-body-editor__select"
-        :options="bodyTypeOptions"
-        placeholder="请求体类型"
-      />
-      <a-button type="primary" :loading="saving" @click="save">保存</a-button>
+      <div class="mango-api-body-editor__field mango-api-body-editor__toolbar-field">
+        <span>请求体类型：</span>
+        <a-select
+          v-model="local.body_type"
+          class="mango-api-body-editor__select"
+          :options="bodyTypeOptions"
+          :disabled="bodyTypeReadonly"
+          placeholder="请选择请求体类型"
+          @change="handleBodyTypeChange"
+        />
+      </div>
     </div>
 
     <div v-if="local.protocol_type === 'sse'" class="mango-api-body-editor__section">
       <div class="mango-api-body-editor__title">SSE配置</div>
-      <div class="mango-api-body-editor__grid">
-        <a-input-number
-          v-model="local.sse_config.max_duration_seconds"
-          placeholder="最大读取秒数"
-          :min="1"
-        />
-        <a-input-number
-          v-model="local.sse_config.max_event_count"
-          placeholder="最大事件数"
-          :min="1"
-        />
-        <a-input v-model="local.sse_config.end_event" allow-clear placeholder="结束事件名" />
-        <a-input
-          v-model="local.sse_config.end_jsonpath"
-          allow-clear
-          placeholder="结束JSONPath"
-        />
+      <div class="mango-api-body-editor__sse-form">
+        <div class="mango-api-body-editor__field">
+          <span>最大读取秒数：</span>
+          <a-input-number
+            v-model="local.sse_config.max_duration_seconds"
+            placeholder="请输入最大读取秒数"
+            :min="1"
+            @blur="save"
+          />
+        </div>
+        <div class="mango-api-body-editor__field">
+          <span>最大事件数：</span>
+          <a-input-number
+            v-model="local.sse_config.max_event_count"
+            placeholder="请输入最大事件数"
+            :min="1"
+            @blur="save"
+          />
+        </div>
+        <div class="mango-api-body-editor__field">
+          <span>结束事件名：</span>
+          <a-input
+            v-model="local.sse_config.end_event"
+            allow-clear
+            placeholder="请输入结束事件名"
+            @blur="save"
+          />
+        </div>
+        <div class="mango-api-body-editor__field">
+          <span>结束JSONPath：</span>
+          <a-input
+            v-model="local.sse_config.end_jsonpath"
+            allow-clear
+            placeholder="请输入结束JSONPath"
+            @blur="save"
+          />
+        </div>
       </div>
     </div>
 
@@ -45,7 +63,11 @@
 
       <template v-else-if="local.body_type === 'json'">
         <div class="mango-api-body-editor__title">JSON请求体</div>
-        <a-radio-group v-model="local.body_config.source_type" type="button">
+        <a-radio-group
+          v-model="local.body_config.source_type"
+          type="button"
+          @change="handleJsonSourceTypeChange"
+        >
           <a-radio value="template">模板文本</a-radio>
           <a-radio value="value">JSON值</a-radio>
         </a-radio-group>
@@ -56,6 +78,7 @@
           allow-clear
           :auto-size="{ minRows: 10, maxRows: 18 }"
           placeholder='支持变量模板，例如 {"id": ${{随机数字}}}'
+          @blur="save"
         />
         <a-textarea
           v-else
@@ -64,6 +87,7 @@
           allow-clear
           :auto-size="{ minRows: 10, maxRows: 18 }"
           placeholder='请输入合法JSON，例如 {"key": "value"}'
+          @blur="save"
         />
       </template>
 
@@ -74,26 +98,33 @@
           :key="index"
           class="mango-api-body-editor__row"
         >
-          <a-input v-model="field.key" placeholder="key" />
-          <a-input v-model="field.value" placeholder="value" />
-          <a-button status="danger" @click="removeRow(local.body_config.fields, index)">删除</a-button>
+          <a-input v-model="field.key" placeholder="key" @blur="save" />
+          <a-input v-model="field.value" placeholder="value" @blur="save" />
+          <a-button status="danger" @click="removeRow(local.body_config.fields, index)"
+            >删除</a-button
+          >
         </div>
         <a-button size="small" type="outline" @click="addField">增加字段</a-button>
       </template>
 
       <template v-else-if="local.body_type === 'raw'">
         <div class="mango-api-body-editor__title">Raw请求体</div>
-        <a-input
-          v-model="local.body_config.content_type"
-          allow-clear
-          placeholder="Content-Type，默认 application/json"
-        />
+        <div class="mango-api-body-editor__field mango-api-body-editor__field--full">
+          <span>Content-Type：</span>
+          <a-input
+            v-model="local.body_config.content_type"
+            allow-clear
+            placeholder="默认 application/json"
+            @blur="save"
+          />
+        </div>
         <a-textarea
           v-model="local.body_config.body_text"
           class="mango-api-body-editor__textarea"
           allow-clear
           :auto-size="{ minRows: 10, maxRows: 18 }"
           placeholder="请输入原始请求体"
+          @blur="save"
         />
       </template>
 
@@ -104,9 +135,11 @@
           :key="`field-${index}`"
           class="mango-api-body-editor__row"
         >
-          <a-input v-model="field.key" placeholder="key" />
-          <a-input v-model="field.value" placeholder="value" />
-          <a-button status="danger" @click="removeRow(local.body_config.fields, index)">删除</a-button>
+          <a-input v-model="field.key" placeholder="key" @blur="save" />
+          <a-input v-model="field.value" placeholder="value" @blur="save" />
+          <a-button status="danger" @click="removeRow(local.body_config.fields, index)"
+            >删除</a-button
+          >
         </div>
         <a-button size="small" type="outline" @click="addField">增加普通字段</a-button>
 
@@ -118,16 +151,24 @@
           :key="`file-${index}`"
           class="mango-api-body-editor__row"
         >
-          <a-input v-model="file.key" placeholder="文件字段key" />
+          <a-input v-model="file.key" placeholder="文件字段key" @blur="save" />
           <a-select
             v-model="file.file_id"
             :options="fileOptions"
             :loading="fileLoading"
             placeholder="选择测试文件"
             allow-search
+            @change="save"
           />
-          <a-input v-model="file.file_name" allow-clear placeholder="发送文件名，可空" />
-          <a-button status="danger" @click="removeRow(local.body_config.files, index)">删除</a-button>
+          <a-input
+            v-model="file.file_name"
+            allow-clear
+            placeholder="发送文件名，可空"
+            @blur="save"
+          />
+          <a-button status="danger" @click="removeRow(local.body_config.files, index)"
+            >删除</a-button
+          >
         </div>
         <a-button size="small" type="outline" @click="addFile">增加文件字段</a-button>
       </template>
@@ -137,7 +178,7 @@
 
 <script setup lang="ts">
   import { Message } from '@arco-design/web-vue'
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { getUserFile } from '@/api/system/file_data'
 
   const props = defineProps<{
@@ -147,33 +188,19 @@
     sseConfig?: Record<string, any> | null
     projectProductId?: string | number | null
     saving?: boolean
+    bodyTypeReadonly?: boolean
   }>()
 
   const emit = defineEmits<{
     (
       event: 'save',
       value: {
-        protocol_type: string
         body_type: string
         body_config: Record<string, any> | null
         sse_config: Record<string, any> | null
       }
     ): void
   }>()
-
-  const protocolOptions = [
-    { label: '标准HTTP', value: 'http' },
-    { label: 'SSE事件流', value: 'sse' },
-    { label: 'JSON-RPC', value: 'json_rpc', disabled: true },
-    { label: 'XML-RPC', value: 'xml_rpc', disabled: true },
-    { label: 'SOAP', value: 'soap', disabled: true },
-    { label: 'GraphQL', value: 'graphql', disabled: true },
-    { label: 'gRPC', value: 'grpc', disabled: true },
-    { label: 'Dubbo', value: 'dubbo', disabled: true },
-    { label: 'Thrift', value: 'thrift', disabled: true },
-    { label: 'MCP', value: 'mcp', disabled: true },
-    { label: 'WebSocket', value: 'websocket', disabled: true },
-  ]
 
   const bodyTypeOptions = [
     { label: '无请求体', value: 'none' },
@@ -191,6 +218,7 @@
   })
   const fileOptions = ref<Array<{ label: string; value: number }>>([])
   const fileLoading = ref(false)
+  const bodyTypeReadonly = computed(() => props.bodyTypeReadonly === true)
 
   const jsonValueText = computed({
     get() {
@@ -248,6 +276,17 @@
 
   function removeRow(rows: any[], index: number) {
     rows.splice(index, 1)
+    save()
+  }
+
+  async function handleBodyTypeChange() {
+    await nextTick()
+    save()
+  }
+
+  async function handleJsonSourceTypeChange() {
+    await nextTick()
+    save()
   }
 
   async function loadFiles() {
@@ -311,7 +350,6 @@
     const bodyConfig = buildBodyConfig()
     if (bodyConfig === false) return
     emit('save', {
-      protocol_type: local.protocol_type,
       body_type: local.body_type,
       body_config: bodyConfig,
       sse_config: local.protocol_type === 'sse' ? local.sse_config : null,
@@ -338,13 +376,23 @@
     gap: 12px;
   }
 
-  .mango-api-body-editor__toolbar,
   .mango-api-body-editor__row,
   .mango-api-body-editor__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 180px)) max-content;
     gap: 8px;
     align-items: center;
+  }
+
+  .mango-api-body-editor__toolbar {
+    display: grid;
+    grid-template-columns: minmax(260px, 360px) max-content;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mango-api-body-editor__toolbar-field {
+    min-width: 260px;
   }
 
   .mango-api-body-editor__row {
@@ -354,6 +402,34 @@
 
   .mango-api-body-editor__row:has(.arco-select:nth-child(2)) {
     grid-template-columns: minmax(120px, 0.25fr) minmax(200px, 0.45fr) minmax(160px, 0.3fr) max-content;
+  }
+
+  .mango-api-body-editor__sse-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 10px 16px;
+  }
+
+  .mango-api-body-editor__field {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    color: var(--m-text-2);
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .mango-api-body-editor__field > span {
+    color: var(--m-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .mango-api-body-editor__field--full {
+    max-width: 560px;
+    margin-bottom: 8px;
   }
 
   .mango-api-body-editor__section {
@@ -392,6 +468,14 @@
     .mango-api-body-editor__row:has(.arco-select:nth-child(2)),
     .mango-api-body-editor__grid {
       grid-template-columns: 1fr;
+    }
+
+    .mango-api-body-editor__sse-form {
+      grid-template-columns: 1fr;
+    }
+
+    .mango-api-body-editor__field {
+      grid-template-columns: 96px minmax(0, 1fr);
     }
   }
 </style>

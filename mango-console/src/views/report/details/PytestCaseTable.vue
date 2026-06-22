@@ -82,10 +82,12 @@
     (props.cases || []).flatMap((item) => {
       const rows =
         Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
-      const rowSpan = rows.length
+      const warningRows = buildWarningRows(item)
+      const displayRows = [...rows, ...warningRows]
+      const rowSpan = displayRows.length
       const caseId = item?.case_id || item?.id || '-'
       const caseName = item?.case_name || item?.name || '未命名用例'
-      return rows.map((row: any, index: number) => ({
+      return displayRows.map((row: any, index: number) => ({
         ...row,
         error_message: row?.statusDetails?.message || row?.error_message,
         case_type: row?.case_type ?? 2,
@@ -93,10 +95,11 @@
         __rowKey: `${item?.id || caseId}-${row?.id || index}-${index}`,
         __caseId: caseId,
         __caseName: caseName,
-        __caseCount: Number(item?.case_sum || rows.length || 0),
+        __caseCount: Number(item?.case_sum || displayRows.length || 0),
         __caseRowSpan: index === 0 ? rowSpan : 0,
         __caseSourceId: item?.id,
         __isFirstCaseRow: index === 0,
+        __isWarningRow: row?.__isWarningRow,
         __detailRecord: {
           ...row,
           error_message: row?.statusDetails?.message || row?.error_message,
@@ -127,12 +130,29 @@
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
 
-  function statusColor(status: number) {
+  function statusColor(status: number | string) {
+    if (Number(status) === 4) return 'orange'
     return props.enumStore?.status_colors?.[status] || 'gray'
   }
 
-  function statusText(status: number) {
+  function statusText(status: number | string) {
+    if (Number(status) === 4) return '警告'
     return props.enumStore?.task_status?.[status]?.title || '未知'
+  }
+
+  function buildWarningRows(item: any) {
+    const rows = Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+    const writtenWarningCount = rows.filter((row: any) => Number(row?.status) === 4).length
+    const warningCount = Math.max(Number(item?.warning || 0) - writtenWarningCount, 0)
+    if (warningCount <= 0) return []
+    const fallbackName = '未执行步骤'
+    return Array.from({ length: warningCount }, (_, index) => ({
+      id: `warning-${item?.id || item?.case_id || 'case'}-${index}`,
+      name: fallbackName,
+      status: 4,
+      error_message: '该用例前置步骤失败，未被执行',
+      __isWarningRow: true,
+    }))
   }
 </script>
 

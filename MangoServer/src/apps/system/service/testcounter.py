@@ -11,7 +11,7 @@ from src.apps.auto_pytest.models import PytestCase
 from src.apps.system.models import TestSuiteDetails
 from src.apps.system.service.test_suite.detail_result import TestSuiteDetailResultService
 from src.common.enums.tools_enum import StatusEnum
-from src.common.enums.tools_enum import TestCaseTypeEnum
+from src.common.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 
 
 class TestCounter:
@@ -30,6 +30,8 @@ class TestCounter:
         model.warning = res['warning']
         if model.fail > 0:
             model.status = StatusEnum.FAIL.value
+        elif model.warning > 0:
+            model.status = TaskEnum.WARNING.value
         model.save()
 
     @staticmethod
@@ -42,9 +44,11 @@ class TestCounter:
         for r in result_data:
             if r.get('status') == StatusEnum.SUCCESS.value:
                 case_counter['success'] += 1
+            elif r.get('status') == TaskEnum.WARNING.value:
+                case_counter['warning'] += 1
             else:
                 case_counter['fail'] += 1
-        TestCounter.fill_missing_failures(case_counter, test_suite_details.case_sum)
+        TestCounter.fill_missing_warnings(case_counter, test_suite_details.case_sum)
         return case_counter
 
     @staticmethod
@@ -57,9 +61,11 @@ class TestCounter:
         for r in result_data:
             if r.get('status') == StatusEnum.SUCCESS.value:
                 case_counter['success'] += 1
+            elif r.get('status') == TaskEnum.WARNING.value:
+                case_counter['warning'] += 1
             else:
                 case_counter['fail'] += 1
-        TestCounter.fill_missing_failures(case_counter, test_suite_details.case_sum)
+        TestCounter.fill_missing_warnings(case_counter, test_suite_details.case_sum)
         return case_counter
 
     @staticmethod
@@ -76,10 +82,10 @@ class TestCounter:
         return {'success': 0, 'fail': 0, 'warning': 0}
 
     @staticmethod
-    def fill_missing_failures(case_counter: dict, case_sum: int):
+    def fill_missing_warnings(case_counter: dict, case_sum: int):
         result_sum = case_counter['success'] + case_counter['fail'] + case_counter['warning']
         missing_sum = max((case_sum or 0) - result_sum, 0)
-        case_counter['fail'] += missing_sum
+        case_counter['warning'] += missing_sum
 
     @staticmethod
     def case_api(case_id):

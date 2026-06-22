@@ -30,6 +30,8 @@ class ApiJsonPathAssertionItem(StrictSchema):
     actual: str = ''
     method: str = ''
     expect: str | None = ''
+    group_name: str = ''
+    group_logic: str = 'AND'
 
 
 class ApiSqlAssertionItem(StrictSchema):
@@ -56,6 +58,8 @@ class ApiGeneralAssertionValue(StrictSchema):
 class ApiGeneralAssertionItem(StrictSchema):
     method: str = ''
     value: ApiGeneralAssertionValue = Field(default_factory=ApiGeneralAssertionValue)
+    group_name: str = ''
+    group_logic: str = 'AND'
 
 
 class ApiRequestFileItem(StrictSchema):

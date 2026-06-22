@@ -182,6 +182,7 @@ def _mcp_tool_write_operation(tool_name: str) -> str | None:
         "batch_delete_",
         "cleanup_",
         "clear_",
+        "unbind_",
     )
     create_prefixes = (
         "create_",
@@ -328,6 +329,8 @@ def _platform_capabilities() -> dict:
                         "list_api_case_scenarios",
                         "create_api_case_scenario",
                         "update_api_case_scenario",
+                        "preview_delete_api_case_scenario_impact",
+                        "delete_api_case_scenario",
                         "copy_api_case_scenario",
                         "get_api_assertion_methods",
                         "get_api_assertion_schema",
@@ -452,10 +455,12 @@ def _platform_capabilities() -> dict:
                 },
                 {
                     "name": "scheduled_task",
-                    "description": "定时任务明细绑定，支持把 UI/API case 批量追加到定时任务，写入前必须先预览并确认",
+                    "description": "定时任务明细绑定，支持把 UI/API case 批量追加或解除绑定到定时任务，写入前必须先预览并确认",
                     "tools": [
                         "preview_bind_cases_to_scheduled_task_impact",
                         "bind_cases_to_scheduled_task",
+                        "preview_unbind_cases_from_scheduled_task_impact",
+                        "unbind_cases_from_scheduled_task",
                     ],
                 },
                 {

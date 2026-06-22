@@ -8,21 +8,22 @@ MangoServer 是芒果测试平台 Django 后端。本文件约定后端开发规
 2. 优先沿用现有目录风格：`models.py`、`views/`、`service/`、`urls.py`、`enums/`。
 3. 业务逻辑尽量放在 `service/`，ViewSet 只负责入参、权限、序列化和响应。
 4. 返回结构使用项目已有 `ResponseData.success/error` 风格。
-5. 业务异常优先使用现有 `ToolsError` 或对应模块异常。
+5. 业务异常必须使用对应 app 的异常类抛出，例如 API 使用 `ApiError`，UI 使用 `UiError`，Pytest 使用 `PytestError`，通用工具使用 `ToolsError`；新增 app 异常必须继承 `MangoServerError`，确保 `error_response` 能直接返回业务文案。
 6. 通过 `ResponseData.fail` 返回给前端的错误响应文案，必须先定义在 `src/common/tools/view/response_msg.py`，代码中引用常量，不直接写散落字符串。
 7. 通过 `ToolsError` 或异常抛出的业务错误文案，必须先定义在 `src/common/exceptions/error_msg.py`，代码中引用常量，不直接写散落字符串。
-8. 不要修改无关模块，不要顺手重构老代码。
-9. 遇到用户已有改动，先兼容，不要回滚。
+8. 不允许用 `serializers.ValidationError`、`ValueError`、裸 `Exception` 等承载可预期业务错误文案；DRF 字段校验只用于字段格式错误，业务规则冲突必须转换为对应 app 异常。
+9. 不要修改无关模块，不要顺手重构老代码。
+10. 遇到用户已有改动，先兼容，不要回滚。
 
 ## 命令边界
 
-10. 后端目录是 `MangoServer/`。
-11. 常用启动命令：`python manage.py runserver --env=dev 0.0.0.0:8000`；多服务本地启动使用 `sh scripts/start_dev_services.sh`。
-12. 本地虚拟环境通常是 `.venv/`，Windows 下可用 `.\.venv\Scripts\python.exe`。
-13. 开发过程中不允许执行生成迁移脚本命令。
-14. 开发过程中不允许执行迁移命令。
-15. 迁移脚本由用户自己生成和执行。
-16. 如模型发生变化，只说明需要迁移，不要运行 `makemigrations` 或 `migrate`。
+11. 后端目录是 `MangoServer/`。
+12. 常用启动命令：`python manage.py runserver --env=dev 0.0.0.0:8000`；多服务本地启动使用 `sh scripts/start_dev_services.sh`。
+13. 本地虚拟环境通常是 `.venv/`，Windows 下可用 `.\.venv\Scripts\python.exe`。
+14. 开发过程中不允许执行生成迁移脚本命令。
+15. 开发过程中不允许执行迁移命令。
+16. 迁移脚本由用户自己生成和执行。
+17. 如模型发生变化，只说明需要迁移，不要运行 `makemigrations` 或 `migrate`。
 
 ## 模型与迁移
 

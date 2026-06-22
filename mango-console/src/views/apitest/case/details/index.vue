@@ -283,6 +283,7 @@
                         >
                           <a-tabs
                             :active-key="data.caseDetailsTypeKey"
+                            class="scenario-root-tabs"
                             position="left"
                             @tab-click="(key) => switchApiInfoType(key, item)"
                           >
@@ -295,6 +296,14 @@
                                 <a-space v-if="data.assClickAdd">
                                   <a-button size="small" type="primary" @click="clickAdd(item)"
                                     >增加
+                                  </a-button>
+                                  <a-button
+                                    v-if="isAssertionGroupTab"
+                                    size="small"
+                                    type="outline"
+                                    @click="clickAddOrAssertionGroup(item)"
+                                  >
+                                    增加或关系
                                   </a-button>
                                 </a-space>
                               </template>
@@ -372,7 +381,7 @@
                               <a-tab-pane key="00" title="请求头">
                                 <div class="request-header-panel">
                                   <TipMessage
-                                    message="只要勾选，就会放弃使用用例前置中所有已勾选的请求头"
+                                    message="场景勾选请求头后优先使用场景请求头；未勾选则使用用例请求头；用例也未勾选时使用请求头管理中已开启的请求头"
                                   />
                                   <a-space direction="vertical" class="full-width">
                                     <a-checkbox-group
@@ -414,11 +423,12 @@
                               <a-tab-pane key="02" title="请求体">
                                 <div class="m-2">
                                   <ApiRequestBodyEditor
-                                    :protocol-type="item.protocol_type"
-                                    :body-type="item.body_type"
+                                    :protocol-type="getScenarioProtocolType(item)"
+                                    :body-type="getScenarioBodyType(item)"
                                     :body-config="item.body_config"
                                     :sse-config="item.sse_config"
                                     :project-product-id="apiProjectProductId"
+                                    :body-type-readonly="true"
                                     @save="(value) => saveScenarioRequestBody(item, value)"
                                   />
                                 </div>
@@ -597,9 +607,6 @@
                               </a-tab-pane>
                               <a-tab-pane key="44" title="响应文本提取">
                                 <div class="m-2">
-                                  <TipMessage
-                                    message="从响应文本中提取，请输入正则表达式，并点击测试按钮进行测试"
-                                  />
                                   <KeyValueList
                                     :data-list="item.posterior_response_text"
                                     :field-config="[
@@ -760,6 +767,7 @@
                               <a-tab-pane key="30" title="json一致断言">
                                 <div class="m-2">
                                   <TipMessage
+                                    margin-bottom="8px"
                                     message="注意以你输入的断言json的key和value为主，你没有输入响应中key和value则不断言"
                                   />
                                   <a-textarea
@@ -780,9 +788,21 @@
                                     :data-list="item.ass_jsonpath"
                                     :field-config="[
                                       {
-                                        field: 'actual',
-                                        label: '实际值',
-                                        placeholder: '请输入jsonpath提取的实际结果',
+                                        field: 'group_logic',
+                                        label: '关系',
+                                        type: 'select',
+                                        options: assertionGroupLogicOptions,
+                                        placeholder: '默认且',
+                                        className: 'assertion-group-select',
+                                        containerClassName: 'assertion-relation-field',
+                                        onChange: (value, currentItem, currentIndex) =>
+                                          handleAssertionGroupLogicChange(
+                                            value,
+                                            currentItem,
+                                            currentIndex,
+                                            item,
+                                            'ass_jsonpath'
+                                          ),
                                       },
                                       {
                                         field: 'method',
@@ -790,6 +810,8 @@
                                         type: 'cascader',
                                         options: data.textAss,
                                         placeholder: '请选择断言方法',
+                                        className: 'assertion-method-cascader',
+                                        containerClassName: 'assertion-method-field',
                                         expandTrigger: 'hover',
                                         valueKey: 'key',
                                         onChange: (value, currentItem, currentIndex) =>
@@ -799,6 +821,11 @@
                                             currentIndex,
                                             item
                                           ),
+                                      },
+                                      {
+                                        field: 'actual',
+                                        label: '实际值',
+                                        placeholder: '请输入jsonpath提取的实际结果',
                                       },
                                       {
                                         field: 'expect',
@@ -836,7 +863,10 @@
                               </a-tab-pane>
                               <a-tab-pane key="33" title="文本一致断言">
                                 <div class="m-2">
-                                  <TipMessage message="响应的text全匹配断言" />
+                                  <TipMessage
+                                    margin-bottom="8px"
+                                    message="响应的text全匹配断言"
+                                  />
                                   <a-textarea
                                     v-model="item.ass_text_all"
                                     :auto-size="{ minRows: 9, maxRows: 9 }"
@@ -855,11 +885,30 @@
                                     :data-list="item.ass_general"
                                     :field-config="[
                                       {
+                                        field: 'group_logic',
+                                        label: '关系',
+                                        type: 'select',
+                                        options: assertionGroupLogicOptions,
+                                        placeholder: '默认且',
+                                        className: 'assertion-group-select',
+                                        containerClassName: 'assertion-relation-field',
+                                        onChange: (value, currentItem, currentIndex) =>
+                                          handleAssertionGroupLogicChange(
+                                            value,
+                                            currentItem,
+                                            currentIndex,
+                                            item,
+                                            'ass_general'
+                                          ),
+                                      },
+                                      {
                                         field: 'method',
                                         label: '断言方法',
                                         type: 'cascader',
                                         options: data.ass,
                                         placeholder: '请选择断言方法',
+                                        className: 'assertion-method-cascader',
+                                        containerClassName: 'assertion-method-field',
                                         expandTrigger: 'hover',
                                         valueKey: 'key',
                                         onChange: (value, currentItem, currentIndex) =>
@@ -1239,7 +1288,6 @@
     visible: false,
     apiInfoId: '',
   })
-
   const data: any = reactive({
     actionTitle: '新增',
 
@@ -1274,6 +1322,11 @@
   const stepTableLoading = ref(false)
   const schemaLoadingId = ref<number | null>(null)
   const jsonEditSaving = ref(false)
+  const assertionGroupLogicOptions = [
+    { label: '且', value: 'AND' },
+    { label: '或', value: 'OR' },
+  ]
+  const isAssertionGroupTab = computed(() => data.tabsKey === '31' || data.tabsKey === '32')
   const showCaseAddButton = computed(() => !(data.apiType === '1' && data.apiSonType === '13'))
   const apiCaseDetailTitle = computed(() => {
     const id = apiCaseId.value || '-'
@@ -1588,9 +1641,9 @@
     if ('10' === data.tabsKey) {
       item['front_sql'].push({ key: '', value: '', datasource_alias: null })
     } else if ('31' === data.tabsKey) {
-      item['ass_jsonpath'].push({ actual: '', method: '', expect: null })
+      item['ass_jsonpath'].push({ group_name: '', group_logic: 'AND', actual: '', method: '', expect: null })
     } else if ('32' === data.tabsKey) {
-      item['ass_general'].push({ method: '', value: {} })
+      item['ass_general'].push({ group_name: '', group_logic: 'AND', method: '', value: {} })
     } else if ('40' === data.tabsKey) {
       item['posterior_response'].push({ key: '', value: '' })
     } else if ('41' === data.tabsKey) {
@@ -1599,6 +1652,24 @@
       item['posterior_response_text'].push({ key: '', value: '' })
     } else if ('12' === data.tabsKey) {
       parameterDataFactoryPanelRefs.get(item.id)?.open()
+    }
+  }
+
+  function clickAddOrAssertionGroup(item: any = null) {
+    if (!item) return
+    const groupName = `或关系${Date.now().toString().slice(-4)}`
+    if ('31' === data.tabsKey) {
+      item.ass_jsonpath.push(
+        { group_name: groupName, group_logic: 'OR', actual: '', method: '', expect: null },
+        { group_name: groupName, group_logic: 'OR', actual: '', method: '', expect: null }
+      )
+      blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
+    } else if ('32' === data.tabsKey) {
+      item.ass_general.push(
+        { group_name: groupName, group_logic: 'OR', method: '', value: {} },
+        { group_name: groupName, group_logic: 'OR', method: '', value: {} }
+      )
+      blurSave('ass_general', item.ass_general, item.id)
     }
   }
 
@@ -1777,7 +1848,6 @@
       'front_func',
       'ass_text_all',
       'params',
-      'protocol_type',
       'body_type',
     ]
     const in_serialize = ['ass_json_all', 'ass_schema']
@@ -1799,6 +1869,8 @@
       }
     } else if (key === 'ass_general') {
       payload[key] = normalizeAssGeneral(item)
+    } else if (key === 'ass_jsonpath') {
+      payload[key] = normalizeAssJsonpath(item)
     } else {
       payload[key] = item
     }
@@ -1811,15 +1883,25 @@
   }
 
   function saveScenarioRequestBody(item: any, value: any) {
-    item.protocol_type = value.protocol_type
-    item.body_type = value.body_type
     item.body_config = value.body_config
     item.sse_config = value.sse_config
-    return putApiCaseDetailedParameter({ id: item.id, ...value })
+    return putApiCaseDetailedParameter({
+      id: item.id,
+      body_config: value.body_config,
+      sse_config: value.sse_config,
+    })
       .then((res) => {
         Message.success(res.msg)
       })
       .catch(console.log)
+  }
+
+  function getScenarioProtocolType(item: any) {
+    return data.tabelJson?.api_info?.protocol_type || item?.api_info?.protocol_type || 'http'
+  }
+
+  function getScenarioBodyType(item: any) {
+    return data.tabelJson?.api_info?.body_type || item?.api_info?.body_type || 'none'
   }
 
   function removeFrontSql(item: any, index: number, key: string, id: number) {
@@ -2017,6 +2099,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         item[prop] = formatJson(item[prop])
       }
     })
+    item.ass_jsonpath = normalizeAssJsonpath(item.ass_jsonpath)
+    item.ass_general = normalizeAssGeneral(item.ass_general)
     item.__formatted = true
     return item
   }
@@ -2294,6 +2378,37 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
+  function normalizeGroupLogic(value: any) {
+    const logic = String(value || 'AND').toUpperCase()
+    return logic === 'OR' ? 'OR' : 'AND'
+  }
+
+  function getDefaultAssertionRelationName(fieldName: 'ass_jsonpath' | 'ass_general') {
+    return fieldName === 'ass_jsonpath' ? 'JSONPath关系' : '通用断言关系'
+  }
+
+  function handleAssertionGroupLogicChange(
+    value: any,
+    currentItem: any,
+    currentIndex: number,
+    item: any,
+    fieldName: 'ass_jsonpath' | 'ass_general'
+  ) {
+    const currentAssertion = currentItem[currentIndex]
+    const groupLogic = normalizeGroupLogic(value)
+    const groupName = currentAssertion?.group_name || getDefaultAssertionRelationName(fieldName)
+    if (!currentAssertion?.group_name) {
+      currentAssertion.group_name = groupName
+    }
+    item[fieldName].forEach((assertion: any) => {
+      if (!assertion.group_name || assertion.group_name === groupName) {
+        assertion.group_name = groupName
+        assertion.group_logic = groupLogic
+      }
+    })
+    blurSave(fieldName, item[fieldName], item.id)
+  }
+
   function handleJsonpathMethodChange(value: any, item: any, index: number, item1) {
     const inputItem = findItemByValue(data.textAss, value)
     if (inputItem && !jsonpathMethodUsesExpect(inputItem)) {
@@ -2323,8 +2438,23 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       return []
     }
     return assGeneral.map((assItem: any) => ({
+      group_name: assItem?.group_name || '',
+      group_logic: normalizeGroupLogic(assItem?.group_logic),
       method: assItem?.method || assItem?.value?.value || '',
       value: normalizeAssGeneralValue(assItem?.value),
+    }))
+  }
+
+  function normalizeAssJsonpath(assJsonpath: any) {
+    if (!Array.isArray(assJsonpath)) {
+      return []
+    }
+    return assJsonpath.map((assItem: any) => ({
+      group_name: assItem?.group_name || '',
+      group_logic: normalizeGroupLogic(assItem?.group_logic),
+      actual: assItem?.actual || '',
+      method: assItem?.method || '',
+      expect: assItem?.expect ?? null,
     }))
   }
 
@@ -2371,7 +2501,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 <style scoped>
   .api-case-workbench {
     display: grid;
-    grid-template-columns: minmax(430px, 0.95fr) minmax(520px, 1.05fr);
+    grid-template-columns: minmax(400px, 45fr) minmax(520px, 55fr);
     gap: 12px;
     height: calc(100vh - 166px);
     min-height: 0;
@@ -2426,6 +2556,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   .api-case-panel-body :deep(.arco-tabs-content) {
     min-height: 0;
+  }
+
+  .api-case-right :deep(.arco-tabs-content) {
+    padding: 3px 3px 3px 3px;
   }
 
   .api-case-failure-reason {
@@ -2504,10 +2638,34 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   .scenario-expand-body {
-    max-height: min(620px, calc(100vh - 200px));
+    height: 400px;
+    overflow: hidden;
+  }
+
+  .scenario-expand-body :deep(.scenario-root-tabs) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .scenario-expand-body :deep(.scenario-root-tabs > .arco-tabs-nav) {
+    height: 100%;
+  }
+
+  .scenario-expand-body :deep(.scenario-root-tabs > .arco-tabs-content) {
+    height: 400px;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+  }
+
+  .api-case-right :deep(.arco-collapse-item-content) {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .api-case-right :deep(.arco-collapse-item-content > .arco-collapse-item-content-box) {
+    padding-right: 8px !important;
+    padding-left: 8px !important;
   }
 
   .sleep-input {
@@ -2598,6 +2756,26 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   .mango-api-case-api-info-panel :deep(.mango-detail-workbench-page) {
     min-height: calc(100vh - 136px);
+  }
+
+  :deep(.assertion-group-select) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  :deep(.assertion-relation-field) {
+    flex: 0 0 76px;
+    min-width: 76px;
+  }
+
+  :deep(.assertion-method-cascader) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  :deep(.assertion-method-field) {
+    flex: 1.35 1 190px;
+    min-width: 190px;
   }
 
   :deep(.assertion-parameters-inline) {

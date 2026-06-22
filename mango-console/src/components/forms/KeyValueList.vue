@@ -7,6 +7,7 @@
           v-for="(field, fieldIndex) in getVisibleFields(item)"
           :key="fieldIndex"
           class="mango-key-value-field"
+          :class="field.containerClassName"
         >
           <span class="mango-field-label">{{ field.label }}:</span>
           <!-- 支持级联选择器 -->
@@ -28,7 +29,7 @@
             :placeholder="field.placeholder || `请选择${field.label}`"
             :field-names="field.fieldNames"
             :class="field.className || 'mango-key-select'"
-            @change="onBlur"
+            @change="(value) => onSelectChange(field, value, dataList, index)"
           />
           <!-- 支持文本域 -->
           <a-textarea
@@ -78,6 +79,7 @@
     field?: string // 字段名（可选，为空时表示直接绑定数组元素）
     label: string // 显示标签
     className?: string // 自定义类名
+    containerClassName?: string // 自定义字段容器类名
     placeholder?: string // 占位符文本
     type?: 'input' | 'textarea' | 'cascader' | 'select' // 字段类型
     // 级联选择器特有属性
@@ -124,6 +126,14 @@
     if (props.onSave) {
       props.onSave()
     }
+  }
+
+  const onSelectChange = (field: FieldConfig, value: any, item: any, index: number) => {
+    if (field.onChange) {
+      field.onChange(value, item, index)
+      return
+    }
+    onBlur()
   }
 
   // 数组元素更新时的处理

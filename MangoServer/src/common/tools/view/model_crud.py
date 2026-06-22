@@ -36,11 +36,16 @@ class ModelCRUD(GenericAPIView):
         for key, value in query_dict.items():
             if not isinstance(value, str):
                 continue
-            field_name = key.split('__', 1)[0]
+            key_parts = key.split('__')
+            field_name = key_parts[0]
             try:
                 field = self.model._meta.get_field(field_name)
             except FieldDoesNotExist:
                 continue
+            if isinstance(field, models.ForeignKey) and len(key_parts) > 1:
+                related_lookup = key_parts[1]
+                if related_lookup not in ("id", "pk", "exact", "in", "isnull") and not related_lookup.endswith("_id"):
+                    continue
             target_field = field.target_field if isinstance(field, models.ForeignKey) else field
             if not isinstance(target_field, models.IntegerField):
                 continue

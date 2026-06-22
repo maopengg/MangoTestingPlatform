@@ -55,11 +55,14 @@ class UpdateTestSuite:
             status__in=[TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value]
         )
         if not test_suite_detail_list.exists():
-            test_suite = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=StatusEnum.FAIL.value)
-            if not test_suite.exists():
-                cls.update_test_suite(data.test_suite, StatusEnum.SUCCESS.value)
-            else:
+            failed_details = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=StatusEnum.FAIL.value)
+            warning_details = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=TaskEnum.WARNING.value)
+            if failed_details.exists():
                 cls.update_test_suite(data.test_suite, StatusEnum.FAIL.value)
+            elif warning_details.exists():
+                cls.update_test_suite(data.test_suite, TaskEnum.WARNING.value)
+            else:
+                cls.update_test_suite(data.test_suite, StatusEnum.SUCCESS.value)
             cls.send_test_result(data.test_suite, data.error_message)
 
     @classmethod

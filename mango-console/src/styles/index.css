@@ -776,6 +776,45 @@ body {
     box-shadow: var(--m-shadow);
 }
 
+.arco-table-column-handle {
+    width: 10px;
+    right: -5px;
+}
+
+.arco-table-column-handle::before,
+.arco-table-column-handle::after {
+    position: absolute;
+    content: '';
+}
+
+.arco-table-column-handle::before {
+    top: 50%;
+    right: 3px;
+    width: 4px;
+    height: 14px;
+    border-right: 1px solid var(--m-muted);
+    border-left: 1px solid var(--m-muted);
+    opacity: .62;
+    transform: translateY(-50%);
+}
+
+.arco-table-column-handle::after {
+    top: 20%;
+    right: 4px;
+    bottom: 20%;
+    width: 2px;
+    background: transparent;
+}
+
+.arco-table-column-handle:hover::before {
+    border-color: var(--m-primary);
+    opacity: .9;
+}
+
+.arco-table-column-handle:hover::after {
+    background: var(--m-primary);
+}
+
 .arco-table .arco-table-content,
 .arco-table .arco-scrollbar-container {
     scrollbar-width: thin;

@@ -6,6 +6,7 @@
 from src.apps.auto_api.models import ApiCase, ApiHeaders
 from src.apps.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.apps.auto_api.service.base.case_data_factory import CaseDataFactory
+from src.common.enums.tools_enum import StatusEnum
 from src.common.exceptions import *
 
 
@@ -24,8 +25,7 @@ class CaseBase:
         self.case_data_factory.run_front()
         if self.api_case.front_sql:
             self.__front_sql(self.api_case.front_sql)
-        if self.api_case.front_headers:
-            self.__front_headers()
+        self.__front_headers()
 
     def case_posterior_main(self, ):
         try:
@@ -70,8 +70,14 @@ class CaseBase:
 
     def __front_headers(self):
         if self.api_case.front_headers:
-            for i in ApiHeaders.objects.filter(id__in=self.api_case.front_headers):
-                self.case_headers[i.key] = i.value
+            queryset = ApiHeaders.objects.filter(id__in=self.api_case.front_headers)
+        else:
+            queryset = ApiHeaders.objects.filter(
+                project_product_id=self.api_case.project_product_id,
+                status=StatusEnum.SUCCESS.value,
+            )
+        for i in queryset:
+            self.case_headers[i.key] = i.value
         log.api.debug(f'前置自定义->用例headers:{self.case_headers}')
 
     def __posterior_sql(self, posterior_sql):

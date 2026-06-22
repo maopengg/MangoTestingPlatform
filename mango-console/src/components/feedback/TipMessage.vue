@@ -54,7 +54,7 @@
     // 下边距
     marginBottom: {
       type: String,
-      default: '12px',
+      default: '0',
     },
     // 边框圆角
     borderRadius: {

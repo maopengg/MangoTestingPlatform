@@ -67,7 +67,7 @@ export const uiColumns: any = reactive([
     title: '测试结果',
     dataIndex: 'status',
     key: 'status',
-    width: 94,
+    width: 150,
   },
   {
     title: '失败提示',
@@ -150,7 +150,7 @@ export const apiColumns: any = reactive([
     title: '测试结果',
     key: 'status',
     dataIndex: 'status',
-    width: 94,
+    width: 150,
   },
   {
     title: '失败提示',
@@ -222,7 +222,7 @@ export const pytestColumns: any = reactive([
     title: '测试结果',
     key: 'status',
     dataIndex: 'status',
-    width: 94,
+    width: 150,
   },
   {
     title: '失败提示',

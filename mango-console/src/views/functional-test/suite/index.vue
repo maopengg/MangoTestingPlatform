@@ -441,8 +441,8 @@
 
   const suiteColumns = [
     { title: 'ID', key: 'id', dataIndex: 'id', width: 72 },
-    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 180, ellipsis: true, tooltip: true },
-    { title: '模块名称', key: 'module', dataIndex: 'module', width: 220, ellipsis: true, tooltip: true },
+    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 150, ellipsis: true, tooltip: true },
+    { title: '模块名称', key: 'module', dataIndex: 'module', width: 150, ellipsis: true, tooltip: true },
     { title: '需求名称', key: 'requirement_name', dataIndex: 'requirement_name', width: 220, ellipsis: true, tooltip: true },
     { title: '所属迭代', key: 'iteration', dataIndex: 'iteration', width: 140, ellipsis: true, tooltip: true },
     { title: '测试负责人', key: 'owner', dataIndex: 'owner', width: 120 },
@@ -455,8 +455,8 @@
   ]
   const caseColumns = [
     { title: 'ID', key: 'id', dataIndex: 'id', width: 72 },
-    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 180, ellipsis: true, tooltip: true },
-    { title: '模块名称', key: 'module', dataIndex: 'module', width: 260, ellipsis: true, tooltip: true },
+    { title: '项目/产品', key: 'project_product', dataIndex: 'project_product', width: 150, ellipsis: true, tooltip: true },
+    { title: '模块名称', key: 'module', dataIndex: 'module', width: 150, ellipsis: true, tooltip: true },
     { title: '需求名称', key: 'suite', dataIndex: 'suite', width: 220, ellipsis: true, tooltip: true },
     { title: '所属迭代', key: 'suite_iteration', dataIndex: 'suite_iteration', width: 140, ellipsis: true, tooltip: true },
     { title: '用例编号', key: 'case_no', dataIndex: 'case_no', width: 130, ellipsis: true, tooltip: true },

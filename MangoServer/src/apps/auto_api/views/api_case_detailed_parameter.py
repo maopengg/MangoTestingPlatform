@@ -57,12 +57,12 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
         return validate_body_config(value, 'SSE配置')
 
     def validate(self, attrs):
-        for legacy_field in ('data', 'json', 'file'):
+        for legacy_field in ('data', 'json', 'file', 'protocol_type', 'body_type', 'is_case_headers'):
             attrs.pop(legacy_field, None)
-        body_type = attrs.get('body_type', getattr(self.instance, 'body_type', None))
-        if 'body_config' in attrs or body_type == 'raw':
-            body_config = attrs.get('body_config', getattr(self.instance, 'body_config', None))
-            attrs['body_config'] = normalize_body_config_by_type(body_type, body_config)
+        case_detailed = attrs.get('case_detailed') or getattr(self.instance, 'case_detailed', None)
+        body_type = case_detailed.api_info.body_type if case_detailed and case_detailed.api_info else None
+        if 'body_config' in attrs:
+            attrs['body_config'] = normalize_body_config_by_type(body_type, attrs.get('body_config'))
         return attrs
 
     def validate_front_sql(self, value):
@@ -119,8 +119,6 @@ class ApiCaseDetailedParameterCRUD(ModelCRUD):
         api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
         data['url'] = api_info_obj.url
         data['params'] = api_info_obj.params
-        data['protocol_type'] = api_info_obj.protocol_type
-        data['body_type'] = api_info_obj.body_type
         data['body_config'] = api_info_obj.body_config
         data['sse_config'] = api_info_obj.sse_config
         return_data = self.inside_post(data)

@@ -208,6 +208,38 @@ class ApiResponseJsonScalarTests(SimpleTestCase):
 
         self.assertEqual(case_parameter.ass_result[0].status, 1)
 
+    def test_jsonpath_assertion_or_group_passes_when_any_item_passes(self):
+        case_parameter = self.make_case_parameter()
+
+        case_parameter._CaseParameter__ass_jsonpath({'$.code': 201}, [
+            {
+                'group_name': '状态码兼容',
+                'group_logic': 'OR',
+                'actual': '$.code',
+                'method': 'p_is_equal_to',
+                'expect': 200,
+            },
+            {
+                'group_name': '状态码兼容',
+                'group_logic': 'OR',
+                'actual': '$.code',
+                'method': 'p_is_equal_to',
+                'expect': 201,
+            },
+        ])
+
+        self.assertEqual(case_parameter.ass_result[-1].status, 1)
+        self.assertEqual(case_parameter.ass_result[-1].group_logic, 'OR')
+
+    def test_jsonpath_assertion_without_group_logic_keeps_and_behavior(self):
+        case_parameter = self.make_case_parameter()
+
+        with self.assertRaises(ApiError):
+            case_parameter._CaseParameter__ass_jsonpath({'$.code': 201}, [
+                {'actual': '$.code', 'method': 'p_is_equal_to', 'expect': 200},
+                {'actual': '$.code', 'method': 'p_is_equal_to', 'expect': 201},
+            ])
+
 
 class RequestModelParamsTests(SimpleTestCase):
 

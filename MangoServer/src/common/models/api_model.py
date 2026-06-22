@@ -196,6 +196,9 @@ class AssResultModel(BaseModel):
     actual: Any | None = None
     ass_msg: str | None = None
     status: int = StatusEnum.SUCCESS.value
+    group_name: str | None = None
+    group_logic: str | None = None
+    group_result: bool | None = None
 
 
 class ApiCaseStepsResultModel(BaseModel):

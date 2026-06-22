@@ -5,7 +5,7 @@ from django.db.models import QuerySet
 
 from src.apps.ai.models import AiAssistantMessage, AiAssistantSession, AiMcpTool
 from src.apps.ai.service.core import McpService, mask_sensitive
-from src.apps.system.service.ai.client import AiService
+from src.apps.system.service.ai.client import AiConfigError, AiService
 from src.common.enums.ai_enum import AiMcpToolRiskLevelEnum
 
 
@@ -251,25 +251,32 @@ class AiAssistantService:
         assistant_content = ""
         tool_calls: dict[int, dict] = {}
 
-        for chunk in AiService.stream_chat(
-            messages=messages,
-            tools=tools or None,
-            tool_choice="auto" if tools else None,
-            max_tokens=1600,
-        ):
-            choice = (chunk.get("choices") or [{}])[0]
-            delta = choice.get("delta") or {}
-            if delta.get("content"):
-                assistant_content += delta["content"]
-                yield {"event": "delta", "data": {"content": delta["content"]}}
-            for tool_call in delta.get("tool_calls") or []:
-                index = tool_call.get("index", 0)
-                target = tool_calls.setdefault(index, {"function": {"name": "", "arguments": ""}})
-                function = tool_call.get("function") or {}
-                if function.get("name"):
-                    target["function"]["name"] += function.get("name") or ""
-                if function.get("arguments"):
-                    target["function"]["arguments"] += function.get("arguments") or ""
+        try:
+            for chunk in AiService.stream_chat(
+                messages=messages,
+                tools=tools or None,
+                tool_choice="auto" if tools else None,
+                max_tokens=1600,
+            ):
+                choice = (chunk.get("choices") or [{}])[0]
+                delta = choice.get("delta") or {}
+                if delta.get("content"):
+                    assistant_content += delta["content"]
+                    yield {"event": "delta", "data": {"content": delta["content"]}}
+                for tool_call in delta.get("tool_calls") or []:
+                    index = tool_call.get("index", 0)
+                    target = tool_calls.setdefault(index, {"function": {"name": "", "arguments": ""}})
+                    function = tool_call.get("function") or {}
+                    if function.get("name"):
+                        target["function"]["name"] += function.get("name") or ""
+                    if function.get("arguments"):
+                        target["function"]["arguments"] += function.get("arguments") or ""
+        except Exception as exc:
+            fallback_response = cls._fallback_chat_after_stream_error(messages, tools, exc)
+            first_message = cls._first_message(fallback_response)
+            assistant_content = cls._content(first_message)
+            for index, tool_call in enumerate(first_message.get("tool_calls") or []):
+                tool_calls[index] = tool_call
 
         if assistant_content:
             assistant_message = AiAssistantMessage.objects.create(
@@ -423,6 +430,21 @@ class AiAssistantService:
             }
             for tool in tools
         ]
+
+    @staticmethod
+    def _fallback_chat_after_stream_error(messages: list[dict], tools: list[dict], error: Exception) -> dict:
+        try:
+            return (
+                AiService.chat_with_tools(messages=messages, tools=tools, tool_choice="auto", max_tokens=1600)
+                if tools
+                else AiService.chat(messages=messages, max_tokens=1600)
+            )
+        except AiConfigError:
+            raise
+        except Exception as fallback_error:
+            original_message = str(error) or error.__class__.__name__
+            fallback_message = str(fallback_error) or fallback_error.__class__.__name__
+            raise AiConfigError(f"AI流式响应异常，且降级非流式请求失败：{original_message}；{fallback_message}") from fallback_error
 
     @staticmethod
     def _first_message(response: dict) -> dict:

@@ -228,18 +228,11 @@ def _api_info_save_failed_response(error: ToolsError) -> dict:
 
 def _normalize_scenario_payload(payload: dict) -> dict:
     normalized = dict(payload)
+    for deprecated_key in ("protocol_type", "body_type", "is_case_headers", "data", "json", "json_body", "file"):
+        normalized.pop(deprecated_key, None)
     for key in ("params",):
         if key in normalized:
             normalized[key] = _json_string(normalized[key])
-    if any(key in normalized for key in ("body_type", "body_config", "sse_config", "data", "json", "json_body", "file")):
-        normalized.update(_normalize_body_payload(
-            body_type=normalized.get("body_type"),
-            body_config=normalized.get("body_config"),
-            sse_config=normalized.get("sse_config"),
-            data=normalized.pop("data", None),
-            json_body=normalized.pop("json", None) or normalized.pop("json_body", None),
-            file=normalized.pop("file", None),
-        ))
     for key in (
         "headers",
         "front_sql",
@@ -268,6 +261,8 @@ def _normalize_ass_general(assertions: list | None) -> list:
     for assertion in normalized:
         if not isinstance(assertion, dict):
             continue
+        assertion["group_name"] = str(assertion.get("group_name") or "").strip()
+        assertion["group_logic"] = _normalize_assertion_group_logic(assertion.get("group_logic"))
         value = assertion.get("value")
         if not isinstance(value, dict):
             continue
@@ -283,6 +278,11 @@ def _normalize_ass_general(assertions: list | None) -> list:
     return normalized
 
 
+def _normalize_assertion_group_logic(group_logic: Any) -> str:
+    logic = str(group_logic or "AND").upper()
+    return "OR" if logic == "OR" else "AND"
+
+
 def _normalize_ass_jsonpath(assertions: list | None) -> list:
     """Normalize JSONPath assertion field names to the executor's actual/method/expect shape."""
     if not assertions:
@@ -294,6 +294,8 @@ def _normalize_ass_jsonpath(assertions: list | None) -> list:
         actual = item.get("actual", item.get("path"))
         method = item.get("method", item.get("operator"))
         expect = item.get("expect", item.get("value"))
+        group_name = str(item.get("group_name") or "").strip()
+        group_logic = _normalize_assertion_group_logic(item.get("group_logic"))
         if _is_empty_value({"actual": actual, "method": method, "expect": expect}):
             continue
         if _jsonpath_method_uses_expect(method):
@@ -305,6 +307,8 @@ def _normalize_ass_jsonpath(assertions: list | None) -> list:
                 "actual": actual,
                 "method": method,
                 "expect": normalized_expect,
+                "group_name": group_name,
+                "group_logic": group_logic,
             }
         )
     return normalized
@@ -482,6 +486,47 @@ def _api_case_delete_impact(case_id: int) -> dict:
     }
 
 
+def _api_case_scenario_delete_impact(scenario_id: int) -> dict:
+    from src.apps.data_factory.models import DataFactoryCaseConfig
+    from src.common.enums.data_factory_enum import DataFactoryCaseSourceTypeEnum
+
+    scenario = ApiCaseDetailedParameter.objects.select_related(
+        "case_detailed",
+        "case_detailed__case",
+        "case_detailed__api_info",
+    ).get(id=scenario_id)
+    step = scenario.case_detailed
+    case = step.case
+    data_factory_config_ids = list(
+        DataFactoryCaseConfig.objects.filter(
+            source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+            source_id=scenario_id,
+        ).values_list("id", flat=True)
+    )
+    step_scenario_count = ApiCaseDetailedParameter.objects.filter(case_detailed_id=step.id).count()
+    return {
+        "scenario": {
+            "id": scenario.id,
+            "name": scenario.name,
+            "step_id": step.id,
+            "api_info_id": step.api_info_id,
+            "api_info_name": step.api_info.name if step.api_info else None,
+            "case_id": case.id,
+            "case_name": case.name,
+        },
+        "will_delete": {
+            "api_case_scenario": 1,
+            "scenario_data_factory_config_ids": data_factory_config_ids,
+            "scenario_data_factory_config_count": len(data_factory_config_ids),
+        },
+        "references": {
+            "step_scenario_count_before_delete": step_scenario_count,
+            "step_scenario_count_after_delete": max(step_scenario_count - 1, 0),
+        },
+        "risk": "确认后会删除该 API Case 场景参数，并清理该场景绑定的数据工厂配置；不会删除 API Case、步骤或接口定义。",
+    }
+
+
 def _create_case_step(case_id: int, api_info_id: int, case_sort: int | None = None) -> dict:
     api_info_obj = ApiInfo.objects.get(id=api_info_id)
     if case_sort is None:
@@ -499,8 +544,6 @@ def _create_case_step(case_id: int, api_info_id: int, case_sort: int | None = No
             "name": api_info_obj.name,
             "headers": [],
             "params": api_info_obj.params,
-            "protocol_type": api_info_obj.protocol_type,
-            "body_type": api_info_obj.body_type,
             "body_config": api_info_obj.body_config,
             "sse_config": api_info_obj.sse_config,
         }
@@ -715,11 +758,12 @@ def register_api_automation_tools(mcp):
         enabled_only: bool = False,
         type: int | None = None,
         test_env_id: int | None = None,
+        common_only: bool = False,
         keyword: str | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> dict:
-        """查询 API 全局变量。type: 0=自定义, 1=SQL, 2=代码变量。"""
+        """查询 API 全局变量。test_env_id=None 默认不过滤环境；common_only=True 只查环境通用变量。"""
         queryset = ApiPublic.objects.select_related("project_product", "datasource_alias").filter(project_product_id=project_product_id)
         if enabled_only:
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
@@ -727,7 +771,9 @@ def register_api_automation_tools(mcp):
             if type not in ApiPublicTypeEnum.get_key_list():
                 return fail("API 全局变量类型只支持 0=自定义、1=SQL、2=代码变量。", "API_PUBLIC_TYPE_INVALID")
             queryset = queryset.filter(type=type)
-        if test_env_id is not None:
+        if common_only:
+            queryset = queryset.filter(test_env__isnull=True)
+        elif test_env_id is not None:
             queryset = queryset.filter(test_env=test_env_id)
         if keyword:
             queryset = (
@@ -758,15 +804,15 @@ def register_api_automation_tools(mcp):
     @mcp.tool()
     def create_api_public_variable(
         project_product_id: int,
-        test_env_id: int,
         type: int,
         name: str,
         key: str,
         value: str,
+        test_env_id: int | None = None,
         datasource_alias_id: int | None = None,
         status: int = 0,
     ) -> dict:
-        """创建 API 全局变量。type: 0=自定义, 1=SQL, 2=代码变量；代码变量 value 必须定义 variable(context) 并返回 dict。"""
+        """创建 API 全局变量。test_env_id=None 表示环境通用；type: 0=自定义, 1=SQL, 2=代码变量。"""
         if type not in ApiPublicTypeEnum.get_key_list():
             return fail("API 全局变量类型只支持 0=自定义、1=SQL、2=代码变量。", "API_PUBLIC_TYPE_INVALID")
         if type == ApiPublicTypeEnum.SQL.value and not datasource_alias_id:
@@ -790,17 +836,17 @@ def register_api_automation_tools(mcp):
         public_variable_id: int,
         type: int | None = None,
         test_env_id: int | None = None,
+        test_env_is_common: bool = False,
         name: str | None = None,
         key: str | None = None,
         value: str | None = None,
         datasource_alias_id: int | None = None,
         status: int | None = None,
     ) -> dict:
-        """更新 API 全局变量。SQL 类型需要 datasource_alias_id；自定义和代码变量可传空清除。"""
+        """更新 API 全局变量。test_env_is_common=True 会把 test_env 改为 null，即环境通用。"""
         payload: dict[str, Any] = {"id": public_variable_id}
         for field, field_value in {
             "type": type,
-            "test_env": test_env_id,
             "name": name,
             "key": key,
             "value": value,
@@ -809,6 +855,10 @@ def register_api_automation_tools(mcp):
         }.items():
             if field_value is not None:
                 payload[field] = field_value
+        if test_env_is_common:
+            payload["test_env"] = None
+        elif test_env_id is not None:
+            payload["test_env"] = test_env_id
         data = ApiPublicCRUD.inside_put(public_variable_id, payload)
         return ok({"public_variable_id": data["id"], **data}, "API 全局变量更新成功")
 
@@ -1093,6 +1143,7 @@ def register_api_automation_tools(mcp):
 
         复杂字段格式见 get_api_case_schema.api_case_fields。front_headers 只传 ApiHeaders.id 数组，
         表示用例级默认请求头；如果某个场景参数 headers 非空，执行时会完全覆盖 front_headers，不会合并。
+        如果场景 headers 和 front_headers 都为空，执行时使用当前项目产品下 status=1 的 ApiHeaders。
         front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端。
         接口/组件层用于单接口、组件能力、契约、边界、异常校验，Integration用于跨模块/跨服务/数据库/消息/第三方协作验证，
@@ -1250,13 +1301,11 @@ def register_api_automation_tools(mcp):
 
     @mcp.tool()
     def refresh_api_case_step_from_api_info(step_id: int) -> dict:
-        """从接口定义同步 params/protocol_type/body_type/body_config/sse_config 到步骤下所有场景。"""
+        """从接口定义同步 params/body_config/sse_config 到步骤下所有场景。请求协议和请求体类型执行时统一读取 ApiInfo。"""
         detail = ApiCaseDetailed.objects.select_related("api_info").get(id=step_id)
         api_info = detail.api_info
         count = ApiCaseDetailedParameter.objects.filter(case_detailed_id=step_id).update(
             params=api_info.params,
-            protocol_type=api_info.protocol_type,
-            body_type=api_info.body_type,
             body_config=api_info.body_config,
             sse_config=api_info.sse_config,
         )
@@ -1276,8 +1325,7 @@ def register_api_automation_tools(mcp):
         retry_interval: int | None = None,
         headers: list[int] | None = None,
         params: str | dict | list | None = None,
-        protocol_type: str = "http",
-        body_type: str = "none",
+        protocol_type: str | None = None,
         body_config: dict | None = None,
         sse_config: dict | None = None,
         front_sql: list | None = None,
@@ -1297,10 +1345,13 @@ def register_api_automation_tools(mcp):
 
         复杂字段格式见 get_api_case_schema.api_case_scenario_fields。
         headers 只传 ApiHeaders.id 数组；只要 headers 非空，就会完全覆盖 API case 的 front_headers，不会合并。
+        headers 为空时回退到 API case.front_headers；如果 front_headers 也为空，则使用当前项目产品下 status=1 的 ApiHeaders。
         front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         ass_jsonpath 中 actual 是 JSONPath；method 使用 get_api_assertion_methods 返回的叶子 value。
+        断言关系可传 group_name/group_logic；group_logic=AND 是且，OR 是或，不传默认 AND。
         如果 method 的参数只有 actual、没有 expect，例如 p_is_none/p_is_true/p_is_false，expect 传 null。
-        请求体使用 body_type/body_config；文件上传使用 body_type=multipart 和 body_config.files[].file_id。
+        protocol_type/body_type 已废弃并会被忽略，场景执行统一使用该步骤绑定的 ApiInfo 协议和请求体类型。
+        body_config/sse_config 是场景级数据，必须匹配 ApiInfo.body_type/protocol_type。
         """
         sql_error = _validate_api_case_sql_datasources(front_sql, posterior_sql)
         if sql_error:
@@ -1312,8 +1363,6 @@ def register_api_automation_tools(mcp):
             "retry_interval": retry_interval,
             "headers": headers or [],
             "params": _json_string(params),
-            "protocol_type": protocol_type,
-            "body_type": body_type,
             "body_config": body_config,
             "sse_config": sse_config,
             "front_sql": front_sql or [],
@@ -1340,7 +1389,8 @@ def register_api_automation_tools(mcp):
         字段格式见 get_api_case_schema.api_case_scenario_fields。fields.headers 非空时会覆盖 API case 的 front_headers。
         fields.front_sql/fields.posterior_sql 每条 SQL 必须传 datasource_alias；先调用 list_data_factory_datasource_aliases 查询。
         fields.ass_jsonpath 的规则同 create_api_case_scenario：单参数断言方法 expect 传 null。
-        fields 中请求体使用 protocol_type/body_type/body_config/sse_config；文件上传使用 body_config.files[].file_id。
+        fields.protocol_type/body_type 已废弃并会被忽略，场景执行统一使用该步骤绑定的 ApiInfo 协议和请求体类型。
+        fields.body_config/fields.sse_config 是场景级数据，必须匹配 ApiInfo.body_type/protocol_type。
         """
         sql_error = _validate_api_case_sql_datasources(fields.get("front_sql"), fields.get("posterior_sql"))
         if sql_error:
@@ -1349,6 +1399,47 @@ def register_api_automation_tools(mcp):
         payload = _normalize_scenario_payload(payload)
         data_obj = ApiCaseDetailedParameterCRUD.inside_put(scenario_id, payload)
         return ok({"scenario_id": data_obj["id"], **data_obj}, "场景参数更新成功")
+
+    @mcp.tool()
+    def preview_delete_api_case_scenario_impact(scenario_id: int) -> dict:
+        """预览删除 API Case 场景参数的影响，并生成确认 token。"""
+        scenario = ApiCaseDetailedParameter.objects.get(id=scenario_id)
+        confirm_text = f"DELETE_API_CASE_SCENARIO:{scenario_id}:{scenario.name}"
+        return ok(
+            create_dangerous_action_preview(
+                "delete_api_case_scenario",
+                scenario_id,
+                confirm_text,
+                _api_case_scenario_delete_impact(scenario_id),
+            ),
+            "已生成 API Case 场景删除影响预览，请二次确认后删除",
+        )
+
+    @mcp.tool()
+    def delete_api_case_scenario(
+        scenario_id: int,
+        preview_token: str | None = None,
+        confirm_text: str | None = None,
+    ) -> dict:
+        """删除 API Case 场景参数。必须先调用 preview_delete_api_case_scenario_impact。"""
+        error = validate_dangerous_action_confirmation(
+            "delete_api_case_scenario",
+            scenario_id,
+            preview_token,
+            confirm_text,
+        )
+        if error:
+            return error
+        try:
+            with transaction.atomic():
+                scenario = ApiCaseDetailedParameter.objects.get(id=scenario_id)
+                case_detailed_id = scenario.case_detailed_id
+                before = _api_case_scenario_delete_impact(scenario_id)
+                scenario.delete()
+                ApiCaseDetailedParameterCRUD.refresh_case_flow(case_detailed_id)
+        except Exception as exc:
+            return fail(str(exc), "DELETE_API_CASE_SCENARIO_FAILED")
+        return ok({"scenario_id": scenario_id, "deleted": before.get("will_delete", {})}, "API Case 场景删除成功")
 
     @mcp.tool()
     def copy_api_case_scenario(
@@ -1498,7 +1589,7 @@ def register_api_automation_tools(mcp):
         调用 preview_create_api_header_impact 并由用户手动确认，再调用 create_api_header 创建，最后把返回 id
         通过 case_front_headers 或 scenarios[].headers 传入。
         如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
-        请求体使用 api.body_type/api.body_config 和 scenarios[].body_type/body_config。
+        请求体类型使用 api.body_type；场景请求数据使用 scenarios[].body_config/sse_config，scenarios[].body_type 会被忽略。
         scenarios[] 可以直接传断言字段 ass_jsonpath、ass_general、ass_json_all、ass_text_all、ass_schema。
         复杂断言格式请先调用 get_api_assertion_schema / get_api_assertion_methods；生成草稿后必须把断言字段保存到场景。
         文件上传使用 body_type=multipart 和 body_config.files[].file_id；不能直接传本地路径、URL、裸文件名或二进制内容。
@@ -1640,32 +1731,29 @@ def register_api_automation_tools(mcp):
         case_sort: int | None = None,
         user_id: int | None = None,
     ) -> dict:
-        """异步执行已保存 API case。不传 test_env_id 时使用当前用户 selected_environment。"""
+        """执行已保存 API case，和 Web 单 case 执行一致，不生成测试报告。不传 test_env_id 时使用当前用户 selected_environment。"""
         try:
-            from src.apps.system.service.tasks.add_tasks import AddTasks
-
-            if case_sort is not None:
-                return fail("异步执行暂不支持 case_sort；请执行完整 API case。", "ASYNC_CASE_SORT_UNSUPPORTED")
             user = current_user(user_id)
             env_id = _selected_env(user.id, test_env_id)
-            case = ApiCase.objects.select_related("project_product").get(id=case_id)
-            add_tasks = AddTasks(
-                project_product=case.project_product_id,
-                test_env=env_id,
-                is_notice=StatusEnum.FAIL.value,
+            run_result = TestCase(
                 user_id=user.id,
-            )
-            add_tasks.add_test_suite_details(case_id, TestCaseTypeEnum.API)
+                test_env=env_id,
+                case_id=case_id,
+            ).test_case(case_sort).model_dump()
         except Exception as exc:
             return fail(str(exc), "API_CASE_RUN_FAILED")
+        payload = {
+            "case_id": case_id,
+            "test_env_id": env_id,
+            "case_sort": case_sort,
+            "run_result": run_result,
+            "result_query_tool": "get_api_case_run_result",
+        }
+        if StatusEnum.SUCCESS.value != run_result.get("status"):
+            return fail(run_result.get("error_message") or "API case 执行失败", "API_CASE_RUN_FAILED", payload)
         return ok(
-            {
-                "case_id": case_id,
-                "test_env_id": env_id,
-                "test_suite_id": add_tasks.test_suite_id,
-                "result_query_tool": "get_test_report_detail",
-            },
-            "API case 异步执行任务创建成功",
+            payload,
+            "API case 执行完成",
         )
 
     @mcp.tool()
@@ -1788,6 +1876,7 @@ def register_api_automation_tools(mcp):
                 "notes": [
                     "jsonpath断言的 method 必须使用 jsonpath_methods 中叶子节点的 value，例如 p_is_equal_to，不能使用 eq。",
                     "判断 ass_jsonpath.expect 如何传值必须看所选 method 在 jsonpath_methods/flat_methods 中的 parameter 定义。",
+                    "断言关系字段 group_logic 可选 AND/OR：AND 是且，OR 是或；不传 group_logic 默认 AND。需要或关系时，多条断言使用相同 group_name 且 group_logic=OR。",
                     "如果 method.parameter 里包含 {f:\"expect\"}，expect 传预期值；如果 parameter 只有 {f:\"actual\"} 或不包含 expect，expect 必须传 null。",
                     "如果响应字段值是 JSON null，不要使用 p_is_equal_to + expect:null，应使用 p_is_none + expect:null。",
                     "如果响应字段值是空字符串，使用 p_is_equal_to + expect:\"\" 或 p_is_empty，不能按 null 处理。",
@@ -1808,17 +1897,25 @@ def register_api_automation_tools(mcp):
             {
                 "assertion_types": {
                     "ass_json_all": "JSON一致断言。仅适用于 object/array 响应；保存基础、固定的期望 JSON 片段，后端用 p_in_dict 到响应 JSON 中做局部包含匹配，不是全量相等断言；已在这里断言的字段无需再重复写入 ass_jsonpath。",
-                    "ass_jsonpath": "JSONPath断言。仅适用于 object/array 响应；actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value；expect 是否需要传值取决于该 method 的 parameter，包含 f=expect 时传预期值，不包含 f=expect 时传 null。",
+                    "ass_jsonpath": "JSONPath断言。仅适用于 object/array 响应；actual 是 JSONPath，method 必须是 get_api_assertion_methods.jsonpath_methods 中的 value；expect 是否需要传值取决于该 method 的 parameter，包含 f=expect 时传预期值，不包含 f=expect 时传 null。可选 group_name/group_logic 配置关系，group_logic=AND 表示且，OR 表示或；不传默认 AND。",
                     "ass_text_all": "文本一致断言。保存完整预期响应文本，后端用 response.text.strip() == expect.strip()。",
-                    "ass_general": "通用断言。外层 value 保存前端级联选中的完整对象；parameter[].v 面向 textarea 保存，dict/list 应保存为 JSON 字符串，执行 SQL 断言时会自动反序列化。",
+                    "ass_general": "通用断言。外层 value 保存前端级联选中的完整对象；parameter[].v 面向 textarea 保存，dict/list 应保存为 JSON 字符串，执行 SQL 断言时会自动反序列化。可选 group_name/group_logic 配置关系，group_logic=AND 表示且，OR 表示或；不传默认 AND。",
                     "ass_schema": "结构化断言。保存 JSON Schema 对象；也可调用 auto_generate_api_case_scenario_schema 自动生成。",
                 },
                 "ass_jsonpath": [
                     {"actual": "$.code", "method": "p_is_equal_to", "expect": "0"},
                     {"actual": "$.timestamp", "method": "p_is_none", "expect": None},
                     {"actual": "$.success", "method": "p_is_true", "expect": None},
+                    {"group_name": "登录成功关系", "group_logic": "OR", "actual": "$.code", "method": "p_is_equal_to", "expect": "0"},
+                    {"group_name": "登录成功关系", "group_logic": "OR", "actual": "$.success", "method": "p_is_true", "expect": None},
                 ],
                 "ass_general": [general_equal],
+                "group_rule": {
+                    "default": "不传 group_name 或 group_logic 时，按 AND(且) 处理，且未分组断言保持原有逐条全部通过语义。",
+                    "and": "同一个 group_name 内 group_logic=AND 时，组内全部断言通过才算通过。",
+                    "or": "同一个 group_name 内 group_logic=OR 时，组内任意一条断言通过即算通过。",
+                    "input": "MCP 创建/更新保存时可以输入 group_logic=AND 或 OR；小写会自动转大写，其他值按 AND 保存。",
+                },
                 "ass_json_all": {"code": 0, "data": {"status": 1}},
                 "ass_text_all": "完整响应文本",
                 "ass_schema": {"type": "object", "properties": {"code": {"type": "integer"}}},
@@ -1875,10 +1972,13 @@ def register_api_automation_tools(mcp):
                 "api_public_sql": {
                     "fields": ["project_product_id", "test_env_id", "type", "name", "key", "value", "datasource_alias_id", "status"],
                     "format": {
+                        "test_env_id": "测试环境枚举值；传 null 或不传表示环境通用，会保存为 test_env=NULL。",
                         "type": "0=自定义公共变量，1=SQL 公共变量，2=代码变量。",
-                        "value": "SQL 类型填写 SQL 语句；自定义类型填写普通值；代码变量必须定义 variable(context) 并返回 dict。",
+                        "key": "SQL 类型可填写单个缓存 key，也可填写英文逗号分隔的多个 key，如 id,name；多 key 会从 SQL 查询结果第一行按列名优先、列顺序兜底写入多个缓存变量。",
+                        "value": "SQL 类型填写查询一行数据的 SQL 语句；自定义类型填写普通值；代码变量必须定义 variable(context) 并返回 dict。",
                         "datasource_alias_id": "SQL 类型必填，传逻辑数据源 DataFactoryDatasourceAlias.id；自定义和代码变量可不传。",
                     },
+                    "common_environment_rule": "环境通用不是环境枚举值，而是 test_env=NULL；list_api_public_variables(common_only=True) 只查通用变量；update_api_public_variable(test_env_is_common=True) 可把已有变量改为通用环境。",
                     "lookup_rule": "创建或更新 SQL 公共变量前，先调用 list_data_factory_datasource_aliases(project_product_id=当前产品ID) 查询逻辑数据源 ID，然后把返回的 datasource_alias_id 传给本字段。",
                     "query_rule": "已有 API 公共变量可调用 list_api_public_variables(project_product_id=当前产品ID, type=1) 查询，返回 datasource_alias_id 和 datasource_alias_name。",
                     "example": {
@@ -1886,7 +1986,7 @@ def register_api_automation_tools(mcp):
                         "test_env_id": 0,
                         "type": 1,
                         "name": "查询用户",
-                        "key": "user",
+                        "key": "id,name",
                         "value": "SELECT id,name FROM user WHERE id=${{user_id}}",
                         "datasource_alias_id": 2,
                         "status": 1,
@@ -1915,8 +2015,6 @@ def register_api_automation_tools(mcp):
                     "retry_interval",
                     "headers",
                     "params",
-                    "protocol_type",
-                    "body_type",
                     "body_config",
                     "sse_config",
                     "front_sql",
@@ -1951,6 +2049,7 @@ def register_api_automation_tools(mcp):
                         "default": "http",
                         "enabled": ["http", "sse"],
                         "reserved_disabled": ["json_rpc", "xml_rpc", "soap", "graphql", "grpc", "dubbo", "thrift", "mcp", "websocket"],
+                        "description": "接口协议类型。当前正式执行 http/sse；其他协议作为保留枚举。",
                     },
                     "body_type": {
                         "type": "str",
@@ -1965,6 +2064,23 @@ def register_api_automation_tools(mcp):
                     "sse_config": {
                         "type": "object | null",
                         "description": "protocol_type=sse 时可配置 max_duration_seconds、max_event_count、end_event、end_jsonpath。",
+                    },
+                },
+                "deprecated_fields": {
+                    "api_case_detailed_parameter.protocol_type": {
+                        "reason": "场景协议类型已废弃，后续会删除。",
+                        "rule": "case 阶段不允许编辑；执行时统一读取步骤绑定的 ApiInfo.protocol_type。",
+                        "mcp_behavior": "create_api_case_scenario/update_api_case_scenario 收到 protocol_type 会忽略。",
+                    },
+                    "api_case_detailed_parameter.body_type": {
+                        "reason": "场景请求体类型已废弃，后续会删除。",
+                        "rule": "case 阶段不允许编辑；执行时统一读取步骤绑定的 ApiInfo.body_type。",
+                        "mcp_behavior": "create_api_case_scenario/update_api_case_scenario 收到 body_type 会忽略；body_config 仍作为场景级请求数据保存。",
+                    },
+                    "api_case_detailed_parameter.is_case_headers": {
+                        "reason": "场景请求头开关已废弃，后续会删除。",
+                        "rule": "执行时按 headers -> ApiCase.front_headers -> 当前项目产品已开启 ApiHeaders 自动回退。",
+                        "mcp_behavior": "create_api_case_scenario/update_api_case_scenario 收到 is_case_headers 会忽略。",
                     },
                 },
                 "api_case_fields": {
@@ -2091,7 +2207,7 @@ def register_api_automation_tools(mcp):
                         "type": "list[int]",
                         "default": [],
                         "description": "场景级请求头，只保存 ApiHeaders.id。",
-                        "execution": "只要 headers 非空，就完全覆盖 api_case.front_headers，不会合并；headers=[] 时使用用例级 front_headers。",
+                        "execution": "只要 headers 非空，就完全覆盖 api_case.front_headers，不会合并；headers=[] 时使用用例级 front_headers；front_headers 也为空时使用当前项目产品下 status=1 的 ApiHeaders。",
                         "example": [4, 5],
                     },
                     "params": {
@@ -2102,18 +2218,21 @@ def register_api_automation_tools(mcp):
                     },
                     "protocol_type": {
                         "type": "str",
-                        "default": "http",
-                        "enabled": ["http", "sse"],
-                        "reserved_disabled": ["json_rpc", "xml_rpc", "soap", "graphql", "grpc", "dubbo", "thrift", "mcp", "websocket"],
+                        "deprecated": True,
+                        "editable": False,
+                        "source": "ApiInfo.protocol_type",
+                        "description": "场景级 protocol_type 已废弃，case 阶段不允许编辑；执行时统一使用步骤绑定的 ApiInfo.protocol_type。",
                     },
                     "body_type": {
                         "type": "str",
-                        "default": "none",
-                        "enum": ["none", "json", "form", "raw", "multipart"],
+                        "deprecated": True,
+                        "editable": False,
+                        "source": "ApiInfo.body_type",
+                        "description": "场景级 body_type 已废弃，case 阶段不允许编辑；执行时统一使用步骤绑定的 ApiInfo.body_type。",
                     },
                     "body_config": {
                         "type": "object | null",
-                        "description": "请求体配置。json/form/raw/multipart 结构同 api_info_fields.body_config；raw.content_type 缺省为 application/json；multipart.files[].file_id 来自测试配置-测试文件 FileData.id。",
+                        "description": "场景级请求体数据。结构必须匹配 ApiInfo.body_type：json/form/raw/multipart 结构同 api_info_fields.body_config；raw.content_type 缺省为 application/json；multipart.files[].file_id 来自测试配置-测试文件 FileData.id。",
                         "multipart_example": file_example,
                     },
                     "sse_config": {
@@ -2133,15 +2252,17 @@ def register_api_automation_tools(mcp):
                     "ass_jsonpath": {
                         "type": "list[object]",
                         "default": [],
-                        "format": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
-                        "description": "JSONPath 断言。仅适用于 object/array 响应；actual 是响应 JSONPath；method 必须来自 get_api_assertion_methods 的叶子 value，不能写 eq。",
+                        "format": [{"group_name": "", "group_logic": "AND", "actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                        "description": "JSONPath 断言。仅适用于 object/array 响应；actual 是响应 JSONPath；method 必须来自 get_api_assertion_methods 的叶子 value，不能写 eq。group_logic=AND 表示且，OR 表示或；不传默认 AND。",
                         "expect_rule": "所选 method 的 parameter 包含 f=expect 时传预期值；不包含 expect 时传 null。",
+                        "group_rule": "同一个 group_name 内按 group_logic 计算；AND 需要全部通过，OR 任意通过即可。group_name 为空时保持原有未分组逐条断言行为。",
                     },
                     "ass_general": {
                         "type": "list[object]",
                         "default": [],
-                        "description": "通用断言。value 必须保存前端级联选中的完整对象；parameter[].v 是实际输入值。",
-                        "format": [{"method": "内容断言 / 值等于什么 / 等于expect", "value": {"label": "等于expect", "value": "p_is_equal_to", "parameter": [{"f": "actual", "v": "${{actual}}"}, {"f": "expect", "v": "0"}]}}],
+                        "description": "通用断言。value 必须保存前端级联选中的完整对象；parameter[].v 是实际输入值。group_logic=AND 表示且，OR 表示或；不传默认 AND。",
+                        "format": [{"group_name": "", "group_logic": "AND", "method": "内容断言 / 值等于什么 / 等于expect", "value": {"label": "等于expect", "value": "p_is_equal_to", "parameter": [{"f": "actual", "v": "${{actual}}"}, {"f": "expect", "v": "0"}]}}],
+                        "group_rule": "同一个 group_name 内按 group_logic 计算；AND 需要全部通过，OR 任意通过即可。group_name 为空时保持原有未分组逐条断言行为。",
                     },
                     "ass_json_all": {
                         "type": "dict | list | null",
@@ -2198,9 +2319,9 @@ def register_api_automation_tools(mcp):
                         "api_case.front_headers 是用例级默认请求头，只保存 ApiHeaders.id 数组。",
                         "api_case_scenario.headers 也是 ApiHeaders.id 数组；只要场景 headers 非空，就会完全覆盖 api_case.front_headers，不会合并。",
                         "如果场景 headers=[]，执行时使用用例级 front_headers。",
-                        "如果用例级 front_headers=[]，则 API case 请求头为空。",
+                        "如果用例级 front_headers=[]，执行时使用当前项目产品下 status=1 的 ApiHeaders。",
                         "ApiInfo.headers 在 MCP 创建/更新接口定义时默认保持 null，不作为 API case 的请求头来源。",
-                        "ApiHeaders.status=1 的全局默认请求头主要用于直接执行 ApiInfo 或接口定义初始化 headers；API case 执行主要依赖 case/scene 选择的 headers。",
+                        "api_case_detailed_parameter.is_case_headers 已废弃，MCP 创建/更新场景时会忽略该字段。",
                     ],
                     "execution_order": [
                         "初始化测试对象和 API 全局变量。",
@@ -2214,12 +2335,14 @@ def register_api_automation_tools(mcp):
                         "API case 全部结束后执行 api_case.posterior_sql，并清理 case 级数据工厂。",
                     ],
                     "request_payload": [
-                        "params/protocol_type/body_type/body_config/sse_config 都以场景参数为准；添加步骤时默认从 ApiInfo 同步一份到默认场景。",
-                        "refresh_api_case_step_from_api_info 会把 ApiInfo 的 params/protocol_type/body_type/body_config/sse_config 同步到该步骤下所有场景。",
+                        "protocol_type/body_type 以 ApiInfo 为准，case 场景阶段不允许编辑；场景级 protocol_type/body_type 字段已废弃，后续会删除。",
+                        "params/body_config/sse_config 以场景参数为准；添加步骤时默认从 ApiInfo 同步一份 body_config/sse_config 到默认场景。",
+                        "refresh_api_case_step_from_api_info 只会把 ApiInfo 的 params/body_config/sse_config 同步到该步骤下所有场景，不会同步 protocol_type/body_type。",
                         "body_type=json 且需要未加引号数字变量时，请使用 body_config.source_type=template 和 body_text。",
                     ],
                     "assertions": [
                         "ass_jsonpath.method 必须使用 get_api_assertion_methods 返回的叶子 value，例如 p_is_equal_to，不能使用 eq。",
+                        "ass_jsonpath/ass_general 可传 group_name/group_logic；group_logic 可选 AND/OR，不传或非法值默认 AND。AND=且，OR=或。",
                         "通用断言 ass_general 保存前端级联选项对象；更详细格式请调用 get_api_assertion_schema。",
                     ],
                 },
@@ -2247,7 +2370,11 @@ def register_api_automation_tools(mcp):
                         "data": None,
                         "body_type": "json",
                         "body_config": {"source_type": "template", "body_text": "{\"categoryId\": ${{category.id}}, \"categoryName\": \"AUTO_${{random_str(8)}}\"}"},
-                        "ass_jsonpath": [{"actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                        "ass_jsonpath": [{"group_name": "", "group_logic": "AND", "actual": "$.code", "method": "p_is_equal_to", "expect": "0"}],
+                        "ass_jsonpath_or": [
+                            {"group_name": "成功关系", "group_logic": "OR", "actual": "$.code", "method": "p_is_equal_to", "expect": "0"},
+                            {"group_name": "成功关系", "group_logic": "OR", "actual": "$.success", "method": "p_is_true", "expect": None},
+                        ],
                         "posterior_response": [{"key": "category_id", "value": "$.data.id"}],
                     },
                     "headers_override": {

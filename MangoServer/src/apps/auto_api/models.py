@@ -132,13 +132,16 @@ class ApiCaseDetailedParameter(models.Model):
     retry_interval = models.SmallIntegerField(verbose_name="重试间隔", null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=128)
     headers = models.JSONField(verbose_name="请求头", default=list)
+    # Deprecated: 请求头优先级改为 headers -> ApiCase.front_headers -> 已开启 ApiHeaders，后续删除该开关。
     is_case_headers = models.SmallIntegerField(verbose_name="是否使用用例headers", default=StatusEnum.SUCCESS.value)
     params = models.TextField(verbose_name="参数", null=True)
     # Deprecated: 仅为 6.3.1 请求体结构迁移保留，运行时读取 body_type/body_config，后续版本删除。
     data = models.TextField(verbose_name="data", null=True)
     json = models.TextField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
+    # Deprecated: 场景协议类型后续删除，运行时统一读取 ApiInfo.protocol_type，case 阶段不允许编辑。
     protocol_type = models.CharField(verbose_name="协议类型", max_length=32, default=ApiProtocolTypeEnum.HTTP.value)
+    # Deprecated: 场景请求体类型后续删除，运行时统一读取 ApiInfo.body_type，case 阶段不允许编辑。
     body_type = models.CharField(verbose_name="请求体类型", max_length=32, default=ApiBodyTypeEnum.NONE.value)
     body_config = models.JSONField(verbose_name="请求体配置", null=True)
     sse_config = models.JSONField(verbose_name="SSE配置", null=True)

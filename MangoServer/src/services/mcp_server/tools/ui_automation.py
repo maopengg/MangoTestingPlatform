@@ -222,10 +222,13 @@ def register_ui_automation_tools(mcp):
             "type": "object",
             "fields": ["project_product_id", "test_env_id", "type", "name", "key", "value", "datasource_alias_id", "status"],
             "format": {
+                "test_env_id": "测试环境枚举值；传 null 或不传表示环境通用，会保存为 test_env=NULL。",
                 "type": "0=自定义公共变量，1=SQL 公共变量，2=代码变量。",
-                "value": "SQL 类型填写 SQL 语句；自定义类型填写普通值；代码变量必须定义 variable(context) 并返回 dict。",
+                "key": "SQL 类型可填写单个缓存 key，也可填写英文逗号分隔的多个 key，如 id,name；多 key 会从 SQL 查询结果第一行按列名优先、列顺序兜底写入多个缓存变量。",
+                "value": "SQL 类型填写查询一行数据的 SQL 语句；自定义类型填写普通值；代码变量必须定义 variable(context) 并返回 dict。",
                 "datasource_alias_id": "SQL 类型必填，传逻辑数据源 DataFactoryDatasourceAlias.id；自定义和代码变量可不传。",
             },
+            "common_environment_rule": "环境通用不是环境枚举值，而是 test_env=NULL；list_ui_public_variables(common_only=True) 只查通用变量；update_ui_public_variable(test_env_is_common=True) 可把已有变量改为通用环境。",
             "lookup_rule": "创建或更新 SQL 公共变量前，先调用 list_data_factory_datasource_aliases(project_product_id=当前产品ID) 查询逻辑数据源 ID，然后把返回的 datasource_alias_id 传给本字段。",
             "query_rule": "已有 UI 公共变量可调用 list_ui_public_variables(project_product_id=当前产品ID, type=1) 查询，返回 datasource_alias_id 和 datasource_alias_name。",
             "example": {
@@ -233,7 +236,7 @@ def register_ui_automation_tools(mcp):
                 "test_env_id": 0,
                 "type": 1,
                 "name": "查询登录用户",
-                "key": "login_user",
+                "key": "id,name",
                 "value": "SELECT id,name FROM user WHERE id=${{user_id}}",
                 "datasource_alias_id": 2,
                 "status": 1,
@@ -321,11 +324,12 @@ def register_ui_automation_tools(mcp):
         enabled_only: bool = False,
         type: int | None = None,
         test_env_id: int | None = None,
+        common_only: bool = False,
         keyword: str | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> dict:
-        """查询 UI 公共变量。type: 0=自定义, 1=SQL, 2=代码变量；SQL 返回逻辑数据源 datasource_alias_id。"""
+        """查询 UI 公共变量。test_env_id=None 默认不过滤环境；common_only=True 只查环境通用变量。"""
         queryset = UiPublic.objects.select_related("project_product", "datasource_alias").filter(project_product_id=project_product_id)
         if enabled_only:
             queryset = queryset.filter(status=StatusEnum.SUCCESS.value)
@@ -333,7 +337,9 @@ def register_ui_automation_tools(mcp):
             if type not in UiPublicTypeEnum.get_key_list():
                 return fail("UI 公共变量类型只支持 0=自定义、1=SQL、2=代码变量。", "UI_PUBLIC_TYPE_INVALID")
             queryset = queryset.filter(type=type)
-        if test_env_id is not None:
+        if common_only:
+            queryset = queryset.filter(test_env__isnull=True)
+        elif test_env_id is not None:
             queryset = queryset.filter(test_env=test_env_id)
         if keyword:
             queryset = (
@@ -364,15 +370,15 @@ def register_ui_automation_tools(mcp):
     @mcp.tool()
     def create_ui_public_variable(
         project_product_id: int,
-        test_env_id: int,
         type: int,
         name: str,
         key: str,
         value: str,
+        test_env_id: int | None = None,
         datasource_alias_id: int | None = None,
         status: int = 0,
     ) -> dict:
-        """创建 UI 公共变量。type: 0=自定义, 1=SQL, 2=代码变量；代码变量 value 必须定义 variable(context) 并返回 dict。"""
+        """创建 UI 公共变量。test_env_id=None 表示环境通用；type: 0=自定义, 1=SQL, 2=代码变量。"""
         if type not in UiPublicTypeEnum.get_key_list():
             return fail("UI 公共变量类型只支持 0=自定义、1=SQL、2=代码变量。", "UI_PUBLIC_TYPE_INVALID")
         if type == UiPublicTypeEnum.SQL.value and not datasource_alias_id:
@@ -396,17 +402,17 @@ def register_ui_automation_tools(mcp):
         public_variable_id: int,
         type: int | None = None,
         test_env_id: int | None = None,
+        test_env_is_common: bool = False,
         name: str | None = None,
         key: str | None = None,
         value: str | None = None,
         datasource_alias_id: int | None = None,
         status: int | None = None,
     ) -> dict:
-        """更新 UI 公共变量。SQL 类型需要传逻辑数据源 datasource_alias_id；自定义和代码变量可不传。"""
+        """更新 UI 公共变量。test_env_is_common=True 会把 test_env 改为 null，即环境通用。"""
         payload = {"id": public_variable_id}
         for field, field_value in {
             "type": type,
-            "test_env": test_env_id,
             "name": name,
             "key": key,
             "value": value,
@@ -415,6 +421,10 @@ def register_ui_automation_tools(mcp):
         }.items():
             if field_value is not None:
                 payload[field] = field_value
+        if test_env_is_common:
+            payload["test_env"] = None
+        elif test_env_id is not None:
+            payload["test_env"] = test_env_id
         data = UiPublicCRUD.inside_put(public_variable_id, payload)
         return ok({"public_variable_id": data["id"], **data}, "UI 公共变量更新成功")
 

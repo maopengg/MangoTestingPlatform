@@ -7,6 +7,7 @@ import components from '../components'
 
 import ArcoVueIcon from '@arco-design/web-vue/es/icon'
 import ArcoVue from '@arco-design/web-vue/es/arco-vue'
+import ArcoTable from '@arco-design/web-vue/es/table'
 
 function getComponentName(key: string) {
   if (!key) {
@@ -42,7 +43,15 @@ export function registerComponents(app: App) {
 
 export const emitKey = Symbol('tiny-emit')
 
+function setupArcoTableDefaults() {
+  const tableProps = (ArcoTable as any)?.props
+  if (tableProps?.columnResizable) {
+    tableProps.columnResizable.default = true
+  }
+}
+
 function install(app: App) {
+  setupArcoTableDefaults()
   app.use(ArcoVue)
   app.use(ArcoVueIcon)
   registerComponents(app)

@@ -7,7 +7,14 @@ import filetype
 
 from src.apps.system.models import FileData
 from src.common.enums.api_enum import ApiBodyTypeEnum, ApiProtocolTypeEnum
-from src.common.exceptions import ApiError, ERROR_MSG_0078, ERROR_MSG_0079, ERROR_MSG_0080, ERROR_MSG_0081
+from src.common.exceptions import (
+    ApiError,
+    ERROR_MSG_0078,
+    ERROR_MSG_0079,
+    ERROR_MSG_0080,
+    ERROR_MSG_0081,
+    ERROR_MSG_0090,
+)
 
 
 SUPPORTED_PROTOCOLS = {ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value}
@@ -131,7 +138,10 @@ def prepare_multipart_body(
             raise ApiError(*ERROR_MSG_0080, value=(file_id,))
         if not file_data.test_file:
             raise ApiError(*ERROR_MSG_0081, value=(file_data.name,))
-        handle = file_data.test_file.open('rb')
+        try:
+            handle = file_data.test_file.open('rb')
+        except OSError as error:
+            raise ApiError(*ERROR_MSG_0090, value=(file_data.name,)) from error
         file_handles.append(handle)
         file_name = item.get('file_name') or file_data.name
         try:

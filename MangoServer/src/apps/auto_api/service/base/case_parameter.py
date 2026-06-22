@@ -156,33 +156,92 @@ class CaseParameter:
     def __ass_jsonpath(self, response_data, ass_jsonpath):
         if ass_jsonpath:
             ensure_jsonpath_source(response_data)
-            for i in ass_jsonpath:
-                actual = self.test_setup.test_data.replace(i.get('actual'))
-                expect = self.test_setup.test_data.replace(i.get('expect'))
-                log.api.debug(f'开始断言jsonpath，实际：{actual}, 预期：{expect}')
-                if not i.get('method') or not actual:
-                    raise ApiError(*ERROR_MSG_0039)
-                ass_dict = {
-                    'expect': self.test_setup.test_data.replace(expect),
-                    'actual': self.test_setup.test_data.get_json_path_value(response_data, actual),
-                    'method': i.get('method')
-                }
-                mango_assertion = ObtainAssertion(mysql_conn=None, test_data=self.test_data)
-                self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0005)
+            self.__run_group_assertions(ass_jsonpath, lambda i: self.__build_jsonpath_ass_dict(response_data, i))
+
+    def __build_jsonpath_ass_dict(self, response_data, i: dict):
+        actual = self.test_setup.test_data.replace(i.get('actual'))
+        expect = self.test_setup.test_data.replace(i.get('expect'))
+        log.api.debug(f'开始断言jsonpath，实际：{actual}, 预期：{expect}')
+        if not i.get('method') or not actual:
+            raise ApiError(*ERROR_MSG_0039)
+        return {
+            'expect': self.test_setup.test_data.replace(expect),
+            'actual': self.test_setup.test_data.get_json_path_value(response_data, actual),
+            'method': i.get('method')
+        }
 
     def __ass_general(self, general: list[dict]):
-        for i in general:
-            ass_dict = {
-                'method': i.get('value').get('value'),
-                'actual': '',
-                'expect': ''
-            }
-            for p in i.get('value', {}).get('parameter', []):
-                ass_dict[p.get('f')] = p.get('v')
-            if not ass_dict.get('method') or not ass_dict.get('actual'):
-                raise ApiError(*ERROR_MSG_0055)
-            mango_assertion = ObtainAssertion(mysql_conn=None, test_data=self.test_data)
-            self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
+        self.__run_group_assertions(general, self.__build_general_ass_dict)
+
+    def __build_general_ass_dict(self, i: dict):
+        value = i.get('value') or {}
+        ass_dict = {
+            'method': value.get('value'),
+            'actual': '',
+            'expect': ''
+        }
+        for p in value.get('parameter', []):
+            ass_dict[p.get('f')] = p.get('v')
+        if not ass_dict.get('method') or not ass_dict.get('actual'):
+            raise ApiError(*ERROR_MSG_0055)
+        return ass_dict
+
+    def __run_group_assertions(self, assertions: list[dict], build_ass_dict):
+        normal_assertions = []
+        grouped_assertions = {}
+        for i in assertions:
+            group_name = (i.get('group_name') or '').strip()
+            if not group_name:
+                normal_assertions.append(i)
+                continue
+            grouped_assertions.setdefault(group_name, []).append(i)
+
+        mango_assertion = ObtainAssertion(mysql_conn=None, test_data=self.test_data)
+        for i in normal_assertions:
+            self.__ass_(mango_assertion, build_ass_dict(i), ERROR_MSG_0007)
+        for group_name, group_items in grouped_assertions.items():
+            self.__ass_group(mango_assertion, group_name, group_items, build_ass_dict)
+
+    def __ass_group(self, mango_assertion, group_name: str, group_items: list[dict], build_ass_dict):
+        group_logic = (group_items[0].get('group_logic') or 'AND').upper()
+        if group_logic not in {'AND', 'OR'}:
+            group_logic = 'AND'
+        passed_count = 0
+        failed_messages = []
+        first_error = None
+        start_index = len(self.ass_result)
+        for i in group_items:
+            try:
+                self.__ass_(
+                    mango_assertion,
+                    build_ass_dict(i),
+                    ERROR_MSG_0007,
+                    group_name=group_name,
+                    group_logic=group_logic,
+                )
+                passed_count += 1
+            except ApiError as error:
+                failed_messages.append(error.msg)
+                if first_error is None:
+                    first_error = error
+
+        group_passed = passed_count == len(group_items) if group_logic == 'AND' else passed_count > 0
+        for ass_result in self.ass_result[start_index:]:
+            ass_result.group_result = group_passed
+        summary = AssResultModel(
+            method=f'{group_logic}断言组',
+            actual=f'通过 {passed_count} 条 / 共 {len(group_items)} 条',
+            expect=group_name,
+            ass_msg=f'{group_logic}组【{group_name}】{"通过" if group_passed else "失败"}：'
+                    f'{len(group_items)} 条中 {passed_count} 条通过',
+            status=StatusEnum.SUCCESS.value if group_passed else StatusEnum.FAIL.value,
+            group_name=group_name,
+            group_logic=group_logic,
+            group_result=group_passed,
+        )
+        self.ass_result.append(summary)
+        if not group_passed and first_error:
+            raise ApiError(300, '；'.join(failed_messages) or first_error.msg)
 
     def __ass_sql(self, sql_list: list[dict]):
         for sql in sql_list:
@@ -265,11 +324,20 @@ class CaseParameter:
             self.ass_result.append(ass_result)
             raise ApiError(*ERROR_MSG_0060)
 
-    def __ass_(self, mango_assertion, ass_dict: dict, _error_msg: tuple):
+    def __ass_(
+            self,
+            mango_assertion,
+            ass_dict: dict,
+            _error_msg: tuple,
+            group_name: str | None = None,
+            group_logic: str | None = None
+    ):
         ass_result = AssResultModel(
             method=getattr(mango_assertion, ass_dict['method']).__doc__,
             actual=ass_dict['actual'],
             expect=ass_dict['expect'],
+            group_name=group_name,
+            group_logic=group_logic,
         )
         log.api.debug(f'用例详情断言-1->{ass_dict}')
         try:

@@ -50,6 +50,29 @@ class ObtainTestDataReplacementTests(SimpleTestCase):
             "user_ids": ["dg8689b9"],
         })
 
+    def test_set_sql_cache_maps_multiple_keys_by_column_name(self):
+        test_data = ObtainTestData()
+
+        test_data.set_sql_cache("id,name", {"name": "mango", "id": 21})
+
+        self.assertEqual(test_data.get_cache("id"), 21)
+        self.assertEqual(test_data.get_cache("name"), "mango")
+
+    def test_set_sql_cache_falls_back_to_column_order_when_key_not_in_row(self):
+        test_data = ObtainTestData()
+
+        test_data.set_sql_cache("id,name", {"id": 21, "neme": "mango"})
+
+        self.assertEqual(test_data.get_cache("id"), 21)
+        self.assertEqual(test_data.get_cache("name"), "mango")
+
+    def test_set_sql_cache_keeps_single_key_first_column_behavior(self):
+        test_data = ObtainTestData()
+
+        test_data.set_sql_cache("user", {"id": 21, "name": "mango"})
+
+        self.assertEqual(test_data.get_cache("user"), 21)
+
 
 class ObtainAssertionTests(SimpleTestCase):
 

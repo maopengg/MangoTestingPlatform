@@ -23,10 +23,11 @@ class TaskEnum(BaseEnum):
     SUCCESS = 1
     STAY_BEGIN = 2
     PROCEED = 3
+    WARNING = 4
 
     @classmethod
     def obj(cls):
-        return {0: "失败", 1: "通过", 2: "待开始", 3: "进行中"}
+        return {0: "失败", 1: "通过", 2: "待开始", 3: "进行中", 4: "警告"}
 
 
 class ProductTypeEnum(BaseEnum):

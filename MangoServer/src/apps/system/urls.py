@@ -75,6 +75,9 @@ urlpatterns = [
     #
     path('test/suite/details/share', TestSuiteDetailsShareViews.as_view({'get': 'get_details'})),
     path('test/suite/details/summary/share', TestSuiteDetailsShareViews.as_view({'get': 'get_summary'})),
+    path('test/suite/details/api/export', TestSuiteDetailsShareViews.as_view({'post': 'post_api_export'})),
+    path('test/suite/details/api/export/status', TestSuiteDetailsShareViews.as_view({'get': 'get_api_export_status'})),
+    path('test/suite/details/api/export/download', TestSuiteDetailsShareViews.as_view({'get': 'download_api_export'})),
     path('test/suite/details', TestSuiteDetailsCRUD.as_view()),
     path('test/suite/details/report', TestSuiteDetailsViews.as_view({'get': 'test_suite_details_report'})),
     path('test/suite/details/all/retry', TestSuiteDetailsViews.as_view({'get': 'get_all_retry'})),

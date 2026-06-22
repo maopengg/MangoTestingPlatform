@@ -26,6 +26,7 @@ from src.apps.system.views.product_module import ProductModuleSerializers
 from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.common.enums.api_enum import MethodEnum
 from src.common.enums.tools_enum import StatusEnum
+from src.common.exceptions import ApiError, ERROR_MSG_0092
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.view.model_crud import ModelCRUD
 from src.common.tools.view.response_data import ResponseData
@@ -58,6 +59,9 @@ class ApiInfoSerializers(serializers.ModelSerializer):
         return attrs
 
     def validate_unique_api_info(self, attrs):
+        unique_fields = {'project_product', 'module', 'type', 'url', 'method', 'protocol_type'}
+        if self.instance and not any(field in attrs for field in unique_fields):
+            return
         project_product = attrs.get('project_product', getattr(self.instance, 'project_product', None))
         module = attrs.get('module', getattr(self.instance, 'module', None))
         api_type = attrs.get('type', getattr(self.instance, 'type', 1))
@@ -78,9 +82,7 @@ class ApiInfoSerializers(serializers.ModelSerializer):
             queryset = queryset.exclude(id=self.instance.id)
         duplicate = queryset.only('id').first()
         if duplicate:
-            raise serializers.ValidationError({
-                'url': RESPONSE_MSG_0191[1].format(duplicate.id),
-            })
+            raise ApiError(*ERROR_MSG_0092, value=(duplicate.id,))
 
 
 class ApiInfoSerializersC(serializers.ModelSerializer):

@@ -68,7 +68,15 @@
           </div>
           <div class="api-detail-panel-head">
             <div>
-              <div class="api-detail-panel-title">{{ currentNavItem.title }}</div>
+              <div class="api-detail-panel-title">
+                <span>{{ currentNavItem.title }}</span>
+                <a-switch
+                  v-if="data.pageType === '10'"
+                  :beforeChange="saveSchemaStatus"
+                  :default-checked="data.api_info.is_schema === 1"
+                  size="small"
+                />
+              </div>
               <div class="api-detail-panel-subtitle">{{ currentNavItem.description }}</div>
             </div>
             <a-space v-if="data.addButton">
@@ -79,15 +87,23 @@
             <div v-if="data.pageType === '0'" class="config-pane">
               <a-space direction="vertical" fill>
                 <TipMessage
-                  message="请必须输入json格式的请求头，留空则默认使用请求头管理中开启的"
+                  :message="
+                    data.isDefaultHeadersPreview
+                      ? '接口请求头留空时，执行会使用下方请求头管理中已开启的 Headers'
+                      : '请必须输入json格式的请求头，留空则默认使用请求头管理中开启的'
+                  "
                 />
                 <a-textarea
                   v-model="data.headers"
                   :auto-size="data.textareaAutoSize"
                   allow-clear
                   placeholder="请输入请求头，字符串形式"
-                  @blur="upDate('headers', data.headers)"
+                  @blur="saveHeaders"
                 />
+                <div v-if="data.isDefaultHeadersPreview" class="default-headers-preview">
+                  <div class="default-headers-preview-title">请求头管理中已开启的 Headers</div>
+                  <pre>{{ data.defaultHeadersText }}</pre>
+                </div>
               </a-space>
             </div>
 
@@ -311,6 +327,7 @@
   import TipMessage from '@/components/feedback/TipMessage.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
+  import { getApiHeaders } from '@/api/apitest/headers'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -323,7 +340,7 @@
   const configNavItems = [
     { key: '0', title: '请求头', description: '维护接口请求 Headers' },
     { key: '1', title: '参数', description: '维护查询参数' },
-    { key: '2', title: '请求体', description: '维护协议类型和 Body 配置' },
+    { key: '2', title: '请求体', description: '维护 Body 配置' },
     { key: '5', title: '后置jsonpath提取', description: '提取响应 JSON 到缓存' },
     { key: '6', title: '后置正则提取', description: '通过正则提取响应内容' },
     { key: '7', title: '后置函数', description: '编写自定义后置函数' },
@@ -391,6 +408,7 @@
     posterior_re: [],
     posterior_func: '',
     ass_schema: null,
+    is_schema: 0,
     result_data: null,
   })
   if (!pageData.record) {
@@ -413,6 +431,8 @@
     addButton: false,
     api_info: initialApiInfoRecord,
     headers: formatJson(initialApiInfoRecord.headers),
+    defaultHeadersText: '',
+    isDefaultHeadersPreview: false,
     ass_schema: formatJson(initialApiInfoRecord.ass_schema),
     textareaAutoSize: { minRows: 16, maxRows: 22 },
   })
@@ -558,6 +578,46 @@
     return JSON.stringify(items, null, 2)
   }
 
+  function formatHeadersPreview(items: Record<string, any>) {
+    const keys = Object.keys(items || {})
+    if (keys.length === 0) return ''
+    return JSON.stringify(items, null, 2)
+  }
+
+  function loadDefaultHeadersPreview(record: any) {
+    const projectProduct = record?.project_product
+    const projectProductValue = projectProduct?.id || projectProduct
+    data.defaultHeadersText = ''
+    data.isDefaultHeadersPreview = false
+    if (!projectProductValue || (record?.headers !== null && record?.headers !== undefined)) {
+      data.headers = formatJson(record?.headers)
+      return Promise.resolve()
+    }
+    return getApiHeaders({
+      project_product: projectProductValue,
+      status: 1,
+      page: 1,
+      pageSize: 1000,
+    })
+      .then((res) => {
+        const rows = Array.isArray(res.data) ? res.data : []
+        const headers = rows.reduce((acc: Record<string, string>, item: any) => {
+          if (item?.key) {
+            acc[item.key] = item.value
+          }
+          return acc
+        }, {})
+        const preview = formatHeadersPreview(headers)
+        data.defaultHeadersText = preview
+        data.headers = null
+        data.isDefaultHeadersPreview = Boolean(preview)
+      })
+      .catch((error) => {
+        console.log(error)
+        data.headers = null
+      })
+  }
+
   function removeFrontSql(item: any, index: number, key: string) {
     item.splice(index, 1)
     upDate(key, item)
@@ -653,6 +713,33 @@
       .catch(console.log)
   }
 
+  function saveHeaders() {
+    if (
+      data.isDefaultHeadersPreview &&
+      (data.headers === null || data.headers === undefined || data.headers === '')
+    ) {
+      return
+    }
+    data.isDefaultHeadersPreview = false
+    upDate('headers', data.headers)
+  }
+
+  function saveSchemaStatus(newValue: boolean) {
+    return new Promise<any>((resolve, reject) => {
+      if (!apiInfoId.value) {
+        resolve(false)
+        return
+      }
+      putApiInfo({ id: apiInfoId.value, is_schema: newValue ? 1 : 0 })
+        .then((res) => {
+          Message.success(res.msg)
+          data.api_info.is_schema = newValue ? 1 : 0
+          resolve(res.code === 200)
+        })
+        .catch(reject)
+    })
+  }
+
   async function saveRequestBody(value: any) {
     if (!apiInfoId.value || requestBodySaving.value) return
     requestBodySaving.value = true
@@ -701,7 +788,7 @@
           pageData.setRecord(res_data)
         }
         data.api_info = res_data
-        data.headers = formatJson(res_data.headers)
+        loadDefaultHeadersPreview(res_data)
         data.ass_schema = formatJson(res_data.ass_schema)
         syncRequestMetaSnapshot()
       })
@@ -863,6 +950,9 @@
   }
 
   .api-detail-panel-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     color: var(--m-text);
     font-size: 15px;
     font-weight: 600;
@@ -985,6 +1075,33 @@
 
   .config-pane {
     min-width: 0;
+  }
+
+  .default-headers-preview {
+    overflow: hidden;
+    border: 1px solid var(--m-border);
+    border-radius: 6px;
+    background: var(--m-surface-soft);
+  }
+
+  .default-headers-preview-title {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--m-border);
+    color: var(--m-text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  .default-headers-preview pre {
+    overflow: auto;
+    max-height: 220px;
+    margin: 0;
+    padding: 10px;
+    color: var(--m-text);
+    font-size: 12px;
+    line-height: 18px;
+    white-space: pre-wrap;
   }
 
   .fill-editor {

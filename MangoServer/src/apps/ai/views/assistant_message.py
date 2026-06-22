@@ -98,7 +98,10 @@ class AiAssistantMessageViews(ViewSet):
             except AiConfigError as exc:
                 yield f"event: error\ndata: {json.dumps({'message': RESPONSE_MSG_0177[1].format(str(exc))}, ensure_ascii=False)}\n\n"
             except Exception as exc:
-                yield f"event: error\ndata: {json.dumps({'message': str(exc)}, ensure_ascii=False)}\n\n"
+                message = str(exc).strip() or exc.__class__.__name__
+                if message == "(0, '')":
+                    message = "AI流式响应异常：连接提前结束或返回了空错误，请重试；如果反复出现，后端会自动降级为非流式响应。"
+                yield f"event: error\ndata: {json.dumps({'message': message}, ensure_ascii=False)}\n\n"
 
         response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
         response["Cache-Control"] = "no-cache"

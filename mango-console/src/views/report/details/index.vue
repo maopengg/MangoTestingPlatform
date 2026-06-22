@@ -76,6 +76,7 @@
           <StatusChart
             :success="summary.success_count || 0"
             :fail="summary.fail_count || 0"
+            :warning="summary.warning_count || 0"
             :pending="summary.proceed_count || 0"
             :todo="summary.stay_begin_count || 0"
           />
@@ -163,38 +164,45 @@
                 <i></i>
                 <span>{{ currentStatusLabel }}</span>
                 <i></i>
-                <span>共 {{ pagination.total || 0 }} 条</span>
+                <span>共 {{ currentTypeCaseTotal }} 条</span>
               </p>
             </div>
-          </div>
-        </div>
-
-        <div class="case-group-panel">
-          <div v-if="visibleTypeTabs.length > 0" class="case-group-block">
-            <span class="case-group-label">用例分组</span>
-            <div class="type-switch">
-              <button
-                v-for="item in visibleTypeTabs"
-                :key="item.key"
-                type="button"
-                class="type-switch-item"
-                :class="{ active: activeType === item.key }"
-                @click="selectType(item.key)"
+            <div class="case-title-actions">
+              <span v-if="visibleTypeTabs.length > 0" class="case-type-label">自动化类型：</span>
+              <a-checkbox-group
+                v-if="visibleTypeTabs.length > 0"
+                v-model="activeTypeSelection"
+                class="case-type-checkbox-group"
               >
-                <span>{{ item.label }}</span>
-                <strong>{{ item.total }}</strong>
-              </button>
+                <a-checkbox v-for="item in visibleTypeTabs" :key="item.key" :value="item.key">
+                  {{ item.label }}({{ item.total }})
+                </a-checkbox>
+              </a-checkbox-group>
+              <span class="case-status-label">测试结果：</span>
+              <a-select
+                v-model="caseStatus"
+                size="small"
+                class="case-status-select"
+                @change="reloadCases"
+              >
+                <a-option
+                  v-for="item in caseStatusOptions"
+                  :key="String(item.value)"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </a-option>
+              </a-select>
+              <a-button
+                v-if="activeType === '1'"
+                type="primary"
+                size="small"
+                :loading="apiExport.loading"
+                @click="startApiExport"
+              >
+                导出 Excel
+              </a-button>
             </div>
-          </div>
-          <div class="case-group-block">
-            <span class="case-group-label">测试结果</span>
-            <a-radio-group v-model="caseStatus" type="button" size="small" @change="reloadCases">
-              <a-radio value="all">全部</a-radio>
-              <a-radio :value="0">失败</a-radio>
-              <a-radio :value="1">成功</a-radio>
-              <a-radio :value="3">进行中</a-radio>
-              <a-radio :value="2">待开始</a-radio>
-            </a-radio-group>
           </div>
         </div>
 
@@ -323,9 +331,12 @@
   import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import {
+    downloadSystemTestSuiteDetailsApiExport,
+    getSystemTestSuiteDetailsApiExportStatus,
     getSystemTestSuiteDetailsRetry,
     getSystemTestSuiteDetailsShare,
     getSystemTestSuiteDetailsSummaryShare,
+    postSystemTestSuiteDetailsApiExport,
   } from '@/api/system/test_sute_details'
   import { getSystemTestSuiteShare } from '@/api/system/test_suite'
   import { useEnum } from '@/store/modules/get-enum'
@@ -367,8 +378,13 @@
     caseId: '',
     caseType: -1,
   })
+  const apiExport = reactive({
+    loading: false,
+    taskId: '',
+  })
   const isPolling = ref(false)
   const pollingTimer = ref<ReturnType<typeof setInterval> | null>(null)
+  const apiExportTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
   const pagination = reactive({
     page: 1,
@@ -449,6 +465,31 @@
       total: item.total,
     }))
   )
+  const currentTypeCaseTotal = computed(() => {
+    return typeProgress.value.find((item) => item.type === activeType.value)?.total || 0
+  })
+  const activeTypeSelection = computed<string[]>({
+    get() {
+      return activeType.value ? [activeType.value] : []
+    },
+    set(values) {
+      const selectedValues = values.map(String)
+      const nextType =
+        selectedValues.find((item) => item !== activeType.value) ||
+        activeType.value ||
+        visibleTypeTabs.value[0]?.key
+      if (!nextType || nextType === activeType.value) return
+      selectType(nextType)
+    },
+  })
+  const caseStatusOptions: Array<{ label: string; value: number | 'all' }> = [
+    { label: '全部', value: 'all' },
+    { label: '失败', value: 0 },
+    { label: '成功', value: 1 },
+    { label: '警告', value: 4 },
+    { label: '进行中', value: 3 },
+    { label: '待开始', value: 2 },
+  ]
   const currentTypeLabel = computed(() => {
     if (activeType.value === '1') return 'API 自动化'
     if (activeType.value === '2') return 'Pytest'
@@ -460,6 +501,7 @@
       1: '只看成功',
       2: '只看待开始',
       3: '只看进行中',
+      4: '只看警告',
     }
     return caseStatus.value === 'all' ? '全部结果' : map[caseStatus.value] || '全部结果'
   })
@@ -524,6 +566,10 @@
   })
 
   function showDetails(record: any) {
+    if (Number(record?.status) === 4) {
+      Message.warning('该用例前置步骤失败，未被执行')
+      return
+    }
     selectedCase.value = {
       ...record,
       case_type: record?.case_type ?? Number(activeType.value),
@@ -699,6 +745,69 @@
     })
   }
 
+  async function startApiExport() {
+    if (!reportId.value || apiExport.loading) return
+    apiExport.loading = true
+    try {
+      const res = await postSystemTestSuiteDetailsApiExport({
+        test_suite_id: reportId.value,
+        status: caseStatus.value,
+      })
+      apiExport.taskId = res.data?.task_id
+      if (!apiExport.taskId) {
+        throw new Error('导出任务创建失败')
+      }
+      Message.success('导出任务已创建，完成后将自动下载')
+      pollApiExport()
+    } catch (error: any) {
+      apiExport.loading = false
+      Message.error(error?.message || '导出任务创建失败')
+    }
+  }
+
+  async function pollApiExport() {
+    if (!apiExport.taskId) {
+      apiExport.loading = false
+      return
+    }
+    try {
+      const res = await getSystemTestSuiteDetailsApiExportStatus(apiExport.taskId)
+      const task = res.data || {}
+      if (task.status === 'success') {
+        await downloadApiExport(task.file_name)
+        Message.success('API报告导出完成')
+        apiExport.loading = false
+        apiExport.taskId = ''
+        return
+      }
+      if (task.status === 'fail') {
+        Message.error(task.message || 'API报告导出失败')
+        apiExport.loading = false
+        apiExport.taskId = ''
+        return
+      }
+      apiExportTimer.value = setTimeout(pollApiExport, 1500)
+    } catch (error: any) {
+      apiExport.loading = false
+      Message.error(error?.message || '查询导出任务失败')
+    }
+  }
+
+  async function downloadApiExport(fileName?: string) {
+    const res: any = await downloadSystemTestSuiteDetailsApiExport(apiExport.taskId)
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName || `API测试报告_${reportId.value}_${Date.now()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   onMounted(async () => {
     if (!enumStore.task_status?.length) {
       enumStore.getEnumShare()
@@ -714,6 +823,10 @@
 
   onUnmounted(() => {
     stopPolling()
+    if (apiExportTimer.value) {
+      clearTimeout(apiExportTimer.value)
+      apiExportTimer.value = null
+    }
   })
 </script>
 
@@ -1147,6 +1260,8 @@
     align-items: center;
     gap: 14px;
     min-width: 0;
+    width: 100%;
+    justify-content: space-between;
   }
 
   .case-toolbar-copy {
@@ -1167,47 +1282,31 @@
     font-size: 13px;
   }
 
-  .toolbar-actions {
+  .case-title-actions {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+    flex: 0 0 auto;
   }
 
-  .case-group-panel {
+  .case-type-checkbox-group {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--m-border);
-    background: var(--m-surface);
-  }
-
-  .case-group-block {
-    display: flex;
-    min-width: 0;
     align-items: center;
     gap: 8px;
+    padding-right: 2px;
+    white-space: nowrap;
   }
 
-  .case-group-label {
-    flex: 0 0 auto;
+  .case-type-label,
+  .case-status-label {
     color: var(--m-muted);
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
   }
 
-  .type-switch {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 0 0 auto;
-    padding: 3px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-lg);
-    background: var(--m-surface-soft);
+  .case-status-select {
+    width: 108px;
   }
 
   .failure-panel {
@@ -1256,48 +1355,6 @@
   .failure-body button:hover {
     border-color: var(--m-danger);
     background: color-mix(in srgb, var(--m-danger) 14%, var(--m-surface));
-  }
-
-  .type-switch-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 28px;
-    padding: 4px 9px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--m-text-2);
-    cursor: pointer;
-    line-height: 18px;
-    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .type-switch-item:hover {
-    background: var(--m-primary-soft);
-    color: var(--m-primary);
-  }
-
-  .type-switch-item.active {
-    background: var(--m-surface);
-    color: var(--m-primary);
-    box-shadow: var(--m-shadow);
-  }
-
-  .type-switch-item span {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .type-switch-item strong {
-    min-width: 18px;
-    padding: 0 5px;
-    border: 1px solid var(--m-border);
-    border-radius: 999px;
-    background: var(--m-surface-soft);
-    font-size: 12px;
-    text-align: center;
   }
 
   .case-main {
@@ -1388,15 +1445,6 @@
     .meta-strip,
     .overview-grid {
       grid-template-columns: 1fr;
-    }
-
-    .type-switch {
-      flex-wrap: wrap;
-    }
-
-    .case-group-panel {
-      align-items: flex-start;
-      flex-direction: column;
     }
 
     h1 {

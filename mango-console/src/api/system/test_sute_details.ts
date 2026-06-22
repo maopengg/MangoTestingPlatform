@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+import request from '@/api/axios.config'
 
 export function getSystemTestSuiteDetails(data: object) {
   return get({
@@ -88,5 +89,26 @@ export function getSystemTestSuiteDetailsSummaryShare(test_suite_id: number | st
     data: () => {
       return { test_suite_id: test_suite_id }
     },
+  })
+}
+
+export function postSystemTestSuiteDetailsApiExport(data: object) {
+  return post({
+    url: 'system/test/suite/details/api/export',
+    data: () => data,
+  })
+}
+
+export function getSystemTestSuiteDetailsApiExportStatus(task_id: string) {
+  return get({
+    url: 'system/test/suite/details/api/export/status',
+    data: () => ({ task_id }),
+  })
+}
+
+export function downloadSystemTestSuiteDetailsApiExport(task_id: string) {
+  return request.get('system/test/suite/details/api/export/download', {
+    params: { task_id },
+    responseType: 'blob',
   })
 }

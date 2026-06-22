@@ -6,6 +6,7 @@
   const props = defineProps<{
     success: number // 成功数据
     fail: number // 失败数据
+    warning?: number // 未执行/警告（可选）
     pending?: number // 进行中（可选）
     todo?: number // 待开始（可选）
     loading?: boolean
@@ -21,6 +22,7 @@
     token('--m-success', '#22c55e'),
     token('--m-danger', '#ef4444'),
     token('--m-warning', '#f59e0b'),
+    token('--m-primary', '#165dff'),
     token('--m-muted', '#64748b'),
   ]
 
@@ -29,11 +31,14 @@
       { name: '通过', value: Number(props.success || 0), color: getPalette()[0] },
       { name: '失败', value: Number(props.fail || 0), color: getPalette()[1] },
     ]
+    if (props.warning !== undefined) {
+      items.push({ name: '警告', value: Number(props.warning || 0), color: getPalette()[2] })
+    }
     if (props.pending !== undefined) {
-      items.push({ name: '进行中', value: Number(props.pending || 0), color: getPalette()[2] })
+      items.push({ name: '进行中', value: Number(props.pending || 0), color: getPalette()[3] })
     }
     if (props.todo !== undefined) {
-      items.push({ name: '待开始', value: Number(props.todo || 0), color: getPalette()[3] })
+      items.push({ name: '待开始', value: Number(props.todo || 0), color: getPalette()[4] })
     }
     const total = items.reduce((sum, item) => sum + item.value, 0)
     return items.map((item) => ({
@@ -102,7 +107,7 @@
 
   // 监听数据变化，更新图表
   watch(
-    () => [props.success, props.fail, props.pending, props.todo],
+    () => [props.success, props.fail, props.warning, props.pending, props.todo],
     () => {
       updateChart()
     },

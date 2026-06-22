@@ -346,6 +346,8 @@ class McpService:
                 "list_api_case_scenarios",
                 "create_api_case_scenario",
                 "update_api_case_scenario",
+                "preview_delete_api_case_scenario_impact",
+                "delete_api_case_scenario",
                 "copy_api_case_scenario",
                 "get_api_assertion_schema",
                 "get_api_assertion_methods",
@@ -440,6 +442,8 @@ class McpService:
             "tools": [
                 "preview_bind_cases_to_scheduled_task_impact",
                 "bind_cases_to_scheduled_task",
+                "preview_unbind_cases_from_scheduled_task_impact",
+                "unbind_cases_from_scheduled_task",
             ],
         },
         {
@@ -488,6 +492,7 @@ class McpService:
         "copy_",
         "upload_",
         "bind_",
+        "unbind_",
         "batch_generate_",
         "execute_",
         "debug_run_",
@@ -551,7 +556,7 @@ class McpService:
             return AiMcpToolRiskLevelEnum.PREVIEW.value, False, False
         if tool_name.startswith(("run_", "execute_", "debug_run_")):
             return AiMcpToolRiskLevelEnum.EXECUTE.value, True, True
-        if tool_name.startswith(("delete_", "cleanup_", "clear_")):
+        if tool_name.startswith(("delete_", "cleanup_", "clear_", "unbind_")):
             return AiMcpToolRiskLevelEnum.DELETE.value, True, True
         if tool_name.startswith(cls.WRITE_PREFIXES):
             return AiMcpToolRiskLevelEnum.WRITE.value, True, True
