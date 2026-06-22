@@ -17,8 +17,15 @@ AFTER_REV="$(git rev-parse HEAD)"
 
 BUILD_FRONTEND="${BUILD_FRONTEND:-0}"
 FRONTEND_CHANGED=0
-if [ "$BEFORE_REV" != "$AFTER_REV" ] && git diff --name-only "$BEFORE_REV" "$AFTER_REV" | grep -q '^mango-console/package.json$'; then
-  FRONTEND_CHANGED=1
+FRONTEND_PACKAGE_CHANGED=0
+if [ "$BEFORE_REV" != "$AFTER_REV" ]; then
+  CHANGED_FILES="$(git diff --name-only "$BEFORE_REV" "$AFTER_REV")"
+  if echo "$CHANGED_FILES" | grep -q '^mango-console/'; then
+    FRONTEND_CHANGED=1
+  fi
+  if echo "$CHANGED_FILES" | grep -Eq '^mango-console/package(-lock)?\.json$'; then
+    FRONTEND_PACKAGE_CHANGED=1
+  fi
 fi
 
 echo "停止当前芒果业务服务，释放内存..."
@@ -52,6 +59,11 @@ $COMPOSE run --rm mango_server python manage.py createcachetable django_cache ||
 
 if [ "$BUILD_FRONTEND" = "1" ] || [ "$FRONTEND_CHANGED" = "1" ] || [ -z "$($COMPOSE images -q mango-console 2>/dev/null || true)" ]; then
   echo "构建前端镜像..."
+  if [ "$FRONTEND_PACKAGE_CHANGED" = "1" ]; then
+    echo "检测到前端依赖文件变化，将重新执行 npm install。"
+  elif [ "$FRONTEND_CHANGED" = "1" ]; then
+    echo "检测到前端代码变化，复用依赖缓存并重新打包。"
+  fi
   $COMPOSE build mango-console
 else
   echo "跳过前端镜像构建。如需构建前端，请执行：BUILD_FRONTEND=1 sh start_service.sh"
