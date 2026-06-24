@@ -185,6 +185,7 @@ class FileData(models.Model):
     """ 文件表 """
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    user = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True, blank=True)
     project_product = models.ForeignKey(
         to=ProjectProduct,
         to_field="id",
@@ -197,6 +198,8 @@ class FileData(models.Model):
     name = models.CharField(verbose_name="文件名称", max_length=255, unique=True)
     test_file = models.FileField(verbose_name='文件', upload_to='test_file/', null=True)
     failed_screenshot = models.ImageField(verbose_name='失败截图', upload_to='failed_screenshot/', null=True)
+    file_size = models.BigIntegerField(verbose_name="文件大小", default=0)
+    allow_download = models.BooleanField(verbose_name="是否允许下载", default=True)
 
     class Meta:
         db_table = 'file_data'

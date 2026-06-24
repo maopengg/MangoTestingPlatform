@@ -11,13 +11,11 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 from src.apps.auto_pytest.service.base import git_obj
 from src.apps.auto_pytest.models import PytestProduct
-from src.apps.auto_pytest.service.base.update_file import UpdateFile
-from src.apps.system.models import ProductModule, CacheData
+from src.apps.auto_pytest.service.base.update_file import get_pytest_auto_test_dir
+from src.apps.system.models import ProductModule
 from src.apps.system.views.project_product import ProjectProductSerializersC
-from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.tools import project_dir
 from src.common.tools.decorator.error_response import error_response
-from src.common.tools.log_collector import log
 from src.common.tools.view.model_crud import ModelCRUD
 from src.common.tools.view.response_data import ResponseData
 from src.common.tools.view.response_msg import *
@@ -69,7 +67,8 @@ class PytestProductViews(ViewSet):
         else:
             repo.clone()
         # 遍历所有项目目录
-        auto_tests_dir = os.path.join(repo.local_dir, 'auto_tests')
+        auto_test_dir = get_pytest_auto_test_dir()
+        auto_tests_dir = os.path.join(repo.local_dir, auto_test_dir)
         if not os.path.isdir(auto_tests_dir):
             return ResponseData.fail(RESPONSE_MSG_0091_1, {'path': auto_tests_dir})
         for item in os.listdir(auto_tests_dir):
@@ -80,7 +79,7 @@ class PytestProductViews(ViewSet):
                     self.model.objects.create(
                         name=item,
                         file_name=item,
-                        init_file=os.path.join('mango_pytest', 'auto_tests', item, '__init__.py'),
+                        init_file=os.path.join('mango_pytest', auto_test_dir, item, '__init__.py'),
                     )
         return ResponseData.success(RESPONSE_MSG_0090_1)
 

@@ -44,6 +44,9 @@ class ApiAuthManager:
             test_env=test_env,
             status=StatusEnum.SUCCESS.value,
         ).order_by('id')
+        current_api_info_id = getattr(test_setup, 'current_api_info_id', None)
+        if current_api_info_id:
+            configs = configs.exclude(api_info_id=current_api_info_id)
         manager = cls(test_setup)
         for config in configs:
             manager.load_config(config)

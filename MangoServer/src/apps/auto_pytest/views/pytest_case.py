@@ -12,7 +12,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_pytest.models import PytestCase, PytestProduct
-from src.apps.auto_pytest.service.base.update_file import UpdateFile
+from src.apps.auto_pytest.service.base.update_file import UpdateFile, get_pytest_auto_test_dir
 from src.apps.auto_pytest.service.test_case.test_case import TestCase
 from src.apps.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.apps.system.views.product_module import ProductModuleSerializers
@@ -86,7 +86,7 @@ class PytestCaseViews(ViewSet):
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
         created_count = 0
-        for project in UpdateFile(product.test_dir).find_test_files(product.file_name):
+        for project in UpdateFile(product.test_dir).find_test_files(product.file_name, get_pytest_auto_test_dir()):
             # 分离 .py 文件和 .feature 文件
             py_files = [f for f in project.auto_test if f.path.endswith('.py')]
             feature_files = {os.path.basename(f.name).replace('.feature', ''): f.path for f in project.auto_test if f.path.endswith('.feature')}

@@ -92,10 +92,22 @@
               <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                 {{ formatProjectProductPath(record?.project_product) }}
               </template>
+              <template v-else-if="item.key === 'file_size'" #cell="{ record }">
+                {{ record.file_size_display || formatFileSize(record.file_size) }}
+              </template>
+              <template v-else-if="item.key === 'allow_download'" #cell="{ record }">
+                <a-tag :color="isAllowDownload(record) ? 'green' : 'orange'" size="small">
+                  {{ isAllowDownload(record) ? '允许下载' : '限制下载' }}
+                </a-tag>
+              </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    { label: '下载', onClick: () => onDownload(record) },
+                    {
+                      label: '下载',
+                      disabled: isDownloadDisabled(record),
+                      onClick: () => onDownload(record),
+                    },
                     { label: '编辑', onClick: () => onUpdate(record) },
                     { label: '删除', danger: true, onClick: () => onDelete(record) },
                   ]"
@@ -149,6 +161,9 @@
           :placeholder="'请选择项目产品'"
         />
       </a-form-item>
+      <a-form-item label="允许下载">
+        <a-switch v-model="uploadForm.allow_download" />
+      </a-form-item>
     </a-form>
     <template #footer>
       <a-button @click="onCloseUploadModal">取消</a-button>
@@ -189,6 +204,7 @@
   const uploadFileList = ref<any[]>([])
   const uploadForm = reactive({
     project_product: '' as string | number,
+    allow_download: true,
   })
   const data = reactive({
     updateId: 0,
@@ -277,6 +293,7 @@
     uploadFile.value = null
     uploadFileList.value = []
     uploadForm.project_product = ''
+    uploadForm.allow_download = true
     uploadModalVisible.value = true
   }
 
@@ -307,6 +324,7 @@
     formData.append('type', '0')
     formData.append('name', uploadFile.value.name)
     formData.append('project_product', String(uploadForm.project_product))
+    formData.append('allow_download', String(uploadForm.allow_download))
     try {
       const res = await postUserFile(formData)
       Message.success(res.msg)
@@ -314,6 +332,7 @@
       uploadFile.value = null
       uploadFileList.value = []
       uploadForm.project_product = ''
+      uploadForm.allow_download = true
       doRefresh()
     } catch (error) {
       console.log(error)
@@ -326,6 +345,7 @@
     uploadFile.value = null
     uploadFileList.value = []
     uploadForm.project_product = ''
+    uploadForm.allow_download = true
   }
 
   function onCloseUploadModal() {
@@ -334,6 +354,10 @@
   }
 
   async function onDownload(record: any) {
+    if (isDownloadDisabled(record)) {
+      Message.warning('当前文件不允许下载')
+      return
+    }
     const file_name = record.name
     try {
       const res = await getUserFileDownloadUrl(record.id)
@@ -352,6 +376,32 @@
     } catch (error) {
       console.log(error)
     }
+  }
+
+  function isDownloadDisabled(record: any) {
+    return !isAllowDownload(record)
+  }
+
+  function isAllowDownload(record: any) {
+    const value = record?.allow_download
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'number') return value === 1
+    if (typeof value === 'string') return ['true', '1', 'yes', 'on'].includes(value.toLowerCase())
+    return false
+  }
+
+  function formatFileSize(size: number | string | null | undefined) {
+    const value = Number(size || 0)
+    if (!value) return '-'
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    let current = value
+    for (const unit of units) {
+      if (current < 1024 || unit === units[units.length - 1]) {
+        return unit === 'B' ? `${Math.round(current)} ${unit}` : `${current.toFixed(1)} ${unit}`
+      }
+      current /= 1024
+    }
+    return '-'
   }
 
   onMounted(() => {

@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import json
 import socket
+from typing import Optional
 
 import minio
 import urllib3
@@ -30,18 +31,25 @@ class FileDataSerializers(serializers.ModelSerializer):
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     test_file = serializers.FileField(use_url=False, allow_null=True, required=False, allow_empty_file=True)
     failed_screenshot = serializers.ImageField(use_url=False, allow_null=True, required=False)
+    file_size_display = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = FileData
         fields = '__all__'
 
+    @staticmethod
+    def get_file_size_display(obj):
+        return format_file_size(obj.file_size or get_storage_file_size(obj))
+
 
 class FileDataSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    user = serializers.SerializerMethodField(read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
     test_file = serializers.FileField(use_url=False, allow_null=True, required=False, allow_empty_file=True)
     failed_screenshot = serializers.ImageField(use_url=False, allow_null=True, required=False)
+    file_size_display = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = FileData
@@ -49,7 +57,48 @@ class FileDataSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.order_by('-id')
+        return queryset.select_related('project_product', 'project_product__project', 'user').order_by('-id')
+
+    @staticmethod
+    def get_file_size_display(obj):
+        return format_file_size(obj.file_size or get_storage_file_size(obj))
+
+    @staticmethod
+    def get_user(obj):
+        if not obj.user_id:
+            return None
+        return {
+            'id': obj.user_id,
+            'name': getattr(obj.user, 'name', ''),
+            'username': getattr(obj.user, 'username', ''),
+        }
+
+
+def get_storage_file_size(file_data: FileData) -> int:
+    try:
+        return file_data.test_file.size if file_data.test_file else 0
+    except Exception:
+        return 0
+
+
+def format_file_size(size: Optional[int]) -> str:
+    size = int(size or 0)
+    if size <= 0:
+        return '-'
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    value = float(size)
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            return f'{value:.1f} {unit}' if unit != 'B' else f'{int(value)} {unit}'
+        value /= 1024
+
+
+def can_download_file(file_data: FileData, request: Request) -> bool:
+    if file_data.allow_download:
+        return True
+    user = getattr(request, 'user', None) or {}
+    user_id = user.get('id')
+    return bool(user_id and file_data.user_id == user_id)
 
 
 class FileDataCRUD(ModelCRUD):
@@ -69,7 +118,13 @@ class FileDataCRUD(ModelCRUD):
             try:
                 if self.model.objects.filter(name=request.data.get('name')):
                     return ResponseData.fail(RESPONSE_MSG_0022)
-                serializer = self.serializer(data=request.data)
+                data = request.data.copy()
+                uploaded_file = request.FILES.get('test_file')
+                if uploaded_file:
+                    data['file_size'] = uploaded_file.size
+                if getattr(request, 'user', None) and request.user.get('id'):
+                    data['user'] = request.user.get('id')
+                serializer = self.serializer(data=data)
                 if serializer.is_valid():
                     serializer.save()
                     return ResponseData.success(RESPONSE_MSG_0002,
@@ -99,6 +154,8 @@ class FileDataViews(ViewSet):
             file_data = FileData.objects.get(id=file_id)
             if not file_data.test_file:
                 return ResponseData.fail(RESPONSE_MSG_0030)
+            if not can_download_file(file_data, request):
+                return ResponseData.fail(RESPONSE_MSG_0030_1)
             return ResponseData.success(RESPONSE_MSG_0001, build_public_file_url(file_data.test_file.name))
         except FileData.DoesNotExist:
             return ResponseData.fail(RESPONSE_MSG_0029)

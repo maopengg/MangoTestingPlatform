@@ -53,6 +53,7 @@ class CacheDataKeyEnum(BaseEnum):
     PYTEST_GIT_URL = 'git仓库地址'
     PYTEST_GIT_USERNAME = 'git账号'
     PYTEST_GIT_PASSWORD = 'git密码'
+    PYTEST_AUTO_TEST_DIR = '自动化根目录名称'
 
     @classmethod
     def obj(cls):
@@ -65,6 +66,7 @@ class CacheDataKeyEnum(BaseEnum):
             'PYTEST_GIT_URL': None,
             'PYTEST_GIT_USERNAME': None,
             'PYTEST_GIT_PASSWORD': None,
+            'PYTEST_AUTO_TEST_DIR': 'auto_tests',
         }
 
     @classmethod

@@ -222,6 +222,9 @@
 
   const jsonValueText = computed({
     get() {
+      if (typeof local.body_config.body_text === 'string') {
+        return local.body_config.body_text
+      }
       return JSON.stringify(local.body_config.body ?? {}, null, 2)
     },
     set(value: string) {

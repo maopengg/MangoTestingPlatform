@@ -17,7 +17,7 @@
                 <ProjectProductSelect
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  @change="doRefresh"
+                  @change="onProjectProductChange"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
@@ -28,6 +28,17 @@
                   @change="doRefresh"
                   :field-names="fieldNames"
                   value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'tasks_id'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="item.optionItems"
+                  :loading="data.tasksLoading"
+                  @change="doRefresh"
                   allow-clear
                   allow-search
                 />
@@ -137,6 +148,7 @@
     getSystemTestSuiteDetailsAllRetry,
     getSystemTestSuiteDetailsReport,
   } from '@/api/system/test_sute_details'
+  import { getSystemTasks } from '@/api/system/tasks'
   import { useEnum } from '@/store/modules/get-enum'
   import { Message, Modal } from '@arco-design/web-vue'
   import Title from '@/views/index/components/Title.vue'
@@ -148,7 +160,6 @@
   const enumStore = useEnum()
 
   const pagination = usePagination(doRefresh)
-  pagination.pageSize = 10
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
@@ -158,8 +169,23 @@
     weekSuccessData: [],
     weekFailData: [],
     chartLoading: false,
+    tasksLoading: false,
   })
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
+
+  function getConditionItem(key: string) {
+    return conditionItems.find((item) => item.key === key)
+  }
+
+  function currentProjectProductId() {
+    return getOptionId(getConditionItem('project_product')?.value)
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '') {
+      delete value[key]
+    }
+  }
 
   function clearPollingTimer() {
     if (pollingTimer.value) {
@@ -172,9 +198,8 @@
     clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['project_product'] = getOptionId(value['project_product'])
-    if (value['project_product'] === null || value['project_product'] === '') {
-      delete value['project_product']
-    }
+    clearEmptyFilter(value, 'project_product')
+    clearEmptyFilter(value, 'tasks_id')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemTestSuite(value)
@@ -196,11 +221,45 @@
       .catch(console.log)
   }
 
+  function loadTaskOptions(projectProductId?: number | string | null) {
+    data.tasksLoading = true
+    const params: Record<string, any> = {}
+    if (projectProductId !== null && projectProductId !== '' && projectProductId !== undefined) {
+      params.project_product = projectProductId
+    }
+    return getSystemTasks(params)
+      .then((res) => {
+        const taskItem = getConditionItem('tasks_id')
+        if (taskItem) {
+          taskItem.optionItems = (Array.isArray(res.data) ? res.data : []).map((item: any) => ({
+            label: item.name || String(item.id),
+            value: item.id,
+          }))
+        }
+      })
+      .catch(console.log)
+      .finally(() => {
+        data.tasksLoading = false
+      })
+  }
+
+  function onProjectProductChange() {
+    const taskItem = getConditionItem('tasks_id')
+    if (taskItem) {
+      taskItem.value = ''
+    }
+    loadTaskOptions(currentProjectProductId()).finally(() => {
+      doRefresh()
+    })
+  }
+
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
-    doRefresh()
+    loadTaskOptions().finally(() => {
+      doRefresh()
+    })
   }
 
   function onClick(record: any) {
@@ -233,6 +292,7 @@
 
   onMounted(() => {
     nextTick(async () => {
+      loadTaskOptions()
       doRefresh()
       data.chartLoading = true
       getSystemTestSuiteDetailsReport()

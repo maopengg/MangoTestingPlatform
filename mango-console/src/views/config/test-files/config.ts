@@ -72,6 +72,18 @@ export const tableColumns = useTableColumn([
     align: 'left',
   },
   {
+    title: '文件大小',
+    key: 'file_size',
+    dataIndex: 'file_size',
+    width: 110,
+  },
+  {
+    title: '下载权限',
+    key: 'allow_download',
+    dataIndex: 'allow_download',
+    width: 110,
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',

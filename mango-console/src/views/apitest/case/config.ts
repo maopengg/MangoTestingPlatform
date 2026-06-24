@@ -277,6 +277,18 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '负责人',
+    key: 'case_people',
+    dataIndex: 'case_people',
+    width: 90,
+  },
+  {
+    title: '状态',
+    key: 'status',
+    dataIndex: 'status',
+    width: 70,
+  },
+  {
     title: '场景层级',
     key: 'scenario_layer',
     dataIndex: 'scenario_layer',
@@ -304,18 +316,6 @@ export const tableColumns = useTableColumn([
     key: 'level',
     dataIndex: 'level',
     width: 80,
-  },
-  {
-    title: '负责人',
-    key: 'case_people',
-    dataIndex: 'case_people',
-    width: 90,
-  },
-  {
-    title: '状态',
-    key: 'status',
-    dataIndex: 'status',
-    width: 70,
   },
   {
     title: '调用顺序',

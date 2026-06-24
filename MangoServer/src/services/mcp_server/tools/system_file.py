@@ -7,7 +7,7 @@ from django.core.files.base import ContentFile
 from src.apps.system.models import FileData, ProjectProduct
 from src.apps.system.views.file_data import FileDataCRUD
 from src.common.tools.storage import build_public_file_url
-from src.services.mcp_server.common import fail, ok
+from src.services.mcp_server.common import McpAuthError, current_user, fail, ok
 
 
 def _file_item(item: FileData, include_download_url: bool = False) -> dict:
@@ -18,12 +18,21 @@ def _file_item(item: FileData, include_download_url: bool = False) -> dict:
         "name": item.name,
         "test_file": item.test_file.name if item.test_file else None,
         "failed_screenshot": item.failed_screenshot.name if item.failed_screenshot else None,
+        "user_id": item.user_id,
+        "file_size": item.file_size,
+        "allow_download": item.allow_download,
         "create_time": item.create_time.strftime("%Y-%m-%d %H:%M:%S") if item.create_time else None,
         "update_time": item.update_time.strftime("%Y-%m-%d %H:%M:%S") if item.update_time else None,
     }
     if include_download_url:
         data["download_url"] = build_public_file_url(item.test_file.name) if item.test_file else None
     return data
+
+
+def _can_download_file(item: FileData, user) -> bool:
+    if item.allow_download:
+        return True
+    return bool(user and item.user_id == user.id)
 
 
 def _decode_base64(content_base64: str) -> bytes:
@@ -62,6 +71,7 @@ def register_system_file_tools(mcp):
         content_base64: str,
         type: int = 0,
         content_type: str | None = None,
+        allow_download: bool = True,
     ) -> dict:
         """
         上传系统文件，对应页面 POST /system/file。
@@ -69,6 +79,7 @@ def register_system_file_tools(mcp):
         content_base64 传文件内容的 base64 字符串，也支持 data URL 格式。
         该工具会真实写入 FileData 并保存文件；name 在系统中唯一，已存在同名文件时不会覆盖。
         content_type 仅用于调用方描述文件类型，当前后端 FileData 不保存该字段。
+        allow_download 控制页面和 MCP 是否允许获取下载地址；默认允许，传 false 时限制下载。
         """
         name = name.strip()
         if not name:
@@ -77,6 +88,10 @@ def register_system_file_tools(mcp):
             return fail("项目产品不存在", "PROJECT_PRODUCT_NOT_FOUND", {"project_product_id": project_product_id})
         if FileData.objects.filter(name=name).exists():
             return fail("文件名称已存在，请更换 name 或复用已有文件。", "FILE_NAME_EXISTS", {"name": name})
+        try:
+            user = current_user()
+        except McpAuthError as exc:
+            return fail(str(exc), exc.error_code, exc.details)
         try:
             content = _decode_base64(content_base64)
         except ValueError as exc:
@@ -89,6 +104,9 @@ def register_system_file_tools(mcp):
                 "type": type,
                 "name": name,
                 "test_file": file_obj,
+                "user": user.id,
+                "file_size": len(content),
+                "allow_download": allow_download,
             }
         )
         item = FileData.objects.get(id=data["id"])
@@ -111,4 +129,10 @@ def register_system_file_tools(mcp):
             return fail("文件不存在", "FILE_NOT_FOUND", {"file_id": file_id})
         if not item.test_file:
             return fail("文件记录没有上传文件", "FILE_CONTENT_NOT_FOUND", {"file_id": file_id})
+        try:
+            user = current_user()
+        except McpAuthError as exc:
+            return fail(str(exc), exc.error_code, exc.details)
+        if not _can_download_file(item, user):
+            return fail("当前文件不允许下载", "FILE_DOWNLOAD_FORBIDDEN", {"file_id": file_id})
         return ok({"file": _file_item(item, include_download_url=True)})

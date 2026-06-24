@@ -114,6 +114,16 @@ SYSTEM_CONFIG_REGISTRY = [
         placeholder="请输入 Git 密码",
     ),
     SystemConfigDefinition(
+        key="PYTEST_AUTO_TEST_DIR",
+        describe="自动化根目录名称",
+        group="pytest",
+        value_type=CacheValueTypeEnum.STR.value,
+        default_value="auto_tests",
+        required=True,
+        sort=35,
+        placeholder="请输入 Pytest 仓库中的自动化根目录名称",
+    ),
+    SystemConfigDefinition(
         key="PYTEST_ACT",
         describe="中间对象（PO模式的pageobject）目录名称",
         group="pytest",

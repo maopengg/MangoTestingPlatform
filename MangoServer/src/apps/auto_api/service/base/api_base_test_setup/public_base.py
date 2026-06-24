@@ -49,6 +49,7 @@ class PublicBase(BaseRequest):
         self.mysql_connect: Optional[None | DatabaseConnection] = None
         self.db_connections: dict[int | str, DatabaseConnection] = {}
         self.skip_auth_load = False
+        self.current_api_info_id = None
         self.headers: dict = {}
         self.is_headers = None
         self.is_test_object = None

@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from src.apps.auto_pytest.models import PytestCase, PytestProduct
 from src.apps.auto_pytest.service.base import git_obj
-from src.apps.auto_pytest.service.base.update_file import UpdateFile
+from src.apps.auto_pytest.service.base.update_file import UpdateFile, get_pytest_auto_test_dir
 from src.apps.auto_pytest.service.test_case.test_case import TestCase
 from src.apps.auto_pytest.views.pytest_case import PytestCaseCRUD
 from src.apps.auto_pytest.views.pytest_product import PytestProductCRUD
@@ -118,7 +118,7 @@ def register_pytest_automation_tools(mcp):
                 "pytest_product_fields": {
                     "project_product_id": "Mango 项目产品 ID，保存到 PytestProduct.project_product。",
                     "name": "Pytest 项目展示名。",
-                    "file_name": "仓库 auto_tests 下的目录名。",
+                    "file_name": "仓库单元自动化根目录下的目录名；根目录来自系统配置 PYTEST_AUTO_TEST_DIR。",
                     "init_file": "__init__.py 相对路径。",
                     "auto_type": "自动化类型，沿用页面保存值。",
                     "test_dir": "list[str]，扫描测试文件的目录配置。",
@@ -140,7 +140,7 @@ def register_pytest_automation_tools(mcp):
                     "write": "写文件必须先 preview_update_*_impact，再传回 preview_token 和 confirm_text。",
                 },
                 "sync_rules": {
-                    "sync_pytest_products_from_repo": "等价页面 pytest/product/update，会 git pull 并扫描 auto_tests。",
+                    "sync_pytest_products_from_repo": "等价页面 pytest/product/update，会 git pull 并扫描系统配置 PYTEST_AUTO_TEST_DIR。",
                     "sync_pytest_cases": "等价页面 pytest/case/update，会扫描仓库并把不存在的文件标记为 DELETED。",
                     "push_pytest_repo": "必须先预览本地 git status/diff 摘要，再二次确认执行 git push。",
                 },
@@ -197,12 +197,17 @@ def register_pytest_automation_tools(mcp):
 
     @mcp.tool()
     def sync_pytest_products_from_repo() -> dict:
-        """从仓库同步 Pytest 项目，会执行 git pull 并扫描 auto_tests。"""
+        """从仓库同步 Pytest 项目，会执行 git pull 并扫描系统配置 PYTEST_AUTO_TEST_DIR。"""
         repo = git_obj()
         repo.pull()
-        auto_tests_dir = os.path.join(repo.local_dir, "auto_tests")
+        auto_test_dir = get_pytest_auto_test_dir()
+        auto_tests_dir = os.path.join(repo.local_dir, auto_test_dir)
         if not os.path.isdir(auto_tests_dir):
-            return fail("仓库中不存在 auto_tests 目录。", "PYTEST_AUTO_TESTS_DIR_NOT_FOUND", {"path": auto_tests_dir})
+            return fail(
+                "仓库中不存在配置的自动化根目录。",
+                "PYTEST_AUTO_TESTS_DIR_NOT_FOUND",
+                {"path": auto_tests_dir, "auto_test_dir": auto_test_dir},
+            )
         created = []
         for item in os.listdir(auto_tests_dir):
             item_path = os.path.join(auto_tests_dir, item)
@@ -211,7 +216,7 @@ def register_pytest_automation_tools(mcp):
                     file_name=item,
                     defaults={
                         "name": item,
-                        "init_file": os.path.join("mango_pytest", "auto_tests", item, "__init__.py"),
+                        "init_file": os.path.join("mango_pytest", auto_test_dir, item, "__init__.py"),
                     },
                 )
                 if is_created:
@@ -344,7 +349,7 @@ def register_pytest_automation_tools(mcp):
         active_paths = []
         created_count = 0
         updated_count = 0
-        for project in UpdateFile(product.test_dir).find_test_files(product.file_name):
+        for project in UpdateFile(product.test_dir).find_test_files(product.file_name, get_pytest_auto_test_dir()):
             py_files = [file for file in project.auto_test if file.path.endswith(".py")]
             feature_files = {
                 os.path.basename(file.name).replace(".feature", ""): file.path

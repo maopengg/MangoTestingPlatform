@@ -72,6 +72,7 @@ class BaseRequest:
             response_json = response.json()
         except Exception:
             response_json = None
+        request_headers = dict(response.request.headers)
         response = ResponseModel(
             code=response.status_code,
             time=end,
@@ -79,7 +80,7 @@ class BaseRequest:
             response_mode=request_data.protocol_type,
             request_protocol_type=request_data.protocol_type,
             request_body_type=request_data.body_type,
-            request_headers=request_data.headers,
+            request_headers=request_headers,
             request_params=request_data.params,
             request_data=prepared_body.request_body if request_data.body_type in {'form', 'raw'} else None,
             request_json=prepared_body.request_body if request_data.body_type == 'json' else None,
@@ -125,6 +126,7 @@ class BaseRequest:
         stop_reason = 'stream_closed'
         status_code = 0
         headers = {}
+        request_headers = request_data.headers
         url = request_data.url
         try:
             timeout = httpx.Timeout(connect=int(self.timeout), read=max_duration, write=int(self.timeout), pool=int(self.timeout))
@@ -138,6 +140,7 @@ class BaseRequest:
                 ) as response:
                     status_code = response.status_code
                     headers = dict(response.headers)
+                    request_headers = dict(response.request.headers)
                     url = str(response.url)
                     for line in response.iter_lines():
                         if time.time() - start_time >= max_duration:
@@ -191,7 +194,7 @@ class BaseRequest:
             response_mode='sse',
             request_protocol_type=request_data.protocol_type,
             request_body_type=request_data.body_type,
-            request_headers=request_data.headers,
+            request_headers=request_headers,
             request_params=request_data.params,
             request_data=prepared_body.request_body if request_data.body_type in {'form', 'raw'} else None,
             request_json=prepared_body.request_body if request_data.body_type == 'json' else None,

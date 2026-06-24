@@ -6,8 +6,19 @@
 import os
 
 from src.apps.auto_pytest.service.base import git_obj
+from src.apps.system.service.system_config import SystemConfigService
+from src.common.enums.system_enum import CacheDataKeyEnum
 from src.common.exceptions import PytestError, ERROR_MSG_0061, ERROR_MSG_0062, ERROR_MSG_0063
 from src.common.models.pytest_model import FileModel, UpdateFileModel
+
+
+DEFAULT_AUTO_TEST_DIR = 'auto_tests'
+
+
+def get_pytest_auto_test_dir() -> str:
+    value = SystemConfigService.get(CacheDataKeyEnum.PYTEST_AUTO_TEST_DIR.name, default=DEFAULT_AUTO_TEST_DIR)
+    value = str(value or DEFAULT_AUTO_TEST_DIR).strip().strip('/\\')
+    return value or DEFAULT_AUTO_TEST_DIR
 
 
 class UpdateFile:
@@ -53,20 +64,21 @@ class UpdateFile:
 
         return file_list
 
-    def generate_json(self, directory):
+    def generate_json(self, directory, auto_test_dir=DEFAULT_AUTO_TEST_DIR):
         if not self.test_dirs:
             raise PytestError(*ERROR_MSG_0061)
 
         all_files = []
         for test_dir in self.test_dirs:
-            subdir_path = os.path.join(directory, test_dir)
+            subdir_path = directory if test_dir == auto_test_dir else os.path.join(directory, test_dir)
             if not os.path.exists(subdir_path) or not os.path.isdir(subdir_path):
                 raise PytestError(*ERROR_MSG_0062, value=(test_dir,))
             files = self.list_files(subdir_path, components=True, include_feature=True)
             all_files.extend(files)
         return all_files
 
-    def find_test_files(self, project_name: str, auto_test_dir='auto_tests') -> list[UpdateFileModel]:
+    def find_test_files(self, project_name: str, auto_test_dir=None) -> list[UpdateFileModel]:
+        auto_test_dir = auto_test_dir or get_pytest_auto_test_dir()
         directory = os.path.join(self.repo.local_dir, auto_test_dir)
         subdirectories = []
         item_path = os.path.join(directory, project_name)
@@ -78,7 +90,7 @@ class UpdateFile:
                            os.path.isdir(os.path.join(module_path, d)) and '__pycache__' not in d]
         else:
             module_name = []
-        auto_test = self.generate_json(item_path)
+        auto_test = self.generate_json(item_path, auto_test_dir)
         subdirectories.append(UpdateFileModel(
             project_name=project_name,
             auto_test=auto_test if auto_test else [],
