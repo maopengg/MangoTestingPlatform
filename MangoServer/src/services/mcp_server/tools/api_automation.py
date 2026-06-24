@@ -585,12 +585,11 @@ def _find_json_paths(data: Any, prefix: str = "$", limit: int = 20) -> list[tupl
     return paths[:limit]
 
 
-def _find_same_api_header(project_product_id: int, key: str) -> ApiHeaders | None:
-    return (
+def _list_same_api_headers(project_product_id: int, key: str) -> list[ApiHeaders]:
+    return list(
         ApiHeaders.objects.select_related("project_product")
         .filter(project_product_id=project_product_id, key__iexact=key)
         .order_by("-status", "-id")
-        .first()
     )
 
 
@@ -635,32 +634,10 @@ def register_api_automation_tools(mcp):
         公共请求头会被 API case/front_headers 或场景 headers 复用。只有接口执行必需的认证、租户、
         CSRF、业务网关等请求头才允许创建；accept-language、user-agent、sec-*、traceparent 等
         非必须浏览器噪声请求头不要添加。预览后必须由用户手动确认，才能调用 create_api_header。
-        创建前会按同一项目产品和请求头 key 做查重；已存在时应复用已有 header_id，不再新增。
+        同一项目产品允许创建多个相同 key 的公共请求头，用于不同场景绑定不同值；预览会提示已有同 key 记录，
+        由用户确认是否继续新增。
         """
-        duplicate = _find_same_api_header(project_product_id, key)
-        if duplicate and duplicate.value == value:
-            return ok(
-                {
-                    "action": "reuse_existing_header",
-                    "header": _api_header_summary(duplicate),
-                    "next_step": "该项目产品下已存在相同请求头，请直接复用这个 header_id，不要重复创建。",
-                },
-                "公共请求头已存在，无需新增",
-            )
-        if duplicate:
-            return fail(
-                "该项目产品下已存在相同 key 的公共请求头，请优先复用已有 header_id；如确需变更，请人工确认后使用 update_api_header。",
-                "API_HEADER_ALREADY_EXISTS",
-                {
-                    "existing_header": _api_header_summary(duplicate),
-                    "requested": {
-                        "project_product_id": project_product_id,
-                        "key": key,
-                        "value_preview": value[:80],
-                        "status": status,
-                    },
-                },
-            )
+        same_headers = _list_same_api_headers(project_product_id, key)
         return ok(
             create_dangerous_action_preview(
                 "create_api_header",
@@ -671,9 +648,10 @@ def register_api_automation_tools(mcp):
                     "key": key,
                     "value_preview": value[:80],
                     "status": status,
-                    "duplicate_header": None,
+                    "same_key_headers": [_api_header_summary(item) for item in same_headers],
                     "manual_check_required": [
                         "请确认该请求头是接口执行必需项。",
+                        "同一项目产品允许多个相同 key 的公共请求头，请确认本次新增值确实需要作为独立 header_id 绑定。",
                         "非必须请求头不允许添加到 ApiHeaders 公共请求头池。",
                         "浏览器自动生成的 sec-*、priority、traceparent、user-agent 等通常不要添加。",
                     ],
@@ -694,7 +672,7 @@ def register_api_automation_tools(mcp):
         """确认后创建项目产品公共请求头。
 
         必须先调用 preview_create_api_header_impact，并由用户确认该 header 是接口执行必需请求头。
-        非必须请求头不允许创建；不要把浏览器噪声请求头写入公共请求头池。
+        同一项目产品允许多个相同 key 的公共请求头；非必须请求头不允许创建，不要把浏览器噪声请求头写入公共请求头池。
         """
         error = validate_dangerous_action_confirmation(
             "create_api_header",
@@ -704,26 +682,6 @@ def register_api_automation_tools(mcp):
         )
         if error:
             return error
-        duplicate = _find_same_api_header(project_product_id, key)
-        if duplicate and duplicate.value == value:
-            return ok(
-                {
-                    "header_id": duplicate.id,
-                    **_api_header_summary(duplicate),
-                    "action": "reuse_existing_header",
-                },
-                "公共请求头已存在，已返回已有 header_id，未重复创建",
-            )
-        if duplicate:
-            return fail(
-                "创建前发现该项目产品下已存在相同 key 的公共请求头，已阻止重复创建。",
-                "API_HEADER_ALREADY_EXISTS",
-                {
-                    "existing_header": _api_header_summary(duplicate),
-                    "requested_value_preview": value[:80],
-                    "next_step": "请复用 existing_header.id；如确需修改公共请求头，请使用 update_api_header。",
-                },
-            )
         data = ApiHeadersCRUD.inside_post(
             {
                 "project_product": project_product_id,

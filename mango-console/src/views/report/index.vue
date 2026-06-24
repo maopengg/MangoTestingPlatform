@@ -43,6 +43,17 @@
                   allow-search
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'user'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="item.optionItems"
+                  :loading="data.userLoading"
+                  @change="doRefresh"
+                  allow-clear
+                  allow-search
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -156,6 +167,7 @@
   import BarChart from '@/components/chart/barChart.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
+  import { getUserName } from '@/api/user/user'
 
   const enumStore = useEnum()
 
@@ -170,6 +182,7 @@
     weekFailData: [],
     chartLoading: false,
     tasksLoading: false,
+    userLoading: false,
   })
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
 
@@ -182,7 +195,7 @@
   }
 
   function clearEmptyFilter(value: Record<string, any>, key: string) {
-    if (value[key] === null || value[key] === '') {
+    if (value[key] === null || value[key] === '' || value[key] === undefined) {
       delete value[key]
     }
   }
@@ -200,6 +213,7 @@
     value['project_product'] = getOptionId(value['project_product'])
     clearEmptyFilter(value, 'project_product')
     clearEmptyFilter(value, 'tasks_id')
+    clearEmptyFilter(value, 'user')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemTestSuite(value)
@@ -240,6 +254,24 @@
       .catch(console.log)
       .finally(() => {
         data.tasksLoading = false
+      })
+  }
+
+  function loadUserOptions() {
+    data.userLoading = true
+    return getUserName()
+      .then((res) => {
+        const userItem = getConditionItem('user')
+        if (userItem) {
+          userItem.optionItems = (Array.isArray(res.data) ? res.data : []).map((item: any) => ({
+            label: item.title || item.name || String(item.key || item.id),
+            value: item.key ?? item.id,
+          }))
+        }
+      })
+      .catch(console.log)
+      .finally(() => {
+        data.userLoading = false
       })
   }
 
@@ -293,6 +325,7 @@
   onMounted(() => {
     nextTick(async () => {
       loadTaskOptions()
+      loadUserOptions()
       doRefresh()
       data.chartLoading = true
       getSystemTestSuiteDetailsReport()

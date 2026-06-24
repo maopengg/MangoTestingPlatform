@@ -42,6 +42,15 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
+  {
+    key: 'user',
+    label: '执行人',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择执行人',
+    optionItems: [],
+    reset: function () {},
+  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
