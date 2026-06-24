@@ -35,6 +35,15 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
+    key: 'module',
+    label: '模块名称',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择模块',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'test_env',
     label: '测试环境',
     value: ref(''),
@@ -57,6 +66,17 @@ export const formItems: FormItem[] = reactive([
         Message.error(this.placeholder || '')
         return false
       }
+      return true
+    },
+  },
+  {
+    label: '模块名称',
+    key: 'module',
+    value: ref(''),
+    placeholder: '请选择模块，留空则为全部模块',
+    required: false,
+    type: 'select',
+    validator: function () {
       return true
     },
   },
@@ -145,10 +165,20 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '模块名称',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 150,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '任务名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 300,
     ellipsis: true,
     tooltip: true,
   },

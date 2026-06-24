@@ -71,6 +71,43 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_case_scenario_layer"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_case_scenario_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_case_scenario_tag"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  multiple
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -150,7 +187,7 @@
         :columns="tableColumns"
         :pagination="false"
         :rowKey="rowKey"
-        :scroll="{ x: 1280 }"
+        :scroll="{ x: 1940 }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -203,6 +240,37 @@
             <template v-else-if="item.key === 'level'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.level]" size="small">
                 {{ record.level !== null ? enumStore.case_level[record.level]?.title || '-' : '-' }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'scenario_layer'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.scenario_layer]" size="small">
+                {{
+                  record.scenario_layer !== null
+                    ? enumStore.api_case_scenario_layer[record.scenario_layer]?.title || '-'
+                    : '-'
+                }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'scenario_tags'" #cell="{ record }">
+              <a-space v-if="record.scenario_tags?.length" size="mini" wrap>
+                <a-tag
+                  v-for="tag of record.scenario_tags"
+                  :key="tag"
+                  :color="enumStore.colors[tag]"
+                  size="small"
+                >
+                  {{ enumStore.api_case_scenario_tag[tag]?.title || '-' }}
+                </a-tag>
+              </a-space>
+              <span v-else>-</span>
+            </template>
+            <template v-else-if="item.key === 'scenario_type'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.scenario_type]" size="small">
+                {{
+                  record.scenario_type !== null
+                    ? enumStore.api_case_scenario_type[record.scenario_type]?.title || '-'
+                    : '-'
+                }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -340,6 +408,40 @@
               value-key="key"
               allow-clear
               allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.api_case_scenario_layer"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.api_case_scenario_type"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.api_case_scenario_tag"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+              multiple
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_people'">
@@ -517,6 +619,9 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
+      value['scenario_layer'] = value['scenario_layer'] ?? 0
+      value['scenario_type'] = value['scenario_type'] ?? 0
+      value['scenario_tags'] = value['scenario_tags'] || []
       if (data.isAdd) {
         postPytestCase(value)
           .then((res) => {
@@ -561,7 +666,15 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        if (it.key === 'scenario_layer' && (propName === undefined || propName === null)) {
+          it.value = 0
+        } else if (it.key === 'scenario_type' && (propName === undefined || propName === null)) {
+          it.value = 0
+        } else if (it.key === 'scenario_tags' && !Array.isArray(propName)) {
+          it.value = []
+        } else if (Array.isArray(propName)) {
+          it.value = propName
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
           it.value = propName
@@ -573,6 +686,9 @@
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
     clearPollingTimer()
     const value = getFormItems(conditionItems)
+    if (!Array.isArray(value.scenario_tags) || !value.scenario_tags.length) {
+      delete value.scenario_tags
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {

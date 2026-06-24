@@ -57,7 +57,8 @@ export function getSystemTasksTypeCaseName(
   type: any,
   moduleId?: number | string,
   projectProductId?: any,
-  moduleIds?: Array<number | string>
+  moduleIds?: Array<number | string>,
+  filters: Record<string, any> = {}
 ) {
   return get({
     url: 'system/tasks/details/type/case/name',
@@ -67,6 +68,7 @@ export function getSystemTasksTypeCaseName(
         module_id: moduleId,
         project_product_id: projectProductId,
         module_ids: moduleIds?.join(','),
+        ...filters,
       }
     },
   })

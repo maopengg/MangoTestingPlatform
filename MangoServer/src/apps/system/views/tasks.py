@@ -11,8 +11,8 @@ from rest_framework.viewsets import ViewSet
 from src.common.middleware.auth import JwtQueryParamsAuthentication
 from src.apps.system.models import Tasks
 from src.apps.system.views.notice_group import NoticeGroupSerializers
+from src.apps.system.views.product_module import ProductModuleSerializers
 from src.apps.system.views.project_product import ProjectProductSerializersC
-from src.apps.system.views.test_object import TestObjectSerializersC
 from src.apps.system.views.time_tasks import TimeTasksSerializers
 from src.apps.user.views.user import UserSerializers
 from src.common.tools.decorator.error_response import error_response
@@ -35,6 +35,7 @@ class TasksSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
     notice_group = NoticeGroupSerializers(read_only=True)
@@ -47,6 +48,7 @@ class TasksSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project_product',
+            'module',
             'timing_strategy',
             'notice_group',
             'case_people')

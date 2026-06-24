@@ -24,7 +24,7 @@
                   v-if="item.key === 'project_product'"
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  @change="doRefresh"
+                  @change="onSearchProjectProductChange"
                 />
                 <a-cascader
                   v-else
@@ -35,6 +35,15 @@
                   allow-clear
                   allow-search
                   value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
+                <ProductModuleSelect
+                  v-model="item.value"
+                  :auto-clear="false"
+                  :project-product-id="getConditionValue('project_product')"
+                  :placeholder="item.placeholder"
                   @change="doRefresh"
                 />
               </template>
@@ -68,7 +77,7 @@
         </template>
       </a-tabs>
       <a-table
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: 1250 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -94,6 +103,9 @@
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
               {{ formatProjectProductPath(record?.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ record?.module ? formatModulePath(record.module) : '全部模块' }}
             </template>
             <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
               {{ record.timing_strategy?.name }}
@@ -169,7 +181,14 @@
             <ProjectProductSelect
               v-model="item.value"
               :placeholder="item.placeholder"
-              @change="onProjectChange(item.value)"
+              @change="onFormProjectChange(item.value)"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
+            <ProductModuleSelect
+              v-model="item.value"
+              :project-product-id="getFormValue('project_product')"
+              :placeholder="item.placeholder"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'timing_strategy'">
@@ -256,7 +275,8 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getSystemNoticeName } from '@/api/system/notice_group'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import { formatModulePath, formatProjectProductPath, getOptionId } from '@/utils/business-format'
 
   const enumStore = useEnum()
 
@@ -284,6 +304,10 @@
     value['project_product'] = getOptionId(value['project_product'])
     if (value['project_product'] === null || value['project_product'] === '') {
       delete value['project_product']
+    }
+    value['module'] = getOptionId(value['module'])
+    if (value['module'] === null || value['module'] === '') {
+      delete value['module']
     }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -385,6 +409,11 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
+      value['project_product'] = getOptionId(value['project_product'])
+      value['module'] = getOptionId(value['module'])
+      if (value['module'] === null || value['module'] === '') {
+        value['module'] = null
+      }
       if (data.isAdd) {
         value['status'] = 0
         value['is_notice'] = 0
@@ -463,8 +492,39 @@
         name: record.name,
         type: record.type,
         project_product_id: record.project_product.id,
+        module_id: record.module?.id || '',
       },
     })
+  }
+
+  function getConditionValue(key: string) {
+    const item = conditionItems.find((it) => it.key === key)
+    return getOptionId(item?.value)
+  }
+
+  function getFormValue(key: string) {
+    const item = formItems.find((it) => it.key === key)
+    return getOptionId(item?.value)
+  }
+
+  function setConditionValue(key: string, value: any) {
+    const item = conditionItems.find((it) => it.key === key)
+    if (item) item.value = value
+  }
+
+  function setFormValue(key: string, value: any) {
+    const item = formItems.find((it) => it.key === key)
+    if (item) item.value = value
+  }
+
+  function onSearchProjectProductChange() {
+    setConditionValue('module', '')
+    doRefresh()
+  }
+
+  function onFormProjectChange(value: any) {
+    setFormValue('module', '')
+    onProjectChange(value)
   }
 
   function onProjectChange(value: any) {

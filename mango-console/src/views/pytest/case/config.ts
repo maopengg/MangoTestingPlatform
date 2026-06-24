@@ -55,12 +55,41 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'level',
-    label: '用例级别',
+    label: '优先级',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择用例级别',
+    placeholder: '请选择优先级',
     optionItems: [],
     reset: function () {},
+  },
+  {
+    key: 'scenario_layer',
+    label: '场景层级',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择场景层级',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'scenario_type',
+    label: '场景类型',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择场景类型',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'scenario_tags',
+    label: '场景标签',
+    value: ref([]),
+    type: 'select',
+    placeholder: '请选择场景标签',
+    optionItems: [],
+    reset: function () {
+      this.value = []
+    },
   },
   {
     key: 'file_status',
@@ -143,18 +172,74 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '用例级别',
+    label: '优先级',
     key: 'level',
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请设置用例级别',
+    placeholder: '请设置优先级',
     validator: function () {
       // @ts-ignore
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
+      return true
+    },
+  },
+  {
+    label: '场景层级',
+    key: 'scenario_layer',
+    value: ref(0),
+    type: 'select',
+    required: true,
+    placeholder: '请选择场景层级',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '场景类型',
+    key: 'scenario_type',
+    value: ref(0),
+    type: 'select',
+    required: true,
+    placeholder: '请选择场景类型',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '场景标签',
+    key: 'scenario_tags',
+    value: ref([]),
+    type: 'select',
+    required: true,
+    placeholder: '请选择场景标签',
+    validator: function () {
+      if (!this.value?.length) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '场景描述',
+    key: 'scenario_description',
+    value: ref(''),
+    type: 'input',
+    required: false,
+    placeholder: '请输入场景描述',
+    validator: function () {
       return true
     },
   },
@@ -204,6 +289,56 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '场景描述',
+    key: 'scenario_description',
+    dataIndex: 'scenario_description',
+    align: 'left',
+    width: 260,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '负责人',
+    key: 'case_people',
+    dataIndex: 'case_people',
+    width: 90,
+  },
+  {
+    title: '状态',
+    key: 'status',
+    dataIndex: 'status',
+    width: 70,
+  },
+  {
+    title: '场景层级',
+    key: 'scenario_layer',
+    dataIndex: 'scenario_layer',
+    align: 'left',
+    width: 120,
+  },
+  {
+    title: '场景标签',
+    key: 'scenario_tags',
+    dataIndex: 'scenario_tags',
+    align: 'left',
+    width: 110,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '场景类型',
+    key: 'scenario_type',
+    dataIndex: 'scenario_type',
+    align: 'left',
+    width: 100,
+  },
+  {
+    title: '优先级',
+    key: 'level',
+    dataIndex: 'level',
+    width: 80,
+  },
+  {
     title: '文件路径',
     key: 'file_path',
     dataIndex: 'file_path',
@@ -211,30 +346,6 @@ export const tableColumns = useTableColumn([
     width: 360,
     ellipsis: true,
     tooltip: true,
-  },
-  // {
-  //   title: '修改时间',
-  //   key: 'file_update_time',
-  //   dataIndex: 'file_update_time',
-  //   width: 170,
-  // },
-  {
-    title: '用例负责人',
-    key: 'case_people',
-    dataIndex: 'case_people',
-    width: 120,
-  },
-  {
-    title: '用例等级',
-    key: 'level',
-    dataIndex: 'level',
-    width: 90,
-  },
-  {
-    title: '测试结果',
-    key: 'status',
-    dataIndex: 'status',
-    width: 90,
   },
   {
     title: '文件状态',

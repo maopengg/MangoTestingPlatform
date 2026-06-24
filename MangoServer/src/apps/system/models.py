@@ -112,6 +112,8 @@ class ProductModule(models.Model):
             raise ToolsError(300, "数据工厂状态模板-有关联数据，请先删除绑定的数据后再删除！")
         if DataFactoryExecution.objects.filter(module=self).exists():
             raise ToolsError(300, "数据工厂执行记录-有关联数据，请先删除绑定的数据后再删除！")
+        if Tasks.objects.filter(module=self).exists():
+            raise ToolsError(300, "定时任务-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -232,6 +234,7 @@ class Tasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT, null=True, blank=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境", default=0)
     name = models.CharField(verbose_name="任务名称", max_length=64)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)

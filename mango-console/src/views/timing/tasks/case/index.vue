@@ -32,8 +32,8 @@
         </div>
 
         <div class="mango-soft-panel mango-timing-case-filter">
-          <a-form :model="addForm" layout="vertical">
-            <a-form-item class="mango-timing-case-filter-main" label="测试类型">
+          <a-form :model="addForm" layout="horizontal" @keyup.enter="loadCandidateCases">
+            <a-form-item label="测试类型">
               <a-select
                 v-model="addForm.type"
                 :field-names="fieldNames"
@@ -43,46 +43,81 @@
                 @change="changeType"
               />
             </a-form-item>
-            <a-form-item class="mango-timing-case-filter-main" label="项目/产品">
+            <a-form-item label="项目/产品">
               <ProjectProductSelect
                 v-model="addForm.projectProduct"
                 placeholder="请选择项目/产品"
                 @change="onProjectProductChange"
               />
             </a-form-item>
-            <a-form-item class="mango-timing-case-filter-module" label="一级模块">
-              <a-select
-                v-model="addForm.moduleLevel1"
-                :loading="moduleLoading"
-                :options="moduleLevel1Options"
-                allow-clear
-                allow-search
-                placeholder="全部一级模块"
-                @change="onAddModuleLevel1Change"
+            <a-form-item label="模块名称">
+              <ProductModuleSelect
+                v-model="addForm.module"
+                :auto-clear="false"
+                :project-product-id="addForm.projectProduct"
+                placeholder="请选择模块"
+                @change="loadCandidateCases"
               />
             </a-form-item>
-            <a-form-item class="mango-timing-case-filter-module" label="二级模块">
+            <a-form-item label="优先级">
               <a-select
-                v-model="addForm.moduleLevel2"
-                :disabled="!addForm.moduleLevel1"
-                :loading="moduleLoading"
-                :options="moduleLevel2Options"
+                v-model="addForm.levels"
+                :field-names="fieldNames"
+                :options="enumStore.case_level"
                 allow-clear
                 allow-search
-                placeholder="全部二级模块"
-                @change="onAddModuleLevel2Change"
+                multiple
+                placeholder="请选择优先级"
+                value-key="key"
+                @change="loadCandidateCases"
               />
             </a-form-item>
-            <a-form-item class="mango-timing-case-filter-module" label="三级模块">
+            <a-form-item label="场景层级">
               <a-select
-                v-model="addForm.moduleLevel3"
-                :disabled="!addForm.moduleLevel1"
-                :loading="moduleLoading"
-                :options="moduleLevel3Options"
+                v-model="addForm.scenarioLayers"
+                :field-names="fieldNames"
+                :options="enumStore.api_case_scenario_layer"
                 allow-clear
                 allow-search
-                placeholder="全部三级模块"
-                @change="onAddModuleLevel3Change"
+                multiple
+                placeholder="请选择场景层级"
+                value-key="key"
+                @change="loadCandidateCases"
+              />
+            </a-form-item>
+            <a-form-item label="场景类型">
+              <a-select
+                v-model="addForm.scenarioTypes"
+                :field-names="fieldNames"
+                :options="enumStore.api_case_scenario_type"
+                allow-clear
+                allow-search
+                multiple
+                placeholder="请选择场景类型"
+                value-key="key"
+                @change="loadCandidateCases"
+              />
+            </a-form-item>
+            <a-form-item label="场景标签">
+              <a-select
+                v-model="addForm.scenarioTags"
+                :field-names="fieldNames"
+                :options="enumStore.api_case_scenario_tag"
+                allow-clear
+                allow-search
+                multiple
+                placeholder="请选择场景标签"
+                value-key="key"
+                @change="loadCandidateCases"
+              />
+            </a-form-item>
+            <a-form-item label="用例名称">
+              <a-input
+                v-model="addForm.caseName"
+                allow-clear
+                placeholder="请输入用例名称"
+                @blur="loadCandidateCases"
+                @clear="loadCandidateCases"
               />
             </a-form-item>
           </a-form>
@@ -107,7 +142,7 @@
             :bordered="false"
             :columns="candidateColumns"
             :data="pagedCandidateCases"
-            :loading="candidateLoading || moduleLoading || boundCaseKeysLoading"
+            :loading="candidateLoading || boundCaseKeysLoading"
             :pagination="false"
             :row-key="'key'"
             size="small"
@@ -243,7 +278,7 @@
             :row-selection="{ selectedRowKeys, showCheckedAll }"
             :row-key="rowKey"
             size="small"
-            :scroll="{ x: 1160 }"
+            :scroll="{ x: 1700 }"
             @selection-change="onSelectionChange"
           >
             <template #columns>
@@ -277,6 +312,49 @@
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
                   {{ getBoundCaseOwner(record) }}
+                </template>
+                <template v-else-if="item.key === 'scenario_layer'" #cell="{ record }">
+                  <a-tag
+                    v-if="getBoundCaseEnumValue(record, 'scenario_layer') !== null"
+                    :color="enumStore.colors[getBoundCaseEnumValue(record, 'scenario_layer')]"
+                    size="small"
+                  >
+                    {{ getEnumTitle(enumStore.api_case_scenario_layer, getBoundCaseEnumValue(record, 'scenario_layer')) }}
+                  </a-tag>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="item.key === 'scenario_tags'" #cell="{ record }">
+                  <a-space v-if="getBoundCaseTags(record).length" size="mini" wrap>
+                    <a-tag
+                      v-for="tag of getBoundCaseTags(record)"
+                      :key="tag"
+                      :color="enumStore.colors[tag]"
+                      size="small"
+                    >
+                      {{ getEnumTitle(enumStore.api_case_scenario_tag, tag) }}
+                    </a-tag>
+                  </a-space>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="item.key === 'scenario_type'" #cell="{ record }">
+                  <a-tag
+                    v-if="getBoundCaseEnumValue(record, 'scenario_type') !== null"
+                    :color="enumStore.colors[getBoundCaseEnumValue(record, 'scenario_type')]"
+                    size="small"
+                  >
+                    {{ getEnumTitle(enumStore.api_case_scenario_type, getBoundCaseEnumValue(record, 'scenario_type')) }}
+                  </a-tag>
+                  <span v-else>-</span>
+                </template>
+                <template v-else-if="item.key === 'level'" #cell="{ record }">
+                  <a-tag
+                    v-if="getBoundCaseEnumValue(record, 'level') !== null"
+                    :color="enumStore.colors[getBoundCaseEnumValue(record, 'level')]"
+                    size="small"
+                  >
+                    {{ getEnumTitle(enumStore.case_level, getBoundCaseEnumValue(record, 'level')) }}
+                  </a-tag>
+                  <span v-else>-</span>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <MangoTableActions
@@ -314,7 +392,6 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getPytestProductName } from '@/api/pytest/product'
   import { getUserName } from '@/api/user/user'
-  import { getUserModuleName } from '@/api/system/module'
   import TableBody from '@/components/table/TableBody.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
@@ -323,13 +400,6 @@
   type CandidateCase = {
     key: string | number
     title: string
-  }
-
-  type ProductModuleOption = {
-    key: string | number
-    title: string
-    superior_module_1?: string | null
-    superior_module_2?: string | null
   }
 
   const enumStore = useEnum()
@@ -343,19 +413,20 @@
   const addForm = reactive({
     type: Number(route.query.type ?? 1),
     projectProduct: route.query.project_product_id || '',
-    moduleLevel1: '',
-    moduleLevel2: '',
-    moduleLevel3: '',
+    module: route.query.module_id || '',
+    caseName: '',
+    levels: [] as Array<number | string>,
+    scenarioLayers: [] as Array<number | string>,
+    scenarioTypes: [] as Array<number | string>,
+    scenarioTags: [] as Array<number | string>,
   })
   const data: any = reactive({
     boundModuleList: [],
     nickname: [],
   })
   const candidateCases = ref<CandidateCase[]>([])
-  const moduleOptions = ref<ProductModuleOption[]>([])
   const addSelectionKeys = ref<Array<string | number>>([])
   const candidateLoading = ref(false)
-  const moduleLoading = ref(false)
   const boundCaseKeysLoading = ref(false)
   const boundCaseKeySet = ref<Set<string>>(new Set())
   const addLoading = ref(false)
@@ -379,59 +450,6 @@
     return `定时任务用例配置 / ${id} / ${name}`
   })
   const isBoundPytestCaseType = computed(() => Number(boundFilter.type) === 2)
-  const normalizedModuleOptions = computed(() => {
-    return moduleOptions.value.map((item) => ({
-      ...item,
-      level1: normalizeModuleName(item.superior_module_1),
-      level2: normalizeModuleName(item.superior_module_2),
-      level3: normalizeModuleName(item.title),
-    }))
-  })
-  const moduleLevel1Options = computed(() => {
-    return uniqueOptions(
-      normalizedModuleOptions.value
-        .map((item) => item.level1)
-        .filter(Boolean)
-    )
-  })
-  const moduleLevel2Options = computed(() => {
-    return uniqueOptions(
-      normalizedModuleOptions.value
-        .filter((item) => !addForm.moduleLevel1 || item.level1 === addForm.moduleLevel1)
-        .map((item) => item.level2)
-        .filter(Boolean)
-    )
-  })
-  const moduleLevel3Options = computed(() => {
-    return normalizedModuleOptions.value
-      .filter((item) => {
-        return (
-          (!addForm.moduleLevel1 || item.level1 === addForm.moduleLevel1)
-          && (!addForm.moduleLevel2 || item.level2 === addForm.moduleLevel2)
-        )
-      })
-      .map((item) => ({
-        value: item.key,
-        label: item.level3,
-      }))
-      .filter((item) => item.label)
-  })
-  const selectedCandidateModuleIds = computed(() => {
-    if (addForm.moduleLevel3) {
-      return [addForm.moduleLevel3]
-    }
-    if (!addForm.moduleLevel1 && !addForm.moduleLevel2) {
-      return []
-    }
-    return normalizedModuleOptions.value
-      .filter((item) => {
-        return (
-          (!addForm.moduleLevel1 || item.level1 === addForm.moduleLevel1)
-          && (!addForm.moduleLevel2 || item.level2 === addForm.moduleLevel2)
-        )
-      })
-      .map((item) => item.key)
-  })
   const pagedCandidateCases = computed(() => {
     const start = (candidatePagination.page - 1) * candidatePagination.pageSize
     return candidateCases.value.slice(start, start + candidatePagination.pageSize)
@@ -491,17 +509,6 @@
     return value || ''
   }
 
-  function normalizeModuleName(value: string | null | undefined) {
-    return value?.trim() || ''
-  }
-
-  function uniqueOptions(values: string[]) {
-    return Array.from(new Set(values)).map((item) => ({
-      value: item,
-      label: item,
-    }))
-  }
-
   function getBoundCase(record: any) {
     return record.ui_case || record.api_case || record.pytest_case || {}
   }
@@ -537,6 +544,21 @@
     )
   }
 
+  function getBoundCaseEnumValue(record: any, key: string) {
+    const caseInfo = getBoundCase(record)
+    const value = caseInfo[key]
+    return value === undefined || value === null || value === '' ? null : value
+  }
+
+  function getBoundCaseTags(record: any) {
+    const tags = getBoundCase(record).scenario_tags
+    return Array.isArray(tags) ? tags : []
+  }
+
+  function getEnumTitle(options: any[], value: any) {
+    return options?.[value]?.title || '-'
+  }
+
   function isCaseBound(caseId: string | number) {
     return boundCaseKeySet.value.has(String(caseId))
   }
@@ -566,9 +588,9 @@
   }
 
   function onProjectProductChange() {
-    resetAddModuleSelection()
+    addForm.module = ''
     clearCandidateCases()
-    loadAddModuleOptions().then(loadCandidateCases)
+    loadCandidateCases()
   }
 
   function onBoundFilterChange() {
@@ -599,48 +621,9 @@
 
   function changeType(value: number) {
     addForm.type = value
-    resetAddModuleSelection()
     clearCandidateCases()
     loadBoundCaseKeys()
     loadCandidateCases()
-  }
-
-  function resetAddModuleSelection() {
-    addForm.moduleLevel1 = ''
-    addForm.moduleLevel2 = ''
-    addForm.moduleLevel3 = ''
-  }
-
-  function onAddModuleLevel1Change() {
-    addForm.moduleLevel2 = ''
-    addForm.moduleLevel3 = ''
-    loadCandidateCases()
-  }
-
-  function onAddModuleLevel2Change() {
-    addForm.moduleLevel3 = ''
-    loadCandidateCases()
-  }
-
-  function onAddModuleLevel3Change() {
-    loadCandidateCases()
-  }
-
-  function loadAddModuleOptions() {
-    const projectProductId = getLeafValue(addForm.projectProduct || route.query.project_product_id)
-    moduleOptions.value = []
-    if (!projectProductId) {
-      return Promise.resolve()
-    }
-    moduleLoading.value = true
-    return getUserModuleName(projectProductId)
-      .then((res) => {
-        moduleOptions.value = Array.isArray(res.data) ? res.data : []
-      })
-      .catch(console.log)
-      .finally(() => {
-        moduleLoading.value = false
-      })
   }
 
   function loadCandidateCases(resetPage = true) {
@@ -648,14 +631,21 @@
       clearCandidateCases()
     }
     const projectProductId = getLeafValue(addForm.projectProduct || route.query.project_product_id)
-    const moduleIds = selectedCandidateModuleIds.value
-    if (!moduleIds.length && !projectProductId) return
+    const moduleId = getLeafValue(addForm.module)
+    if (!moduleId && !projectProductId) return
     candidateLoading.value = true
     getSystemTasksTypeCaseName(
       addForm.type,
-      undefined,
+      moduleId || undefined,
       projectProductId || undefined,
-      moduleIds.length ? moduleIds : undefined
+      undefined,
+      {
+        case_name: addForm.caseName || undefined,
+        levels: addForm.levels?.join(','),
+        scenario_layers: addForm.scenarioLayers?.join(','),
+        scenario_types: addForm.scenarioTypes?.join(','),
+        scenario_tags: addForm.scenarioTags?.join(','),
+      }
     )
       .then((res) => {
         candidateCases.value = res.data || []
@@ -791,7 +781,6 @@
 
   onMounted(() => {
     nextTick(async () => {
-      await loadAddModuleOptions()
       await loadBoundCaseKeys()
       doRefresh()
       getNickName()
@@ -801,15 +790,11 @@
 </script>
 
 <style lang="less" scoped>
-  .mango-timing-case-page {
-    background: var(--m-surface);
-  }
-
   .mango-timing-case-workbench {
     display: grid;
     min-height: calc(100% - 12px);
     margin-top: 12px;
-    grid-template-columns: minmax(520px, 1fr) minmax(680px, 1.35fr);
+    grid-template-columns: minmax(420px, 0.9fr) minmax(0, 1.35fr);
     gap: 12px;
     align-items: start;
   }
@@ -851,31 +836,6 @@
     height: 42px;
   }
 
-  .mango-timing-case-table :deep(.arco-table-header) {
-    overflow: hidden;
-  }
-
-  .mango-timing-case-table :deep(.arco-table-header .arco-table-tr) {
-    height: 28px !important;
-  }
-
-  .mango-timing-case-table :deep(.arco-table-th) {
-    height: 28px !important;
-    padding: 0 !important;
-  }
-
-  .mango-timing-case-table :deep(.arco-table-th .arco-table-cell) {
-    display: flex;
-    height: 28px !important;
-    min-height: 28px !important;
-    align-items: center;
-    overflow: hidden;
-    padding: 0 10px !important;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .mango-timing-case-picker > .mango-section-title,
   .mango-timing-case-bound > .mango-section-title {
     min-height: 42px;
@@ -907,20 +867,31 @@
 
   .mango-timing-case-filter :deep(.arco-form) {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0 10px;
-  }
-
-  .mango-timing-case-filter :deep(.mango-timing-case-filter-main) {
-    grid-column: span 3;
-  }
-
-  .mango-timing-case-filter :deep(.mango-timing-case-filter-module) {
-    grid-column: span 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 12px;
   }
 
   .mango-timing-case-filter :deep(.arco-form-item) {
+    display: flex;
+    align-items: center;
     margin-bottom: 10px;
+  }
+
+  .mango-timing-case-filter :deep(.arco-form-item-label-col) {
+    flex: 0 0 78px;
+    width: 78px;
+    min-width: 78px;
+    padding-right: 8px;
+    text-align: right;
+  }
+
+  .mango-timing-case-filter :deep(.arco-form-item-label) {
+    justify-content: flex-end;
+  }
+
+  .mango-timing-case-filter :deep(.arco-form-item-wrapper-col) {
+    flex: 1;
+    min-width: 0;
   }
 
   .mango-timing-case-list-head {
@@ -975,5 +946,30 @@
     color: var(--m-text-2);
     font-size: 12px;
     line-height: 17px;
+  }
+
+  @media (max-width: 1380px) {
+    .mango-timing-case-workbench {
+      grid-template-columns: minmax(360px, 0.82fr) minmax(0, 1.28fr);
+    }
+
+    .mango-timing-case-filter :deep(.arco-form) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mango-timing-case-bound-filter :deep(.arco-form) {
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+    }
+  }
+
+  @media (max-width: 1120px) {
+    .mango-timing-case-workbench {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mango-timing-case-filter :deep(.arco-form),
+    .mango-timing-case-bound-filter :deep(.arco-form) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 </style>

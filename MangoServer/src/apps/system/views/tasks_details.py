@@ -176,16 +176,43 @@ class TasksDetailsViews(ViewSet):
     model = TasksDetails
     serializer_class = TasksDetailsSerializers
 
+    @staticmethod
+    def _split_query_values(request: Request, key: str):
+        return [
+            item for item in request.query_params.get(key, '').split(',')
+            if item not in ('', None)
+        ]
+
+    @staticmethod
+    def _filter_multi_value(queryset, field_name: str, values: list):
+        if not values:
+            return queryset
+        return queryset.filter(**{f'{field_name}__in': values})
+
+    @staticmethod
+    def _filter_json_any(queryset, field_name: str, values: list):
+        if not values:
+            return queryset
+        query = Q()
+        for value in values:
+            try:
+                query |= Q(**{f'{field_name}__contains': [int(value)]})
+            except (TypeError, ValueError):
+                continue
+        return queryset.filter(query)
+
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_type_case_name(self, request: Request):
         _type = int(request.query_params.get('type'))
         module_id = request.query_params.get('module_id')
-        module_ids = [
-            item for item in request.query_params.get('module_ids', '').split(',')
-            if item
-        ]
+        module_ids = self._split_query_values(request, 'module_ids')
         project_product_id = request.query_params.get('project_product_id')
+        case_name = request.query_params.get('case_name')
+        levels = self._split_query_values(request, 'levels')
+        scenario_layers = self._split_query_values(request, 'scenario_layers')
+        scenario_types = self._split_query_values(request, 'scenario_types')
+        scenario_tags = self._split_query_values(request, 'scenario_tags')
         if _type == TestCaseTypeEnum.UI.value:
             queryset = UiCase.objects.all()
             if module_ids:
@@ -196,6 +223,12 @@ class TasksDetailsViews(ViewSet):
                 queryset = queryset.filter(project_product=project_product_id)
             else:
                 queryset = queryset.none()
+            if case_name:
+                queryset = queryset.filter(name__contains=case_name)
+            queryset = self._filter_multi_value(queryset, 'level', levels)
+            queryset = self._filter_multi_value(queryset, 'scenario_layer', scenario_layers)
+            queryset = self._filter_multi_value(queryset, 'scenario_type', scenario_types)
+            queryset = self._filter_json_any(queryset, 'scenario_tags', scenario_tags)
             res = queryset.values_list('id', 'name')
         elif _type == TestCaseTypeEnum.API.value:
             queryset = ApiCase.objects.all()
@@ -207,6 +240,12 @@ class TasksDetailsViews(ViewSet):
                 queryset = queryset.filter(project_product=project_product_id)
             else:
                 queryset = queryset.none()
+            if case_name:
+                queryset = queryset.filter(name__contains=case_name)
+            queryset = self._filter_multi_value(queryset, 'level', levels)
+            queryset = self._filter_multi_value(queryset, 'scenario_layer', scenario_layers)
+            queryset = self._filter_multi_value(queryset, 'scenario_type', scenario_types)
+            queryset = self._filter_json_any(queryset, 'scenario_tags', scenario_tags)
             res = queryset.values_list('id', 'name')
         else:
             queryset = PytestCase.objects.all()
@@ -218,6 +257,12 @@ class TasksDetailsViews(ViewSet):
                 queryset = queryset.filter(project_product__project_product=project_product_id)
             else:
                 queryset = queryset.none()
+            if case_name:
+                queryset = queryset.filter(name__contains=case_name)
+            queryset = self._filter_multi_value(queryset, 'level', levels)
+            queryset = self._filter_multi_value(queryset, 'scenario_layer', scenario_layers)
+            queryset = self._filter_multi_value(queryset, 'scenario_type', scenario_types)
+            queryset = self._filter_json_any(queryset, 'scenario_tags', scenario_tags)
             res = queryset.values_list('id', 'name')
         return ResponseData.success(RESPONSE_MSG_0065, [{'key': _id, 'title': name} for _id, name in res])
 
