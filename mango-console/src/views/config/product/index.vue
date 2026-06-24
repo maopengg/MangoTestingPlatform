@@ -13,11 +13,35 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-              <template v-else-if="item.type === 'select'">
+              <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
                   :options="project.data"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'ui_client_type'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.drive_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'api_client_type'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_client"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -80,7 +104,7 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '模块', onClick: () => onModule(record) },
+                  { label: '模块名称', onClick: () => onModule(record) },
                   { label: '逻辑数据源', onClick: () => onDatasource(record) },
                   { label: '编辑', onClick: () => onUpdate(record) },
                   { label: '删除', danger: true, onClick: () => onDelete(record) },
@@ -190,6 +214,9 @@
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    clearEmptyFilter(value, 'project')
+    clearEmptyFilter(value, 'ui_client_type')
+    clearEmptyFilter(value, 'api_client_type')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getUserProduct(value)
@@ -198,6 +225,12 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '' || value[key] === undefined) {
+      delete value[key]
+    }
   }
 
   function onAdd() {

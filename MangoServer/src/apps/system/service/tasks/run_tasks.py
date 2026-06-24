@@ -197,6 +197,7 @@ class RunTasks:
             is_notice=tasks.is_notice,
             user_id=user_id,
             tasks_id=tasks.id,
+            module_id=tasks.module_id,
         )
         for task in tasks_details:
             log.system.debug(f'触发任务开始执行：{task.id}')

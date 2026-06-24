@@ -793,7 +793,7 @@
       align: 'left',
     },
     {
-      title: '模块',
+      title: '模块名称',
       dataIndex: 'module',
       width: 150,
       ellipsis: true,

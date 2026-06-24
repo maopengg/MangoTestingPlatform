@@ -70,7 +70,7 @@ export const formItems: FormItem[] = reactive([
     label: '上级模块(二级模块)',
     key: 'superior_module_2',
     value: ref(''),
-    placeholder: '请输入上级模块',
+    placeholder: '请输入上级模块名称',
     required: false,
     type: 'input',
     validator: function () {
@@ -81,7 +81,7 @@ export const formItems: FormItem[] = reactive([
     label: '上级模块(一级模块)',
     key: 'superior_module_1',
     value: ref(''),
-    placeholder: '请输入上级模块',
+    placeholder: '请输入上级模块名称',
     required: false,
     type: 'input',
     validator: function () {

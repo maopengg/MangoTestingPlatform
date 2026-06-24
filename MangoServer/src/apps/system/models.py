@@ -294,6 +294,7 @@ class TestSuite(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True, blank=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     user = models.ForeignKey(to=User, to_field="id", verbose_name='用例执行人', on_delete=models.PROTECT)
     tasks = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)

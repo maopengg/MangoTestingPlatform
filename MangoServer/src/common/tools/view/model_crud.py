@@ -21,6 +21,15 @@ from src.common.tools.decorator.error_response import error_response
 from src.common.tools.log_collector import log
 from src.common.tools.view import *
 
+
+def get_request_project_id(request: Request):
+    return request.headers.get('X-Project-Id')
+
+
+def get_request_project_product_id(request: Request):
+    return request.headers.get('X-Project-Product-Id')
+
+
 class ModelCRUD(GenericAPIView):
     model = None
     project_model = None
@@ -67,16 +76,22 @@ class ModelCRUD(GenericAPIView):
                     query_dict[f'{k}__contains'] = v[0]
                 else:
                     query_dict[k] = v[0]
-            project_id = request.headers.get('Project', None)
-            if query_dict.get('project_product') is None and project_id and hasattr(self.model, 'project_product'):
-                project_product = ProjectProduct.objects.filter(project_id=project_id)
+            project_id = get_request_project_id(request)
+            project_product_id = get_request_project_product_id(request)
+            if query_dict.get('project_product') is None and hasattr(self.model, 'project_product'):
                 if self.model.__name__ in self.pytest_model:
-                    product = PytestProduct.objects.filter(
-                        project_product_id__in=project_product.values_list('id', flat=True)
-                    )
-                    query_dict['project_product_id__in'] = product.values_list('id', flat=True)
-                else:
-                    query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
+                    if project_product_id:
+                        product = PytestProduct.objects.filter(project_product_id=project_product_id)
+                    elif project_id:
+                        product = PytestProduct.objects.filter(project_product__project_id=project_id)
+                    else:
+                        product = None
+                    if product is not None:
+                        query_dict['project_product_id__in'] = product.values_list('id', flat=True)
+                elif project_product_id:
+                    query_dict['project_product_id'] = project_product_id
+                elif project_id:
+                    query_dict['project_product__project_id'] = project_id
             return query_dict
 
         query_dict = query()

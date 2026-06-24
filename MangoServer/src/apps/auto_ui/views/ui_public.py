@@ -74,7 +74,10 @@ class UiPublicCRUD(ModelCRUD):
     queryset = UiPublic.objects.filter(type__in=UiPublicTypeEnum.get_key_list())
     serializer_class = UiPublicSerializersC
     serializer = UiPublicSerializers
-    not_matching_str = ModelCRUD.not_matching_str + ['test_env', 'datasource_alias']
+    not_matching_str = ModelCRUD.not_matching_str + [
+        'test_env',
+        'datasource_alias',
+    ]
 
 
 class UiPublicViews(ViewSet):

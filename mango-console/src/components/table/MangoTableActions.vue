@@ -65,8 +65,17 @@
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
   )
 
-  const visibleInlineActions = computed(() => normalizedActions.value.slice(0, props.maxInline))
-  const overflowActions = computed(() => normalizedActions.value.slice(props.maxInline))
+  const inlineActionLimit = computed(() => {
+    if (normalizedActions.value.length <= 3) {
+      return normalizedActions.value.length
+    }
+    return Math.min(props.maxInline, 2)
+  })
+
+  const visibleInlineActions = computed(() =>
+    normalizedActions.value.slice(0, inlineActionLimit.value)
+  )
+  const overflowActions = computed(() => normalizedActions.value.slice(inlineActionLimit.value))
 
   function actionKey(action: MangoTableAction) {
     return `${action.label}-${action.priority ?? ''}`

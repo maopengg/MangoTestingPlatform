@@ -52,6 +52,7 @@ class TestObjectCRUD(ModelCRUD):
     queryset = TestObject.objects.all()
     serializer_class = TestObjectSerializersC
     serializer = TestObjectSerializers
+    not_matching_str = ModelCRUD.not_matching_str + ['environment', 'auto_type', 'executor_name']
 
 
 class TestObjectViews(ViewSet):

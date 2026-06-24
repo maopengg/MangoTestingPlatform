@@ -97,7 +97,7 @@
               @change="onDatasourceAliasChange"
             />
           </a-form-item>
-          <a-form-item label="模块" required>
+          <a-form-item label="模块名称" required>
             <ProductModuleSelect
               v-model="form.module"
               :project-product-id="form.project_product"
@@ -195,7 +195,7 @@
                 v-if="!form.project_product || !form.datasource_alias || !form.module"
                 class="mango-empty-state mango-template-empty"
               >
-                请先选择项目/产品、逻辑数据库和模块
+                请先选择项目/产品、逻辑数据库和模块名称
               </div>
               <div v-else-if="!templateList.length" class="mango-empty-state mango-template-empty">
                 暂无可选场景模板

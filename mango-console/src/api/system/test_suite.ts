@@ -27,6 +27,15 @@ export function putSystemTestSuite(data: object) {
   })
 }
 
+export function postSystemTestSuiteSendNotice(data: object) {
+  return post({
+    url: 'system/test/suite/send/notice',
+    data: () => {
+      return data
+    },
+  })
+}
+
 export function deleteSystemTestSuite(id: number | string[] | number[]) {
   return deleted({
     url: 'system/test/suite',

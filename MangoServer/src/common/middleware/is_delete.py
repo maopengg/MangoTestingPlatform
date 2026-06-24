@@ -43,7 +43,6 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                                 }, status=200)
                         elif request.method == 'PUT':
                             if request.path not in [
-                                '/api/user/info/project',
                                 '/api/user/info/environment',
                             ]:
                                 return JsonResponse({

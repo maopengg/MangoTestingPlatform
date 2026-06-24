@@ -206,7 +206,7 @@
           /></a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="模块" required
+          <a-form-item label="模块名称" required
             ><ProductModuleSelect
               v-model="templateForm.module"
               :project-product-id="templateForm.project_product"
@@ -456,7 +456,7 @@
       !templateForm.name ||
       !templateForm.usage_scope
     ) {
-      Message.error('请先填写产品、模块、实体、场景名称和场景用途')
+      Message.error('请先填写产品、模块名称、实体、场景名称和场景用途')
       return false
     }
 

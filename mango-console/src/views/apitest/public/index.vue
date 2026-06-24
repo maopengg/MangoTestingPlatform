@@ -26,11 +26,11 @@
                   @change="onSearchRefresh"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'client'">
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
-                  :options="enumStore.client"
+                  :options="enumStore.api_public_type"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -370,6 +370,7 @@
     } else {
       value.test_env = normalizeEnvironmentValue(value.test_env)
     }
+    clearEmptyFilter(value, 'type')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getApiPublic(value)
@@ -383,6 +384,12 @@
           table.tableLoading.value = false
         }
       })
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '') {
+      delete value[key]
+    }
   }
 
   function onResetSearch() {

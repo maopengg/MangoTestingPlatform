@@ -51,6 +51,7 @@ class PageCRUD(ModelCRUD):
     model = Page
     queryset = Page.objects.all()
     serializer_class = PageSerializersC
+    not_matching_str = ModelCRUD.not_matching_str + ['project_product__ui_client_type']
     # post专用序列化器
     serializer = PageSerializers
 

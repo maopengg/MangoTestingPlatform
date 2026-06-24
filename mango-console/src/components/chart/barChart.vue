@@ -11,6 +11,8 @@
 
   const barChart = ref<HTMLElement | null>(null)
   let myChart: echarts.ECharts | null = null
+  let resizeObserver: ResizeObserver | null = null
+  let resizeFrame = 0
   const token = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
   const successTotal = computed(() =>
@@ -175,6 +177,18 @@
     }
 
     myChart.setOption(options)
+    resizeChart()
+  }
+
+  const resizeChart = () => {
+    if (!myChart) return
+    if (resizeFrame) {
+      window.cancelAnimationFrame(resizeFrame)
+    }
+    resizeFrame = window.requestAnimationFrame(() => {
+      myChart?.resize()
+      resizeFrame = 0
+    })
   }
 
   watch(
@@ -188,10 +202,20 @@
   onMounted(() => {
     initBarChart()
     window.addEventListener('mango-theme-change', updateChart)
+    window.addEventListener('resize', resizeChart)
+    if (barChart.value) {
+      resizeObserver = new ResizeObserver(resizeChart)
+      resizeObserver.observe(barChart.value)
+    }
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener('mango-theme-change', updateChart)
+    window.removeEventListener('resize', resizeChart)
+    resizeObserver?.disconnect()
+    if (resizeFrame) {
+      window.cancelAnimationFrame(resizeFrame)
+    }
     myChart?.dispose()
   })
 </script>

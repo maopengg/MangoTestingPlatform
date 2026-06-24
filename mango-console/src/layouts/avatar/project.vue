@@ -1,118 +1,141 @@
 <template>
   <div class="mango-avatar-container">
-    <a-dropdown size="large" trigger="hover" @select="handleSelect">
-      <div class="mango-action-wrapper">
-        <span class="mango-nick-name"> {{ project.selectTitle }} </span>
-        <icon-caret-down class="mango-tip" />
-      </div>
-      <template #content>
-        <a-doption v-for="item of project.data" :key="item.key" :value="item.key">
-          {{ item.title }}
-        </a-doption>
-      </template>
-    </a-dropdown>
+    <a-cascader
+      :model-value="project.scopeValue"
+      :options="scopeOptions"
+      :style="{ width: '190px' }"
+      allow-clear
+      allow-search
+      :bordered="false"
+      check-strictly
+      class="mango-project-scope"
+      placeholder="选择项目/产品"
+      @change="handleSelect"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { onMounted, watchEffect } from 'vue'
-  import useUserStore from '@/store/modules/user'
+  import { computed, onMounted } from 'vue'
   import { useProject } from '@/store/modules/get-project'
   import { useDebounceFn } from '@vueuse/core'
   import { useRoute, useRouter } from 'vue-router'
   import { useProductModule } from '@/store/modules/project_module'
-  import { putUserPutProject } from '@/api/user/user'
 
-  const userStore = useUserStore()
   const project = useProject()
   const productModule = useProductModule()
 
   const router = useRouter()
   const route = useRoute()
 
-  function handleSelect(key: any) {
-    if (key === '选择项目') {
-      key = null
+  const scopeOptions = computed(() => {
+    return (project.projectProduct || []).map((item: any) => ({
+      value: `project:${item.value}`,
+      label: item.label,
+      raw_id: item.value,
+      node_type: 'project',
+      children: (item.children || []).map((child: any) => ({
+        value: `project_product:${child.value}`,
+        label: child.label,
+        raw_id: child.value,
+        node_type: 'project_product',
+        full_title: `${item.label} / ${child.label}`,
+      })),
+    }))
+  })
+
+  function findScopeNode(options: any[], value: string): any {
+    for (const item of options) {
+      if (item.value === value) return item
+      const child = findScopeNode(item.children || [], value)
+      if (child) return child
     }
-    putUserPutProject(userStore.userId, key)
-      .then((res) => {
-        userStore.selected_project = res.data.selected_project
-        setTitle(key)
-        return productModule.getProjectModule()
-      })
-      .then(() => {
+    return null
+  }
+
+  function handleSelect(value: any) {
+    if (!value) {
+      project.clearScope()
+      productModule.getProjectModule().finally(() => {
         debouncedFn()
       })
-      .catch(console.log)
+      return
+    }
+    const node = findScopeNode(scopeOptions.value, String(value))
+    if (!node) {
+      project.clearScope()
+      return
+    }
+    project.setScope({
+      type: node.node_type,
+      id: Number(node.raw_id),
+      value: node.value,
+      title: node.full_title || node.label,
+    })
+    const moduleProjectProductId = project.scopeType === 'project_product' ? project.scopeId : null
+    productModule.getProjectModule(moduleProjectProductId).finally(() => {
+      debouncedFn()
+    })
   }
 
   const debouncedFn = useDebounceFn(() => {
     router.replace({ path: '/redirect' + route.path, query: route.query })
   }, 200)
 
-  function setTitle(key: any) {
-    if (key === null) {
-      project.selectTitle = '选择项目'
-      project.selectValue = null
-      return
-    }
-    project.data.forEach((item: any) => {
-      project.selectValue = key
-      if (item.key === project.selectValue) project.selectTitle = item.title
-    })
-    // project.projectProductNameList(project.selectValue)
-  }
-
-  watchEffect(() => {
-    if (project.data.length > 0) {
-      setTitle(userStore.selected_project)
-    }
-  })
-
   onMounted(async () => {
-    project.getProject()
+    project.projectProductName()
     project.projectPytestName()
   })
 </script>
 
 <style lang="less" scoped>
   .mango-avatar-container {
-    .mango-action-wrapper {
-      display: flex;
-      align-items: center;
-
-      .mango-avatar {
-        display: flex;
-        align-items: center;
-
-        & > img {
-          border: 1px solid var(--m-border);
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 50%;
-        }
-      }
-
-      .mango-nick-name {
-        margin: 0 5px;
-
-        .mango-tip {
-          transform: rotate(0);
-          transition: transform @transitionTime;
-          margin-left: 2px;
-        }
-      }
-    }
+    min-width: 190px;
+    height: 100%;
+    display: flex;
+    align-items: center;
   }
 
-  .mango-avatar-container:hover {
-    cursor: pointer;
-    color: var(--m-primary);
+  .mango-project-scope {
+    height: 100%;
 
-    .mango-tip {
-      transform: rotate(180deg);
-      transition: transform @transitionTime;
+    :deep(.arco-select-view-single) {
+      height: 100%;
+      color: var(--m-layout-header-text);
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      cursor: pointer;
+      transition: color 0.2s ease, background-color 0.2s ease;
+    }
+
+    :deep(.arco-select-view-single:hover),
+    :deep(.arco-select-view-opened) {
+      color: var(--m-layout-sidebar-active-text);
+      background-color: var(--m-layout-sidebar-hover-bg);
+    }
+
+    :deep(.arco-select-view-value),
+    :deep(.arco-select-view-input),
+    :deep(.arco-select-view-placeholder) {
+      color: inherit;
+      font-size: 14px;
+    }
+
+    :deep(.arco-select-view-value) {
+      padding-left: 10px;
+    }
+
+    :deep(.arco-select-view-input) {
+      cursor: pointer;
+    }
+
+    :deep(.arco-select-view-icon) {
+      color: inherit;
+    }
+
+    :deep(.arco-select-view-clear-btn) {
+      color: inherit;
     }
   }
 </style>

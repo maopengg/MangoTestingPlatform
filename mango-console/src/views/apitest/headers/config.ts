@@ -25,6 +25,15 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
+    key: 'project_product__api_client_type',
+    label: '客户端',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择客户端',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'key',
     label: 'key',
     type: 'input',

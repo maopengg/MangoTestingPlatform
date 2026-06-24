@@ -17,6 +17,7 @@
   import image_403 from '@/assets/img_403.png'
   import image_500 from '@/assets/img_500.png'
   import { defineComponent } from 'vue'
+  import usePermissionStore from '@/store/modules/permission'
 
   export default defineComponent({
     name: 'ExceptionStatus',
@@ -54,8 +55,16 @@
       },
     },
     methods: {
-      backHome() {
-        this.$router.replace({ path: '/index/home' })
+      async backHome() {
+        const permissionStore = usePermissionStore()
+        try {
+          permissionStore.reset()
+          await permissionStore.initPermissionRoute()
+          await this.$router.replace({ path: permissionStore.homePath || '/' })
+        } catch (error) {
+          window.location.hash = '#/'
+          window.location.reload()
+        }
       },
     },
   })

@@ -10,7 +10,6 @@ export interface UserState {
   name: string
   avatar: string
   selected_environment: number | null
-  selected_project: number | null
 }
 
 export enum LayoutMode {

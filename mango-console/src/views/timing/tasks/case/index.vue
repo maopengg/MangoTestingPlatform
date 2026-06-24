@@ -18,7 +18,7 @@
         <div class="mango-section-title">
           <div>
             <h3>添加用例</h3>
-            <p>按类型、项目、模块筛选后批量添加到当前定时任务</p>
+            <p>按类型、项目、模块名称筛选后批量添加到当前定时任务</p>
           </div>
           <a-button
             size="small"
@@ -55,7 +55,7 @@
                 v-model="addForm.module"
                 :auto-clear="false"
                 :project-product-id="addForm.projectProduct"
-                placeholder="请选择模块"
+                placeholder="请选择模块名称"
                 @change="loadCandidateCases"
               />
             </a-form-item>
@@ -220,13 +220,13 @@
                 @change="onBoundProjectProductChange"
               />
             </a-form-item>
-            <a-form-item label="模块">
+            <a-form-item label="模块名称">
               <ProductModuleSelect
                 v-if="!isBoundPytestCaseType"
                 v-model="boundFilter.module"
                 :auto-clear="false"
                 :project-product-id="boundFilter.projectProduct"
-                placeholder="全部模块"
+                placeholder="全部模块名称"
                 @change="onBoundFilterChange"
               />
               <a-select
@@ -236,7 +236,7 @@
                 :options="data.boundModuleList"
                 allow-clear
                 allow-search
-                placeholder="全部模块"
+                placeholder="全部模块名称"
                 value-key="key"
                 @change="onBoundFilterChange"
               />

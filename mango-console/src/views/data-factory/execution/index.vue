@@ -185,7 +185,7 @@
             </span>
           </div>
           <div class="execution-source-detail__item">
-            <span class="execution-source-detail__label">所属模块</span>
+            <span class="execution-source-detail__label">所属模块名称</span>
             <span class="execution-source-detail__value">
               {{ detail.execution?.source_info?.ui_module_name || '-' }}
             </span>

@@ -22,7 +22,6 @@ urlpatterns = [
     #
     path("info", UserCRUD.as_view()),
     path("info/name", cache_page(10)(UserViews.as_view({'get': 'get_name'}))),
-    path("info/project", UserViews.as_view({'put': 'put_project'})),
     path("info/environment", UserViews.as_view({'put': 'put_environment'})),
     path("info/password", UserViews.as_view({'put': 'put_password'})),
     path("info/api-key", UserViews.as_view({'put': 'reset_api_key'})),

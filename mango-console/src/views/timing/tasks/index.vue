@@ -47,6 +47,18 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'case_people'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="data.userList"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-if="item.type === 'date'">
                 <a-date-picker v-model="item.value" />
               </template>
@@ -105,7 +117,7 @@
               {{ formatProjectProductPath(record?.project_product) }}
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ record?.module ? formatModulePath(record.module) : '全部模块' }}
+              {{ record?.module ? formatModulePath(record.module) : '-' }}
             </template>
             <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
               {{ record.timing_strategy?.name }}
@@ -308,6 +320,9 @@
     value['module'] = getOptionId(value['module'])
     if (value['module'] === null || value['module'] === '') {
       delete value['module']
+    }
+    if (value['case_people'] === null || value['case_people'] === '') {
+      delete value['case_people']
     }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize

@@ -74,7 +74,10 @@ class ApiPublicCRUD(ModelCRUD):
     queryset = ApiPublic.objects.filter(type__in=ApiPublicTypeEnum.get_key_list())
     serializer_class = ApiPublicSerializersC
     serializer = ApiPublicSerializers
-    not_matching_str = ModelCRUD.not_matching_str + ['test_env', 'datasource_alias']
+    not_matching_str = ModelCRUD.not_matching_str + [
+        'test_env',
+        'datasource_alias',
+    ]
 
 
 class ApiPublicViews(ViewSet):

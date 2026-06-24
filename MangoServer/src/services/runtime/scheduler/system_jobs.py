@@ -90,6 +90,16 @@ class SchedulerSystemJobService:
 
     @classmethod
     @async_task_db_connection()
+    def send_api_auth_expire_notice(cls):
+        try:
+            from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
+            return ApiAuthManager.send_expire_notices()
+        except Exception as error:
+            log.system.error(f'scheduler-service 发送 API 授权到期通知失败：{error}')
+            raise
+
+    @classmethod
+    @async_task_db_connection()
     def repair_api_case_status(cls):
         try:
             from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiInfo
@@ -205,6 +215,7 @@ class SchedulerSystemJobService:
     def check_task_status(cls):
         result = cls.repair_test_suite_status()
         result.update(cls.send_pending_test_suite_notice())
+        result.update(cls.send_api_auth_expire_notice())
         return result
 
     @classmethod

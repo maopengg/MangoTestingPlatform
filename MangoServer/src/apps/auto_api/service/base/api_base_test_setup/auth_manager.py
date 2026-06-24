@@ -12,8 +12,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from src.apps.auto_api.models import ApiAuthConfig
+from src.apps.system.service.test_suite.base_notice import NoticeMain
 from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum
-from src.common.enums.tools_enum import StatusEnum
+from src.common.enums.tools_enum import EnvironmentEnum, StatusEnum
 from src.common.exceptions import ApiError, ERROR_MSG_0072
 from src.common.tools.json_response import ensure_jsonpath_source
 from src.common.tools.log_collector import log
@@ -55,7 +56,7 @@ class ApiAuthManager:
         if self._is_cache_available(config):
             self.inject_cache(config)
             return
-        if config.refresh_mode == ApiAuthRefreshModeEnum.MANUAL.value:
+        if config.refresh_mode in [ApiAuthRefreshModeEnum.MANUAL.value, ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value]:
             raise ApiError(300, f'API授权缓存不可用，请手动刷新：{config.name}')
         self.refresh(config.id, self.test_setup, force=False, raise_error=True)
         config.refresh_from_db()
@@ -93,6 +94,7 @@ class ApiAuthManager:
             config.last_refresh_time = now
             config.last_refresh_status = ApiAuthRefreshStatusEnum.SUCCESS.value
             config.last_refresh_error = None
+            config.expire_notice_sent_at = None
             config.refreshing = False
             config.refresh_lock_until = None
             config.save(update_fields=[
@@ -101,6 +103,7 @@ class ApiAuthManager:
                 'last_refresh_time',
                 'last_refresh_status',
                 'last_refresh_error',
+                'expire_notice_sent_at',
                 'refreshing',
                 'refresh_lock_until',
                 'update_time',
@@ -135,6 +138,7 @@ class ApiAuthManager:
         ApiAuthConfig.objects.filter(id=config_id).update(
             cache_data={},
             expires_at=None,
+            expire_notice_sent_at=None,
             last_refresh_error=None,
             refreshing=False,
             refresh_lock_until=None,
@@ -267,8 +271,15 @@ class ApiAuthManager:
             raise ApiError(300, 'Token有效期必须大于0')
         if config.refresh_margin < 0:
             raise ApiError(300, '提前刷新时间不能小于0')
-        if config.refresh_margin >= config.token_ttl:
+        if config.refresh_mode in [ApiAuthRefreshModeEnum.PASSIVE.value, ApiAuthRefreshModeEnum.BOTH.value] and config.refresh_margin >= config.token_ttl:
             raise ApiError(300, '提前刷新时间必须小于Token有效期')
+        if config.refresh_mode == ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value:
+            if not config.notice_group_id:
+                raise ApiError(300, '到期通知必须选择通知组')
+            if config.expire_notice_minutes < 0:
+                raise ApiError(300, '提前通知时间不能小于0')
+            if config.expire_notice_minutes >= config.token_ttl:
+                raise ApiError(300, '提前通知时间必须小于Token有效期')
         if config.auth_type == ApiAuthTypeEnum.API.value and not config.api_info_id:
             raise ApiError(300, '接口登录授权必须选择登录接口')
         if config.auth_type == ApiAuthTypeEnum.CUSTOM.value and not config.custom_code:
@@ -326,3 +337,55 @@ class ApiAuthManager:
             cls.refresh(config.id, force=False, raise_error=False)
             refresh_count += 1
         return refresh_count
+
+    @classmethod
+    def send_expire_notices(cls) -> dict:
+        now = timezone.now()
+        configs = ApiAuthConfig.objects.select_related(
+            'project_product',
+            'project_product__project',
+            'notice_group',
+        ).filter(
+            status=StatusEnum.SUCCESS.value,
+            refresh_mode=ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value,
+            notice_group__isnull=False,
+            expires_at__isnull=False,
+            expire_notice_sent_at__isnull=True,
+        )
+        notice_count = 0
+        fail_count = 0
+        for config in configs:
+            notify_at = config.expires_at - timedelta(minutes=config.expire_notice_minutes or 0)
+            if notify_at > now:
+                continue
+            updated = ApiAuthConfig.objects.filter(
+                id=config.id,
+                expire_notice_sent_at__isnull=True,
+            ).update(expire_notice_sent_at=now)
+            if updated == 0:
+                continue
+            try:
+                NoticeMain(config.notice_group_id).notice_monitoring(cls._expire_notice_text(config, now))
+                notice_count += 1
+            except Exception as error:
+                fail_count += 1
+                ApiAuthConfig.objects.filter(id=config.id).update(expire_notice_sent_at=None)
+                log.api.error(f'API授权到期通知发送失败，config_id={config.id}，错误：{error}')
+        return {'api_auth_expire_notice_count': notice_count, 'api_auth_expire_notice_fail_count': fail_count}
+
+    @staticmethod
+    def _expire_notice_text(config: ApiAuthConfig, now) -> str:
+        remaining_minutes = max(0, int((config.expires_at - now).total_seconds() / 60))
+        project = config.project_product.project.name if config.project_product and config.project_product.project else '-'
+        product = config.project_product.name if config.project_product else '-'
+        env = EnvironmentEnum.get_value(config.test_env) or config.test_env
+        expires_at = config.expires_at.strftime('%Y-%m-%d %H:%M:%S') if config.expires_at else '-'
+        return (
+            f'API授权即将到期通知\n'
+            f'- 授权名称：{config.name}\n'
+            f'- 项目/产品：{project}/{product}\n'
+            f'- 环境：{env}\n'
+            f'- 过期时间：{expires_at}\n'
+            f'- 剩余时间：约 {remaining_minutes} 分钟\n'
+            f'- 处理建议：请在到期前手动刷新授权缓存或调整刷新方式。'
+        )

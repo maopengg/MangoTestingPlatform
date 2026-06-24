@@ -52,7 +52,7 @@ npm run theme:audit
 - 只有弹窗、抽屉、代码面板、画布、有限高度嵌入区等明确固定高度场景，才允许使用表格内部 `scroll.y`。
 - 操作列固定右侧，宽度统一 `170`。
 - 操作列统一使用 `MangoTableActions`。
-- `MangoTableActions` 默认展示 2 个操作，超出进“更多”。
+- `MangoTableActions` 操作数小于等于 3 时全部外显；大于等于 4 时外显 2 个，其余进“更多”。
 - 删除/移除/清理必须 `danger: true`。
 - 表格内执行、调试保持文本按钮；表格外主执行按钮才用成功绿色。
 - 长字段必须 `ellipsis: true`、`tooltip: true`。

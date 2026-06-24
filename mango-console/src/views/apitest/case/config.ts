@@ -40,7 +40,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '模块名称',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择模块',
+    placeholder: '请选择模块名称',
     optionItems: [],
     reset: function () {},
   },
@@ -121,7 +121,7 @@ export const formItems: FormItem[] = reactive([
     label: '模块名称',
     key: 'module',
     value: ref(''),
-    placeholder: '请选择测试模块',
+    placeholder: '请选择测试模块名称',
     required: true,
     type: 'select',
     validator: function () {

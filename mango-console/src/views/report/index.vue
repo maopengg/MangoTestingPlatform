@@ -20,6 +20,15 @@
                   @change="onProjectProductChange"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
+                <ProductModuleSelect
+                  v-model="item.value"
+                  :auto-clear="false"
+                  :project-product-id="currentProjectProductId()"
+                  :placeholder="item.placeholder"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
@@ -85,7 +94,7 @@
           :columns="tableColumns"
           :pagination="false"
           :rowKey="rowKey"
-          :scroll="{ x: 1100 }"
+          :scroll="{ x: 1280 }"
         >
           <template #columns>
             <a-table-column
@@ -93,7 +102,7 @@
               :key="item.key"
               :align="item.align"
               :title="item.title"
-              :width="item.width + 50"
+              :width="item.width"
               :data-index="item.key"
               :fixed="item.fixed"
               :ellipsis="item.ellipsis"
@@ -117,6 +126,9 @@
               <template v-else-if="item.key === 'tasks'" #cell="{ record }">
                 {{ record.tasks?.name }}
               </template>
+              <template v-else-if="item.key === 'module'" #cell="{ record }">
+                {{ record.module ? formatModulePath(record.module) : '-' }}
+              </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-tag :color="enumStore.status_colors[record.status]" size="small"
                   >{{ enumStore.task_status[record.status]?.title || '-' }}
@@ -131,7 +143,12 @@
                 <MangoTableActions
                   :actions="[
                     { label: '重试', onClick: () => onRetry(record) },
-                    { label: '查看结果', onClick: () => onClick(record) },
+                    { label: '明细', onClick: () => onClick(record) },
+                    {
+                      label: '通知',
+                      loading: data.noticeSendingId === record.id,
+                      onClick: () => onSendNotice(record),
+                    },
                   ]"
                 />
               </template>
@@ -144,6 +161,30 @@
       <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
+  <a-modal
+    v-model:visible="data.noticeModalVisible"
+    title="发送通知"
+    :confirm-loading="data.noticeSending"
+    @cancel="onCancelNoticeModal"
+    @before-ok="onConfirmNoticeModal"
+  >
+    <a-form :model="noticeForm">
+      <a-form-item label="项目/产品">
+        <ProjectProductSelect v-model="noticeForm.project_product" disabled />
+      </a-form-item>
+      <a-form-item label="通知组" required>
+        <a-select
+          v-model="noticeForm.notice_group"
+          :options="data.noticeList"
+          :loading="data.noticeLoading"
+          placeholder="请选择通知组"
+          allow-clear
+          allow-search
+          value-key="key"
+        />
+      </a-form-item>
+    </a-form>
+  </a-modal>
 </template>
 
 <script lang="ts" setup>
@@ -154,7 +195,7 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
-  import { getSystemTestSuite } from '@/api/system/test_suite'
+  import { getSystemTestSuite, postSystemTestSuiteSendNotice } from '@/api/system/test_suite'
   import {
     getSystemTestSuiteDetailsAllRetry,
     getSystemTestSuiteDetailsReport,
@@ -166,8 +207,10 @@
   import StatusChart from '@/components/chart/StatusChart.vue'
   import BarChart from '@/components/chart/barChart.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
+  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import { formatModulePath, formatProjectProductPath, getOptionId } from '@/utils/business-format'
   import { getUserName } from '@/api/user/user'
+  import { getSystemNoticeName } from '@/api/system/notice_group'
 
   const enumStore = useEnum()
 
@@ -183,6 +226,16 @@
     chartLoading: false,
     tasksLoading: false,
     userLoading: false,
+    noticeLoading: false,
+    noticeSending: false,
+    noticeSendingId: null,
+    noticeModalVisible: false,
+    noticeList: [],
+    noticeRecord: null,
+  })
+  const noticeForm = reactive({
+    project_product: '' as any,
+    notice_group: '' as any,
   })
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
 
@@ -211,7 +264,9 @@
     clearPollingTimer()
     let value = getFormItems(conditionItems)
     value['project_product'] = getOptionId(value['project_product'])
+    value['module'] = getOptionId(value['module'])
     clearEmptyFilter(value, 'project_product')
+    clearEmptyFilter(value, 'module')
     clearEmptyFilter(value, 'tasks_id')
     clearEmptyFilter(value, 'user')
     value['page'] = pagination.page
@@ -276,7 +331,11 @@
   }
 
   function onProjectProductChange() {
+    const moduleItem = getConditionItem('module')
     const taskItem = getConditionItem('tasks_id')
+    if (moduleItem) {
+      moduleItem.value = ''
+    }
     if (taskItem) {
       taskItem.value = ''
     }
@@ -322,6 +381,86 @@
     })
   }
 
+  function reportProjectProductId(record: any) {
+    return record?.project_product?.id || record?.project_product
+  }
+
+  function buildProjectProductValue(record: any) {
+    const product = record?.project_product
+    if (!product) return ''
+    if (product.project?.id && product.id) return [product.project.id, product.id]
+    return product.id || ''
+  }
+
+  function hasTaskNotice(record: any) {
+    return Boolean(record?.tasks?.name && record?.tasks?.notice_group)
+  }
+
+  async function sendNotice(record: any, noticeGroup?: number | string) {
+    data.noticeSending = true
+    data.noticeSendingId = record.id
+    try {
+      const payload: Record<string, any> = { id: record.id }
+      if (noticeGroup) payload.notice_group = noticeGroup
+      const res = await postSystemTestSuiteSendNotice(payload)
+      Message.success(res.msg)
+      data.noticeModalVisible = false
+      doRefresh()
+      return true
+    } catch (error: any) {
+      Message.error(error?.msg || '发送通知失败')
+      return false
+    } finally {
+      data.noticeSending = false
+      data.noticeSendingId = null
+    }
+  }
+
+  function onSendNotice(record: any) {
+    if (hasTaskNotice(record)) {
+      sendNotice(record)
+      return
+    }
+    data.noticeRecord = record
+    noticeForm.project_product = buildProjectProductValue(record)
+    noticeForm.notice_group = ''
+    data.noticeModalVisible = true
+    loadNoticeOptions(reportProjectProductId(record))
+  }
+
+  function loadNoticeOptions(projectProductId?: number | string | null) {
+    if (!projectProductId) {
+      data.noticeList = []
+      return Promise.resolve()
+    }
+    data.noticeLoading = true
+    return getSystemNoticeName(Number(projectProductId))
+      .then((res) => {
+        data.noticeList = Array.isArray(res.data) ? res.data : []
+      })
+      .catch(console.log)
+      .finally(() => {
+        data.noticeLoading = false
+      })
+  }
+
+  function onCancelNoticeModal() {
+    data.noticeModalVisible = false
+    data.noticeRecord = null
+    noticeForm.project_product = ''
+    noticeForm.notice_group = ''
+    data.noticeList = []
+  }
+
+  async function onConfirmNoticeModal() {
+    if (!noticeForm.notice_group) {
+      Message.error('请选择通知组')
+      return false
+    }
+    if (!data.noticeRecord) return false
+    return sendNotice(data.noticeRecord, noticeForm.notice_group)
+  }
+
   onMounted(() => {
     nextTick(async () => {
       loadTaskOptions()
@@ -365,7 +504,7 @@
 
   .report-id-cell {
     display: inline-block;
-    width: 110px;
+    width: 150px;
   }
 
   .status-card :deep(.mango-status-chart),

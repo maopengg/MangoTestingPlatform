@@ -103,6 +103,36 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  {
+    key: 'project',
+    label: '项目名称',
+    type: 'select',
+    placeholder: '请选择项目名称',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'ui_client_type',
+    label: 'UI产品类型',
+    type: 'select',
+    placeholder: '请选择UI产品类型',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'api_client_type',
+    label: 'API产品类型',
+    type: 'select',
+    placeholder: '请选择API产品类型',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,

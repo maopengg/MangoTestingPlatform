@@ -12,9 +12,12 @@ export default function (config: AxiosRequestConfig) {
     config.headers['Source-Type'] = '1'
     if (useStore.token && !config.headers['Authorization']) {
       config.headers['Authorization'] = useStore.token
-      if (project.selectValue) {
-        config.headers['project'] = project.selectValue.toString()
-      }
+    }
+    if (project.scopeType === 'project' && project.scopeId) {
+      config.headers['X-Project-Id'] = project.scopeId.toString()
+    }
+    if (project.scopeType === 'project_product' && project.scopeId) {
+      config.headers['X-Project-Product-Id'] = project.scopeId.toString()
     }
   }
   return config

@@ -65,7 +65,6 @@ def register_project_context_tools(mcp):
                     "name": user.name,
                     "username": user.username,
                 },
-                "selected_project": user.selected_project,
                 "selected_environment": user.selected_environment,
                 "selected_environment_title": environment_title(user.selected_environment),
             }
@@ -368,4 +367,3 @@ def register_project_context_tools(mcp):
                 ]
             }
         )
-

@@ -126,6 +126,11 @@ class ApiInfoCRUD(ModelCRUD):
     queryset = ApiInfo.objects.all()
     serializer_class = ApiInfoSerializersC
     serializer = ApiInfoSerializers
+    not_matching_str = ModelCRUD.not_matching_str + [
+        'project_product__api_client_type',
+        'method',
+        'protocol_type',
+    ]
 
     def get_serializer_class(self):
         params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))

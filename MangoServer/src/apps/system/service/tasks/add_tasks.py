@@ -12,13 +12,22 @@ from src.common.tools.view import Snowflake
 
 
 class AddTasks:
-    def __init__(self, project_product: int, test_env: int, is_notice: int, user_id: int, tasks_id: int | None = None):
+    def __init__(
+            self,
+            project_product: int,
+            test_env: int,
+            is_notice: int,
+            user_id: int,
+            tasks_id: int | None = None,
+            module_id: int | None = None,
+    ):
         self.test_suite_id = Snowflake.generate_id()
         self.project_product = project_product
         self.test_env = test_env
         self.is_notice = is_notice
         self.user_id = user_id
         self.tasks_id = tasks_id
+        self.module_id = module_id
         self.add_test_suite()
 
     def add_test_suite(self):
@@ -26,6 +35,7 @@ class AddTasks:
         TestSuiteCRUD.inside_post({
             'id': self.test_suite_id,
             'project_product': self.project_product,
+            'module': self.module_id,
             'test_env': self.test_env,
             'user': self.user_id,
             'status': TaskEnum.STAY_BEGIN.value,

@@ -25,6 +25,15 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
+    key: 'module',
+    label: '模块名称',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择模块名称',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'status',
     label: '测试结果',
     value: ref(''),
@@ -53,7 +62,10 @@ export const conditionItems: Array<FormItem> = reactive([
   },
 ])
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  {
+    ...table.indexColumn,
+    width: 150,
+  },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -64,11 +76,19 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '模块名称',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 150,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '任务名称',
     key: 'tasks',
     dataIndex: 'tasks',
     align: 'left',
-    width: 260,
     ellipsis: true,
     tooltip: true,
   },
@@ -94,7 +114,7 @@ export const tableColumns = useTableColumn([
     title: '测试结果',
     key: 'status',
     dataIndex: 'status',
-    width: 70,
+    width: 90,
   },
   {
     title: '通知结果',

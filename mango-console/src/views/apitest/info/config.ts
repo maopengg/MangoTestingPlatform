@@ -63,8 +63,35 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '模块名称',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择模块',
+    placeholder: '请选择模块名称',
     optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'project_product__api_client_type',
+    label: '端类型',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择端类型',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'method',
+    label: '方法',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择方法',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'protocol_type',
+    label: '协议',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择协议',
+    optionItems: apiProtocolOptions,
     reset: function () {},
   },
   {
@@ -72,7 +99,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '状态',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择步骤状态',
+    placeholder: '请选择状态',
     optionItems: [],
     reset: function () {},
   },
@@ -99,7 +126,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请用例归属模块',
+    placeholder: '请选择用例归属模块名称',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
@@ -199,7 +226,7 @@ export const formItemsImport: FormItem[] = reactive([
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请用例归属模块',
+    placeholder: '请选择用例归属模块名称',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')

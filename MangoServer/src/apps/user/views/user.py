@@ -98,17 +98,6 @@ class UserViews(ViewSet):
 
     @action(methods=['put'], detail=False)
     @error_response('user')
-    def put_project(self, request: Request):
-
-        user = self.model.objects.get(id=request.data.get('id'))
-        selected_project = request.data.get('selected_project')
-        user.selected_project = None if selected_project == '' else selected_project
-        user.save()
-        return ResponseData.success(RESPONSE_MSG_0034, model_to_dict(user, exclude=['password']))
-        # return ResponseData.fail(RESPONSE_MSG_0035, serializer.errors)
-
-    @action(methods=['put'], detail=False)
-    @error_response('user')
     def put_environment(self, request: Request):
         user = self.model.objects.get(id=request.data.get('id'))
         selected_environment = request.data.get('selected_environment')
@@ -121,8 +110,7 @@ class UserViews(ViewSet):
     @error_response('user')
     def get_user_project_environment(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('id'))
-        data = {'id': obj.id, 'selected_environment': obj.selected_environment,
-                'selected_project': obj.selected_project}
+        data = {'id': obj.id, 'selected_environment': obj.selected_environment}
         return ResponseData.success(RESPONSE_MSG_0041, data)
 
     @action(methods=['put'], detail=False)
@@ -183,7 +171,6 @@ class LoginViews(ViewSet):
             "userId": user_info.id,
             "roleId": user_info.role.id if user_info.role else None,
             "token": create_token({'id': user_info.id, 'username': user_info.username, 'name': user_info.name}),
-            "selected_project": user_info.selected_project,
             "selected_environment": user_info.selected_environment,
             "roles": [
                 {

@@ -537,7 +537,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="模块" required>
+          <a-form-item label="模块名称" required>
             <ProductModuleSelect v-model="caseForm.module" :project-product-id="caseForm.project_product" />
           </a-form-item>
         </a-grid-item>
@@ -753,6 +753,11 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item :span="2">
+          <a-alert class="mango-functional-resource-readable-tip" type="info" show-icon>
+            AI 只能读取平台保存的文本内容。URL 需要后端服务可访问且无需额外登录；内网、鉴权页面、飞书等私有链接需要先解析成文本。文件和图片请确认解析文本可读，无法自动解析时请手工补充。
+          </a-alert>
+        </a-grid-item>
+        <a-grid-item :span="2">
           <a-form-item label="标题" required>
             <a-input v-model="resourceForm.title" placeholder="请输入资料标题" />
           </a-form-item>
@@ -797,7 +802,7 @@
             <CodeEditor
               v-model="resourceForm.extracted_text"
               :code-style="{ width: '100%', height: '180px' }"
-              placeholder="文件或图片暂未自动解析时，可以手工补充提取后的文本"
+              placeholder="AI会优先读取这里的解析文本。文件、图片或无法访问的URL，请在这里补充AI可读的文本内容。"
             />
           </a-form-item>
         </a-grid-item>
@@ -2392,7 +2397,7 @@
       ['title', '请输入用例标题'],
       ['test_point', '请输入测试点'],
       ['project_product', '请选择项目产品'],
-      ['module', '请选择模块'],
+      ['module', '请选择模块名称'],
       ['owner', '请选择负责人'],
     ]
     for (const [field, message] of required) {
@@ -3004,6 +3009,10 @@
     color: var(--m-muted);
     font-size: 12px;
     line-height: 18px;
+  }
+
+  .mango-functional-resource-readable-tip {
+    margin-bottom: 4px;
   }
 
   .mango-functional-raw-viewer {

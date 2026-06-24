@@ -153,7 +153,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="模块" required>
+          <a-form-item label="模块名称" required>
             <ProductModuleSelect
               v-model="batchForm.module"
               :project-product-id="batchForm.project_product"
@@ -259,7 +259,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="模块" required>
+          <a-form-item label="模块名称" required>
             <ProductModuleSelect
               v-model="entityForm.module"
               :project-product-id="entityForm.project_product"
@@ -786,7 +786,7 @@
       return false
     }
     if (!entityForm.module) {
-      Message.error('请选择模块')
+      Message.error('请选择模块名称')
       return false
     }
     if (!entityForm.datasource_alias) {
@@ -916,7 +916,7 @@
       return
     }
     if (!batchForm.module) {
-      Message.error('请选择模块')
+      Message.error('请选择模块名称')
       return
     }
     if (!batchForm.datasource_alias) {
@@ -970,7 +970,7 @@
       return
     }
     if (!batchForm.module) {
-      Message.error('请选择模块')
+      Message.error('请选择模块名称')
       return
     }
     const emptyNameRow = selectedRows.find((it) => !it.name)

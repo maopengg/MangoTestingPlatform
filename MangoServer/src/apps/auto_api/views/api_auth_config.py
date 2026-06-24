@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_api.models import ApiAuthConfig
 from src.apps.auto_api.service.base.api_base_test_setup.auth_manager import ApiAuthManager
 from src.apps.auto_api.views.api_info import ApiInfoSerializersC
+from src.apps.system.views.notice_group import NoticeGroupSerializers
 from src.apps.system.views.project_product import ProjectProductSerializersC
 from src.apps.system.views.time_tasks import TimeTasksSerializers
 from src.common.enums.api_enum import ApiAuthRefreshModeEnum, ApiAuthTypeEnum
@@ -35,8 +36,10 @@ class ApiAuthConfigSerializers(serializers.ModelSerializer):
         custom_code = attrs.get('custom_code', getattr(self.instance, 'custom_code', None))
         refresh_mode = attrs.get('refresh_mode', getattr(self.instance, 'refresh_mode', None))
         time_task = attrs.get('time_task', getattr(self.instance, 'time_task', None))
+        notice_group = attrs.get('notice_group', getattr(self.instance, 'notice_group', None))
         token_ttl = attrs.get('token_ttl', getattr(self.instance, 'token_ttl', 1440))
         refresh_margin = attrs.get('refresh_margin', getattr(self.instance, 'refresh_margin', 5))
+        expire_notice_minutes = attrs.get('expire_notice_minutes', getattr(self.instance, 'expire_notice_minutes', 30))
         project_product = attrs.get('project_product', getattr(self.instance, 'project_product', None))
 
         if auth_type == ApiAuthTypeEnum.API.value and not api_info:
@@ -47,13 +50,27 @@ class ApiAuthConfigSerializers(serializers.ModelSerializer):
             raise serializers.ValidationError({'custom_code': '自定义代码授权必须填写代码'})
         if refresh_mode in [ApiAuthRefreshModeEnum.TIMING.value, ApiAuthRefreshModeEnum.BOTH.value] and not time_task:
             raise serializers.ValidationError({'time_task': '定时刷新必须选择定时策略'})
-        if refresh_mode in [ApiAuthRefreshModeEnum.PASSIVE.value, ApiAuthRefreshModeEnum.BOTH.value]:
+        if refresh_mode == ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value and not notice_group:
+            raise serializers.ValidationError({'notice_group': '到期通知必须选择通知组'})
+        if notice_group and project_product and notice_group.project_id != project_product.project_id:
+            raise serializers.ValidationError({'notice_group': '通知组必须属于当前项目'})
+        if refresh_mode in [
+            ApiAuthRefreshModeEnum.PASSIVE.value,
+            ApiAuthRefreshModeEnum.BOTH.value,
+            ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value,
+        ]:
             if token_ttl <= 0:
                 raise serializers.ValidationError({'token_ttl': 'Token有效期必须大于0'})
+        if refresh_mode in [ApiAuthRefreshModeEnum.PASSIVE.value, ApiAuthRefreshModeEnum.BOTH.value]:
             if refresh_margin < 0:
                 raise serializers.ValidationError({'refresh_margin': '提前刷新时间不能小于0'})
             if refresh_margin >= token_ttl:
                 raise serializers.ValidationError({'refresh_margin': '提前刷新时间必须小于Token有效期'})
+        if refresh_mode == ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value:
+            if expire_notice_minutes < 0:
+                raise serializers.ValidationError({'expire_notice_minutes': '提前通知时间不能小于0'})
+            if expire_notice_minutes >= token_ttl:
+                raise serializers.ValidationError({'expire_notice_minutes': '提前通知时间必须小于Token有效期'})
         attrs['cache_keys'] = []
         return attrs
 
@@ -62,10 +79,11 @@ class ApiAuthConfigSerializersC(ApiAuthConfigSerializers):
     project_product = ProjectProductSerializersC(read_only=True)
     api_info = ApiInfoSerializersC(read_only=True)
     time_task = TimeTasksSerializers(read_only=True)
+    notice_group = NoticeGroupSerializers(read_only=True)
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related('project_product', 'api_info', 'time_task')
+        return queryset.select_related('project_product', 'api_info', 'time_task', 'notice_group')
 
 
 class ApiAuthConfigCRUD(ModelCRUD):
@@ -79,6 +97,7 @@ class ApiAuthConfigCRUD(ModelCRUD):
         'refresh_mode',
         'last_refresh_status',
         'time_task',
+        'notice_group',
         'api_info',
     ]
 

@@ -12,7 +12,6 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiCase
-from src.apps.system.models import ProjectProduct
 from src.apps.auto_api.schemas.case_schema import (
     ApiKeyValueItem,
     ApiParametrizeSuite,
@@ -28,7 +27,11 @@ from src.common.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.common.models.api_model import ApiCaseResultModel
 from src.common.tools.decorator.error_response import error_response
 from src.common.tools.log_collector import log
-from src.common.tools.view.model_crud import ModelCRUD
+from src.common.tools.view.model_crud import (
+    ModelCRUD,
+    get_request_project_id,
+    get_request_project_product_id,
+)
 from src.common.tools.view.response_data import ResponseData
 from src.common.tools.view.response_msg import *
 
@@ -107,11 +110,13 @@ class ApiCaseCRUD(ModelCRUD):
             else:
                 query_dict[key] = value
 
-        project_id = request.headers.get('Project', None)
-        if query_dict.get('project_product') is None and project_id:
-            query_dict['project_product_id__in'] = ProjectProduct.objects.filter(
-                project_id=project_id
-            ).values_list('id', flat=True)
+        project_id = get_request_project_id(request)
+        project_product_id = get_request_project_product_id(request)
+        if query_dict.get('project_product') is None:
+            if project_product_id:
+                query_dict['project_product_id'] = project_product_id
+            elif project_id:
+                query_dict['project_product__project_id'] = project_id
 
         queryset = ApiCase.objects.filter(**query_dict)
         if scenario_tags:

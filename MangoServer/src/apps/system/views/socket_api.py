@@ -19,6 +19,7 @@ from src.common.enums.tools_enum import AutoTypeEnum
 from src.common.models.socket_model import SocketDataModel, QueueModel
 from src.common.models.ui_model import RecordingModel
 from src.common.tools.decorator.error_response import error_response
+from src.common.tools.view.model_crud import get_request_project_id, get_request_project_product_id
 from src.common.tools.view.response_data import ResponseData
 from src.common.tools.view.response_msg import *
 
@@ -112,11 +113,15 @@ class SocketApiViews(ViewSet):
         is_recording = request.query_params.get('is_recording')
         if is_recording == '1':
             user_obj = User.objects.get(id=request.user['id'])
+            project_id = get_request_project_id(request)
+            project_product_id = get_request_project_product_id(request)
+            project_product_queryset = ProjectProduct.objects.all()
+            if project_product_id:
+                project_product_queryset = project_product_queryset.filter(id=project_product_id)
+            elif project_id:
+                project_product_queryset = project_product_queryset.filter(project_id=project_id)
             host_list: list[dict] = list(TestObject.objects
-                                         .filter(project_product_id__in=ProjectProduct
-                                                 .objects
-                                                 .filter(project_id=user_obj.selected_project)
-                                                 .values_list('id', flat=True),
+                                         .filter(project_product_id__in=project_product_queryset.values_list('id', flat=True),
                                                  environment=user_obj.selected_environment,
                                                  auto_type__in=[AutoTypeEnum.API.value, AutoTypeEnum.CURRENCY.value])
                                          .values('value', 'project_product_id'))

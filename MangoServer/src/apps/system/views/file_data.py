@@ -39,7 +39,7 @@ class FileDataSerializers(serializers.ModelSerializer):
 
     @staticmethod
     def get_file_size_display(obj):
-        return format_file_size(obj.file_size or get_storage_file_size(obj))
+        return format_file_size(obj.file_size)
 
 
 class FileDataSerializersC(serializers.ModelSerializer):
@@ -61,7 +61,7 @@ class FileDataSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def get_file_size_display(obj):
-        return format_file_size(obj.file_size or get_storage_file_size(obj))
+        return format_file_size(obj.file_size)
 
     @staticmethod
     def get_user(obj):
@@ -72,13 +72,6 @@ class FileDataSerializersC(serializers.ModelSerializer):
             'name': getattr(obj.user, 'name', ''),
             'username': getattr(obj.user, 'username', ''),
         }
-
-
-def get_storage_file_size(file_data: FileData) -> int:
-    try:
-        return file_data.test_file.size if file_data.test_file else 0
-    except Exception:
-        return 0
 
 
 def format_file_size(size: Optional[int]) -> str:

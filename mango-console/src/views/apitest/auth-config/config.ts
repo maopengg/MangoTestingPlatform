@@ -35,11 +35,31 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
-    key: 'name',
-    label: '授权名称',
-    type: 'input',
-    placeholder: '请输入授权名称',
+    key: 'auth_type',
+    label: '授权方式',
     value: ref(''),
+    type: 'select',
+    placeholder: '请选择授权方式',
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'refresh_mode',
+    label: '刷新方式',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择刷新方式',
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'last_refresh_status',
+    label: '刷新状态',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择刷新状态',
     reset: function () {
       this.value = ''
     },
@@ -154,6 +174,21 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '提前通知(分钟)',
+    key: 'expire_notice_minutes',
+    value: ref(30),
+    type: 'number',
+    required: true,
+    placeholder: '请输入提前通知时间',
+    validator: function () {
+      if (this.value === '' || Number(this.value) < 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '刷新方式',
     key: 'refresh_mode',
     value: ref(0),
@@ -175,6 +210,14 @@ export const formItems: FormItem[] = reactive([
     type: 'select',
     required: false,
     placeholder: '请选择定时策略',
+  },
+  {
+    label: '通知组',
+    key: 'notice_group',
+    value: ref(''),
+    type: 'select',
+    required: false,
+    placeholder: '请选择通知组',
   },
 ])
 

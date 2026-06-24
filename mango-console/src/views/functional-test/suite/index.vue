@@ -126,7 +126,7 @@
           <a-input-search
             v-model="caseFilter.moduleKeyword"
             allow-clear
-            placeholder="搜索模块"
+            placeholder="搜索模块名称"
           />
           <div class="mango-functional-case-module-tree">
             <a-tree
@@ -290,7 +290,7 @@
       <a-form-item label="项目产品" required>
         <ProjectProductSelect v-model="suiteForm.project_product" @change="suiteForm.module = null" />
       </a-form-item>
-      <a-form-item label="模块">
+      <a-form-item label="模块名称">
         <ProductModuleSelect v-model="suiteForm.module" :project-product-id="suiteForm.project_product" :auto-clear="false" />
       </a-form-item>
       <a-form-item label="所属迭代">
@@ -342,7 +342,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="模块" required>
+          <a-form-item label="模块名称" required>
             <ProductModuleSelect v-model="caseForm.module" :project-product-id="caseForm.project_product" />
           </a-form-item>
         </a-grid-item>
@@ -421,7 +421,7 @@
   const caseModuleExpandedKeys = ref<Array<string>>(['all'])
   const conditionItems = reactive([
     { key: 'project_product', label: '项目产品', type: 'cascader', value: undefined as number | undefined, placeholder: '请选择项目产品' },
-    { key: 'module', label: '模块', type: 'select', value: undefined as number | undefined, placeholder: '请选择模块' },
+    { key: 'module', label: '模块名称', type: 'select', value: undefined as number | undefined, placeholder: '请选择模块名称' },
     { key: 'requirement_name', label: '需求名称', type: 'input', value: '', placeholder: '请输入需求名称' },
     { key: 'iteration', label: '所属迭代', type: 'input', value: '', placeholder: '请输入迭代名称' },
     { key: 'sync_status', label: '同步状态', type: 'select', value: undefined as string | undefined, placeholder: '请选择同步状态' },
@@ -517,7 +517,7 @@
       }
     })
     const total = filteredModuleOptions.value.reduce((count, module) => count + Number(module.case_count || 0), 0)
-    return [{ key: 'all', title: `全部模块 (${total})`, children }]
+    return [{ key: 'all', title: `全部模块名称 (${total})`, children }]
   })
 
   function enumTitle(options: any[] = [], value: any) {
@@ -903,7 +903,7 @@
       ['title', '请输入用例标题'],
       ['test_point', '请输入测试点'],
       ['project_product', '请选择项目产品'],
-      ['module', '请选择模块'],
+      ['module', '请选择模块名称'],
       ['owner', '请选择负责人'],
     ]
     for (const [field, message] of required) {

@@ -5,6 +5,8 @@ import {
   getUserProjectProductName,
 } from '@/api/system/project'
 
+type ProjectScopeType = 'project' | 'project_product' | null
+
 let projectRequest: Promise<void> | null = null
 let projectProductRequest: Promise<void> | null = null
 let projectPytestRequest: Promise<void> | null = null
@@ -13,8 +15,10 @@ export const useProject = defineStore('get-project', {
   state: () => {
     return {
       data: [],
-      selectTitle: '选择项目',
-      selectValue: null as number | null,
+      scopeTitle: '选择项目/产品',
+      scopeValue: null as string | null,
+      scopeType: null as ProjectScopeType,
+      scopeId: null as number | null,
       projectProduct: [],
       projectPytest2: [],
       projectPytest: [],
@@ -43,6 +47,7 @@ export const useProject = defineStore('get-project', {
       projectProductRequest = getUserProjectProductName()
         .then((res) => {
           this.projectProduct = Array.isArray(res.data) ? res.data : []
+          this.normalizeScope()
         })
         .catch((error) => {
           console.error(error)
@@ -51,6 +56,38 @@ export const useProject = defineStore('get-project', {
           projectProductRequest = null
         })
       return projectProductRequest
+    },
+
+    setScope(scope: { type: ProjectScopeType; id: number | null; value: string | null; title: string }) {
+      this.scopeType = scope.type
+      this.scopeId = scope.id
+      this.scopeValue = scope.value
+      this.scopeTitle = scope.title || '选择项目/产品'
+    },
+
+    clearScope() {
+      this.scopeType = null
+      this.scopeId = null
+      this.scopeValue = null
+      this.scopeTitle = '选择项目/产品'
+    },
+
+    normalizeScope() {
+      if (!this.scopeValue) {
+        this.clearScope()
+        return
+      }
+      const node = findScopeNode(this.projectProduct, this.scopeValue)
+      if (!node) {
+        this.clearScope()
+        return
+      }
+      this.setScope({
+        type: node.node_type,
+        id: Number(node.raw_id),
+        value: node.value,
+        title: node.full_title || node.label,
+      })
     },
 
     projectPytestName() {
@@ -93,3 +130,31 @@ export const useProject = defineStore('get-project', {
     resetToState: true,
   },
 })
+
+function findScopeNode(options: any[], value: string): any {
+  for (const item of options || []) {
+    const projectValue = `project:${item.value}`
+    if (projectValue === value) {
+      return {
+        ...item,
+        value: projectValue,
+        raw_id: item.value,
+        node_type: 'project',
+        full_title: item.label,
+      }
+    }
+    for (const child of item.children || []) {
+      const productValue = `project_product:${child.value}`
+      if (productValue === value) {
+        return {
+          ...child,
+          value: productValue,
+          raw_id: child.value,
+          node_type: 'project_product',
+          full_title: `${item.label} / ${child.label}`,
+        }
+      }
+    }
+  }
+  return null
+}

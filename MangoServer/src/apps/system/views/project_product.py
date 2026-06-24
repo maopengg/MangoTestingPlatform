@@ -46,6 +46,7 @@ class ProjectProductCRUD(ModelCRUD):
     queryset = ProjectProduct.objects.all()
     serializer_class = ProjectProductSerializersC
     serializer = ProjectProductSerializers
+    not_matching_str = ModelCRUD.not_matching_str + ['ui_client_type', 'api_client_type']
 
 
 class ProjectProductViews(ViewSet):

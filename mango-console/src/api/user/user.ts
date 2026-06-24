@@ -65,15 +65,6 @@ export function postUserPassword(data: object) {
   })
 }
 
-export function putUserPutProject(userId: number, key: any) {
-  return put({
-    url: '/user/info/project',
-    data: () => {
-      return { id: userId, selected_project: key }
-    },
-  })
-}
-
 export function putUserEnvironment(userId: number, key: any) {
   return put({
     url: '/user/info/environment',

@@ -47,10 +47,10 @@ export const columns: any = reactive([
 
 export const formItems: FormItem[] = reactive([
   {
-    label: '选择模块',
+    label: '模块名称',
     key: 'module',
     value: ref(''),
-    placeholder: '请选择模块',
+    placeholder: '请选择模块名称',
     required: true,
     type: 'cascader',
     validator: function () {

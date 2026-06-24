@@ -1,6 +1,6 @@
 from django.db import models
 
-from src.apps.system.models import ProjectProduct, ProductModule, TimeTasks
+from src.apps.system.models import NoticeGroup, ProjectProduct, ProductModule, TimeTasks
 from src.apps.user.models import User
 from src.common.enums.api_enum import (
     ApiAuthRefreshModeEnum,
@@ -270,7 +270,9 @@ class ApiAuthConfig(models.Model):
     cache_data = models.JSONField(verbose_name="授权缓存数据", default=dict)
     token_ttl = models.IntegerField(verbose_name="Token有效期(分钟)", default=1440)
     refresh_margin = models.IntegerField(verbose_name="提前刷新时间(分钟)", default=5)
+    expire_notice_minutes = models.IntegerField(verbose_name="到期提前通知时间(分钟)", default=30)
     expires_at = models.DateTimeField(verbose_name="过期时间", null=True, blank=True)
+    expire_notice_sent_at = models.DateTimeField(verbose_name="到期通知发送时间", null=True, blank=True)
 
     last_refresh_time = models.DateTimeField(verbose_name="最近刷新时间", null=True, blank=True)
     last_refresh_status = models.SmallIntegerField(
@@ -291,6 +293,14 @@ class ApiAuthConfig(models.Model):
         to=TimeTasks,
         to_field="id",
         verbose_name="定时策略",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    notice_group = models.ForeignKey(
+        to=NoticeGroup,
+        to_field="id",
+        verbose_name="到期通知组",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,

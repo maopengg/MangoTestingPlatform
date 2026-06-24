@@ -41,6 +41,7 @@ class ApiHeadersCRUD(ModelCRUD):
     queryset = ApiHeaders.objects.all()
     serializer_class = ApiHeadersSerializersC
     serializer = ApiHeadersSerializers
+    not_matching_str = ModelCRUD.not_matching_str + ['project_product__api_client_type']
 
 
 class ApiHeadersViews(ViewSet):

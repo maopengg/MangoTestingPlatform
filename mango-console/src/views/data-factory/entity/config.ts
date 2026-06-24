@@ -20,17 +20,17 @@ export const entityConditionItems: Array<FormItem> = reactive([
     placeholder: '请选择产品',
   },
   {
+    key: 'module',
+    label: '模块名称',
+    type: 'select',
+    placeholder: '请选择模块名称',
+    value: ref(''),
+  },
+  {
     key: 'datasource_alias',
     label: '逻辑数据源',
     type: 'select',
     placeholder: '请选择逻辑源',
-    value: ref(''),
-  },
-  {
-    key: 'module',
-    label: '模块',
-    type: 'select',
-    placeholder: '请选择模块',
     value: ref(''),
   },
   {

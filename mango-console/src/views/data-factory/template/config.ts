@@ -20,17 +20,17 @@ export const templateConditionItems: Array<FormItem> = reactive([
     placeholder: '请选择产品',
   },
   {
+    key: 'module',
+    label: '模块名称',
+    type: 'select',
+    placeholder: '请选择模块名称',
+    value: ref(''),
+  },
+  {
     key: 'entity',
     label: '实体',
     type: 'select',
     placeholder: '请选择实体',
-    value: ref(''),
-  },
-  {
-    key: 'module',
-    label: '模块',
-    type: 'select',
-    placeholder: '请选择模块',
     value: ref(''),
   },
   {

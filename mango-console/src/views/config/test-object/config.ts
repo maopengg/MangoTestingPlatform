@@ -35,6 +35,39 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  {
+    key: 'environment',
+    label: '部署环境',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择部署环境',
+    optionItems: [],
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'auto_type',
+    label: '自动化类型',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择自动化类型',
+    optionItems: [],
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'executor_name',
+    label: '负责人',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择负责人',
+    optionItems: [],
+    reset: function () {
+      this.value = ''
+    },
+  },
 ])
 export const formItems: FormItem[] = reactive([
   {

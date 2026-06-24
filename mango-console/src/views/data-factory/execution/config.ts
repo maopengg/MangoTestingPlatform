@@ -21,9 +21,9 @@ export const executionConditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'module',
-    label: '模块',
+    label: '模块名称',
     type: 'select',
-    placeholder: '请选择模块',
+    placeholder: '请选择模块名称',
     value: ref(''),
   },
   {

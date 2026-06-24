@@ -25,6 +25,15 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
+    key: 'type',
+    label: '类型',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择类型',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'test_env',
     label: '环境',
     value: ref(''),

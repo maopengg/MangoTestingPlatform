@@ -55,7 +55,7 @@
     },
     placeholder: {
       type: String,
-      default: '请选择模块',
+      default: '请选择模块名称',
     },
     disabled: {
       type: Boolean,

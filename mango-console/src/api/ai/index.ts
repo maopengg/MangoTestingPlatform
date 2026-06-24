@@ -169,8 +169,11 @@ export async function fetchAiAssistantMessageStream(
   if (userStore.token) {
     headers.Authorization = userStore.token
   }
-  if (project.selectValue) {
-    headers.project = project.selectValue.toString()
+  if (project.scopeType === 'project' && project.scopeId) {
+    headers['X-Project-Id'] = project.scopeId.toString()
+  }
+  if (project.scopeType === 'project_product' && project.scopeId) {
+    headers['X-Project-Product-Id'] = project.scopeId.toString()
   }
   const response = await fetch(`${baseURL}/ai/assistant/message/stream`, {
     method: 'POST',

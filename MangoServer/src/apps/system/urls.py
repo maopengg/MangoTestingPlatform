@@ -11,7 +11,7 @@ from .views.cache_data import CacheDataCRUD, CacheDataViews
 from .views.socket_api import SocketApiViews
 from .views.tasks import TasksCRUD, TasksViews, TasksNoPermissionViews
 from .views.tasks_details import TasksDetailsCRUD, TasksDetailsViews
-from .views.test_suite import TestSuiteCRUD
+from .views.test_suite import TestSuiteCRUD, TestSuiteViews
 from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsViews, TestSuiteDetailsShareViews
 from .views.database import DatabaseCRUD, DatabaseViews
 from .views.file_data import FileDataCRUD, FileDataViews
@@ -72,6 +72,7 @@ urlpatterns = [
     #
     path('test/suite/share', TestSuiteDetailsShareViews.as_view({'get': 'get_test_suite'})),
     path('test/suite', TestSuiteCRUD.as_view()),
+    path('test/suite/send/notice', TestSuiteViews.as_view({'post': 'send_notice'})),
     #
     path('test/suite/details/share', TestSuiteDetailsShareViews.as_view({'get': 'get_details'})),
     path('test/suite/details/summary/share', TestSuiteDetailsShareViews.as_view({'get': 'get_summary'})),

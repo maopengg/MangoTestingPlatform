@@ -82,6 +82,7 @@ class ScheduleRunner:
         jobs = [
             ('repair_test_suite_status', '*/10 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_test_suite_status),
             ('send_pending_test_suite_notice', '*/3 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.send_pending_test_suite_notice),
+            ('send_api_auth_expire_notice', '*/3 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.send_api_auth_expire_notice),
             ('repair_api_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_api_case_status),
             ('repair_ui_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_ui_case_status),
             ('repair_pytest_case_status', '*/5 * * * *', ScheduleFireService.create_system_job_fire, SchedulerSystemJobService.repair_pytest_case_status),

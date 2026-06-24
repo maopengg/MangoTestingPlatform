@@ -25,7 +25,7 @@
           <a-input-search
             v-model="filter.treeKeyword"
             allow-clear
-            placeholder="搜索模块"
+            placeholder="搜索模块名称"
             @clear="resetPage"
             @search="resetPage"
           />

@@ -35,6 +35,20 @@
                   @change="onSearchRefresh"
                 />
               </template>
+              <template
+                v-else-if="item.type === 'select' && item.key === 'project_product__ui_client_type'"
+              >
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.drive_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -168,6 +182,7 @@
     getItemValue,
     setItemValue,
   } from '@/utils/business-format'
+  import { fieldNames } from '@/setting'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -314,6 +329,7 @@
     const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    clearEmptyFilter(value, 'project_product__ui_client_type')
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
     }
@@ -328,6 +344,12 @@
           table.tableLoading.value = false
         }
       })
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '') {
+      delete value[key]
+    }
   }
 
   function onPageCopy(id: number) {

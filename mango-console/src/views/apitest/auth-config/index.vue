@@ -38,6 +38,42 @@
                   @change="onSearchRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'auth_type'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_auth_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'refresh_mode'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_auth_refresh_mode"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'last_refresh_status'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_auth_refresh_status"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -215,6 +251,16 @@
               allow-search
             />
           </template>
+          <template v-else-if="item.type === 'select' && item.key === 'notice_group'">
+            <a-select
+              v-model="item.value"
+              :options="data.noticeList"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
           <template v-else-if="item.type === 'code'">
             <CodeEditor
               v-model="item.value"
@@ -274,6 +320,7 @@
   import { formatProjectProductPath } from '@/utils/business-format'
   import { getApiInfo } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
+  import { getSystemNoticeName } from '@/api/system/notice_group'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
     deleteApiAuthConfig,
@@ -300,6 +347,7 @@
     updateId: 0,
     apiInfoList: [] as any[],
     timeTaskList: [] as any[],
+    noticeList: [] as any[],
   })
   const cacheModal = reactive({
     visible: false,
@@ -329,8 +377,14 @@
       if (it.key === 'custom_code') {
         return authTypeItem.value?.value === 1
       }
-      if (it.key === 'token_ttl' || it.key === 'refresh_margin') {
+      if (it.key === 'token_ttl') {
+        return [0, 2, 4].includes(refreshModeItem.value?.value)
+      }
+      if (it.key === 'refresh_margin') {
         return isExecutionCheckRefreshMode.value
+      }
+      if (it.key === 'expire_notice_minutes' || it.key === 'notice_group') {
+        return refreshModeItem.value?.value === 4
       }
       if (it.key === 'time_task') {
         return [1, 2].includes(refreshModeItem.value?.value)
@@ -348,6 +402,10 @@
       table.tableLoading.value = true
     }
     const value = getFormItems(conditionItems)
+    clearEmptyFilter(value, 'test_env')
+    clearEmptyFilter(value, 'auth_type')
+    clearEmptyFilter(value, 'refresh_mode')
+    clearEmptyFilter(value, 'last_refresh_status')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     return getApiAuthConfig(value)
@@ -361,6 +419,12 @@
           table.tableLoading.value = false
         }
       })
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '' || value[key] === undefined) {
+      delete value[key]
+    }
   }
 
   function refreshTable() {
@@ -385,6 +449,8 @@
         it.value = 1440
       } else if (it.key === 'refresh_margin') {
         it.value = 5
+      } else if (it.key === 'expire_notice_minutes') {
+        it.value = 30
       } else if (it.key === 'custom_code') {
         it.value = customAuthCodeExample
       } else {
@@ -396,6 +462,7 @@
       envItem.value = userStore.selected_environment
     }
     data.apiInfoList = []
+    data.noticeList = []
   }
 
   function onAdd() {
@@ -429,6 +496,7 @@
         }
       })
       getApiInfoList(item.project_product?.id || item.project_product)
+      getNoticeList(item.project_product?.id || item.project_product)
     })
   }
 
@@ -438,7 +506,12 @@
       if (apiInfoItem) {
         apiInfoItem.value = ''
       }
+      const noticeItem = formItems.find((it) => it.key === 'notice_group')
+      if (noticeItem) {
+        noticeItem.value = ''
+      }
       getApiInfoList(projectProductItem.value?.value)
+      getNoticeList(projectProductItem.value?.value)
     })
   }
 
@@ -457,6 +530,10 @@
       Message.error('请选择定时策略')
       return false
     }
+    if (refreshMode === 4 && !formItems.find((it) => it.key === 'notice_group')?.value) {
+      Message.error('请选择通知组')
+      return false
+    }
     return visibleFormItems.value.every((it) => (it.validator ? it.validator() : true))
   }
 
@@ -468,6 +545,9 @@
     }
     if (![1, 2].includes(value.refresh_mode)) {
       value.time_task = null
+    }
+    if (value.refresh_mode !== 4) {
+      value.notice_group = null
     }
     return value
   }
@@ -502,6 +582,11 @@
     }
     if (record.refresh_mode === 3) {
       return '手动刷新'
+    }
+    if (record.refresh_mode === 4) {
+      const tokenStrategy = `有效期${record.token_ttl ?? '-'}分钟，提前${record.expire_notice_minutes ?? '-'}分钟通知`
+      const noticeGroup = record.notice_group?.name ? `通知组：${record.notice_group.name}` : '通知组：-'
+      return `${tokenStrategy}；${noticeGroup}`
     }
     return '-'
   }
@@ -630,6 +715,18 @@
           label: item.title,
           value: item.key,
         }))
+      })
+      .catch(console.log)
+  }
+
+  function getNoticeList(projectProductId?: any) {
+    if (!projectProductId) {
+      data.noticeList = []
+      return
+    }
+    getSystemNoticeName(projectProductId)
+      .then((res) => {
+        data.noticeList = res.data || []
       })
       .catch(console.log)
   }

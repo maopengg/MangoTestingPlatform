@@ -35,6 +35,42 @@
                   @change="onSearchRefresh"
                 />
               </template>
+              <template
+                v-else-if="item.type === 'select' && item.key === 'project_product__api_client_type'"
+              >
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_client"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'method'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.method"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'protocol_type'">
+                <a-select
+                  v-model="item.value"
+                  :options="item.optionItems"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  @change="onSearchRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
@@ -428,6 +464,10 @@
     value['page'] = pagination.page
     value['type'] = data.apiType
     value['pageSize'] = pagination.pageSize
+    clearEmptyFilter(value, 'project_product__api_client_type')
+    clearEmptyFilter(value, 'method')
+    clearEmptyFilter(value, 'protocol_type')
+    clearEmptyFilter(value, 'status')
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
     }
@@ -451,6 +491,12 @@
           table.tableLoading.value = false
         }
       })
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '' || value[key] === undefined) {
+      delete value[key]
+    }
   }
 
   function onResetSearch() {

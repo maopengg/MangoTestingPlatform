@@ -26,6 +26,20 @@
                   @change="onSearchRefresh"
                 />
               </template>
+              <template
+                v-else-if="item.type === 'select' && item.key === 'project_product__api_client_type'"
+              >
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.api_client"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -174,6 +188,12 @@
       table.tableLoading.value = true
     }
     let value = getFormItems(conditionItems)
+    if (
+      value['project_product__api_client_type'] === null ||
+      value['project_product__api_client_type'] === ''
+    ) {
+      delete value['project_product__api_client_type']
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getApiHeaders(value)

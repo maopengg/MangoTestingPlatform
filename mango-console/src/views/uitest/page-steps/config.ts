@@ -83,7 +83,7 @@ export const formItems: FormItem[] = reactive([
     label: '模块名称',
     key: 'module',
     value: ref(''),
-    placeholder: '请选择测试模块',
+    placeholder: '请选择测试模块名称',
     required: true,
     type: 'select',
     validator: function () {

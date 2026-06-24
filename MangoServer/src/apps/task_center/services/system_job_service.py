@@ -44,6 +44,14 @@ class SystemJobService:
             handler=SchedulerSystemJobService.send_pending_test_suite_notice,
         ),
         SystemJobDefinition(
+            key='send_api_auth_expire_notice',
+            name='API 授权到期通知',
+            description='每 3 分钟扫描即将到期的 API 授权缓存，并向配置的通知组发送提醒。',
+            cron='*/3 * * * *',
+            source_type=ScheduleFireSourceTypeEnum.SYSTEM_JOB.value,
+            handler=SchedulerSystemJobService.send_api_auth_expire_notice,
+        ),
+        SystemJobDefinition(
             key='repair_api_case_status',
             name='API 用例卡住状态修复',
             description='将进行中超过 5 分钟仍未更新的 API 用例状态重置为待开始。',

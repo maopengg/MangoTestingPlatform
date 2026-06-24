@@ -69,7 +69,7 @@ export const tableColumns = useTableColumn([
     align: 'left',
   },
   {
-    title: '每年某月',
+    title: 'Cron表达式',
     key: 'cron',
     dataIndex: 'cron',
     align: 'left',

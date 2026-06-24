@@ -67,6 +67,7 @@ class ScheduleDispatchService:
             is_notice=task.is_notice,
             user_id=task.case_people_id,
             tasks_id=task.id,
+            module_id=task.module_id,
         )
         for detail in TasksDetails.objects.select_related('ui_case', 'api_case', 'pytest_case').filter(task=task.id):
             log.system.debug(f'分发定时任务详情：task_detail_id={detail.id}')

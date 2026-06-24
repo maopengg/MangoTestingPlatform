@@ -26,11 +26,35 @@
                   @change="doRefresh"
                 />
               </template>
-              <template v-else-if="item.type === 'select'">
+              <template v-else-if="item.type === 'select' && item.key === 'environment'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="enumStore.environment_type"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.auto_type"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'executor_name'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="data.nickname"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -199,7 +223,6 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useProject } from '@/store/modules/get-project'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { conditionItems, formItems, tableColumns } from './config'
@@ -215,10 +238,9 @@
   import { useRouter } from 'vue-router'
   import { useEnum } from '@/store/modules/get-enum'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import { formatProjectProductPath } from '@/utils/business-format'
+  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
 
   const router = useRouter()
-  const project = useProject()
   const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -334,6 +356,11 @@
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    value['project_product'] = getOptionId(value['project_product'])
+    clearEmptyFilter(value, 'project_product')
+    clearEmptyFilter(value, 'environment')
+    clearEmptyFilter(value, 'auto_type')
+    clearEmptyFilter(value, 'executor_name')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getUserTestObject(value)
@@ -342,6 +369,12 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+  }
+
+  function clearEmptyFilter(value: Record<string, any>, key: string) {
+    if (value[key] === null || value[key] === '' || value[key] === undefined) {
+      delete value[key]
+    }
   }
 
   function getNickName() {

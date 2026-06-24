@@ -17,7 +17,6 @@ const useUserStore = defineStore('user-info', {
       nickName: '',
       avatar: defaultAvatar,
       password: '',
-      selected_project: null,
       selected_environment: null,
       selected_environment_title: '选择测试环境',
     }
@@ -32,7 +31,6 @@ const useUserStore = defineStore('user-info', {
         this.nickName = userInfo.name
         this.password = password
         this.avatar = userInfo.avatar || defaultAvatar
-        this.selected_project = userInfo.selected_project
         this.selected_environment = userInfo.selected_environment
         resolve(userInfo)
       })

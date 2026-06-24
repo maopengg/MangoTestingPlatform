@@ -52,6 +52,7 @@ def _auth_config_summary(item: ApiAuthConfig, include_custom_code: bool = True) 
     api_info = item.api_info
     project_product = item.project_product
     time_task = item.time_task
+    notice_group = item.notice_group
     data = {
         "id": item.id,
         "project_product_id": item.project_product_id,
@@ -70,11 +71,15 @@ def _auth_config_summary(item: ApiAuthConfig, include_custom_code: bool = True) 
         "api_info_method": api_info.method if api_info else None,
         "token_ttl": item.token_ttl,
         "refresh_margin": item.refresh_margin,
+        "expire_notice_minutes": item.expire_notice_minutes,
         "refresh_mode": item.refresh_mode,
         "refresh_mode_title": ApiAuthRefreshModeEnum.get_value(item.refresh_mode),
         "time_task_id": item.time_task_id,
         "time_task_name": time_task.name if time_task else None,
+        "notice_group_id": item.notice_group_id,
+        "notice_group_name": notice_group.name if notice_group else None,
         "expires_at": _format_datetime(item.expires_at),
+        "expire_notice_sent_at": _format_datetime(item.expire_notice_sent_at),
         "remaining_minutes": _remaining_minutes(item),
         "last_refresh_time": _format_datetime(item.last_refresh_time),
         "last_refresh_status": item.last_refresh_status,
@@ -97,8 +102,10 @@ def _write_payload(
     custom_code: str | None = None,
     token_ttl: int | None = None,
     refresh_margin: int | None = None,
+    expire_notice_minutes: int | None = None,
     refresh_mode: int | None = None,
     time_task_id: int | None = None,
+    notice_group_id: int | None = None,
     include_none: bool = False,
 ) -> dict:
     fields = {
@@ -111,8 +118,10 @@ def _write_payload(
         "custom_code": custom_code,
         "token_ttl": token_ttl,
         "refresh_margin": refresh_margin,
+        "expire_notice_minutes": expire_notice_minutes,
         "refresh_mode": refresh_mode,
         "time_task": time_task_id,
+        "notice_group": notice_group_id,
     }
     if include_none:
         return fields
@@ -177,6 +186,12 @@ def register_api_auth_config_tools(mcp):
                         "default": 5,
                         "description": "提前刷新时间，单位分钟，必须大于等于 0 且小于 token_ttl。",
                     },
+                    "expire_notice_minutes": {
+                        "type": "int",
+                        "default": 30,
+                        "required_when": "refresh_mode=4",
+                        "description": "到期通知提前时间，单位分钟，必须大于等于 0 且小于 token_ttl。",
+                    },
                     "refresh_mode": {
                         "type": "int",
                         "default": 0,
@@ -189,11 +204,18 @@ def register_api_auth_config_tools(mcp):
                         "required_when": "refresh_mode=1 或 refresh_mode=2",
                         "description": "定时刷新策略 ID。可调用 list_api_auth_time_tasks 查询。",
                     },
+                    "notice_group_id": {
+                        "type": "int | null",
+                        "model_field": "notice_group",
+                        "required_when": "refresh_mode=4",
+                        "description": "到期通知使用的通知组 ID，通知组需要属于当前项目产品所在项目。",
+                    },
                 },
                 "runtime": {
                     "load_order": ["ApiPublic 自定义变量", "ApiPublic SQL 变量", "ApiAuthConfig Token 授权缓存"],
                     "cache_injection": "刷新成功或缓存可用时，cache_data 会全量写入当前执行上下文，可通过 ${token}、${tenant_id} 引用。",
                     "manual_refresh": "refresh_mode=3 表示手动刷新，API/case 执行只读取已有且未过期的 cache_data，不会自动调用登录接口或自定义代码；需要调用 refresh_api_auth_config 才会刷新。",
+                    "expire_notice": "refresh_mode=4 表示到期通知，API/case 执行只读取已有且未过期的 cache_data，不会自动刷新；系统任务会在 expires_at 前 expire_notice_minutes 分钟向 notice_group_id 发送通知。",
                     "refresh_warning": "refresh_api_auth_config 会真实执行登录接口或自定义代码，并写入 cache_data。",
                     "clear_warning": "clear_api_auth_config_cache 会清空 cache_data 和 expires_at，必须先调用 preview_clear_api_auth_config_cache_impact。",
                     "delete_warning": "delete_api_auth_config 会删除授权配置，必须先调用 preview_delete_api_auth_config_impact。",
@@ -240,7 +262,7 @@ def register_api_auth_config_tools(mcp):
         page_size: int = 20,
     ) -> dict:
         """查询 API Token 授权配置列表。"""
-        queryset = ApiAuthConfig.objects.select_related("project_product", "project_product__project", "api_info", "time_task").all()
+        queryset = ApiAuthConfig.objects.select_related("project_product", "project_product__project", "api_info", "time_task", "notice_group").all()
         if project_product_id is not None:
             queryset = queryset.filter(project_product_id=project_product_id)
         if test_env_id is not None:
@@ -261,7 +283,7 @@ def register_api_auth_config_tools(mcp):
     @mcp.tool()
     def get_api_auth_config_detail(auth_config_id: int) -> dict:
         """查询单个 API Token 授权配置详情。"""
-        item = ApiAuthConfig.objects.select_related("project_product", "project_product__project", "api_info", "time_task").get(id=auth_config_id)
+        item = ApiAuthConfig.objects.select_related("project_product", "project_product__project", "api_info", "time_task", "notice_group").get(id=auth_config_id)
         data = _auth_config_summary(item)
         data["raw"] = model_to_dict(item)
         return ok(data)
@@ -276,8 +298,10 @@ def register_api_auth_config_tools(mcp):
         custom_code: str | None = None,
         token_ttl: int = 1440,
         refresh_margin: int = 5,
+        expire_notice_minutes: int = 30,
         refresh_mode: int = 0,
         time_task_id: int | None = None,
+        notice_group_id: int | None = None,
         status: int = 1,
     ) -> dict:
         """新增 API Token 授权配置。创建前应先确认项目产品、测试环境、登录接口或定时策略。"""
@@ -293,8 +317,10 @@ def register_api_auth_config_tools(mcp):
                     custom_code=custom_code,
                     token_ttl=token_ttl,
                     refresh_margin=refresh_margin,
+                    expire_notice_minutes=expire_notice_minutes,
                     refresh_mode=refresh_mode,
                     time_task_id=time_task_id,
+                    notice_group_id=notice_group_id,
                     include_none=True,
                 )
             )
@@ -314,8 +340,10 @@ def register_api_auth_config_tools(mcp):
         custom_code: str | None = None,
         token_ttl: int | None = None,
         refresh_margin: int | None = None,
+        expire_notice_minutes: int | None = None,
         refresh_mode: int | None = None,
         time_task_id: int | None = None,
+        notice_group_id: int | None = None,
     ) -> dict:
         """编辑 API Token 授权配置。保留现有 serializer 校验。"""
         payload = {"id": auth_config_id}
@@ -330,8 +358,10 @@ def register_api_auth_config_tools(mcp):
                 custom_code=custom_code,
                 token_ttl=token_ttl,
                 refresh_margin=refresh_margin,
+                expire_notice_minutes=expire_notice_minutes,
                 refresh_mode=refresh_mode,
                 time_task_id=time_task_id,
+                notice_group_id=notice_group_id,
             )
         )
         if auth_type == ApiAuthTypeEnum.API.value:
@@ -340,6 +370,8 @@ def register_api_auth_config_tools(mcp):
             payload["api_info"] = None
         if refresh_mode is not None and refresh_mode not in [ApiAuthRefreshModeEnum.TIMING.value, ApiAuthRefreshModeEnum.BOTH.value]:
             payload["time_task"] = None
+        if refresh_mode is not None and refresh_mode != ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value:
+            payload["notice_group"] = None
         try:
             data = ApiAuthConfigCRUD.inside_put(auth_config_id, payload)
         except Exception as exc:

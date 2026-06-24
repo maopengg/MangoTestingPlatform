@@ -11,6 +11,7 @@ const usePermissionStore = defineStore('permission-route', {
   state: () => {
     return {
       permissionRoutes: [] as RouteRecordRaw[],
+      homePath: '/index/home',
     }
   },
   getters: {
@@ -60,6 +61,8 @@ const usePermissionStore = defineStore('permission-route', {
         roleId: userStore.roleId,
         userId: userStore.userId,
       })
+      const homePath = findRootPathRoute(accessRoutes)
+      this.homePath = homePath
       const mapRoutes = mapTwoLevelRouter(accessRoutes)
       mapRoutes.forEach((it: any) => {
         router.addRoute(it)
@@ -67,7 +70,7 @@ const usePermissionStore = defineStore('permission-route', {
       // 配置 `/` 路由的默认跳转地址
       router.addRoute({
         path: '/',
-        redirect: findRootPathRoute(accessRoutes),
+        redirect: homePath,
         meta: {
           hidden: true,
         },
