@@ -30,8 +30,8 @@ REDIS = False
 # ************************ MCP配置 ************************ #
 # MCP 有 Host/Origin 安全校验。test 当前默认允许公司测试域名。
 # 如果部署到自己的域名/IP，需要同步修改 HOSTS 与 ORIGINS。
-MCP_ALLOWED_HOSTS = ['qfei-auto-platform-dev.internal.qtech.cn']
-MCP_ALLOWED_ORIGINS = ['https://qfei-auto-platform-dev.internal.qtech.cn']
+MCP_ALLOWED_HOSTS = ['127.0.0.1:*', 'localhost:*', '[::1]:*']
+MCP_ALLOWED_ORIGINS = ['http://127.0.0.1:*', 'http://localhost:*', 'http://[::1]:*']
 
 # ************************ 文件存储配置 ************************ #
 # FILE_STORAGE_BACKEND 支持 local/minio/tos。

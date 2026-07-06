@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件是 `qfei-auto-platform` 仓库的总开发约束。子项目更细规范见：
+本文件是 `mango-auto-platform` 仓库的总开发约束。子项目更细规范见：
 
 - `MangoServer/AGENTS.md`
 - `mango-console/AGENTS.md`
