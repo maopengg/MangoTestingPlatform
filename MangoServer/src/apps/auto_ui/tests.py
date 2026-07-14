@@ -17,32 +17,6 @@ class FakeQuerySet(list):
 
 class UiTestCaseParametrizeTests(SimpleTestCase):
 
-    def make_case(self, parametrize):
-        return SimpleNamespace(
-            id=1,
-            name='允许空参数用例',
-            status=None,
-            save=lambda: None,
-            front_custom=[],
-            front_sql=[],
-            posterior_sql=[],
-            parametrize=parametrize,
-            module=SimpleNamespace(name='合同管理'),
-            project_product=SimpleNamespace(id=1, name='智书合同'),
-            case_people=SimpleNamespace(name='liqian'),
-        )
-
-    def run_case(self, case):
-        step = SimpleNamespace(page_step=SimpleNamespace(id=1), switch_step_open_url=False)
-        service = TestCase(user_id=1, username='liqian', test_env=1)
-
-        with patch.object(ui_test_case_module.UiCase.objects, 'get', return_value=case), \
-                patch.object(ui_test_case_module.UiCaseStepsDetailed.objects, 'filter',
-                             return_value=FakeQuerySet([step])), \
-                patch.object(service, 'steps_model', return_value=object()), \
-                patch.object(ui_test_case_module, 'CaseModel', return_value=SimpleNamespace()), \
-                patch.object(service, '_TestCase__socket_send'):
-            return service.test_case(case_id=case.id)
 
     def test_case_parametrize_allows_empty_values(self):
         case = self.make_case([
