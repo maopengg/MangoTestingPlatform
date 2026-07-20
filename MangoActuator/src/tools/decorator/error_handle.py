@@ -5,14 +5,8 @@
 # @Author : 毛鹏
 import traceback
 
-from mangotools.data_processor import SqlCache
-from mangotools.mangos import Mango
-
 from src.enums.system_enum import ClientTypeEnum
-from src.enums.tools_enum import CacheKeyEnum
-from src.settings.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
-from src.tools.set_config import SetConfig
 
 
 def async_error_handle(is_error=False):
@@ -23,11 +17,6 @@ def async_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 log.error(trace)
-                if IS_SEND_MAIL:
-                    from src import project_dir
-                    from src.settings.settings import SETTINGS
-                    kwargs['version'] = SETTINGS.get('version')
-                    Mango.s(func, error, trace, SetConfig.get_username(), args, kwargs)
                 from src.network import socket_conn
                 await socket_conn.async_send(
                     code=300,
@@ -50,12 +39,7 @@ def sync_error_handle(is_error=False):
                 return func(*args, **kwargs)
             except Exception as error:
                 trace = traceback.format_exc()
-                if IS_SEND_MAIL:
-                    from src import project_dir
-                    from src.settings.settings import SETTINGS
-                    kwargs['version'] = SETTINGS.get('version')
-                    Mango.s(func, error, trace,
-                            SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value), args, kwargs)
+                log.error(trace)
                 from src.network import socket_conn
                 socket_conn.sync_send(
                     code=300,

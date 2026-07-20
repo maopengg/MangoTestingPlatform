@@ -72,10 +72,6 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
-                from mangotools.mangos import Mango
-                from src.settings.settings import SETTINGS
-                Mango.s(self.page_steps_mian, error, traceback.format_exc(), SetConfig.get_username(),
-                        version=SETTINGS.get('version'))
                 log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.base_data.is_open_url = False
                 await self.base_data.async_base_close()
@@ -115,10 +111,6 @@ class TestPageSteps:
             await self.base_data.async_base_close()
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
-            from mangotools.mangos import Mango
-            from src.settings.settings import SETTINGS
-            Mango.s(self.new_web_obj, error, traceback.format_exc(), SetConfig.get_username(),
-                    version=SETTINGS.get('version'))
             log.error(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.base_data.is_open_url = False
             await self.base_data.async_base_close()
