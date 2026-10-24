@@ -16,7 +16,7 @@ __pycache__/
 logs\\*.log
 
 # 运行时目录，所有新生成的缓存、截图、视频、下载、上传都应进入 runtime
-runtime/
+/runtime/
 
 # 历史运行时目录，保留忽略规则避免旧环境再次生成后进入 Git
 logs/

@@ -1,5 +1,5 @@
 .venv/
-runtime/
+/runtime/
 local_packages/mangoui-*.whl
 __pycache__/
 *.pyc
