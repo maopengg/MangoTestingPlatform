@@ -144,7 +144,7 @@ class UiStepDebugControlSerializer(serializers.Serializer):
 
 class UiOpenStepBrowserSerializer(serializers.Serializer):
     page_step_id = serializers.IntegerField(min_value=1)
-    test_env = serializers.ChoiceField(choices=EnvironmentEnum.get_key_list())
+    test_env = serializers.ChoiceField(choices=EnvironmentEnum.choices())
 
 
 class UiPageStepReferencedCasesSerializer(serializers.Serializer):
