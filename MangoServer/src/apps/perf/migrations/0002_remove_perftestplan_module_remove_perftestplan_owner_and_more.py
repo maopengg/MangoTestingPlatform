@@ -10,6 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RemoveConstraint(
+            model_name='perftestplan',
+            name='perf_plan_enabled_schedule_has_strategy',
+        ),
         migrations.RemoveField(
             model_name='perftestplan',
             name='module',
