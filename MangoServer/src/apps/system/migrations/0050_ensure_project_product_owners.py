@@ -51,6 +51,9 @@ def ensure_project_product_owners(apps, schema_editor):
         return
 
     TestObject = apps.get_model("test_center", "TestObject")
+    # Fresh installs may already have applied the legacy executor field removal.
+    if not any(field.name == "executor_name" for field in TestObject._meta.concrete_fields):
+        return
     database = connection.alias
     legacy_relations = (
         TestObject.objects.using(database)
