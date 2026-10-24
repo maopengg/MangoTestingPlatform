@@ -52,7 +52,7 @@ class NoticeMain:
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def notice_task_group(self, report: TaskGroupNoticeReport):
         """使用任务组专用样式合并发送一个执行批次的全部子报告。"""
-        builder = TaskGroupNoticeBuilder(report, self.__get_domain_name())
+        builder = TaskGroupNoticeBuilder(report, self.__get_domain_name(), SystemConfigService.get_platform_name())
         if self.notice_obj.mail:
             send_user, email_host, stamp_key = self.__mail_config()
             EmailSend(EmailNoticeModel(
@@ -60,7 +60,7 @@ class NoticeMain:
                 email_host=email_host,
                 stamp_key=stamp_key,
                 send_list=self.notice_obj.mail,
-            )).send_mail('任务组执行报告', builder.build_email_html(), subtype='html')
+            ), platform_name=builder.platform_name).send_mail('任务组执行报告', builder.build_email_html(), subtype='html')
         if self.notice_obj.work_weixin:
             WeChatSend(
                 WeChatNoticeModel(webhook=self.notice_obj.work_weixin)
@@ -130,7 +130,8 @@ class NoticeMain:
 
     def __we_chat_send(self, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report))
+            wechat = WeChatSend(WeChatNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report),
+                                platform_name=SystemConfigService.get_platform_name())
             if original:
                 wechat.send_text(msg)
             else:
@@ -140,7 +141,8 @@ class NoticeMain:
 
     def __fs_chat_send(self, webhook: str, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            feishu = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report))
+            feishu = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report),
+                               platform_name=SystemConfigService.get_platform_name())
             if original:
                 feishu.send_markdown(msg)
             else:
@@ -150,7 +152,8 @@ class NoticeMain:
 
     def __ding_ding_send(self, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            dingding = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report))
+            dingding = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report),
+                                 platform_name=SystemConfigService.get_platform_name())
             if original:
                 dingding.send_text(msg)
             else:
@@ -165,7 +168,7 @@ class NoticeMain:
             email_host=email_host,
             stamp_key=stamp_key,
             send_list=send_list,
-        ), test_report, self.__get_report_url(test_report))
+        ), test_report, self.__get_report_url(test_report), platform_name=SystemConfigService.get_platform_name())
         if original:
             email.send_mail(f'预警监控通知', msg)
         else:

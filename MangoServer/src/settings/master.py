@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-07-12 14:13
 # @Author : 毛鹏
-import os
 from urllib.parse import urlsplit
+import os
 
 # ************************ 数据库配置 ************************ #
 # master 是默认部署环境，开源 docker-compose 默认使用该环境。

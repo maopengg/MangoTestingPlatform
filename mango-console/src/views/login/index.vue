@@ -1,21 +1,21 @@
 <template>
   <main class="login-container">
     <div class="login-code-background" aria-hidden="true">
-      <div class="code-texture-track">
+      <div ref="codeTextureTrack" class="code-texture-track">
         <img class="code-texture" :src="loginCodeTexture" alt="" />
         <img class="code-texture" :src="loginCodeTexture" alt="" />
       </div>
     </div>
 
-    <section class="login-stage" aria-label="芒果测试平台登录">
+    <section class="login-stage" :aria-label="`${branding.projectName}登录`">
       <div class="login-copy">
         <div class="brand-row">
           <div class="brand-mark">
             <img :src="brandLogo" alt="" />
           </div>
           <div>
-            <div class="brand-name">{{ projectName }}</div>
-            <div class="brand-meta">QA Automation Control Center</div>
+            <div class="brand-name" :title="branding.projectName">{{ branding.projectName }}</div>
+            <div class="brand-meta" :title="branding.englishName">{{ branding.englishName }}</div>
           </div>
         </div>
         <div class="hero-copy">
@@ -23,16 +23,16 @@
           <div class="module-viewport" aria-label="平台核心能力">
             <div class="module-track">
               <div class="module-card">
-                <icon-desktop />
+                <icon-find-replace />
                 <div>
-                  <strong>UI 自动化</strong>
+                  <strong>UI自动化</strong>
                   <span>页面、元素、步骤、公共能力与执行链路统一管理</span>
                 </div>
               </div>
               <div class="module-card">
-                <icon-code />
+                <icon-thunderbolt />
                 <div>
-                  <strong>API 自动化</strong>
+                  <strong>API自动化</strong>
                   <span>接口用例、断言、环境变量和场景编排</span>
                 </div>
               </div>
@@ -44,52 +44,66 @@
                 </div>
               </div>
               <div class="module-card">
-                <icon-bar-chart />
+                <icon-calendar-clock />
                 <div>
-                  <strong>测试报告</strong>
+                  <strong>报告分析</strong>
                   <span>执行趋势、失败定位和质量结果追踪</span>
                 </div>
               </div>
               <div class="module-card">
-                <icon-experiment />
+                <icon-file />
                 <div>
-                  <strong>功能测试</strong>
-                  <span>需求资产、平台用例和自动化绑定闭环维护</span>
+                  <strong>研发协同</strong>
+                  <span>迭代、需求、用例、计划与缺陷协同管理</span>
                 </div>
               </div>
               <div class="module-card">
-                <icon-clock-circle />
+                <icon-schedule />
                 <div>
-                  <strong>定时任务</strong>
-                  <span>回归计划、执行策略、通知和执行器调度</span>
+                  <strong>任务调度</strong>
+                  <span>定时任务、任务组、触发策略与结果通知</span>
                 </div>
               </div>
               <div class="module-card">
-                <icon-apps />
+                <icon-command />
                 <div>
                   <strong>测试配置</strong>
                   <span>项目产品、模块、环境、文件和测试对象配置</span>
                 </div>
               </div>
               <div class="module-card">
-                <icon-file />
+                <icon-experiment />
                 <div>
-                  <strong>灰度配置</strong>
-                  <span>仓库、配置文件、开关和执行记录统一追踪</span>
+                  <strong>评测中心</strong>
+                  <span>评测数据集、测试用例与评分器管理</span>
                 </div>
               </div>
               <div class="module-card">
-                <icon-code-square />
+                <icon-code-block />
                 <div>
-                  <strong>Pytest 自动化</strong>
+                  <strong>Pytest自动化</strong>
                   <span>代码用例、Fixture、Allure 和分层架构管理</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-dashboard />
+                <div>
+                  <strong>性能测试</strong>
+                  <span>压测场景、执行容量和性能结果分析</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-play-circle />
+                <div>
+                  <strong>监控中心</strong>
+                  <span>脚本定时运行、异常预警与监控报告</span>
                 </div>
               </div>
               <div class="module-card">
                 <icon-robot />
                 <div>
-                  <strong>脚本运行器</strong>
-                  <span>执行器节点、脚本任务和运行结果统一调度</span>
+                  <strong>智能能力</strong>
+                  <span>Skill、MCP 工具与 AI 任务执行</span>
                 </div>
               </div>
             </div>
@@ -101,7 +115,7 @@
         <div v-if="baseData.isLogin === true" class="form-content">
           <div class="form-kicker">secure sign in</div>
           <h1 class="title">登录测试平台</h1>
-          <p class="subtitle">进入用例、报告、灰度和自动化执行工作台</p>
+          <p class="subtitle">统一开展自动化测试、效果测评与性能测试</p>
           <div class="item-wrapper">
             <a-input
               v-model="baseData.username"
@@ -207,6 +221,19 @@
             >返回登录</a-link
           >
         </div>
+        <section v-if="!registrationState.configLoading && registrationState.showAuthor" class="mango-login-author" aria-label="开源项目与作者">
+          <div class="mango-login-author__identity">
+            <icon-code-block aria-hidden="true" />
+            <strong>芒果味 · maopeng</strong>
+            <span>项目作者</span>
+          </div>
+          <p>芒果测试平台 · AGPL-3.0 开源</p>
+          <nav aria-label="开源项目链接">
+            <a href="https://gitee.com/mao-peng/MangoTestingPlatform" target="_blank" rel="noopener noreferrer">Gitee <icon-launch aria-hidden="true" /></a>
+            <a href="https://github.com/maopengg/MangoTestingPlatform" target="_blank" rel="noopener noreferrer">GitHub <icon-launch aria-hidden="true" /></a>
+            <a href="https://gitee.com/mao-peng" target="_blank" rel="noopener noreferrer">作者主页 <icon-launch aria-hidden="true" /></a>
+          </nav>
+        </section>
       </aside>
     </section>
     <a-modal
@@ -225,20 +252,22 @@
         </a-form-item>
       </a-form>
     </a-modal>
-    <div class="bottom">芒果测试平台 Copyright © 芒果味 2022年-至今 Version：{{ version }}</div>
+    <div class="bottom">{{ branding.projectName }} Copyright © 芒果味 2022年-至今 Version：{{ version }}</div>
   </main>
 </template>
 
 <script lang="ts" setup>
-  import { reactive, onMounted } from 'vue'
+  import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+  import { startLoginBackgroundMotion } from './background-motion'
   import { useRoute, useRouter } from 'vue-router'
-  import { get, post, Response } from '@/api/http'
+  import { post, Response } from '@/api/http'
   import { md5 } from 'js-md5'
 
   import { login, register } from '@/api/url'
   import { Message } from '@arco-design/web-vue'
   import { UserState } from '@/store/types'
-  import setting from '../../setting'
+  import usePlatformBrandingStore from '@/store/modules/platform-branding'
+  import type { PublicPlatformConfig } from '@/store/modules/platform-branding'
   import brandLogo from '@/assets/logo.svg'
   import loginCodeTexture from '@/assets/login-code-texture.jpg'
   import useAppInfo from '@/hooks/useAppInfo'
@@ -247,14 +276,18 @@
   import useUserStore from '@/store/modules/user'
   import { connectWebSocket, markWebSocketLoginSession } from '@/utils/socket'
 
-  const projectName = setting.projectName
+  const branding = usePlatformBrandingStore()
   const { version } = useAppInfo()
   const router = useRouter()
   const route = useRoute()
   const userStore = useUserStore()
   const permissionStore = usePermissionStore()
   const appStore = useAppConfigStore()
-  const registrationState = reactive({ loading: false })
+  const registrationState = reactive({ loading: false, configLoading: true, showAuthor: false })
+  type RegistrationConfig = PublicPlatformConfig
+  let registrationConfigRequest: Promise<RegistrationConfig> | undefined
+  const codeTextureTrack = ref<HTMLElement>()
+  let stopBackgroundMotion: (() => void) | undefined
   const baseData: any = reactive({
     name: '',
     email: '',
@@ -343,21 +376,30 @@
     }
   }
 
+  async function loadRegistrationConfig() {
+    if (!registrationConfigRequest) {
+      registrationState.configLoading = true
+      registrationConfigRequest = branding.loadPublicConfig().then((config) => {
+        if (typeof config?.allow_registration !== 'boolean' || typeof config.disabled_message !== 'string') {
+          throw new Error('Invalid registration configuration')
+        }
+        registrationState.showAuthor = config.show_author_info === true
+        return config
+      }).finally(() => {
+        registrationConfigRequest = undefined
+        registrationState.configLoading = false
+      })
+    }
+    return registrationConfigRequest
+  }
+
   async function register1() {
     if (registrationState.loading) return
     registrationState.loading = true
     try {
-      const res = await get<{ allow_registration: boolean; disabled_message: string }>({
-        url: '/user/registration-config',
-        silentError: true,
-        timeout: 10_000,
-      })
-      if (typeof res.data?.allow_registration !== 'boolean' || typeof res.data.disabled_message !== 'string') {
-        Message.error('注册配置加载失败，请稍后重试')
-        return
-      }
-      if (!res.data.allow_registration) {
-        Message.info(res.data.disabled_message)
+      const config = await loadRegistrationConfig()
+      if (!config.allow_registration) {
+        Message.info(config.disabled_message)
         return
       }
       baseData.isLogin = false
@@ -406,7 +448,14 @@
 
   onMounted(() => {
     appStore.applyCurrentThemePreset()
+    void loadRegistrationConfig().catch(() => {
+      registrationState.showAuthor = false
+    })
+    if (codeTextureTrack.value) {
+      stopBackgroundMotion = startLoginBackgroundMotion(codeTextureTrack.value)
+    }
   })
+  onBeforeUnmount(() => stopBackgroundMotion?.())
 </script>
 
 <style lang="less" scoped>
@@ -487,7 +536,6 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-    animation: code-texture-scroll 160s linear infinite;
     transform: rotate(7deg);
     transform-origin: left top;
   }
@@ -503,16 +551,6 @@
     user-select: none;
   }
 
-  @keyframes code-texture-scroll {
-    from {
-      transform: rotate(7deg) translateY(0);
-    }
-
-    to {
-      transform: rotate(7deg) translateY(-50%);
-    }
-  }
-
   .login-stage {
     position: relative;
     z-index: 1;
@@ -524,6 +562,7 @@
   }
 
   .login-panel {
+    position: relative;
     border: 1px solid color-mix(in srgb, var(--m-border) 72%, transparent);
     border-radius: var(--m-radius);
     background: color-mix(in srgb, var(--m-surface) 94%, transparent);
@@ -545,7 +584,19 @@
     gap: 14px;
   }
 
+  .brand-row > div:last-child {
+    min-width: 0;
+  }
+
+  .brand-name,
+  .brand-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .brand-mark {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -754,6 +805,56 @@
     margin-top: 18px;
   }
 
+  .mango-login-author {
+    position: absolute;
+    right: 42px;
+    bottom: 24px;
+    left: 42px;
+    padding-top: 14px;
+    border-top: 1px solid var(--m-border);
+    color: var(--m-text-2);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .mango-login-author__identity,
+  .mango-login-author nav,
+  .mango-login-author a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mango-login-author__identity strong {
+    color: var(--m-text);
+    font-weight: 600;
+  }
+
+  .mango-login-author p {
+    margin: 5px 0 8px;
+  }
+
+  .mango-login-author nav {
+    gap: 16px;
+  }
+
+  .mango-login-author a {
+    gap: 4px;
+    color: var(--m-primary);
+    text-decoration: none;
+  }
+
+  .mango-login-author a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .mango-login-author a:focus-visible {
+    outline: 2px solid var(--m-primary);
+    outline-offset: 3px;
+  }
+
   .bottom {
     position: fixed;
     right: 24px;
@@ -778,6 +879,11 @@
 
     .login-panel {
       padding: 36px;
+    }
+
+    .mango-login-author {
+      right: 36px;
+      left: 36px;
     }
 
     .code-texture-track {
@@ -836,6 +942,11 @@
 
     .login-panel {
       padding: 28px 24px;
+    }
+
+    .mango-login-author {
+      position: static;
+      margin-top: 28px;
     }
 
     .code-texture-track {

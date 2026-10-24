@@ -86,6 +86,20 @@ class RepositoryGitService:
     def repo_url(self) -> str:
         return (self.repository.repo_url or "").strip()
 
+    def source_identity(self) -> dict:
+        return {
+            "provider": self.repository.provider,
+            "repo_url": self.repo_url(),
+            "api_base_url": self.repository.api_base_url,
+            "remote_project": self.repository.remote_project,
+        }
+
+    def validate_source_change(self):
+        with self._lock():
+            state = self._read_state()
+            if state is not None and self._changed_files(state):
+                raise AutoPytestError(PYTEST_REPOSITORY_BRANCH_CODE_INVALID)
+
     def local_dir(self) -> str:
         # API 快照与旧 Git 工作区隔离，避免迁移时覆盖用户在旧目录的未提交改动。
         return os.path.abspath(
@@ -237,15 +251,25 @@ class RepositoryGitService:
         with self._lock():
             state = self._read_state()
             desired_branch = self.repository.active_branch or self.repository.default_branch
+            # 旧快照没有来源标记；切换代码源时已清空 current_commit，不能继续复用旧文件。
+            source_changed = state is not None and (
+                state["source"] != self.source_identity()
+                if "source" in state else not self.repository.current_commit
+            )
             if state is None:
                 if os.path.isdir(self.local_dir()) and os.listdir(self.local_dir()):
                     raise AutoPytestError(PYTEST_REPOSITORY_FAILED_CODE_REPOSITORY_FAILED,
                                           value=("本地 API 快照状态缺失，请人工检查缓存目录",))
                 self._install_snapshot(desired_branch)
-            elif restore_persisted and state["branch"] != desired_branch:
+            elif source_changed or (
+                restore_persisted and state["branch"] != desired_branch
+            ):
                 if self._changed_files(state):
                     raise AutoPytestError(PYTEST_REPOSITORY_BRANCH_CODE_INVALID)
                 self._install_snapshot(desired_branch)
+            elif "source" not in state:
+                state["source"] = self.source_identity()
+                self._write_state(state)
             return self.local_dir()
 
     def local_info(self) -> dict:
@@ -447,6 +471,7 @@ class RepositoryGitService:
                     with zipped.open(member) as source, open(target, "wb") as destination:
                         shutil.copyfileobj(source, destination)
             state = {
+                "source": self.source_identity(),
                 "branch": branch,
                 "commit_hash": commit,
                 "hashes": self._file_hashes(content_dir),

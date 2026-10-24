@@ -187,6 +187,7 @@
     IconSwap,
   } from '@arco-design/web-vue/es/icon'
   import useUserStore from '@/store/modules/user'
+  import usePlatformBrandingStore from '@/store/modules/platform-branding'
   import { useHomeMenuIcon } from '@/views/index/composables/use-home-menu-icon'
   import { getCurrentUserApiKey, putUserApiKey } from '@/api/user/user'
   import { baseURL } from '@/api/axios.config'
@@ -197,6 +198,7 @@
   })
 
   const userStore = useUserStore()
+  const branding = usePlatformBrandingStore()
   const { resolveMenuIcon } = useHomeMenuIcon()
   const apiKey = ref('')
   const configVisible = ref(false)
@@ -263,18 +265,17 @@
     },
   ])
 
-  const mcpServerName =
-    String(import.meta.env.VITE_APP_MCP_SERVER_NAME || '').trim() || 'mango-test-platform'
-  const prompts = [
-    `使用 ${mcpServerName} MCP 查询当前平台开放了哪些能力。`,
-    `使用 ${mcpServerName} MCP 查询当前用户的项目、测试环境和可用模块。`,
-    `使用 ${mcpServerName} MCP 创建一个 API case，执行后分析失败原因。`,
-    `使用 ${mcpServerName} MCP 创建一个 UI 页面步骤并绑定到 UI 用例中。`,
-    `使用 ${mcpServerName} MCP 为指定表创建数据实体和模板，并预览生成数据。`,
-    `使用 ${mcpServerName} MCP 查询测试报告，筛选失败用例并生成排查结论。`,
-    `使用 ${mcpServerName} MCP 查询 AI Skill 和 MCP 工具快照。`,
-  ]
-  const promptIndex = ref(Math.floor(Math.random() * prompts.length))
+  const mcpServerName = computed(() => branding.englishName)
+  const prompts = computed(() => [
+    `使用 ${mcpServerName.value} MCP 查询当前平台开放了哪些能力。`,
+    `使用 ${mcpServerName.value} MCP 查询当前用户的项目、测试环境和可用模块。`,
+    `使用 ${mcpServerName.value} MCP 创建一个 API case，执行后分析失败原因。`,
+    `使用 ${mcpServerName.value} MCP 创建一个 UI 页面步骤并绑定到 UI 用例中。`,
+    `使用 ${mcpServerName.value} MCP 为指定表创建数据实体和模板，并预览生成数据。`,
+    `使用 ${mcpServerName.value} MCP 查询测试报告，筛选失败用例并生成排查结论。`,
+    `使用 ${mcpServerName.value} MCP 查询 AI Skill 和 MCP 工具快照。`,
+  ])
+  const promptIndex = ref(Math.floor(Math.random() * prompts.value.length))
 
   const docsUrl =
     'http://43.142.161.61:8002/pages/MCP%E6%9C%8D%E5%8A%A1/%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.html'
@@ -286,7 +287,7 @@
   })
   const mcpUrl = computed(() => `${backendBaseUrl.value}/mcp`)
   const modeText = computed(() => import.meta.env.MODE || '-')
-  const activePrompt = computed(() => prompts[promptIndex.value])
+  const activePrompt = computed(() => prompts.value[promptIndex.value])
   const maskedApiKey = computed(() => {
     if (!apiKey.value) return '当前用户暂无 APIKey'
     if (apiKey.value.length <= 18) return apiKey.value
@@ -296,9 +297,9 @@
     apiKey.value ? `Bearer ${apiKey.value}` : 'Bearer <MCP APIKey>'
   )
   const installPrompt = computed(
-    () => `请根据下面的配置帮我安装 Mango MCP 服务。安装完成后，请查询并向我说明这个 MCP 服务开放的功能，以及服务端提供了哪些 Skill。
+    () => `请根据下面的配置帮我安装 ${mcpServerName.value} MCP 服务。安装完成后，请查询并向我说明这个 MCP 服务开放的功能，以及服务端提供了哪些 Skill。
 
-MCP 服务名称：${mcpServerName}
+MCP 服务名称：${mcpServerName.value}
 URL：${mcpUrl.value}
 Headers：
 Authorization: ${authHeader.value}
@@ -312,7 +313,7 @@ Authorization: ${authHeader.value}
 6. 安装完成后的回复包含安装及连接结果、MCP 功能清单、Skill 清单以及 Skill 使用与更新方式。`
   )
   function nextPrompt() {
-    promptIndex.value = (promptIndex.value + 1) % prompts.length
+    promptIndex.value = (promptIndex.value + 1) % prompts.value.length
   }
 
   function fallbackCopy(text: string) {

@@ -778,6 +778,57 @@ class PytestGitManagementSafetyTests(SimpleTestCase):
             'main', 'Update example', project='example/repository',
         )
 
+    def test_source_change_refreshes_snapshot_even_when_branch_and_commit_are_unchanged(self):
+        repository = self._api_repository()
+        service = RepositoryGitService(repository)
+        client = Mock()
+        client.get_branch.return_value = GitBranchInfo(name='main', commit_hash='same-commit')
+        client.download_archive.side_effect = [self._archive('old source'), self._archive('new source')]
+        with tempfile.TemporaryDirectory() as directory, override_settings(GIT_WORKSPACE_DIR=directory), patch.object(
+                service, 'api_client', return_value=client,
+        ):
+            service.ensure_local_repository()
+            repository.remote_project = 'example/new-repository'
+            self.assertEqual(service.remote_file_content('tests/test_example.py'), 'new source')
+        self.assertEqual(client.download_archive.call_count, 2)
+        client.download_archive.assert_called_with('same-commit', project='example/new-repository')
+
+    def test_source_change_preserves_unpushed_local_edits(self):
+        repository = self._api_repository()
+        service = RepositoryGitService(repository)
+        client = Mock()
+        client.get_branch.return_value = GitBranchInfo(name='main', commit_hash='same-commit')
+        client.download_archive.return_value = self._archive('original')
+        with tempfile.TemporaryDirectory() as directory, override_settings(GIT_WORKSPACE_DIR=directory), patch.object(
+                service, 'api_client', return_value=client,
+        ), patch.object(service, '_persist_ref'):
+            service.write_local_file('tests/test_example.py', 'local edits')
+            with self.assertRaises(AutoPytestError):
+                service.validate_source_change()
+            repository.remote_project = 'example/new-repository'
+            with self.assertRaises(AutoPytestError):
+                service.ensure_local_repository()
+            self.assertEqual((Path(service.local_dir()) / 'tests/test_example.py').read_text(), 'local edits')
+        client.download_archive.assert_called_once()
+
+    def test_legacy_snapshot_with_local_edits_is_still_usable_without_source_change(self):
+        repository = self._api_repository()
+        service = RepositoryGitService(repository)
+        client = Mock()
+        client.get_branch.return_value = GitBranchInfo(name='main', commit_hash='same-commit')
+        client.download_archive.return_value = self._archive('original')
+        with tempfile.TemporaryDirectory() as directory, override_settings(GIT_WORKSPACE_DIR=directory), patch.object(
+                service, 'api_client', return_value=client,
+        ), patch.object(service, '_persist_ref'):
+            service.write_local_file('tests/test_example.py', 'local edits')
+            state = service._read_state()
+            state.pop('source')
+            service._write_state(state)
+            repository.current_commit = 'same-commit'
+            self.assertEqual(service.remote_file_content('tests/test_example.py'), 'local edits')
+            self.assertEqual(service._read_state()['source'], service.source_identity())
+        client.download_archive.assert_called_once()
+
     def test_api_branch_switch_keeps_selected_branch_after_refresh(self):
         repository = self._api_repository()
         service = RepositoryGitService(repository)

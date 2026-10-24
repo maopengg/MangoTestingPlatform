@@ -248,13 +248,6 @@ else:
     raise Exception(
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
 
-# 容器部署使用运行时凭据，不依赖仓库中的开发配置。
-MYSQL_DB_NAME = os.getenv('MYSQL_DATABASE', MYSQL_DB_NAME)
-MYSQL_USER = os.getenv('MYSQL_USER', MYSQL_USER)
-MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', MYSQL_PASSWORD)
-MYSQL_IP = os.getenv('MYSQL_HOST', MYSQL_IP)
-MYSQL_PORT = int(os.getenv('MYSQL_PORT', MYSQL_PORT))
-
 # 环境文件加载完成后，再允许系统环境变量覆盖文件存储配置。
 apply_object_storage_env_overrides()
 FILE_STORAGE_BACKEND = globals().get('FILE_STORAGE_BACKEND', 'local')

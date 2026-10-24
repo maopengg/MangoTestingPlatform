@@ -33,7 +33,7 @@
 <script lang="ts">
   import { computed, defineComponent } from 'vue'
   import { useRouter } from 'vue-router'
-  import { projectName } from '../../setting'
+  import usePlatformBrandingStore from '@/store/modules/platform-branding'
   import useAppConfigStore from '@/store/modules/app-config'
 
   export default defineComponent({
@@ -54,6 +54,7 @@
     },
     setup() {
       const appStore = useAppConfigStore()
+      const branding = usePlatformBrandingStore()
       const router = useRouter()
       const bgColor = computed(() => {
         return 'var(--m-layout-logo-bg)'
@@ -63,7 +64,7 @@
       }
       return {
         appStore,
-        projectName,
+        projectName: computed(() => branding.projectName),
         bgColor,
         goHome,
       }

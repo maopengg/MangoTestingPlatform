@@ -20,12 +20,13 @@
       </template>
     </a-dropdown>
   </div>
-  <ContactAuthor v-model:visible="visible" />
+  <ContactAuthor v-if="!authorPopupLoading" v-model:visible="visible" />
 </template>
 
 <script lang="ts" setup>
   import { Modal } from '@arco-design/web-vue'
-  import { computed, ref } from 'vue'
+  import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+  import usePlatformBrandingStore from '@/store/modules/platform-branding'
   import { IconCaretDown } from '@arco-design/web-vue/es/icon'
   import useUserStore from '@/store/modules/user'
   import { useRouter } from 'vue-router'
@@ -35,6 +36,7 @@
   import ContactAuthor from '@/views/index/components/ContactAuthor.vue'
 
   const userStore = useUserStore()
+  const branding = usePlatformBrandingStore()
   const router = useRouter()
   const isActuatorOnline = ref(false)
   const displayName = computed(() => userStore.nickName || userStore.userName || '用户')
@@ -109,7 +111,20 @@
     return /[a-z]/i.test(text) ? text.toUpperCase() : text
   }
 
-  const visible = ref(import.meta.env.VITE_IS_INDEX_WINDOW == 'true')
+  const visible = ref(false)
+  const authorPopupLoading = ref(true)
+  let disposed = false
+  onMounted(async () => {
+    try {
+      const config = await branding.loadPublicConfig()
+      if (!disposed) visible.value = config?.show_home_author_popup === true
+    } catch {
+      // 展示配置不可用时不打断工作台使用。
+    } finally {
+      if (!disposed) authorPopupLoading.value = false
+    }
+  })
+  onBeforeUnmount(() => { disposed = true })
 </script>
 
 <style lang="less" scoped>

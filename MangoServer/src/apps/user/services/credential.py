@@ -97,10 +97,11 @@ class UserCredentialService:
         safe_name = html.escape(name or email)
         safe_email = html.escape(email)
         safe_password = html.escape(password)
+        platform_name = SystemConfigService.get_platform_name()
         content = f"""<!doctype html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #1d2129; line-height: 1.7;">
-  <h2>芒果测试平台{html.escape(action)}</h2>
+  <h2>{html.escape(platform_name)}{html.escape(action)}</h2>
   <p>{safe_name}，您好：</p>
   <p>您的登录邮箱为 <strong>{safe_email}</strong>，系统随机密码为：</p>
   <p style="font-size: 20px; font-weight: 700; letter-spacing: 1px;">{safe_password}</p>
@@ -109,7 +110,7 @@ class UserCredentialService:
 </html>"""
         cls.send_email(
             email=email,
-            subject=f"芒果测试平台{action}",
+            subject=f"{platform_name}{action}",
             content=content,
         )
 
@@ -131,7 +132,7 @@ class UserCredentialService:
                     email_host=email_host,
                     stamp_key=stamp_key,
                     send_list=[normalized_email],
-                )
+                ), platform_name=SystemConfigService.get_platform_name(),
             ).send_mail(subject, content, subtype=subtype)
         except (MangoToolsError, smtplib.SMTPException, OSError) as error:
             raise UserError(USER_CREDENTIAL_EMAIL_CONFIG_FAILED, error=str(error)) from error

@@ -51,6 +51,7 @@ class CacheDataCRUD(ModelCRUD):
     def get(self, request: Request):
         SystemConfigService.sync_registered_configs()
         books = self.model.objects.filter(
+            key__in=SystemConfigService.editable_config_keys(),
             is_enabled=True,
             management_level__gte=SystemConfigManagementLevelEnum.CAUTION.value,
         ).exclude(
@@ -148,6 +149,7 @@ class CacheDataViews(ViewSet):
     def grouped(self, request: Request):
         SystemConfigService.sync_registered_configs()
         queryset = self.model.objects.filter(
+            key__in=SystemConfigService.editable_config_keys(),
             is_enabled=True,
             management_level__gte=SystemConfigManagementLevelEnum.CAUTION.value,
         ).exclude(

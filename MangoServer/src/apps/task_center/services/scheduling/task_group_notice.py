@@ -45,8 +45,9 @@ class TaskGroupNoticeReport:
 class TaskGroupNoticeBuilder:
     """任务组批次使用独立通知样式，避免被误解为单个测试套报告。"""
 
-    def __init__(self, report: TaskGroupNoticeReport, domain_name: str = ''):
+    def __init__(self, report: TaskGroupNoticeReport, domain_name: str = '', platform_name: str = '芒果测试平台'):
         self.report = report
+        self.platform_name = platform_name
         self.domain_name = domain_name.rstrip('/') if domain_name.startswith(('http://', 'https://')) else ''
 
     def group_report_url(self) -> str:
@@ -174,7 +175,7 @@ class TaskGroupNoticeBuilder:
                 'template': header_template,
                 'title': {
                     'tag': 'plain_text',
-                    'content': f'芒果测试平台任务组执行报告 - {status_text}',
+                    'content': f'{self.platform_name}任务组执行报告 - {status_text}',
                 },
             },
             'elements': elements,
@@ -186,7 +187,7 @@ class TaskGroupNoticeBuilder:
         status_text = '失败' if failed else '通过'
         status_color = 'warning' if failed else 'info'
         lines = [
-            f'## 芒果测试平台任务组执行报告 - <font color="{status_color}">{status_text}</font>',
+            f'## {self.platform_name}任务组执行报告 - <font color="{status_color}">{status_text}</font>',
             f'**项目产品：** {report.project_name} / {report.product_name}',
             f'**测试环境：** {report.test_environment}',
             f'**任务组：** {report.task_group_name}',
@@ -219,7 +220,7 @@ class TaskGroupNoticeBuilder:
         )
         return f"""<!doctype html>
 <html><body style="font-family:Arial,sans-serif;color:#1D2129">
-<h2>芒果测试平台任务组执行报告 - <span style="color:{status_color}">{status_text}</span></h2>
+<h2>{html.escape(self.platform_name)}任务组执行报告 - <span style="color:{status_color}">{status_text}</span></h2>
 <p><strong>项目产品：</strong>{html.escape(report.project_name)} / {html.escape(report.product_name)}<br>
 <strong>测试环境：</strong>{html.escape(report.test_environment)}<br>
 <strong>任务组：</strong>{html.escape(report.task_group_name)}</p>

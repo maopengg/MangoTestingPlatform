@@ -6,15 +6,16 @@ import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 
 const filename = 'src/views/login/index.vue'
 const source = readFileSync(new URL('../src/views/login/index.vue', import.meta.url), 'utf8')
-const handler = source.slice(source.indexOf('  async function register1()'), source.indexOf('  function returnToLogin()'))
+const handler = source.slice(source.indexOf('  async function loadRegistrationConfig()'), source.indexOf('  function returnToLogin()'))
 const { outputText } = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2020 } })
 
 function harness(get) {
-  const state = { loading: false }, form = { isLogin: true }, info = [], errors = []
-  const click = new Function('get', 'registrationState', 'baseData', 'Message', `${outputText}; return register1`)(
-    get, state, form, { info: message => info.push(message), error: message => errors.push(message) }
+  const state = { loading: false, configLoading: true, showAuthor: false }, form = { isLogin: true }, info = [], errors = []
+  const { click, load } = new Function('branding', 'registrationState', 'baseData', 'Message', `let registrationConfigRequest; ${outputText}; return { click: register1, load: loadRegistrationConfig }`)(
+    { loadPublicConfig: async () => (await get({ url: '/user/registration-config', timeout: 10_000 })).data },
+    state, form, { info: message => info.push(message), error: message => errors.push(message) }
   )
-  return { state, form, info, errors, click }
+  return { state, form, info, errors, click, load }
 }
 
 test('registration is controlled by the public database configuration, not build-time env', async () => {
@@ -90,4 +91,29 @@ test('login script and template compile with the async registration entry', () =
     compilerOptions: { bindingMetadata: script.bindings },
   })
   assert.deepEqual(template.errors, [])
+})
+
+test('the public config controls author visibility independently of registration', async () => {
+  for (const visible of [true, false]) {
+    const h = harness(async () => ({ data: {
+      allow_registration: false, disabled_message: '注册关闭', show_author_info: visible,
+    } }))
+    await h.load()
+    assert.equal(h.state.showAuthor, visible)
+    assert.equal(h.state.configLoading, false)
+    assert.equal(h.form.isLogin, true)
+    assert.deepEqual(h.info, [])
+  }
+})
+
+test('page initialization and a concurrent register click share one config request', async () => {
+  let resolve, calls = 0
+  const h = harness(() => { calls++; return new Promise(done => { resolve = done }) })
+  const initial = h.load()
+  const click = h.click()
+  assert.equal(calls, 1)
+  resolve({ data: { allow_registration: true, disabled_message: '', show_author_info: true } })
+  await Promise.all([initial, click])
+  assert.equal(h.state.showAuthor, true)
+  assert.equal(h.form.isLogin, false)
 })

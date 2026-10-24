@@ -10,6 +10,7 @@ from src.apps.auto_pytest.api.serializers.pytest_repository import PytestReposit
 from src.apps.auto_pytest.enums import (
     PytestRepositoryCredentialTypeEnum,
     PytestRepositoryProviderEnum,
+    PytestRepositorySyncStatusEnum,
 )
 from src.apps.auto_pytest.exceptions import (
     AutoPytestError,
@@ -181,27 +182,33 @@ class PytestRepositoryViews(ViewSet):
 
     @action(methods=["POST", "PUT"], detail=False)
     @error_response("pytest")
-    @transaction.atomic
     def save_repository(self, request: Request):
+        repository_id = (request.data or {}).get("id")
+        if repository_id:
+            # 与拉取、推送共用锁，避免同步中途切换远程代码源。
+            with GitRepositoryLockService.locked("save", repository_id):
+                return self._save_repository(request)
+        return self._save_repository(request)
+
+    @transaction.atomic
+    def _save_repository(self, request: Request):
         data = request.data or {}
         repository = None
         if data.get("id"):
             repository = _repository(data.get("id"), request)
+        previous_source = RepositoryGitService(repository).source_identity() if repository else None
         repo_url = _normalize_repo_url(data.get("repo_url") or (repository.repo_url if repository else ""))
         provider = str(data.get("provider") or (repository.provider if repository else "gitlab"))
         requested_remote_project = str(
             data.get("remote_project")
-            or (repository.remote_project if repository else _remote_project(repo_url))
+            or (
+                repository.remote_project
+                if repository and repo_url == repository.repo_url else _remote_project(repo_url)
+            )
         ).strip()
         if not repo_url or provider not in PytestRepositoryProviderEnum.obj():
             raise AutoPytestError(PYTEST_REPOSITORY_REQUIRED_CODE_REPOSITORY_REQUIRED)
         _validate_repository_provider(repo_url, provider)
-        if repository is not None and (
-                repo_url != repository.repo_url
-                or provider != repository.provider
-                or requested_remote_project != repository.remote_project
-        ):
-            raise AutoPytestError(PYTEST_REPOSITORY_REQUIRED_CODE_REPOSITORY_REQUIRED)
         if PytestRepository.objects.exclude(id=repository.id if repository else None).filter(
                 repo_url=repo_url,
         ).exists():
@@ -251,11 +258,23 @@ class PytestRepositoryViews(ViewSet):
         repository.credential = credential
         repository.default_branch = str(data.get("default_branch") or repository.default_branch or "master").strip()
         repository.active_branch = repository.active_branch or repository.default_branch
+        source_changed = previous_source is not None and (
+            previous_source != RepositoryGitService(repository).source_identity()
+        )
+        if source_changed:
+            RepositoryGitService(repository).validate_source_change()
+            repository.active_branch = repository.default_branch
+            repository.current_commit = None
+            repository.sync_status = PytestRepositorySyncStatusEnum.IDLE.value
+            repository.last_sync_time = None
+            repository.last_sync_error = None
+        elif repository.active_branch == previous_default_branch:
+            repository.active_branch = repository.default_branch
         repository.update_user_id = _request_user_id(request)
         if not repository.name or not repository.remote_project:
             raise AutoPytestError(PYTEST_REPOSITORY_REQUIRED_CODE_REPOSITORY_REQUIRED)
         repository.save()
-        if is_create or repository.default_branch != previous_default_branch:
+        if is_create or source_changed or repository.default_branch != previous_default_branch:
             RepositoryGitService(repository).test_connection()
         log.pytest.info(
             f'Pytest仓库保存完成：repository_id={repository.id}，operator_id={_request_user_id(request)}'

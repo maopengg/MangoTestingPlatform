@@ -51,9 +51,7 @@
 
 <script lang="ts">
   import { computed, defineComponent, onBeforeUnmount, onMounted } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
-  import { useTitle } from '@vueuse/core'
-  import { projectName } from '@/setting'
+  import { useRoute } from 'vue-router'
   import useAppConfigStore from '@/store/modules/app-config'
   import AiAssistantWidget from '@/components/ai/AiAssistantWidget.vue'
 
@@ -69,12 +67,8 @@
     setup() {
       const appStore = useAppConfigStore()
       // const isShowTabbar = computed(() => true)
-      const router = useRouter()
       const route = useRoute()
       const showFooter = computed(() => route.meta.hideFooter !== true)
-      router.afterEach(() => {
-        useTitle(projectName + ' | ' + (route.meta.title as string))
-      })
       onMounted(() => {
         const mainEl = document.querySelector('.mango-main-section') as HTMLDivElement
         appStore.setMainHeight(mainEl.clientHeight || mainEl.offsetHeight)

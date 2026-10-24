@@ -147,6 +147,16 @@ class SystemConfigDefinition:
 
 SYSTEM_CONFIG_REGISTRY = [
     SystemConfigDefinition(
+        key="PLATFORM_NAME", describe="测试平台中文名称", group="system",
+        default_value="芒果测试平台", required=True, sort=11,
+        placeholder="登录页、导航、浏览器标题及通知中使用的名称",
+    ),
+    SystemConfigDefinition(
+        key="PLATFORM_NAME_EN", describe="测试平台英文名称", group="system",
+        default_value="mango-test-platform", required=True, sort=12,
+        placeholder="登录页英文品牌名称，不改变 MCP 等技术标识",
+    ),
+    SystemConfigDefinition(
         key="EVALUATION_AI_PROFILES", describe="效果测评 AI 列表", group="evaluation_ai",
         value_type=CacheValueTypeEnum.LIST.value, default_value=[], sort=10, is_secret=True,
         placeholder="独立配置效果测评的评分、回答与总结模型；不使用默认 AI",
@@ -317,42 +327,6 @@ SYSTEM_CONFIG_REGISTRY = [
         management_level=SystemConfigManagementLevelEnum.CAUTION.value,
         sort=20,
         placeholder=f"请输入 {API_WORKER_THREAD_POOL_SIZE_MIN}-{API_WORKER_THREAD_POOL_SIZE_MAX} 之间的整数",
-    ),
-    SystemConfigDefinition(
-        key="PYTEST_ACT",
-        describe="中间对象（PO模式的pageobject）目录名称",
-        group="pytest",
-        value_type=CacheValueTypeEnum.STR.value,
-        default_value="abstract",
-        management_level=SystemConfigManagementLevelEnum.INTERNAL.value,
-        sort=40,
-    ),
-    SystemConfigDefinition(
-        key="PYTEST_TESTCASE",
-        describe="测试用例目录名称",
-        group="pytest",
-        value_type=CacheValueTypeEnum.STR.value,
-        default_value="test_cases",
-        management_level=SystemConfigManagementLevelEnum.INTERNAL.value,
-        sort=50,
-    ),
-    SystemConfigDefinition(
-        key="PYTEST_TOOLS",
-        describe="脚本目录名称",
-        group="pytest",
-        value_type=CacheValueTypeEnum.STR.value,
-        default_value="scripts",
-        management_level=SystemConfigManagementLevelEnum.INTERNAL.value,
-        sort=60,
-    ),
-    SystemConfigDefinition(
-        key="PYTEST_UPLOAD",
-        describe="上传文件目录名称",
-        group="pytest",
-        value_type=CacheValueTypeEnum.STR.value,
-        default_value="upload",
-        management_level=SystemConfigManagementLevelEnum.INTERNAL.value,
-        sort=70,
     ),
     SystemConfigDefinition(
         key=UI_FIXED_LOCATOR_RETRY_SECONDS_KEY,
@@ -584,6 +558,18 @@ SYSTEM_CONFIG_REGISTRY.extend([
         default_value="当前平台未开放自助注册，请联系管理员开通账号。", required=True, sort=20,
         management_level=SystemConfigManagementLevelEnum.STANDARD.value,
     ),
+    SystemConfigDefinition(
+        key="SHOW_LOGIN_AUTHOR_INFO", describe="登录页显示开源作者信息", group="access",
+        value_type=CacheValueTypeEnum.BOOL.value, default_value=True, sort=30,
+        management_level=SystemConfigManagementLevelEnum.STANDARD.value,
+        placeholder="关闭后隐藏登录页的开源项目与作者介绍",
+    ),
+    SystemConfigDefinition(
+        key="SHOW_HOME_AUTHOR_POPUP", describe="登录后自动显示联系作者弹窗", group="access",
+        value_type=CacheValueTypeEnum.BOOL.value, default_value=True, sort=40,
+        management_level=SystemConfigManagementLevelEnum.STANDARD.value,
+        placeholder="仅控制自动弹窗，不影响手动查看作者信息",
+    ),
     _ranged_int_definition(
         "DATA_SOURCE_TIMEOUT_SECONDS", "数据源连接超时时间（秒）", "data_source", 10,
         management_level=SystemConfigManagementLevelEnum.CAUTION.value,
@@ -646,12 +632,33 @@ DEPRECATED_SYSTEM_CONFIG_KEYS = {
     "AI_PROJECT",
     "AI_EXTRA_HEADERS",
     "AI_EXTRA_BODY",
+    "AI_PROXY_URL",
+    "PYTEST_GIT_URL",
     "PYTEST_GIT_USERNAME",
     "PYTEST_GIT_PASSWORD",
     "PYTEST_GIT_DEFAULT_PROJECT",
     "PYTEST_GIT_DEFAULT_BRANCH",
     "PYTEST_GIT_WORK_BRANCH_PREFIX",
     "PYTEST_AUTO_TEST_DIR",
+    "PYTEST_GIT_PROVIDER",
+    "PYTEST_GIT_API_BASE_URL",
+    "PYTEST_GIT_ACCESS_TOKEN",
+    "PYTEST_GIT_OPERATION_MODE",
+    "PYTEST_ACT",
+    "PYTEST_TESTCASE",
+    "PYTEST_TOOLS",
+    "PYTEST_UPLOAD",
+    "SQL_EXECUTION_AUDIT_ENABLED",
+    "SQL_EXECUTION_AUDIT_RETENTION_DAYS",
+    "playwright_operation_method",
+    "playwright_assertion_method",
+    "public_assertion_method",
+    "sql_assertion_method",
+    "uiautomator_operation_method",
+    "desktop_operation_method",
+    "ios_operation_method",
+    "uiautomator_assertion_method",
+    "assertion_method",
     "AI_UI_LOCATOR_ENABLED",
     "AI_UI_LOCATOR_MODE",
     "AI_UI_LOCATOR_SEMANTIC_STRENGTH",
@@ -699,6 +706,15 @@ class SystemConfigService:
     _guest_project_data_scope_cache_expires_at = 0.0
     _runtime_int_cache: dict[str, tuple[float, int]] = {}
     _runtime_int_cache_seconds = 5.0
+
+    @classmethod
+    def editable_config_keys(cls) -> set[str]:
+        return {
+            item.key for item in SYSTEM_CONFIG_REGISTRY
+            if item.management_level >= SystemConfigManagementLevelEnum.CAUTION.value
+            and item.group not in DEPRECATED_SYSTEM_CONFIG_GROUPS
+            and item.key not in DEPRECATED_SYSTEM_CONFIG_KEYS
+        }
 
     @classmethod
     def sync_registered_configs(cls):
@@ -994,6 +1010,14 @@ class SystemConfigService:
     @classmethod
     def validate_editable_config(cls, key: str, value) -> str | None:
         """统一校验配置管理页可编辑的单个配置项。"""
+        if key not in cls.editable_config_keys():
+            return '该配置已停用或不属于可编辑的系统配置'
+        if key in ('PLATFORM_NAME', 'PLATFORM_NAME_EN'):
+            if not isinstance(value, str) or not value.strip() or len(value.strip()) > 64:
+                return '平台名称不能为空，且不能超过 64 个字符'
+            if any(ord(char) < 32 or ord(char) == 127 for char in value):
+                return '平台名称不能包含换行或控制字符'
+            return None
         if key == "EVALUATION_AI_PROFILES":
             from src.apps.system.services.ai.evaluation_profiles import EvaluationAiProfileService
             EvaluationAiProfileService.parse(value)
@@ -1252,7 +1276,30 @@ class SystemConfigService:
             'disabled_message': cls.get(
                 'REGISTRATION_DISABLED_MESSAGE', default=definitions['REGISTRATION_DISABLED_MESSAGE'].default_value,
             ),
+            'show_author_info': cls.get(
+                'SHOW_LOGIN_AUTHOR_INFO', default=definitions['SHOW_LOGIN_AUTHOR_INFO'].default_value,
+            ),
+            'show_home_author_popup': cls.get(
+                'SHOW_HOME_AUTHOR_POPUP', default=definitions['SHOW_HOME_AUTHOR_POPUP'].default_value,
+            ),
+            **cls.get_platform_branding(),
         }
+
+    @classmethod
+    def get_platform_branding(cls) -> dict[str, str]:
+        definitions = get_config_definition_map()
+        result = {}
+        for field, key in (('platform_name', 'PLATFORM_NAME'), ('platform_name_en', 'PLATFORM_NAME_EN')):
+            default = definitions[key].default_value
+            value = cls.get(key, default=default)
+            result[field] = value.strip() if isinstance(value, str) and value.strip() else default
+        return result
+
+    @classmethod
+    def get_platform_name(cls) -> str:
+        default = get_config_definition_map()['PLATFORM_NAME'].default_value
+        value = cls.get('PLATFORM_NAME', default=default)
+        return value.strip() if isinstance(value, str) and value.strip() else default
 
     @classmethod
     def get(cls, key: str, default=None):

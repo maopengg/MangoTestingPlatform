@@ -1,13 +1,10 @@
 import { DeviceType, DisplayDensity } from '@/store/types'
 
-export const projectName = '芒果测试平台'
-
 export default {
   theme: 'light',
   sideTheme: 'white',
   themeColor: '#165dff',
   themePreset: 'mango-blue',
-  projectName,
   layoutMode: 'ltr',
   sideWidth: 199,
   displayDensity: DisplayDensity.AUTO,

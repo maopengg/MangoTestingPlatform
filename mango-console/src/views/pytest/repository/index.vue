@@ -237,14 +237,12 @@
             ><a-form-item label="Git 平台" required
               ><a-select
                 v-model="repositoryForm.provider"
-                :disabled="Boolean(repositoryForm.id)"
                 :options="providerOptions" /></a-form-item
           ></a-grid-item>
           <a-grid-item :span="2"
             ><a-form-item label="仓库地址" required>
               <a-input
                 v-model="repositoryForm.repo_url"
-                :disabled="Boolean(repositoryForm.id)"
                 placeholder="https://git.example.com/group/project.git" /></a-form-item
           ></a-grid-item>
           <a-grid-item
@@ -257,7 +255,6 @@
             ><a-form-item label="远程项目标识"
               ><a-input
                 v-model="repositoryForm.remote_project"
-                :disabled="Boolean(repositoryForm.id)"
                 placeholder="group/project" /></a-form-item
           ></a-grid-item>
           <a-grid-item

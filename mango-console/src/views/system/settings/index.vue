@@ -400,6 +400,7 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
+  import usePlatformBrandingStore from '@/store/modules/platform-branding'
   import { useMenuIcon } from '@/hooks/useMenuIcon'
   import { postSystemAiTest } from '@/api/system/ai'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
@@ -527,7 +528,7 @@
     {
       key: 'access',
       title: '用户与访问',
-      description: '自助注册与访问提示',
+      description: '自助注册、访问提示与登录页展示',
       groupKeys: ['access'],
     },
     {
@@ -1015,6 +1016,11 @@
         },
       ])
       lastSavedValues.set(item.key, nextValue)
+      if (item.key === 'PLATFORM_NAME' || item.key === 'PLATFORM_NAME_EN') {
+        usePlatformBrandingStore().apply({
+          [item.key === 'PLATFORM_NAME' ? 'platform_name' : 'platform_name_en']: String(item.value),
+        })
+      }
       item.has_value = true
       if (item.key === 'EVALUATION_AI_PROFILES') {
         item.value = item.value.map((profile: any) => ({ ...profile, api_key: profile.api_key ? '__KEEP_SECRET__' : '' }))

@@ -1,18 +1,70 @@
 from contextlib import ExitStack
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from django.test import SimpleTestCase
 
+from src.apps.system.api.views.cache_data import CacheDataCRUD, CacheDataViews
+from src.apps.system.enums import CacheDataKey2Enum
 from src.apps.system.services.system_config import (
     API_WORKER_DESIRED_COUNT_DEFAULT,
     API_WORKER_DESIRED_COUNT_KEY,
+    DEPRECATED_SYSTEM_CONFIG_KEYS,
+    get_config_definition_map,
     SystemConfigDefinition,
     SystemConfigService,
 )
 
 
 class ConfigDefaultPersistenceTests(SimpleTestCase):
+    def test_obsolete_configs_are_not_registered_or_editable(self):
+        definitions = get_config_definition_map()
+        editable = SystemConfigService.editable_config_keys()
+        self.assertTrue(DEPRECATED_SYSTEM_CONFIG_KEYS.isdisjoint(definitions))
+        self.assertTrue(DEPRECATED_SYSTEM_CONFIG_KEYS.isdisjoint(editable))
+        for key in DEPRECATED_SYSTEM_CONFIG_KEYS:
+            with self.subTest(key=key):
+                self.assertIsNotNone(SystemConfigService.validate_editable_config(key, 'test'))
+
+    def test_only_registered_business_configs_can_be_edited(self):
+        self.assertIn('EXECUTOR_PYTEST_MAX_RUNTIME_MINUTES', SystemConfigService.editable_config_keys())
+        self.assertIsNone(SystemConfigService.validate_editable_config('EXECUTOR_PYTEST_MAX_RUNTIME_MINUTES', '60'))
+        for key in ('unknown_legacy_config', 'select_value', '__system_snowflake_next_tick__'):
+            with self.subTest(key=key):
+                self.assertNotIn(key, SystemConfigService.editable_config_keys())
+                self.assertIsNotNone(SystemConfigService.validate_editable_config(key, 'test'))
+
+    def test_method_cache_enum_only_contains_active_keys(self):
+        self.assertEqual(
+            {item.value for item in CacheDataKey2Enum},
+            {'select_value', 'ass_select_value', 'test_data_select_value'},
+        )
+
+    @patch.object(SystemConfigService, 'sync_registered_configs')
+    def test_config_list_and_grouped_only_query_registered_editable_keys(self, sync):
+        for view_class, method in ((CacheDataCRUD, 'get'), (CacheDataViews, 'grouped')):
+            with self.subTest(method=method), patch(
+                'src.apps.system.api.views.cache_data.CacheData.objects',
+            ) as manager:
+                queryset = MagicMock()
+                queryset.__iter__.return_value = iter([])
+                queryset.count.return_value = 0
+                manager.filter.return_value.exclude.return_value.order_by.return_value = queryset
+                view = view_class()
+                view.serializer_class = MagicMock()
+                getattr(view, method)(SimpleNamespace())
+                manager.filter.assert_called_once_with(
+                    key__in=SystemConfigService.editable_config_keys(),
+                    is_enabled=True,
+                    management_level__gte=2,
+                )
+
+    def test_legacy_pytest_git_url_is_disabled_on_initialization(self):
+        self.assertIn('PYTEST_GIT_URL', DEPRECATED_SYSTEM_CONFIG_KEYS)
+        manager = self.sync(None, 120, created=True)
+        manager.filter.assert_any_call(key__in=DEPRECATED_SYSTEM_CONFIG_KEYS, is_enabled=True)
+        manager.filter.return_value.update.assert_any_call(is_enabled=False)
+
     def sync(self, stored, default, *, created=False, key='TEST_CONFIG', update_user_id=None):
         definition = SystemConfigDefinition(key=key, describe='Test', group='system', default_value=default)
         obj = SimpleNamespace(pk=1, **SystemConfigService._definition_defaults(definition))

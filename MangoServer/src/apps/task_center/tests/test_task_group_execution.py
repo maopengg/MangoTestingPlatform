@@ -225,6 +225,12 @@ class TaskGroupNoticeBuilderTests(SimpleTestCase):
         self.assertIn('group_execution_id=17', builder.build_wechat_markdown())
         self.assertIn('group_execution_id=17', builder.build_email_html())
 
+    def test_group_notice_uses_configured_platform_name(self):
+        builder = TaskGroupNoticeBuilder(self.report(), 'https://example.com', '演示<&>平台')
+        self.assertIn('演示<&>平台任务组执行报告', builder.build_feishu_card()['header']['title']['content'])
+        self.assertIn('演示<&>平台任务组执行报告', builder.build_wechat_markdown())
+        self.assertIn('演示&lt;&amp;&gt;平台任务组执行报告', builder.build_email_html())
+
     def test_feishu_child_reports_are_rendered_in_one_continuous_block(self):
         report = self.report()
         report = TaskGroupNoticeReport(**{

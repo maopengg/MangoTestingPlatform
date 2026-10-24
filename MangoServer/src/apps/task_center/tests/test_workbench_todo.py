@@ -161,11 +161,13 @@ class WorkbenchTodoServiceTests(SimpleTestCase):
                 WorkbenchTodoService,
                 '_notification_url',
                 return_value='https://example.com/#/index',
-        ), patch.object(UserCredentialService, 'send_email') as send_email:
+        ), patch('src.apps.task_center.services.workbench.todo.SystemConfigService.get_platform_name', return_value='示例平台'), \
+                patch.object(UserCredentialService, 'send_email') as send_email:
             result = WorkbenchTodoService._notify_owner(todo)
 
         self.assertTrue(result)
         self.assertEqual(send_email.call_count, 2)
+        self.assertIn('示例平台待办提醒', send_email.call_args.kwargs['subject'])
         self.assertEqual(
             [call.kwargs['email'] for call in send_email.call_args_list],
             ['owner@example.com', 'owner-b@example.com'],

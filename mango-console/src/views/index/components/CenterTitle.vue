@@ -2,9 +2,11 @@
   import { getNowDate } from '@/utils'
   import { defineComponent, onMounted, onUnmounted, ref } from 'vue'
   import { getSystemSocketAllUserSum } from '@/api/system/socket_api'
+  import usePlatformBrandingStore from '@/store/modules/platform-branding'
 
   export default defineComponent({
     setup() {
+      const branding = usePlatformBrandingStore()
       const date = getNowDate()
       const dateStr = date[0]
       const timeStr = ref(date[1])
@@ -33,7 +35,7 @@
             <div class="date">{dateStr}</div>
             <div class="time">{timeStr.value}</div>
           </div>
-          <div class="center">芒果测试平台</div>
+          <div class="center">{branding.projectName}</div>
           <div class="right">
             <div>{userSum.value}</div>
             <div style={{ color: 'var(--m-muted)', fontSize: '12px' }}>当前在线人数</div>

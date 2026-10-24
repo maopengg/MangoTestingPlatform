@@ -64,7 +64,6 @@ export enum PageAnim {
 }
 
 export interface AppConfigState {
-  projectName: string
   theme: ThemeMode
   sideTheme: SideTheme
   themeColor: string

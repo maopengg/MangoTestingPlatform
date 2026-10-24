@@ -993,6 +993,8 @@ class WorkbenchTodoService:
             if not UserCredentialService.is_valid_email(owner.username):
                 continue
             try:
+                platform_name = SystemConfigService.get_platform_name()
+                safe_platform_name = html.escape(platform_name)
                 email = UserCredentialService.normalize_email(owner.username)
                 owner_name = html.escape(owner.name or email)
                 title = html.escape(todo.title)
@@ -1001,14 +1003,14 @@ class WorkbenchTodoService:
                 product_name = html.escape(todo.project_product.name)
                 todo_url = cls._notification_url()
                 link_content = (
-                    f'<p><a href="{html.escape(todo_url, quote=True)}">打开芒果测试平台查看待办</a></p>'
+                    f'<p><a href="{html.escape(todo_url, quote=True)}">打开{safe_platform_name}查看待办</a></p>'
                     if todo_url
                     else ''
                 )
                 content = f"""<!doctype html>
 <html>
 <body style="font-family: Arial, sans-serif; color: #1d2129; line-height: 1.7;">
-  <h2>芒果测试平台待办提醒</h2>
+  <h2>{safe_platform_name}待办提醒</h2>
   <p>{owner_name}，您好：</p>
   <p>您负责的项目产品 <strong>{project_name} / {product_name}</strong> 产生了新的待办：</p>
   <p><strong>{title}</strong></p>
@@ -1018,7 +1020,7 @@ class WorkbenchTodoService:
 </html>"""
                 UserCredentialService.send_email(
                     email=email,
-                    subject=f'芒果测试平台待办提醒：{todo.title}',
+                    subject=f'{platform_name}待办提醒：{todo.title}',
                     content=content,
                 )
                 sent = True
