@@ -5,8 +5,8 @@ WORKDIR /app
 COPY MangoServer/requirements ./requirements
 COPY MangoServer/local_packages ./local_packages
 ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
-RUN pip install --no-cache-dir -r requirements/master.txt -i ${PIP_INDEX_URL}
-RUN pip install --no-cache-dir --force-reinstall -r requirements/local.txt -i ${PIP_INDEX_URL}
+RUN pip install --no-cache-dir -r requirements/master.txt -r requirements/local.txt -i ${PIP_INDEX_URL} \
+    && pip check
 COPY MangoServer/ .
 COPY skill/ ./skill/
 

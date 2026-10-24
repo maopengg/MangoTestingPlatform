@@ -36,8 +36,8 @@ compose build mango-console
 
 echo '启动数据库并检查连接...'
 compose up -d --wait --wait-timeout 180 db
-TABLE_COUNT=$(compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -D"$MYSQL_DATABASE" -Nse "SHOW TABLES"' | wc -l | tr -d ' ')
-if [ "$TABLE_COUNT" -gt 0 ]; then
+TABLE_NAMES=$(compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -D"$MYSQL_DATABASE" -Nse "SHOW TABLES"')
+if [ -n "$TABLE_NAMES" ]; then
     echo '备份现有数据库...'
     BACKUP="$DATA_DIR/backups/before-deploy-$(date +%Y%m%d-%H%M%S).sql"
     umask 077
