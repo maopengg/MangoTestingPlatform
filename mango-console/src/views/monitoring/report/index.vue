@@ -1,12 +1,7 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="预警监控报告"
-        @search="onSearchRefresh"
-        @reset-search="onResetSearch"
-      >
+      <TableHeader title="预警监控报告" @search="onSearchRefresh" @reset-search="onResetSearch">
         <template #search-content>
           <a-form layout="inline" :model="{}" @keyup.enter="onSearchRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
@@ -22,6 +17,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :placeholder="item.placeholder"
                   :options="enumStore.monitoring_log_status"
                   @change="onSearchRefresh"
@@ -41,8 +38,7 @@
       <a-space direction="vertical" fill>
         <!-- 报告表格 -->
         <a-table
-          :scroll="{ x: 1100 }"
-          :scrollbar="true"
+          :scroll="{ x: 1190 }"
           :bordered="false"
           :loading="table.tableLoading.value"
           :data="table.dataList"
@@ -69,7 +65,7 @@
                 {{ record.task_name }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
-                <a-tag :color="enumStore.colors[record.status]" size="small"
+                <a-tag :color="monitoringLogStatusColor(record.status)" size="small"
                   >{{ enumStore.monitoring_log_status[record.status]?.title || '-' }}
                 </a-tag>
               </template>
@@ -86,7 +82,7 @@
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
-                  :actions="[{ label: '查看详情', onClick: () => onViewDetail(record) }]"
+                  :actions="[{ permission: 'monitoring.report:detail', label: '查看详情', onClick: () => onViewDetail(record) }]"
                 />
               </template>
             </a-table-column>
@@ -107,7 +103,7 @@
         <a-tag color="blue">{{ detailDrawer.data.task_name }}</a-tag>
       </a-descriptions-item>
       <a-descriptions-item label="状态">
-        <a-tag :color="enumStore.colors[detailDrawer.data.status]">
+        <a-tag :color="monitoringLogStatusColor(detailDrawer.data.status)">
           {{ detailDrawer.data.status_display }}
         </a-tag>
       </a-descriptions-item>
@@ -144,11 +140,15 @@
   import { conditionItems, tableColumns } from './config'
   import { getMonitoringReportList, MonitoringReport } from '@/api/monitoring/report'
   import { useEnum } from '@/store/modules/get-enum'
+  import { getStatusTagColor, MONITORING_LOG_STATUS_COLORS } from '@/utils/status-color'
 
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const table = useTable()
   const rowKey = useRowKey('id')
   const enumStore = useEnum()
+
+  const monitoringLogStatusColor = (value: number) =>
+    getStatusTagColor(MONITORING_LOG_STATUS_COLORS, value)
 
   // 详情抽屉
   const detailDrawer = reactive({
@@ -182,7 +182,7 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
     doRefresh(true)
   }
@@ -200,10 +200,6 @@
 </script>
 
 <style scoped lang="less">
-  :deep(.arco-card-body) {
-    padding: 16px;
-  }
-
   .report-id-cell {
     display: inline-block;
     width: 80px;

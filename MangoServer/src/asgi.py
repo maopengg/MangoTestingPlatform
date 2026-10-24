@@ -7,26 +7,21 @@ For more information on this file, see
 https://docs.djangoproject.com/en/4.1/howto/deployment/asgi/
 """
 
-import os
-import django
 import asyncio
+import os
+
+import django
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
 
 django.setup()
 
-from channels.auth import AuthMiddlewareStack
-from channels.routing import ProtocolTypeRouter, URLRouter
-from . import routing
-from src.services.mcp_server.app import mcp_asgi_app
+from src.interfaces.mcp.server import mcp_router_asgi_app
 
-django_channels_application = ProtocolTypeRouter({
-    'http': get_asgi_application(),
-    'websocket': AuthMiddlewareStack(URLRouter(routing.websocket_urlpatterns))
-})
+django_application = get_asgi_application()
 
-mcp_application = mcp_asgi_app()
+mcp_application = mcp_router_asgi_app()
 
 
 class LifespanManagedApp:
@@ -119,4 +114,4 @@ async def application(scope, receive, send):
     if path == MCP_PATH or path.startswith(f'{MCP_PATH}/'):
         scope = _mount_mcp_scope(scope, MCP_PATH)
         return await mcp_lifespan_managed_application(scope, receive, send)
-    return await django_channels_application(scope, receive, send)
+    return await django_application(scope, receive, send)

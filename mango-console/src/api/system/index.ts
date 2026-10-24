@@ -1,10 +1,30 @@
-import { get } from '@/api/http'
+import { get, post } from '@/api/http'
 
-export function getSystemActivityLevel() {
+export function getSystemWorkbenchTodos(data: {
+  page: number
+  pageSize: number
+  status?: 'pending' | 'handled'
+  source_type?: number
+  event_type?: number
+}) {
+  return get({
+    url: 'system/index/todos',
+    data: () => data,
+  })
+}
+
+export function postSystemWorkbenchTodoHandled(data: { id: number; handle_note?: string }) {
+  return post({
+    url: 'system/index/todos/handled',
+    data,
+  })
+}
+
+export function getSystemActivityLevel(params?: { page?: number; pageSize?: number }) {
   return get({
     url: 'system/index/activity/level',
     data: () => {
-      return {}
+      return params || {}
     },
   })
 }
@@ -39,6 +59,15 @@ export function getSystemCaseRunSum() {
 export function getSystemCaseSum() {
   return get({
     url: 'system/index/sum',
+    data: () => {
+      return {}
+    },
+  })
+}
+
+export function getSystemProjectQuality() {
+  return get({
+    url: 'system/index/project/quality',
     data: () => {
       return {}
     },

@@ -12,5 +12,5 @@ from src.enums.tools_enum import MessageEnum
 
 class MessageModel(BaseModel):
     type: MessageEnum
-    msg: str | int
+    msg: str | int | dict
     level: TipsTypeEnum | None = None

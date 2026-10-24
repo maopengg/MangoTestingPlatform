@@ -1,8 +1,20 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { reactive, ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
+export const tableScrollX = 1800
+export const requestMethodOptions = [
+  { key: 'GET', title: 'GET' },
+  { key: 'POST', title: 'POST' },
+  { key: 'PUT', title: 'PUT' },
+  { key: 'PATCH', title: 'PATCH' },
+  { key: 'DELETE', title: 'DELETE' },
+  { key: 'OPTIONS', title: 'OPTIONS' },
+  { key: 'HEAD', title: 'HEAD' },
+]
+
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -50,6 +62,7 @@ export const tableColumns = useTableColumn([
     key: 'request_data',
     dataIndex: 'request_data',
     align: 'left',
+    width: 300,
     ellipsis: true,
     tooltip: true,
   },
@@ -64,6 +77,7 @@ export const tableColumns = useTableColumn([
     key: 'response_data',
     dataIndex: 'response_data',
     align: 'left',
+    width: 300,
     ellipsis: true,
     tooltip: true,
   },
@@ -73,8 +87,10 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'user',
     label: '筛选用户',
-    value: ref(''),
+    value: ref([]),
     type: 'select',
+    multiple: true,
+    searchOperator: 'in',
     placeholder: '请选择用户',
     optionItems: [],
     reset: function () {},
@@ -84,6 +100,15 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '筛选来源',
     type: 'select',
     placeholder: '请选择来源',
+    value: ref(''),
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'method',
+    label: '请求方法',
+    type: 'select',
+    placeholder: '请选择请求方法',
     value: ref(''),
     optionItems: [],
     reset: function () {},
@@ -116,3 +141,4 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
 ])
+enableMultiSelectSearch(conditionItems)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from src.apps.functional_test.service.common import ManualTestValidationService
+from src.apps.functional_test.services.common import ManualTestValidationService
 
 
 class FunctionalCaseNormalizer:

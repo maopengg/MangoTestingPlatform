@@ -1,0 +1,4 @@
+interface:
+  display_name: "API 自动化用例创建与修复"
+  short_description: "先确认方案，再创建或修复 API Case"
+  default_prompt: "使用 $mango-api-case-builder 先输出 API 自动化实施方案和编号选择，待我确认后创建或修复 API Case，并在完整编辑态验证业务场景。"

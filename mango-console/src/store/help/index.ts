@@ -59,10 +59,11 @@ export function filterRoutesFromLocalRoutes(
       affix: !!route.affix,
       cacheable: !!route.cacheable,
       icon: route.icon || 'icon-menu',
-      badge: route.badge,
+      isBeta: !!route.isBeta,
       hidden: !!route.hidden,
       isRootPath: !!route.isRootPath,
       isSingle: !!route.isSingle,
+      permissionKey: route.permissionKey || route.menuKey,
       ...filterRoute.meta,
     }
     const parentPath = resolve(path, filterRoute.path)
@@ -110,9 +111,10 @@ export function generatorRoutes(res: Array<OriginRoute>) {
           affix: !!it.affix,
           cacheable: !!it.cacheable,
           icon: it.icon || 'icon-menu',
-          badge: it.badge,
+          isBeta: !!it.isBeta,
           isRootPath: !!it.isRootPath,
           isSingle: !!it.isSingle,
+          permissionKey: it.permissionKey || it.menuKey,
         },
       }
       if (it.children) {
@@ -188,6 +190,7 @@ export function transfromMenu(originRoutes: Array<RouteRecordRaw>): Array<MenuOp
         key: it.path,
         label: it.meta?.title as string,
         icon: it.meta?.icon as string,
+        isBeta: !!it.meta?.isBeta,
         children: null,
       }
       if (it.children) {
@@ -200,6 +203,7 @@ export function transfromMenu(originRoutes: Array<RouteRecordRaw>): Array<MenuOp
           tempMenu.icon = (
             lastItem.meta && lastItem.meta.icon ? lastItem.meta?.icon : tempMenu.icon
           ) as string
+          tempMenu.isBeta = !!lastItem.meta?.isBeta
           tempMenu.children = null
         } else {
           tempMenu.children = transfromMenu(it.children)
@@ -218,6 +222,7 @@ export function transformSplitTabMenu(routes: Array<RouteRecordRaw>): Array<Spli
       fullPath: it.path || '',
       iconPrefix: it.meta?.iconPrefix || 'icon',
       icon: it.meta ? (it.meta?.icon as any) : undefined,
+      isBeta: !!it.meta?.isBeta,
       children: it.children as RouteRecordRaw[],
       checked: ref(false),
     }

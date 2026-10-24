@@ -1,0 +1,138 @@
+id: functional.case
+version: "2"
+owner: functional_test
+description: 功能测试用例分析、生成、补漏、去重和质量门禁
+system: |-
+  输出必须是 JSON object。
+  顶层字段：suite、cases、warnings。
+
+  cases 每一项必须包含：
+  - case_no：已有用例保留编号；新用例留空，由平台分配。
+  - title：用例标题。
+  - category_level_1、category_level_2、category_level_3：分类一、分类二、分类三，均可选；仅在业务确有分类时填写。
+  - precondition：前置条件。
+  - test_point：测试场景。
+  - test_steps：数组，每项为 {"action": "操作", "expected": "步骤预期"}。
+  - expected_result：用例整体预期结果。
+  - test_data：测试数据。
+  - test_types、priority、scenario_layer、scenario_type、scenario_tags：平台枚举字段。
+  - story_refs：需求验收点 ID 数组。
+  - acceptance_source：验收规则或业务依据。
+  - remark：备注。
+  - source_text：可追溯的原始资料片段。
+
+  枚举只能使用平台 value：
+  测试类型：0=手工，1=API，2=UI，3=Pytest，4=性能，5=监控。
+  优先级：0=P0，1=P1，2=P2，3=P3。
+  测试层级：0=接口/组件，1=Integration，2=E2E。
+  验证类型：0=正常，1=异常，2=边界，3=权限，4=数据，5=流程。
+  执行场景：routine_regression、release_verification、smoke_verification、stability_monitoring、data_verification、effectiveness_test、production_inspection、production_regression、temporary_validation、performance_test。
+
+  重要规则：
+  - 完整生成，不允许只给示例或前若干条。
+  - 每条用例必须可落库，测试场景、步骤和预期要具体；分类字段没有可靠依据时可以留空。
+  - story_refs 只能引用需求模型中已有 AC-* ID。
+  - 不输出项目产品、模块、负责人或执行结果；执行结果属于测试执行轮次，不属于用例库。
+templates:
+  default_skill: |-
+    # 功能测试用例设计默认技能
+
+    ## 目标
+    把需求资料、原始用例资料和用户补充要求，设计为可复用的功能测试用例库资产。
+
+    ## 固定流程
+    1. 抽取业务目标、角色、主流程、分支、状态、验收点和关键数据。
+    2. 识别已有功能、异常、边界、权限、数据和流程覆盖。
+    3. 分析覆盖差距并补齐用例，保留有效已有用例及编号。
+    4. 为每条用例填写业务分类、步骤、步骤预期和整体预期。
+    5. 去重并校验必填字段和平台枚举。
+
+    ## 字段规则
+    - 分类一、分类二、分类三均可为空，按业务层次选填，不创建独立分类对象。
+    - test_steps 是结构化步骤数组，每一步至少填写操作或步骤预期。
+    - expected_result 描述整条用例通过时的最终期望。
+    - 用例库不包含测试结果，禁止生成 result/test_result。
+    - priority、scenario_layer、scenario_type、scenario_tags 使用平台枚举值。
+  outline: |-
+    请先不要输出完整用例，只输出场景大纲和预计用例清单。输出 JSON：{suite:{}, outline:[{group_name, expected_case_count, case_titles:[...]}], warnings:[]}。
+    补充要求：{{ user_instruction }}
+    需求文档：
+    {{ requirement_context }}
+    原始用例/需求资料：
+    {{ source_content }}
+  semantic_deduplication: |-
+    只判断候选用例对是否语义重复。不同权限、边界、数据、状态或预期结果不得合并。
+    输出 JSON object：{duplicates:[{kept_index:number,duplicate_index:number,reason:string}]}。
+    索引必须使用输入中的 left/right，不要输出其他内容。
+    {{ candidates }}
+  requirement_analysis: |-
+    请先做需求理解，不要生成测试用例。输出 JSON：{business_goals:[], actors:[], permissions:[], preconditions:[], main_flows:[], alternative_flows:[], state_transitions:[], business_rules:[], acceptance_criteria:[{description:string,source_refs:[]}], data_entities:[], risks:[], ambiguities:[{description:string,severity:risk|critical,requires_confirmation:boolean,options:[],source_refs:[]}]}。
+    只有会导致两个相反测试预期且无法从当前资料判断的歧义才标记 critical 并要求确认；其他不确定性标记 risk。
+    补充要求：{{ user_instruction }}
+    需求/上下文资料：
+    {{ requirement_context }}
+    原始用例资料摘要：
+    {{ source_content }}
+  existing_coverage: |-
+    请分析原始用例已经覆盖了哪些内容，不要生成新用例。输出 JSON：{covered_acceptance_points:[], covered_case_titles:[], normal:[], abnormal:[], boundary:[], permission:[], data:[], flow:[], weak_points:[], warnings:[]}。
+    补充要求：{{ user_instruction }}
+    需求理解：{{ requirement_analysis }}
+    原始用例资料：
+    {{ source_content }}
+  gap_analysis: |-
+    请基于需求理解和已有覆盖做差异分析，并给出后续生成策略。输出 JSON：{missing_acceptance_points:[], missing_normal:[], missing_abnormal:[], missing_boundary:[], missing_permission:[], missing_data:[], missing_flow:[], generation_outline:[{group_name, expected_case_count, case_titles:[]}], dedupe_rules:[], warnings:[]}。
+    补充要求：{{ user_instruction }}
+    需求理解：{{ requirement_analysis }}
+    已有覆盖：{{ existing_coverage }}
+  batch_generation: |-
+    当前是第 {{ batch_index }}/{{ batch_total }} 个测试计划批次。只完成当前计划项，不要按文本分片自行猜测全局。
+    purpose=preserve_existing 时必须逐条保留并规范化计划中的已有用例；purpose=fill_gap 时只补齐指定缺口。
+    不要只返回示例，不要限制为 10 条。每条候选用例必须能追溯到当前计划或来源资料。
+    补充要求：{{ user_instruction }}
+    当前测试计划：{{ plan_batch }}
+    全局需求模型与覆盖矩阵：{{ outline }}
+    需求相关上下文：
+    {{ requirement_context }}
+    与当前计划相关的来源资料：
+    {{ source_context }}
+
+    {{ case_schema }}
+  coverage_patch: |-
+    请检查已生成用例是否遗漏需求、原始用例或场景大纲中的内容。必须重点核对差异分析中的缺失项是否都已覆盖。只输出需要新增补漏的 cases；如果没有遗漏，cases 输出空数组。
+    补充要求：{{ user_instruction }}
+    测试设计分析：{{ outline }}
+    已生成用例摘要：{{ case_digest }}
+    需求文档：
+    {{ requirement_context }}
+    原始资料：
+    {{ source_content }}
+
+    {{ case_schema }}
+  deep_patch: |-
+    请检查已生成的测试平台功能用例是否遗漏上下文资料中的明确用例、重要验收点、异常、边界、权限、数据或流程场景。只输出需要补充新增的 cases；如果没有遗漏，cases 输出空数组。不要重复输出已生成用例。
+    补充要求：{{ user_instruction }}
+    已生成用例摘要：{{ case_digest }}
+    需求相关上下文：
+    {{ requirement_context }}
+    测试设计上下文：
+    {{ source_content }}
+
+    {{ case_schema }}
+  quality_gate: |-
+    你现在是受限的功能测试用例质量评估器，不生成或修改用例。逐项检查必要验收点是否有用例覆盖，同时检查严重矛盾、明显重复、原始用例遗漏和 Skill 违反。
+    只输出 JSON：{passed:boolean,score:number,covered_criterion_ids:[],missing_criterion_ids:[],partial_criterion_ids:[],dimension_summary:{normal:number,exception:number,boundary:number,permission:number,data:number,flow:number},findings:[{severity:'high|medium|low',type:string,message:string,criterion_ids:[],related_case_nos:[]}]}。
+    只有必要验收点无 missing 且 high finding 为 0 时 passed 才能为 true。
+    补充要求：{{ user_instruction }}
+    需求模型：{{ requirement_model }}
+    覆盖矩阵：{{ coverage_matrix }}
+    候选用例：{{ case_digest }}
+  repair_findings: |-
+    只修复下面质量门禁指出的缺口。输出需要新增或修正的 cases；修正已有用例时保留其 case_no（无编号时保留 title），不要重写无关用例。
+    质量发现：{{ findings }}
+    需求模型：{{ requirement_model }}
+    已有用例摘要：{{ case_digest }}
+    补充要求：{{ user_instruction }}
+    必要需求资料：{{ requirement_context }}
+    必要测试资料：{{ source_content }}
+
+    {{ case_schema }}

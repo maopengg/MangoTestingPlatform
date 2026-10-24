@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+import type { DiagnosticMarkdownResult } from '@/api/system/tasks'
 
 export function getSystemTestSuite(data: object) {
   return get({
@@ -36,6 +37,13 @@ export function postSystemTestSuiteSendNotice(data: object) {
   })
 }
 
+export function postSystemTestSuiteStop(id: number | string) {
+  return post({
+    url: 'system/test/suite/stop',
+    data: () => ({ id }),
+  })
+}
+
 export function deleteSystemTestSuite(id: number | string[] | number[]) {
   return deleted({
     url: 'system/test/suite',
@@ -53,5 +61,12 @@ export function getSystemTestSuiteShare(id: number | string) {
     data: () => {
       return { id: id }
     },
+  })
+}
+
+export function getSystemTestSuiteDiagnosticMarkdown(id: number | string) {
+  return get<DiagnosticMarkdownResult>({
+    url: 'system/test/suite/diagnostic/markdown',
+    data: () => ({ id }),
   })
 }

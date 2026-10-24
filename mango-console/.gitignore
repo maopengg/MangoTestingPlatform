@@ -6,6 +6,5 @@ dist
 dist-staging
 yarn.loc
 .idea
-package-lock.json
 .DS_Store
 **/.DS_Store

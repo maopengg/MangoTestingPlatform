@@ -1,0 +1,28 @@
+{
+  "name": "@mango/testing-platform-cli",
+  "version": "7.2.2",
+  "description": "Mango testing platform REST API CLI",
+  "type": "module",
+  "bin": {
+    "mango": "bin/mango.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node bin/mango.js",
+    "test": "node --test",
+    "test:package": "node scripts/package-smoke.mjs mango-testing-platform-cli-7.2.2.tgz",
+    "test:live": "node scripts/verify-live-capabilities.mjs --profile dev",
+    "check": "node --check bin/mango.js && node --check scripts/package-smoke.mjs && node --check src/auth.js && node --check src/browser-auth.js && node --check src/cli.js && node --check src/client.js && node --check src/config.js && node --check src/contracts.js && node --check src/input.js && node --check src/perf.js && node --check src/version.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "13.1.0"
+  }
+}

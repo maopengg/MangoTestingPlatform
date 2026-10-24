@@ -8,7 +8,9 @@ import httpx
 from httpx import URL
 
 class ApiError(Exception):
-    pass
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class BaseHttpClient:
@@ -95,10 +97,10 @@ class BaseHttpClient:
         except httpx.HTTPStatusError as e:
 
             self._log(
-                f"[HTTP ERROR] {e.response.status_code} {url} {e.response.text}"
+                f"[HTTP ERROR] {e.response.status_code} {url}"
             )
 
-            raise ApiError(e.response.text)
+            raise ApiError(e.response.text, status_code=e.response.status_code)
 
         except Exception as e:
 

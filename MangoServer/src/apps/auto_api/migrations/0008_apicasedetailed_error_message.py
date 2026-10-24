@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_api', '0007_apicasedetailedparameter_is_case_headers_and_more'),
     ]

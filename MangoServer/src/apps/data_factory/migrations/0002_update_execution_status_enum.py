@@ -29,7 +29,6 @@ def backwards(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_data_factory', '0001_initial'),
     ]

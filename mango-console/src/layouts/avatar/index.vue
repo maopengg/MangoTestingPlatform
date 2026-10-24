@@ -1,14 +1,12 @@
 <template>
   <div class="mango-avatar-container">
     <a-dropdown size="large" trigger="hover" @select="handleSelect">
-      <div class="mango-action-wrapper">
-        <!--        <div class="mango-avatar">-->
-        <!--          <a-avatar :size="30">-->
-        <!--            <img :src="userStore.mango-avatar" />-->
-        <!--          </a-avatar>-->
-        <!--        </div>-->
-        <span class="mango-nick-name">
-          {{ userStore.nickName }}
+      <div class="mango-action-wrapper" :title="avatarTitle">
+        <span class="mango-name-avatar-wrap">
+          <a-avatar class="mango-name-avatar" :size="27">
+            {{ avatarText }}
+          </a-avatar>
+          <span v-if="isActuatorOnline" class="mango-actuator-online-dot" />
         </span>
         <icon-caret-down class="mango-tip" />
       </div>
@@ -27,7 +25,7 @@
 
 <script lang="ts" setup>
   import { Modal } from '@arco-design/web-vue'
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { IconCaretDown } from '@arco-design/web-vue/es/icon'
   import useUserStore from '@/store/modules/user'
   import { useRouter } from 'vue-router'
@@ -38,6 +36,12 @@
 
   const userStore = useUserStore()
   const router = useRouter()
+  const isActuatorOnline = ref(false)
+  const displayName = computed(() => userStore.nickName || userStore.userName || '用户')
+  const avatarText = computed(() => getNameAvatarText(displayName.value))
+  const avatarTitle = computed(
+    () => `${displayName.value}${isActuatorOnline.value ? '，执行器在线' : ''}`
+  )
 
   const options = [
     {
@@ -87,6 +91,24 @@
     }
   }
 
+  function getNameAvatarText(name: string) {
+    const normalizedName = String(name || '').trim()
+    if (!normalizedName) return '用'
+
+    const nameParts = normalizedName.split(/\s+/).filter(Boolean)
+    if (nameParts.length > 1) {
+      return nameParts
+        .slice(0, 2)
+        .map((item) => Array.from(item)[0] || '')
+        .join('')
+        .toUpperCase()
+    }
+
+    const chars = Array.from(normalizedName)
+    const text = chars.slice(0, 2).join('')
+    return /[a-z]/i.test(text) ? text.toUpperCase() : text
+  }
+
   const visible = ref(import.meta.env.VITE_IS_INDEX_WINDOW == 'true')
 </script>
 
@@ -95,39 +117,64 @@
     .mango-action-wrapper {
       display: flex;
       align-items: center;
+      height: 32px;
+      padding: 0 4px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      transition: border-color @transitionTime, background-color @transitionTime;
 
-      .mango-avatar {
-        display: flex;
-        align-items: center;
-
-        & > img {
-          border: 1px solid var(--m-border);
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 50%;
-        }
+      .mango-name-avatar-wrap {
+        position: relative;
+        display: inline-flex;
+        flex: 0 0 auto;
       }
 
-      .mango-nick-name {
-        margin: 0 5px;
+      .mango-name-avatar {
+        flex: 0 0 auto;
+        border: 1px solid var(--m-primary-border);
+        color: var(--m-primary);
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--m-primary-soft);
+      }
 
-        .mango-tip {
-          transform: rotate(0);
-          transition: transform @transitionTime;
-          margin-left: 2px;
-        }
+      .mango-actuator-online-dot {
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        width: 8px;
+        height: 8px;
+        border: 2px solid var(--m-layout-header-bg);
+        border-radius: 50%;
+        background: var(--m-success);
+      }
+
+      .mango-tip {
+        flex: 0 0 auto;
+        margin-left: 3px;
+        font-size: 12px;
+        color: var(--m-muted);
+        transform: rotate(0);
+        transition: color @transitionTime, transform @transitionTime;
       }
     }
   }
 
   .mango-avatar-container:hover {
     cursor: pointer;
-    color: var(--m-primary);
+
+    .mango-action-wrapper {
+      border-color: var(--m-primary-border);
+      background: var(--m-surface-soft);
+    }
+
+    .mango-name-avatar {
+      background: var(--m-surface);
+    }
 
     .mango-tip {
+      color: var(--m-primary);
       transform: rotate(180deg);
-      transition: transform @transitionTime;
     }
   }
 </style>

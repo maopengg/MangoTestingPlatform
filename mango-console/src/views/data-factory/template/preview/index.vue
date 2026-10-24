@@ -9,34 +9,48 @@
           </div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button size="small" type="primary" :loading="saving" @click="saveTemplateConfig">
+          <a-button v-permission="'data_factory.template:edit'" size="small" type="primary" :loading="saving" @click="saveTemplateConfig" data-testid="qa-views-data-factory-template-preview-button-保存字段配置">
             保存字段配置
           </a-button>
-          <a-button size="small" :loading="syncLoading" @click="confirmSyncTemplateFields">
-            同步实体规则
+          <a-button size="small" @click="postUpdateVisible = true">
+            配置插入后回写
+            <a-badge :count="templateForm.post_insert_updates?.length || 0" :max-count="99" />
           </a-button>
           <a-button
             size="small"
+            :disabled="!templateForm.entity"
+            :loading="entityRuleLoading"
+            @click="openRootEntityRules"
+            data-testid="qa-views-data-factory-template-preview-button-查看实体规则"
+          >
+            查看实体规则
+          </a-button>
+          <a-button v-permission="'data_factory.template:edit'" size="small" :loading="syncLoading" @click="confirmSyncTemplateFields" data-testid="qa-views-data-factory-template-preview-button-同步实体规则">
+            同步实体规则
+          </a-button>
+          <a-button v-permission="'data_factory.template:debug'"
+            size="small"
             status="success"
-            :disabled="!previewResult.can_debug_run"
+            :disabled="!templateForm.id || previewLoading"
             :loading="debugLoading"
-            @click="debugRun"
+            @click="debugRun" data-testid="qa-views-data-factory-template-preview-button-调试运行"
           >
             调试运行
           </a-button>
-          <a-button size="small" @click="goBack">返回</a-button>
+          <VariableReferencePanel />
+          <a-button class="mango-back-button" size="small" @click="goBack" data-testid="qa-views-data-factory-template-preview-button-返回">返回</a-button>
         </a-space>
       </div>
     </template>
 
     <template #default>
-      <a-spin
+      <mango-panel-spin
         :loading="initialPageLoading"
-        class="preview-spin"
+        class="preview-spin mango-workbench-scroll-x scene-config-workbench-scroll"
         tip="模板配置加载中..."
       >
         <div v-if="templateForm.entity" class="scene-config-workbench">
-          <a-spin :loading="scenePanelLoading" class="scene-items-spin" tip="编排数据加载中...">
+          <mango-panel-spin :loading="scenePanelLoading" class="scene-items-spin" tip="编排数据加载中...">
             <aside class="scene-items-card">
               <div class="scene-items-header">
                 <div>
@@ -51,7 +65,7 @@
                 >
                   {{ sceneAutoSaveMeta.text }}
                 </a-tag>
-                <a-button size="small" type="primary" long @click="addSceneItem"
+                <a-button size="small" type="primary" long @click="addSceneItem" data-testid="qa-views-data-factory-template-preview-button-添加关联模板"
                   >添加关联模板</a-button
                 >
               </div>
@@ -62,9 +76,14 @@
                     { 'scene-item-card-active': activeSceneNodeKey === 'root' },
                   ]"
                   @click="activeSceneNodeKey = 'root'"
+                  role="button"
+                  tabindex="0"
+                  :aria-pressed="activeSceneNodeKey === 'root'"
+                  @keydown.enter="activeSceneNodeKey = 'root'"
+                  @keydown.space.prevent="activeSceneNodeKey = 'root'"
                 >
                   <div class="scene-root-label">主模板</div>
-                  <div class="scene-root-name">{{
+                  <div class="scene-root-name" :title="templateForm.name || pageRecord?.name">{{
                     templateForm.name || pageRecord?.name || '-'
                   }}</div>
                   <div class="scene-root-meta">场景入口，优先创建</div>
@@ -88,25 +107,34 @@
                   <div class="scene-item-content">
                     <a-select
                       v-model="item.child_template"
-                      :options="sceneTemplateOptions"
+                      :options="sceneSelectOptions"
+                      :loading="sceneOptionsLoading"
+                      :filter-option="false"
                       :field-names="{ value: 'id', label: 'name' }"
                       allow-search
                       allow-clear
                       placeholder="选择关联模板"
-                      @change="() => onSceneItemTemplateChange(item)"
-                    />
+                      @popup-visible-change="(visible) => visible && loadSceneTemplateOptions('', 1)"
+                      @search="(keyword) => loadSceneTemplateOptions(keyword, 1)"
+                      @dropdown-reach-bottom="loadMoreSceneTemplateOptions"
+                      @change="() => onSceneItemTemplateChange(item)" data-testid="qa-views-data-factory-template-preview-select-选择关联模板"
+                    >
+                      <template #footer v-if="sceneOptionsFailed">
+                        <a-button type="text" size="small" :loading="sceneOptionsLoading" @click="loadSceneTemplateOptions(sceneOptionsKeyword, sceneOptionsPage)">加载失败，点击重试</a-button>
+                      </template>
+                    </a-select>
                     <a-input
                       v-model="item.name"
                       placeholder="关联名称"
-                      @blur="() => onSceneItemNameBlur(item)"
+                      @blur="() => onSceneItemNameBlur(item)" data-testid="qa-views-data-factory-template-preview-input-关联名称"
                     />
                     <div class="scene-item-footer">
                       <span class="scene-item-hint">共享主场景上下文</span>
-                      <a-button
+                      <a-button v-permission="'data_factory.template:delete'"
                         size="mini"
                         status="danger"
                         type="text"
-                        @click="removeSceneItem(index)"
+                        @click="removeSceneItem(index)" data-testid="qa-views-data-factory-template-preview-button-移除"
                       >
                         移除
                       </a-button>
@@ -118,11 +146,13 @@
                 </div>
               </div>
             </aside>
-          </a-spin>
+          </mango-panel-spin>
           <section class="scene-preview-panel">
             <DataFactoryDependencyPreview
               :dependency-tree="previewResult.dependency_tree"
+              :post-insert-updates="previewResult.post_insert_updates || []"
               :can-debug-run="previewResult.can_debug_run"
+              configuration-preview
               :generator-options="enumStore.data_factory_generator_type"
               :root-fields="fieldRows"
               :editable-node-configs="editableNodeConfigs"
@@ -134,14 +164,14 @@
               :flow-loading="previewLoading"
               :field-loading="fieldPanelLoading"
               editable-root
-              field-table-scroll-y="calc(100vh - 320px)"
+              field-table-scroll-y="100%"
               @open-template="openDependencyTemplate"
               @update-node-field-overrides="updateSceneItemOverrides"
             />
           </section>
         </div>
         <div v-else class="mango-empty-state">场景模板未绑定实体</div>
-      </a-spin>
+      </mango-panel-spin>
     </template>
   </TableBody>
 
@@ -151,22 +181,211 @@
         >执行编号：{{ debugResult.execution_no }}</a-alert
       >
       <JsonDisplay :data="debugResult.context || debugResult" />
-      <a-button
+      <a-button v-permission="'data_factory.template:delete'"
         v-if="debugResult.execution_id"
         :loading="debugCleanupLoading"
         status="danger"
-        @click="debugCleanup"
+        @click="debugCleanup" data-testid="qa-views-data-factory-template-preview-button-清理调试数据"
         >清理调试数据</a-button
       >
+    </a-space>
+  </a-modal>
+
+  <a-modal
+    v-model:visible="entityRuleVisible"
+    :title="`${entityRuleRecord?.name || ''} 字段规则`"
+    width="1180px"
+    :footer="false"
+  >
+    <div class="entity-rule-toolbar">
+      <a-tag color="arcoblue">当前表：{{ entityRuleRecord?.table_name || '-' }}</a-tag>
+    </div>
+    <div class="mango-entity-rule-table-region">
+    <a-table
+      class="mango-native-scroll-table"
+      size="small"
+      :columns="entityRuleColumns"
+      :data="entityRuleRows"
+      :loading="entityRuleLoading"
+      :pagination="false"
+      :scroll="{ x: entityRuleTableScrollWidth, y: '100%' }"
+      row-key="id"
+    >
+      <template #columns>
+        <a-table-column
+          v-for="item of entityRuleColumns"
+          :key="item.key"
+          :align="item.align"
+          :data-index="item.key"
+          :fixed="item.fixed"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
+          :title="item.title"
+          :width="item.width"
+        >
+          <template v-if="item.key === 'generator_type'" #cell="{ record }">
+            <a-select
+              :model-value="generatorTypeTitle(record.generator_type)"
+              :options="[generatorTypeTitle(record.generator_type)]"
+              disabled
+              :title="generatorTypeTitle(record.generator_type)"
+              :aria-label="`${record.name} 生成方式（只读）`"
+            />
+          </template>
+          <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
+            <a-tooltip :content="getGeneratorDisplay(record).text">
+              <a-select
+                v-if="getGeneratorDisplay(record).enum"
+                :model-value="getGeneratorDisplay(record).text"
+                :options="[getGeneratorDisplay(record).text]"
+                disabled
+                :aria-label="`${record.name} 枚举配置（只读）`"
+              />
+              <a-input
+                v-else
+                :model-value="getGeneratorDisplay(record).text"
+                readonly
+                :disabled="getGeneratorDisplay(record).automatic"
+                :aria-label="`${record.name} 生成配置（只读）`"
+              />
+            </a-tooltip>
+          </template>
+          <template
+            v-else-if="['nullable', 'primary_key', 'autoincrement', 'db_type', 'platform_type'].includes(item.key)"
+            #cell="{ record }"
+          >
+            <DataFactoryFieldTag :record="record" :field="item.key" />
+          </template>
+        </a-table-column>
+      </template>
+    </a-table>
+    </div>
+  </a-modal>
+
+  <a-modal
+    v-model:visible="postUpdateVisible"
+    title="插入后回写"
+    width="920px"
+    :footer="false"
+  >
+    <a-alert type="info" class="post-update-alert">
+      适用于两张表互相引用的场景。全部数据创建完成后，系统会把来源记录的真实字段值写入目标记录，并且只更新本次执行创建的那一条数据。
+    </a-alert>
+    <div class="post-update-list">
+      <section
+        v-for="(item, index) in templateForm.post_insert_updates || []"
+        :key="`${item.target_node}-${item.target_field}-${index}`"
+        class="post-update-rule"
+      >
+        <header class="post-update-rule-header">
+          <div>
+            <span class="post-update-rule-title">回写规则 {{ index + 1 }}</span>
+            <span class="post-update-rule-summary">{{ getPostUpdateSummary(item) }}</span>
+          </div>
+          <a-button v-permission="'data_factory.template:delete'" size="mini" type="text" status="danger" @click="removePostInsertUpdate(index)">
+            删除规则
+          </a-button>
+        </header>
+
+        <div class="post-update-mapping">
+          <div class="post-update-side post-update-source">
+            <div class="post-update-side-title">取值来源</div>
+            <label class="post-update-field">
+              <span>来源节点</span>
+              <a-select
+                v-model="item.source_node"
+                :options="sceneNodeOptions"
+                placeholder="选择已创建的数据节点"
+                allow-search
+                @change="handlePostUpdateSourceNodeChange(item)"
+              />
+            </label>
+            <label class="post-update-field">
+              <span>来源字段</span>
+              <a-select
+                v-model="item.source_field"
+                :options="getPostUpdateSourceFieldOptions(item)"
+                placeholder="选择要取出的字段"
+                allow-search
+                @change="handlePostUpdateFieldChange(item)"
+              />
+            </label>
+          </div>
+
+          <div class="post-update-direction" aria-hidden="true">
+            <span>写入</span>
+            <strong>→</strong>
+          </div>
+
+          <div class="post-update-side post-update-target">
+            <div class="post-update-side-title">写入目标</div>
+            <label class="post-update-field">
+              <span>目标节点</span>
+              <a-select
+                v-model="item.target_node"
+                :options="sceneNodeOptions"
+                placeholder="选择要更新的数据节点"
+                allow-search
+                @change="handlePostUpdateTargetNodeChange(item)"
+              />
+            </label>
+            <label class="post-update-field">
+              <span>目标字段</span>
+              <a-select
+                v-model="item.target_field"
+                :options="getPostUpdateTargetFieldOptions(item.target_node)"
+                placeholder="仅显示可安全回写字段"
+                allow-search
+                @change="handlePostUpdateFieldChange(item)"
+              />
+            </label>
+          </div>
+        </div>
+
+        <a-alert
+          :type="getPostUpdateValidation(item, index).type"
+          class="post-update-validation"
+        >
+          {{ getPostUpdateValidation(item, index).message }}
+        </a-alert>
+
+        <details class="post-update-advanced">
+          <summary>高级设置与执行详情</summary>
+          <div class="post-update-advanced-content">
+            <label class="post-update-order-field">
+              <span>执行顺序</span>
+              <a-input-number v-model="item.sort" :min="0" placeholder="数字越小越先执行" />
+            </label>
+            <div class="post-update-order-tip">存在多条回写规则时，数字越小越先执行。</div>
+            <div
+              v-if="previewResult.post_insert_updates?.[index]?.valid"
+              class="post-update-sql"
+            >
+              {{ previewResult.post_insert_updates[index].sql_template }}
+            </div>
+          </div>
+        </details>
+      </section>
+      <div v-if="!templateForm.post_insert_updates?.length" class="mango-empty-state">
+        <div>暂未配置回写规则</div>
+        <div class="post-update-empty-tip">例如：评分创建后，将评分 ID 写入状态表的当前评分结果字段。</div>
+      </div>
+    </div>
+    <a-space>
+      <a-button size="small" type="primary" @click="addPostInsertUpdate">添加回写规则</a-button>
+      <a-button size="small" :loading="previewLoading" @click="loadPreview">检查全部规则</a-button>
     </a-space>
   </a-modal>
 </template>
 
 <script lang="ts" setup>
   import DataFactoryDependencyPreview from '@/components/DataFactory/DataFactoryDependencyPreview.vue'
+  import DataFactoryFieldTag from '@/components/display/DataFactoryFieldTag.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
   import {
     getDataFactoryField,
+    getDataFactoryEntity,
     getDataFactoryTemplate,
     postDataFactoryTemplateDebugCleanup,
     postDataFactoryTemplateDebugRun,
@@ -180,6 +399,8 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+  import { entityRuleColumns, entityRuleTableScrollWidth } from './config'
+  import { getGeneratorDisplay } from './generatorDisplay'
 
   const route = useRoute()
   const router = useRouter()
@@ -201,12 +422,26 @@
   const debugCleanupLoading = ref(false)
   const saving = ref(false)
   const syncLoading = ref(false)
+  const entityRuleLoading = ref(false)
+  const entityRuleVisible = ref(false)
+  const postUpdateVisible = ref(false)
+  const entityRuleRecord = ref<any>(null)
+  const entityRuleRows = ref<any[]>([])
   const sceneAutoSaving = ref(false)
   const sceneAutoSaveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const sceneSavedItemOverrides = ref<Record<string, Record<string, any>>>({})
   const savedFieldConfigSignature = ref('')
   const fieldRows = ref<any[]>([])
   const sceneTemplateOptions = ref<any[]>([])
+  const sceneOptionsKeyword = ref('')
+  const sceneOptionsPage = ref(0)
+  const sceneOptionsHasMore = ref(false)
+  const sceneOptionsFailed = ref(false)
+  let sceneOptionsRequest = 0
+  const sceneSelectOptions = computed(() => {
+    const selected = (templateForm.items || []).map((item: any) => item.child_template_detail).filter(Boolean)
+    return [...new Map([...selected, ...sceneTemplateOptions.value].map((item: any) => [String(item.id), item])).values()]
+  })
   const itemFieldsMap = ref<Record<string, any[]>>({})
   const dependencyTemplateOptions = ref<Record<string, any[]>>({})
   const draggingSceneItemKey = ref('')
@@ -215,6 +450,7 @@
     id: null,
     field_overrides: {},
     output_config: [],
+    post_insert_updates: [],
     items: [],
   })
   const pageRecord = computed<any>(() => pageData.record || {})
@@ -242,9 +478,32 @@
     })
     return configs
   })
+  const sceneNodeOptions = computed(() => [
+    {
+      label: `主模板：${templateForm.name || '-'}${
+        previewResult.value?.entity?.table_name
+          ? `｜${previewResult.value.entity.table_name}`
+          : ''
+      }`,
+      value: 'root',
+    },
+    ...(templateForm.items || [])
+      .filter((item: any) => item.child_template && (item.id || item.name))
+      .map((item: any) => ({
+        label: `关联模板：${item.name || getSceneTemplateName(item.child_template)}${
+          item.child_template_detail?.entity?.table_name
+            ? `｜${item.child_template_detail.entity.table_name}`
+            : ''
+        }`,
+        value: `item:${item.id || item.name}`,
+      })),
+  ])
   const canDebugText = computed(() => {
     if (!previewResult.value.dependency_tree) {
       return '维护字段覆盖配置，并查看依赖实体关系'
+    }
+    if (previewResult.value.preview_mode === 'configuration') {
+      return '当前仅展示配置示例；调试运行时才校验环境和数据库权限'
     }
     return previewResult.value.can_debug_run
       ? '依赖链路完整，可以保存当前字段配置'
@@ -258,7 +517,7 @@
       !previewResult.value.dependency_tree
     )
   })
-  const scenePanelLoading = computed(() => templateLoading.value || sceneOptionsLoading.value)
+  const scenePanelLoading = computed(() => !initialPageLoading.value && templateLoading.value)
   const sceneAutoSaveMeta = computed(() => {
     if (sceneAutoSaving.value || sceneAutoSaveStatus.value === 'saving') {
       return { text: '保存中...', color: 'arcoblue' }
@@ -286,8 +545,9 @@
       template_id: templateId.value,
       overrides: templateForm.field_overrides || {},
       output_config: templateForm.output_config,
+      post_insert_updates: templateForm.post_insert_updates || [],
       items: normalizeSceneItems(),
-      test_env: route.query.test_env || userStore.selected_environment,
+      preview_mode: 'configuration',
     }
   }
 
@@ -300,12 +560,13 @@
       entity: record?.entity?.id || record?.entity || null,
       name: record?.name || '',
       description: record?.description || '',
-      cleanup_strategy: record?.cleanup_strategy || 2,
+      cleanup_strategy: record?.cleanup_strategy ?? 1,
       is_default: record?.is_default || false,
       config_status: record?.config_status ?? 0,
       status: record?.status || 1,
       field_overrides: previewContext.value.overrides || record?.field_overrides || {},
       output_config: previewContext.value.output_config || record?.output_config || [],
+      post_insert_updates: record?.post_insert_updates || [],
       items: normalizeLoadedItems(record?.items || []),
     })
     snapshotSceneItemOverrides(record?.items || [])
@@ -327,7 +588,7 @@
       return Promise.resolve(cached)
     }
     templateLoading.value = true
-    return getDataFactoryTemplate({ id: templateId.value, page: 1, pageSize: 1 })
+    return getDataFactoryTemplate({ id: templateId.value, page: 1, pageSize: 1 }, 30000)
       .then((res) => {
         const record = (res.data || [])[0]
         resetTemplateForm(record || {})
@@ -339,14 +600,19 @@
   }
 
   function reloadPageData() {
+    sceneOptionsRequest += 1
+    sceneOptionsLoading.value = false
+    sceneTemplateOptions.value = []
+    sceneOptionsPage.value = 0
+    sceneOptionsHasMore.value = false
+    sceneOptionsFailed.value = false
     previewResult.value = {}
     dependencyTemplateOptions.value = {}
     itemFieldsMap.value = {}
     firstPreviewReady.value = false
     editableFieldsReady.value = false
     return loadTemplate()
-      .then(() => Promise.all([loadSceneTemplateOptions(), loadPreview()]))
-      .then(loadEditableFieldDefinitions)
+      .then(() => Promise.all([loadPreview(), loadEditableFieldDefinitions()]))
   }
 
   function loadEditableFieldDefinitions() {
@@ -390,8 +656,8 @@
   }
 
   function debugRun() {
-    if (!previewResult.value.can_debug_run) {
-      Message.warning('当前依赖链路还有字段未配置，暂不能调试运行')
+    if (hasUnsavedFieldConfig()) {
+      Message.warning('请先保存字段和插入后回写配置，再调试运行')
       return
     }
     debugLoading.value = true
@@ -419,11 +685,15 @@
       id: templateForm.id,
       field_overrides: templateForm.field_overrides || {},
       output_config: templateForm.output_config || [],
+      post_insert_updates: templateForm.post_insert_updates || [],
       items: normalizeSceneItems(),
-      test_env: route.query.test_env || userStore.selected_environment,
     })
       .then((res) => {
-        Message.success(res.msg)
+        if (Number(res.data?.config_status) === 0) {
+          Message.warning('配置已保存，待校验后可执行；请在模板列表完成校验')
+        } else {
+          Message.success(res.msg)
+        }
         resetTemplateForm(res.data || templateForm)
         snapshotFieldConfig()
         loadSceneItemFields().then(loadPreview)
@@ -473,6 +743,39 @@
     })
   }
 
+  function openRootEntityRules() {
+    if (!templateForm.entity) {
+      Message.warning('当前场景模板未绑定数据实体')
+      return
+    }
+    entityRuleVisible.value = true
+    entityRuleLoading.value = true
+    entityRuleRecord.value = null
+    entityRuleRows.value = []
+    Promise.all([
+      getDataFactoryEntity({ id: templateForm.entity, page: 1, pageSize: 1 }),
+      getDataFactoryField({ entity: templateForm.entity }),
+    ])
+      .then(([entityRes, fieldRes]) => {
+        entityRuleRecord.value = (entityRes.data || [])[0] || null
+        entityRuleRows.value = fieldRes.data || []
+        if (!entityRuleRecord.value) {
+          Message.warning('数据实体不存在或已被删除')
+        }
+      })
+      .finally(() => {
+        entityRuleLoading.value = false
+      })
+  }
+
+  function generatorTypeTitle(value: any) {
+    return (
+      (enumStore.data_factory_generator_type || []).find(
+        (item: any) => Number(item.key) === Number(value)
+      )?.title || value || '-'
+    )
+  }
+
   function loadDependencyTemplateOptions(row: any) {
     const dependencyEntityId = row.generator_config?.dependency_entity_id
     const projectProduct = templateForm.project_product
@@ -512,25 +815,45 @@
     })
   }
 
-  function loadSceneTemplateOptions() {
+  function loadSceneTemplateOptions(keyword = '', page = 1) {
     if (!templateForm.project_product) {
       sceneTemplateOptions.value = []
       return Promise.resolve()
     }
+    const requestId = ++sceneOptionsRequest
+    const productId = templateForm.project_product
+    sceneOptionsKeyword.value = keyword
+    sceneOptionsPage.value = page
+    sceneOptionsFailed.value = false
     sceneOptionsLoading.value = true
     return getDataFactoryTemplate({
-      project_product: templateForm.project_product,
-      page: 1,
-      pageSize: 9999,
-    })
+      project_product: productId,
+      ...(keyword.trim() ? { name: keyword.trim() } : {}),
+      page,
+      pageSize: 30,
+    }, 30000)
       .then((res) => {
-        sceneTemplateOptions.value = (res.data || []).filter(
+        if (requestId !== sceneOptionsRequest) return
+        const rows = res.data || []
+        const candidates = rows.filter(
           (item: any) => String(item.id) !== String(templateForm.id)
         )
+        sceneTemplateOptions.value = page === 1 ? candidates : [...sceneTemplateOptions.value, ...candidates]
+        sceneOptionsHasMore.value = page * 30 < res.totalSize
+      })
+      .catch(() => {
+        if (requestId !== sceneOptionsRequest) return
+        sceneOptionsFailed.value = true
       })
       .finally(() => {
-        sceneOptionsLoading.value = false
+        if (requestId === sceneOptionsRequest) sceneOptionsLoading.value = false
       })
+  }
+
+  function loadMoreSceneTemplateOptions() {
+    if (!sceneOptionsLoading.value && !sceneOptionsFailed.value && sceneOptionsHasMore.value) {
+      return loadSceneTemplateOptions(sceneOptionsKeyword.value, sceneOptionsPage.value + 1)
+    }
   }
 
   function normalizeLoadedItems(items: any[]) {
@@ -586,6 +909,7 @@
     return JSON.stringify({
       field_overrides: templateForm.field_overrides || {},
       output_config: templateForm.output_config || [],
+      post_insert_updates: templateForm.post_insert_updates || [],
       item_field_overrides: (templateForm.items || [])
         .filter((item: any) => Object.keys(item.field_overrides || {}).length)
         .map((item: any) => ({
@@ -613,16 +937,204 @@
 
   function getSceneTemplateName(templateId: any) {
     return (
-      sceneTemplateOptions.value.find((item: any) => String(item.id) === String(templateId))
+      sceneSelectOptions.value.find((item: any) => String(item.id) === String(templateId))
         ?.name || ''
     )
   }
 
   function getSceneTemplateEntity(templateId: any) {
-    const template = sceneTemplateOptions.value.find(
+    const template = sceneSelectOptions.value.find(
       (item: any) => String(item.id) === String(templateId)
     )
     return template?.entity?.id || template?.entity
+  }
+
+  function getSceneItemByNode(node: string) {
+    if (!node || node === 'root') {
+      return null
+    }
+    const reference = String(node).replace(/^item:/, '')
+    return (templateForm.items || []).find(
+      (item: any) => String(item.id) === reference || String(item.name) === reference
+    )
+  }
+
+  function getPostUpdateNodeFields(node: string) {
+    if (!node) {
+      return []
+    }
+    if (node === 'root') {
+      return fieldRows.value || []
+    }
+    const sceneItem = getSceneItemByNode(node)
+    return sceneItem ? itemFieldsMap.value[getSceneItemKey(sceneItem)] || [] : []
+  }
+
+  function getPostUpdateNodeOverrides(node: string) {
+    if (!node || node === 'root') {
+      return templateForm.field_overrides || {}
+    }
+    const sceneItem = getSceneItemByNode(node)
+    return {
+      ...(sceneItem?.child_template_detail?.field_overrides || {}),
+      ...(sceneItem?.field_overrides || {}),
+    }
+  }
+
+  function getEffectiveGeneratorType(node: string, field: any) {
+    return getPostUpdateNodeOverrides(node)?.[field.name]?.generator_type ?? field.generator_type
+  }
+
+  function getPostUpdateField(node: string, fieldName: string) {
+    return getPostUpdateNodeFields(node).find((field: any) => field.name === fieldName)
+  }
+
+  function formatPostUpdateFieldOption(node: string, field: any) {
+    const tags = []
+    if (field.primary_key) tags.push('主键')
+    if (field.autoincrement) tags.push('自增')
+    if (field.nullable) tags.push('可空')
+    if (getEffectiveGeneratorType(node, field) === 0) tags.push('已跳过')
+    if (field.platform_type) tags.push(field.platform_type)
+    const businessName = field.label && field.label !== field.name ? `${field.label}｜` : ''
+    return `${businessName}${field.name}${tags.length ? ` · ${tags.join(' · ')}` : ''}`
+  }
+
+  function getPostUpdateTargetFieldOptions(node: string) {
+    return getPostUpdateNodeFields(node)
+      .filter(
+        (field: any) =>
+          field.nullable &&
+          !field.primary_key &&
+          getEffectiveGeneratorType(node, field) === 0
+      )
+      .map((field: any) => ({
+        label: formatPostUpdateFieldOption(node, field),
+        value: field.name,
+      }))
+  }
+
+  function getPostUpdateSourceFieldOptions(item: any) {
+    const targetField = getPostUpdateField(item.target_node, item.target_field)
+    return getPostUpdateNodeFields(item.source_node)
+      .filter(
+        (field: any) => !targetField || field.platform_type === targetField.platform_type
+      )
+      .map((field: any) => ({
+        label: formatPostUpdateFieldOption(item.source_node, field),
+        value: field.name,
+      }))
+  }
+
+  function getPostUpdateNodeLabel(node: string) {
+    return sceneNodeOptions.value.find((option: any) => option.value === node)?.label || '未选择节点'
+  }
+
+  function getPostUpdateFieldLabel(node: string, fieldName: string) {
+    const field = getPostUpdateField(node, fieldName)
+    if (!field) return fieldName || '未选择字段'
+    return field.label && field.label !== field.name
+      ? `${field.label}（${field.name}）`
+      : field.name
+  }
+
+  function getPostUpdateSummary(item: any) {
+    if (!item.source_node || !item.source_field || !item.target_node || !item.target_field) {
+      return '请选择取值来源和写入目标'
+    }
+    return `将 ${getPostUpdateNodeLabel(item.source_node)} 的 ${getPostUpdateFieldLabel(
+      item.source_node,
+      item.source_field
+    )} 写入 ${getPostUpdateNodeLabel(item.target_node)} 的 ${getPostUpdateFieldLabel(
+      item.target_node,
+      item.target_field
+    )}`
+  }
+
+  function clearPostUpdatePreview() {
+    previewResult.value = {
+      ...previewResult.value,
+      post_insert_updates: [],
+    }
+  }
+
+  function selectOnlyPostUpdateOption(item: any, key: string, options: any[]) {
+    if (!options.some((option: any) => option.value === item[key])) {
+      item[key] = options.length === 1 ? options[0].value : ''
+    }
+  }
+
+  function handlePostUpdateSourceNodeChange(item: any) {
+    selectOnlyPostUpdateOption(item, 'source_field', getPostUpdateSourceFieldOptions(item))
+    clearPostUpdatePreview()
+  }
+
+  function handlePostUpdateTargetNodeChange(item: any) {
+    selectOnlyPostUpdateOption(
+      item,
+      'target_field',
+      getPostUpdateTargetFieldOptions(item.target_node)
+    )
+    selectOnlyPostUpdateOption(item, 'source_field', getPostUpdateSourceFieldOptions(item))
+    clearPostUpdatePreview()
+  }
+
+  function handlePostUpdateFieldChange(item: any) {
+    selectOnlyPostUpdateOption(item, 'source_field', getPostUpdateSourceFieldOptions(item))
+    clearPostUpdatePreview()
+  }
+
+  function getPostUpdateValidation(item: any, index: number) {
+    if (!item.source_node || !item.source_field || !item.target_node || !item.target_field) {
+      return { type: 'warning', message: '请完整选择来源节点、来源字段、目标节点和目标字段。' }
+    }
+    const targetField = getPostUpdateField(item.target_node, item.target_field)
+    const sourceField = getPostUpdateField(item.source_node, item.source_field)
+    if (!targetField || !sourceField) {
+      return { type: 'error', message: '所选字段已不存在，请重新选择。' }
+    }
+    if (
+      !targetField.nullable ||
+      targetField.primary_key ||
+      getEffectiveGeneratorType(item.target_node, targetField) !== 0
+    ) {
+      return {
+        type: 'error',
+        message: '目标字段必须可空、不能是主键，并且需要在字段规则中配置为“跳过”。',
+      }
+    }
+    if (sourceField.platform_type !== targetField.platform_type) {
+      return {
+        type: 'error',
+        message: `字段类型不一致：来源为 ${sourceField.platform_type}，目标为 ${targetField.platform_type}。`,
+      }
+    }
+    const checkedResult = previewResult.value.post_insert_updates?.[index]
+    if (checkedResult?.valid === false) {
+      return { type: 'error', message: checkedResult.message || '后端检查未通过，请调整配置。' }
+    }
+    if (checkedResult?.valid) {
+      return { type: 'success', message: '检查通过，将按本次 execution 生成的目标主键安全回写。' }
+    }
+    return { type: 'info', message: '配置完整，请点击“检查全部规则”确认可执行 SQL。' }
+  }
+
+  function addPostInsertUpdate() {
+    const item = {
+      target_node: 'root',
+      target_field: '',
+      source_node: sceneNodeOptions.value[1]?.value || '',
+      source_field: '',
+      sort: (templateForm.post_insert_updates?.length || 0) * 10,
+    }
+    templateForm.post_insert_updates = [...(templateForm.post_insert_updates || []), item]
+    handlePostUpdateTargetNodeChange(item)
+    handlePostUpdateSourceNodeChange(item)
+  }
+
+  function removePostInsertUpdate(index: number) {
+    templateForm.post_insert_updates.splice(index, 1)
+    loadPreview()
   }
 
   function addSceneItem() {
@@ -683,6 +1195,7 @@
   }
 
   function onSceneItemTemplateChange(item: any) {
+    item.child_template_detail = sceneSelectOptions.value.find((option: any) => String(option.id) === String(item.child_template)) || null
     if (!item.name) {
       item.name = getSceneTemplateName(item.child_template)
     }
@@ -769,7 +1282,6 @@
     return putDataFactoryTemplate({
       id: templateForm.id,
       items: normalizeSceneArrangementItems(),
-      test_env: route.query.test_env || userStore.selected_environment,
     })
       .then((res) => {
         mergeSavedSceneItems(res.data?.items || [], keepFieldDirty)
@@ -845,7 +1357,7 @@
 </script>
 
 <style scoped>
-  .template-preview-page :deep(.arco-card-body) {
+  .template-preview-page :deep(> .arco-card-body) {
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -853,18 +1365,218 @@
 
   .preview-spin {
     display: block;
+    box-sizing: border-box;
     width: 100%;
-    height: calc(100vh - 178px);
+    height: 100%;
     min-height: 0;
-    padding-top: 12px;
+    padding-top: var(--m-page-gap);
+  }
+
+  .entity-rule-toolbar {
+    margin-bottom: var(--m-page-gap);
+  }
+
+  .mango-entity-rule-table-region {
+    height: min(460px, 65vh);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .post-update-alert {
+    margin-bottom: var(--m-page-gap);
+  }
+
+  .post-update-list {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--m-page-gap);
+    gap: 10px;
+  }
+
+  .post-update-rule {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface-soft);
+  }
+
+  .post-update-rule-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    min-width: 0;
+    margin-bottom: 10px;
+    gap: 12px;
+  }
+
+  .post-update-rule-header > div {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .post-update-rule-title {
+    flex: none;
+    color: var(--m-text);
+    font-weight: 600;
+  }
+
+  .post-update-rule-summary {
+    overflow: hidden;
+    color: var(--m-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .post-update-mapping {
+    display: grid;
+    align-items: stretch;
+    min-width: 0;
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
+  }
+
+  .post-update-side {
+    display: grid;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-sm);
+    background: var(--m-surface);
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .post-update-side-title {
+    color: var(--m-text);
+    font-weight: 600;
+    grid-column: 1 / -1;
+  }
+
+  .post-update-source .post-update-side-title {
+    color: var(--m-warning);
+  }
+
+  .post-update-target .post-update-side-title {
+    color: var(--m-primary);
+  }
+
+  .post-update-field,
+  .post-update-order-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .post-update-field > span,
+  .post-update-order-field > span {
+    color: var(--m-text-2);
+    font-size: 12px;
+  }
+
+  .post-update-field :deep(.arco-select-view),
+  .post-update-order-field :deep(.arco-input-wrapper) {
+    width: 100%;
+  }
+
+  .post-update-direction {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--m-muted);
+    flex-direction: column;
+    font-size: 12px;
+    gap: 2px;
+  }
+
+  .post-update-direction strong {
+    color: var(--m-warning);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .post-update-validation {
+    margin-top: 10px;
+  }
+
+  .post-update-advanced {
+    margin-top: 8px;
+    color: var(--m-text-2);
+    font-size: 12px;
+  }
+
+  .post-update-advanced summary {
+    width: fit-content;
+    color: var(--m-primary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .post-update-advanced-content {
+    display: grid;
+    align-items: end;
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: var(--m-radius-sm);
+    background: var(--m-surface);
+    gap: 8px 12px;
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+
+  .post-update-order-tip {
+    padding-bottom: 7px;
+    color: var(--m-muted);
+  }
+
+  .post-update-sql {
+    overflow-x: auto;
+    padding: 8px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-sm);
+    background: var(--m-code-bg);
+    color: var(--m-code-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    grid-column: 1 / -1;
+    white-space: nowrap;
+  }
+
+  .post-update-empty-tip {
+    margin-top: 4px;
+    color: var(--m-muted);
+    font-size: 12px;
+  }
+
+  @media (max-width: 900px) {
+    .post-update-mapping {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .post-update-direction strong {
+      transform: rotate(90deg);
+    }
   }
 
   .scene-config-workbench {
     display: grid;
     height: 100%;
     min-height: 0;
-    gap: 12px;
+    gap: var(--m-page-gap);
     grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .scene-config-workbench-scroll {
+    --mango-workbench-min-width: 980px;
+  }
+
+  .scene-config-workbench-scroll .scene-config-workbench {
+    min-width: var(--mango-workbench-min-width);
   }
 
   .scene-items-spin {
@@ -873,8 +1585,7 @@
     min-height: 0;
   }
 
-  .scene-items-spin :deep(.arco-spin),
-  .scene-items-spin :deep(.arco-spin-children) {
+  .scene-items-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
     min-height: 0;
   }
@@ -886,7 +1597,8 @@
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 12px;
+    box-sizing: border-box;
+    padding: var(--m-card-padding);
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface);
@@ -897,7 +1609,7 @@
     align-items: flex-start;
     flex-direction: column;
     justify-content: flex-start;
-    gap: 12px;
+    gap: var(--m-page-gap);
   }
 
   .scene-items-title {
@@ -920,16 +1632,16 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    margin-top: 12px;
+    margin-top: var(--m-page-gap);
     padding-right: 2px;
     padding-bottom: 2px;
-    gap: 10px;
+    gap: var(--m-page-gap);
   }
 
   .scene-item-card {
     display: grid;
     flex-shrink: 0;
-    padding: 10px 10px 10px 8px;
+    padding: var(--m-card-padding);
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface-soft);
@@ -941,7 +1653,7 @@
 
   .scene-root-card {
     flex-shrink: 0;
-    padding: 10px 12px;
+    padding: var(--m-card-padding);
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface-soft);
@@ -953,6 +1665,11 @@
   .scene-item-card:hover {
     border-color: color-mix(in srgb, var(--m-primary) 28%, var(--m-border));
     background: var(--m-surface);
+  }
+
+  .scene-root-card:focus-visible {
+    outline: 2px solid var(--m-primary);
+    outline-offset: 2px;
   }
 
   .scene-item-card-active {
@@ -1033,21 +1750,8 @@
     min-height: 0;
   }
 
-  :deep(.preview-spin > .arco-spin) {
+  .preview-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
-  }
-
-  :deep(.preview-spin .arco-spin-children) {
-    height: 100%;
-  }
-
-  @media (max-width: 1px) {
-    .scene-config-workbench {
-      grid-template-columns: 1fr;
-    }
-
-    .scene-items-header {
-      flex-direction: column;
-    }
+    min-height: 0;
   }
 </style>

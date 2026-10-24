@@ -4,7 +4,7 @@
     :data="flatRows"
     :loading="loading"
     :pagination="false"
-    :scroll="{ x: 1800 }"
+    :scroll="{ x: 2000 }"
     :span-method="spanMethod"
     class="case-summary-table"
     row-key="__rowKey"
@@ -24,44 +24,52 @@
         <template v-if="itemRow.key === '__caseCount'" #cell="{ record }">
           <span class="case-count">共 {{ record.__caseCount }} 条</span>
         </template>
+        <template v-else-if="itemRow.key === 'name'" #cell="{ record }">
+          <a-tag v-if="record.is_recovery" size="small">恢复</a-tag>
+          <span>{{ record.name }}</span>
+        </template>
         <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
           <a-tag :color="statusColor(record.status)" size="small">{{
             statusText(record.status)
           }}</a-tag>
         </template>
         <template v-else-if="itemRow.key === 'response_time'" #cell="{ record }">
-          <span>{{ formatDuration(record?.response?.time) }}</span>
+          <span>{{ formatDuration(record?.response_time ?? record?.response?.time) }}</span>
+        </template>
+        <template v-else-if="itemRow.key === 'disposition'" #cell="{ record }">
+          <ReportDispositionStatus :record="record.__sourceRecord" />
         </template>
         <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-          <div class="action-cell">
-            <a-button
-              v-if="!record.children"
-              type="text"
-              size="mini"
-              @click="$emit('show-details', record.__detailRecord || record)"
-            >
-              详细报告
-            </a-button>
-            <span v-else></span>
-            <a-button
-              v-if="canRetry && record.__isFirstCaseRow && record.__caseId && record.__caseId !== '-'"
-              type="text"
-              size="mini"
-              @click="$emit('open-case-detail', record)"
-            >
-              用例详情
-            </a-button>
-            <span v-else class="action-placeholder">用例详情</span>
-            <a-button
-              v-if="canRetry && record.__isFirstCaseRow"
-              type="text"
-              size="mini"
-              @click="$emit('retry', record.__caseSourceId)"
-            >
-              重试
-            </a-button>
-            <span v-else class="action-placeholder">重试</span>
-          </div>
+          <ReportDisposition :record="record.__sourceRecord"
+            :editable="canRetry && record.__isFirstCaseRow" @saved="$emit('disposition-saved')">
+            <template #default="{ open, eligible }">
+          <MangoTableActions
+            :actions="[
+              { permission: 'report:exclude', label: '排查与排除', hidden: !eligible, overflow: true, priority: 100, onClick: open },
+              { permission: 'report:detail',
+                label: '详细报告',
+                hidden: !!record.children,
+                onClick: () => $emit('show-details', record.__detailRecord || record),
+              },
+              { permission: 'report:retry',
+                label: '重试',
+                hidden: !(canRetry && record.__isFirstCaseRow),
+                onClick: () => $emit('retry', record.__caseSourceId),
+              },
+              { permission: 'report:detail',
+                label: '历史报告',
+                hidden: !(record.__isFirstCaseRow && record.__caseId && record.__caseId !== '-'),
+                onClick: () => $emit('show-history', record),
+              },
+              { permission: 'report:detail',
+                label: '用例详情',
+                hidden: !(canRetry && record.__isFirstCaseRow && record.__caseId && record.__caseId !== '-'),
+                onClick: () => $emit('open-case-detail', record),
+              },
+            ]"
+          />
+            </template>
+          </ReportDisposition>
         </template>
       </a-table-column>
     </template>
@@ -70,6 +78,9 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import ReportDisposition from './ReportDisposition.vue'
+  import ReportDispositionStatus from './ReportDispositionStatus.vue'
   import { apiColumns } from './config'
 
   const props = defineProps<{
@@ -82,7 +93,9 @@
   defineEmits<{
     (event: 'open-case-detail', record: any): void
     (event: 'show-details', record: any): void
+    (event: 'show-history', record: any): void
     (event: 'retry', id: any): void
+    (event: 'disposition-saved'): void
   }>()
 
   const flatRows = computed(() =>
@@ -96,11 +109,18 @@
       const caseName = item?.case_name || item?.name || '未命名用例'
       const apiInfoName =
         item?.api_info_name || rows.find((row: any) => row?.api_info_name)?.api_info_name
+      const snapshotCurrentStep = item?.snapshot_current_step || {}
+      const snapshotParameterId = snapshotCurrentStep?.parameter_id
       return displayRows.map((row: any, index: number) => ({
         ...row,
+        status: isSnapshotRow(item, row, index, displayRows.length) ? 3 : row?.status,
+        error_message: isSnapshotRow(item, row, index, displayRows.length)
+          ? snapshotMessage(item, row)
+          : row?.error_message,
         case_type: row?.case_type ?? 1,
         name: row?.name || item?.case_name || item?.name,
         __rowKey: `${item?.id || caseId}-${row?.id || index}-${index}`,
+        __detailId: item?.id || '-',
         __caseId: caseId,
         __caseName: caseName,
         __apiInfoName: row?.api_info_name || apiInfoName || '-',
@@ -108,18 +128,33 @@
         __caseRowSpan: index === 0 ? rowSpan : 0,
         __caseSourceId: item?.id,
         __isFirstCaseRow: index === 0,
+        __sourceRecord: item,
         __isWarningRow: row?.__isWarningRow,
+        __isSnapshotRow: isSnapshotRow(item, row, index, displayRows.length),
+        __snapshotParameterId: snapshotParameterId,
         __detailRecord: {
           ...row,
+          __caseId: caseId,
+          __caseName: caseName,
+          test_suite_detail_id: item?.id,
+          __caseSourceId: item?.id,
+          status: isSnapshotRow(item, row, index, displayRows.length) ? 3 : row?.status,
+          error_message: isSnapshotRow(item, row, index, displayRows.length)
+            ? snapshotMessage(item, row)
+            : row?.error_message,
           case_type: row?.case_type ?? 1,
           name: row?.name || item?.case_name || item?.name,
+          result_mode: item?.result_mode,
+          snapshot_progress: item?.snapshot_progress,
+          snapshot_retry: item?.snapshot_retry,
+          snapshot_updated_at: item?.snapshot_updated_at,
         },
       }))
     })
   )
 
   function spanMethod({ record, columnIndex }: any) {
-    if (columnIndex >= 4) return undefined
+    if (!apiColumns[columnIndex]?.mergeCell) return undefined
     return {
       rowspan: record.__caseRowSpan,
       colspan: record.__caseRowSpan > 0 ? 1 : 0,
@@ -141,6 +176,34 @@
   function statusText(status: number | string) {
     if (Number(status) === 4) return '警告'
     return props.enumStore?.task_status?.[status]?.title || '未知'
+  }
+
+  function isSnapshotRow(item: any, row: any, index: number, total: number) {
+    if (item?.result_mode !== 'snapshot') return false
+    const currentStep = item?.snapshot_current_step || {}
+    if (currentStep?.parameter_id && row?.parameter_id) {
+      return String(currentStep.parameter_id) === String(row.parameter_id)
+    }
+    return index === total - 1
+  }
+
+  function snapshotMessage(item: any, row: any) {
+    const retry = item?.snapshot_retry || {}
+    const progress = item?.snapshot_progress || {}
+    const parts = ['执行中快照']
+    if (retry.current || retry.max) {
+      parts.push(`重试 ${retry.current || 0}/${retry.max || '-'}`)
+    }
+    if (progress.done || progress.total) {
+      parts.push(`进度 ${progress.done || 0}/${progress.total || '-'}`)
+    }
+    if (row?.error_message || retry.reason) {
+      parts.push(row?.error_message || retry.reason)
+    }
+    if (item?.snapshot_updated_at) {
+      parts.push(`更新于 ${item.snapshot_updated_at}`)
+    }
+    return parts.join('，')
   }
 
   function buildWarningRows(item: any) {

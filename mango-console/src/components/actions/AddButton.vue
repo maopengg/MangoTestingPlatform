@@ -1,5 +1,5 @@
 <template>
-  <a-button size="mini" status="success" type="primary" @click="onAdd">
+  <a-button size="mini" status="success" type="primary" @click="onAdd" data-testid="qa-components-actions-addbutton-button-添加">
     <template #icon>
       <IconPlus />
     </template>

@@ -1,6 +1,7 @@
 <template>
   <div
     :class="[
+      { 'mango-main-layout--without-footer': !showFooter },
       appStore.isCollapse ? 'main-layout-close-status' : 'main-layout-open-status',
       appStore.isFixedNavBar ? 'main-layout_fixed-nav-bar' : 'main-layout',
       !appStore.isFixedNavBar
@@ -27,7 +28,9 @@
     </section>
     <component
       :is="appStore.isFixedNavBar ? 'Scrollbar' : 'div'"
-      :class="[appStore.theme === 'light' ? 'mango-main-base-light-theme' : 'mango-main-base-dark-theme']"
+      :class="[
+        appStore.theme === 'light' ? 'mango-main-base-light-theme' : 'mango-main-base-dark-theme',
+      ]"
       class="mango-main-base-style"
     >
       <section
@@ -36,7 +39,7 @@
       >
         <Main />
       </section>
-      <section class="mango-footer-wrapper">
+      <section v-if="showFooter" class="mango-footer-wrapper">
         <Footer />
       </section>
       <a-back-top target-container=".mango-main-base-style" />
@@ -47,7 +50,7 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, onBeforeUnmount, onMounted } from 'vue'
+  import { computed, defineComponent, onBeforeUnmount, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useTitle } from '@vueuse/core'
   import { projectName } from '@/setting'
@@ -68,6 +71,7 @@
       // const isShowTabbar = computed(() => true)
       const router = useRouter()
       const route = useRoute()
+      const showFooter = computed(() => route.meta.hideFooter !== true)
       router.afterEach(() => {
         useTitle(projectName + ' | ' + (route.meta.title as string))
       })
@@ -119,6 +123,7 @@
       }
       return {
         appStore,
+        showFooter,
         // isShowTabbar,
       }
     },
@@ -191,7 +196,8 @@
     .mango-main-base-style {
       height: 100%;
       box-sizing: border-box;
-      padding: 6px 8px 8px;
+      padding: var(--m-layout-padding-block) var(--m-layout-padding-inline)
+        var(--m-layout-padding-inline);
     }
 
     .mango-main-base-light-theme {
@@ -203,15 +209,18 @@
     }
 
     .mango-main-section {
+      min-width: 0;
+      min-height: 0;
       overflow-x: hidden;
+      container-type: inline-size;
     }
 
     .flex-height {
-      height: calc(100% - @footerHeight - 10px);
+      height: calc(100% - @footerHeight - var(--m-page-inset-block-start));
     }
 
     .min-height {
-      min-height: calc(100% - @footerHeight - 10px);
+      min-height: calc(100% - @footerHeight - var(--m-page-inset-block-start));
     }
 
     .fixed-nav-bar {
@@ -226,12 +235,26 @@
     }
   }
 
+  .mango-main-layout-container.mango-main-layout--without-footer {
+    .flex-height {
+      height: calc(100% - var(--m-page-inset-block-start));
+    }
+
+    .min-height {
+      min-height: calc(100% - var(--m-page-inset-block-start));
+    }
+  }
+
   .mango-footer-wrapper {
-    margin-top: 6px;
+    margin-top: var(--m-layout-padding-block);
     position: fixed;
-    left: 215px;
-    right: 5px;
-    bottom: 5px;
+    left: calc(var(--menu-width) + var(--m-page-inset-block-start));
+    right: var(--m-page-inset-block-start);
+    bottom: var(--m-page-inset-block-start);
+  }
+
+  .main-layout-close-status .mango-footer-wrapper {
+    left: calc(@minMenuWidth + var(--m-layout-padding-block));
   }
 
   .mango-is-mobile {

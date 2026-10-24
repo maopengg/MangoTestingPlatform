@@ -1,5 +1,6 @@
 // WebSocket 管理服务
 import { Notification } from '@arco-design/web-vue'
+import { claimExecutorTaskNotification } from '@/utils/executor-task-notification'
 import { useNotificationMessage } from '@/store/modules/notification-message'
 import { webSocketURL } from '@/api/axios.config'
 import { SERVER } from '@/setting'
@@ -14,6 +15,11 @@ enum ConnectionState {
 
 // 消息接口（与后端保持一致）
 interface WebSocketMessage {
+  message_id?: string
+  protocol_version?: number
+  dispatch_id?: string
+  connection_id?: string
+  sent_at?: number
   code: number
   msg: string
   user: string | null
@@ -31,7 +37,6 @@ class WebSocketService {
   private reconnectTimer: number | null = null
   private reconnectAttempts = 0
   private maxReconnectAttempts = Infinity // 无限重连
-  private reconnectInterval = 5000 // 5秒
   private heartbeatTimer: number | null = null
   private heartbeatInterval = 30000 // 30秒心跳
   private url = ''
@@ -55,7 +60,6 @@ class WebSocketService {
   // 初始化并连接
   public connect(username: string, password: string): void {
     if (this.connectionState !== ConnectionState.DISCONNECTED) {
-      console.warn('WebSocket 已连接或正在连接中')
       return
     }
 
@@ -94,6 +98,7 @@ class WebSocketService {
   private _onOpen(): void {
     this.connectionState = ConnectionState.CONNECTED
     this.reconnectAttempts = 0
+    window.dispatchEvent(new CustomEvent('mango:websocket-open'))
 
     // 发送握手消息
     const message: WebSocketMessage = {
@@ -116,29 +121,51 @@ class WebSocketService {
     try {
       const res: WebSocketMessage = JSON.parse(event.data)
       const currentTime = this._formatDateTime(new Date())
+      const funcName = res.data?.func_name
+      const isRealtimeProgress =
+        (funcName === 'u_page_steps' && res.msg.includes('实时结果已更新')) ||
+        funcName === 'u_page_step_node_progress'
+      const isHeartbeatConnectedNotice =
+        res.code === 200 && /^心跳已连接！IP：[^，]+，端口：\d+$/.test(res.msg.trim())
+      const isTaskResult = funcName === 'executor_task_result'
+      const taskResult = isTaskResult ? res.data?.func_args || {} : {}
+      window.dispatchEvent(new CustomEvent('mango:websocket-message', { detail: res }))
 
       // 更新消息中心
-      if (this.notificationMessage) {
-        this.notificationMessage.addBadgeValue()
-        this.notificationMessage.addMessageContentList(
-          currentTime,
-          res.msg,
-          res.code === 200 ? 1 : 0
-        )
+      if (this.notificationMessage && !isRealtimeProgress && !isHeartbeatConnectedNotice) {
+        this.notificationMessage.addMessage(currentTime, res.msg, res.code, {
+          kind: isTaskResult ? 'task_result' : 'message',
+          taskId: taskResult.task_id,
+          taskType: taskResult.task_type,
+          businessType: taskResult.business_type,
+          businessId: taskResult.business_id,
+          resultName: taskResult.result_name,
+          statusText: taskResult.status_text,
+          errorMessage: taskResult.error_message,
+          durationSeconds: taskResult.duration_seconds,
+        })
       }
 
       // 显示通知
+      if (isRealtimeProgress || isHeartbeatConnectedNotice) {
+        return
+      }
+      if (isTaskResult && !claimExecutorTaskNotification(taskResult.task_id)) {
+        return
+      }
       if (res.code === 200) {
         Notification.success({
-          title: '消息',
+          title: isTaskResult ? '测试通过' : '消息',
           content: res.msg,
-          duration: 3000,
+          duration: isTaskResult ? 5000 : 3000,
+          closable: true,
         })
       } else {
         Notification.error({
-          title: '错误',
+          title: isTaskResult ? '测试失败' : '错误',
           content: res.msg,
-          duration: 5000,
+          duration: isTaskResult ? 8000 : 5000,
+          closable: true,
         })
       }
     } catch (error) {
@@ -156,6 +183,7 @@ class WebSocketService {
         title: 'WebSocket 连接断开',
         content: '正在尝试重新连接...',
         duration: 3000,
+        closable: true,
       })
       this._scheduleReconnect()
     }
@@ -179,6 +207,7 @@ class WebSocketService {
         title: 'WebSocket 连接失败',
         content: '无法连接到服务器，请检查网络或稍后重试',
         duration: 0,
+        closable: true,
       })
       return
     }
@@ -189,9 +218,12 @@ class WebSocketService {
     }
 
     this.reconnectAttempts++
+    const exponent = Math.min(this.reconnectAttempts - 1, 5)
+    const baseDelay = Math.min(30000, 1000 * 2 ** exponent)
+    const reconnectDelay = Math.round(baseDelay * (0.8 + Math.random() * 0.4))
     this.reconnectTimer = window.setTimeout(() => {
       this._connect()
-    }, this.reconnectInterval)
+    }, reconnectDelay)
   }
 
   // 启动心跳
@@ -228,6 +260,7 @@ class WebSocketService {
         title: '发送失败',
         content: 'WebSocket 未连接',
         duration: 2000,
+        closable: true,
       })
       return
     }

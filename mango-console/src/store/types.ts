@@ -5,11 +5,16 @@ export interface UserState {
   userId: number
   token: string
   roleId: number
-  roles: string[] | null
+  roles: Array<{
+    description: string | null
+    roleId: number | null
+    roleName: string | null
+  }> | null
   userName: string
   name: string
   avatar: string
   selected_environment: number | null
+  is_super_admin?: boolean
 }
 
 export enum LayoutMode {
@@ -22,6 +27,13 @@ export enum DeviceType {
   PC = 'pc',
   PAD = 'pad',
   MOBILE = 'mobile',
+}
+
+export enum DisplayDensity {
+  AUTO = 'auto',
+  COMPACT = 'compact',
+  STANDARD = 'standard',
+  COMFORTABLE = 'comfortable',
 }
 
 export enum ThemeMode {
@@ -59,6 +71,7 @@ export interface AppConfigState {
   themePreset: ThemePresetId
   layoutMode: LayoutMode
   deviceType: DeviceType
+  displayDensity: DisplayDensity
   sideWidth: number
   pageAnim: PageAnim
   isFixedNavBar: boolean
@@ -75,6 +88,7 @@ export interface MenuOption {
   key: string | undefined
   label: string | undefined
   icon: string | undefined
+  isBeta?: boolean
   children: Array<MenuOption> | null
 }
 
@@ -82,6 +96,7 @@ export interface SplitTab {
   label: string
   iconPrefix?: string | unknown
   icon: string
+  isBeta?: boolean
   fullPath: string
   children?: Array<RouteRecordRaw>
   checked: Ref<UnwrapRef<boolean>>
@@ -99,9 +114,16 @@ export interface OriginRoute {
   isRootPath?: boolean
   iconPrefix?: string
   icon?: string
-  badge?: string | number
+  isBeta?: boolean
   isSingle?: boolean
   localFilePath?: string
+  permissionKey?: string
+  menuKey?: string
+  actions?: Array<{
+    permissionKey: string
+    permissionName: string
+    permissionType: string
+  }>
   children?: Array<OriginRoute>
 }
 

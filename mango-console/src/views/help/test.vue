@@ -42,32 +42,32 @@
         <div class="type-card page-title-sample">
           <span>页面标题 / Report Page</span>
           <strong>测试报告详情</strong>
-          <p>22px / 700 / --m-text，用于详情页头部、报告页头部、一级业务页面标题。</p>
+          <p>19px / 700 / --m-text，用于详情页头部、报告页头部、一级业务页面标题。</p>
         </div>
         <div class="type-card detail-title-sample">
           <span>详情标题 / Detail Title</span>
           <strong>订单创建主流程校验</strong>
-          <p>18px / 650 / --m-text，用于抽屉、详情卡片、被查看对象名称。</p>
+          <p>16px / 650 / --m-text，用于抽屉、详情卡片、被查看对象名称。</p>
         </div>
         <div class="type-card section-title-sample">
           <span>区块标题 / Section Title</span>
           <strong>测试套用例列表</strong>
-          <p>16px / 600 / --m-text，用于表格区、配置分组、帮助页分类。</p>
+          <p>14px / 600 / --m-text，用于表格区、配置分组、帮助页分类。</p>
         </div>
         <div class="type-card table-title-sample">
           <span>卡片标题 / Card Title</span>
-          <strong>接口自动化配置</strong>
-          <p>14px / 600 / --m-text-2，用于卡片、小面板、表格工具栏标题。</p>
+          <strong>API自动化配置</strong>
+          <p>12px / 600 / --m-text-2，用于卡片、小面板、表格工具栏标题。</p>
         </div>
         <div class="type-card body-title-sample">
           <span>正文强调 / Body Strong</span>
           <strong>执行环境：测试环境</strong>
-          <p>13px / 500 / --m-text-2，用于描述列表、列表项主文案。</p>
+          <p>11px / 500 / --m-text-2，用于描述列表、列表项主文案。</p>
         </div>
         <div class="type-card meta-title-sample">
           <span>辅助信息 / Meta Text</span>
           <strong>2026-05-22 10:32:08</strong>
-          <p>12px / 400-600 / --m-muted，用于时间、统计说明、面包屑非当前项。</p>
+          <p>10px / 400-600 / --m-muted，用于时间、统计说明、面包屑非当前项。</p>
         </div>
       </div>
     </section>
@@ -81,18 +81,27 @@
           </div>
         </div>
         <div class="button-row">
-          <a-button type="primary">主操作</a-button>
-          <a-button class="success-action-btn" type="primary" status="success">执行</a-button>
-          <a-button class="success-action-btn" type="primary" status="success">调试</a-button>
-          <a-button status="danger">删除</a-button>
-          <a-button>次要</a-button>
-          <a-button type="text">文本按钮</a-button>
+          <a-button type="primary" data-testid="qa-views-help-test-button-主操作">主操作</a-button>
+          <a-button class="success-action-btn" type="primary" status="success" data-testid="qa-views-help-test-button-执行">执行</a-button>
+          <a-button class="success-action-btn" type="primary" status="success" data-testid="qa-views-help-test-button-调试">调试</a-button>
+          <a-button status="danger" data-testid="qa-views-help-test-button-删除">删除</a-button>
+          <a-button data-testid="qa-views-help-test-button-次要">次要</a-button>
+          <a-button
+            class="mango-back-button"
+            type="primary"
+            status="warning"
+            data-testid="qa-views-help-test-button-后退"
+            @click="goBack"
+          >
+            后退
+          </a-button>
+          <a-button type="text" data-testid="qa-views-help-test-button-文本按钮">文本按钮</a-button>
         </div>
         <div class="button-row compact">
           <AddButton />
           <DeleteButton />
           <a-dropdown trigger="hover">
-            <a-button size="mini" type="text">更多</a-button>
+            <a-button size="mini" type="text" data-testid="qa-views-help-test-button-更多">更多</a-button>
             <template #content>
               <a-doption>复制</a-doption>
               <a-doption>导出</a-doption>
@@ -168,10 +177,10 @@
           text-color="var(--m-text-2)"
           background-color="var(--m-surface-soft)"
           border="1px solid var(--m-primary-border)"
-          border-radius="8px"
-          margin-bottom="12px"
+          border-radius="7px"
+          margin-bottom="10px"
         />
-        <a-input-password v-model="passwordSample" placeholder="输入密码查看强度" allow-clear />
+        <a-input-password v-model="passwordSample" placeholder="输入密码查看强度" allow-clear data-testid="qa-views-help-test-input-password-输入密码查看强度" />
         <div class="password-preview">
           <PasswordStrong :input-value="passwordSample" />
         </div>
@@ -214,13 +223,13 @@
           <p>覆盖输入、级联、选择、日期、时间、数字、标签、开关等高频控件。</p>
         </div>
         <div class="title-actions">
-          <a-button size="small">重置</a-button>
-          <a-button size="small" type="primary">搜索</a-button>
+          <a-button size="small" data-testid="qa-views-help-test-button-重置">重置</a-button>
+          <a-button size="small" type="primary" data-testid="qa-views-help-test-button-搜索">搜索</a-button>
         </div>
       </div>
       <a-form layout="inline" :model="formModel" class="filter-form">
         <a-form-item label="关键字">
-          <a-input v-model="formModel.keyword" placeholder="请输入用例/接口名称" allow-clear />
+          <a-input v-model="formModel.keyword" placeholder="请输入用例/接口名称" allow-clear data-testid="qa-views-help-test-input-请输入用例-接口名称" />
         </a-form-item>
         <a-form-item label="项目产品">
           <a-cascader
@@ -236,7 +245,7 @@
             v-model="formModel.status"
             :options="statusOptions"
             placeholder="请选择"
-            allow-clear
+            allow-clear data-testid="qa-views-help-test-select-请选择"
           />
         </a-form-item>
         <a-form-item label="日期">
@@ -249,7 +258,7 @@
           <a-input-number v-model="formModel.retry" :min="0" :max="10" />
         </a-form-item>
         <a-form-item label="标签">
-          <a-input-tag v-model="formModel.tags" placeholder="输入后回车" allow-clear />
+          <a-input-tag v-model="formModel.tags" placeholder="输入后回车" allow-clear data-testid="qa-views-help-test-input-tag-输入后回车" />
         </a-form-item>
         <a-form-item label="成员">
           <a-tree-select
@@ -280,12 +289,12 @@
         </div>
         <div class="title-actions">
           <a-radio-group v-model="tableFilter" type="button" size="small">
-            <a-radio value="all">全部</a-radio>
-            <a-radio value="fail">失败</a-radio>
-            <a-radio value="success">成功</a-radio>
+            <a-radio value="all" data-testid="qa-views-help-test-radio-全部">全部</a-radio>
+            <a-radio value="fail" data-testid="qa-views-help-test-radio-失败">失败</a-radio>
+            <a-radio value="success" data-testid="qa-views-help-test-radio-成功">成功</a-radio>
           </a-radio-group>
-          <a-button size="small" status="danger">批量删除</a-button>
-          <a-button size="small" type="primary">新增</a-button>
+          <a-button size="small" status="danger" data-testid="qa-views-help-test-button-批量删除">批量删除</a-button>
+          <a-button size="small" type="primary" data-testid="qa-views-help-test-button-新增">新增</a-button>
         </div>
       </div>
       <a-table
@@ -295,7 +304,7 @@
         :loading="false"
         :pagination="false"
         :row-selection="{ selectedRowKeys }"
-        :scroll="{ x: 1160 }"
+        :scroll="{ x: 1210 }"
         row-key="id"
         class="theme-table"
       >
@@ -310,10 +319,10 @@
         </template>
         <template #actions>
           <a-space :size="4">
-            <a-button type="text" size="mini">编辑</a-button>
-            <a-button type="text" size="mini">执行</a-button>
+            <a-button type="text" size="mini" data-testid="qa-views-help-test-button-编辑">编辑</a-button>
+            <a-button type="text" size="mini" data-testid="qa-views-help-test-button-执行-2">执行</a-button>
             <a-dropdown trigger="hover">
-              <a-button type="text" size="mini">更多</a-button>
+              <a-button type="text" size="mini" data-testid="qa-views-help-test-button-更多-2">更多</a-button>
               <template #content>
                 <a-doption>详情</a-doption>
                 <a-doption>复制</a-doption>
@@ -335,7 +344,7 @@
             <h2>详情信息</h2>
             <p>详情页、抽屉、报告头部可以使用描述列表和状态摘要。</p>
           </div>
-          <a-button size="small" type="primary" @click="drawerVisible = true">打开抽屉</a-button>
+          <a-button size="small" type="primary" @click="drawerVisible = true" data-testid="qa-views-help-test-button-打开抽屉">打开抽屉</a-button>
         </div>
         <a-descriptions :column="2" size="small" bordered>
           <a-descriptions-item label="任务名称">每日冒烟测试</a-descriptions-item>
@@ -355,14 +364,14 @@
           </div>
         </div>
         <a-tabs default-active-key="log" size="small">
-          <a-tab-pane key="log" title="执行日志">
+          <a-tab-pane key="log" title="执行日志" data-testid="qa-views-help-test-tab-pane-执行日志">
             <a-timeline class="theme-timeline">
               <a-timeline-item label="10:32:08">开始执行测试套</a-timeline-item>
               <a-timeline-item label="10:32:11">完成接口鉴权</a-timeline-item>
               <a-timeline-item label="10:32:15" dot-color="red">订单断言失败</a-timeline-item>
             </a-timeline>
           </a-tab-pane>
-          <a-tab-pane key="steps" title="步骤">
+          <a-tab-pane key="steps" title="步骤" data-testid="qa-views-help-test-tab-pane-步骤">
             <a-collapse :bordered="false" :default-active-key="[1]">
               <a-collapse-item :key="1" header="步骤 1：准备测试数据">
                 <p class="mango-muted-text">生成用户、订单和支付参数。</p>
@@ -539,23 +548,23 @@
           </div>
         </div>
         <a-breadcrumb class="theme-breadcrumb">
-          <a-breadcrumb-item>接口自动化</a-breadcrumb-item>
+          <a-breadcrumb-item>API自动化</a-breadcrumb-item>
           <a-breadcrumb-item>组合场景</a-breadcrumb-item>
           <a-breadcrumb-item>订单创建主流程</a-breadcrumb-item>
         </a-breadcrumb>
         <a-divider />
         <div class="button-row">
           <a-tooltip content="用于解释图标按钮或被截断字段" mini>
-            <a-button size="small">Tooltip</a-button>
+            <a-button size="small" data-testid="qa-views-help-test-button-tooltip">Tooltip</a-button>
           </a-tooltip>
           <a-popover title="字段说明" trigger="click">
-            <a-button size="small">Popover</a-button>
+            <a-button size="small" data-testid="qa-views-help-test-button-popover">Popover</a-button>
             <template #content>
               <p class="popover-copy">用于展示轻量帮助、字段解释和临时操作集合。</p>
             </template>
           </a-popover>
-          <a-button size="small" type="outline">Outline</a-button>
-          <a-button size="small" type="dashed">Dashed</a-button>
+          <a-button size="small" type="outline" data-testid="qa-views-help-test-button-outline">Outline</a-button>
+          <a-button size="small" type="dashed" data-testid="qa-views-help-test-button-dashed">Dashed</a-button>
         </div>
       </div>
     </section>
@@ -592,7 +601,7 @@
             <h2>消息与侧栏</h2>
             <p>通知、日志、帮助说明适合使用右侧抽屉和轻量提示。</p>
           </div>
-          <a-button size="small" @click="modalVisible = true">打开弹窗</a-button>
+          <a-button size="small" @click="modalVisible = true" data-testid="qa-views-help-test-button-打开弹窗">打开弹窗</a-button>
         </div>
         <div class="message-list">
           <div v-for="item in messages" :key="item.title" class="message-item">
@@ -639,21 +648,21 @@
         </a-form-item>
         <a-form-item label="执行模式">
           <a-radio-group v-model="drawerForm.mode">
-            <a-radio value="serial">串行</a-radio>
-            <a-radio value="parallel">并行</a-radio>
+            <a-radio value="serial" data-testid="qa-views-help-test-radio-串行">串行</a-radio>
+            <a-radio value="parallel" data-testid="qa-views-help-test-radio-并行">并行</a-radio>
           </a-radio-group>
         </a-form-item>
         <a-form-item label="失败通知">
-          <a-checkbox v-model="drawerForm.failNotice">仅失败时通知</a-checkbox>
+          <a-checkbox v-model="drawerForm.failNotice" data-testid="qa-views-help-test-checkbox-仅失败时通知">仅失败时通知</a-checkbox>
         </a-form-item>
       </a-form>
       <template #footer>
-        <a-button @click="drawerVisible = false">取消</a-button>
-        <a-button type="primary" @click="drawerVisible = false">保存</a-button>
+        <a-button @click="drawerVisible = false" data-testid="qa-views-help-test-button-取消">取消</a-button>
+        <a-button type="primary" @click="drawerVisible = false" data-testid="qa-views-help-test-button-保存">保存</a-button>
       </template>
     </a-drawer>
 
-    <a-modal v-model:visible="modalVisible" title="主题弹窗样式" width="420px">
+    <a-modal v-model:visible="modalVisible" title="主题弹窗样式" width="378px">
       <p class="mango-muted-text"
         >弹窗用于确认、短表单和不可打断的重点提示。按钮、边框、标题和正文都沿用同一套 token。</p
       >
@@ -663,6 +672,7 @@
 
 <script lang="ts" setup>
   import { reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import AddButton from '@/components/actions/AddButton.vue'
   import DeleteButton from '@/components/actions/DeleteButton.vue'
   import AssertionResult from '@/components/feedback/AssertionResult.vue'
@@ -671,6 +681,7 @@
   import TableConfig from '@/components/table/TableConfig.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue'
 
+  const router = useRouter()
   const drawerVisible = ref(false)
   const modalVisible = ref(false)
   const tableFilter = ref('all')
@@ -678,6 +689,14 @@
   const tableConfigState = ref('等待操作')
   const passwordSample = ref('Mango2026')
   const visibleCustomColumns = ref<any[]>([])
+
+  const goBack = () => {
+    if (window.history.state?.back) {
+      router.back()
+      return
+    }
+    router.push('/index/home')
+  }
 
   const formModel = reactive({
     keyword: '',
@@ -806,7 +825,7 @@
     { title: '启用', slotName: 'enabled', width: 90 },
     { title: '更新时间', dataIndex: 'updatedAt', width: 180 },
     { title: '说明', dataIndex: 'description', ellipsis: true, tooltip: true, align: 'left' },
-    { title: '操作', slotName: 'actions', fixed: 'right', width: 170 },
+    { title: '操作', slotName: 'actions', fixed: 'right', width: 160 },
   ]
 
   const rows = [
@@ -980,11 +999,11 @@
   .theme-lab {
     height: 100%;
     overflow: auto;
-    padding: 14px;
+    padding: 12px;
     background: linear-gradient(
         180deg,
         var(--m-primary-soft),
-        color-mix(in srgb, var(--m-surface) 0%, transparent) 260px
+        color-mix(in srgb, var(--m-surface) 0%, transparent) 234px
       ),
       var(--m-bg);
     color: var(--m-text);
@@ -999,29 +1018,29 @@
   .lab-head,
   .mango-section-card {
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
     box-shadow: var(--m-shadow);
   }
 
   .lab-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 280px;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 252px;
+    gap: 14px;
     align-items: stretch;
-    padding: 18px;
+    padding: 16px;
   }
 
   .eyebrow {
     color: var(--m-primary);
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
   }
 
   .lab-head h1 {
-    margin-top: 6px;
-    font-size: 26px;
-    line-height: 34px;
+    margin-top: 5px;
+    font-size: 23px;
+    line-height: 30px;
     font-weight: 750;
   }
 
@@ -1031,34 +1050,34 @@
   .mango-muted-text,
   .message-item p {
     color: var(--m-muted);
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .head-card {
     display: grid;
     align-content: center;
-    gap: 6px;
-    padding: 14px;
+    gap: 5px;
+    padding: 12px;
     border: 1px solid var(--m-primary-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: linear-gradient(135deg, var(--m-primary-soft), var(--m-surface));
   }
 
   .head-card span,
   .head-card em {
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
     font-style: normal;
   }
 
   .head-card strong {
     color: var(--m-primary);
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .mango-section-card {
-    margin-top: 10px;
-    padding: 14px;
+    margin-top: 9px;
+    padding: 12px;
   }
 
   .mango-section-title,
@@ -1075,43 +1094,43 @@
   .mango-section-title,
   .table-toolbar {
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 12px;
+    gap: 12px;
+    margin-bottom: 10px;
   }
 
   .mango-section-title h2,
   .table-toolbar h2 {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .token-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   .token-item {
     display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 3px 10px;
+    grid-template-columns: 27px minmax(0, 1fr);
+    gap: 2px 9px;
     align-items: center;
-    padding: 10px;
+    padding: 9px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
   .token-item i {
     grid-row: span 2;
-    width: 30px;
-    height: 30px;
+    width: 27px;
+    height: 27px;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: 5px;
   }
 
   .token-item span,
   .token-item strong {
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .token-item span {
@@ -1121,81 +1140,81 @@
   .component-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   .type-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   .type-card {
-    min-height: 132px;
-    padding: 12px;
+    min-height: 118px;
+    padding: 10px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
   .type-card span {
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 9px;
     color: var(--m-muted);
-    font-size: 12px;
-    line-height: 18px;
+    font-size: 10px;
+    line-height: 16px;
   }
 
   .type-card strong {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
     color: var(--m-text);
     line-height: 1.35;
   }
 
   .type-card p {
     color: var(--m-muted);
-    font-size: 12px;
-    line-height: 20px;
+    font-size: 10px;
+    line-height: 18px;
   }
 
   .page-title-sample strong {
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 700;
   }
 
   .detail-title-sample strong {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 650;
   }
 
   .section-title-sample strong {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
   }
 
   .table-title-sample strong {
     color: var(--m-text-2);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
   }
 
   .body-title-sample strong {
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 500;
   }
 
   .meta-title-sample strong {
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
   }
 
   .button-row,
   .tag-row,
   .title-actions {
-    gap: 8px;
+    gap: 7px;
     flex-wrap: wrap;
   }
 
@@ -1227,48 +1246,48 @@
 
     :deep(.mango-tip-message) {
       align-items: center;
-      line-height: 20px;
+      line-height: 18px;
     }
   }
 
   .custom-toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 42px;
-    padding: 10px;
+    gap: 9px;
+    min-height: 37px;
+    padding: 9px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
   .custom-toolbar > span {
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
   }
 
   .custom-toolbar em {
     margin-left: auto;
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
     font-style: normal;
   }
 
   .column-preview {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 7px;
+    margin-top: 9px;
   }
 
   .password-preview {
-    max-width: 360px;
-    margin-top: 10px;
+    max-width: 324px;
+    margin-top: 9px;
 
     :deep(.tip) {
-      height: 8px;
-      border-radius: 999px;
+      height: 7px;
+      border-radius: 899px;
     }
 
     :deep(.normal) {
@@ -1289,35 +1308,35 @@
 
     :deep(span:last-child) {
       color: var(--m-muted);
-      font-size: 12px;
+      font-size: 10px;
     }
   }
 
   .kv-preview {
     display: grid;
-    gap: 10px;
+    gap: 9px;
   }
 
   .kv-row span {
     display: block;
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .kv-row strong {
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
   }
 
   .kv-row {
     display: grid;
-    grid-template-columns: 120px minmax(0, 1fr) max-content;
-    gap: 10px;
+    grid-template-columns: 108px minmax(0, 1fr) max-content;
+    gap: 9px;
     align-items: center;
-    padding: 8px 10px;
+    padding: 7px 9px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
@@ -1328,40 +1347,40 @@
   }
 
   .mini-json {
-    margin: 10px 0 0;
-    padding: 10px 12px;
+    margin: 9px 0 0;
+    padding: 9px 10px;
     overflow: auto;
     border: 1px solid var(--m-code-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-code-bg);
     color: var(--m-code-text);
     font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1.7;
   }
 
   .button-row + .button-row,
   .progress-list {
-    margin-top: 12px;
+    margin-top: 10px;
   }
 
   .compact {
-    padding-top: 10px;
+    padding-top: 9px;
     border-top: 1px dashed var(--m-border);
   }
 
   .progress-row {
     display: grid;
-    grid-template-columns: 92px minmax(0, 1fr) 42px;
-    gap: 10px;
+    grid-template-columns: 82px minmax(0, 1fr) 37px;
+    gap: 9px;
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .semantic-alert {
-    margin-top: 12px;
+    margin-top: 10px;
     border: 1px solid var(--m-primary-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface-soft);
 
     :deep(.arco-alert-icon) {
@@ -1374,7 +1393,7 @@
   }
 
   .progress-row + .progress-row {
-    margin-top: 10px;
+    margin-top: 9px;
   }
 
   .progress-row em {
@@ -1385,7 +1404,7 @@
 
   .filter-form {
     :deep(.arco-form-item) {
-      margin-bottom: 10px;
+      margin-bottom: 9px;
     }
 
     :deep(.arco-input-wrapper),
@@ -1393,8 +1412,8 @@
     :deep(.arco-picker),
     :deep(.arco-input-tag),
     :deep(.arco-input-number) {
-      width: 190px;
-      border-radius: 6px;
+      width: 171px;
+      border-radius: 5px;
     }
   }
 
@@ -1405,7 +1424,7 @@
 
   .table-toolbar {
     margin-bottom: 0;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--m-border);
     background: var(--m-surface-soft);
   }
@@ -1413,13 +1432,13 @@
   .table-toolbar p {
     display: flex;
     align-items: center;
-    gap: 7px;
-    margin-top: 4px;
+    gap: 6px;
+    margin-top: 3px;
   }
 
   .table-toolbar p i {
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
     border-radius: 50%;
     background: var(--m-border-strong);
   }
@@ -1457,7 +1476,7 @@
   .mango-table-footer-preview {
     display: flex;
     justify-content: flex-end;
-    padding: 10px 14px;
+    padding: 9px 12px;
     border-top: 1px solid var(--m-border);
     background: var(--m-surface);
   }
@@ -1473,39 +1492,39 @@
   .upload-drop {
     display: grid;
     place-items: center;
-    min-height: 112px;
+    min-height: 100px;
     border: 1px dashed var(--m-primary-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface-soft);
     color: var(--m-primary);
     text-align: center;
   }
 
   .upload-drop span {
-    margin-top: 4px;
+    margin-top: 3px;
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .state-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 10px;
+    gap: 9px;
+    margin-top: 9px;
   }
 
   .state-card {
     display: grid;
     place-items: center;
-    min-height: 96px;
+    min-height: 86px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
   .theme-empty-demo {
     width: 100%;
-    min-height: 72px;
+    min-height: 64px;
     border: 0;
   }
 
@@ -1513,62 +1532,62 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    min-height: 86px;
-    padding: 12px;
+    min-height: 77px;
+    padding: 10px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
   .stat-card :deep(.arco-statistic-title) {
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .stat-card :deep(.arco-statistic-value) {
     color: var(--m-text);
-    font-size: 24px;
+    font-size: 21px;
     font-weight: 650;
   }
 
   .theme-list {
     :deep(.arco-list-item) {
-      padding: 10px;
+      padding: 9px;
       border: 1px solid var(--m-border);
-      border-radius: 8px;
+      border-radius: var(--m-radius-lg);
       background: var(--m-surface);
     }
 
     :deep(.arco-list-item + .arco-list-item) {
-      margin-top: 10px;
+      margin-top: 9px;
     }
 
     :deep(.arco-list-item-meta-title) {
       color: var(--m-text);
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 600;
     }
 
     :deep(.arco-list-item-meta-description) {
       color: var(--m-muted);
-      font-size: 12px;
+      font-size: 10px;
     }
   }
 
   .chart-grid {
     display: grid;
-    grid-template-columns: minmax(260px, 0.9fr) minmax(420px, 1.35fr) minmax(260px, 1fr) minmax(
-        260px,
+    grid-template-columns: minmax(234px, 0.9fr) minmax(378px, 1.35fr) minmax(234px, 1fr) minmax(
+        234px,
         1fr
       );
-    gap: 10px;
+    gap: var(--m-page-gap);
   }
 
   .chart-card {
-    min-height: 260px;
-    padding: 12px;
+    min-height: 234px;
+    padding: 10px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
@@ -1576,30 +1595,30 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 9px;
+    margin-bottom: 10px;
   }
 
   .chart-head strong {
     display: block;
     color: var(--m-text);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
   }
 
   .chart-head span,
   .chart-head em {
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
     font-style: normal;
   }
 
   .donut-chart {
     display: grid;
     place-items: center;
-    width: 148px;
-    height: 148px;
-    margin: 10px auto 14px;
+    width: 133px;
+    height: 133px;
+    margin: 9px auto 12px;
     border-radius: 50%;
     background: conic-gradient(
       var(--m-primary) var(--p1),
@@ -1611,42 +1630,42 @@
   .donut-chart > div {
     display: grid;
     place-items: center;
-    width: 94px;
-    height: 94px;
+    width: 84px;
+    height: 84px;
     border-radius: 50%;
     background: var(--m-surface);
   }
 
   .donut-chart strong {
     color: var(--m-text);
-    font-size: 24px;
-    line-height: 28px;
+    font-size: 21px;
+    line-height: 25px;
   }
 
   .donut-chart span {
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .chart-legend {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .chart-legend span {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
   }
 
   .chart-legend i {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
+    width: 7px;
+    height: 7px;
+    border-radius: 899px;
   }
 
   .chart-legend .blue {
@@ -1667,33 +1686,33 @@
 
   .bar-chart {
     display: grid;
-    grid-template-columns: repeat(8, minmax(26px, 1fr));
+    grid-template-columns: repeat(8, minmax(23px, 1fr));
     align-items: end;
-    gap: 12px;
-    height: 176px;
-    padding: 18px 8px 0;
+    gap: 10px;
+    height: 158px;
+    padding: 16px 7px 0;
     border-bottom: 1px solid var(--m-border);
-    background: linear-gradient(to top, var(--m-border) 1px, transparent 1px) 0 0 / 100% 44px,
+    background: linear-gradient(to top, var(--m-border) 1px, transparent 1px) 0 0 / 100% 39px,
       var(--m-surface);
   }
 
   .bar-column {
     display: grid;
     justify-items: center;
-    gap: 8px;
+    gap: 7px;
   }
 
   .bar-stack {
     display: flex;
     align-items: end;
-    gap: 4px;
-    height: 138px;
+    gap: 3px;
+    height: 124px;
   }
 
   .bar-stack i {
-    width: 10px;
-    min-height: 4px;
-    border-radius: 999px 999px 2px 2px;
+    width: 9px;
+    min-height: 3px;
+    border-radius: 899px 899px 1px 1px;
   }
 
   .bar-stack .success {
@@ -1706,29 +1725,29 @@
 
   .bar-column span {
     color: var(--m-muted);
-    font-size: 11px;
+    font-size: 9px;
   }
 
   .rank-chart,
   .status-summary {
     display: grid;
-    gap: 12px;
-    margin-top: 18px;
+    gap: 10px;
+    margin-top: 16px;
   }
 
   .rank-row {
     display: grid;
-    grid-template-columns: 70px minmax(0, 1fr) 36px;
+    grid-template-columns: 63px minmax(0, 1fr) 32px;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     color: var(--m-text-2);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .rank-row div {
-    height: 8px;
+    height: 7px;
     overflow: hidden;
-    border-radius: 999px;
+    border-radius: 899px;
     background: var(--m-border);
   }
 
@@ -1749,21 +1768,21 @@
     position: relative;
     display: grid;
     grid-template-columns: 1fr max-content;
-    gap: 8px;
-    padding-bottom: 12px;
+    gap: 7px;
+    padding-bottom: 10px;
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .status-summary strong {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 650;
   }
 
   .status-summary i {
     grid-column: 1 / -1;
-    height: 8px;
-    border-radius: 999px;
+    height: 7px;
+    border-radius: 899px;
   }
 
   .status-summary .success i {
@@ -1781,13 +1800,13 @@
   .audit-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   .audit-card {
-    padding: 12px;
+    padding: 10px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface-soft);
   }
 
@@ -1795,44 +1814,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 7px;
+    margin-bottom: 7px;
   }
 
   .audit-head span {
     color: var(--m-text);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 650;
   }
 
   .audit-card ul {
     display: grid;
-    gap: 6px;
+    gap: 5px;
     margin: 0;
-    padding-left: 16px;
+    padding-left: 14px;
     color: var(--m-text-2);
-    font-size: 12px;
-    line-height: 18px;
+    font-size: 10px;
+    line-height: 16px;
   }
 
   .audit-command {
     display: grid;
     grid-template-columns: max-content max-content minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    padding: 10px 12px;
+    gap: 9px;
+    margin-top: 9px;
+    padding: 9px 10px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
     color: var(--m-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .audit-command code {
-    padding: 3px 8px;
+    padding: 2px 7px;
     border: 1px solid var(--m-code-border);
-    border-radius: 6px;
+    border-radius: 5px;
     background: var(--m-code-bg);
     color: var(--m-code-text);
     font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
@@ -1850,13 +1869,13 @@
   }
 
   .popover-copy {
-    max-width: 220px;
+    max-width: 198px;
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 11px;
   }
 
   :deep(.arco-btn) {
-    border-radius: 6px;
+    border-radius: 5px;
   }
 
   :deep(.arco-btn-primary) {
@@ -1882,18 +1901,18 @@
   }
 
   .theme-timeline {
-    margin-top: 6px;
+    margin-top: 5px;
   }
 
   .editor-stack {
     display: grid;
-    gap: 10px;
+    gap: 9px;
   }
 
   .editor-panel {
     overflow: hidden;
     border: 1px solid var(--m-code-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-code-bg);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
@@ -1902,12 +1921,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 32px;
-    padding: 0 12px;
+    height: 28px;
+    padding: 0 10px;
     border-bottom: 1px solid var(--m-code-border);
     background: color-mix(in srgb, var(--m-code-bg) 88%, #ffffff);
     color: var(--m-code-comment);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .editor-title span {
@@ -1920,13 +1939,13 @@
   }
 
   .editor-panel pre {
-    min-height: 150px;
+    min-height: 135px;
     margin: 0;
-    padding: 12px 14px;
+    padding: 10px 12px;
     overflow: auto;
     color: var(--m-code-text);
     font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
-    font-size: 13px;
+    font-size: 11px;
     line-height: 1.68;
     tab-size: 2;
   }
@@ -1964,22 +1983,22 @@
 
   .message-list {
     display: grid;
-    gap: 10px;
+    gap: 9px;
   }
 
   .message-item {
-    gap: 10px;
-    padding: 10px;
+    gap: 9px;
+    padding: 9px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
   .message-item > span {
     flex: none;
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
+    width: 7px;
+    height: 7px;
+    border-radius: 899px;
   }
 
   .message-item .info {
@@ -1995,7 +2014,7 @@
   }
 
   .message-item strong {
-    font-size: 13px;
+    font-size: 11px;
   }
 
   @media (max-width: 1px) {
@@ -2022,7 +2041,7 @@
 
   @media (max-width: 1px) {
     .theme-lab {
-      padding: 8px;
+      padding: 7px;
     }
 
     .lab-head,

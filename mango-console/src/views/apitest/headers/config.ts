@@ -1,7 +1,10 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 export const conditionItems: Array<FormItem> = reactive([
@@ -10,7 +13,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -33,6 +36,7 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
+  createUpdateUserCondition(),
   {
     key: 'key',
     label: 'key',
@@ -54,6 +58,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
 ])
+enableMultiSelectSearch(conditionItems)
 
 export const formItems: FormItem[] = reactive([
   {
@@ -106,15 +111,6 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
     title: '客户端',
     key: 'client',
     dataIndex: 'client',
@@ -136,16 +132,32 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '接口管理默认使用',
+    title: '服务调用默认使用',
     key: 'status',
     dataIndex: 'status',
     width: 200,
+  },
+  updateUserColumn(),
+  {
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
+    width: 180,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

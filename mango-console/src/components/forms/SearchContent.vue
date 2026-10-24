@@ -1,7 +1,7 @@
 <template>
   <a-modal v-model:visible="visible" :align-center="false" :closable="false">
     <a-tabs default-active-key="1" size="small">
-      <a-tab-pane key="1" title="站内">
+      <a-tab-pane key="1" title="站内" data-testid="qa-components-forms-searchcontent-tab-pane-站内">
         <div class="p-4">
           <a-tree-select
             v-model:value="innerValue"
@@ -12,7 +12,7 @@
             show-search
             size="large"
             style="width: 100%"
-            @change="onSelectItem"
+            @change="onSelectItem" data-testid="qa-components-forms-searchcontent-tree-select-请输入菜单名称"
           />
         </div>
       </a-tab-pane>

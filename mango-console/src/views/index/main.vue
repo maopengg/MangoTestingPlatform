@@ -1,91 +1,159 @@
 <template>
-  <div class="main-container">
-    <div class="left">
-      <div class="item">
-        <Title title="用例占比" />
-        <PieChart :chartData="data.caseSum" :loading="data.caseSumLoading" />
+  <div class="mango-home-workbench-scroll">
+    <div class="main-container mango-home-dashboard">
+      <div class="left">
+        <div class="item mango-section-card">
+          <Title title="项目自动化质量" />
+          <a-button
+            class="mango-home-card-shortcut"
+            type="text"
+            size="small"
+            @click="navigateTo('/report/effectiveness/index')"
+          >
+            直达质量效能
+            <template #icon><IconArrowRight /></template>
+          </a-button>
+          <p class="mango-home-panel-description"
+            >按项目汇总定时任务执行报告，比较执行量与最终结果</p
+          >
+          <ProjectQualityChart :data="data.projectQuality" :loading="data.projectQualityLoading" />
+        </div>
+        <div class="item mango-section-card">
+          <Title title="近 7 天执行结果" />
+          <a-button
+            class="mango-home-card-shortcut"
+            type="text"
+            size="small"
+            @click="navigateTo('/report/index')"
+          >
+            直达执行报告
+            <template #icon><IconArrowRight /></template>
+          </a-button>
+          <p class="mango-home-panel-description">按真实用例与场景数汇总最终执行质量</p>
+          <StatusChart
+            :success="data.reportStatus.success"
+            :fail="data.reportStatus.fail"
+            :warning="data.reportStatus.warning"
+            :other="reportOtherCount"
+            :loading="data.reportSumLoading"
+            center-label="最终通过率"
+            :center-value="formatPercent(data.reportPassRate)"
+          />
+        </div>
+        <div class="item mango-section-card">
+          <Title title="自动化能力建设" />
+          <p class="mango-home-panel-description">前端、服务、脚本、数据工厂、测试配置与定时任务</p>
+          <AutomationStats />
+        </div>
       </div>
-      <div class="item">
-        <Title title="执行占比" />
-        <PieChart :chartData="data.reportSum" :loading="data.reportSumLoading" />
-      </div>
-      <div class="item">
-        <Title title="自动化测试统计" />
-        <!-- 组件自己获取所需数据 -->
-        <AutomationStats />
-      </div>
-    </div>
-    <div class="center-workspace">
-      <div class="trend-panel panel">
-        <Title title="近3个月执行趋势图" />
-        <FullYearSalesChart ref="fullYearSalesChart" />
-      </div>
-      <div class="center-bottom">
-        <div class="pending-panel panel compact-panel">
-          <Title title="待执行自动化任务" />
-          <div class="pending-card-body">
-            <PendingTasks />
+      <div class="center-workspace">
+        <div class="trend-panel panel mango-section-card">
+          <Title title="近 12 周自动化执行趋势" />
+          <p class="mango-home-panel-description">UI、API、Pytest 的真实用例与场景执行规模</p>
+          <FullYearSalesChart ref="fullYearSalesChart" />
+        </div>
+        <div class="center-bottom">
+          <div class="pending-panel panel mango-section-card">
+            <Title title="即将执行的定时任务" />
+            <p class="mango-home-panel-description">按下一次触发时间排序，仅展示已启用任务</p>
+            <div class="pending-card-body">
+              <PendingTasks />
+            </div>
+          </div>
+          <div class="activity-panel panel mango-section-card">
+            <Title title="近 7 天用户活跃度" />
+            <p class="mango-home-panel-description">衡量用户对测试平台的实际使用情况</p>
+            <HotProductChart ref="hotProductChart" />
           </div>
         </div>
-        <div class="activity-panel panel compact-panel">
-          <Title title="活跃度" />
-          <HotProductChart ref="hotProductChart" />
+      </div>
+      <div class="right-rail">
+        <div class="todo-panel panel mango-section-card">
+          <Title title="风险待办" :class="{ 'mango-risk-title--danger': hasPendingRisk }" />
+          <p class="mango-home-panel-description">授权到期、刷新失败与数据模型异常</p>
+          <div class="todo-card-body">
+            <RiskTodos @pending-change="hasPendingRisk = $event" />
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="right-rail">
-      <div class="resource-panel panel compact-panel">
-        <Title title="资源中心" />
-        <ResourceCenter
-          @download-executor="downloadExecutor"
-          @download-plugin="downloadPlugin"
-          @view-help="viewHelp"
-          @contact-author="contactAuthor"
-        />
-      </div>
-      <div class="mcp-panel panel feature-panel">
-        <Title title="MCP智能接入" />
-        <McpWorkbench />
+        <div class="resource-panel panel mango-section-card">
+          <div class="resource-panel__content">
+            <Title title="资源中心" />
+            <ResourceCenter
+              @download-executor="downloadExecutor"
+              @view-skill="viewSkill"
+              @view-help="viewHelp"
+              @contact-author="contactAuthor"
+            />
+          </div>
+        </div>
+        <div class="mcp-panel panel mango-section-card">
+          <Title title="MCP智能接入" />
+          <McpWorkbench compact />
+        </div>
       </div>
     </div>
   </div>
 
   <!-- 联系作者弹窗 -->
   <ContactAuthor v-model:visible="contactVisible" />
+  <SkillCenterDrawer v-model:visible="skillVisible" />
 </template>
 
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { IconArrowRight } from '@arco-design/web-vue/es/icon'
   import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
   import HotProductChart from './components/chart/HotProductChart.vue'
   import Title from '@/views/index/components/Title.vue'
-  import PieChart from '@/components/chart/PieChart.vue'
-  import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system'
+  import StatusChart from '@/components/chart/StatusChart.vue'
+  import { getSystemCaseRunSum, getSystemProjectQuality } from '@/api/system'
   import ContactAuthor from './components/ContactAuthor.vue'
   import AutomationStats from './components/AutomationStats.vue'
   import PendingTasks from './components/PendingTasks.vue'
   import ResourceCenter from './components/ResourceCenter.vue'
   import McpWorkbench from './components/McpWorkbench.vue'
+  import SkillCenterDrawer from './components/SkillCenterDrawer.vue'
+  import RiskTodos from './components/RiskTodos.vue'
+  import ProjectQualityChart from './components/chart/ProjectQualityChart.vue'
 
   const contactVisible = ref(false)
+  const skillVisible = ref(false)
+  const hasPendingRisk = ref(false)
+  const router = useRouter()
 
   const data: any = reactive({
-    caseSum: [],
-    reportSum: [],
-    caseSumLoading: false,
+    projectQuality: [],
+    reportStatus: {
+      success: 0,
+      fail: 0,
+      warning: 0,
+      proceed: 0,
+      stay_begin: 0,
+      stopped: 0,
+    },
+    reportPassRate: null,
+    projectQualityLoading: false,
     reportSumLoading: false,
     onlineUsers: 0,
   })
 
-  function caseSum() {
-    data.caseSumLoading = true
-    getSystemCaseSum()
+  const reportOtherCount = computed(
+    () =>
+      Number(data.reportStatus.proceed || 0) +
+      Number(data.reportStatus.stay_begin || 0) +
+      Number(data.reportStatus.stopped || 0)
+  )
+
+  function projectQuality() {
+    data.projectQualityLoading = true
+    getSystemProjectQuality()
       .then((res) => {
-        data.caseSum = res.data
+        data.projectQuality = Array.isArray(res.data) ? res.data : []
       })
       .catch(console.log)
       .finally(() => {
-        data.caseSumLoading = false
+        data.projectQualityLoading = false
       })
   }
 
@@ -93,7 +161,31 @@
     data.reportSumLoading = true
     getSystemCaseRunSum()
       .then((res) => {
-        data.reportSum = res.data
+        const payload = res.data || {}
+        if (Array.isArray(payload)) {
+          const legacy = Object.fromEntries(
+            payload.map((item: any) => [String(item.name || ''), Number(item.value || 0)])
+          )
+          data.reportStatus = {
+            success: legacy['通过'] || 0,
+            fail: legacy['失败'] || 0,
+            warning: legacy['警告'] || 0,
+            proceed: legacy['进行中'] || 0,
+            stay_begin: legacy['待开始'] || 0,
+            stopped: legacy['已停止'] || 0,
+          }
+          const completed =
+            data.reportStatus.success + data.reportStatus.fail + data.reportStatus.warning
+          data.reportPassRate = completed
+            ? Number(((data.reportStatus.success / completed) * 100).toFixed(2))
+            : null
+          return
+        }
+        data.reportStatus = {
+          ...data.reportStatus,
+          ...(payload.status_counts || {}),
+        }
+        data.reportPassRate = payload.final_pass_rate ?? null
       })
       .catch(console.log)
       .finally(() => {
@@ -101,9 +193,19 @@
       })
   }
 
+  function formatPercent(value: number | string | null | undefined) {
+    if (value === null || value === undefined || value === '') return '-'
+    const numberValue = Number(value)
+    return Number.isFinite(numberValue) ? `${numberValue.toFixed(2)}%` : '-'
+  }
+
+  function navigateTo(path: string) {
+    router.push(path)
+  }
+
   onMounted(() => {
     nextTick(async () => {
-      caseSum()
+      projectQuality()
       getAllReportSum()
     })
   })
@@ -114,9 +216,8 @@
     window.open('https://www.alipan.com/s/8CmZdabwt4R', '_blank')
   }
 
-  function downloadPlugin() {
-    // 跳转到插件下载链接
-    window.open('https://www.alipan.com/s/dEaiFz5Zvfq', '_blank')
+  function viewSkill() {
+    skillVisible.value = true
   }
 
   function viewHelp() {
@@ -136,7 +237,7 @@
   }
 
   :deep(.arco-card) {
-    border-radius: 8px;
+    border-radius: var(--m-radius-lg);
     border: 1px solid var(--m-border);
     background: var(--m-surface);
     box-shadow: var(--m-shadow);
@@ -154,58 +255,234 @@
 
   :deep(.arco-modal) {
     .arco-modal-body {
-      padding: 20px;
+      padding: 18px;
     }
+  }
+
+  .mango-home-workbench-scroll {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    container-name: mango-home;
+    container-type: inline-size;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--m-scrollbar-thumb) transparent;
+    scrollbar-width: thin;
   }
 
   .main-container {
     display: grid;
+    width: 100%;
     height: 100%;
-    min-height: 0;
-    grid-template-columns: minmax(360px, 420px) minmax(0, 1fr) minmax(340px, 400px);
-    gap: 10px;
+    /* 首页是固定阅读顺序的数据看板；宽度不足时滚动，不能把右栏重排到不可见区域。 */
+    min-width: 1064px;
+    min-height: 648px;
+    margin: 0 auto;
+    grid-template-areas: 'left center right';
+    grid-template-columns:
+      minmax(260px, 22fr)
+      minmax(520px, 56fr)
+      minmax(270px, 22fr);
+    gap: var(--m-page-gap);
     overflow: hidden;
-    padding: 6px;
+
+    .mango-section-card + .mango-section-card {
+      margin-top: 0;
+    }
 
     .panel {
       display: flex;
       min-height: 0;
       flex-direction: column;
       position: relative;
-      border-radius: 8px;
-      border: 1px solid var(--m-border);
-      background: var(--m-surface);
-      box-shadow: var(--m-shadow);
-      padding: 10px 12px 12px;
       transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
     }
 
-    .compact-panel {
-      padding: 8px 10px 10px;
+    .mango-home-panel-description {
+      margin: -4px 8px 1px 18px;
+      color: var(--m-muted);
+      font-size: var(--m-home-font-micro);
+      line-height: 13px;
     }
 
-    .feature-panel {
-      padding: 10px 12px;
+    .mango-home-card-shortcut {
+      position: absolute;
+      z-index: 2;
+      top: 8px;
+      right: 8px;
+      height: 21px;
+      padding: 0 4px;
+      font-size: var(--m-home-font-micro);
+    }
+
+    :deep(.title-container) {
+      padding: 8px;
+
+      .title {
+        font-size: var(--m-home-font-title);
+      }
+
+      .line {
+        width: 2px;
+        height: 13px;
+        margin-right: 7px;
+      }
+    }
+
+    :deep(.mango-upcoming-task) {
+      min-height: 50px;
+      grid-template-columns: 77px minmax(0, 1fr) auto;
+      gap: 9px;
+      padding: 6px 9px;
+    }
+
+    :deep(.mango-upcoming-task__relative) {
+      font-size: var(--m-home-font-body);
+    }
+
+    :deep(.mango-upcoming-task__absolute),
+    :deep(.mango-upcoming-task__meta) {
+      font-size: var(--m-home-font-micro);
+    }
+
+    :deep(.mango-upcoming-task__name) {
+      font-size: var(--m-home-font-small);
+    }
+
+    :deep(.mango-upcoming-task__meta) {
+      margin-top: 2px;
+    }
+
+    :deep(.mango-risk-todo) {
+      min-height: 61px;
+      padding: 6px 8px;
+    }
+
+    :deep(.mango-risk-todo__title-row strong) {
+      font-size: var(--m-home-font-small);
+    }
+
+    :deep(.mango-risk-todo__summary) {
+      margin: 1px 0;
+      font-size: var(--m-home-font-micro);
+      line-height: 13px;
+    }
+
+    :deep(.mango-capability-overview) {
+      padding: 4px 8px 8px;
+    }
+
+    :deep(.mango-capability-grid) {
+      grid-auto-rows: minmax(142px, 1fr);
+      gap: 6px;
+    }
+
+    :deep(.mango-capability-card) {
+      gap: 6px;
+      padding: 8px 8px 6px;
+    }
+
+    :deep(.mango-capability-card__header) {
+      grid-template-columns: 23px minmax(0, 1fr) minmax(54px, auto);
+      gap: 4px;
+
+      strong {
+        font-size: var(--m-home-font-body);
+        line-height: 16px;
+      }
+    }
+
+    :deep(.mango-capability-card__icon) {
+      width: 23px;
+      height: 23px;
+      flex-basis: 23px;
+      font-size: var(--m-font-subtitle);
+    }
+
+    :deep(.mango-capability-card__total strong) {
+      font-size: var(--m-font-subtitle);
+      line-height: 17px;
+      white-space: nowrap;
+    }
+
+    :deep(.mango-capability-card__total) {
+      min-width: 54px;
+    }
+
+    :deep(.mango-capability-card__metrics) {
+      grid-auto-rows: minmax(22px, 1fr);
+      padding-top: 6px;
+    }
+
+    :deep(.mango-capability-metric) {
+      gap: 3px;
+      padding: 2px 4px;
+
+      dd {
+        font-size: var(--m-home-font-body);
+        line-height: 14px;
+      }
+    }
+
+    :deep(.mango-activity-rank__list) {
+      gap: 6px;
+      padding-top: 4px;
+    }
+
+    :deep(.mango-activity-rank__metrics) {
+      padding: 4px 1px;
+
+      div {
+        padding: 4px;
+      }
+
+      strong {
+        font-size: var(--m-home-font-body);
+        line-height: 15px;
+      }
+    }
+
+    :deep(.mango-activity-rank__trend) {
+      height: 54px;
+    }
+
+    :deep(.mango-mcp-workbench.is-compact) {
+      .mango-mcp-scroll-area {
+        gap: 3px;
+      }
+
+      .mango-mcp-endpoint-box,
+      .mango-mcp-api-key-box {
+        min-height: 45px;
+        padding: 6px 8px;
+      }
+
+      .mango-mcp-capability-item {
+        padding: 5px;
+      }
+
+      .arco-btn-size-small {
+        height: 21px;
+        font-size: var(--m-home-font-micro);
+      }
     }
 
     .left {
       display: flex;
+      grid-area: left;
       min-width: 0;
       min-height: 0;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--m-page-gap);
 
       .item {
-        border-radius: 8px;
         display: flex;
         flex-direction: column;
         min-height: 0;
         position: relative;
-        border: 1px solid var(--m-border);
-        background: var(--m-surface);
         transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
-        box-shadow: var(--m-shadow);
-        padding: 12px;
 
         div:nth-last-child(1) {
           flex: 1;
@@ -228,10 +505,11 @@
 
     .center-workspace {
       display: grid;
+      grid-area: center;
       min-width: 0;
       min-height: 0;
-      grid-template-rows: 360px minmax(0, 1fr);
-      gap: 10px;
+      grid-template-rows: minmax(270px, 36fr) minmax(0, 64fr);
+      gap: var(--m-page-gap);
     }
 
     .trend-panel {
@@ -240,9 +518,10 @@
 
     .center-bottom {
       display: grid;
+      min-width: 0;
       min-height: 0;
-      grid-template-columns: minmax(0, 1fr) 280px;
-      gap: 10px;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: var(--m-page-gap);
     }
 
     .pending-panel {
@@ -252,20 +531,49 @@
     .pending-card-body {
       flex: 1;
       min-height: 0;
-      padding-top: 8px;
+      padding-top: var(--m-page-gap);
     }
 
     .right-rail {
       display: grid;
+      grid-area: right;
       min-width: 0;
       min-height: 0;
-      grid-template-rows: 190px minmax(0, 1fr);
-      gap: 10px;
+      grid-template-rows: minmax(252px, 34fr) minmax(76px, 8fr) minmax(234px, 58fr);
+      gap: var(--m-page-gap);
     }
 
     .resource-panel,
+    .todo-panel,
     .mcp-panel {
       overflow: hidden;
+    }
+
+    .resource-panel {
+      border: 1px solid var(--m-border-strong);
+    }
+
+    .resource-panel__content {
+      display: flex;
+      width: 100%;
+      min-height: 0;
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .todo-card-body {
+      min-height: 0;
+      padding-top: 3px;
+      flex: 1;
+    }
+
+    .resource-panel :deep(.title-container) {
+      padding: 3px 9px;
+    }
+
+    :deep(.mango-risk-title--danger .title) {
+      color: var(--m-danger);
     }
 
     .activity-panel {
@@ -278,127 +586,30 @@
     }
   }
 
-  @media (max-width: 1440px) {
+  @media (max-height: 820px) and (min-width: 1440px) {
     .main-container {
-      grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.22fr) minmax(280px, 0.82fr);
-      gap: 8px;
-      padding: 6px;
-
-      .panel {
-        padding: 8px 10px 10px;
-      }
-
-      .compact-panel,
-      .feature-panel {
-        padding: 8px;
-      }
-
-      .left {
-        gap: 8px;
-
-        .item {
-          padding: 9px;
-        }
-      }
-
-      .center-workspace {
-        grid-template-rows: 320px minmax(0, 1fr);
-        gap: 8px;
-      }
-
-      .center-bottom {
-        grid-template-columns: minmax(0, 1fr) minmax(210px, 240px);
-        gap: 8px;
-      }
-
-      .right-rail {
-        grid-template-rows: 168px minmax(0, 1fr);
-        gap: 8px;
-      }
-    }
-  }
-
-  @media (max-width: 1280px) {
-    .main-container {
-      grid-template-columns: minmax(270px, 0.85fr) minmax(320px, 1.2fr) minmax(240px, 0.75fr);
-      gap: 8px;
-      padding: 6px;
-
-      .left {
-        gap: 8px;
-
-        .item {
-          padding: 8px;
-        }
-      }
-
-      .center-workspace {
-        grid-template-rows: 300px minmax(0, 1fr);
-        gap: 8px;
-      }
-
-      .center-bottom {
-        grid-template-columns: minmax(0, 1fr) minmax(180px, 210px);
-        gap: 8px;
-      }
-
-      .right-rail {
-        grid-template-rows: 150px minmax(0, 1fr);
-        gap: 8px;
-      }
-    }
-  }
-
-  @media (max-height: 820px) {
-    .main-container {
-      gap: 8px;
-      padding: 6px;
-
-      .left {
-        gap: 8px;
-
-        .item {
-          padding: 8px;
-        }
-      }
-
-      .center-workspace {
-        grid-template-rows: 300px minmax(0, 1fr);
-        gap: 8px;
-      }
-
-      .right-rail {
-        grid-template-rows: 158px minmax(0, 1fr);
-        gap: 8px;
-      }
-    }
-  }
-
-  @media (max-height: 760px) {
-    .main-container {
-      gap: 8px;
-      padding: 8px;
-
       .center-workspace {
         grid-template-rows: 270px minmax(0, 1fr);
-        gap: 8px;
       }
+    }
+  }
 
-      .right-rail {
-        grid-template-rows: 138px minmax(0, 1fr);
-        gap: 8px;
+  @media (max-height: 760px) and (min-width: 1440px) {
+    .main-container {
+      .center-workspace {
+        grid-template-rows: 243px minmax(0, 1fr);
       }
     }
   }
 
   // 按钮样式优化
   :deep(.arco-btn) {
-    border-radius: 6px;
+    border-radius: 5px;
     transition: all 0.3s ease;
   }
 
   :deep(.arco-btn:hover) {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: var(--m-shadow);
   }
 
@@ -414,66 +625,4 @@
     }
   }
 
-  // 首页作为后台工作台页面，低于全局最小工作区宽度后不再降级为移动布局。
-  @media (max-width: 1px) {
-    .main-container {
-      height: auto;
-      min-height: 100%;
-      grid-template-columns: 1fr;
-      grid-template-rows: auto;
-      overflow: auto;
-
-      .left,
-      .center-workspace,
-      .trend-panel,
-      .pending-panel,
-      .mcp-panel,
-      .right-rail {
-        grid-column: 1;
-        grid-row: auto;
-      }
-
-      .left {
-        flex-direction: row;
-
-        .item {
-          flex: 1;
-          min-height: 260px;
-        }
-      }
-
-      .trend-panel {
-        min-height: 420px;
-      }
-
-      .pending-panel,
-      .mcp-panel {
-        min-height: 260px;
-      }
-
-      .center-workspace,
-      .right-rail {
-        grid-template-rows: auto;
-      }
-    }
-  }
-
-  @media (max-width: 1px) {
-    .main-container {
-      padding: 10px;
-      gap: 10px;
-
-      .left {
-        flex-direction: column;
-
-        .item {
-          flex: 1;
-        }
-      }
-
-      .center-bottom {
-        grid-template-columns: 1fr;
-      }
-    }
-  }
 </style>

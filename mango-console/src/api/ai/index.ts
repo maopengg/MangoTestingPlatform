@@ -1,22 +1,33 @@
 import { deleted, get, post, put } from '@/api/http'
+import request from '@/api/axios.config'
 import { baseURL } from '@/api/axios.config'
-import { useProject } from '@/store/modules/get-project'
 import { useUserStoreContext } from '@/store/modules/user'
 
 export function getAiSkill(data: Record<string, unknown>) {
   return get({ url: '/ai/skill', data: () => data })
 }
 
-export function postAiSkill(data: Record<string, unknown>) {
-  return post({ url: '/ai/skill', data: () => data })
+export function postAiSkill(data: Record<string, unknown> | FormData) {
+  return post({
+    url: '/ai/skill',
+    headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    data: () => data,
+  })
 }
 
 export function putAiSkill(data: Record<string, unknown>) {
-  return put({ url: '/ai/skill', data: () => data })
+  return put({ permissionKey: 'ai.skill', url: '/ai/skill', data: () => data })
 }
 
 export function deleteAiSkill(id: number) {
   return deleted({ url: '/ai/skill', data: () => ({ id }) })
+}
+
+export function downloadAiSkill(id: number) {
+  return request.get('/ai/skill/download', {
+    params: { id },
+    responseType: 'blob',
+  })
 }
 
 export function postAiSkillPublish(id: number) {
@@ -40,7 +51,7 @@ export function postAiMcpServer(data: Record<string, unknown>) {
 }
 
 export function putAiMcpServer(data: Record<string, unknown>) {
-  return put({ url: '/ai/mcp/server', data: () => data })
+  return put({ permissionKey: 'ai.mcp', url: '/ai/mcp/server', data: () => data })
 }
 
 export function deleteAiMcpServer(id: number) {
@@ -59,8 +70,11 @@ export function postAiMcpServerBuiltin(data: Record<string, unknown>) {
   return post({ url: '/ai/mcp/server/builtin', data: () => data })
 }
 
-export function postAiMcpServerSyncTools(id: number) {
-  return post({ url: '/ai/mcp/server/sync-tools', data: () => ({ id }) })
+export function postAiMcpServerSyncTools(data: number | Record<string, unknown>) {
+  return post({
+    url: '/ai/mcp/server/sync-tools',
+    data: () => (typeof data === 'number' ? { id: data } : data),
+  })
 }
 
 export function getAiMcpTool(data: Record<string, unknown>) {
@@ -73,6 +87,10 @@ export function putAiMcpToolStatus(data: Record<string, unknown>) {
 
 export function postAiMcpToolCall(data: Record<string, unknown>) {
   return post({ url: '/ai/mcp/tool/call', data: () => data })
+}
+
+export function postAiMcpToolImportApiInfo(data: Record<string, unknown>) {
+  return post({ url: '/ai/mcp/tool/import-api-info', data: () => data })
 }
 
 export function getAiTask(data: Record<string, unknown>) {
@@ -89,6 +107,18 @@ export function getAiTaskDetail(id: number) {
 
 export function postAiTaskRetry(id: number) {
   return post({ url: '/ai/task/retry', data: () => ({ id }) })
+}
+
+export function getAiAgentRunEvents(data: Record<string, unknown>) {
+  return get({ url: '/ai/agent/run/events', data: () => data })
+}
+
+export function getAiAgentRunEvidence(data: Record<string, unknown>) {
+  return get({ url: '/ai/agent/run/evidence', data: () => data })
+}
+
+export function postAiAgentRunConfirm(data: Record<string, unknown>) {
+  return post({ url: '/ai/agent/run/confirm', data: () => data })
 }
 
 export function getAiAgentContext(data: Record<string, unknown>) {
@@ -161,19 +191,12 @@ export async function fetchAiAssistantMessageStream(
   signal?: AbortSignal
 ) {
   const userStore = useUserStoreContext()
-  const project = useProject()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json;charset=UTF-8',
     'Source-Type': '1',
   }
   if (userStore.token) {
     headers.Authorization = userStore.token
-  }
-  if (project.scopeType === 'project' && project.scopeId) {
-    headers['X-Project-Id'] = project.scopeId.toString()
-  }
-  if (project.scopeType === 'project_product' && project.scopeId) {
-    headers['X-Project-Product-Id'] = project.scopeId.toString()
   }
   const response = await fetch(`${baseURL}/ai/assistant/message/stream`, {
     method: 'POST',
@@ -195,7 +218,11 @@ export async function fetchAiAssistantMessageStream(
     buffer = chunks.pop() || ''
     chunks.forEach((chunk) => {
       const lines = chunk.split('\n')
-      const event = lines.find((line) => line.startsWith('event:'))?.replace('event:', '').trim() || 'message'
+      const event =
+        lines
+          .find((line) => line.startsWith('event:'))
+          ?.replace('event:', '')
+          .trim() || 'message'
       const dataText = lines
         .filter((line) => line.startsWith('data:'))
         .map((line) => line.replace('data:', '').trim())

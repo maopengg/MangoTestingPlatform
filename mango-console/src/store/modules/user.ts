@@ -19,6 +19,7 @@ const useUserStore = defineStore('user-info', {
       password: '',
       selected_environment: null,
       selected_environment_title: '选择测试环境',
+      is_super_admin: false,
     }
   },
   actions: {
@@ -32,6 +33,7 @@ const useUserStore = defineStore('user-info', {
         this.password = password
         this.avatar = userInfo.avatar || defaultAvatar
         this.selected_environment = userInfo.selected_environment
+        this.is_super_admin = !!userInfo.is_super_admin
         resolve(userInfo)
       })
     },

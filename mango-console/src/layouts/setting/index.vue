@@ -1,7 +1,7 @@
 <template>
   <a-drawer
     v-model:visible="opened"
-    :width="appStore.deviceType === 'mobile' ? '75%' : '280px'"
+    :width="appStore.deviceType === 'mobile' ? '75%' : '17.5rem'"
     closable
     placement="right"
     title="系统设置"
@@ -28,7 +28,7 @@
           </span>
         </button>
       </div>
-      <div style="height: 20px"></div>
+      <div class="mango-setting-section-spacer"></div>
       <a-divider dashed>侧边栏样式</a-divider>
       <div class="flex justify-around pb-8">
         <div
@@ -60,14 +60,27 @@
           />
         </div>
       </div>
+      <a-divider dashed>显示密度</a-divider>
+      <div class="mango-setting-item-wrapper">
+        <span class="mango-setting-item-label">页面密度</span>
+        <a-select
+          v-model="appStore.displayDensity"
+          :options="densityOptions"
+          size="small"
+          @change="onDensityUpdate"
+        />
+      </div>
+      <p class="mango-setting-help"
+        >自动模式会按当前浏览器宽度连续缩放，使不同屏幕保持接近的布局比例。</p
+      >
       <a-divider dashed>菜单设置</a-divider>
       <div class="mango-setting-item-wrapper">
-        <span style="width: 100px">菜单宽度</span>
-        <a-input-number v-model="menuWidth" :max="400" :min="200" :step="10" size="small" />
+        <span class="mango-setting-item-label">菜单宽度</span>
+        <a-input-number v-model="menuWidth" :max="280" :min="168" :step="7" size="small" />
       </div>
       <a-divider dashed>页面切换动画</a-divider>
       <div class="mango-setting-item-wrapper">
-        <span style="width: 100px">动画效果</span>
+        <span class="mango-setting-item-label">动画效果</span>
         <a-select v-model="appStore.pageAnim" :options="animOptions" @change="onAnimUpdate" />
       </div>
       <a-divider dashed>按钮显示</a-divider>
@@ -100,10 +113,9 @@
   import { defineComponent, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { ModalDialogType } from '@/types/components'
-  import { useMenuWidth } from '@/hooks/useMenuWidth'
   import LeftBg from '@/assets/bg_img.webp'
   import useAppConfigStore from '@/store/modules/app-config'
-  import { ThemeMode, ThemePresetId } from '@/store/types'
+  import { DisplayDensity, ThemeMode, ThemePresetId } from '@/store/types'
   import { themePresets } from '@/theme/presets'
 
   export default defineComponent({
@@ -113,7 +125,7 @@
       const opened = ref(false)
       const appStore = useAppConfigStore()
       const showContact = ref(false)
-      const menuWidth = ref(useMenuWidth())
+      const menuWidth = ref(appStore.sideWidth)
       const sideExampleList = reactive([
         {
           leftBg: 'var(--m-layout-sidebar-bg)',
@@ -183,6 +195,12 @@
           value: 'scale',
         },
       ])
+      const densityOptions = [
+        { label: '自动（推荐）', value: DisplayDensity.AUTO },
+        { label: '紧凑', value: DisplayDensity.COMPACT },
+        { label: '标准', value: DisplayDensity.STANDARD },
+        { label: '宽屏舒适', value: DisplayDensity.COMFORTABLE },
+      ]
       onMounted(() => {
         sideExampleList.forEach((it) => {
           it.checked = appStore.sideTheme === it.themeId
@@ -221,7 +239,7 @@
         })
       }
 
-      function onShowTabbar(val: boolean) {
+      function onShowTabbar(_val: boolean) {
         // appStore.changeShowTabbar(val)
       }
 
@@ -231,6 +249,10 @@
 
       function onAnimUpdate(val: any) {
         appStore.changePageAnim(val)
+      }
+
+      function onDensityUpdate(val: DisplayDensity) {
+        appStore.changeDisplayDensity(val)
       }
 
       watch(
@@ -255,6 +277,8 @@
         presetClick,
         openAppInfo,
         animOptions,
+        densityOptions,
+        onDensityUpdate,
         menuWidth,
       }
     },
@@ -405,6 +429,23 @@
       align-items: center;
       padding: 10px;
       font-size: 14px;
+    }
+
+    .mango-setting-item-label {
+      width: 100px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .mango-setting-section-spacer {
+      height: 20px;
+    }
+
+    .mango-setting-help {
+      margin: -4px 10px 8px;
+      color: var(--m-muted);
+      font-size: var(--m-font-caption);
+      line-height: var(--m-line-caption);
     }
   }
 </style>

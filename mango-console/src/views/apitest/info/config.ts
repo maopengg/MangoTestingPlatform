@@ -1,22 +1,47 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 
 export const apiProtocolOptions = [
   { label: '标准HTTP', value: 'http' },
   { label: 'SSE事件流', value: 'sse' },
-  { label: 'JSON-RPC', value: 'json_rpc', disabled: true },
-  { label: 'XML-RPC', value: 'xml_rpc', disabled: true },
-  { label: 'SOAP', value: 'soap', disabled: true },
-  { label: 'GraphQL', value: 'graphql', disabled: true },
-  { label: 'gRPC', value: 'grpc', disabled: true },
-  { label: 'Dubbo', value: 'dubbo', disabled: true },
-  { label: 'Thrift', value: 'thrift', disabled: true },
-  { label: 'MCP', value: 'mcp', disabled: true },
-  { label: 'WebSocket', value: 'websocket', disabled: true },
+  { label: 'JSON-RPC', value: 'json_rpc' },
+  { label: 'XML-RPC', value: 'xml_rpc' },
+  { label: 'SOAP', value: 'soap' },
+  { label: 'GraphQL', value: 'graphql' },
+  { label: 'gRPC', value: 'grpc' },
+  { label: 'Dubbo', value: 'dubbo' },
+  { label: 'Thrift', value: 'thrift' },
+  { label: 'MCP', value: 'mcp' },
+  { label: 'WebSocket', value: 'websocket' },
+]
+
+export const apiProtocolCreateOptions = [
+  { label: '标准HTTP', value: 'http' },
+  { label: 'SSE事件流', value: 'sse' },
+  { label: 'WebSocket', value: 'websocket' },
+]
+
+export const apiBodyTypeOptions = [
+  { label: '无请求体', value: 'none' },
+  { label: 'JSON', value: 'json' },
+  { label: 'Form', value: 'form' },
+  { label: 'Raw', value: 'raw' },
+  { label: 'Multipart', value: 'multipart' },
+]
+
+export const apiProtocolTabOptions = [
+  { label: '标准HTTP', value: 'http' },
+  { label: 'SSE事件流', value: 'sse' },
+  { label: 'gRPC', value: 'grpc' },
+  { label: 'MCP', value: 'mcp' },
+  { label: 'WebSocket', value: 'websocket' },
 ]
 
 export const conditionItems: Array<FormItem> = reactive([
@@ -25,7 +50,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入接口ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -103,7 +128,9 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(conditionItems)
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
@@ -162,8 +189,32 @@ export const formItems: FormItem[] = reactive([
         Message.error(this.placeholder || '')
         return false
       }
-      if (this.value.toLowerCase().startsWith('http')) {
-        Message.error('只允许输入url的路径部分，协议和域名部分从测试环境中读取！')
+      const value = String(this.value || '').trim()
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value) || value.startsWith('//')) {
+        Message.error('只允许输入url的路径部分，协议、域名和端口从测试配置-测试对象中读取！')
+        return false
+      }
+      if (!value.startsWith('/')) {
+        Message.error('url必须以 / 开头，只保存路径部分')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '协议',
+    key: 'protocol_type',
+    value: ref('http'),
+    type: 'select',
+    required: true,
+    placeholder: '请选择协议类型',
+    optionItems: apiProtocolCreateOptions,
+    reset: function () {
+      this.value = 'http'
+    },
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
         return false
       }
       return true
@@ -185,18 +236,18 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '协议',
-    key: 'protocol_type',
-    value: ref('http'),
+    label: '请求体类型',
+    key: 'body_type',
+    value: ref('none'),
     type: 'select',
     required: true,
-    placeholder: '请选择协议类型',
-    optionItems: apiProtocolOptions,
+    placeholder: '请选择请求体类型',
+    optionItems: apiBodyTypeOptions,
     reset: function () {
-      this.value = 'http'
+      this.value = 'none'
     },
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -262,16 +313,8 @@ export const formItemsImport: FormItem[] = reactive([
         Message.error(this.placeholder || '')
         return false
       }
-      const cmd = this.value.trim()
-      const isBrowserCurl =
-        cmd.startsWith('curl ') &&
-        (cmd.includes("'") || cmd.includes('"')) &&
-        !cmd.includes('^"') &&
-        cmd.includes(' \\\n') &&
-        !cmd.includes(' ^\n') &&
-        (cmd.includes('--compressed') || cmd.includes('--insecure') || cmd.includes('User-Agent:'))
-      if (!isBrowserCurl) {
-        Message.error('请从浏览器开发者工具(F12)中复制 cURL (base)，不要手动输入！')
+      if (!/^curl\s/.test(String(this.value).trim())) {
+        Message.error('请输入有效的 cURL（bash）命令')
         return false
       }
       return true
@@ -281,24 +324,6 @@ export const formItemsImport: FormItem[] = reactive([
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '模块名称',
-    key: 'module',
-    dataIndex: 'module',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '接口名称',
     key: 'name',
@@ -318,12 +343,6 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '端类型',
-    key: 'client',
-    dataIndex: 'client',
-    width: 80,
-  },
-  {
     title: '方法',
     key: 'method',
     dataIndex: 'method',
@@ -336,16 +355,53 @@ export const tableColumns = useTableColumn([
     width: 70,
   },
   {
-    title: '状态',
+    title: '结果',
     key: 'status',
     dataIndex: 'status',
     width: 70,
+  },
+  {
+    title: '发布状态',
+    key: 'publication_status',
+    dataIndex: 'publication_status',
+    width: 110,
+  },
+  {
+    title: '端类型',
+    key: 'client',
+    dataIndex: 'client',
+    width: 80,
+  },
+  updateUserColumn(),
+  {
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
+    width: 180,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

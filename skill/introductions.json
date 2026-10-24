@@ -1,0 +1,50 @@
+{
+  "mango-api-case-builder": {
+    "title": "API 自动化用例创建与修复",
+    "category": "API 自动化",
+    "description": "通过测试平台 MCP 创建或修复 API Case。新建自动化时先输出实施方案和编号选项，用户确认后先落地代表 Case，再由用户选择全量或继续小批量；覆盖接口版本绑定、请求、场景、断言、提取器、前置数据和清理。写请求使用数据工厂前置时，必须为 API 创建的关联数据配置失败可执行的用例级后置清理，并在发布前完成清理链复核。执行报告分析与重试由报告维护 Skill 负责。",
+    "mcp_enabled": true
+  },
+  "mango-code-driven-api-case-builder": {
+    "title": "根据代码创建 API 自动化用例",
+    "category": "代码分析",
+    "description": "扫描 Spring Boot、FastAPI 等服务端代码，识别接口契约与业务分支，并沿字段、枚举、策略或注册表分派解析到具体处理器；为每个接口生成一张必传且可回读校验的 Mermaid 接口全景图，由各 Case 通过节点和分支 ID 选择覆盖子图并审计异常的同图碰撞；通过稳定 source_key 将多次扫描的新增、修改、归档和已有 ApiCase 绑定同步到测试平台模块覆盖基线，也支持飞书/Excel 评审台账。",
+    "mcp_enabled": true
+  },
+  "mango-data-factory-builder": {
+    "title": "数据工厂创建与修复",
+    "category": "数据工厂",
+    "description": "通过测试平台 MCP 创建和修复数据工厂实体、字段规则、场景模板、多表依赖、插入后回写、用例绑定及清理流程。除清理工厂 execution 记录的数据外，还要求消费前置数据的写用例为 API 创建的子表和关联数据配置用例级后置清理，并在发布前校验完整清理链。",
+    "mcp_enabled": true
+  },
+  "mango-test-case-document-builder": {
+    "title": "测试用例设计与文档生成",
+    "category": "用例设计",
+    "description": "读取需求、设计文档或表格资料，按照统一字段和业务可读规则设计测试场景，并生成规范的测试用例文档。",
+    "mcp_enabled": true
+  },
+  "mango-scheduled-api-report-maintainer": {
+    "title": "定时任务失败用例排查与修复",
+    "category": "API 报告维护",
+    "description": "仅排查和修复指定项目产品的定时 API 报告失败 Case。按页面统一原因类型归因；授权后分批修复、精确重试，并通过 MCP 回写每个报告执行项的原因和说明，不自动排除。未授权修复先给诊断方案，严格只读请求不回写。",
+    "mcp_enabled": true
+  },
+  "mango-test-platform-asset-governance": {
+    "title": "测试平台资产治理",
+    "category": "资产治理",
+    "description": "审计和治理测试平台中的接口、用例、生产标签与定时任务，识别名称失真、重复资产和不安全绑定，并按确认范围安全修复。",
+    "mcp_enabled": true
+  },
+  "mango-restricted-env-test-verifier": {
+    "title": "受限环境接口测试与结果验证",
+    "category": "发布验证",
+    "description": "用于仿真、蓝环境、预发布或线上等测试平台无法执行 SQL、或平台执行器无法访问目标接口的环境。复用测试平台 Case，在平台或经授权的本地客户端执行 API，并通过本地只读数据库与日志工具补充持久化结果和调用链证据；禁止把数据库连接、SQL 或修复操作写入测试平台。",
+    "mcp_enabled": true
+  },
+  "mango-agent-ui-case-runner": {
+    "title": "AI 执行 UI 自动化用例",
+    "category": "UI 自动化",
+    "description": "让任意具备浏览器工具的智能代理通过统一 agent_ui_ MCP 协议，逐步读取测试平台 UI Case、执行操作和断言、上传截图与 Trace，并将步骤结果和最终执行结果持久化回平台；不依赖桌面执行器。",
+    "mcp_enabled": true
+  }
+}

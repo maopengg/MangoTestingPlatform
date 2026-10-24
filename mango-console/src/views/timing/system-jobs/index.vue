@@ -1,12 +1,37 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" content-flush>
     <template #header>
-      <TableHeader title="系统任务" @search="doRefresh" />
+      <TableHeader title="系统定时任务" @search="onSearch" @reset-search="onResetSearch">
+        <template #search-content>
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearch">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+              <a-input
+                v-if="item.type === 'input'"
+                v-model="item.value"
+                :placeholder="item.placeholder"
+                allow-clear
+                @clear="onSearch"
+              />
+              <a-select
+                v-else-if="item.type === 'select'"
+                v-model="item.value"
+                :placeholder="item.placeholder"
+                :options="item.optionItems"
+                :multiple="item.multiple"
+                :max-tag-count="1"
+                allow-search
+                allow-clear
+                @clear="onSearch"
+              />
+            </a-form-item>
+          </a-form>
+        </template>
+      </TableHeader>
     </template>
 
     <template #default>
       <a-table
-        :scroll="{ x: 1450 }"
+        :scroll="{ x: 2200 }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -36,7 +61,7 @@
               <a-tag v-if="record.latest_fire" :color="statusColor(record.latest_fire.status)" size="small">
                 {{ record.latest_fire.status_name || '-' }}
               </a-tag>
-              <span v-else>-</span>
+              <a-tag v-else color="gray" size="small">尚未触发</a-tag>
             </template>
             <template v-else-if="item.key === 'latest_planned_at'" #cell="{ record }">
               {{ record.latest_fire?.planned_at || '-' }}
@@ -50,7 +75,7 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  {
+                  { permission: 'timing.system_jobs:execute',
                     label: '立即触发',
                     loading: data.triggeringKey === record.key,
                     onClick: () => onTrigger(record),
@@ -73,6 +98,8 @@
   import { usePagination, useRowKey, useTable, useTableColumn } from '@/hooks/table'
   import { getSystemTaskSystemJobs, postSystemTaskSystemJobTrigger } from '@/api/system/tasks'
   import { Message, Modal } from '@arco-design/web-vue'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { conditionItems } from './config'
 
   const tableColumns = useTableColumn([
     {
@@ -98,7 +125,7 @@
       key: 'description',
       dataIndex: 'description',
       align: 'left',
-      width: 280,
+      width: 560,
       ellipsis: true,
       tooltip: true,
     },
@@ -152,7 +179,7 @@
       key: 'actions',
       dataIndex: 'actions',
       fixed: 'right',
-      width: 130,
+      width: 160,
     },
   ])
 
@@ -161,18 +188,48 @@
     setup() {
       const table = useTable()
       const rowKey = useRowKey('key')
-      const pagination = usePagination(doRefresh)
+      const pagination = usePagination(doRefresh, () => table.tableLoading)
       const data = reactive({
         triggeringKey: '',
       })
+      let requestVersion = 0
+
+      function onSearch() {
+        pagination.page = 1
+        return doRefresh()
+      }
+
+      function onResetSearch() {
+        conditionItems.forEach((item) => { item.value = item.multiple ? [] : '' })
+        return onSearch()
+      }
 
       function doRefresh() {
-        getSystemTaskSystemJobs()
+        const version = ++requestVersion
+        table.tableLoading.value = true
+        const params = getFormItems(conditionItems)
+        Object.keys(params).forEach((key) => {
+          params[key] = String(params[key] ?? '').trim()
+          if (!params[key]) delete params[key]
+        })
+        return getSystemTaskSystemJobs({
+          ...params,
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+        })
           .then((res) => {
+            if (version !== requestVersion) return
             table.handleSuccess(res)
             pagination.setTotalSize((res as any).totalSize)
           })
-          .catch(console.log)
+          .catch(() => {
+            if (version !== requestVersion) return
+            table.dataList.length = 0
+            pagination.setTotalSize(0)
+          })
+          .finally(() => {
+            if (version === requestVersion) table.tableLoading.value = false
+          })
       }
 
       function statusColor(status: number) {
@@ -185,8 +242,8 @@
 
       function onTrigger(record: any) {
         Modal.confirm({
-          title: '确认触发系统任务',
-          content: `确认立即触发系统任务「${record.name || record.key}」吗？该操作会立即执行一次并写入触发记录。`,
+          title: '确认触发系统定时任务',
+          content: `确认立即触发系统定时任务「${record.name || record.key}」吗？该操作会立即执行一次并写入触发记录。`,
           okText: '确认触发',
           cancelText: '取消',
           onOk: () => {
@@ -216,6 +273,9 @@
         pagination,
         rowKey,
         data,
+        conditionItems,
+        onSearch,
+        onResetSearch,
         doRefresh,
         statusColor,
         onTrigger,

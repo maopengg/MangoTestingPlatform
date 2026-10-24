@@ -1,7 +1,10 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 
@@ -11,7 +14,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -64,7 +67,9 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(conditionItems)
 
 export const formItems: FormItem[] = reactive([
   {
@@ -148,6 +153,7 @@ export const formItems: FormItem[] = reactive([
     key: 'token_ttl',
     value: ref(1440),
     type: 'number',
+    min: 1,
     required: true,
     placeholder: '请输入Token有效期',
     validator: function () {
@@ -161,13 +167,14 @@ export const formItems: FormItem[] = reactive([
   {
     label: '提前刷新(分钟)',
     key: 'refresh_margin',
-    value: ref(5),
+    value: ref(10),
     type: 'number',
+    min: 10,
     required: true,
     placeholder: '请输入提前刷新时间',
     validator: function () {
-      if (this.value === '' || Number(this.value) < 0) {
-        Message.error(this.placeholder || '')
+      if (this.value === '' || Number(this.value) < 10) {
+        Message.error('提前刷新时间不能少于10分钟')
         return false
       }
       return true
@@ -178,11 +185,12 @@ export const formItems: FormItem[] = reactive([
     key: 'expire_notice_minutes',
     value: ref(30),
     type: 'number',
+    min: 10,
     required: true,
     placeholder: '请输入提前通知时间',
     validator: function () {
-      if (this.value === '' || Number(this.value) < 0) {
-        Message.error(this.placeholder || '')
+      if (this.value === '' || Number(this.value) < 10) {
+        Message.error('提前通知时间不能少于10分钟')
         return false
       }
       return true
@@ -223,15 +231,6 @@ export const formItems: FormItem[] = reactive([
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '授权名称',
     key: 'name',
@@ -287,16 +286,32 @@ export const tableColumns = useTableColumn([
     width: 110,
   },
   {
-    title: '状态',
+    title: '默认开启',
     key: 'status',
     dataIndex: 'status',
-    width: 80,
+    width: 90,
+  },
+  updateUserColumn(),
+  {
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
+    width: 180,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

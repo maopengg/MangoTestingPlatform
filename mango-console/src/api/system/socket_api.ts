@@ -1,4 +1,4 @@
-import { get, put } from '@/api/http'
+import { get, post, put } from '@/api/http'
 
 export function getSystemSocketAllUserSum() {
   return get({
@@ -14,6 +14,15 @@ export function getSystemSocketUserList(data: object) {
     url: '/system/socket/user/list',
     data: () => {
       return data
+    },
+  })
+}
+
+export function getSystemSocketCurrentActuatorStatus() {
+  return get({
+    url: '/system/socket/current/actuator/status',
+    data: () => {
+      return {}
     },
   })
 }
@@ -48,6 +57,34 @@ export function getSystemSocketPutDebug(username: string, status: number) {
         status: status,
       }
     },
+  })
+}
+
+export function postSystemSocketActuatorConfigRequest(username: string) {
+  return post({
+    url: '/system/socket/actuator/config/request',
+    data: () => ({ username }),
+  })
+}
+
+export function getSystemSocketActuatorConfigResult(requestId: string) {
+  return get({
+    url: '/system/socket/actuator/config/result',
+    data: () => ({ request_id: requestId }),
+  })
+}
+
+export function putSystemSocketActuatorConfig(username: string, config: Record<string, any>) {
+  return put({
+    url: '/system/socket/actuator/config',
+    data: () => ({ username, config }),
+  })
+}
+
+export function getSystemSocketActuatorConfigSaveResult(requestId: string) {
+  return get({
+    url: '/system/socket/actuator/config/save-result',
+    data: () => ({ request_id: requestId }),
   })
 }
 

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_pytest', '0005_alter_pytestact_options_alter_pytestcase_options_and_more'),
     ]

@@ -4,6 +4,7 @@ import type { ApiCaseDetailedPayload } from '@/types/api-test/case'
 export function getApiCaseDetailed(caseId: any) {
   return get({
     url: '/api/case/detailed',
+    losslessJson: true,
     data: () => {
       return {
         case_id: caseId,
@@ -17,6 +18,7 @@ export function postApiCaseDetailed(data: ApiCaseDetailedPayload, parent_id: any
   data['parent_id'] = parent_id
   return post({
     url: '/api/case/detailed',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -27,7 +29,9 @@ export function putApiCaseDetailed(data: ApiCaseDetailedPayload, parent_id: any)
   // @ts-ignore
   data['parent_id'] = parent_id
   return put({
+    permissionKey: 'api.case',
     url: '/api/case/detailed',
+    losslessJson: true,
     data: () => {
       return data
     },

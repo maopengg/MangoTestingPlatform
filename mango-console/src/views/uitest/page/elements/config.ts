@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { isValidInteger } from '@/utils/form'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 
@@ -16,86 +17,67 @@ export const tableColumns = useTableColumn([
     width: 250,
   },
   {
-    title: '等待时间(秒)',
+    title: '分类',
+    key: 'category',
+    dataIndex: 'category',
+    width: 90,
+  },
+  {
+    title: 'AI自愈',
+    key: 'ai_heal_status',
+    dataIndex: 'ai_heal_status',
+    width: 90,
+  },
+  {
+    title: '等待时间',
     key: 'sleep',
     dataIndex: 'sleep',
-    width: 180,
+    width: 100,
   },
   {
-    title: '类型-1',
-    key: 'exp',
-    dataIndex: 'exp',
-    width: 120,
-  },
-  {
-    title: '定位-1',
-    key: 'loc',
-    dataIndex: 'loc',
+    title: '预期事件/输入',
+    key: 'expected_event',
+    dataIndex: 'expected_event',
     align: 'left',
-    ellipsis: true,
-    tooltip: true,
-    width: 300,
+    width: 260,
   },
   {
-    title: '下标-1',
-    key: 'sub',
-    dataIndex: 'sub',
-    width: 80,
-  },
-  {
-    title: '类型-2',
-    key: 'exp2',
-    dataIndex: 'exp2',
-    width: 120,
-  },
-  {
-    title: '定位-2',
-    key: 'loc2',
-    dataIndex: 'loc2',
+    title: '第一组元素',
+    key: 'locator_group_1',
+    dataIndex: 'locator_group_1',
     align: 'left',
-    ellipsis: true,
-    tooltip: true,
+    width: 360,
   },
   {
-    title: '下标-2',
-    key: 'sub2',
-    dataIndex: 'sub',
-    width: 80,
-  },
-  {
-    title: '类型-3',
-    key: 'exp3',
-    dataIndex: 'exp3',
-    width: 120,
-  },
-  {
-    title: '定位-3',
-    key: 'loc3',
-    dataIndex: 'loc3',
+    title: '第二组元素',
+    key: 'locator_group_2',
+    dataIndex: 'locator_group_2',
     align: 'left',
-    ellipsis: true,
-    tooltip: true,
+    width: 360,
   },
   {
-    title: '下标-3',
-    key: 'sub3',
-    dataIndex: 'sub',
-    width: 80,
+    title: '第三组元素',
+    key: 'locator_group_3',
+    dataIndex: 'locator_group_3',
+    align: 'left',
+    width: 360,
   },
   {
-    title: 'AI定位提示词',
+    title: '元素描述',
     key: 'prompt',
     dataIndex: 'prompt',
     align: 'left',
     ellipsis: true,
     tooltip: true,
   },
+  updateUserColumn(),
+  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])
 
@@ -116,12 +98,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '类型-1',
+    label: '定位类型-1',
     key: 'exp',
     value: null,
     type: 'select',
     required: true,
-    placeholder: '请选择元素表达式类型',
+    placeholder: '请选择定位类型',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
@@ -131,12 +113,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '定位-1',
+    label: '定位表达式-1',
     key: 'loc',
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入元素表达式',
+    placeholder: '请输入定位表达式',
     validator: function () {
       return true
     },
@@ -160,23 +142,23 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '类型-2',
+    label: '定位类型-2',
     key: 'exp2',
     value: null,
     type: 'select',
     required: false,
-    placeholder: '请选择类型-2的元素表达式类型',
+    placeholder: '请选择第二组定位类型',
     validator: function () {
       return true
     },
   },
   {
-    label: '定位-2',
+    label: '定位表达式-2',
     key: 'loc2',
     value: ref(''),
     type: 'input',
     required: false,
-    placeholder: '请输入定位-2的元素表达式',
+    placeholder: '请输入第二组定位表达式',
     validator: function () {
       return true
     },
@@ -200,23 +182,23 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '类型-3',
+    label: '定位类型-3',
     key: 'exp3',
     value: null,
     type: 'select',
     required: false,
-    placeholder: '请选择类型-3的元素表达式类型',
+    placeholder: '请选择第三组定位类型',
     validator: function () {
       return true
     },
   },
   {
-    label: '定位-3',
+    label: '定位表达式-3',
     key: 'loc3',
     value: ref(''),
     type: 'input',
     required: false,
-    placeholder: '请输入定位-3的元素表达式',
+    placeholder: '请输入第三组定位表达式',
     validator: function () {
       return true
     },
@@ -240,12 +222,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: 'AI提示词',
+    label: '元素描述',
     key: 'prompt',
     value: ref(''),
     type: 'input',
     required: false,
-    placeholder: '请输入AI辅助定位，用于查找元素的提示词',
+    placeholder: '请输入元素位置、周边文字等正向识别线索',
     validator: function () {
       return true
     },

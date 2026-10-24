@@ -1,0 +1,8 @@
+websockets==10.4
+websocket-client==1.5.1
+
+Pympler==1.0.1
+psutil==5.9.5
+
+httpx==0.28.1
+pydantic==2.9.2

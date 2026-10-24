@@ -20,6 +20,18 @@
         type: Boolean,
         default: false,
       },
+      showFooter: {
+        type: Boolean,
+        default: true,
+      },
+      confirmText: {
+        type: String,
+        default: '提交',
+      },
+      cancelText: {
+        type: String,
+        default: '取消',
+      },
     },
     emits: ['confirm', 'cancel', 'continuousSubmit'],
     setup(props, { emit }) {
@@ -164,18 +176,29 @@
     <Scrollbar wrap-class="mango-modal-dialog__wrap">
       <slot name="content"></slot>
     </Scrollbar>
-    <template #footer>
+    <template v-if="showFooter" #footer>
+      <slot name="footer">
       <a-space class="mango-modal-dialog-footer-actions">
-        <a-button @click="onCancel">取消</a-button>
+        <a-button @click="onCancel" data-testid="qa-components-overlays-modaldialog-button-取消">{{
+          cancelText
+        }}</a-button>
         <a-button
           v-if="showContinuousSubmit"
           type="primary"
           :loading="continuousLoading"
           @click="onContinuousSubmit"
+          data-testid="qa-components-overlays-modaldialog-button-连续提交"
           >连续提交</a-button
         >
-        <a-button type="primary" :loading="confirmLoading" @click="onConfirm">提交</a-button>
+        <a-button
+          type="primary"
+          :loading="confirmLoading"
+          @click="onConfirm"
+          data-testid="qa-components-overlays-modaldialog-button-提交"
+          >{{ confirmText }}</a-button
+        >
       </a-space>
+      </slot>
     </template>
   </a-modal>
 </template>

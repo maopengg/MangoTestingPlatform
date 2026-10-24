@@ -5,6 +5,13 @@ import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
 
+export type CandidateExecutionVersion = 'published' | 'unpublished'
+
+export const candidateExecutionVersionOptions = [
+  { value: 'published', label: '当前已发布' },
+  { value: 'unpublished', label: '暂无已发布版本' },
+]
+
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -50,14 +57,14 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '场景层级',
+    title: '测试层级',
     key: 'scenario_layer',
     dataIndex: 'scenario_layer',
     align: 'left',
     width: 120,
   },
   {
-    title: '场景标签',
+    title: '执行场景',
     key: 'scenario_tags',
     dataIndex: 'scenario_tags',
     align: 'left',
@@ -66,7 +73,7 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '场景类型',
+    title: '验证类型',
     key: 'scenario_type',
     dataIndex: 'scenario_type',
     align: 'left',
@@ -79,11 +86,17 @@ export const tableColumns = useTableColumn([
     width: 100,
   },
   {
+    title: '执行版本',
+    key: 'api_case_version',
+    dataIndex: 'api_case_version',
+    width: 170,
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])
 

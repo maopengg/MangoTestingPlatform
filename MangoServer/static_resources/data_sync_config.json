@@ -1,0 +1,25 @@
+{
+  "excluded_models": [
+    "auto_ai.aimcptool",
+    "auto_api.apicaseexecutionstep",
+    "auto_api.apicaseexecutiontrace",
+    "auto_data_factory.datafactoryexecutionitem",
+    "auto_system.serviceheartbeat",
+    "auto_system.systemerrorevent",
+    "auto_system.testsuite",
+    "auto_system.testsuitedetailresult",
+    "auto_system.testsuitedetails",
+    "auto_user.departmentprojectproductpermission",
+    "auto_user.rolemenupermission",
+    "monitoring.monitoringreport",
+    "monitoring.monitoringtask",
+    "task_center.schedulefire"
+  ],
+  "excluded_fields": {
+    "auto_user.user": [
+      "ip",
+      "is_super_admin",
+      "mailbox"
+    ]
+  }
+}

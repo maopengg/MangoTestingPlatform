@@ -7,7 +7,9 @@ interface ParameterItem {
   n: string // 名称
   p: string // 提示信息
   d: boolean // 是否默认
-  v: string // 默认值
+  v: unknown // 默认值
+  value_type?: string
+  input_type?: string
 }
 
 // 子项类型
@@ -33,8 +35,10 @@ interface SlsectValueState {
   dataList: ChildrenItem[]
   webOpe: ChildrenItem[]
   androidOpe: ChildrenItem[]
+  iosOpe: ChildrenItem[]
   assAndroid: (ChildrenItem | SelectValueItem)[]
   assWeb: (ChildrenItem | SelectValueItem)[]
+  assIos: (ChildrenItem | SelectValueItem)[]
   ass: SelectValueItem[]
 }
 
@@ -46,8 +50,10 @@ export const useSelectValueStore = defineStore('get-select-value', {
     dataList: [],
     webOpe: [],
     androidOpe: [],
+    iosOpe: [],
     assAndroid: [],
     assWeb: [],
+    assIos: [],
     ass: [],
   }),
   getters: {},
@@ -72,8 +78,10 @@ export const useSelectValueStore = defineStore('get-select-value', {
           appendChildren(this.data)
           this.webOpe = []
           this.androidOpe = []
+          this.iosOpe = []
           this.assAndroid = []
           this.assWeb = []
+          this.assIos = []
           this.ass = []
           this.data.forEach((item: SelectValueItem) => {
             const children = Array.isArray(item.children) ? item.children : []
@@ -81,14 +89,19 @@ export const useSelectValueStore = defineStore('get-select-value', {
               this.webOpe.push(...children)
             } else if (item.value === 'android') {
               this.androidOpe.push(...children)
+            } else if (item.value === 'ios') {
+              this.iosOpe.push(...children)
             } else if (item.value === 'ass_android') {
               this.assAndroid.push(...children)
             } else if (item.value === 'ass_web') {
               this.assWeb.push(...children)
+            } else if (item.value === 'ass_ios') {
+              this.assIos.push(...children)
             } else if (item.value.includes('断言')) {
               this.ass.push(item)
               this.assAndroid.push(item)
               this.assWeb.push(item)
+              this.assIos.push(item)
             }
           })
         })
@@ -97,6 +110,18 @@ export const useSelectValueStore = defineStore('get-select-value', {
           selectValueRequest = null
         })
       return selectValueRequest
+    },
+    getOperationOptions(pageType: string | number) {
+      const type = Number(pageType)
+      if (type === 0) return this.webOpe
+      if (type === 3) return this.iosOpe
+      return this.androidOpe
+    },
+    getAssertionOptions(pageType: string | number) {
+      const type = Number(pageType)
+      if (type === 0) return this.assWeb
+      if (type === 3) return this.assIos
+      return this.assAndroid
     },
     getSelectLabel(value: string): ChildrenItem[] {
       // 如果数据为空，则调用初始化函数

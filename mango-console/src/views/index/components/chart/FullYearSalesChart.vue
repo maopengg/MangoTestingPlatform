@@ -1,19 +1,30 @@
 <template>
   <div class="chart-item-container">
-    <a-spin :loading="loading" class="mango-chart-spin">
+    <mango-panel-spin :loading="loading" class="mango-chart-spin">
       <div class="mango-chart-content">
-        <div class="trend-summary">
-          <div v-for="item in seriesSummary" :key="item.name" class="summary-item">
-            <span class="summary-dot" :style="{ backgroundColor: item.color }"></span>
-            <div>
-              <span>{{ item.name }}</span>
-              <strong>{{ item.total }}</strong>
-            </div>
+        <div class="mango-trend-summary" aria-label="近 12 周自动化执行总次数">
+          <div class="mango-trend-summary__item is-api">
+            <span class="mango-trend-summary__dot"></span>
+            <span class="mango-trend-summary__label">API 场景</span>
+            <strong>{{ formatNumber(summary.api) }}</strong>
+            <small>次</small>
+          </div>
+          <div class="mango-trend-summary__item is-ui">
+            <span class="mango-trend-summary__dot"></span>
+            <span class="mango-trend-summary__label">UI 用例</span>
+            <strong>{{ formatNumber(summary.ui) }}</strong>
+            <small>次</small>
+          </div>
+          <div class="mango-trend-summary__item is-pytest">
+            <span class="mango-trend-summary__dot"></span>
+            <span class="mango-trend-summary__label">Pytest 用例</span>
+            <strong>{{ formatNumber(summary.pytest) }}</strong>
+            <small>次</small>
           </div>
         </div>
         <div ref="fullYearSalesChart" class="chart-item"></div>
       </div>
-    </a-spin>
+    </mango-panel-spin>
   </div>
 </template>
 <script lang="ts">
@@ -22,20 +33,6 @@
   import { dispose } from 'echarts/core'
   import { getSystemCaseResultWeekSum } from '@/api/system'
 
-  const months = [
-    '1周',
-    '2周',
-    '3周',
-    '4周',
-    '5周',
-    '6周',
-    '7周',
-    '8周',
-    '9周',
-    '10周',
-    '11周',
-    '12周',
-  ]
   export default defineComponent({
     name: 'FullYearSalesChart',
     setup() {
@@ -43,6 +40,7 @@
       const fullYearSalesChart = ref<HTMLDivElement | null>(null)
       let resizeObserver: ResizeObserver | null = null
       let resizeFrame = 0
+      let visibleLabelSignature = ''
       const token = (name: string, fallback: string) =>
         getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
       const testTypeColors = () => ({
@@ -50,25 +48,24 @@
         ui: token('--m-chart-2', '#22c55e'),
         pytest: token('--m-chart-3', '#f6c143'),
       })
-      const seriesSummary = ref([
-        { name: '接口自动化', total: 0, color: testTypeColors().api },
-        { name: '界面自动化', total: 0, color: testTypeColors().ui },
-        { name: '单元自动化', total: 0, color: testTypeColors().pytest },
-      ])
       let interval: any = null
       let data: any = reactive([])
+      const summary = reactive({ api: 0, ui: 0, pytest: 0 })
 
-      function syncSummaryColors() {
-        const colors = testTypeColors()
-        seriesSummary.value = seriesSummary.value.map((item) => {
-          if (item.name.includes('接口')) {
-            return { ...item, color: colors.api }
-          }
-          if (item.name.includes('界面')) {
-            return { ...item, color: colors.ui }
-          }
-          return { ...item, color: colors.pytest }
-        })
+      function sumValues(values: unknown) {
+        return Array.isArray(values)
+          ? values.reduce((total, value) => total + Number(value || 0), 0)
+          : 0
+      }
+
+      function updateSummary() {
+        summary.api = sumValues(data.api_count)
+        summary.ui = sumValues(data.ui_count)
+        summary.pytest = sumValues(data.pytest_count)
+      }
+
+      function formatNumber(value: number) {
+        return Number(value || 0).toLocaleString('zh-CN')
       }
 
       function caseResultWeekSum() {
@@ -76,32 +73,7 @@
         getSystemCaseResultWeekSum()
           .then((res) => {
             data = res.data
-            seriesSummary.value = [
-              {
-                name: '接口自动化',
-                total: (data.api_count || []).reduce(
-                  (sum: number, item: number) => sum + Number(item || 0),
-                  0
-                ),
-                color: testTypeColors().api,
-              },
-              {
-                name: '界面自动化',
-                total: (data.ui_count || []).reduce(
-                  (sum: number, item: number) => sum + Number(item || 0),
-                  0
-                ),
-                color: testTypeColors().ui,
-              },
-              {
-                name: '单元自动化',
-                total: (data.pytest_count || []).reduce(
-                  (sum: number, item: number) => sum + Number(item || 0),
-                  0
-                ),
-                color: testTypeColors().pytest,
-              },
-            ]
+            updateSummary()
             init()
           })
           .catch(console.log)
@@ -110,28 +82,93 @@
           })
       }
 
+      function getVisibleLabelIndexes() {
+        const labels = Array.isArray(data.labels)
+          ? data.labels.map((item: any) => String(item))
+          : []
+        if (!labels.length) return new Set<number>()
+
+        const chartWidth = fullYearSalesChart.value?.clientWidth || 0
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+        if (context) context.font = '12px system-ui'
+        const widestLabel = Math.max(
+          ...labels.map((label: string) => context?.measureText(label).width || label.length * 7),
+          72
+        )
+        const availableWidth = Math.max(0, chartWidth - 48)
+        const visibleCount = Math.max(
+          2,
+          Math.min(labels.length, Math.floor(availableWidth / (widestLabel + 18)))
+        )
+
+        if (visibleCount >= labels.length) {
+          return new Set(labels.map((_: string, index: number) => index))
+        }
+
+        const indexes = new Set<number>()
+        for (let index = 0; index < visibleCount; index += 1) {
+          indexes.add(Math.round((index * (labels.length - 1)) / (visibleCount - 1)))
+        }
+        return indexes
+      }
+
+      function responsiveAxisLabelInterval() {
+        const visibleIndexes = getVisibleLabelIndexes()
+        visibleLabelSignature = [...visibleIndexes].join(',')
+        return (index: number) => visibleIndexes.has(index)
+      }
+
+      function updateResponsiveAxisLabels() {
+        if (!fullYearSalesChart.value) return
+        const visibleIndexes = getVisibleLabelIndexes()
+        const signature = [...visibleIndexes].join(',')
+        if (signature === visibleLabelSignature) return
+        visibleLabelSignature = signature
+        useEcharts(fullYearSalesChart.value).setOption({
+          xAxis: {
+            axisLabel: {
+              interval: (index: number) => visibleIndexes.has(index),
+            },
+          },
+        })
+      }
+
       const init = () => {
-        syncSummaryColors()
         const option = {
-          color: [testTypeColors().api, testTypeColors().ui, testTypeColors().pytest],
+          color: [testTypeColors().ui, testTypeColors().api, testTypeColors().pytest],
           grid: {
-            top: 20,
-            left: 8,
-            right: 12,
-            bottom: 8,
+            // 为双纵轴标题预留完整高度，避免标题被图表容器顶部裁切。
+            top: 37,
+            left: 10,
+            right: 21,
+            bottom: 7,
             containLabel: true,
           },
           tooltip: {
             trigger: 'axis',
+            axisPointer: { type: 'line' },
             backgroundColor: token('--m-surface', '#fff'),
             borderColor: token('--m-border', '#e5e6eb'),
             textStyle: {
               color: token('--m-text', '#1d2129'),
+              fontSize: 14,
+              lineHeight: 18,
+            },
+            padding: 9,
+            formatter(params: any[]) {
+              if (!params?.length) return ''
+              return [
+                `<strong>${params[0].axisValueLabel || params[0].name}</strong>`,
+                ...params.map(
+                  (item) => `${item.marker}${item.seriesName}：${Number(item.value || 0)} 个`
+                ),
+              ].join('<br />')
             },
           },
           xAxis: {
             type: 'category',
-            data: months,
+            data: Array.isArray(data.labels) && data.labels.length ? data.labels : [],
             axisLine: {
               show: true,
               lineStyle: {
@@ -145,77 +182,142 @@
             },
             axisLabel: {
               color: token('--m-muted', '#86909c'),
+              fontSize: 12,
+              interval: responsiveAxisLabelInterval(),
+              hideOverlap: true,
             },
           },
-          yAxis: {
-            type: 'value',
-            splitLine: {
-              show: true,
-              lineStyle: {
-                color: token('--m-border', '#eef0f5'),
-                type: 'dashed',
+          yAxis: [
+            {
+              type: 'value',
+              name: 'API 场景（个）',
+              nameLocation: 'end',
+              nameGap: 9,
+              min: 0,
+              minInterval: 1,
+              nameTextStyle: {
+                color: token('--m-text-2', '#4e5969'),
+                fontSize: 11,
+                fontWeight: 600,
+                align: 'left',
+              },
+              splitLine: {
+                show: true,
+                lineStyle: {
+                  color: token('--m-border', '#eef0f5'),
+                  type: 'dashed',
+                },
+              },
+              axisLine: {
+                show: true,
+                lineStyle: {
+                  color: token('--m-border-strong', '#98A3B2'),
+                },
+              },
+              axisTick: {
+                show: false,
+              },
+              axisLabel: {
+                color: token('--m-muted', '#86909c'),
+                fontSize: 12,
               },
             },
-            axisLine: {
-              show: false,
+            {
+              type: 'value',
+              name: 'UI / Pytest（个）',
+              nameLocation: 'end',
+              nameGap: 9,
+              min: 0,
+              minInterval: 1,
+              nameTextStyle: {
+                color: token('--m-text-2', '#4e5969'),
+                fontSize: 11,
+                fontWeight: 600,
+                align: 'right',
+              },
+              splitLine: {
+                show: false,
+              },
+              axisLine: {
+                show: true,
+                lineStyle: {
+                  color: token('--m-border-strong', '#98A3B2'),
+                },
+              },
+              axisTick: {
+                show: false,
+              },
+              axisLabel: {
+                color: token('--m-muted', '#86909c'),
+                fontSize: 12,
+              },
             },
-            axisTick: {
-              show: false,
-            },
-            axisLabel: {
-              color: token('--m-muted', '#86909c'),
-            },
-          },
+          ],
           series: [
             {
               type: 'line',
-              name: '接口自动化',
-              data: data.api_count,
+              name: 'UI 用例',
+              yAxisIndex: 1,
+              data: data.ui_count || [],
               symbol: 'circle',
               symbolSize: 6,
               smooth: true,
               lineStyle: {
                 width: 3,
-              },
-              areaStyle: {
-                opacity: 0.12,
-              },
-              itemStyle: {
-                color: testTypeColors().api,
-              },
-            },
-            {
-              type: 'line',
-              name: '界面自动化',
-              data: data.ui_count,
-              symbol: 'circle',
-              symbolSize: 6,
-              smooth: true,
-              lineStyle: {
-                width: 3,
-              },
-              areaStyle: {
-                opacity: 0.1,
-              },
-              itemStyle: {
                 color: testTypeColors().ui,
               },
+              itemStyle: {
+                color: token('--m-surface', '#fff'),
+                borderColor: testTypeColors().ui,
+                borderWidth: 2,
+              },
+              emphasis: {
+                focus: 'none',
+                lineStyle: { width: 4, color: testTypeColors().ui },
+              },
             },
             {
               type: 'line',
-              name: '单元自动化',
-              data: data.pytest_count,
+              name: 'API 场景',
+              yAxisIndex: 0,
+              data: data.api_count || [],
               symbol: 'circle',
               symbolSize: 6,
               smooth: true,
               lineStyle: {
                 width: 3,
-              },
-              areaStyle: {
-                opacity: 0.12,
+                color: testTypeColors().api,
               },
               itemStyle: {
+                color: token('--m-surface', '#fff'),
+                borderColor: testTypeColors().api,
+                borderWidth: 2,
+              },
+              emphasis: {
+                focus: 'none',
+                lineStyle: { width: 4, color: testTypeColors().api },
+              },
+            },
+            {
+              type: 'line',
+              name: 'Pytest 用例',
+              yAxisIndex: 1,
+              data: data.pytest_count || [],
+              symbol: 'circle',
+              symbolSize: 6,
+              smooth: true,
+              lineStyle: {
+                width: 3,
                 color: testTypeColors().pytest,
+              },
+              itemStyle: {
+                color: token('--m-surface', '#fff'),
+                borderColor: testTypeColors().pytest,
+                borderWidth: 2,
+              },
+              emphasis: {
+                focus: 'none',
+                lineStyle: { width: 4, color: testTypeColors().pytest },
               },
             },
           ],
@@ -237,6 +339,7 @@
         resizeFrame = window.requestAnimationFrame(() => {
           if (fullYearSalesChart.value) {
             useEcharts(fullYearSalesChart.value as HTMLDivElement).resize()
+            updateResponsiveAxisLabels()
           }
           resizeFrame = 0
         })
@@ -266,7 +369,8 @@
       return {
         loading,
         fullYearSalesChart,
-        seriesSummary,
+        summary,
+        formatNumber,
         updateChart,
       }
     },
@@ -281,7 +385,7 @@
   }
 
   .mango-chart-spin,
-  :deep(.mango-chart-spin .arco-spin-children) {
+  :deep(.mango-chart-spin > .mango-panel-spin__content) {
     display: flex;
     height: 100%;
     min-height: 0;
@@ -297,53 +401,64 @@
     width: 100%;
   }
 
-  .trend-summary {
+  .mango-trend-summary {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    padding: 8px 6px 2px;
+    gap: 8px;
+    padding: 6px 8px 2px;
   }
 
-  .summary-item {
+  .mango-trend-summary__item {
     display: flex;
     min-width: 0;
+    height: 40px;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 7px;
+    padding: 0 12px;
     border: 1px solid var(--m-border);
-    border-radius: 8px;
+    border-radius: 5px;
     background: var(--m-surface-soft);
 
-    div {
-      min-width: 0;
-    }
-
-    span,
     strong {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      margin-left: auto;
+      color: var(--m-text);
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+      line-height: 22px;
     }
 
-    span {
+    small {
       color: var(--m-muted);
       font-size: 12px;
     }
 
-    strong {
-      margin-top: 2px;
-      color: var(--m-text);
-      font-size: 18px;
-      line-height: 22px;
+    &.is-api .mango-trend-summary__dot {
+      background: var(--m-chart-1);
+    }
+
+    &.is-ui .mango-trend-summary__dot {
+      background: var(--m-chart-2);
+    }
+
+    &.is-pytest .mango-trend-summary__dot {
+      background: var(--m-chart-3);
     }
   }
 
-  .summary-dot {
-    width: 9px;
-    height: 9px;
-    flex: 0 0 auto;
+  .mango-trend-summary__dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
     border-radius: 50%;
+  }
+
+  .mango-trend-summary__label {
+    overflow: hidden;
+    color: var(--m-text-2);
+    font-size: 13px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .chart-item {

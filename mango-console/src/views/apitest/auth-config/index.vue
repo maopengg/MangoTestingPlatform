@@ -1,98 +1,39 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" plain class="mango-api-resource-page mango-detail-workbench-page">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="Token授权管理"
-        @search="onSearchRefresh"
-        @reset-search="onResetSearch"
-      >
-        <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-              <template v-if="item.type === 'input'">
-                <a-input
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  @blur="onSearchRefresh"
-                  @clear="onSearchRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'cascader'">
-                <ProjectProductSelect
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  @change="onSearchRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'test_env'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="enumStore.environment_type"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="onSearchRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'auth_type'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="enumStore.api_auth_type"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="onSearchRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'refresh_mode'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="enumStore.api_auth_refresh_mode"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="onSearchRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'last_refresh_status'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="enumStore.api_auth_refresh_status"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="onSearchRefresh"
-                />
-              </template>
-            </a-form-item>
-          </a-form>
-        </template>
-      </TableHeader>
+      <TableHeader title="Token授权管理" />
     </template>
 
     <template #default>
-      <a-tabs>
-        <template #extra>
+      <ProjectProductNavigationWorkbench
+          contained-body
+          :model-value="projectProductCondition?.value"
+          :reset-key="sidebarResetKey"
+          @filter-change="onSidebarFilterChange"
+          @search="onSearchRefresh"
+          @reset-search="onResetSearch"
+        >
+          <template #search>
+              <ApiResourceSearchFilters
+                :items="headerConditionItems"
+                :field-names="fieldNames"
+                :enum-store="enumStore"
+                :user-list="data.userList"
+                @search="onSearchRefresh"
+                @reset="onResetSearch"
+              />
+          </template>
+          <template #toolbar>
           <div>
             <a-space>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-              <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
+              <a-button v-permission="'api.auth_config:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-apitest-auth-config-button-新增">新增</a-button>
+              <a-button v-permission="'api.auth_config:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-auth-config-button-批量删除">批量删除</a-button>
             </a-space></div
           >
-        </template>
-      </a-tabs>
+          </template>
       <a-table
-        :scroll="{ x: 1100 }"
+        class="mango-native-scroll-table"
+        :scroll="{ x: 1720, y: '100%' }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -117,12 +58,9 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.test_env]" size="small">
-                {{ enumStore.environment_type[record.test_env]?.title }}
+                {{ enumStore.environment_type.find((item) => String(item.key) === String(record.test_env))?.title }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'auth_type'" #cell="{ record }">
@@ -150,33 +88,40 @@
               </a-tooltip>
             </template>
             <template v-else-if="item.key === 'last_refresh_status'" #cell="{ record }">
-              <a-tag :color="enumStore.status_colors[record.last_refresh_status]" size="small">
+              <a-tag :color="authRefreshStatusColor(record.last_refresh_status)" size="small">
                 {{ enumStore.api_auth_refresh_status[record.last_refresh_status]?.title }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
+              <a-switch v-permission="'api.auth_config:status'"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
             </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '查看', onClick: () => onPreview(record) },
-                  { label: '刷新', onClick: () => onRefresh(record) },
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '清空', onClick: () => onClear(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'api.auth_config:detail', label: '查看', onClick: () => onPreview(record) },
+                  { permission: 'api.auth_config:debug', label: '刷新', onClick: () => onRefresh(record) },
+                  { permission: 'api.auth_config:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'api.auth_config:debug', label: '清空', onClick: () => onClear(record) },
+                  { permission: 'api.auth_config:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
           </a-table-column>
         </template>
       </a-table>
-    </template>
-    <template #footer>
-      <TableFooter :pagination="pagination" />
+          <template #footer>
+            <TableFooter :pagination="pagination" />
+          </template>
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
 
@@ -193,7 +138,11 @@
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'number'">
-            <a-input-number v-model="item.value" :min="0" :placeholder="item.placeholder" />
+            <a-input-number
+              v-model="item.value"
+              :min="item.min ?? 0"
+              :placeholder="item.placeholder"
+            />
           </template>
           <template v-else-if="item.type === 'cascader'">
             <ProjectProductSelect
@@ -205,6 +154,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'test_env'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.environment_type"
               :placeholder="item.placeholder"
@@ -216,6 +167,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'auth_type'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.api_auth_type"
               :placeholder="item.placeholder"
@@ -226,6 +179,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'api_info'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :options="data.apiInfoList"
               :placeholder="item.placeholder"
               allow-clear
@@ -235,6 +190,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'refresh_mode'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.api_auth_refresh_mode"
               :placeholder="item.placeholder"
@@ -245,6 +202,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'time_task'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :options="data.timeTaskList"
               :placeholder="item.placeholder"
               allow-clear
@@ -254,6 +213,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'notice_group'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :options="data.noticeList"
               :placeholder="item.placeholder"
               allow-clear
@@ -306,9 +267,13 @@
 </template>
 
 <script lang="ts" setup>
+  import { formatProjectProductPath } from '@/utils/business-format'
+  import { AUTH_REFRESH_STATUS_COLORS, getStatusTagColor } from '@/utils/status-color'
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { useLatestRequest } from '@/hooks/use-latest-request'
   import { ModalDialogType } from '@/types/components'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
@@ -317,10 +282,12 @@
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import { formatProjectProductPath } from '@/utils/business-format'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import ApiResourceSearchFilters from '@/components/business/ApiResourceSearchFilters.vue'
   import { getApiInfo } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
   import { getSystemNoticeName } from '@/api/system/notice_group'
+  import { getUserName } from '@/api/user/user'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
     deleteApiAuthConfig,
@@ -334,11 +301,25 @@
   } from '@/api/apitest/auth-config'
 
   const enumStore = useEnum()
+  const route = useRoute()
+  const authRefreshStatusColor = (value: number) =>
+    getStatusTagColor(AUTH_REFRESH_STATUS_COLORS, value)
+  const headerConditionItems = computed(() => conditionItems.filter((item) => item.key !== 'project_product'))
+  const projectProductCondition = computed(() => conditionItems.find((item) => item.key === 'project_product'))
+  const sidebarResetKey = ref(0)
+
+  function onSidebarFilterChange({ projectProduct }: { projectProduct: string | number | null }) {
+    if (projectProductCondition.value) projectProductCondition.value.value = projectProduct
+    selectedRowKeys.value = []
+    pagination.page = 1
+    doRefresh(true)
+  }
   const userStore = useUserStore()
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
+  const { beginRequest, isLatestRequest } = useLatestRequest()
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const data = reactive({
@@ -348,6 +329,7 @@
     apiInfoList: [] as any[],
     timeTaskList: [] as any[],
     noticeList: [] as any[],
+    userList: [] as any[],
   })
   const cacheModal = reactive({
     visible: false,
@@ -398,6 +380,7 @@
   }
 
   function doRefresh(showLoading = false) {
+    const requestId = beginRequest()
     if (showLoading) {
       table.tableLoading.value = true
     }
@@ -406,16 +389,20 @@
     clearEmptyFilter(value, 'auth_type')
     clearEmptyFilter(value, 'refresh_mode')
     clearEmptyFilter(value, 'last_refresh_status')
+    clearEmptyFilter(value, 'update_user')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     return getApiAuthConfig(value)
       .then((res) => {
+        if (!isLatestRequest(requestId)) return
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
       })
-      .catch(console.log)
+      .catch((error) => {
+        if (isLatestRequest(requestId)) console.log(error)
+      })
       .finally(() => {
-        if (showLoading) {
+        if (isLatestRequest(requestId)) {
           table.tableLoading.value = false
         }
       })
@@ -434,9 +421,16 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
+    sidebarResetKey.value += 1
     doRefresh(true)
+  }
+
+  function applyRouteIdFilter(value: unknown) {
+    const routeValue = Array.isArray(value) ? value[0] : value
+    const idCondition = conditionItems.find((item) => item.key === 'id')
+    if (idCondition) idCondition.value = typeof routeValue === 'string' ? routeValue : ''
   }
 
   function resetFormItems() {
@@ -448,13 +442,13 @@
       } else if (it.key === 'token_ttl') {
         it.value = 1440
       } else if (it.key === 'refresh_margin') {
-        it.value = 5
+        it.value = 10
       } else if (it.key === 'expire_notice_minutes') {
         it.value = 30
       } else if (it.key === 'custom_code') {
         it.value = customAuthCodeExample
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
     const envItem = formItems.find((it) => it.key === 'test_env')
@@ -556,11 +550,7 @@
     if (record.auth_type === 0) {
       const apiInfo = record.api_info
       if (!apiInfo) return '-'
-      const method = apiInfo.method !== undefined && apiInfo.method !== null
-        ? enumStore.api_method?.[apiInfo.method]?.title || apiInfo.method
-        : ''
-      const url = apiInfo.url ? ` ${apiInfo.url}` : ''
-      return `${apiInfo.name || '-'}${method ? ` / ${method}` : ''}${url}`
+      return `ID：${apiInfo.id ?? '-'} / 名称：${apiInfo.name || '-'}`
     }
     if (record.auth_type === 1) {
       return record.custom_code || '-'
@@ -581,7 +571,7 @@
       return `${timeTaskStrategy}；${tokenStrategy}`
     }
     if (record.refresh_mode === 3) {
-      return '手动刷新'
+      return '手动刷新（永久有效）'
     }
     if (record.refresh_mode === 4) {
       const tokenStrategy = `有效期${record.token_ttl ?? '-'}分钟，提前${record.expire_notice_minutes ?? '-'}分钟通知`
@@ -731,6 +721,14 @@
       .catch(console.log)
   }
 
+  function getNickName() {
+    getUserName()
+      .then((res) => {
+        data.userList = res.data
+      })
+      .catch(console.log)
+  }
+
   watch(
     () => authTypeItem.value?.value,
     (value) => {
@@ -740,10 +738,22 @@
     }
   )
 
+  watch(
+    () => route.query.id,
+    (value) => {
+      applyRouteIdFilter(value)
+      pagination.page = 1
+      doRefresh(true)
+    }
+  )
+
   onMounted(() => {
+    if (projectProductCondition.value) projectProductCondition.value.value = ''
+    applyRouteIdFilter(route.query.id)
     nextTick(() => {
       getTiming()
       doRefresh()
+      getNickName()
     })
   })
 </script>

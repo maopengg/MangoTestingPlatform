@@ -21,6 +21,36 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '仓库管理',
+    key: 'repository',
+    value: ref(''),
+    placeholder: '请选择代码仓库',
+    required: true,
+    type: 'pytest-repository',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '项目目录',
+    key: 'file_name',
+    value: ref(''),
+    placeholder: '请选择项目在当前仓库中的目录',
+    required: true,
+    type: 'repository-directory',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '名称',
     key: 'name',
     value: ref(''),
@@ -54,9 +84,10 @@ export const formItems: FormItem[] = reactive([
     label: '测试目录',
     key: 'test_dir',
     value: ref([]),
-    placeholder: '请输入测试文件所在目录名称，回车输入多个',
+    placeholder: '请选择当前分支中测试文件所在的目录',
     required: true,
-    type: 'input-tag',
+    type: 'cascader',
+    multiple: true,
     validator: function () {
       if (!this.value || this.value.length === 0) {
         Message.error(this.placeholder || '')
@@ -65,34 +96,29 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '配置文件',
+    key: 'pytest_config_path',
+    value: ref(''),
+    placeholder: '例如 pytest.ini',
+    required: false,
+    type: 'input',
+  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
+    title: '项目绑定',
+    key: 'binding',
+    dataIndex: 'binding',
     align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
+    width: 260,
   },
   {
-    title: '名称',
-    key: 'name',
-    dataIndex: 'name',
-    align: 'left',
-    width: 300,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '文件名称',
-    key: 'file_name',
-    dataIndex: 'file_name',
-    align: 'left',
-    ellipsis: true,
-    tooltip: true,
+    title: '仓库 / 分支',
+    key: 'repository',
+    dataIndex: 'repository',
+    width: 210,
   },
   {
     title: '自动化类型',
@@ -101,18 +127,23 @@ export const tableColumns = useTableColumn([
     width: 120,
   },
   {
-    title: '测试文件目录',
+    title: '测试目录',
     key: 'test_dir',
     dataIndex: 'test_dir',
-    width: 300,
-    ellipsis: true,
-    tooltip: true,
+    width: 260,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 180,
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

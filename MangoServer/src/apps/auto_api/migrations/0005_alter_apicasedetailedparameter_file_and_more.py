@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_api', '0004_rename_header_apicasedetailedparameter_headers_and_more'),
     ]

@@ -1,5 +1,5 @@
 <template>
-  <a-button size="mini" status="danger" @click="onDelete">
+  <a-button size="mini" status="danger" @click="onDelete" data-testid="qa-components-actions-deletebutton-button-删除">
     <template #icon>
       <IconDelete />
     </template>

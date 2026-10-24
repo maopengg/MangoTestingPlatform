@@ -35,6 +35,15 @@ def http_to_ws_url(http_url):
         return None
 
 
+def platform_ws_url(http_url):
+    parsed_http_url = is_valid_url(http_url)
+    if not parsed_http_url:
+        return None
+    if parsed_http_url in {'http://127.0.0.1:8000', 'http://localhost:8000'}:
+        return 'ws://127.0.0.1:8011/'
+    return http_to_ws_url(parsed_http_url)
+
+
 def is_valid_url(url):
     try:
         parsed = urlparse(url)

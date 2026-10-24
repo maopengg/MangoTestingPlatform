@@ -46,3 +46,23 @@ export function deleteUserRoleList(id: number | string[] | number[]) {
     },
   })
 }
+
+export function getUserRolePermission(roleId: number) {
+  return get({
+    url: '/user/role/permission',
+    data: () => {
+      return {
+        role_id: roleId,
+      }
+    },
+  })
+}
+
+export function putUserRolePermission(data: object) {
+  return put({
+    url: '/user/role/permission',
+    data: () => {
+      return data
+    },
+  })
+}

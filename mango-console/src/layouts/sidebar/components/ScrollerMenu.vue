@@ -15,7 +15,10 @@
             <template #icon>
               <component :is="item.icon || 'icon-menu'" />
             </template>
-            {{ item.label }}
+            <span class="mango-menu-label">
+              <span class="mango-menu-label__text">{{ item.label }}</span>
+              <MenuStatusBadge v-if="item.isBeta" value="Beta" />
+            </span>
           </a-menu-item>
         </template>
         <template v-else>
@@ -43,9 +46,11 @@
   import useAppConfigStore from '@/store/modules/app-config'
   import { LayoutMode, SideTheme, ThemeMode } from '@/store/types'
   import { transfromMenu } from '@/store/help'
+  import MenuStatusBadge from './MenuStatusBadge.vue'
 
   export default defineComponent({
     name: 'ScrollerMenu',
+    components: { MenuStatusBadge },
     props: {
       routes: {
         type: Array as PropType<Array<RouteRecordRaw>>,
@@ -176,8 +181,49 @@
     margin: 0 auto;
   }
 
-  :deep(.arco-menu-vertical .arco-menu-item) {
-    max-height: 40px;
+  :deep(.arco-menu-vertical .arco-menu-item),
+  :deep(.arco-menu-vertical .arco-menu-inline-header) {
+    height: 36px;
+    max-height: 36px;
+    line-height: 36px;
+    font-size: 14px;
+  }
+
+  :deep(.arco-menu-vertical .arco-menu-icon) {
+    font-size: 16px;
+  }
+
+  :deep(.arco-menu-vertical .arco-menu-title),
+  :deep(.arco-menu-vertical .arco-menu-item-inner) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  :deep(.arco-menu-vertical .arco-menu-inner) {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .mango-menu-label {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    padding-right: 3px;
+  }
+
+  .mango-menu-label__text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :deep(.arco-menu-collapsed .mango-menu-label) {
+    display: none;
   }
 
   .mango-scrollbar {

@@ -6,4 +6,7 @@
 
 
 class Perf:
-    pass
+    @staticmethod
+    async def perf_execution(data):
+        from src.services.perf import PerfRunner
+        return await PerfRunner(data).run()

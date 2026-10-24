@@ -10,6 +10,16 @@ export const constantRoutes = [
     },
   },
   {
+    path: '/cli-auth',
+    name: 'CliAuth',
+    component: () => import('@/views/cli-auth/index.vue'),
+    meta: {
+      hidden: true,
+      noShowTabbar: true,
+      title: 'CLI 授权',
+    },
+  },
+  {
     path: '/report/details',
     name: 'ReportDetailsShare',
     component: () => import('@/views/report/details/index.vue'),
@@ -38,7 +48,7 @@ export const constantRoutes = [
     name: 'personal',
     component: LAYOUT,
     meta: {
-      title: '个人中心',
+      title: '',
       hidden: true,
     },
     children: [

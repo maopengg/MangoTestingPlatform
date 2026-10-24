@@ -2,7 +2,12 @@
   <section class="mango-ui-report">
     <div class="mango-ui-report__hero">
       <div class="mango-ui-report__title-block">
-        <span class="mango-ui-report__eyebrow">UI 执行明细</span>
+        <div class="mango-ui-report__title-top">
+          <span class="mango-ui-report__eyebrow">UI 执行明细</span>
+          <a-button type="primary" size="medium" shape="square" @click="cachePanelVisible = true" data-testid="qa-components-reports-elementtestreport-button-查看缓存变量">
+            查看缓存变量
+          </a-button>
+        </div>
         <div class="mango-ui-report__title-row">
           <h2>{{ resultData?.name || resultData?.case_name || 'UI 自动化执行结果' }}</h2>
           <a-tag :color="resultStatusColor" size="large">{{ resultStatusText }}</a-tag>
@@ -14,7 +19,7 @@
       </div>
 
       <div class="mango-ui-report__progress-card" :class="resultStatusClass">
-        <span>步骤通过率</span>
+        <span>操作通过率</span>
         <strong>{{ passRate }}%</strong>
         <div class="mango-ui-report__progress-track">
           <div class="mango-ui-report__progress-bar" :style="{ width: `${passRate}%` }"></div>
@@ -24,15 +29,15 @@
 
     <div class="mango-ui-report__metrics">
       <div class="mango-ui-report__metric">
-        <span>步骤总数</span>
-        <strong>{{ stepList.length }}</strong>
+        <span>操作总数</span>
+        <strong>{{ operationTotal }}</strong>
       </div>
       <div class="mango-ui-report__metric">
-        <span>通过步骤</span>
+        <span>通过操作</span>
         <strong class="mango-ui-report__metric-value--success">{{ passedCount }}</strong>
       </div>
       <div class="mango-ui-report__metric">
-        <span>失败步骤</span>
+        <span>失败操作</span>
         <strong class="mango-ui-report__metric-value--danger">{{ failedCount }}</strong>
       </div>
       <div class="mango-ui-report__metric">
@@ -62,178 +67,82 @@
         </div>
         <div v-if="firstFailedStep?.picture_path" class="mango-ui-report__focus-shot">
           <span>失败截图</span>
-          <a-image :src="`${minioURL}/${firstFailedStep.picture_path}`" width="132" />
+          <a-image :src="firstFailedPictureUrl" width="132" />
         </div>
       </div>
     </article>
 
-    <a-tabs v-model:active-key="activeTab" class="mango-ui-report__tabs" lazy-load>
-      <a-tab-pane key="steps" title="执行步骤">
-        <div v-if="stepList.length === 0" class="mango-empty-state">暂无执行过程</div>
-        <a-collapse
-          v-else
-          :bordered="false"
-          :default-active-key="failedStepKeys"
-          destroy-on-hide
-          class="mango-ui-report__step-list"
-        >
-          <a-collapse-item v-for="(item, index) in stepList" :key="stepKey(item, index)">
-            <template #header>
-              <div class="mango-ui-report__step-header">
-                <a-tag size="small" :color="statusColor(item.status)">
-                  {{ stepStatusText(item.status) }}
-                </a-tag>
-                <span class="mango-ui-report__step-name" :title="stepName(item)">
-                  {{ stepName(item) }}
-                </span>
-                <span class="mango-ui-report__step-op">{{ operationLabel(item) }}</span>
-                <span class="mango-ui-report__step-meta">
-                  元素 {{ elementRows(item).length }}
-                </span>
-              </div>
-            </template>
-
-            <div class="mango-ui-report__step-detail">
-              <section class="mango-ui-report__detail-panel">
-                <div class="mango-ui-report__section-head">
-                  <h3>操作上下文</h3>
-                  <p>用于判断步骤动作、等待和断言是否符合预期。</p>
-                </div>
-                <div class="mango-ui-report__info-grid">
-                  <div>
-                    <span>操作类型</span>
-                    <strong>{{ operationLabel(item) }}</strong>
-                  </div>
-                  <div v-if="item.sub">
-                    <span>元素下标</span>
-                    <strong>{{ item.sub }}</strong>
-                  </div>
-                  <div>
-                    <span>等待时间</span>
-                    <strong>{{ formatSleep(item.sleep) }}</strong>
-                  </div>
-                  <div v-if="item.ass_msg" class="mango-ui-report__info-wide">
-                    <span>断言提示</span>
-                    <a-tooltip :content="item.ass_msg">
-                      <strong>{{ item.ass_msg }}</strong>
-                    </a-tooltip>
-                  </div>
-                  <div
-                    v-if="item.status === 0 && item?.error_message"
-                    class="mango-ui-report__info-wide"
-                  >
-                    <span>错误提示</span>
-                    <a-tooltip :content="item.error_message">
-                      <strong class="mango-ui-report__danger-text">{{ item.error_message }}</strong>
-                    </a-tooltip>
-                  </div>
-                  <div
-                    v-if="item.status === 0 && item?.video_path"
-                    class="mango-ui-report__info-wide"
-                  >
-                    <span>视频路径</span>
-                    <strong class="mango-ui-report__mono">{{ item.video_path }}</strong>
-                  </div>
-                </div>
-              </section>
-
-              <section class="mango-ui-report__detail-panel mango-ui-report__element-panel">
-                <div class="mango-ui-report__section-head">
-                  <h3>元素信息</h3>
-                  <p>多个定位信息可在当前区域内滚动查看。</p>
-                </div>
-                <div v-if="elementRows(item).length" class="mango-ui-report__element-list">
-                  <article
-                    v-for="(element, elementIndex) in elementRows(item)"
-                    :key="elementIndex"
-                    class="mango-ui-report__element-card"
-                  >
-                    <div class="mango-ui-report__element-card-head">
-                      <strong>{{ element.name || `元素信息` }}</strong>
-                      <a-tag size="small" color="arcoblue">{{ elementExpText(element.exp) }}</a-tag>
-                    </div>
-                    <div class="mango-ui-report__element-row">
-                      <span>定位表达式</span>
-                      <a-tooltip :content="element.loc || '-'">
-                        <strong class="mango-ui-report__mono">{{ element.loc || '-' }}</strong>
-                      </a-tooltip>
-                    </div>
-                    <div class="mango-ui-report__element-row">
-                      <span>匹配数量</span>
-                      <strong>{{ element.ele_quantity ?? '-' }}</strong>
-                    </div>
-                    <div v-if="element.sub" class="mango-ui-report__element-row">
-                      <span>下标</span>
-                      <strong>{{ element.sub }}</strong>
-                    </div>
-                    <div v-if="element.element_text" class="mango-ui-report__element-row">
-                      <span>元素文本</span>
-                      <a-tooltip :content="element.element_text">
-                        <strong>{{ element.element_text }}</strong>
-                      </a-tooltip>
-                    </div>
-                  </article>
-                </div>
-                <div v-else class="mango-empty-state mango-ui-report__element-empty">
-                  暂无元素信息
-                </div>
-              </section>
-
-              <section
-                v-if="item.status === 0 && item?.picture_path"
-                class="mango-ui-report__detail-panel mango-ui-report__screenshot-panel"
-              >
-                <div class="mango-ui-report__section-head">
-                  <h3>失败截图</h3>
-                  <p>失败发生时的页面截图。</p>
-                </div>
-                <a-image :src="`${minioURL}/${item.picture_path}`" width="180" />
-              </section>
+    <div v-if="timelineRows.length === 0" class="mango-empty-state">暂无执行过程</div>
+    <a-timeline v-else class="mango-ui-report__timeline">
+      <a-timeline-item
+        v-for="(row, index) in timelineRows"
+        :key="timelineRowKey(row, index)"
+        :label="timelineLabel(row.runtime, index)"
+        :dot-color="timelineDotColor(row.runtime?.status)"
+      >
+        <div class="mango-ui-report__operation-item">
+          <div class="mango-ui-report__timeline-head">
+            <div class="mango-ui-report__timeline-title">
+              <strong :title="runtimeResultName(row.runtime, row.step, row.runtimeIndex)">
+                {{ runtimeResultName(row.runtime, row.step, row.runtimeIndex) }}
+              </strong>
             </div>
-          </a-collapse-item>
-        </a-collapse>
-      </a-tab-pane>
+            <div class="mango-ui-report__timeline-tags">
+              <a-tag size="small" color="arcoblue">元素 {{ elementRows(row.runtime).length }}</a-tag>
+              <a-tag size="small" :color="statusColor(row.runtime?.status)">
+                {{ stepStatusText(row.runtime?.status) }}
+              </a-tag>
+            </div>
+          </div>
 
-      <a-tab-pane key="runtime" title="运行信息">
-        <div class="mango-ui-report__runtime-grid">
-          <article class="mango-ui-report__detail-panel">
-            <div class="mango-ui-report__section-head">
-              <h3>测试对象</h3>
-              <p>本次 UI 执行使用的浏览器、环境或目标对象。</p>
-            </div>
-            <div class="mango-ui-report__runtime-value">{{ resultData?.test_object || '-' }}</div>
-          </article>
-          <article v-if="resultData?.video_path" class="mango-ui-report__detail-panel">
-            <div class="mango-ui-report__section-head">
-              <h3>执行视频</h3>
-              <p>完整执行过程的视频路径。</p>
-            </div>
-            <div class="mango-ui-report__runtime-value mango-ui-report__mono">
-              {{ resultData.video_path }}
-            </div>
-          </article>
-          <article
+          <UiStepRuntimeResult
+            :result="row.runtime"
+            :fallback-ope-key="row.runtime?.ope_key || row.step?.ope_key"
+            :fallback-element-name="runtimeResultName(row.runtime, row.step, row.runtimeIndex)"
+            empty-text="暂无执行结果"
+            :image-width="220"
+            frameless
+            :show-header="false"
+          />
+        </div>
+      </a-timeline-item>
+    </a-timeline>
+
+    <BaseSidePanel
+      :visible="cachePanelVisible"
+      title="缓存变量"
+      width="50%"
+      @update:visible="(val) => { cachePanelVisible = val }"
+      @cancel="cachePanelVisible = false"
+    >
+      <div class="mango-ui-report__cache-panel">
+        <template v-if="runtimeSections.length">
+          <section
             v-for="section in runtimeSections"
             :key="section.key"
-            class="mango-ui-report__detail-panel mango-ui-report__runtime-wide"
+            class="mango-ui-report__cache-section"
           >
-            <div class="mango-ui-report__section-head">
-              <h3>{{ section.title }}</h3>
-              <p>{{ section.description }}</p>
+            <div class="mango-ui-report__cache-section-head">
+              <strong>{{ section.title }}</strong>
+              <span>{{ section.description }}</span>
             </div>
-            <JsonDisplay :data="section.data" />
-          </article>
-        </div>
-      </a-tab-pane>
-    </a-tabs>
+            <JsonDisplay :data="section.data" :show-drawer-button="false" :default-expanded="true" />
+          </section>
+        </template>
+        <div v-else class="mango-empty-state">暂无缓存变量</div>
+      </div>
+    </BaseSidePanel>
   </section>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
-  import { minioURL } from '@/api/axios.config'
+  import { useArtifactUrl } from '@/hooks/use-artifact-url'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import UiStepRuntimeResult from '@/components/reports/UiStepRuntimeResult.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
+  import JsonDisplay from '@/components/display/JsonDisplay.vue'
 
   const props = defineProps({
     resultData: {
@@ -244,25 +153,32 @@
 
   const enumStore = useEnum()
   const useSelectValue = useSelectValueStore()
-  const activeTab = ref('steps')
+  const cachePanelVisible = ref(false)
 
-  const stepList = computed(() => props.resultData?.element_result_list || [])
-  const passedCount = computed(() => stepList.value.filter((item: any) => item.status === 1).length)
-  const failedCount = computed(() => stepList.value.filter((item: any) => item.status === 0).length)
+  const stepList = computed(() => normalizeStepList(props.resultData))
+  const timelineRows = computed(() =>
+    stepList.value.flatMap((step: any, stepIndex: number) =>
+      runtimeResultRows(step).map((runtime: any, runtimeIndex: number) => ({
+        step,
+        runtime,
+        stepIndex,
+        runtimeIndex,
+      }))
+    )
+  )
+  const operationTotal = computed(() => timelineRows.value.length)
+  const passedCount = computed(() => timelineRows.value.filter((item: any) => item.runtime?.status === 1).length)
+  const failedCount = computed(() => timelineRows.value.filter((item: any) => item.runtime?.status === 0).length)
   const pendingCount = computed(() =>
-    stepList.value.filter((item: any) => item.status !== 0 && item.status !== 1).length
+    timelineRows.value.filter((item: any) => item.runtime?.status !== 0 && item.runtime?.status !== 1).length
   )
   const passRate = computed(() => {
-    if (!stepList.value.length) return 0
-    return Math.round((passedCount.value / stepList.value.length) * 100)
+    if (!operationTotal.value) return 0
+    return Math.round((passedCount.value / operationTotal.value) * 100)
   })
-  const failedStepKeys = computed(() =>
-    stepList.value
-      .map((item: any, index: number) => ({ item, index }))
-      .filter(({ item }: any) => item.status === 0)
-      .map(({ item, index }: any) => stepKey(item, index))
-  )
   const firstFailedStep = computed(() => stepList.value.find((item: any) => item.status === 0))
+  const firstFailedPicturePath = computed(() => firstFailedStep.value?.picture_path || '')
+  const firstFailedPictureUrl = useArtifactUrl(firstFailedPicturePath)
   const resultStatusType = computed(() => stepStatusType(props.resultData?.status))
   const resultStatusText = computed(() => {
     if (props.resultData?.status === 1) return '测试通过'
@@ -301,20 +217,8 @@
         data: props.resultData?.data_factory_cache_data,
       },
     ]
-    const visibleSections = sections.filter((item) => hasValue(item.data))
-    return visibleSections.length ? visibleSections : [
-      {
-        key: 'empty',
-        title: '暂无运行缓存',
-        description: '本次 UI 执行没有记录缓存数据或数据工厂上下文。',
-        data: {},
-      },
-    ]
+    return sections.filter((item) => hasValue(item.data))
   })
-
-  function stepKey(item: any, index: number) {
-    return String(item?.id ?? item?.page_step_details_id ?? index)
-  }
 
   function stepName(item: any) {
     return (
@@ -352,17 +256,23 @@
     return 'gray'
   }
 
-  function elementExpText(value: any) {
-    return enumStore.element_exp?.find((item: any) => item.key === value)?.title || value || '-'
+  function timelineDotColor(status: any) {
+    if (status === 1) return 'green'
+    if (status === 0) return 'red'
+    return 'gray'
   }
 
-  function formatSleep(value: any) {
-    if (value === null || value === undefined || value === '') return '-'
-    return `${value} 秒`
+  function timelineLabel(item: any, index: number) {
+    const time = item?.stop_time || item?.test_time || ''
+    const match = String(time).match(/\d{2}:\d{2}:\d{2}/)
+    return match?.[0] || ''
   }
 
   function elementRows(item: any) {
     if (Array.isArray(item?.elements) && item.elements.length) return item.elements
+    if (Array.isArray(item?.element_result) && item.element_result.length) return item.element_result
+    if (Array.isArray(item?.element_list) && item.element_list.length) return item.element_list
+    if (Array.isArray(item?.element) && item.element.length) return item.element
     if (item?.ele_name) return [item.ele_name]
     if (item?.loc) {
       return [
@@ -379,13 +289,37 @@
     return []
   }
 
-  watch(
-    () => props.resultData,
-    () => {
-      activeTab.value = 'steps'
-    },
-    { immediate: true }
-  )
+  function normalizeStepList(data: any) {
+    if (Array.isArray(data?.steps) && data.steps.length) return data.steps
+    if (Array.isArray(data?.element_result_list) && data.element_result_list.length) {
+      return data.element_result_list
+    }
+    if (Array.isArray(data?.children) && data.children.length) return data.children
+    return []
+  }
+
+  function runtimeResultRows(item: any) {
+    if (Array.isArray(item?.element_result_list) && item.element_result_list.length) {
+      return item.element_result_list
+    }
+    if (Array.isArray(item?.children) && item.children.length) {
+      return item.children
+    }
+    return [item]
+  }
+
+  function timelineRowKey(row: any, index: number) {
+    return String(
+      row?.runtime?.id ??
+        row?.runtime?.page_step_details_id ??
+        `${row?.step?.id || row.stepIndex}-${row?.runtime?.name || index}`
+    )
+  }
+
+  function runtimeResultName(runtime: any, step: any, index: number) {
+    return runtime?.name || runtime?.ele_name?.name || stepName(runtime) || `${stepName(step)}-${index + 1}`
+  }
+
 </script>
 
 <style scoped lang="less">
@@ -418,6 +352,13 @@
   .mango-ui-report__title-block {
     min-width: 0;
     padding: 14px 16px;
+  }
+
+  .mango-ui-report__title-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .mango-ui-report__eyebrow,
@@ -585,68 +526,94 @@
     min-width: 132px;
   }
 
-  .mango-ui-report__tabs {
-    :deep(.arco-tabs-nav) {
-      margin-bottom: 10px;
-    }
-
-    :deep(.arco-tabs-content) {
-      padding-top: 0;
-    }
+  .mango-ui-report__timeline {
+    margin-top: 4px;
   }
 
-  .mango-ui-report__step-list :deep(.arco-collapse-item) {
+  .mango-ui-report__timeline :deep(.arco-timeline-item-label) {
+    color: var(--m-muted);
+    font-size: 12px;
+  }
+
+  .mango-ui-report__timeline :deep(.arco-timeline-item-content) {
+    min-width: 0;
+  }
+
+  .mango-ui-report__operation-item {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface);
+    box-shadow: var(--m-shadow-sm);
+  }
+
+  .mango-ui-report__timeline-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--m-border);
+  }
+
+  .mango-ui-report__timeline-title {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .mango-ui-report__timeline-title strong {
+    min-width: 0;
     overflow: hidden;
-    margin-bottom: 8px;
+    color: var(--m-text);
+    font-size: 14px;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mango-ui-report__timeline-tags {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .mango-ui-report__cache-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .mango-ui-report__cache-section {
+    min-width: 0;
+    padding: 12px;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface);
   }
 
-  .mango-ui-report__step-list :deep(.arco-collapse-item-header) {
-    padding: 8px 10px 8px 32px;
-    background: var(--m-surface);
-  }
-
-  .mango-ui-report__step-list :deep(.arco-collapse-item-header-title) {
-    min-width: 0;
-  }
-
-  .mango-ui-report__step-list :deep(.arco-collapse-item-content-box) {
-    padding: 10px;
-    background: var(--m-surface);
-  }
-
-  .mango-ui-report__step-header {
+  .mango-ui-report__cache-section-head {
     display: grid;
-    align-items: center;
-    width: 100%;
-    min-width: 0;
-    gap: 8px;
-    grid-template-columns: max-content minmax(160px, 1fr) minmax(100px, 180px) max-content;
+    gap: 2px;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--m-border);
   }
 
-  .mango-ui-report__step-name,
-  .mango-ui-report__step-op,
-  .mango-ui-report__step-meta {
-    min-width: 0;
-    overflow: hidden;
+  .mango-ui-report__cache-section-head strong {
     color: var(--m-text);
-    font-size: 13px;
-    line-height: 20px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 14px;
+    line-height: 22px;
   }
 
-  .mango-ui-report__step-op,
-  .mango-ui-report__step-meta {
+  .mango-ui-report__cache-section-head span {
     color: var(--m-muted);
-  }
-
-  .mango-ui-report__step-detail {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    font-size: 12px;
+    line-height: 18px;
   }
 
   .mango-ui-report__detail-panel {

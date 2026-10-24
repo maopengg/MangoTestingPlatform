@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_pytest', '0007_remove_pytesttestfile_project_product_and_more'),
     ]

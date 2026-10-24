@@ -3,11 +3,16 @@
 # @Description: 
 # @Time   : 2023-04-29 11:23
 # @Author : 毛鹏
-import platform
+from dataclasses import dataclass
 from enum import Enum
 
-if platform.system() != "Linux":
-    from mangoui.models import ComboBoxDataModel
+
+@dataclass(frozen=True)
+class ComboBoxDataModel:
+    """Framework-neutral option model kept for legacy callers of get_select."""
+
+    id: str
+    name: str
 
 
 class BaseEnum(Enum):

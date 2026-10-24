@@ -1,15 +1,21 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="公共方法"
+      <TableHeader title="全局变量" />
+    </template>
+
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        :model-value="projectProductCondition?.value"
+        :reset-key="sidebarResetKey"
+        @filter-change="onNavigationFilterChange"
         @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
-        <template #search-content>
+        <template #search>
           <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+            <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -29,6 +35,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.ui_public"
                   :placeholder="item.placeholder"
@@ -42,10 +50,12 @@
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
-                  :options="item.key === 'test_env' ? environmentOptions : item.optionItems"
+                  :options="item.key === 'test_envs' ? environmentOptions : item.optionItems"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  :multiple="item.multiple || item.key === 'test_envs'"
+                  :max-tag-count="item.multiple || item.key === 'test_envs' ? 1 : undefined"
                   value-key="key"
                   @change="onSearchRefresh"
                 />
@@ -53,27 +63,18 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs default-active-key="0" @tab-click="(key) => switchType(key)">
-        <template #extra>
-          <div>
-            <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-          </div>
+        <template #toolbar>
+          <a-button v-permission="'ui.public:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-public-button-新增">新增</a-button>
         </template>
-      </a-tabs>
       <a-table
-        :scroll="{ x: 1100 }"
+        class="mango-native-scroll-table"
+        :scroll="{ x: 1540, y: '100%' }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
         :loading="table.tableLoading.value"
         :pagination="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
-        @selection-change="onSelectionChange"
       >
         <template #columns>
           <a-table-column
@@ -90,51 +91,70 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-              <a-tag v-if="isCommonEnvironment(record.test_env)" size="small">环境通用</a-tag>
-              <a-tag v-else :color="enumStore.colors[record.test_env]" size="small">
-                {{ enumStore.environment_type[record.test_env]?.title }}
-              </a-tag>
+              <a-tag v-if="isCommonEnvironment(record.test_envs)" color="gray" size="small"
+                >环境通用</a-tag
+              >
+              <a-space v-else wrap :size="4">
+                <a-tag
+                  v-for="env in normalizeEnvironmentList(record.test_envs)"
+                  :key="env"
+                  :color="enumStore.colors[env]"
+                  size="small"
+                >
+                  {{ enumStore.environment_type.find((item) => String(item.key) === String(env))?.title || '-' }}
+                </a-tag>
+              </a-space>
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.type]" size="small"
-                >{{ enumStore.ui_public[record.type]?.title || '-' }}
+              <a-tag :color="enumStore.colors[record.type]" size="small">
+                {{ enumStore.ui_public[record.type]?.title || '-' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'datasource_alias'" #cell="{ record }">
-              <a-tag v-if="record.datasource_alias" size="small">
+              <a-tag v-if="record.datasource_alias" color="blue" size="small">
                 {{ record.datasource_alias.name }}
               </a-tag>
               <span v-else>-</span>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
+              <a-switch v-permission="'ui.public:status'"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
+                size="small"
               />
+            </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'ui.public:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'ui.public:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
           </a-table-column>
         </template>
       </a-table>
-    </template>
-    <template #footer>
-      <TableFooter :pagination="pagination" />
+        <template #footer>
+          <TableFooter :pagination="pagination" />
+        </template>
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
-      <a-form :model="formModel">
+      <a-form
+        :model="formModel"
+        layout="horizontal"
+        :label-col-props="{ span: 6 }"
+        :wrapper-col-props="{ span: 18 }"
+      >
         <a-form-item
           v-for="item of formItems"
           v-show="isFormItemVisible(item)"
@@ -145,7 +165,9 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'value' && isCodePublicType">
+          <template
+            v-else-if="item.type === 'textarea' && item.key === 'value' && isCodePublicType"
+          >
             <CodeEditor
               v-model="item.value"
               :line-height="260"
@@ -171,6 +193,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'type'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.ui_public"
               :placeholder="item.placeholder"
@@ -180,7 +204,7 @@
               @change="onTypeChange"
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'test_env'">
+          <template v-else-if="item.type === 'select' && item.key === 'test_envs'">
             <a-select
               v-model="item.value"
               :field-names="fieldNames"
@@ -188,13 +212,17 @@
               :placeholder="item.placeholder"
               allow-clear
               allow-search
+              multiple
               value-key="key"
+              @change="onEnvironmentMultiChange(item)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'datasource_alias'">
             <a-select
               v-if="isSqlPublicType"
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :options="datasourceAliasOptions"
               :field-names="{ value: 'id', label: 'name' }"
               :placeholder="item.placeholder"
@@ -209,7 +237,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { formatProjectProductPath } from '@/utils/business-format'
+  import { usePagination, useRowKey, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, ref, nextTick, reactive } from 'vue'
@@ -217,8 +246,8 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, tableColumns, formItems } from './config'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
-  import { formatProjectProductPath } from '@/utils/business-format'
   import {
     deleteUiPublic,
     getUiPublic,
@@ -228,19 +257,26 @@
   } from '@/api/uitest/public'
   import { useEnum } from '@/store/modules/get-enum'
   import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
+  import { getUserName } from '@/api/user/user'
+  import { setUpdateUserOptions } from '@/utils/update-user'
 
   const enumStore = useEnum()
   const COMMON_ENV_VALUE = '__common__'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
-  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const table = useTable()
   const rowKey = useRowKey('id')
+  const sidebarResetKey = ref(0)
+  const projectProductCondition = computed(() =>
+    conditionItems.find((item) => item.key === 'project_product')
+  )
+  const headerConditionItems = computed(() =>
+    conditionItems.filter((item) => item.key !== 'project_product')
+  )
   const formModel = ref({})
   const datasourceAliasOptions = ref<any[]>([])
   const data = reactive({
-    type: 0,
     actionTitle: '新增',
     updateId: 0,
     isAdd: true,
@@ -280,16 +316,45 @@
     return value === '' || value == null ? null : Number(value)
   }
 
+  function normalizeEnvironmentList(value: any) {
+    return Array.isArray(value)
+      ? value
+      : value === null || value === undefined || value === ''
+      ? []
+      : [value]
+  }
+
   function isCommonEnvironment(value: any) {
-    return value === null || value === undefined || value === ''
+    return normalizeEnvironmentList(value).length === 0
   }
 
-  function normalizeEnvironmentValue(value: any) {
-    return value === COMMON_ENV_VALUE || value === '' || value === undefined ? null : value
+  function normalizeEnvironmentValues(value: any) {
+    const list = normalizeEnvironmentList(value)
+    if (list.length === 0 || list.includes(COMMON_ENV_VALUE)) {
+      return []
+    }
+    return list.filter((it) => it !== null && it !== undefined && it !== '').map((it) => Number(it))
   }
 
-  function toEnvironmentSelectValue(value: any) {
-    return isCommonEnvironment(value) ? COMMON_ENV_VALUE : value
+  function toEnvironmentSelectValue(item: any) {
+    const envs = normalizeEnvironmentList(item?.test_envs)
+    if (envs.length > 0) {
+      return envs
+    }
+    const oldValue = item?.test_env
+    return isCommonEnvironment(oldValue) ? [COMMON_ENV_VALUE] : [oldValue]
+  }
+
+  function onEnvironmentMultiChange(item: any) {
+    const value = normalizeEnvironmentList(item.value)
+    if (value.length === 0) {
+      item.value = [COMMON_ENV_VALUE]
+    } else if (value.includes(COMMON_ENV_VALUE)) {
+      item.value =
+        value[value.length - 1] === COMMON_ENV_VALUE
+          ? [COMMON_ENV_VALUE]
+          : value.filter((it) => it !== COMMON_ENV_VALUE)
+    }
   }
 
   function isFormItemVisible(item: any) {
@@ -325,10 +390,13 @@
     }
     return getDataFactoryDatasourceAlias({
       project_product: productId,
+      status: 1,
       page: 1,
       pageSize: 999,
     }).then((res) => {
-      datasourceAliasOptions.value = res.data || []
+      datasourceAliasOptions.value = (res.data || []).filter(
+        (item: any) => Number(item.status) === 1 && [0, 1, 2].includes(Number(item.db_type))
+      )
     })
   }
 
@@ -350,11 +418,13 @@
     }
   }
 
-  function switchType(key: any) {
-    data.type = key
+  function onSearchRefresh() {
+    doRefresh(true)
   }
 
-  function onSearchRefresh() {
+  function onNavigationFilterChange({ projectProduct }: { projectProduct: any }) {
+    if (projectProductCondition.value) projectProductCondition.value.value = projectProduct ?? ''
+    pagination.page = 1
     doRefresh(true)
   }
 
@@ -363,13 +433,14 @@
       table.tableLoading.value = true
     }
     let value = getFormItems(conditionItems)
-    if (value.test_env === COMMON_ENV_VALUE) {
-      delete value.test_env
-      value.test_env__isnull = true
+    const filterEnvs = normalizeEnvironmentList(value.test_envs)
+    if (filterEnvs.length > 0) {
+      value.test_envs = filterEnvs.join(',')
     } else {
-      value.test_env = normalizeEnvironmentValue(value.test_env)
+      delete value.test_envs
     }
     clearEmptyFilter(value, 'type')
+    clearEmptyFilter(value, 'update_user')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getUiPublic(value)
@@ -393,8 +464,9 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
+    sidebarResetKey.value += 1
     doRefresh(true)
   }
 
@@ -425,10 +497,10 @@
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
-    setFormValue('test_env', COMMON_ENV_VALUE)
+    setFormValue('test_envs', [COMMON_ENV_VALUE])
     datasourceAliasOptions.value = []
     if (Number(getFormValue('type')) === 2) {
       fillCodeVariableExample()
@@ -463,10 +535,10 @@
       loadDatasourceAliasOptions(item?.project_product?.id || item?.project_product)
       formItems.forEach((it) => {
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        if (it.key === 'test_envs') {
+          it.value = toEnvironmentSelectValue(item)
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
-        } else if (it.key === 'test_env') {
-          it.value = toEnvironmentSelectValue(propName)
         } else {
           it.value = propName
         }
@@ -477,9 +549,10 @@
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       let value = getFormItems(formItems)
-      value.test_env = normalizeEnvironmentValue(value.test_env)
+      value.test_envs = normalizeEnvironmentValues(value.test_envs)
+      delete value.test_env
       if (Number(value.type) === 1 && !getFormNumberValue('datasource_alias')) {
-        Message.error('SQL公共变量必须选择逻辑数据源')
+        Message.error('SQL公共变量必须选择逻辑数据库')
         modalDialogRef.value?.setConfirmLoading(false)
         return
       }
@@ -525,7 +598,16 @@
 
   onMounted(() => {
     nextTick(async () => {
+      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
       doRefresh()
     })
   })
 </script>
+
+<style scoped lang="less">
+  .mango-ui-public-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+  }
+</style>

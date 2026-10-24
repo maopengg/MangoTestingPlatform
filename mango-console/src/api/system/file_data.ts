@@ -51,3 +51,10 @@ export function getUserFileDownloadUrl(id: number | string) {
     },
   })
 }
+
+export function getExecutionArtifactDownloadUrl(path: string) {
+  return get({
+    url: '/system/file/artifact/download/url',
+    data: () => ({ path }),
+  })
+}

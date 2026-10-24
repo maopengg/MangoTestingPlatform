@@ -1,19 +1,42 @@
 # Created by .gitignore support plugin (hsz.mobi)
 .idea/
+.venv
+venv/
 *.pyc
 *.log
-.logs/*
+*.local
+__pycache__/
+**/__pycache__/
+*.py[cod]
+/.DS_Store
+**/.DS_Store
+
+# 本地私有配置
+src/settings/database.json
+
+# 运行时目录，所有新生成的日志、文件、缓存都应进入 runtime
+/runtime/
+
+# 脚本运行备份和临时产物
+scripts/logs/
+scripts/maintenance/backups/
+scripts/probes/backups/
+scripts/benchmarks/backups/
+
+# 历史运行时目录，保留忽略规则避免旧环境再次生成后进入 Git
 logs/
+.logs/*
+git_workspace/
 mango-file/
 failed_screenshot/
-src/settings/database.json
 src/auto_test/auto_pytest/mango_pytest/
 mango_pytest/
+mango_gray*/
 download/
 upload/
 monitoring_scripts/
-__pycache__/
+
+# 测试、报告和工具产物
+tests/backups/
 allure-report/
 allure-results
-/.DS_Store
-**/.DS_Store

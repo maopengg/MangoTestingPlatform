@@ -1,16 +1,23 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
 
-export const conditionItems: Array<FormItem> = reactive([
+export const conditionItems = reactive([
+  {
+    key: 'case_type', label: '自动化类型', type: 'select', value: ref([]),
+    multiple: true, searchOperator: 'in', placeholder: '请选择自动化类型', optionItems: [],
+    reset: function () { this.value = [] },
+  },
   {
     key: 'id',
     label: 'ID',
     type: 'input',
     placeholder: '请输入测试套ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -36,8 +43,10 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'status',
     label: '测试结果',
-    value: ref(''),
+    value: ref([]),
     type: 'select',
+    multiple: true,
+    searchOperator: 'in',
     placeholder: '请选择测试结果',
     optionItems: [],
     reset: function () {},
@@ -52,19 +61,153 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
-    key: 'user',
-    label: '执行人',
+    key: 'tasks__task_group_id',
+    label: '任务组',
+    value: ref([]),
+    type: 'select',
+    multiple: true,
+    searchOperator: 'in',
+    placeholder: '请选择任务组',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'report_source',
+    label: '报告来源',
     value: ref(''),
     type: 'select',
+    placeholder: '请选择报告来源',
+    optionItems: [
+      { value: 'scheduled', label: '定时任务生成' },
+      { value: 'non_scheduled', label: '非定时任务生成' },
+    ],
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'test_env',
+    label: '测试环境',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择测试环境',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'execution_scene',
+    label: '执行场景',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择执行场景',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'execution_scope',
+    label: '执行范围',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择执行范围',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'date_range',
+    label: '执行日期',
+    value: ref([]),
+    type: 'date-range',
+    placeholder: '请选择执行日期',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'user',
+    label: '执行人',
+    value: ref([]),
+    type: 'select',
+    multiple: true,
+    searchOperator: 'in',
     placeholder: '请选择执行人',
     optionItems: [],
     reset: function () {},
   },
-])
+]) as Array<FormItem>
+enableMultiSelectSearch(conditionItems)
 export const tableColumns = useTableColumn([
   {
     ...table.indexColumn,
     width: 150,
+  },
+  {
+    title: '任务名称',
+    key: 'tasks',
+    dataIndex: 'tasks',
+    align: 'left',
+    width: 300,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '测试环境',
+    key: 'test_env',
+    dataIndex: 'test_env',
+    width: 90,
+  },
+  {
+    title: '测试结果',
+    key: 'status',
+    dataIndex: 'status',
+    width: 90,
+  },
+  {
+    title: '结果统计',
+    key: 'execution_summary',
+    dataIndex: 'execution_summary',
+    align: 'left',
+    width: 300,
+  },
+  {
+    title: '通知结果',
+    key: 'is_notice',
+    dataIndex: 'is_notice',
+    width: 90,
+  },
+  {
+    title: '执行场景',
+    key: 'execution_scenes',
+    dataIndex: 'execution_scenes',
+    width: 180,
+  },
+  {
+    title: '执行范围',
+    key: 'execution_scope',
+    dataIndex: 'execution_scope',
+    width: 90,
+  },
+  {
+    title: 'API并发',
+    key: 'api_concurrency_limit',
+    dataIndex: 'api_concurrency_limit',
+    width: 120,
+  },
+  {
+    title: '执行人',
+    key: 'user',
+    dataIndex: 'user',
+    width: 110,
+  },
+  {
+    title: '创建时间',
+    key: 'create_time',
+    dataIndex: 'create_time',
+    width: 180,
+  },
+  {
+    title: '排除统计',
+    key: 'excluded_count',
+    dataIndex: 'excluded_count',
+    width: 100,
   },
   {
     title: '项目/产品',
@@ -76,7 +219,7 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '模块名称',
+    title: '模块',
     key: 'module',
     dataIndex: 'module',
     align: 'left',
@@ -85,48 +228,10 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '任务名称',
-    key: 'tasks',
-    dataIndex: 'tasks',
-    align: 'left',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '测试环境',
-    key: 'test_env',
-    dataIndex: 'test_env',
-    width: 100,
-  },
-  {
-    title: '创建时间',
-    key: 'create_time',
-    dataIndex: 'create_time',
-    width: 180,
-  },
-  {
-    title: '执行人',
-    key: 'user',
-    dataIndex: 'user',
-    width: 110,
-  },
-  {
-    title: '测试结果',
-    key: 'status',
-    dataIndex: 'status',
-    width: 90,
-  },
-  {
-    title: '通知结果',
-    key: 'is_notice',
-    dataIndex: 'is_notice',
-    width: 90,
-  },
-  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

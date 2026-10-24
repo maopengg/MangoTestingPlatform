@@ -8,9 +8,6 @@
         <ActionItems />
       </div>
       <div class="mango-avatar-wrapper">
-        <Project />
-      </div>
-      <div class="mango-avatar-wrapper">
         <TestEnvironment />
       </div>
       <div class="mango-avatar-wrapper">
@@ -24,12 +21,11 @@
   import useAppConfigStore from '@/store/modules/app-config'
   import { defineComponent } from 'vue'
   import TestEnvironment from '@/layouts/avatar/testing-environment.vue'
-  import Project from '@/layouts/avatar/project.vue'
   import VAWavatar from '@/layouts/avatar/index.vue'
 
   export default defineComponent({
     name: 'NavBar',
-    components: { VAWavatar, Project, TestEnvironment },
+    components: { VAWavatar, TestEnvironment },
     setup() {
       const appStore = useAppConfigStore()
       return {
@@ -53,8 +49,8 @@
     background: var(--m-layout-header-bg);
 
     .mango-avatar-wrapper {
-      padding-right: 20px;
-      margin-left: 10px;
+      padding-right: 18px;
+      margin-left: 9px;
     }
 
     .mango-right-wrapper {

@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0007_remove_uicase_switch_step_open_url_and_more'),
     ]

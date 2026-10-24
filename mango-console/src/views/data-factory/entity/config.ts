@@ -1,6 +1,9 @@
 import { useTable, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
+import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 
 const table = useTable()
 
@@ -10,7 +13,7 @@ export const entityConditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入ID',
-    value: ref(''),
+    value: createIdSearchValue(),
   },
   {
     key: 'project_product',
@@ -28,7 +31,7 @@ export const entityConditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'datasource_alias',
-    label: '逻辑数据源',
+    label: '逻辑数据库',
     type: 'select',
     placeholder: '请选择逻辑源',
     value: ref(''),
@@ -54,30 +57,14 @@ export const entityConditionItems: Array<FormItem> = reactive([
     placeholder: '请选择状态',
     value: ref(''),
   },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(entityConditionItems)
 
 export const entityTableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '模块名称',
-    key: 'module',
-    dataIndex: 'module',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '逻辑数据源',
+    title: '逻辑数据库',
     key: 'datasource_alias',
     dataIndex: 'datasource_alias',
     align: 'left',
@@ -125,6 +112,12 @@ export const entityTableColumns = useTableColumn([
     width: 110,
   },
   {
+    title: '删除方式',
+    key: 'delete_type',
+    dataIndex: 'delete_type',
+    width: 110,
+  },
+  {
     title: '清理顺序',
     key: 'cleanup_order',
     dataIndex: 'cleanup_order',
@@ -137,11 +130,78 @@ export const entityTableColumns = useTableColumn([
     width: 100,
   },
   {
+    title: '状态变更来源',
+    key: 'status_change_source',
+    dataIndex: 'status_change_source',
+    width: 150,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+  },
+  updateUserColumn(),
+  updateTimeColumn(),
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 180,
+  },
+])
+
+export const entityStatusLogColumns = useTableColumn([
+  {
+    title: '变更时间',
+    key: 'create_time',
+    dataIndex: 'create_time',
+    width: 180,
+  },
+  {
+    title: '状态变更',
+    key: 'status_change',
+    dataIndex: 'status_change',
+    width: 150,
+  },
+  {
+    title: '变更来源',
+    key: 'source_name',
+    dataIndex: 'source_name',
+    width: 150,
+  },
+  {
+    title: '原因',
+    key: 'reason',
+    dataIndex: 'reason',
+    width: 260,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '操作人',
+    key: 'operator',
+    dataIndex: 'operator',
+    width: 130,
+  },
+  {
+    title: '关联记录',
+    key: 'reference',
+    dataIndex: 'reference',
+    width: 160,
   },
 ])
 

@@ -1,24 +1,12 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
-
-interface Project {
-  id: number
-  // 添加 Project 模型中其他需要的字段
-}
-
-interface ProjectProduct {
-  id: number
-  create_time: Date
-  update_time: Date
-  project: Project | null
-  name: string
-  auto_type: number
-  client_type: number
-}
 
 export const formItems: FormItem[] = reactive([
   {
@@ -81,6 +69,23 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '产品负责人',
+    key: 'owners',
+    value: ref([]),
+    type: 'select',
+    multiple: true,
+    required: true,
+    placeholder: '请选择产品负责人',
+    optionItems: [],
+    validator: function () {
+      if (!Array.isArray(this.value) || this.value.length === 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
 ])
 export const conditionItems: Array<FormItem> = reactive([
   {
@@ -88,34 +93,37 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入产品ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
   },
   {
-    key: 'name',
-    label: '产品名称',
+    key: 'keyword',
+    label: '关键字',
     type: 'input',
-    placeholder: '请输入产品名称',
+    placeholder: '搜索项目或产品名称',
     value: ref(''),
     reset: function () {
       this.value = ''
     },
   },
   {
-    key: 'project',
-    label: '项目名称',
+    key: 'owners',
+    label: '产品负责人',
     type: 'select',
-    placeholder: '请选择项目名称',
-    value: ref(''),
+    placeholder: '请选择产品负责人',
+    value: ref([]),
+    multiple: true,
+    searchOperator: 'in',
+    optionItems: [],
     reset: function () {
-      this.value = ''
+      this.value = []
     },
   },
   {
     key: 'ui_client_type',
-    label: 'UI产品类型',
+    label: 'UI类型',
     type: 'select',
     placeholder: '请选择UI产品类型',
     value: ref(''),
@@ -125,7 +133,7 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'api_client_type',
-    label: 'API产品类型',
+    label: 'API类型',
     type: 'select',
     placeholder: '请选择API产品类型',
     value: ref(''),
@@ -133,34 +141,24 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(conditionItems)
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '创建时间',
-    key: 'create_time',
-    dataIndex: 'create_time',
-    width: 180,
-  },
-  {
-    title: '更新时间',
-    key: 'update_time',
-    dataIndex: 'update_time',
-    width: 180,
-  },
-  {
-    title: '项目名称',
-    key: 'project',
-    dataIndex: 'project',
-    align: 'left',
-
-    width: 200,
-  },
   {
     title: '产品名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '产品负责人',
+    key: 'owners',
+    dataIndex: 'owners',
+    width: 180,
   },
   {
     title: 'UI产品类型',
@@ -174,11 +172,19 @@ export const tableColumns = useTableColumn([
     dataIndex: 'api_client_type',
     width: 120,
   },
+  updateUserColumn(),
+  {
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
+    width: 180,
+  },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
+    align: 'center',
     fixed: 'right',
-    width: 220,
+    width: 160,
   },
 ])

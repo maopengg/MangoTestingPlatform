@@ -45,7 +45,7 @@
     display: inline-flex;
     line-height: @logoHeight;
     text-align: center;
-    padding: 0 10px;
+    padding: 0 9px;
     font-size: 18px;
     transition: transform @transitionTime;
   }

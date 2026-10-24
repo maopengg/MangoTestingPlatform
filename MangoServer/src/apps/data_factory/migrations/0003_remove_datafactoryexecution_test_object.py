@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_data_factory', '0002_update_execution_status_enum'),
     ]

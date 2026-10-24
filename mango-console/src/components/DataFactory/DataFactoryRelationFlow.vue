@@ -2,29 +2,30 @@
   <div class="mango-relation-flow-shell" :style="{ height: resolvedHeight }">
     <div v-if="showHeader" class="mango-relation-flow-header">
       <div class="mango-relation-flow-heading">
-        <div class="mango-relation-flow-title">{{ title }}</div>
-        <div v-if="subtitle" class="mango-relation-flow-subtitle">{{ subtitle }}</div>
+        <div class="mango-relation-flow-title" :title="title">{{ title }}</div>
       </div>
       <div class="mango-relation-flow-actions">
-        <div class="mango-relation-flow-legend">
-          <span><i class="legend-line legend-line-scene"></i>场景编排</span>
-          <span><i class="legend-line legend-line-field"></i>字段依赖</span>
-          <span><i class="legend-line legend-line-reuse"></i>复用</span>
-        </div>
         <a-button
           v-if="showDownload"
           size="mini"
           type="primary"
           :loading="downloadLoading"
           :disabled="!flowNodes.length"
-          @click="downloadImage"
+          @click="downloadImage" data-testid="qa-components-datafactory-datafactoryrelationflow-button-下载为图片"
         >
           下载为图片
         </a-button>
         <slot name="extra"></slot>
       </div>
+      <div v-if="subtitle" class="mango-relation-flow-subtitle" :title="subtitle">{{ subtitle }}</div>
+      <div class="mango-relation-flow-legend" aria-label="关系线图例">
+        <span><i class="legend-line legend-line-main"></i>主表出线</span>
+        <span><i class="legend-line legend-line-child"></i>子表出线</span>
+        <span><i class="legend-line legend-line-post-update"></i>插入后回写</span>
+        <span><i class="legend-line legend-line-invalid"></i>异常关系</span>
+      </div>
     </div>
-    <a-spin :loading="flowLoading" class="mango-relation-flow-spin" tip="依赖关系加载中...">
+    <mango-panel-spin :loading="flowLoading" class="mango-relation-flow-spin" tip="依赖关系加载中...">
       <div v-if="!focusedDependencyTree" class="mango-empty-state mango-relation-flow-empty">
         暂无依赖关系
       </div>
@@ -70,14 +71,14 @@
           <Controls />
         </VueFlow>
       </div>
-    </a-spin>
+    </mango-panel-spin>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import { VueFlow, useVueFlow } from '@vue-flow/core'
+  import { MarkerType, VueFlow, useVueFlow } from '@vue-flow/core'
   import type { Edge, Node } from '@vue-flow/core'
   import { Background, Controls, MiniMap } from '@vue-flow/additional-components'
   import '@vue-flow/core/dist/style.css'
@@ -103,9 +104,21 @@
     children?: PreviewNode[]
   }
 
+  interface PostInsertUpdate {
+    target_node?: string
+    target_alias?: string
+    target_field?: string
+    source_node?: string
+    source_alias?: string
+    source_field?: string
+    valid?: boolean
+    message?: string
+  }
+
   const props = withDefaults(
     defineProps<{
       dependencyTree?: PreviewNode | null
+      postInsertUpdates?: PostInsertUpdate[]
       focusNodeKey?: string
       editableRoot?: boolean
       flowLoading?: boolean
@@ -120,6 +133,7 @@
     }>(),
     {
       dependencyTree: null,
+      postInsertUpdates: () => [],
       focusNodeKey: 'root',
       editableRoot: false,
       flowLoading: false,
@@ -167,7 +181,7 @@
   const { fitView, areNodesInitialized } = useVueFlow(flowId)
 
   watch(
-    () => props.dependencyTree,
+    () => [props.dependencyTree, props.postInsertUpdates],
     () => {
       buildFlow()
       scheduleFitView()
@@ -315,9 +329,13 @@
           target: childLayout.id,
           label: getEdgeLabel(child),
           type: 'default',
-          animated: false,
-          class: getEdgeClass(child),
-          style: getEdgeStyle(child),
+          animated: true,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: getSourceEdgeColor(node),
+          },
+          class: `${getEdgeClass(child)} ${getSourceEdgeClass(node)}`,
+          style: getEdgeStyle(child, node),
           labelStyle: { fill: 'var(--m-text-2)', fontSize: 12 },
           labelBgStyle: { fill: 'var(--m-surface)', fillOpacity: 0.85 },
         })
@@ -328,6 +346,42 @@
     if (focusedDependencyTree.value) {
       walk(layout(focusedDependencyTree.value))
     }
+    const flowTreeNodes = flattenTree(focusedDependencyTree.value)
+    props.postInsertUpdates.forEach((update, index) => {
+      const source = resolvePostUpdateNode(flowTreeNodes, update.source_node, update.source_alias)
+      const target = resolvePostUpdateNode(flowTreeNodes, update.target_node, update.target_alias)
+      if (!source || !target || source.id === target.id) {
+        return
+      }
+      const valid = update.valid !== false
+      edges.push({
+        id: `post-update-${source.id}-${target.id}-${index}`,
+        source: source.id,
+        target: target.id,
+        label: valid
+          ? `回写 ${update.source_field || '-'} → ${update.target_field || '-'}`
+          : `回写配置异常：${update.message || '请检查配置'}`,
+        type: 'default',
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: valid ? 'var(--m-relation-post-update)' : 'var(--m-relation-invalid)',
+        },
+        class: valid
+          ? 'mango-relation-edge-post-update'
+          : 'mango-relation-edge-post-update mango-relation-edge-post-update-invalid',
+        style: {
+          stroke: valid ? 'var(--m-relation-post-update)' : 'var(--m-relation-invalid)',
+          strokeWidth: 2.8,
+          strokeDasharray: '5 6',
+        },
+        labelStyle: {
+          fill: valid ? 'var(--m-text)' : 'var(--m-relation-invalid)',
+          fontSize: 12,
+        },
+        labelBgStyle: { fill: 'var(--m-surface)', fillOpacity: 0.9 },
+      })
+    })
     flowNodes.value = nodes
     flowEdges.value = edges
     selectedNodeId.value = nodes.some((node) => node.id === selectedNodeId.value)
@@ -356,6 +410,27 @@
     return `node-${
       node.scene_item_id || node.template_id || node.entity_id || node.alias || indexPath
     }-${indexPath}`
+  }
+
+  function resolvePostUpdateNode(
+    nodes: Array<{ id: string; node: PreviewNode }>,
+    reference?: string,
+    resolvedAlias?: string
+  ) {
+    if (reference === 'root') {
+      return nodes.find((item) => item.node.action === 'root')
+    }
+    const value = String(reference || '').replace(/^item:/, '')
+    return nodes.find(({ node }) => {
+      return [
+        node.scene_item_id,
+        node.scene_item_name,
+        node.alias,
+        node.template_id,
+        node.template_name,
+      ].some((candidate) => candidate !== undefined && String(candidate) === value) ||
+        Boolean(resolvedAlias && (node.alias === resolvedAlias || node.scene_item_name === resolvedAlias))
+    })
   }
 
   function getEditableNodeKey(node?: PreviewNode | null) {
@@ -474,10 +549,23 @@
     return '依赖创建'
   }
 
-  function getEdgeStyle(node: PreviewNode) {
+  function getSourceEdgeClass(node: PreviewNode) {
+    return node.action === 'root'
+      ? 'mango-relation-edge-source-main'
+      : 'mango-relation-edge-source-child'
+  }
+
+  function getSourceEdgeColor(node: PreviewNode) {
+    return node.action === 'root'
+      ? 'var(--m-relation-main)'
+      : 'var(--m-relation-child)'
+  }
+
+  function getEdgeStyle(node: PreviewNode, sourceNode: PreviewNode) {
+    const stroke = getSourceEdgeColor(sourceNode)
     if (node.reused || node.action === 'reuse') {
       return {
-        stroke: 'var(--m-success)',
+        stroke,
         strokeWidth: 2.8,
         strokeDasharray: '1 8',
         strokeLinecap: 'round',
@@ -485,19 +573,19 @@
     }
     if (node.scene_item_id !== undefined && node.scene_item_id !== null) {
       return {
-        stroke: 'var(--m-primary)',
+        stroke,
         strokeWidth: 3,
       }
     }
     if (node.field) {
       return {
-        stroke: 'var(--m-danger)',
+        stroke,
         strokeWidth: 2.8,
         strokeDasharray: '9 6',
       }
     }
     return {
-      stroke: 'var(--m-warning)',
+      stroke,
       strokeWidth: 2.6,
       strokeDasharray: '14 6',
     }
@@ -701,23 +789,27 @@
     const targetY = target.position.y + offsetY + nodeHeight / 2
     const middleX = sourceX + Math.max((targetX - sourceX) / 2, 48)
     const edgeClass = String(edge.class || '')
-    const color = edgeClass.includes('reuse')
-      ? tokens.success
-      : edgeClass.includes('field')
-      ? tokens.danger
-      : edgeClass.includes('dependency')
-      ? tokens.warning
-      : tokens.primary
+    const color = edgeClass.includes('post-update-invalid')
+      ? tokens.relationInvalid
+      : edgeClass.includes('post-update')
+      ? tokens.relationPostUpdate
+      : edgeClass.includes('source-child')
+      ? tokens.relationChild
+      : tokens.relationMain
     context.save()
     context.strokeStyle = color
     context.lineWidth = edgeClass.includes('scene') ? 3 : 2.8
     context.setLineDash(
       edgeClass.includes('reuse')
         ? [1, 8]
+        : edgeClass.includes('post-update')
+        ? [5, 6]
         : edgeClass.includes('field')
         ? [9, 6]
         : edgeClass.includes('dependency')
         ? [14, 6]
+        : edgeClass.includes('scene')
+        ? [12, 6]
         : []
     )
     context.lineCap = edgeClass.includes('reuse') ? 'round' : 'butt'
@@ -849,6 +941,10 @@
       success: readCssToken(style, '--m-success', '#00b42a'),
       warning: readCssToken(style, '--m-warning', '#ff7d00'),
       danger: readCssToken(style, '--m-danger', '#f53f3f'),
+      relationMain: style.getPropertyValue('--m-relation-main').trim(),
+      relationChild: style.getPropertyValue('--m-relation-child').trim(),
+      relationPostUpdate: style.getPropertyValue('--m-relation-post-update').trim(),
+      relationInvalid: style.getPropertyValue('--m-relation-invalid').trim(),
       border: readCssToken(style, '--m-border', '#e5e6eb'),
       shadow: 'rgba(0, 0, 0, 0.12)',
     }
@@ -930,6 +1026,7 @@
     display: flex;
     overflow: hidden;
     flex-direction: column;
+    min-width: 0;
     min-height: 0;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
@@ -937,12 +1034,12 @@
   }
 
   .mango-relation-flow-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 58px;
-    padding: 10px 12px;
+    flex-shrink: 0;
+    gap: 4px var(--m-page-gap);
+    padding: var(--m-card-padding);
     border-bottom: 1px solid var(--m-border);
   }
 
@@ -951,15 +1048,19 @@
   }
 
   .mango-relation-flow-title {
+    overflow: hidden;
     color: var(--m-text);
     font-size: 15px;
     font-weight: 600;
     line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mango-relation-flow-subtitle {
+    grid-column: 1 / -1;
+    min-width: 0;
     overflow: hidden;
-    margin-top: 2px;
     color: var(--m-muted);
     font-size: 12px;
     line-height: 18px;
@@ -970,16 +1071,20 @@
   .mango-relation-flow-actions {
     display: flex;
     align-items: center;
-    flex-shrink: 0;
-    gap: 10px;
+    justify-content: flex-end;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: var(--m-page-gap);
   }
 
   .mango-relation-flow-legend {
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px 10px;
+    justify-content: flex-start;
+    min-width: 0;
+    gap: 4px 12px;
     color: var(--m-muted);
     font-size: 12px;
     line-height: 18px;
@@ -999,18 +1104,24 @@
     border-top: 2px solid var(--m-muted);
   }
 
-  .legend-line-scene {
-    border-color: var(--m-primary);
-  }
-
-  .legend-line-field {
-    border-color: var(--m-danger);
+  .legend-line-main {
+    border-color: var(--m-relation-main);
     border-top-style: dashed;
   }
 
-  .legend-line-reuse {
-    border-color: var(--m-success);
-    border-top-style: dotted;
+  .legend-line-child {
+    border-color: var(--m-relation-child);
+    border-top-style: dashed;
+  }
+
+  .legend-line-post-update {
+    border-color: var(--m-relation-post-update);
+    border-top-style: dashed;
+  }
+
+  .legend-line-invalid {
+    border-color: var(--m-relation-invalid);
+    border-top-style: dashed;
   }
 
   .mango-relation-flow-spin {
@@ -1020,8 +1131,7 @@
     min-height: 0;
   }
 
-  .mango-relation-flow-spin :deep(.arco-spin),
-  .mango-relation-flow-spin :deep(.arco-spin-children) {
+  .mango-relation-flow-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
     min-height: 0;
   }
@@ -1049,28 +1159,53 @@
   }
 
   .mango-relation-flow :deep(.mango-relation-edge-scene .vue-flow__edge-path) {
-    stroke: var(--m-primary) !important;
-    stroke-dasharray: none !important;
+    stroke-dasharray: 12 6 !important;
     stroke-width: 3 !important;
   }
 
   .mango-relation-flow :deep(.mango-relation-edge-field .vue-flow__edge-path) {
-    stroke: var(--m-danger) !important;
     stroke-dasharray: 9 6 !important;
     stroke-width: 2.8 !important;
   }
 
   .mango-relation-flow :deep(.mango-relation-edge-reuse .vue-flow__edge-path) {
-    stroke: var(--m-success) !important;
     stroke-dasharray: 1 8 !important;
     stroke-linecap: round;
     stroke-width: 2.8 !important;
   }
 
   .mango-relation-flow :deep(.mango-relation-edge-dependency .vue-flow__edge-path) {
-    stroke: var(--m-warning) !important;
     stroke-dasharray: 14 6 !important;
     stroke-width: 2.6 !important;
+  }
+
+  .mango-relation-flow :deep(.mango-relation-edge-source-main .vue-flow__edge-path) {
+    stroke: var(--m-relation-main) !important;
+  }
+
+  .mango-relation-flow :deep(.mango-relation-edge-source-child .vue-flow__edge-path) {
+    stroke: var(--m-relation-child) !important;
+  }
+
+  .mango-relation-flow :deep(.mango-relation-edge-post-update .vue-flow__edge-path) {
+    stroke: var(--m-relation-post-update) !important;
+    stroke-dasharray: 5 6 !important;
+    stroke-width: 2.8 !important;
+  }
+
+  .mango-relation-flow :deep(.mango-relation-edge-post-update-invalid .vue-flow__edge-path) {
+    stroke: var(--m-relation-invalid) !important;
+  }
+
+  .mango-relation-flow :deep(.vue-flow__edge.animated .vue-flow__edge-path) {
+    animation-duration: 0.9s;
+    animation-timing-function: linear;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mango-relation-flow :deep(.vue-flow__edge.animated .vue-flow__edge-path) {
+      animation: none;
+    }
   }
 
   .mango-relation-flow-minimap {

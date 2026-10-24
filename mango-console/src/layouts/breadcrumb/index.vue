@@ -103,6 +103,7 @@
   .mango-breadcrumb {
     display: flex;
     align-items: center;
+    font-size: 14px;
   }
 
   .mango-breadcrumb-link {

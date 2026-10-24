@@ -1,4 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
+import type { FlowData } from '@/types/components'
+import type { UiPageStepsDetailPayload } from '@/types/ui-test/case'
 
 export function getUiPageStepsDetailed(id: any) {
   return get({
@@ -11,9 +13,19 @@ export function getUiPageStepsDetailed(id: any) {
   })
 }
 
-export function postUiPageStepsDetailed(data: object, parent_id: any) {
-  // @ts-ignore
-  data['parent_id'] = parent_id
+export function getUiPageStepsDetailedById(id: any) {
+  return get({
+    url: '/ui/page/steps/detailed',
+    data: () => {
+      return {
+        id,
+      }
+    },
+  })
+}
+
+export function postUiPageStepsDetailed(data: UiPageStepsDetailPayload, parent_id: any) {
+  data.parent_id = parent_id
   return post({
     url: '/ui/page/steps/detailed',
     data: () => {
@@ -22,9 +34,20 @@ export function postUiPageStepsDetailed(data: object, parent_id: any) {
   })
 }
 
-export function putUiPageStepsDetailed(data: object, parent_id: any) {
-  // @ts-ignore
-  data['parent_id'] = parent_id
+export function postUiPageStepNodeCopy(data: {
+  page_step_id: number | string
+  source_detail_id: number | string
+  node_id: string
+  flow_data: FlowData
+}) {
+  return post({
+    url: '/ui/page/steps/detailed/copy',
+    data: () => data,
+  })
+}
+
+export function putUiPageStepsDetailed(data: UiPageStepsDetailPayload, parent_id: any) {
+  data.parent_id = parent_id
   return put({
     url: '/ui/page/steps/detailed',
     data: () => {

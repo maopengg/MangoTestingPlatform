@@ -1,7 +1,9 @@
 import { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 export const conditionItems: Array<FormItem> = reactive([
@@ -10,7 +12,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入定时策略ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -25,6 +27,7 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  createUpdateUserCondition(),
 ])
 export const formItems: FormItem[] = reactive([
   {
@@ -86,11 +89,12 @@ export const tableColumns = useTableColumn([
     dataIndex: 'update_time',
     width: 180,
   },
+  updateUserColumn(),
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

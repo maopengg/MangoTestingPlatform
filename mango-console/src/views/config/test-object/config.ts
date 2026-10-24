@@ -1,7 +1,10 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 export const conditionItems: Array<FormItem> = reactive([
@@ -10,7 +13,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入测试对象ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -57,18 +60,9 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
-  {
-    key: 'executor_name',
-    label: '负责人',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择负责人',
-    optionItems: [],
-    reset: function () {
-      this.value = ''
-    },
-  },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(conditionItems)
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
@@ -101,22 +95,6 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '被测对象',
-    key: 'value',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入域名/包名/路径',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-
-  {
     label: '被测环境',
     key: 'environment',
     value: ref(''),
@@ -146,40 +124,16 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-  {
-    label: '负责人名称',
-    key: 'executor_name',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请输入负责人名称',
-    validator: function () {
-      if (this.value === null && this.value === '') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
 ])
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
     title: '环境名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    width: 300,
+    width: 200,
     ellipsis: true,
     tooltip: true,
   },
@@ -188,6 +142,7 @@ export const tableColumns = useTableColumn([
     key: 'value',
     dataIndex: 'value',
     align: 'left',
+    width: 400,
     ellipsis: true,
     tooltip: true,
   },
@@ -195,37 +150,30 @@ export const tableColumns = useTableColumn([
     title: '部署环境',
     key: 'environment',
     dataIndex: 'environment',
-    width: 90,
+    width: 100,
   },
   {
     title: '自动化类型',
     key: 'auto_type',
     dataIndex: 'auto_type',
-    width: 120,
+    width: 130,
   },
   {
-    title: '负责人',
-    key: 'executor_name',
-    dataIndex: 'executor_name',
-    width: 110,
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
   },
-  {
-    title: '查询权限',
-    key: 'db_c_status',
-    dataIndex: 'db_c_status',
-    width: 90,
-  },
-  {
-    title: '增删改权限',
-    key: 'db_rud_status',
-    dataIndex: 'db_rud_status',
-    width: 120,
-  },
+  updateUserColumn(),
+  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

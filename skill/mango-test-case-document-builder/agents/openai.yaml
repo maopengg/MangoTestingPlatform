@@ -1,0 +1,4 @@
+interface:
+  display_name: "测试用例设计与文档生成"
+  short_description: "从需求/开发设计生成标准功能测试用例文档和 Excel/飞书表格，处理字段、下拉、多选和表格清洁。"
+  default_prompt: "使用这个 skill 读取需求或开发设计，按规范编写测试用例文档和飞书/Excel case 表。"

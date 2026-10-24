@@ -15,7 +15,7 @@ export function postApiAuthConfig(data: object) {
 }
 
 export function putApiAuthConfig(data: object) {
-  return put({
+  return put({ permissionKey: 'api.auth_config',
     url: '/api/auth/config',
     data: () => data,
   })

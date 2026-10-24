@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from .system import SystemApi
 from .user import UserApi
+from .actuator_tasks import ActuatorTaskApi
 
-__all__ = ['SystemApi', 'UserApi']
-
+__all__ = ['SystemApi', 'UserApi', 'ActuatorTaskApi']
 

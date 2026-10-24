@@ -1,15 +1,23 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="测试用例"
+      <TableHeader title="测试用例" />
+    </template>
+
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        :model-value="getConditionValue('project_product')"
+        :module-value="getConditionValue('module')"
+        :reset-key="sidebarResetKey"
+        show-modules
+        @filter-change="onNavigationFilterChange"
         @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
-        <template #search-content>
+        <template #search>
           <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+            <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -38,6 +46,22 @@
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="data.userList"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="data.userList"
                   :placeholder="item.placeholder"
@@ -50,6 +74,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.task_status"
                   :placeholder="item.placeholder"
@@ -62,6 +88,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'level'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.case_level"
                   :placeholder="item.placeholder"
@@ -74,6 +102,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.api_case_scenario_layer"
                   :placeholder="item.placeholder"
@@ -86,6 +116,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.api_case_scenario_type"
                   :placeholder="item.placeholder"
@@ -111,63 +143,87 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs>
-        <template #extra>
+        <template #tabs>
+          <TableTabs :active-key="activePublicationStatus" @tab-click="switchPublicationTab">
+            <a-tab-pane v-for="tab in publicationTabs" :key="tab.key" :title="tab.title" />
+            <template #extra>
           <a-space>
             <div>
-              <a-button
+              <a-button v-permission="'ui.case:execute'"
                 size="small"
                 status="success"
                 :loading="caseRunning"
-                @click="onConcurrency('批量执行')"
+                @click="onConcurrency('批量执行')" data-testid="qa-views-uitest-case-button-批量执行"
                 >批量执行
               </a-button>
             </div>
             <div>
-              <a-button size="small" status="warning" @click="handleClick">设为定时任务</a-button>
+              <a-button v-permission="'timing.tasks:edit'" size="small" status="warning" @click="handleClick" data-testid="qa-views-uitest-case-button-设为定时任务">设为定时任务</a-button>
               <a-modal v-model:visible="data.visible" @cancel="handleCancel" @ok="handleOk">
                 <template #title> 设为定时任务</template>
-                <div>
-                  <a-select
-                    v-model="data.value"
-                    :field-names="fieldNames"
-                    :options="data.scheduledName"
-                    allow-clear
-                    allow-search
-                    placeholder="请选择定时任务进行绑定"
-                    value-key="key"
-                  />
-                </div>
+                <a-form :model="data">
+                  <a-form-item class="mango-form-item__require" label="项目产品">
+                    <ProjectProductSelect
+                      v-model="data.scheduledProjectProduct"
+                      placeholder="请选择项目产品"
+                      @change="onScheduledProjectProductChange"
+                    />
+                  </a-form-item>
+                  <a-form-item label="模块">
+                    <ProductModuleSelect
+                      v-model="data.scheduledModule"
+                      :auto-clear="false"
+                      :disabled="!getOptionId(data.scheduledProjectProduct)"
+                      :project-product-id="data.scheduledProjectProduct"
+                      :selectable-level="0"
+                      show-all-option
+                      placeholder="请选择模块分类（可选）"
+                      @change="onScheduledModuleChange"
+                    />
+                  </a-form-item>
+                  <a-form-item class="mango-form-item__require" label="定时任务">
+                    <a-select
+                      v-model="data.value"
+                      :disabled="!getOptionId(data.scheduledProjectProduct)"
+                      :field-names="fieldNames"
+                      :loading="data.scheduledNameLoading"
+                      :options="data.scheduledName"
+                      allow-clear
+                      allow-search
+                      placeholder="请选择定时任务进行绑定"
+                      value-key="key"
+                      data-testid="qa-views-uitest-case-select-请选择定时任务进行绑定"
+                    />
+                  </a-form-item>
+                </a-form>
               </a-modal>
             </div>
             <div>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
+              <a-button v-permission="'ui.case:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-case-button-新增">新增</a-button>
             </div>
             <div>
-              <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
+              <a-button v-permission="'ui.case:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-uitest-case-button-批量删除">批量删除</a-button>
             </div>
           </a-space>
+            </template>
+          </TableTabs>
         </template>
-      </a-tabs>
 
       <a-table
+        class="mango-native-scroll-table"
         :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
+        :columns="visibleTableColumns"
+        :data="batchSelectableDataList"
         :loading="table.tableLoading.value"
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
-        :scroll="{ x: 1640 }"
-        @selection-change="onSelectionChange"
+        :scroll="{ x: 2000, y: '100%' }"
+        @selection-change="onUiCaseSelectionChange"
       >
         <template #columns>
           <a-table-column
-            v-for="item of tableColumns"
+            v-for="item of visibleTableColumns"
             :key="item.key"
             :align="item.align"
             :data-index="item.key"
@@ -180,12 +236,6 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ formatModulePath(record?.module) }}
-            </template>
             <template v-else-if="item.key === 'scenario_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.scenario_type]" size="small">
                 {{ getEnumTitle(enumStore.api_case_scenario_type, record.scenario_type) }}
@@ -197,17 +247,11 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'scenario_tags'" #cell="{ record }">
-              <a-space wrap :size="4">
-                <a-tag
-                  v-for="tag of getScenarioTagList(record)"
-                  :key="tag.key"
-                  :color="enumStore.colors[tag.key]"
-                  size="small"
-                >
-                  {{ tag.title }}
-                </a-tag>
-                <span v-if="!getScenarioTagList(record).length">-</span>
-              </a-space>
+              <ExecutionSceneTagGrid
+                :values="record.scenario_tags"
+                :options="enumStore.api_case_scenario_tag"
+                :colors="enumStore.colors"
+              />
             </template>
             <template v-else-if="item.key === 'scenario_description'" #cell="{ record }">
               {{ record.scenario_description || '-' }}
@@ -225,15 +269,50 @@
                 >{{ enumStore.task_status[record.status]?.title || '-' }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'publication_status'" #cell="{ record }">
+              <a-tag :color="record.publication_status === 'published' ? 'green' : record.publication_status === 'prepublished' ? 'orange' : 'gray'" size="small">
+                {{ publicationTabs.find((tab) => tab.key === record.publication_status)?.title || '未发布' }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ formatModulePath(record.module) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '执行', loading: caseRunning, onClick: () => onCaseRun(record.id) },
-                  { label: '步骤', onClick: () => onClick(record) },
-                  { label: '套件', onClick: () => clickSuite(record) },
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '复制', onClick: () => caseCody(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'ui.case:execute', label: '执行', loading: caseRunning, onClick: () => onCaseRun(record.id) },
+                  { permission: 'ui.case:detail', label: '步骤', onClick: () => onClick(record) },
+                  { permission: 'ui.case:edit', label: '套件', onClick: () => clickSuite(record) },
+                  { permission: 'ui.case:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'ui.case:copy', label: '复制', onClick: () => caseCody(record) },
+                  {
+                    permission: 'ui.case:publish',
+                    hidden: record.publication_status !== 'unpublished',
+                    label: '提交预发布',
+                    loading: publicationActionCaseId === record.id,
+                    onClick: () => onPublicationChange(record, 'prepublished'),
+                  },
+                  {
+                    permission: 'ui.case:publish',
+                    hidden: record.publication_status !== 'prepublished' || !record.is_product_owner,
+                    label: '通过发布',
+                    loading: publicationActionCaseId === record.id,
+                    onClick: () => onPublicationChange(record, 'published'),
+                  },
+                  {
+                    permission: 'ui.case:publish',
+                    hidden: record.publication_status === 'unpublished' || !record.is_product_owner,
+                    label: '退回未发布', danger: true,
+                    loading: publicationActionCaseId === record.id,
+                    onClick: () => onPublicationChange(record, 'unpublished'),
+                  },
+                  { permission: 'ui.case:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
@@ -242,15 +321,18 @@
       </a-table>
       <ParametrizeDrawer
         v-model:initial-data="data.row.parametrize"
+        show-environment
         :visible="data.drawerVisible"
         @cancel="data.drawerVisible = false"
         @ok="drawerOk"
       />
-    </template>
-    <template #footer>
-      <TableFooter :pagination="pagination" />
+        <template #footer>
+          <TableFooter :pagination="pagination" />
+        </template>
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
+  <CasePublicationReviewModal ref="publicationReviewRef" @published="doRefresh()" />
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
@@ -281,6 +363,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'case_people'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="data.userList"
               :placeholder="item.placeholder"
@@ -292,6 +376,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'level'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.case_level"
               :placeholder="item.placeholder"
@@ -303,6 +389,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.api_case_scenario_layer"
               :placeholder="item.placeholder"
@@ -314,6 +402,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.api_case_scenario_type"
               :placeholder="item.placeholder"
@@ -348,23 +438,29 @@
 </template>
 
 <script lang="ts" setup>
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
+  import { usePagination, useRowKey, useTable } from '@/hooks/table'
+  import { useProjectLockedRowSelection } from '@/hooks/use-project-locked-row-selection'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
+  import { computed, onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { useRouter } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
+  import { useLatestRequest } from '@/hooks/use-latest-request'
   import { usePageData } from '@/store/page-data'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import ExecutionSceneTagGrid from '@/components/display/ExecutionSceneTagGrid.vue'
   import {
-    formatModulePath,
     formatProjectProductPath,
+    formatModulePath,
     getItemValue,
+    getOptionId,
     setItemValue,
   } from '@/utils/business-format'
-  import { conditionItems, formItems, tableColumns } from './config'
+  import { conditionItems, formItems, tableColumns, publicationTabs } from './config'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import {
     deleteUiCase,
     getUiCase,
@@ -372,6 +468,7 @@
     postUiCase,
     postUiCaseCopy,
     putUiCase,
+    putUiCasePublication,
     postUiRunCaseBatch,
   } from '@/api/uitest/case'
   import { getSystemTasksName } from '@/api/system/tasks'
@@ -384,11 +481,37 @@
 
   const userStore = useUserStore()
   const router = useRouter()
+  const route = useRoute()
+  const { beginRequest, isLatestRequest } = useLatestRequest()
+  const activePublicationStatus = ref('all')
+
+  function switchPublicationTab(key: string | number) {
+    activePublicationStatus.value = String(key)
+    pagination.page = 1
+    selectedRowKeys.value = []
+    doRefresh(null, false, true)
+  }
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
-  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+  const publicationReviewRef = ref<InstanceType<typeof CasePublicationReviewModal> | null>(null)
   const table = useTable()
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
+  const {
+    selectedRowKeys,
+    showCheckedAll,
+    selectableDataList: batchSelectableDataList,
+    onSelectionChange: onUiCaseSelectionChange,
+    validateSingleProject,
+  } = useProjectLockedRowSelection<any>(
+    () => table.dataList,
+    (row) => row?.project_product?.project
+  )
+  const sidebarResetKey = ref(0)
+  const sidebarModuleIds = ref<Array<string | number>>([])
+  const headerConditionItems = computed(() =>
+    conditionItems.filter((item) => !['project_product', 'module'].includes(item.key))
+  )
+  const visibleTableColumns = tableColumns
   const rowKey = useRowKey('id')
   const formModel = ref({})
 
@@ -400,12 +523,16 @@
     moduleList: [],
     systemStatus: [],
     scheduledName: [],
+    scheduledNameLoading: false,
+    scheduledProjectProduct: null,
+    scheduledModule: '__all__',
     value: null,
     visible: false,
     drawerVisible: false,
     row: {},
   })
   const caseRunning = ref(false)
+  const publicationActionCaseId = ref<number | null>(null)
 
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
 
@@ -437,14 +564,37 @@
     doRefresh(null, false, true)
   }
 
+  function onNavigationFilterChange({
+    projectProduct,
+    module,
+    moduleIds,
+  }: {
+    projectProduct: any
+    module: any
+    moduleIds?: Array<string | number>
+  }) {
+    setItemValue(conditionItems, 'project_product', projectProduct ?? null)
+    setItemValue(conditionItems, 'module', module ?? null)
+    sidebarModuleIds.value = moduleIds || []
+    pagination.page = 1
+    selectedRowKeys.value = []
+    doRefresh(null, false, true)
+  }
+
   function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
     clearPollingTimer()
+    const requestId = beginRequest()
     if (showLoading) {
       table.tableLoading.value = true
     }
     let value = getFormItems(conditionItems)
+    if (activePublicationStatus.value !== 'all') value.publication_status = activePublicationStatus.value
+    if (sidebarModuleIds.value.length) value['module__in'] = sidebarModuleIds.value.join(',')
     if (!Array.isArray(value.scenario_tags) || !value.scenario_tags.length) {
       delete value.scenario_tags
+    }
+    if (value.update_user === null || value.update_user === '') {
+      delete value.update_user
     }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -453,6 +603,7 @@
     }
     getUiCase(value)
       .then((res) => {
+        if (!isLatestRequest(requestId)) return
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
         const hasRunningItem =
@@ -467,38 +618,28 @@
       })
       .catch(console.log)
       .finally(() => {
-        if (showLoading) {
-          table.tableLoading.value = false
-        }
+        if (isLatestRequest(requestId)) table.tableLoading.value = false
       })
   }
 
   function onResetSearch() {
+    pagination.page = 1
+    sidebarModuleIds.value = []
     conditionItems.forEach((it) => {
       if (it.key === 'project_product' || it.key === 'module') {
         it.value = null
       } else if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
+    sidebarResetKey.value += 1
     doRefresh(null, false, true)
   }
 
   function getEnumTitle(options: any[] | null, value: any) {
     return options?.find((item: any) => Number(item.key) === Number(value))?.title || '-'
-  }
-
-  function getScenarioTagList(record: any) {
-    const tags = Array.isArray(record.scenario_tags) ? record.scenario_tags : []
-    return tags
-      .map((tag: any) =>
-        (enumStore.api_case_scenario_tag || []).find(
-          (item: any) => Number(item.key) === Number(tag)
-        )
-      )
-      .filter(Boolean)
   }
 
   function onAdd() {
@@ -509,7 +650,7 @@
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
   }
@@ -539,6 +680,41 @@
               selectedRowKeys.value = []
             }
           })
+      },
+    })
+  }
+
+  function onPublicationChange(record: any, target: 'prepublished' | 'published' | 'unpublished') {
+    if (target === 'published') {
+      if (record.publication_status !== 'prepublished') {
+        Message.warning('只有预发布状态的用例可以进入发布审核')
+        return
+      }
+      void publicationReviewRef.value?.open('ui', [Number(record.id)])
+      return
+    }
+    if (target !== 'unpublished' && record.status !== 1) {
+      Message.warning('用例必须执行通过后才能提交预发布或正式发布')
+      return
+    }
+    const title = target === 'prepublished' ? '提交预发布' : '退回未发布'
+    Modal.confirm({
+      title,
+      content: target === 'prepublished' ? '提交后由项目产品负责人审核，预发布用例不参与定时执行。确认提交吗？'
+        : '退回后该用例不再参与定时执行。确认退回吗？',
+      cancelText: '取消',
+      okText: title,
+      okButtonProps: target === 'unpublished' ? { status: 'danger' } : undefined,
+      onBeforeOk: async () => {
+        publicationActionCaseId.value = record.id
+        try {
+          const res = await putUiCasePublication(record.id, target)
+          Message.success(res.msg)
+          doRefresh()
+          return true
+        } finally {
+          publicationActionCaseId.value = null
+        }
       },
     })
   }
@@ -590,6 +766,7 @@
       Message.error('请选择要' + name + '的用例数据')
       return
     }
+    if (!validateSingleProject()) return
     Modal.confirm({
       title: '提示',
       content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',
@@ -612,9 +789,21 @@
       Message.error('请选择要添加定时任务的用例')
       return
     }
+    data.scheduledProjectProduct = null
+    data.scheduledModule = '__all__'
+    data.scheduledName = []
+    data.value = null
     data.visible = true
   }
   const handleOk = () => {
+    if (!getOptionId(data.scheduledProjectProduct)) {
+      Message.warning('请选择项目产品')
+      return
+    }
+    if (!data.value) {
+      Message.warning('请选择定时任务')
+      return
+    }
     postSystemTasksBatchSetCases(selectedRowKeys.value, data.value, 0)
       .then((res) => {
         Message.success(res.msg)
@@ -635,6 +824,8 @@
         value['front_custom'] = []
         value['front_sql'] = []
         value['posterior_sql'] = []
+        value['front_public'] = []
+        value['front_auth_config'] = []
         value['scenario_layer'] = value['scenario_layer'] ?? 0
         postUiCase(value)
           .then((res) => {
@@ -698,7 +889,7 @@
       data.row.parametrize = [
         {
           name: '',
-          parametrize: [{ key: '', value: '' }],
+          parametrize: [{ key: '', value: '', test_envs: [] }],
         },
       ]
     }
@@ -735,18 +926,45 @@
       .catch(console.log)
   }
 
-  function scheduledName() {
-    getSystemTasksName()
+  function scheduledName(projectProductId: number | string, moduleId?: number | string | null) {
+    data.scheduledNameLoading = true
+    getSystemTasksName(projectProductId, moduleId, 0)
       .then((res) => {
         data.scheduledName = res.data
       })
       .catch(console.log)
+      .finally(() => {
+        data.scheduledNameLoading = false
+      })
+  }
+
+  function onScheduledProjectProductChange(value: any) {
+    const projectProductId = getOptionId(value)
+    data.scheduledModule = '__all__'
+    data.value = null
+    data.scheduledName = []
+    if (projectProductId) scheduledName(projectProductId)
+  }
+
+  function onScheduledModuleChange(value: any) {
+    const projectProductId = getOptionId(data.scheduledProjectProduct)
+    const selectedModuleId = getOptionId(value)
+    const moduleId = selectedModuleId === '__all__' ? null : selectedModuleId
+    data.value = null
+    data.scheduledName = []
+    if (projectProductId) scheduledName(projectProductId, moduleId)
   }
 
   onMounted(() => {
+    const routeStatus = route.query.publication_status
+    if (typeof routeStatus === 'string' && publicationTabs.some((tab) => tab.key === routeStatus)) {
+      activePublicationStatus.value = routeStatus
+    }
+    if (route.query.project_product) {
+      setItemValue(conditionItems, 'project_product', Number(route.query.project_product))
+    }
     nextTick(async () => {
       await getNickName()
-      await scheduledName()
       doRefresh()
     })
   })

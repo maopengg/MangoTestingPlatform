@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head
+    ><meta charset="UTF-8" /><title>模块覆盖概览 · 演示验证</title></head
+  >
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { createApp, h, ref } from 'vue'
+      import { createPinia } from 'pinia'
+      import Arco from '@arco-design/web-vue'
+      import '@arco-design/web-vue/dist/arco.css'
+      import '../../src/styles/index.css'
+      import CoverageOverview from '../../src/views/apitest/module-coverage/components/CoverageOverview.vue'
+      import { applyDisplayDensity } from '../../src/hooks/useDisplayDensity'
+      const modules = Array.from({ length: 38 }, (_, i) => ({
+        id: i + 1,
+        parent_id: null,
+        project_product_id: 1,
+        project_name: '演示项目',
+        product_name: 'WEB端',
+        name: `模块${i + 1}`,
+        full_path:
+          ['订单管理/订单详情', 'AI能力/智能问答', '系统设置/角色管理'][i % 3] + `/${i + 1}`,
+        is_leaf: true,
+        scan_completed: i > 3,
+        applied_scan_id: i > 3 ? 100 + i : null,
+        latest_scan_id: i ? 100 + i : null,
+        latest_scan_status: i > 3 ? 'completed' : 'completed_with_gaps',
+        interface_count: i < 4 ? 0 : 10,
+        bound_count: i < 4 ? 0 : 8,
+        target_count: i < 4 ? 0 : 20,
+        completed_count: i < 4 ? 0 : 10,
+        deferred_count: i < 4 ? 0 : 2,
+        incomplete_interface_count: i < 4 ? 0 : 5,
+        covered_interface_count: i < 4 ? 0 : 3,
+        partial_interface_count: i < 4 ? 0 : 2,
+        uncovered_interface_count: i < 4 ? 0 : 3,
+        deferred_interface_count: i < 4 ? 0 : 2,
+        interface_coverage_rate: i < 4 ? null : 30,
+        binding_rate: i < 4 ? null : 80,
+        automation_rate: i < 4 ? null : 50,
+      }))
+      const data = {
+        modules,
+        summary: {
+          module_count: 38,
+          leaf_count: 38,
+          scanned_count: 34,
+          unscanned_count: 4,
+          interface_count: 340,
+          bound_count: 272,
+          target_count: 680,
+          completed_count: 340,
+          deferred_count: 68,
+          incomplete_interface_count: 170,
+          covered_interface_count: 102,
+          partial_interface_count: 68,
+          uncovered_interface_count: 102,
+          deferred_interface_count: 68,
+          interface_coverage_rate: 30,
+          binding_rate: 80,
+          automation_rate: 50,
+        },
+        interface_gap_count: 1,
+        interface_gaps: [
+          {
+            id: 1,
+            module_id: 5,
+            name: '查询订单详情',
+            module_path: '订单管理/订单详情',
+            method: 'GET',
+            url: '/api/contracts/{id}',
+            bound: false,
+            incomplete: true,
+            target_count: 20,
+            completed_count: 10,
+            deferred_count: 2,
+          },
+        ],
+      }
+      const state = new URL(location.href).searchParams.get('state')
+      if (state === 'empty') {
+        data.modules = []
+        data.interface_gaps = []
+        data.interface_gap_count = 0
+        for (const key of Object.keys(data.summary))
+          data.summary[key] = key.endsWith('_rate') ? null : 0
+      }
+      const pinia = createPinia()
+      pinia.state.value['permission-route'] = { permissionKeys: ['api.module_coverage:detail'], isSuperAdmin: false }
+      createApp({
+        setup() {
+          const action = ref('')
+          return () =>
+            h('main', { class: 'mango-overview-preview' }, [
+              h('header', [
+                '演示数据 · 模块覆盖概览验证（不连接业务数据） ',
+                h('span', action.value),
+              ]),
+              h(CoverageOverview, {
+                data,
+                loading: state === 'loading',
+                error: state === 'error',
+                onDrill: (row, tab) => {
+                  action.value = `查看模块 ${row.id} 的 ${tab}`
+                },
+                onInterface: (id) => {
+                  action.value = `查看接口 ${id}`
+                },
+              }),
+            ])
+        },
+      })
+        .use(Arco)
+        .use(pinia)
+        .directive('permission', {})
+        .mount('#app')
+      function resize() {
+        applyDisplayDensity('auto')
+      }
+      resize()
+      window.addEventListener('resize', resize)
+    </script>
+    <style>
+      .mango-overview-preview {
+        height: 100vh;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+      .mango-overview-preview header {
+        padding: 8px;
+        color: var(--m-muted);
+      }
+      .mango-overview-preview > .mango-coverage-overview {
+        flex: 1;
+        min-height: 0;
+      }
+    </style>
+  </body>
+</html>

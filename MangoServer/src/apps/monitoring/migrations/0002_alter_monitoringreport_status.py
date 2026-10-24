@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('monitoring', '0001_initial'),
     ]
@@ -13,6 +12,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='monitoringreport',
             name='status',
-            field=models.SmallIntegerField(choices=[(0, '信息'), (1, '失败'), (2, '警告'), (3, '调试')], db_index=True, default=0, verbose_name='状态'),
+            field=models.SmallIntegerField(choices=[(0, '信息'), (1, '失败'), (2, '警告'), (3, '调试')], db_index=True,
+                                           default=0, verbose_name='状态'),
         ),
     ]

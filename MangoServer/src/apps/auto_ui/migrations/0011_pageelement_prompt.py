@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0010_pageelement_sub2_pageelement_sub3_and_more'),
     ]

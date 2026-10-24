@@ -1,11 +1,31 @@
 <template>
   <div class="mango-table-header">
-    <a-card :bordered="isBordered" :title="title" class="mango-table-header__card" size="small">
-      <template v-if="showFilter" #extra>
-        <a-space>
-          <a-button size="small" type="primary" @click="doSearch">搜索</a-button>
-          <a-button size="small" @click="doResetSearch">重置</a-button>
-        </a-space>
+    <a-card
+      v-if="hasBody"
+      :bordered="isBordered"
+      :title="title"
+      class="mango-table-header__card"
+      size="small"
+    >
+      <template v-if="showHeaderExtra || showDefaultSearchActions" #extra>
+        <div class="mango-table-header__extra">
+          <slot name="header-extra"></slot>
+          <a-space v-if="showDefaultSearchActions">
+            <a-button
+              size="small"
+              type="primary"
+              @click="doSearch"
+              data-testid="qa-components-table-tableheader-button-搜索"
+              >搜索</a-button
+            >
+            <a-button
+              size="small"
+              @click="doResetSearch"
+              data-testid="qa-components-table-tableheader-button-重置"
+              >重置</a-button
+            >
+          </a-space>
+        </div>
       </template>
       <div v-if="showFilter" class="mango-table-header__filters">
         <slot name="search-content"></slot>
@@ -14,6 +34,24 @@
         <slot name="table-config"></slot>
       </div>
     </a-card>
+    <div
+      v-else
+      :class="[
+        'arco-card',
+        'arco-card-size-small',
+        'mango-table-header__card',
+        { 'arco-card-bordered': isBordered },
+      ]"
+    >
+      <div class="arco-card-header">
+        <div v-if="title" class="arco-card-header-title">{{ title }}</div>
+        <div v-if="showHeaderExtra" class="arco-card-header-extra">
+          <div class="mango-table-header__extra">
+            <slot name="header-extra"></slot>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -31,10 +69,20 @@
         type: Boolean,
         default: false,
       },
+      showSearchActions: {
+        type: Boolean,
+        default: true,
+      },
     },
     emits: ['search', 'reset-search'],
     setup(props, { emit, slots }) {
       const showFilter = computed(() => !!slots['search-content'])
+      const showDefaultSearchActions = computed(
+        () => showFilter.value && props.showSearchActions
+      )
+      const showHeaderExtra = computed(() => !!slots['header-extra'])
+      const showConfig = computed(() => !!slots['table-config'])
+      const hasBody = computed(() => showFilter.value || showConfig.value)
       const isBordered = computed(() => props.bordered)
 
       function doSearch() {
@@ -47,6 +95,9 @@
 
       return {
         showFilter,
+        showDefaultSearchActions,
+        showHeaderExtra,
+        hasBody,
         isBordered,
         doSearch,
         doResetSearch,
@@ -90,6 +141,14 @@
     min-width: 0;
   }
 
+  .mango-table-header__extra {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+  }
+
   :deep(.arco-card-extra .arco-space) {
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -112,11 +171,9 @@
   }
 
   .mango-table-header__filters {
-    --table-filter-label-width: 72px;
+    --table-filter-label-width: 70px;
     --table-filter-control-width: 160px;
-    --table-filter-item-width: calc(
-      var(--table-filter-label-width) + var(--table-filter-control-width) + 3px
-    );
+    --table-filter-item-width: 230px;
 
     :deep(.arco-form-layout-inline),
     :deep(.arco-form-inline) {
@@ -213,8 +270,16 @@
     :deep(.arco-form-inline .arco-picker),
     :deep(.arco-form-inline .arco-input-number),
     :deep(.arco-form-inline .arco-input-tag) {
+      flex: 0 0 var(--table-filter-control-width) !important;
       width: var(--table-filter-control-width) !important;
-      min-width: 0;
+      min-width: var(--table-filter-control-width) !important;
+      max-width: var(--table-filter-control-width) !important;
+    }
+
+    :deep(.arco-form-item-content > :first-child) {
+      flex: 0 0 var(--table-filter-control-width) !important;
+      width: var(--table-filter-control-width) !important;
+      max-width: var(--table-filter-control-width) !important;
     }
 
     :deep(.arco-form-layout-inline .arco-input),

@@ -1,12 +1,14 @@
 <template>
   <div class="mango-ai-assistant">
-    <a-tooltip content="Mango AI 助手" position="left">
+    <a-tooltip v-if="showTrigger" content="Mango AI 助手" position="left">
       <button class="mango-ai-assistant__trigger" type="button" @click="togglePanel">
         <icon-robot class="mango-ai-assistant__trigger-icon" />
         <span
           :class="[
             'mango-ai-assistant__trigger-status',
-            aiOnline ? 'mango-ai-assistant__trigger-status--online' : 'mango-ai-assistant__trigger-status--offline',
+            aiOnline
+              ? 'mango-ai-assistant__trigger-status--online'
+              : 'mango-ai-assistant__trigger-status--offline',
           ]"
         ></span>
       </button>
@@ -20,7 +22,12 @@
         </div>
         <a-space class="mango-ai-assistant__header-actions" size="mini">
           <a-tooltip content="新建对话">
-            <a-button size="mini" type="text" :disabled="!aiOnline || sending" @click="createSession">
+            <a-button
+              size="mini"
+              type="text"
+              :disabled="!aiOnline || sending"
+              @click="createSession"
+            >
               <template #icon><icon-plus /></template>
             </a-button>
           </a-tooltip>
@@ -29,7 +36,7 @@
               <template #icon><icon-refresh /></template>
             </a-button>
           </a-tooltip>
-          <a-button size="mini" type="text" @click="visible = false">
+          <a-button size="mini" type="text" @click="closeAiAssistant">
             <template #icon><icon-close /></template>
           </a-button>
         </a-space>
@@ -56,16 +63,18 @@
                 :field-names="{ value: 'value', label: 'label' }"
                 allow-clear
                 placeholder="选择MCP"
-                @change="loadStatus"
+                @change="loadStatus" data-testid="qa-components-ai-aiassistantwidget-select-选择mcp"
               />
-              <a-button size="mini" type="text" @click="historyVisible = true">切换</a-button>
+              <a-button size="mini" type="text" @click="historyVisible = true" data-testid="qa-components-ai-aiassistantwidget-button-切换">切换</a-button>
             </div>
           </div>
 
           <main ref="messageBody" class="mango-ai-assistant__messages mango-custom-scrollbar">
             <div v-if="messages.length === 0" class="mango-ai-assistant__empty">
               <icon-robot />
-              <span>{{ aiOnline ? '可以直接提问；选择可用 MCP 后还能查询测试资产。' : '请先配置可用的 AI。' }}</span>
+              <span>{{
+                aiOnline ? '可以直接提问；选择可用 MCP 后还能查询测试资产。' : '请先配置可用的 AI。'
+              }}</span>
             </div>
             <article
               v-for="item in messages"
@@ -73,7 +82,10 @@
               :class="['mango-ai-assistant__message', `mango-ai-assistant__message--${item.role}`]"
             >
               <div class="mango-ai-assistant__bubble">
-                <div class="mango-ai-assistant__markdown" v-html="renderMarkdown(item.content)"></div>
+                <div
+                  class="mango-ai-assistant__markdown"
+                  v-html="renderMarkdown(item.content)"
+                ></div>
                 <div v-if="item.need_confirm" class="mango-ai-assistant__confirm">
                   <div>
                     <strong>{{ item.tool_name }}</strong>
@@ -85,10 +97,15 @@
                     </a-collapse-item>
                   </a-collapse>
                   <a-space size="mini">
-                    <a-button size="small" type="primary" :loading="confirmLoading === item.id" @click="confirmTool(item)">
+                    <a-button
+                      size="small"
+                      type="primary"
+                      :loading="confirmLoading === item.id"
+                      @click="confirmTool(item)" data-testid="qa-components-ai-aiassistantwidget-button-确认执行"
+                    >
                       确认执行
                     </a-button>
-                    <a-button size="small" @click="item.need_confirm = false">取消</a-button>
+                    <a-button size="small" @click="item.need_confirm = false" data-testid="qa-components-ai-aiassistantwidget-button-取消">取消</a-button>
                   </a-space>
                 </div>
               </div>
@@ -107,7 +124,7 @@
               placeholder="输入问题，Enter 发送，Shift + Enter 换行"
               @compositionstart="isComposing = true"
               @compositionend="isComposing = false"
-              @keydown.enter.exact="handleEnter"
+              @keydown.enter.exact="handleEnter" data-testid="qa-components-ai-aiassistantwidget-textarea-输入问题-enter-发送-shift-enter-换行"
             />
             <a-button
               class="mango-ai-assistant__send-button"
@@ -132,9 +149,20 @@
             <span>{{ sessions.length }} 个会话</span>
           </div>
           <a-space size="mini">
-            <a-button size="mini" type="text" :disabled="!aiOnline || sending" @click="createSession">新建</a-button>
+            <a-button
+              size="mini"
+              type="text"
+              :disabled="!aiOnline || sending"
+              @click="createSession" data-testid="qa-components-ai-aiassistantwidget-button-新建"
+              >新建</a-button
+            >
             <a-tooltip content="清空当前会话">
-              <a-button size="mini" type="text" :disabled="!sessionId || sending" @click="clearSession">
+              <a-button
+                size="mini"
+                type="text"
+                :disabled="!sessionId || sending"
+                @click="clearSession"
+              >
                 <template #icon><icon-delete /></template>
               </a-button>
             </a-tooltip>
@@ -147,10 +175,13 @@
           <button
             v-for="item in sessions"
             :key="item.id"
-            :class="['mango-ai-assistant__session-item', { 'mango-ai-assistant__session-item--active': item.id === sessionId }]"
+            :class="[
+              'mango-ai-assistant__session-item',
+              { 'mango-ai-assistant__session-item--active': item.id === sessionId },
+            ]"
             type="button"
             :disabled="sending"
-            @click="switchSession(item.id); historyVisible = false"
+            @click="selectSession(item.id)"
           >
             <strong>{{ item.title || '新会话' }}</strong>
             <span>{{ item.current_page || '无页面上下文' }}</span>
@@ -164,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, ref } from 'vue'
+  import { computed, nextTick, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import {
@@ -177,9 +208,20 @@
     postAiAssistantSession,
     postAiAssistantToolConfirm,
   } from '@/api/ai'
+  import { useAiAssistantPanel } from '@/hooks/use-ai-assistant-panel'
+
+  const props = withDefaults(
+    defineProps<{
+      showTrigger?: boolean
+    }>(),
+    {
+      showTrigger: false,
+    }
+  )
 
   const route = useRoute()
-  const visible = ref(false)
+  const { visible, closeAiAssistant, toggleAiAssistant } = useAiAssistantPanel()
+  const showTrigger = computed(() => props.showTrigger)
   const statusLoading = ref(false)
   const sessionLoading = ref(false)
   const sending = ref(false)
@@ -205,30 +247,31 @@
   const mcpOptions = computed(() =>
     (status.value?.candidates || []).map((item: any) => ({
       value: item.server_id,
-      label: `${item.is_builtin ? '内置 / ' : ''}${item.server_name || `MCP #${item.server_id}`}${item.is_connected ? '' : '（未连接）'}`,
+      label: `${item.is_builtin ? '内置 / ' : ''}${item.server_name || `MCP #${item.server_id}`}${
+        item.is_connected ? '' : '（未连接）'
+      }`,
     }))
   )
   const activeSessionTitle = computed(() => {
     const session = sessions.value.find((item) => item.id === sessionId.value)
-    return session?.title || session?.current_page || String(route.meta?.title || route.name || '当前页面')
+    return (
+      session?.title ||
+      session?.current_page ||
+      String(route.meta?.title || route.name || '当前页面')
+    )
   })
 
   async function togglePanel() {
-    visible.value = !visible.value
+    toggleAiAssistant()
     historyVisible.value = false
-    if (visible.value) {
-      await loadStatus()
-      if (aiOnline.value) {
-        await loadSessions()
-        await loadSession(sessionId.value || sessions.value[0]?.id)
-      }
-    }
   }
 
   async function loadStatus() {
     statusLoading.value = true
     try {
-      const res = await getAiAssistantStatus(selectedMcpServerId.value ? { mcp_server_id: selectedMcpServerId.value } : {})
+      const res = await getAiAssistantStatus(
+        selectedMcpServerId.value ? { mcp_server_id: selectedMcpServerId.value } : {}
+      )
       status.value = res.data || {}
       aiOnline.value = !!status.value.ai_available
       mcpOnline.value = !!status.value.is_connected
@@ -278,6 +321,11 @@
   async function switchSession(id: number) {
     if (sending.value || id === sessionId.value) return
     await loadSession(id)
+  }
+
+  async function selectSession(id: number) {
+    await switchSession(id)
+    historyVisible.value = false
   }
 
   function pageContext() {
@@ -391,8 +439,14 @@
     }
   }
 
-  onMounted(() => {
-    loadStatus()
+  watch(visible, async (isVisible) => {
+    if (!isVisible) return
+    historyVisible.value = false
+    await loadStatus()
+    if (aiOnline.value) {
+      await loadSessions()
+      await loadSession(sessionId.value || sessions.value[0]?.id)
+    }
   })
 
   function scrollToBottom() {

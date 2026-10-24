@@ -35,16 +35,6 @@
 //     },
 //   })
 // }
-// export function postUiPageCopy(pageId: number | string) {
-//   return post({
-//     url: '/ui/page/copy',
-//     data: () => {
-//       return {
-//         page_id: pageId,
-//       }
-//     },
-//   })
-// }
 // export function getUiElement(pageId: any) {
 //   return get({
 //     url: '/ui/element',
@@ -109,15 +99,6 @@
 //       return {
 //         page_type: pageType,
 //       }
-//     },
-//   })
-// }
-//
-// export function putUiUiElementTest(data: object) {
-//   return post({
-//     url: '/ui/element/test',
-//     data: () => {
-//       return data
 //     },
 //   })
 // }

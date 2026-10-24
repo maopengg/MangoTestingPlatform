@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0012_alter_pagesteps_status_alter_uicase_level_and_more'),
     ]
@@ -28,6 +27,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='uipublic',
             name='test_env',
-            field=models.SmallIntegerField(blank=True, choices=[(0, '测试环境'), (1, '预发环境'), (2, '生产环境'), (3, '开发环境'), (4, '验收环境'), (5, '仿真环境')], default=None, null=True, verbose_name='测试环境'),
+            field=models.SmallIntegerField(blank=True,
+                                           choices=[(0, '测试环境'), (1, '预发环境'), (2, '生产环境'), (3, '开发环境'),
+                                                    (4, '验收环境'), (5, '仿真环境')], default=None, null=True,
+                                           verbose_name='测试环境'),
         ),
     ]

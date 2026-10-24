@@ -7,345 +7,469 @@
           <div class="mango-detail-subtitle"> 维护请求配置、后置处理、断言和最近一次响应结果 </div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase">
+          <a-button v-permission="'api.info:execute'"
+            size="small"
+            status="success"
+            :loading="caseRunning"
+            @click="onRunCase"
+            data-testid="qa-views-apitest-info-details-button-执行"
+          >
             执行
           </a-button>
-          <a-button size="small" @click="doResetSearch">返回</a-button>
+          <a-button
+            v-if="canCopyApiInfoCurl(data.api_info)"
+            size="small"
+            :loading="copyingId === String(data.api_info.id)"
+            @click="
+              copyApiInfoCurl(
+                { ...data.api_info, headers: data.headers },
+                userStore.selected_environment
+              )
+            "
+            >复制 cURL</a-button
+          >
+          <a-button
+            size="small"
+            @click="versionPanelRef?.openResultHistoryDrawer()"
+            data-testid="qa-views-apitest-info-details-button-历史结果"
+          >
+            历史结果
+          </a-button>
+          <VariableReferencePanel />
+          <a-button
+            class="mango-back-button"
+            size="small"
+            @click="doResetSearch"
+            data-testid="qa-views-apitest-info-details-button-返回"
+            >返回</a-button
+          >
         </a-space>
       </div>
     </template>
     <template #default>
-      <div class="api-detail-workbench mango-detail-workbench">
-        <aside class="api-detail-nav">
-          <div class="api-detail-nav-head">
-            <div class="api-detail-nav-title">配置项</div>
-            <div class="api-detail-nav-subtitle">按执行链路维护接口配置</div>
-          </div>
-          <button
-            v-for="item in configNavItems"
-            :key="item.key"
-            :class="[
-              'api-detail-nav-item',
-              {
-                'api-detail-nav-item-active': data.pageType === item.key,
-                'api-detail-nav-item-disabled': item.disabled,
-              },
-            ]"
-            :disabled="item.disabled"
-            type="button"
-            @click="switchType(item.key)"
-          >
-            <span>{{ item.title }}</span>
-            <small>{{ item.description }}</small>
-          </button>
-        </aside>
-
-        <section class="api-detail-panel">
-          <div class="api-request-bar">
-            <a-select
-              v-model="data.api_info.method"
-              class="api-request-method"
-              :options="methodOptions"
-              placeholder="方法"
-              @change="saveRequestMeta"
-            />
-            <a-input
-              v-model="data.api_info.url"
-              class="api-request-url"
-              allow-clear
-              placeholder="请输入接口路径，例如 /api/user/list"
-              @blur="saveRequestMeta"
-              @press-enter="saveRequestMeta"
-            />
-            <a-button
-              class="api-request-save"
-              type="primary"
-              :loading="requestMetaSaving"
-              @click="saveRequestMeta"
+      <div class="mango-workbench-scroll-x api-detail-workbench-scroll">
+        <div class="api-detail-workbench mango-detail-workbench">
+          <ApiInfoVersionPanel
+            ref="versionPanelRef"
+            :api-info-id="apiInfoId"
+            :current-payload="currentApiInfoPayload"
+            @select="handleApiVersionSelect"
+          />
+          <aside class="api-detail-nav">
+            <div class="api-detail-nav-head">
+              <div class="api-detail-nav-title">配置项</div>
+              <div class="api-detail-nav-subtitle">按执行链路维护接口配置</div>
+            </div>
+            <button
+              v-for="item in configNavItems"
+              :key="item.key"
+              :class="[
+                'api-detail-nav-item',
+                {
+                  'api-detail-nav-item-active': data.pageType === item.key,
+                  'api-detail-nav-item-disabled': item.disabled,
+                },
+              ]"
+              :disabled="item.disabled"
+              type="button"
+              @click="switchType(item.key)"
             >
-              保存
-            </a-button>
-          </div>
-          <div class="api-detail-panel-head">
-            <div>
-              <div class="api-detail-panel-title">
-                <span>{{ currentNavItem.title }}</span>
-                <a-switch
-                  v-if="data.pageType === '10'"
-                  :beforeChange="saveSchemaStatus"
-                  :default-checked="data.api_info.is_schema === 1"
-                  size="small"
-                />
+              <span>{{ item.title }}</span>
+              <small>{{ item.description }}</small>
+            </button>
+          </aside>
+
+          <section
+            class="api-detail-panel"
+            :class="{ 'api-detail-panel-readonly': apiVersionReadOnly }"
+          >
+            <div class="api-request-bar">
+              <a-select
+                v-model="data.api_info.method"
+                class="api-request-method"
+                :options="methodOptions"
+                :disabled="apiVersionReadOnly"
+                placeholder="方法"
+                data-testid="qa-views-apitest-info-details-select-方法"
+              />
+              <a-input
+                v-model="data.api_info.url"
+                class="api-request-url"
+                allow-clear
+                :disabled="apiVersionReadOnly"
+                placeholder="请输入接口路径，例如 /api/user/list"
+                @press-enter="saveRequestMeta"
+                data-testid="qa-views-apitest-info-details-input-请输入接口路径-例如-api-user-list"
+              />
+              <a-button v-permission="['api.info:create', 'api.info:edit']"
+                class="api-request-save"
+                type="primary"
+                :loading="requestMetaSaving"
+                :disabled="apiVersionReadOnly"
+                @click="saveRequestMeta"
+                data-testid="qa-views-apitest-info-details-button-保存"
+              >
+                保存
+              </a-button>
+            </div>
+            <div
+              class="api-version-context"
+              :class="{ readonly: apiVersionReadOnly }"
+              role="status"
+              aria-live="polite"
+            >
+              <div>
+                <strong>{{ executionVersionTitle }}</strong>
+                <span>{{ executionVersionDescription }}</span>
               </div>
-              <div class="api-detail-panel-subtitle">{{ currentNavItem.description }}</div>
+              <a-tag size="small" :color="apiVersionReadOnly ? 'gray' : 'orange'">
+                {{ apiVersionReadOnly ? '固定版本' : '编辑态' }}
+              </a-tag>
             </div>
-            <a-space v-if="data.addButton">
-              <a-button size="small" type="primary" @click="addData">增加</a-button>
-            </a-space>
-          </div>
-          <div class="api-detail-panel-body">
-            <div v-if="data.pageType === '0'" class="config-pane">
-              <a-space direction="vertical" fill>
-                <TipMessage
-                  :message="
-                    data.isDefaultHeadersPreview
-                      ? '接口请求头留空时，执行会使用下方请求头管理中已开启的 Headers'
-                      : '请必须输入json格式的请求头，留空则默认使用请求头管理中开启的'
-                  "
-                />
-                <a-textarea
-                  v-model="data.headers"
-                  :auto-size="data.textareaAutoSize"
-                  allow-clear
-                  placeholder="请输入请求头，字符串形式"
-                  @blur="saveHeaders"
-                />
-                <div v-if="data.isDefaultHeadersPreview" class="default-headers-preview">
-                  <div class="default-headers-preview-title">请求头管理中已开启的 Headers</div>
-                  <pre>{{ data.defaultHeadersText }}</pre>
+            <div class="api-detail-panel-head">
+              <div>
+                <div class="api-detail-panel-title">
+                  <span>{{ currentNavItem.title }}</span>
+                  <a-tag v-if="apiVersionReadOnly" size="small" color="gray">只读快照</a-tag>
                 </div>
-              </a-space>
-            </div>
-
-            <div v-else-if="data.pageType === '1'" class="config-pane">
-              <a-space direction="vertical" fill>
-                <TipMessage message='支持 JSON 对象/数组，也支持 query string，例如：case_id=21' />
-                <a-textarea
-                  v-model="data.api_info.params"
-                  :auto-size="data.textareaAutoSize"
-                  allow-clear
-                  placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
-                  @blur="upDate('params', data.api_info.params)"
-                />
-              </a-space>
-            </div>
-
-            <div v-else-if="data.pageType === '2'" class="config-pane">
-              <ApiRequestBodyEditor
-                :protocol-type="data.api_info.protocol_type"
-                :body-type="data.api_info.body_type"
-                :body-config="data.api_info.body_config"
-                :sse-config="data.api_info.sse_config"
-                :project-product-id="projectProductId"
-                :saving="requestBodySaving"
-                @save="saveRequestBody"
-              />
-            </div>
-
-            <div v-else-if="data.pageType === '5'" class="config-pane">
-              <KeyValueList
-                :data-list="data.api_info.posterior_json_path"
-                :field-config="[
-                  { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
-                  { field: 'value', label: 'jsonpath语法', placeholder: '请输入jsonpath语法' },
-                ]"
-                :on-delete-item="
-                  (index) =>
-                    removeFrontSql(data.api_info.posterior_json_path, index, 'posterior_json_path')
-                "
-                :on-save="() => upDate('posterior_json_path', data.api_info.posterior_json_path)"
-              />
-            </div>
-
-            <div v-else-if="data.pageType === '6'" class="config-pane">
-              <KeyValueList
-                :data-list="data.api_info.posterior_re"
-                :field-config="[
-                  { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
-                  { field: 'value', label: '正则表达式', placeholder: '请输入正则表达式' },
-                ]"
-                :on-delete-item="
-                  (index) => removeFrontSql(data.api_info.posterior_re, index, 'posterior_re')
-                "
-                :on-save="() => upDate('posterior_re', data.api_info.posterior_re)"
-              />
-            </div>
-
-            <div v-else-if="data.pageType === '7'" class="config-pane">
-              <CodeEditor
-                v-model="data.api_info.posterior_func"
-                :line-height="360"
-                :code-style="{ width: '100%' }"
-                placeholder="根据帮助文档，输入自定义后置函数"
-                @focus="recordPosteriorFuncSnapshot"
-                @blur="savePosteriorFuncIfChanged"
-              />
-            </div>
-
-            <div v-else-if="data.pageType === '9'" class="config-pane">
-              <a-space>
-                <a-input
-                  v-model="data.api_info.posterior_file"
-                  placeholder="请输入保存key，后续可以通过key取到文件路径"
-                  class="posterior-file-input"
-                  @blur="upDate('posterior_file', data.api_info.posterior_file)"
-                />
-              </a-space>
-            </div>
-
-            <div v-else-if="data.pageType === '10'" class="config-pane">
-              <a-space direction="vertical" fill>
-                <TipMessage message="请参照帮助文档设置结构化断言配置" />
+                <div class="api-detail-panel-subtitle">{{ currentNavItem.description }}</div>
+              </div>
+              <a-space v-if="data.addButton && !apiVersionReadOnly">
                 <a-button
-                  size="mini"
+                  size="small"
                   type="primary"
-                  :loading="schemaLoading"
-                  @click="setSchema(data.api_info.id)"
-                  >自动生成</a-button
+                  @click="addData"
+                  data-testid="qa-views-apitest-info-details-button-增加"
+                  >增加</a-button
                 >
-                <a-textarea
-                  v-model="data.ass_schema"
-                  :auto-size="data.textareaAutoSize"
-                  allow-clear
-                  placeholder="根据帮助文档，输入结构化断言"
-                  @blur="upDate('ass_schema', data.ass_schema)"
-                />
               </a-space>
             </div>
-          </div>
-        </section>
+            <div class="api-detail-panel-body">
+              <div v-if="data.pageType === '0'" class="config-pane">
+                <a-space direction="vertical" fill>
+                  <TipMessage
+                    message="请求头必须为 JSON 格式。留空时默认使用请求头管理中已开启的请求头；获取 Token 等授权接口请填写 {}，避免公共 Authorization 引用待生成 Token 造成循环引用。"
+                  />
+                  <a-textarea
+                    v-model="data.headers"
+                    :auto-size="data.textareaAutoSize"
+                    allow-clear
+                    :disabled="apiVersionReadOnly"
+                    placeholder='请输入 JSON 格式的请求头，例如：{"Content-Type": "application/json"}'
+                    @blur="saveHeaders"
+                    data-testid="qa-views-apitest-info-details-textarea-请输入-json-格式的请求头-例如-content-type-application-json"
+                  />
+                  <div v-if="data.isDefaultHeadersPreview" class="default-headers-preview">
+                    <div class="default-headers-preview-title">请求头管理中已开启的 Headers</div>
+                    <pre>{{ data.defaultHeadersText }}</pre>
+                  </div>
+                </a-space>
+              </div>
 
-        <aside class="api-response-panel">
-          <div class="api-response-head">
-            <div>
-              <div class="api-response-title">调用结果</div>
-              <div class="api-response-subtitle">执行后固定展示最近一次响应</div>
-            </div>
-            <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase">
-              执行
-            </a-button>
-          </div>
-          <div class="api-response-summary">
-            <div>
-              <span>状态码</span>
-              <strong>{{ data.api_info.result_data?.code || '-' }}</strong>
-            </div>
-            <div>
-              <span>响应时间</span>
-              <strong>{{ responseTimeText }}</strong>
-            </div>
-            <div>
-              <span>执行状态</span>
-              <a-tag size="small" :color="responseStatusColor">{{ responseStatusText }}</a-tag>
-            </div>
-          </div>
-          <div v-if="data.api_info.result_data?.error_msg" class="api-response-error">
-            {{ data.api_info.result_data.error_msg }}
-          </div>
-          <a-tabs default-active-key="response" class="api-response-tabs">
-            <a-tab-pane key="response" title="响应">
-              <div class="response-section">
-                <div
-                  v-if="
-                    data.api_info.result_data?.headers &&
-                    Object.keys(data.api_info.result_data.headers).length > 0
-                  "
-                  class="response-item"
-                >
-                  <span class="response-label">响应头</span>
-                  <div class="response-value">
-                    <JsonDisplay
-                      :data="data.api_info.result_data.headers"
-                      :default-expanded="false"
-                    />
-                  </div>
-                </div>
-                <div class="response-item">
-                  <span class="response-label">响应体</span>
-                  <div class="response-value">
-                    <JsonDisplay :data="responseBodyData" />
-                  </div>
-                </div>
+              <div v-else-if="data.pageType === '1'" class="config-pane">
+                <a-space direction="vertical" fill>
+                  <TipMessage
+                    message="支持 JSON 对象/数组，也支持 query string，例如：case_id=21"
+                  />
+                  <a-textarea
+                    v-model="data.api_info.params"
+                    :auto-size="data.textareaAutoSize"
+                    allow-clear
+                    :disabled="apiVersionReadOnly"
+                    placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
+                    @blur="upDate('params', data.api_info.params)"
+                    data-testid="qa-views-apitest-info-details-textarea-请输入查询参数-例如-key-value-或-case_id-21"
+                  />
+                </a-space>
               </div>
-            </a-tab-pane>
-            <a-tab-pane key="request" title="请求">
-              <div class="response-section">
-                <div v-if="data.api_info.result_data?.url" class="response-item">
-                  <span class="response-label">URL</span>
-                  <span class="response-value">{{ data.api_info.result_data.url }}</span>
-                </div>
-                <div
-                  v-if="
-                    data.api_info.result_data?.request_headers &&
-                    Object.keys(data.api_info.result_data.request_headers).length > 0
-                  "
-                  class="response-item"
-                >
-                  <span class="response-label">请求头</span>
-                  <div class="response-value">
-                    <JsonDisplay :data="data.api_info.result_data.request_headers" />
-                  </div>
-                </div>
-                <div
-                  v-if="
-                    data.api_info.result_data?.request_params &&
-                    Object.keys(data.api_info.result_data.request_params).length > 0
-                  "
-                  class="response-item"
-                >
-                  <span class="response-label">查询参数</span>
-                  <div class="response-value">
-                    <JsonDisplay :data="data.api_info.result_data.request_params" />
-                  </div>
-                </div>
-                <div v-if="hasValue(data.api_info.result_data?.request_body)" class="response-item">
-                  <span class="response-label">请求体</span>
-                  <div class="response-value">
-                    <JsonDisplay :data="data.api_info.result_data.request_body" />
-                  </div>
-                </div>
-                <div class="response-item">
-                  <span class="response-label">请求类型</span>
-                  <span class="response-value">
-                    {{ data.api_info.result_data?.request_protocol_type || '-' }} /
-                    {{ data.api_info.result_data?.request_body_type || '-' }}
-                  </span>
-                </div>
+
+              <div v-else-if="data.pageType === '2'" class="config-pane">
+                <ApiRequestBodyEditor
+                  :protocol-type="data.api_info.protocol_type"
+                  :body-type="data.api_info.body_type"
+                  :body-config="data.api_info.body_config"
+                  :sse-config="data.api_info.sse_config"
+                  :project-product-id="projectProductId"
+                  :saving="requestBodySaving"
+                  :readonly="apiVersionReadOnly"
+                  @save="saveRequestBody"
+                />
               </div>
-            </a-tab-pane>
-            <a-tab-pane v-if="hasValue(data.api_info.result_data?.sse_events)" key="sse" title="SSE">
-              <JsonDisplay :data="data.api_info.result_data?.sse_events" />
-            </a-tab-pane>
-            <a-tab-pane v-if="hasValue(data.api_info.result_data?.cache_all)" key="cache" title="缓存">
-              <JsonDisplay :data="data.api_info.result_data?.cache_all" />
-            </a-tab-pane>
-          </a-tabs>
-        </aside>
+
+              <div
+                v-else-if="data.pageType === '5'"
+                class="config-pane mango-horizontal-scroll-region mango-horizontal-scroll-region--compact"
+              >
+                <KeyValueList
+                  :data-list="data.api_info.posterior_json_path"
+                  :field-config="[
+                    { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
+                    { field: 'value', label: 'jsonpath语法', placeholder: '请输入jsonpath语法' },
+                  ]"
+                  :on-delete-item="
+                    (index) =>
+                      removeFrontSql(
+                        data.api_info.posterior_json_path,
+                        index,
+                        'posterior_json_path'
+                      )
+                  "
+                  :on-save="() => upDate('posterior_json_path', data.api_info.posterior_json_path)"
+                />
+              </div>
+
+              <div
+                v-else-if="data.pageType === '6'"
+                class="config-pane mango-horizontal-scroll-region mango-horizontal-scroll-region--compact"
+              >
+                <KeyValueList
+                  :data-list="data.api_info.posterior_re"
+                  :field-config="[
+                    { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
+                    { field: 'value', label: '正则表达式', placeholder: '请输入正则表达式' },
+                  ]"
+                  :on-delete-item="
+                    (index) => removeFrontSql(data.api_info.posterior_re, index, 'posterior_re')
+                  "
+                  :on-save="() => upDate('posterior_re', data.api_info.posterior_re)"
+                />
+              </div>
+
+              <div v-else-if="data.pageType === '7'" class="config-pane">
+                <CodeEditor
+                  v-model="data.api_info.posterior_func"
+                  :line-height="360"
+                  :code-style="{ width: '100%' }"
+                  placeholder="根据帮助文档，输入自定义后置函数"
+                  @focus="recordPosteriorFuncSnapshot"
+                  @blur="savePosteriorFuncIfChanged"
+                />
+              </div>
+            </div>
+          </section>
+
+          <aside class="api-response-panel">
+            <div class="api-response-head">
+              <div>
+                <div class="api-response-title">调用结果</div>
+                <div class="api-response-subtitle">执行后固定展示最近一次响应</div>
+              </div>
+              <a-spin v-if="resultLoading" :loading="true" />
+            </div>
+            <div class="api-response-summary">
+              <div>
+                <span>状态码</span>
+                <strong>{{ data.api_info.result_data?.code || '-' }}</strong>
+              </div>
+              <div>
+                <span>响应时间</span>
+                <strong>{{ responseTimeText }}</strong>
+              </div>
+              <div>
+                <span>执行状态</span>
+                <a-tag size="small" :color="responseStatusColor">{{ responseStatusText }}</a-tag>
+              </div>
+            </div>
+            <div v-if="data.api_info.result_data?.error_msg" class="api-response-error">
+              {{ data.api_info.result_data.error_msg }}
+            </div>
+            <a-tabs default-active-key="response" class="api-response-tabs">
+              <a-tab-pane
+                key="response"
+                title="响应"
+                data-testid="qa-views-apitest-info-details-tab-pane-响应"
+              >
+                <div class="response-section">
+                  <div
+                    v-if="
+                      data.api_info.result_data?.headers &&
+                      Object.keys(data.api_info.result_data.headers).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">响应头</span>
+                    <div class="response-value">
+                      <JsonDisplay
+                        :data="data.api_info.result_data.headers"
+                        :default-expanded="false"
+                      />
+                    </div>
+                  </div>
+                  <div class="response-item">
+                    <span class="response-label">响应体</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="responseBodyData" />
+                    </div>
+                  </div>
+                </div>
+              </a-tab-pane>
+              <a-tab-pane
+                key="request"
+                title="请求"
+                data-testid="qa-views-apitest-info-details-tab-pane-请求"
+              >
+                <div class="response-section">
+                  <div v-if="data.api_info.result_data?.url" class="response-item">
+                    <span class="response-label">URL</span>
+                    <span class="response-value">{{ data.api_info.result_data.url }}</span>
+                  </div>
+                  <div
+                    v-if="
+                      data.api_info.result_data?.request_headers &&
+                      Object.keys(data.api_info.result_data.request_headers).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">请求头</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_headers" />
+                    </div>
+                  </div>
+                  <div
+                    v-if="
+                      data.api_info.result_data?.request_params &&
+                      Object.keys(data.api_info.result_data.request_params).length > 0
+                    "
+                    class="response-item"
+                  >
+                    <span class="response-label">查询参数</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_params" />
+                    </div>
+                  </div>
+                  <div
+                    v-if="hasValue(data.api_info.result_data?.request_body)"
+                    class="response-item"
+                  >
+                    <span class="response-label">请求体</span>
+                    <div class="response-value">
+                      <JsonDisplay :data="data.api_info.result_data.request_body" />
+                    </div>
+                  </div>
+                  <div class="response-item">
+                    <span class="response-label">请求类型</span>
+                    <span class="response-value">
+                      {{ data.api_info.result_data?.request_protocol_type || '-' }} /
+                      {{ data.api_info.result_data?.request_body_type || '-' }}
+                    </span>
+                  </div>
+                </div>
+              </a-tab-pane>
+              <a-tab-pane
+                v-if="hasValue(data.api_info.result_data?.sse_events)"
+                key="sse"
+                title="SSE"
+                data-testid="qa-views-apitest-info-details-tab-pane-sse"
+              >
+                <JsonDisplay :data="data.api_info.result_data?.sse_events" />
+              </a-tab-pane>
+              <a-tab-pane
+                v-if="hasValue(data.api_info.result_data?.ws_messages)"
+                key="websocket"
+                title="WebSocket"
+                data-testid="qa-views-apitest-info-details-tab-pane-websocket"
+              >
+                <JsonDisplay
+                  :data="{
+                    stop_reason: data.api_info.result_data?.ws_stop_reason,
+                    close_code: data.api_info.result_data?.ws_close_code,
+                    close_reason: data.api_info.result_data?.ws_close_reason,
+                    messages: data.api_info.result_data?.ws_messages,
+                  }"
+                />
+              </a-tab-pane>
+              <a-tab-pane
+                v-if="data.api_info.result_data?.response_mode === 'grpc'"
+                key="grpc"
+                title="gRPC"
+                data-testid="qa-views-apitest-info-details-tab-pane-grpc"
+              >
+                <JsonDisplay
+                  :data="{
+                    full_method: data.api_info.result_data?.grpc_full_method,
+                    status_code: data.api_info.result_data?.grpc_status_code,
+                    status_details: data.api_info.result_data?.grpc_status_details,
+                    initial_metadata: data.api_info.result_data?.grpc_initial_metadata,
+                    trailing_metadata: data.api_info.result_data?.grpc_trailing_metadata,
+                    request_message: data.api_info.result_data?.request_body,
+                    response_message: data.api_info.result_data?.json,
+                  }"
+                />
+              </a-tab-pane>
+              <a-tab-pane
+                v-if="hasValue(data.api_info.result_data?.cache_all)"
+                key="cache"
+                title="缓存"
+                data-testid="qa-views-apitest-info-details-tab-pane-缓存"
+              >
+                <JsonDisplay :data="data.api_info.result_data?.cache_all" />
+              </a-tab-pane>
+            </a-tabs>
+          </aside>
+        </div>
       </div>
     </template>
   </TableBody>
+  <ApiInfoRuntimeParametersModal ref="runtimeParametersRef" />
 </template>
 <script lang="ts" setup>
+  import ApiInfoRuntimeParametersModal from '@/components/business/ApiInfoRuntimeParametersModal.vue'
   import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { useRoute } from 'vue-router'
   import { usePageData } from '@/store/page-data'
-  import { getApiCaseInfoRun, getApiInfo, putApiInfo, putSetSchema } from '@/api/apitest/info'
+  import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import ApiInfoVersionPanel from './components/ApiInfoVersionPanel.vue'
   import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
+  import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
   import { getApiHeaders } from '@/api/apitest/headers'
+  import { canCopyApiInfoCurl, useApiInfoCurl } from '../useApiInfoCurl'
+  import {
+    getExecutionResultDetailResolved,
+    getExecutionResultLatestResolved,
+  } from '@/api/system/execution_result'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
   const caseRunning = ref(false)
+  const runtimeParametersRef = ref<InstanceType<typeof ApiInfoRuntimeParametersModal> | null>(null)
+  const { copyingId, copyApiInfoCurl } = useApiInfoCurl()
+  const versionPanelRef = ref<InstanceType<typeof ApiInfoVersionPanel> | null>(null)
+  const selectedApiVersion = ref<{
+    kind: 'current' | 'revision'
+    id: number
+    label: string
+  } | null>(null)
+  const apiVersionReadOnly = ref(false)
   const requestMetaSaving = ref(false)
   const requestBodySaving = ref(false)
-  const schemaLoading = ref(false)
+  const resultLoading = ref(false)
   const requestMetaSnapshot = ref({ method: null as any, url: '' })
   const posteriorFuncSnapshot = ref('')
   const configNavItems = [
     { key: '0', title: '请求头', description: '维护接口请求 Headers' },
     { key: '1', title: '参数', description: '维护查询参数' },
     { key: '2', title: '请求体', description: '维护 Body 配置' },
-    { key: '5', title: '后置jsonpath提取', description: '提取响应 JSON 到缓存' },
-    { key: '6', title: '后置正则提取', description: '通过正则提取响应内容' },
-    { key: '7', title: '后置函数', description: '编写自定义后置函数' },
-    { key: '9', title: '文件保存', description: '保存响应文件路径', disabled: true },
-    { key: '10', title: '结构化断言配置', description: '维护结构化断言规则' },
+    {
+      key: '5',
+      title: '后置 JSONPath 提取',
+      description: '从响应 JSON 提取值写入缓存，未匹配时执行失败',
+    },
+    {
+      key: '6',
+      title: '后置正则提取',
+      description: '从响应文本提取首个匹配值写入缓存，未匹配时执行失败',
+    },
+    {
+      key: '7',
+      title: '后置自定义函数',
+      description: '请求完成后执行自定义函数，可处理响应并操作运行缓存',
+    },
   ]
   const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
     # self 是当前执行上下文，常用能力：
@@ -359,7 +483,7 @@
     headers = response.headers or {}  # 响应头
     json_body = response.json  # 解析后的 JSON，可能是 dict/list/str/number/bool/null
     text = response.text  # 原始响应文本，非 JSON 或文本断言可使用
-    response_mode = response.response_mode  # 响应模式：http/sse
+    response_mode = response.response_mode  # 响应模式：http/sse/grpc/websocket
     sse_events = response.sse_events  # SSE 事件列表，仅 SSE 场景有值
     sse_stop_reason = response.sse_stop_reason  # SSE 停止原因
     request_body = response.request_body  # 实际发送的请求体
@@ -407,8 +531,6 @@
     posterior_json_path: [],
     posterior_re: [],
     posterior_func: '',
-    ass_schema: null,
-    is_schema: 0,
     result_data: null,
   })
   if (!pageData.record) {
@@ -418,10 +540,12 @@
     return {
       ...defaultApiInfoRecord(),
       ...(record || {}),
-      posterior_json_path: Array.isArray(record?.posterior_json_path)
-        ? record.posterior_json_path
+      posterior_json_path: Array.isArray(record?.posterior_json_path || record?.posterior_response)
+        ? record.posterior_json_path || record.posterior_response
         : [],
-      posterior_re: Array.isArray(record?.posterior_re) ? record.posterior_re : [],
+      posterior_re: Array.isArray(record?.posterior_re || record?.posterior_response_text)
+        ? record.posterior_re || record.posterior_response_text
+        : [],
     }
   }
   const initialApiInfoRecord = normalizeApiInfoRecord(pageData.record)
@@ -433,9 +557,9 @@
     headers: formatJson(initialApiInfoRecord.headers),
     defaultHeadersText: '',
     isDefaultHeadersPreview: false,
-    ass_schema: formatJson(initialApiInfoRecord.ass_schema),
     textareaAutoSize: { minRows: 16, maxRows: 22 },
   })
+  const currentApiInfoPayload = ref<any>(normalizeApiInfoRecord(initialApiInfoRecord))
   const currentNavItem = computed(
     () =>
       configNavItems.find((item) => item.key === data.pageType) || {
@@ -447,7 +571,7 @@
   const apiDetailTitle = computed(() => {
     const id = data.api_info?.id || apiInfoId.value || '-'
     const name = data.api_info?.name || pageData.record?.name || '-'
-    return `接口配置工作台 / ${id} / ${name}`
+    return `服务调用工作台 / ${id} / ${name}`
   })
   const projectProductId = computed(() => {
     const projectProduct = data.api_info?.project_product
@@ -493,6 +617,78 @@
     }
     return result.text
   })
+  const executionVersionTitle = computed(() => {
+    if (selectedApiVersion.value?.kind === 'revision') {
+      return `当前执行：${selectedApiVersion.value.label}（Revision #${selectedApiVersion.value.id}）`
+    }
+    return '当前执行：编辑态配置'
+  })
+  const executionVersionDescription = computed(() => {
+    if (selectedApiVersion.value?.kind === 'revision') {
+      return '本次执行使用该只读快照，不会读取编辑态的最新修改。'
+    }
+    return '保存只更新编辑态；生成修订并发布后，才会形成新的正式版本。'
+  })
+
+  function handleApiVersionSelect(selection: {
+    kind: 'current' | 'revision'
+    id: number
+    label: string
+    payload: any
+  }) {
+    selectedApiVersion.value = {
+      kind: selection.kind,
+      id: selection.id,
+      label: selection.label,
+    }
+    apiVersionReadOnly.value = selection.kind !== 'current'
+    const record = normalizeApiInfoRecord({
+      ...selection.payload,
+      id: apiInfoId.value,
+      result_data: data.api_info?.result_data || null,
+    })
+    data.api_info = record
+    data.headers = formatJson(record.headers)
+    data.isDefaultHeadersPreview = false
+    syncRequestMetaSnapshot()
+    switchPageType()
+  }
+
+  let persistApiInfoQueue: Promise<unknown> = Promise.resolve()
+
+  function showEditingSavedMessage() {
+    Message.success('已保存到编辑态，发布版本未变更')
+  }
+
+  function persistApiInfo(payload: Record<string, unknown>) {
+    if (apiVersionReadOnly.value) {
+      Message.warning('当前正在查看只读快照，请先在版本栏迁出到编辑态后再修改')
+      return Promise.resolve(null)
+    }
+    const request = persistApiInfoQueue
+      .catch(() => undefined)
+      .then(async () => {
+        const response = await putApiInfo({ id: apiInfoId.value, ...payload })
+        if (response?.data) {
+          const record = normalizeApiInfoRecord({
+            ...response.data,
+            result_data: data.api_info?.result_data || null,
+          })
+          currentApiInfoPayload.value = record
+          data.api_info = record
+          if (Object.prototype.hasOwnProperty.call(payload, 'headers')) {
+            data.headers = formatJson(record.headers)
+            data.isDefaultHeadersPreview = false
+          }
+        }
+        return response
+      })
+    persistApiInfoQueue = request.then(
+      () => undefined,
+      () => undefined
+    )
+    return request
+  }
 
   const hasValue = (value: unknown) => {
     if (value === null || value === undefined || value === '') return false
@@ -534,6 +730,10 @@
   }
 
   function addData() {
+    if (apiVersionReadOnly.value) {
+      Message.warning('当前正在查看只读快照，请先在版本栏迁出到编辑态后再修改')
+      return
+    }
     if (data.pageType === '5') {
       data.api_info.posterior_json_path.push({ key: '', value: '' })
     } else if (data.pageType === '6') {
@@ -643,8 +843,12 @@
       Message.error('请输入接口路径')
       return false
     }
-    if (value.toLowerCase().startsWith('http')) {
-      Message.error('只允许输入 URL 的路径部分，协议和域名从测试环境中读取')
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value) || value.startsWith('//')) {
+      Message.error('只允许输入 URL 的路径部分，协议、域名和端口从测试配置-测试对象中读取')
+      return false
+    }
+    if (!value.startsWith('/')) {
+      Message.error('URL 必须以 / 开头，只保存路径部分')
       return false
     }
     return true
@@ -663,15 +867,15 @@
     }
     if (!validateRequestPath(data.api_info.url)) return
     requestMetaSaving.value = true
+    await nextTick()
     try {
-      const res = await putApiInfo({
-        id: apiInfoId.value,
+      const res = await persistApiInfo({
         method: data.api_info.method,
         url: data.api_info.url.trim(),
       })
-      Message.success(res.msg)
+      if (!res) return
+      showEditingSavedMessage()
       syncRequestMetaSnapshot()
-      doRefresh()
     } catch (e) {
       console.log(e)
     } finally {
@@ -681,7 +885,7 @@
 
   function upDate(key: string, value1: string) {
     let value = ''
-    if (key === 'headers' || key === 'ass_schema') {
+    if (key === 'headers') {
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
@@ -706,9 +910,10 @@
       }
     }
     if (!apiInfoId.value) return
-    putApiInfo({ id: apiInfoId.value, [key]: value })
+    persistApiInfo({ [key]: value })
       .then((res) => {
-        Message.success(res.msg)
+        if (!res) return
+        showEditingSavedMessage()
       })
       .catch(console.log)
   }
@@ -724,29 +929,13 @@
     upDate('headers', data.headers)
   }
 
-  function saveSchemaStatus(newValue: boolean) {
-    return new Promise<any>((resolve, reject) => {
-      if (!apiInfoId.value) {
-        resolve(false)
-        return
-      }
-      putApiInfo({ id: apiInfoId.value, is_schema: newValue ? 1 : 0 })
-        .then((res) => {
-          Message.success(res.msg)
-          data.api_info.is_schema = newValue ? 1 : 0
-          resolve(res.code === 200)
-        })
-        .catch(reject)
-    })
-  }
-
   async function saveRequestBody(value: any) {
     if (!apiInfoId.value || requestBodySaving.value) return
     requestBodySaving.value = true
     try {
-      const res = await putApiInfo({ id: apiInfoId.value, ...value })
-      Message.success(res.msg)
-      await doRefresh()
+      const res = await persistApiInfo(value)
+      if (!res) return
+      showEditingSavedMessage()
     } catch (error) {
       console.log(error)
     } finally {
@@ -762,12 +951,29 @@
     }
     if (caseRunning.value) return
     caseRunning.value = true
-    Message.loading('接口开始执行中~')
     try {
-      const res = await getApiCaseInfoRun(apiInfoId.value, userStore.selected_environment)
+      const versionParams =
+        selectedApiVersion.value?.kind === 'revision'
+          ? { revision_id: selectedApiVersion.value.id }
+          : {}
+      const targetId = apiInfoId.value
+      const testEnv = userStore.selected_environment
+      const parameters = await runtimeParametersRef.value?.prepare([{ id: targetId, ...versionParams }])
+      if (parameters == null) return
+      Message.loading('接口开始执行中~')
+      const res = await getApiCaseInfoRun(
+        targetId,
+        testEnv,
+        versionParams,
+        parameters
+      )
       data.caseResult = res.data
-      if (res.data.error_msg) {
-        Message.error(res.data.error_msg)
+      if (res.data?.id) {
+        const detailRes = await getExecutionResultDetailResolved(res.data.id)
+        data.api_info.result_data = detailRes.data?.result_data || null
+      }
+      if (res.data?.error_message) {
+        Message.error(res.data.error_message)
       } else {
         Message.success(res.msg)
       }
@@ -775,7 +981,24 @@
       doRefresh()
     } finally {
       caseRunning.value = false
-      doRefresh()
+    }
+  }
+
+  async function loadLatestExecutionResult() {
+    if (!apiInfoId.value) return
+    resultLoading.value = true
+    try {
+      const res = await getExecutionResultLatestResolved({
+        source_type: 'page',
+        target_type: 'api_info',
+        target_id: apiInfoId.value,
+      })
+      data.api_info.result_data = res.data?.result_data || null
+    } catch (error) {
+      console.log(error)
+      data.api_info.result_data = null
+    } finally {
+      resultLoading.value = false
     }
   }
 
@@ -787,26 +1010,13 @@
         if (!props.embedded) {
           pageData.setRecord(res_data)
         }
+        currentApiInfoPayload.value = normalizeApiInfoRecord(res_data)
         data.api_info = res_data
         loadDefaultHeadersPreview(res_data)
-        data.ass_schema = formatJson(res_data.ass_schema)
         syncRequestMetaSnapshot()
+        return loadLatestExecutionResult()
       })
       .catch(console.log)
-  }
-
-  function setSchema(id: number) {
-    if (schemaLoading.value) return
-    schemaLoading.value = true
-    putSetSchema(id)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-      .finally(() => {
-        schemaLoading.value = false
-      })
   }
 
   onMounted(() => {
@@ -820,10 +1030,25 @@
 <style scoped>
   .api-detail-workbench {
     display: grid;
-    grid-template-columns: 200px minmax(360px, 0.95fr) minmax(480px, 1.15fr);
-    gap: 12px;
-    height: calc(100vh - 166px);
+    grid-template-columns: 230px 190px minmax(360px, 34fr) minmax(480px, 52fr);
+    gap: var(--m-page-gap);
+    height: calc(100% - var(--m-page-gap));
     min-height: 0;
+  }
+
+  .api-detail-workbench-scroll {
+    --mango-workbench-min-width: 1332px;
+  }
+
+  .api-detail-panel-readonly .api-request-bar,
+  .api-detail-panel-readonly .api-detail-panel-body,
+  .api-detail-panel-readonly :deep(.arco-switch) {
+    pointer-events: none;
+  }
+
+  .api-detail-panel-readonly .api-request-bar,
+  .api-detail-panel-readonly .api-detail-panel-body {
+    opacity: 0.78;
   }
 
   .api-detail-nav,
@@ -937,6 +1162,46 @@
 
   .api-request-save {
     min-width: 64px;
+  }
+
+  .api-version-context {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--m-border);
+    background: color-mix(in srgb, var(--m-warning) 6%, var(--m-surface));
+  }
+
+  .api-version-context.readonly {
+    background: var(--m-surface-soft);
+  }
+
+  .api-version-context > div {
+    min-width: 0;
+  }
+
+  .api-version-context strong,
+  .api-version-context span {
+    display: block;
+  }
+
+  .api-version-context strong {
+    color: var(--m-text);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  .api-version-context span {
+    overflow: hidden;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .api-detail-panel-head {
@@ -1080,7 +1345,7 @@
   .default-headers-preview {
     overflow: hidden;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: var(--m-radius-md);
     background: var(--m-surface-soft);
   }
 

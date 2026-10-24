@@ -2,10 +2,11 @@ import useUserStore from '@/store/modules/user'
 import usePermissionStore from '@/store/modules/permission'
 import { useEnum } from '@/store/modules/get-enum'
 import router from '..'
-import { connectWebSocket, hasWebSocketLoginSession } from '@/utils/socket'
+import { connectWebSocket } from '@/utils/socket'
 
 const whiteRoutes: string[] = [
   '/login',
+  '/cli-auth',
   '/404',
   '/403',
   '/500',
@@ -34,8 +35,8 @@ function usePermissionGuard() {
 
     await useEnum().getEnum()
 
-    // 用户已登录，确保 WebSocket 已连接（处理页面刷新的情况）
-    if (hasWebSocketLoginSession() && userStore.userName && userStore.password) {
+    // 用户已登录，确保 WebSocket 已连接（处理页面刷新或会话标记丢失的情况）
+    if (userStore.userName && userStore.password) {
       connectWebSocket(userStore.userName, userStore.password)
     }
 
@@ -44,6 +45,13 @@ function usePermissionGuard() {
     if (isEmptyRoute) {
       await permissionStore.initPermissionRoute()
       return { ...to, replace: true }
+    }
+    const permissionKey = to.meta?.permissionKey as string | undefined
+    if (permissionKey && !permissionStore.hasPermission(permissionKey)) {
+      return {
+        path: '/403',
+        replace: true,
+      }
     }
     return true
   })

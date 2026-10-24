@@ -2,26 +2,33 @@
 import json
 from typing import Any
 
-from src.apps.ai.agent.api_automation.api_case_runner import ApiCaseExecutionService
 from src.apps.ai.agent.api_automation.result_extractor import ApiAutomationResultExtractor
 from src.apps.ai.agent.api_automation.tool_catalog import ApiAutomationToolStageCatalog
 from src.apps.ai.agent.api_automation.tool_schema import ApiAutomationToolSchemaBuilder
 from src.apps.ai.agent.api_automation.workflow_planner import ApiAutomationWorkflowPlanner
-from src.apps.ai.agent.mcp.tool_runner import AgentMcpToolRunner
-from src.apps.ai.agent.roles import AgentRole
+from src.apps.ai.enums.role import AgentRole
+from src.apps.ai.exceptions import AiError, ai_service_error
+from src.apps.ai.model_gateway.client import AgentModelGateway
 from src.apps.ai.models import AiAgentTask, AiMcpServer, AiMcpTool, AiSkill
-from src.apps.ai.service.core import AiTaskService, mask_sensitive
-from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter
-from src.apps.functional_test.models import ManualTestAutomationBinding, ManualTestCase, ManualTestSuite
-from src.apps.functional_test.service.automation import ManualAutomationService
-from src.apps.system.service.ai.client import AiService
-from src.common.enums.manual_test_enum import ManualTestAutomationTypeEnum, ManualTestRelationTypeEnum, ManualTestTypeEnum
+from src.apps.ai.services.agent.api_case_execution import ApiCaseExecutionService
+from src.apps.ai.services.agent.budget import AgentBudgetService
+from src.apps.ai.services.agent.mcp.tool_runner import AgentMcpToolRunner
+from src.apps.ai.services.core import AiTaskService, mask_sensitive
+from src.apps.ai.services.harness.artifact import AgentArtifactService, AgentEventService
+from src.apps.auto_api.selectors.querysets import ApiQuerySelector
+from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
+from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum
+from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
+from src.apps.functional_test.enums import ManualTestAutomationTypeEnum, ManualTestRelationTypeEnum, ManualTestTypeEnum
+from src.apps.functional_test.models import ManualTestCase, ManualTestSuite
+from src.apps.functional_test.services.automation import ManualAutomationService
+from src.common.prompts import get_prompt
 
 
 class ApiAutomationExecutor:
-    TOOL_LIMIT = 300
-    MAX_ROUNDS = 20
+    TOOL_LIMIT = None
     STAGE_MAX_ROUNDS = 4
+    ASSET_REPAIR_ROUNDS = 2
     API_CREATE_TOOLS = {"create_api_case", "create_complete_api_case"}
     API_UPDATE_TOOLS = {
         "update_api_case",
@@ -34,59 +41,61 @@ class ApiAutomationExecutor:
     }
     API_CASE_ID_INJECTION_TOOLS = {"update_api_case", "add_api_case_step"}
     API_RUN_TOOLS = {"run_api_case", "run_api_case_batch"}
-    ROLE_PROMPTS = {
-        AgentRole.API_AUTOMATION_EXPERT: AgentRole.PROMPTS[AgentRole.API_AUTOMATION_EXPERT],
-        AgentRole.BUSINESS_TEST_EXPERT: AgentRole.PROMPTS[AgentRole.BUSINESS_TEST_EXPERT],
-    }
 
     @classmethod
     def execute(
-        cls,
-        *,
-        task: AiAgentTask,
-        manual_case: ManualTestCase,
-        suite: ManualTestSuite,
-        skill: AiSkill,
-        mcp_servers: list[AiMcpServer],
-        context_package: dict,
-        existing_api_case_id: int | None,
-        ai_role: str,
-        user_instruction: str,
-        user_id: int | None,
+            cls,
+            *,
+            task: AiAgentTask,
+            manual_case: ManualTestCase,
+            suite: ManualTestSuite,
+            skill: AiSkill,
+            mcp_servers: list[AiMcpServer],
+            context_package: dict,
+            existing_api_case_id: int | None,
+            ai_role: str,
+            user_instruction: str,
+            user_id: int | None,
+            skill_contract: dict | None = None,
+            workflow_plan: dict | None = None,
     ) -> dict:
         if ManualTestTypeEnum.API.value not in (manual_case.test_types or []):
-            raise ValueError("当前用例未开启API自动化测试类型")
+            raise ai_service_error("当前用例未开启API自动化测试类型")
         if not skill:
-            raise ValueError("生成API自动化必须选择技能")
+            raise ai_service_error("生成API自动化必须选择技能")
         if not mcp_servers:
-            raise ValueError("生成API自动化必须选择MCP服务")
+            raise ai_service_error("生成API自动化必须选择MCP服务")
 
         tools, tool_map = cls.build_tools(mcp_servers, user_id, existing_api_case_id)
         if not tools:
-            raise ValueError("选中的MCP服务没有可用工具，请先同步MCP工具")
+            raise ai_service_error("选中的MCP服务没有可用工具，请先同步MCP工具")
 
-        use_builtin_workflow = False
-        workflow_plan = {}
+        use_builtin_workflow = cls.should_use_builtin_workflow(skill, mcp_servers)
+        workflow_plan = workflow_plan or {}
         tool_calls: list[dict] = []
         api_case_id: int | None = None
         final_message: dict = {}
         stage_results: list[dict] = []
         used_write_tool = False
         used_run_tool = False
+        execution_record_id: int | None = None
         exhausted_rounds = False
 
-        if use_builtin_workflow:
+        if tools:
             tool_catalog = ApiAutomationToolStageCatalog.catalog_for_tools(tool_map)
-            workflow_plan = ApiAutomationWorkflowPlanner.plan(
-                manual_case=manual_case,
-                suite=suite,
-                skill=skill,
-                context_package=context_package,
-                existing_api_case_id=existing_api_case_id,
-                tool_catalog=tool_catalog,
-                user_instruction=user_instruction,
-                ai_role=ai_role,
-            )
+            if not workflow_plan:
+                workflow_plan = ApiAutomationWorkflowPlanner.plan(
+                    manual_case=manual_case,
+                    suite=suite,
+                    skill=skill,
+                    context_package=context_package,
+                    existing_api_case_id=existing_api_case_id,
+                    tool_catalog=tool_catalog,
+                    user_instruction=user_instruction,
+                    ai_role=ai_role,
+                    skill_contract=skill_contract or {},
+                    task=task,
+                )
             planned_stages = workflow_plan.get("stages") or []
             for stage_index, stage in enumerate(planned_stages, start=1):
                 stage_tool_map = ApiAutomationToolStageCatalog.tools_for_stage(tool_map, stage["stage"])
@@ -115,7 +124,7 @@ class ApiAutomationExecutor:
                     current_stage=stage,
                     stage_results=stage_results,
                     api_case_id=api_case_id,
-                    builtin_workflow=True,
+                    builtin_workflow=use_builtin_workflow,
                 )
                 stage_tool_call_count = 0
                 AiTaskService.update_progress(
@@ -128,7 +137,8 @@ class ApiAutomationExecutor:
 
                 stage_completed = False
                 for round_index in range(cls.STAGE_MAX_ROUNDS):
-                    response = AiService.chat_with_tools(
+                    response = AgentModelGateway.chat_with_tools(
+                        task=task,
                         messages=messages,
                         tools=stage_tools,
                         tool_choice="auto",
@@ -138,7 +148,8 @@ class ApiAutomationExecutor:
                     final_message = cls.first_message(response)
                     current_tool_calls = final_message.get("tool_calls") or []
                     if not current_tool_calls:
-                        api_case_id = cls.extract_api_case_id(final_message) or cls.extract_api_case_id(cls.message_content(final_message)) or api_case_id
+                        api_case_id = cls.extract_api_case_id(final_message) or cls.extract_api_case_id(
+                            cls.message_content(final_message)) or api_case_id
                         stage_completed = True
                         break
                     messages.append(final_message)
@@ -161,6 +172,7 @@ class ApiAutomationExecutor:
                     api_case_id = call_result["api_case_id"] or api_case_id
                     used_write_tool = used_write_tool or call_result["used_write_tool"]
                     used_run_tool = used_run_tool or call_result["used_run_tool"]
+                    execution_record_id = call_result.get("execution_record_id") or execution_record_id
                 if not stage_completed:
                     exhausted_rounds = True
                 stage_results.append(
@@ -173,101 +185,63 @@ class ApiAutomationExecutor:
                         "assistant_message": cls.message_content(final_message)[:3000],
                     }
                 )
-        else:
-            messages = cls.build_messages(
-                manual_case=manual_case,
-                suite=suite,
-                skill=skill,
-                mcp_servers=mcp_servers,
-                tools=tools,
-                context_package=context_package,
-                existing_api_case_id=existing_api_case_id,
-                ai_role=ai_role,
-                user_instruction=user_instruction,
-                builtin_workflow=False,
-            )
-            generic_completed = False
-            for round_index in range(cls.MAX_ROUNDS):
-                AiTaskService.update_progress(
-                    task,
-                    min(20 + int(round_index / cls.MAX_ROUNDS * 20), 40),
-                    "请求已经发给 AI",
-                    f"正在通过通用 MCP Agent 调用工具 {round_index + 1}/{cls.MAX_ROUNDS}",
-                    {"round_index": round_index + 1, "round_total": cls.MAX_ROUNDS, "tool_call_count": len(tool_calls)},
-                )
-                response = AiService.chat_with_tools(
-                    messages=messages,
-                    tools=tools,
-                    tool_choice="auto",
-                    temperature=0,
-                    max_tokens=3000,
-                )
-                final_message = cls.first_message(response)
-                current_tool_calls = final_message.get("tool_calls") or []
-                if not current_tool_calls:
-                    api_case_id = cls.extract_api_case_id(final_message) or cls.extract_api_case_id(cls.message_content(final_message)) or api_case_id
-                    generic_completed = True
-                    break
-                messages.append(final_message)
-                call_result = cls.handle_tool_calls(
-                    task=task,
-                    tool_calls=tool_calls,
-                    current_tool_calls=current_tool_calls,
-                    stage_tool_map=tool_map,
-                    full_tool_map=tool_map,
-                    messages=messages,
-                    manual_case=manual_case,
-                    suite=suite,
-                    existing_api_case_id=existing_api_case_id,
-                    user_id=user_id,
-                    stage={"stage": "generic_mcp", "name": "通用 MCP 工具调用"},
-                    stage_index=1,
-                    api_case_id=api_case_id,
-                )
-                api_case_id = call_result["api_case_id"] or api_case_id
-                used_write_tool = used_write_tool or call_result["used_write_tool"]
-                used_run_tool = used_run_tool or call_result["used_run_tool"]
-            if not generic_completed:
-                exhausted_rounds = True
-            stage_results.append(
-                {
-                    "stage": "generic_mcp",
-                    "name": "通用 MCP 工具调用",
-                    "skipped": False,
-                    "tool_call_count": len(tool_calls),
-                    "api_case_id": api_case_id,
-                    "assistant_message": cls.message_content(final_message)[:3000],
-                }
-            )
-
         if not tool_calls:
-            raise ValueError("AI未调用MCP工具。请检查技能是否明确要求使用MCP创建或更新API自动化Case")
+            raise ai_service_error("AI未调用MCP工具。请检查技能是否明确要求使用MCP创建或更新API自动化Case")
         if exhausted_rounds and (not api_case_id or not used_write_tool):
-            raise ValueError("AI工具调用已达到最大轮次，但仍未完成API自动化Case创建或更新。请检查技能流程是否过于宽泛，或补充更明确的生成要求")
+            raise ai_service_error(
+                "AI工具调用已达到最大轮次，但仍未完成API自动化Case创建或更新。请检查技能流程是否过于宽泛，或补充更明确的生成要求")
         if existing_api_case_id:
             api_case_id = api_case_id or existing_api_case_id
             if int(api_case_id) != int(existing_api_case_id):
-                raise ValueError(f"已绑定API Case必须覆盖旧ID，但MCP返回了不同ID：{api_case_id}")
+                raise ai_service_error(f"已绑定API Case必须覆盖旧ID，但MCP返回了不同ID：{api_case_id}")
         if not api_case_id:
             latest_result = tool_calls[-1]["result"] if tool_calls else {}
             latest_error = cls.extract_mcp_error_message(latest_result)
             if latest_error:
-                raise ValueError(f"MCP工具执行失败：{latest_error}")
-            raise ValueError(f"MCP工具调用完成但未返回api_case_id/case_id，最近一次MCP返回：{json.dumps(latest_result, ensure_ascii=False)[:800]}")
+                raise ai_service_error(f"MCP工具执行失败：{latest_error}")
+            raise ai_service_error(
+                f"MCP工具调用完成但未返回api_case_id/case_id，最近一次MCP返回：{json.dumps(latest_result, ensure_ascii=False)[:800]}")
         if not used_write_tool:
-            raise ValueError("AI未调用创建或更新API自动化Case的MCP写入工具")
-        if not ApiCase.objects.filter(id=api_case_id).exists():
-            raise ValueError(f"MCP返回的API Case不存在：{api_case_id}")
+            raise ai_service_error("AI未调用创建或更新API自动化Case的MCP写入工具")
+        if not ApiQuerySelector.api_case().filter(id=api_case_id).exists():
+            raise ai_service_error(f"MCP返回的API Case不存在：{api_case_id}")
 
         if not used_run_tool:
             run_result = cls.try_run_api_case(task, tools, tool_map, int(api_case_id), user_id)
             if run_result:
                 used_run_tool = True
+                execution_record_id = run_result.get("execution_record_id") or execution_record_id
                 tool_calls.append(run_result)
         if not used_run_tool:
-            raise ValueError("API Case 已生成，但没有可用 MCP 工具执行一次 API Case")
+            raise ai_service_error("API Case 已生成，但没有可用 MCP 工具执行一次 API Case")
+        if not execution_record_id:
+            raise ai_service_error("API Case 已触发执行，但没有保存本次 Agent 的执行调用记录")
 
-        assertion_summary = cls.validate_api_case_assertions(int(api_case_id))
+        asset_repair_report = {"required": False, "rounds": 0, "errors": []}
+        try:
+            assertion_summary = cls.validate_api_case_assertions(int(api_case_id))
+            skill_asset_summary = cls.validate_required_assets(int(api_case_id), skill_contract or {})
+        except (AiError, ValueError) as exc:
+            asset_repair_report = cls.repair_asset_configuration(
+                task=task,
+                tool_calls=tool_calls,
+                tools=tools,
+                tool_map=tool_map,
+                manual_case=manual_case,
+                suite=suite,
+                skill=skill,
+                mcp_servers=mcp_servers,
+                context_package=context_package,
+                existing_api_case_id=existing_api_case_id,
+                api_case_id=int(api_case_id),
+                ai_role=ai_role,
+                user_instruction=user_instruction,
+                user_id=user_id,
+                validation_error=str(exc),
+                skill_contract=skill_contract or {},
+            )
+            assertion_summary = cls.validate_api_case_assertions(int(api_case_id))
+            skill_asset_summary = cls.validate_required_assets(int(api_case_id), skill_contract or {})
 
         binding = ManualAutomationService.bind(
             manual_case,
@@ -279,10 +253,13 @@ class ApiAutomationExecutor:
         return {
             "api_case_id": int(api_case_id),
             "binding_id": binding.id,
+            "execution_record_id": execution_record_id,
             "tool_calls": tool_calls,
             "workflow_plan": workflow_plan,
             "stage_results": stage_results,
             "assertion_summary": assertion_summary,
+            "skill_asset_summary": skill_asset_summary,
+            "asset_repair_report": asset_repair_report,
             "assistant_message": cls.message_content(final_message),
             "selected_context_keys": context_package["context_keys"],
             "context_hash": context_package["context_hash"],
@@ -299,37 +276,46 @@ class ApiAutomationExecutor:
 
     @classmethod
     def build_tools(
-        cls,
-        servers: list[AiMcpServer],
-        user_id: int | None,
-        existing_api_case_id: int | None,
+            cls,
+            servers: list[AiMcpServer],
+            user_id: int | None,
+            existing_api_case_id: int | None,
+            *,
+            refresh: bool = False,
     ) -> tuple[list[dict], dict[str, AiMcpTool]]:
-        return ApiAutomationToolSchemaBuilder.build_tools(servers, user_id, existing_api_case_id, cls.TOOL_LIMIT)
+        return ApiAutomationToolSchemaBuilder.build_tools(
+            servers,
+            user_id,
+            existing_api_case_id,
+            cls.TOOL_LIMIT,
+            refresh=refresh,
+        )
 
     @classmethod
     def build_messages(
-        cls,
-        *,
-        manual_case: ManualTestCase,
-        suite: ManualTestSuite,
-        skill: AiSkill,
-        mcp_servers: list[AiMcpServer],
-        tools: list[dict],
-        context_package: dict,
-        existing_api_case_id: int | None,
-        ai_role: str,
-        user_instruction: str,
-        workflow_plan: dict | None = None,
-        current_stage: dict | None = None,
-        stage_results: list[dict] | None = None,
-        api_case_id: int | None = None,
-        builtin_workflow: bool = False,
+            cls,
+            *,
+            manual_case: ManualTestCase,
+            suite: ManualTestSuite,
+            skill: AiSkill,
+            mcp_servers: list[AiMcpServer],
+            tools: list[dict],
+            context_package: dict,
+            existing_api_case_id: int | None,
+            ai_role: str,
+            user_instruction: str,
+            workflow_plan: dict | None = None,
+            current_stage: dict | None = None,
+            stage_results: list[dict] | None = None,
+            api_case_id: int | None = None,
+            builtin_workflow: bool = False,
     ) -> list[dict]:
-        role_prompt = cls.ROLE_PROMPTS[cls.normalize_ai_role(ai_role)]
+        prompt = get_prompt("api.automation")
+        role_prompt = AgentRole.prompt(cls.normalize_ai_role(ai_role), AgentRole.API_AUTOMATION_EXPERT)
         action_rule = (
-            f"当前功能测试用例已绑定 API Case：{existing_api_case_id}。必须严格使用旧 ID 原地更新，不允许新建重复 Case。"
+            prompt.render("update_action_rule", existing_api_case_id=existing_api_case_id)
             if existing_api_case_id
-            else "当前功能测试用例未绑定 API Case。必须创建一个新的完整 API Case。"
+            else prompt.values["create_action_rule"]
         )
         context_payload = {
             "context_hash": context_package["context_hash"],
@@ -341,7 +327,7 @@ class ApiAutomationExecutor:
         if not context_package["reuse_context"]:
             context_payload["full_context"] = context_package["context_text"]
         user_payload = {
-            "task": "请严格按照 Skill，通过 MCP 工具创建或更新 API 自动化 Case。",
+            "task": prompt.values["executor_task"],
             "suite": {
                 "id": suite.id,
                 "requirement_name": suite.requirement_name,
@@ -385,25 +371,12 @@ class ApiAutomationExecutor:
             "builtin_workflow": builtin_workflow,
             "context": context_payload,
             "user_instruction": user_instruction,
-            "requirements": [
-                action_rule,
-                "必须调用 MCP 工具，不能只返回文字计划。",
-                "调用工具前必须先阅读 mcp_servers 中每个 MCP 的 prompt 和 description，根据 MCP 职责选择工具；不要把飞书、代码检索、平台写入等不同 MCP 的用途混用。",
-                "你会看到当前已选 MCP 服务经过安全过滤后的全部可用工具。不要等待平台分阶段授权，请根据 Skill、当前功能用例、上下文和工具描述自主决定调用顺序。",
-                "Skill 是强制流程，请按 Skill 中描述的接口、断言、数据工厂、执行、结果查询等步骤推进。",
-                "生成断言时不能只调用生成草稿工具；必须把断言通过 create_api_case_scenario 或 update_api_case_scenario 落库到具体场景。",
-                "如果响应不是 JSON，也必须添加可执行的文本断言、通用断言或其他适合当前响应的断言；不要留下零断言场景。",
-                "如果 Skill 没有要求某一步，可以不做；但平台最低要求是最终有 api_case_id/case_id、至少配置一种断言，并且 API Case 被执行一次。",
-                "最终回复必须包含 JSON：{\"api_case_id\": 数字, \"summary\": \"...\"}。",
-            ],
+            "requirements": [action_rule, *prompt.values["requirements"]],
         }
-        system_prompt = "\n\n".join(
-            [
-                role_prompt,
-                "你只能使用已提供的 MCP tools 完成落库、更新和执行。不要编造工具返回结果。",
-                "调用 create_complete_api_case 时，必须传 case_name、api.name、api.url、api.method、scenarios[].name。api.method 使用 0=GET、1=POST、2=PUT、3=DELETE、6=PATCH。",
-                f"用户选择的技能规则：\n{skill.content}",
-            ]
+        system_prompt = prompt.render(
+            "executor_system",
+            role_prompt=role_prompt,
+            skill_content=skill.content,
         )
         return [
             {"role": "system", "content": system_prompt},
@@ -418,32 +391,33 @@ class ApiAutomationExecutor:
 
     @classmethod
     def handle_tool_calls(
-        cls,
-        *,
-        task: AiAgentTask,
-        tool_calls: list[dict],
-        current_tool_calls: list[dict],
-        stage_tool_map: dict[str, AiMcpTool],
-        full_tool_map: dict[str, AiMcpTool] | None,
-        messages: list[dict],
-        manual_case: ManualTestCase,
-        suite: ManualTestSuite,
-        existing_api_case_id: int | None,
-        user_id: int | None,
-        stage: dict,
-        stage_index: int,
-        api_case_id: int | None,
+            cls,
+            *,
+            task: AiAgentTask,
+            tool_calls: list[dict],
+            current_tool_calls: list[dict],
+            stage_tool_map: dict[str, AiMcpTool],
+            full_tool_map: dict[str, AiMcpTool] | None,
+            messages: list[dict],
+            manual_case: ManualTestCase,
+            suite: ManualTestSuite,
+            existing_api_case_id: int | None,
+            user_id: int | None,
+            stage: dict,
+            stage_index: int,
+            api_case_id: int | None,
     ) -> dict:
         stage_tool_call_count = 0
         used_write_tool = False
         used_run_tool = False
+        execution_record_id = None
         for tool_call in current_tool_calls:
             tool_call_id, tool_name, arguments = cls.tool_call_parts(tool_call)
             tool = stage_tool_map.get(tool_name)
             if not tool:
                 tool = cls.resolve_readonly_cross_stage_tool(tool_name, full_tool_map)
             if not tool:
-                raise ValueError(f"AI请求调用的MCP工具不可用：{tool_name}")
+                raise ai_service_error(f"AI请求调用的MCP工具不可用：{tool_name}")
             call_index = len(tool_calls) + 1
             stage_tool_call_count += 1
             AiTaskService.update_progress(
@@ -458,7 +432,8 @@ class ApiAutomationExecutor:
                     "tool_name": tool.name,
                 },
             )
-            arguments = cls.normalize_tool_arguments(tool.name, arguments, manual_case, suite, existing_api_case_id, user_id)
+            arguments = cls.normalize_tool_arguments(tool.name, arguments, manual_case, suite, existing_api_case_id,
+                                                     user_id)
             result = AgentMcpToolRunner.call(task, tool, arguments, user_id)
             error_message = cls.extract_mcp_error_message(result)
             tool_calls.append(
@@ -474,6 +449,7 @@ class ApiAutomationExecutor:
                 used_write_tool = True
             if tool.name in cls.API_RUN_TOOLS:
                 used_run_tool = True
+                execution_record_id = getattr(task, "last_tool_call_id", None) or execution_record_id
             extracted_id = cls.extract_api_case_id(result)
             if extracted_id:
                 api_case_id = extracted_id
@@ -490,29 +466,32 @@ class ApiAutomationExecutor:
             "api_case_id": api_case_id,
             "used_write_tool": used_write_tool,
             "used_run_tool": used_run_tool,
+            "execution_record_id": execution_record_id,
         }
 
     @staticmethod
-    def resolve_readonly_cross_stage_tool(tool_name: str, full_tool_map: dict[str, AiMcpTool] | None) -> AiMcpTool | None:
+    def resolve_readonly_cross_stage_tool(tool_name: str,
+                                          full_tool_map: dict[str, AiMcpTool] | None) -> AiMcpTool | None:
         tool = (full_tool_map or {}).get(tool_name)
         if tool and not tool.write_operation:
             return tool
         return None
 
     @classmethod
-    def try_run_api_case(cls, task: AiAgentTask, tools: list[dict], tool_map: dict[str, AiMcpTool], api_case_id: int, user_id: int | None) -> dict | None:
+    def try_run_api_case(cls, task: AiAgentTask, tools: list[dict], tool_map: dict[str, AiMcpTool], api_case_id: int,
+                         user_id: int | None) -> dict | None:
         return ApiCaseExecutionService.try_run_api_case(task, tool_map, api_case_id, user_id)
 
     @classmethod
     def validate_api_case_assertions(cls, api_case_id: int) -> dict:
-        details = list(ApiCaseDetailed.objects.select_related("api_info").filter(case_id=api_case_id))
+        details = list(ApiQuerySelector.api_case_detailed().select_related("api_info").filter(case_id=api_case_id))
         if not details:
-            raise ValueError(f"API Case {api_case_id} 没有步骤，无法作为有效 API 自动化用例")
+            raise ai_service_error(f"API Case {api_case_id} 没有步骤，无法作为有效 API 自动化用例")
 
         detail_ids = [detail.id for detail in details]
-        parameters = list(ApiCaseDetailedParameter.objects.filter(case_detailed_id__in=detail_ids))
+        parameters = list(ApiQuerySelector.api_case_detailed_parameter().filter(case_detailed_id__in=detail_ids))
         if not parameters:
-            raise ValueError(f"API Case {api_case_id} 没有场景参数，无法作为有效 API 自动化用例")
+            raise ai_service_error(f"API Case {api_case_id} 没有场景参数，无法作为有效 API 自动化用例")
 
         summary = {
             "api_case_id": api_case_id,
@@ -525,9 +504,14 @@ class ApiAutomationExecutor:
             "ass_schema_count": 0,
             "api_info_schema_count": 0,
         }
+        api_infos = {}
         for detail in details:
-            api_info = detail.api_info
-            if api_info and api_info.is_schema == 1 and api_info.ass_schema:
+            try:
+                api_info = ApiInfoRuntimeService.resolve_runtime(detail.api_info_id, allow_draft=True)
+            except Exception:
+                api_info = None
+            api_infos[detail.id] = api_info
+            if api_info and api_info.ass_schema:
                 summary["api_info_schema_count"] += 1
         for parameter in parameters:
             summary["ass_jsonpath_count"] += len(parameter.ass_jsonpath or [])
@@ -540,20 +524,219 @@ class ApiAutomationExecutor:
                 summary["ass_schema_count"] += 1
 
         total_assertions = (
-            summary["ass_jsonpath_count"]
-            + summary["ass_general_count"]
-            + summary["ass_json_all_count"]
-            + summary["ass_text_all_count"]
-            + summary["ass_schema_count"]
-            + summary["api_info_schema_count"]
+                summary["ass_jsonpath_count"]
+                + summary["ass_general_count"]
+                + summary["ass_json_all_count"]
+                + summary["ass_text_all_count"]
+                + summary["ass_schema_count"]
+                + summary["api_info_schema_count"]
         )
         summary["total_assertion_count"] = total_assertions
         if total_assertions <= 0:
-            raise ValueError(
+            raise ai_service_error(
                 f"API Case {api_case_id} 已生成并执行一次，但没有配置任何断言。"
                 "请让 AI 按 Skill 补充状态码、JSONPath、文本、Schema 或业务字段断言后重新生成"
             )
         return summary
+
+    @staticmethod
+    def validate_required_assets(api_case_id: int, skill_contract: dict) -> dict:
+        required = set(skill_contract.get("required_capabilities") or [])
+        case = ApiQuerySelector.api_case().get(id=api_case_id)
+        from src.apps.auto_api.services.api_case.snapshot import ApiExecutableSnapshotService
+
+        case_config = ApiExecutableSnapshotService.current_case_config(
+            case.id,
+            case.project_product_id,
+        )
+        details = list(ApiQuerySelector.api_case_detailed().select_related("api_info").filter(case=case))
+        parameters = list(
+            ApiQuerySelector.api_case_detailed_parameter().filter(case_detailed_id__in=[item.id for item in details])
+        )
+        api_infos = {}
+        for detail in details:
+            try:
+                api_infos[detail.id] = ApiInfoRuntimeService.resolve_runtime(detail.api_info_id, allow_draft=True)
+            except Exception:
+                api_infos[detail.id] = None
+        result = {}
+        if "data_factory" in required:
+            has_data_factory = DataFactoryQuerySelector.data_factory_case_config().filter(
+                source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
+                source_id=api_case_id,
+            ).exists() or DataFactoryQuerySelector.data_factory_case_config().filter(
+                source_type=DataFactoryCaseSourceTypeEnum.API_CASE_PARAMETER.value,
+                source_id__in=[item.id for item in parameters],
+            ).exists()
+            if not has_data_factory:
+                raise ai_service_error("Skill 要求配置数据工厂，但真实 API Case 未查询到数据工厂绑定")
+            result["data_factory"] = True
+        if "headers" in required:
+            has_headers = bool(case_config.get("front_headers")) or any(
+                bool(item.headers) for item in parameters) or any(
+                bool(api_infos.get(item.id) and api_infos[item.id].headers) for item in details
+            )
+            if not has_headers:
+                raise ai_service_error("Skill 要求配置请求头，但真实 API Case 未查询到请求头配置")
+            result["headers"] = True
+        if "extractor" in required:
+            has_extractor = any(
+                bool(
+                    api_infos.get(item.id)
+                    and (
+                            api_infos.get(item.id).posterior_json_path
+                            or api_infos.get(item.id).posterior_re
+                            or api_infos.get(item.id).posterior_func
+                    )
+                )
+                for item in details
+            ) or any(bool(item.posterior_response or item.posterior_response_text) for item in parameters)
+            if not has_extractor:
+                raise ai_service_error("Skill 要求配置提取器，但真实 API Case 未查询到提取器配置")
+            result["extractor"] = True
+        return result
+
+    @classmethod
+    def repair_asset_configuration(
+            cls,
+            *,
+            task: AiAgentTask,
+            tool_calls: list[dict],
+            tools: list[dict],
+            tool_map: dict[str, AiMcpTool],
+            manual_case: ManualTestCase,
+            suite: ManualTestSuite,
+            skill: AiSkill,
+            mcp_servers: list[AiMcpServer],
+            context_package: dict,
+            existing_api_case_id: int | None,
+            api_case_id: int,
+            ai_role: str,
+            user_instruction: str,
+            user_id: int | None,
+            validation_error: str,
+            skill_contract: dict,
+    ) -> dict:
+        prompt = get_prompt("api.automation")
+        AgentBudgetService.before_replan(task)
+        replan = {
+            "reason": validation_error,
+            "api_case_id": api_case_id,
+            "required_capabilities": skill_contract.get("required_capabilities") or [],
+            "forbidden_capabilities": skill_contract.get("forbidden_capabilities") or [],
+            "strategy": "仅重规划和修复缺失资产，不重建已验证资产",
+        }
+        AgentArtifactService.create(task, "replan", replan, status="validated")
+        AgentEventService.emit(
+            task,
+            "workflow_replanned",
+            "真实资产校验未通过，正在定向重规划",
+            data=replan,
+            step_key="diagnose_and_repair",
+        )
+        capability_stage_map = {
+            "headers": "configure_headers",
+            "data_factory": "configure_data_factory",
+            "assertion": "add_assertions",
+            "extractor": "add_extractors",
+        }
+        forbidden_stages = {
+            capability_stage_map[capability]
+            for capability in skill_contract.get("forbidden_capabilities") or []
+            if capability in capability_stage_map
+        }
+        repair_stage_names = {
+                                 "create_or_update_case",
+                                 "configure_headers",
+                                 "configure_data_factory",
+                                 "add_assertions",
+                                 "add_extractors",
+                             } - forbidden_stages
+        repair_tool_names = set()
+        for stage_name in repair_stage_names:
+            repair_tool_names.update(ApiAutomationToolStageCatalog.stage_tool_names(stage_name))
+        repair_tool_map = {
+            safe_name: tool
+            for safe_name, tool in tool_map.items()
+            if tool.name in repair_tool_names
+        }
+        repair_tools = ApiAutomationToolStageCatalog.openai_tools_for_stage(tools, repair_tool_map)
+        if not repair_tools:
+            raise ai_service_error(f"API 资产校验失败且没有可用修复工具：{validation_error}")
+        stage = {"stage": "repair_assets", "name": "修复缺失 API 资产"}
+        messages = cls.build_messages(
+            manual_case=manual_case,
+            suite=suite,
+            skill=skill,
+            mcp_servers=mcp_servers,
+            tools=repair_tools,
+            context_package=context_package,
+            existing_api_case_id=existing_api_case_id,
+            ai_role=ai_role,
+            user_instruction=user_instruction,
+            current_stage=stage,
+            api_case_id=api_case_id,
+            builtin_workflow=True,
+        )
+        messages.append(
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "task": prompt.values["repair_task"],
+                        "api_case_id": api_case_id,
+                        "validation_error": validation_error,
+                        "required_capabilities": skill_contract.get("required_capabilities") or [],
+                        "rules": prompt.values["repair_rules"],
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+        )
+        rounds = 0
+        for round_index in range(cls.ASSET_REPAIR_ROUNDS):
+            response = AgentModelGateway.chat_with_tools(
+                task=task,
+                messages=messages,
+                tools=repair_tools,
+                tool_choice="auto",
+                temperature=0,
+                max_tokens=3000,
+            )
+            message = cls.first_message(response)
+            current_calls = message.get("tool_calls") or []
+            if not current_calls:
+                break
+            rounds += 1
+            messages.append(message)
+            cls.handle_tool_calls(
+                task=task,
+                tool_calls=tool_calls,
+                current_tool_calls=current_calls,
+                stage_tool_map=repair_tool_map,
+                full_tool_map=tool_map,
+                messages=messages,
+                manual_case=manual_case,
+                suite=suite,
+                existing_api_case_id=existing_api_case_id or api_case_id,
+                user_id=user_id,
+                stage=stage,
+                stage_index=1,
+                api_case_id=api_case_id,
+            )
+            try:
+                cls.validate_api_case_assertions(api_case_id)
+                cls.validate_required_assets(api_case_id, skill_contract)
+                return {"required": True, "rounds": rounds, "errors": [validation_error], "resolved": True}
+            except (AiError, ValueError) as exc:
+                validation_error = str(exc)
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": prompt.render("repair_followup", validation_error=validation_error),
+                    }
+                )
+        raise ai_service_error(f"API 资产经过 {rounds} 轮修复仍未通过校验：{validation_error}")
 
     @staticmethod
     def safe_tool_name(name: str, used_names: set[str]) -> str:
@@ -585,13 +768,13 @@ class ApiAutomationExecutor:
 
     @classmethod
     def normalize_tool_arguments(
-        cls,
-        tool_name: str,
-        arguments: dict,
-        manual_case: ManualTestCase,
-        suite: ManualTestSuite,
-        existing_api_case_id: int | None,
-        user_id: int | None,
+            cls,
+            tool_name: str,
+            arguments: dict,
+            manual_case: ManualTestCase,
+            suite: ManualTestSuite,
+            existing_api_case_id: int | None,
+            user_id: int | None,
     ) -> dict:
         if tool_name == "create_complete_api_case":
             return cls.normalize_complete_api_case_arguments(arguments, manual_case, suite, user_id)
@@ -604,14 +787,15 @@ class ApiAutomationExecutor:
 
     @classmethod
     def normalize_complete_api_case_arguments(
-        cls,
-        arguments: dict,
-        manual_case: ManualTestCase,
-        suite: ManualTestSuite,
-        user_id: int | None,
+            cls,
+            arguments: dict,
+            manual_case: ManualTestCase,
+            suite: ManualTestSuite,
+            user_id: int | None,
     ) -> dict:
         normalized = dict(arguments or {})
-        case_name = normalized.get("case_name") or normalized.get("name") or normalized.get("case_title") or manual_case.title or manual_case.case_no
+        case_name = normalized.get("case_name") or normalized.get("name") or normalized.get(
+            "case_title") or manual_case.title or manual_case.case_no
         normalized["case_name"] = str(case_name or "AI生成API自动化Case")[:128]
         normalized.pop("name", None)
         normalized.setdefault("project_product_id", manual_case.project_product_id)
@@ -625,15 +809,6 @@ class ApiAutomationExecutor:
         normalized.setdefault("scenario_description", manual_case.test_point or manual_case.title)
         api = normalized.get("api") or normalized.get("api_info") or normalized.get("interface") or {}
         api = dict(api) if isinstance(api, dict) else {}
-        api["name"] = str(api.get("name") or api.get("api_name") or api.get("title") or normalized["case_name"])[:128]
-        if not api.get("url") and api.get("path"):
-            api["url"] = api.get("path")
-        if not api.get("method") and api.get("http_method"):
-            api["method"] = api.get("http_method")
-        if "method" in api:
-            api["method"] = cls.normalize_http_method(api.get("method"))
-        if "json" in api and "json_body" not in api:
-            api["json_body"] = api.pop("json")
         normalized["api"] = api
         scenarios = normalized.get("scenarios") or normalized.get("parameters") or normalized.get("scenario_list") or []
         if isinstance(scenarios, dict):
@@ -646,12 +821,10 @@ class ApiAutomationExecutor:
             missing_fields.append("project_product_id")
         if not normalized.get("module_id"):
             missing_fields.append("module_id")
-        if not normalized["api"].get("url"):
-            missing_fields.append("api.url")
-        if normalized["api"].get("method") is None:
-            missing_fields.append("api.method")
+        if not normalized["api"].get("api_info_id"):
+            missing_fields.append("api.api_info_id")
         if missing_fields:
-            raise ValueError("AI调用 create_complete_api_case 时缺少必要入参：" + "、".join(missing_fields))
+            raise ai_service_error("AI调用 create_complete_api_case 时缺少必要入参：" + "、".join(missing_fields))
         return normalized
 
     @staticmethod

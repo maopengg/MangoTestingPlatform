@@ -8,7 +8,7 @@
           placeholder="搜索图标名称"
           press-enter
           search-button
-          @search="onSearch"
+          @search="onSearch" data-testid="qa-components-forms-iconselector-input-search-搜索图标名称"
         />
         <div class="mt-4"></div>
         <div class="icon-wrapper">
@@ -31,8 +31,8 @@
         />
       </div>
     </template>
-    <a-button v-if="!seletedItem" type="primary">请选择图标</a-button>
-    <a-button v-else status="success">
+    <a-button v-if="!seletedItem" type="primary" data-testid="qa-components-forms-iconselector-button-请选择图标">请选择图标</a-button>
+    <a-button v-else status="success" data-testid="qa-components-forms-iconselector-button-已选择">
       已选择
       <component :is="seletedItem" />
     </a-button>

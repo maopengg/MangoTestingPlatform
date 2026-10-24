@@ -1,23 +1,30 @@
 <template>
   <a-space direction="vertical" fill>
-    <div v-if="showAddButton" class="mango-data-factory-case-config__toolbar">
-      <a-button size="small" type="primary" @click="open()">增加</a-button>
+    <div v-if="showAddButton && !readonly" class="mango-data-factory-case-config__toolbar">
+      <a-button
+        v-permission="local ? localPermission : undefined"
+        size="small"
+        type="primary"
+        @click="open()"
+        data-testid="qa-components-datafactory-caseconfigpanel-button-增加"
+        >{{ local ? '选择模板' : '增加' }}</a-button
+      >
     </div>
     <a-table
       :bordered="false"
-      :columns="columns"
-      :data="caseConfigList"
+      :columns="displayColumns"
+      :data="readonly ? configs : caseConfigList"
       :loading="loading"
       :pagination="false"
       :row-key="'id'"
-      :draggable="{ type: 'handle', width: 40 }"
-      :scroll="{ x: 900 }"
+      :draggable="readonly || local ? undefined : { type: 'handle', width: 40 }"
+      :scroll="{ x: readonly ? 1000 : 970 }"
       size="small"
       @change="handleChange"
     >
       <template #columns>
         <a-table-column
-          v-for="item of columns"
+          v-for="item of displayColumns"
           :key="item.key"
           :data-index="item.key"
           :ellipsis="item.ellipsis"
@@ -47,17 +54,24 @@
             </a-tag>
           </template>
           <template v-else-if="item.key === 'status'" #cell="{ record }">
+            <a-tag v-if="readonly" :color="record.status === 1 ? 'green' : 'gray'" size="small">{{ record.status === 1 ? '启用' : '停用' }}</a-tag>
             <a-switch
+              v-else
               :beforeChange="(newValue) => switchStatus(newValue, record)"
               :default-checked="record.status === 1"
             />
           </template>
+          <template v-else-if="item.key === 'stage'" #cell="{ record }">
+            {{ enumTitle(enumStore.data_factory_execution_stage, record.stage) }}
+          </template>
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
             <MangoTableActions
               :actions="[
-                { label: '编辑/预览', onClick: () => open(record) },
+                { label: readonly ? '查看/预览' : '编辑/预览', permission: readonly ? readonlyPermission : local ? localPermission : undefined, onClick: () => open(record) },
                 {
                   label: '删除',
+                  permission: local ? localPermission : undefined,
+                  hidden: readonly,
                   danger: true,
                   loading: deleteLoading === record.id,
                   onClick: () => deleteConfig(record),
@@ -72,34 +86,42 @@
 
   <a-drawer
     v-model:visible="visible"
-    :title="form.id ? '编辑数据工厂配置' : '新增数据工厂配置'"
+    :title="readonly ? '查看数据工厂配置' : form.id ? '编辑数据工厂配置' : '新增数据工厂配置'"
     width="min(1480px, 96vw)"
-    :mask-closable="false"
+    body-class="mango-data-factory-config-body"
     unmount-on-close
   >
     <div class="mango-data-factory-config-drawer">
-      <a-form :model="form" layout="vertical" class="mango-data-factory-config-form">
+      <a-alert v-if="readonlyError" type="error">配置加载失败，请关闭后重试，并确认具备数据工厂模板和实体的查看权限。</a-alert>
+      <a-form
+        :model="form"
+        :disabled="readonly"
+        layout="horizontal"
+        :label-col-props="{ flex: 'none' }"
+        :wrapper-col-props="{ flex: '1' }"
+        class="mango-data-factory-config-form"
+      >
         <div class="mango-section-card mango-data-factory-base-card">
           <a-form-item label="项目/产品" required>
-            <ProjectProductSelect
-              v-model="form.project_product"
-              @change="onProjectProductChange"
-            />
+            <ProjectProductSelect v-model="form.project_product" :disabled="readonly" @change="onProjectProductChange" />
           </a-form-item>
           <a-form-item label="逻辑数据库" required>
             <a-select
               v-model="form.datasource_alias"
+              :disabled="readonly"
               :options="datasourceAliasOptions"
               :field-names="{ value: 'id', label: 'name' }"
               allow-clear
               allow-search
               placeholder="请选择逻辑数据库"
               @change="onDatasourceAliasChange"
+              data-testid="qa-components-datafactory-caseconfigpanel-select-请选择逻辑数据库"
             />
           </a-form-item>
           <a-form-item label="模块名称" required>
             <ProductModuleSelect
               v-model="form.module"
+              :disabled="readonly"
               :project-product-id="form.project_product"
               :auto-clear="false"
               @change="onModuleChange"
@@ -108,32 +130,39 @@
           <a-form-item label="场景模板" required>
             <a-select
               v-model="form.template"
+              :disabled="readonly"
               :options="templateSelectOptions"
               :loading="templateLoading"
               allow-clear
               allow-search
               placeholder="请选择场景模板"
               @change="onTemplateChange"
+              data-testid="qa-components-datafactory-caseconfigpanel-select-请选择场景模板"
             />
           </a-form-item>
-          <a-form-item label="数据名称" required>
+          <a-form-item v-if="!local" label="数据名称" required>
             <a-input
               v-model="form.name"
+              :disabled="readonly"
               placeholder="例如：订单数据；用例中按“订单数据.id”取值"
+              data-testid="qa-components-datafactory-caseconfigpanel-input-例如-订单数据-用例中按-订单数据-id-取值"
             />
           </a-form-item>
-          <a-form-item label="清理策略">
+          <a-form-item v-if="!local" label="清理策略">
             <a-select
               v-model="form.cleanup_strategy"
+              :disabled="readonly"
               :options="cleanupStrategyOptions"
               :field-names="{ value: 'key', label: 'title' }"
               allow-clear
               placeholder="默认使用模板清理策略"
+              data-testid="qa-components-datafactory-caseconfigpanel-select-默认使用模板清理策略"
             />
           </a-form-item>
-          <a-form-item label="状态">
+          <a-form-item v-if="!local" label="状态">
             <a-switch
               :model-value="form.status === 1"
+              :disabled="readonly"
               @change="(value) => (form.status = value ? 1 : 0)"
             />
           </a-form-item>
@@ -153,14 +182,18 @@
               type="button"
               :class="[
                 'mango-template-current-card',
-                { 'mango-template-current-card--active': activeTemplateSectionKey === MAIN_TEMPLATE_SECTION_KEY },
+                {
+                  'mango-template-current-card--active':
+                    activeTemplateSectionKey === MAIN_TEMPLATE_SECTION_KEY,
+                },
               ]"
               @click="scrollToMainTemplate"
             >
               <div class="mango-template-current-card__label">主模板</div>
               <div class="mango-template-current-card__name">{{ currentTemplate.name }}</div>
               <div class="mango-template-current-card__meta">
-                {{ getTemplateEntityName(currentTemplate) }} / {{ getTemplateTableName(currentTemplate) }}
+                {{ getTemplateEntityName(currentTemplate) }} /
+                {{ getTemplateTableName(currentTemplate) }}
               </div>
               <div class="mango-template-current-card__foot">
                 <span>{{ getTemplateItemCount(currentTemplate) }} 个关联模板</span>
@@ -174,7 +207,10 @@
                 type="button"
                 :class="[
                   'mango-template-child-card',
-                  { 'mango-template-child-card--active': activeTemplateSectionKey === getItemCaseKey(item) },
+                  {
+                    'mango-template-child-card--active':
+                      activeTemplateSectionKey === getItemCaseKey(item),
+                  },
                 ]"
                 @click="scrollToTemplateItem(item)"
               >
@@ -183,7 +219,7 @@
                 <em>{{ itemFieldsMap[String(item.id)]?.length || 0 }} 字段</em>
               </button>
             </div>
-            <a-spin
+            <mango-panel-spin
               v-if="templateLoading || !currentTemplate"
               :loading="templateLoading"
               :class="[
@@ -203,7 +239,7 @@
               <div v-else-if="!currentTemplate" class="mango-empty-state mango-template-empty">
                 请在上方筛选区选择场景模板
               </div>
-            </a-spin>
+            </mango-panel-spin>
           </aside>
 
           <section class="mango-template-editor">
@@ -211,7 +247,8 @@
               <div>
                 <div class="mango-template-summary__title">{{ currentTemplate.name }}</div>
                 <div class="mango-template-summary__meta">
-                  {{ getTemplateEntityName(currentTemplate) }} / {{ getTemplateTableName(currentTemplate) }}
+                  {{ getTemplateEntityName(currentTemplate) }} /
+                  {{ getTemplateTableName(currentTemplate) }}
                 </div>
               </div>
               <a-space>
@@ -219,17 +256,20 @@
                   size="small"
                   type="primary"
                   :loading="previewLoading === 'form'"
-                  :disabled="!form.template"
+                  :disabled="!form.template || (readonly && !canPreviewConfiguration)"
                   @click="openRelationPreview"
+                  data-testid="qa-components-datafactory-caseconfigpanel-button-预览整体流程"
                 >
                   预览整体流程
                 </a-button>
-                <a-tag size="small" color="arcoblue">{{ getTemplateItemCount(currentTemplate) }} 个关联模板</a-tag>
+                <a-tag size="small" color="arcoblue"
+                  >{{ getTemplateItemCount(currentTemplate) }} 个关联模板</a-tag
+                >
                 <a-tag size="small">{{ getTemplateCleanupText(currentTemplate) }}</a-tag>
               </a-space>
             </div>
-            <a-spin :loading="fieldLoading" class="mango-template-editor-spin">
-              <a-space v-if="form.template" class="mango-template-field-stack" direction="vertical" fill>
+            <mango-panel-spin :loading="fieldLoading" class="mango-template-editor-spin">
+              <div v-if="form.template" class="mango-template-field-stack">
                 <section
                   :id="getTemplateSectionDomId(MAIN_TEMPLATE_SECTION_KEY)"
                   class="mango-section-card mango-case-config-field-card"
@@ -241,6 +281,8 @@
                     </div>
                   </div>
                   <TemplateFieldConfigEditor
+                    :readonly="readonly || local"
+                    :show-config="!local"
                     :field-overrides="mainCaseOverrides"
                     :output-config="templateOutputConfig"
                     :fields="fieldRows"
@@ -248,7 +290,7 @@
                     :dependency-template-options="dependencyTemplateOptions"
                     :load-dependency-template-options="loadDependencyTemplateOptions"
                     :preview-fields="previewResult.fields || []"
-                    :loading="fieldLoading || previewLoading === 'form'"
+                    :loading="!fieldLoading && previewLoading === 'form'"
                     :show-output="false"
                     show-preview
                     @update:field-overrides="updateMainCaseOverrides"
@@ -271,7 +313,9 @@
                       <p>配置该关联模板在当前用例中的字段生成规则</p>
                     </div>
                     <a-space>
-                      <a-tag size="small">{{ itemFieldsMap[String(item.id)]?.length || 0 }} 个字段</a-tag>
+                      <a-tag size="small"
+                        >{{ itemFieldsMap[String(item.id)]?.length || 0 }} 个字段</a-tag
+                      >
                       <a-button size="mini" type="text" @click="toggleItemExpanded(item)">
                         {{ isItemExpanded(item) ? '收起' : '展开' }}
                       </a-button>
@@ -279,6 +323,8 @@
                   </div>
                   <template v-if="isItemExpanded(item)">
                     <TemplateFieldConfigEditor
+                      :readonly="readonly || local"
+                      :show-config="!local"
                       :field-overrides="getItemCaseOverrides(item)"
                       :output-config="[]"
                       :fields="itemFieldsMap[String(item.id)] || []"
@@ -286,7 +332,7 @@
                       :dependency-template-options="dependencyTemplateOptions"
                       :load-dependency-template-options="loadDependencyTemplateOptions"
                       :preview-fields="getItemPreviewFields(item)"
-                      :loading="fieldLoading || previewLoading === 'form'"
+                      :loading="!fieldLoading && previewLoading === 'form'"
                       :show-output="false"
                       show-preview
                       @update:field-overrides="(value) => updateItemCaseOverrides(item, value)"
@@ -296,17 +342,29 @@
                     关联模板字段已收起。展开后可覆盖该模板在当前用例中的字段生成规则。
                   </div>
                 </section>
-              </a-space>
+              </div>
               <div v-else class="mango-empty-state mango-field-empty">请先选择场景模板</div>
-            </a-spin>
+            </mango-panel-spin>
           </section>
         </div>
       </a-form>
     </div>
     <template #footer>
       <a-space class="mango-data-factory-config-footer">
-        <a-button @click="visible = false">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="save()">确定</a-button>
+        <a-button
+          @click="visible = false"
+          data-testid="qa-components-datafactory-caseconfigpanel-button-取消"
+          >{{ readonly ? '关闭' : '取消' }}</a-button
+        >
+        <a-button
+          v-if="!readonly"
+          v-permission="local ? localPermission : undefined"
+          type="primary"
+          :loading="saving"
+          @click="save()"
+          data-testid="qa-components-datafactory-caseconfigpanel-button-确定"
+          >确定</a-button
+        >
       </a-space>
     </template>
   </a-drawer>
@@ -337,8 +395,8 @@
 <script lang="ts" setup>
   import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
+  import usePermissionStore from '@/store/modules/permission'
   import DataFactoryRelationFlow from '@/components/DataFactory/DataFactoryRelationFlow.vue'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
@@ -364,18 +422,35 @@
     defineProps<{
       caseId?: string | number | null
       projectProductId?: string | number | null
-      sourceType: number
+      sourceType?: number
+      local?: boolean
+      localPermission?: string
       showAddButton?: boolean
+      readonly?: boolean
+      readonlyPermission?: string
+      configs?: any[]
     }>(),
     {
       caseId: null,
+      local: false,
+      localPermission: undefined,
       projectProductId: null,
       showAddButton: false,
+      readonly: false,
+      readonlyPermission: 'api.case:detail',
+      configs: () => [],
     }
   )
+  const emit = defineEmits<{
+    (event: 'count-change', count: number): void
+    (event: 'update:configs', configs: any[]): void
+  }>()
 
   const enumStore = useEnum()
-  const userStore = useUserStore()
+  const permissions = usePermissionStore()
+  const canPreviewConfiguration = computed(() => permissions.hasPermission('data_factory.template:detail'))
+  const readonlyError = ref(false)
+  let readonlyRequestVersion = 0
   const TEMPLATE_USAGE_CASE = 1
   const MAIN_TEMPLATE_SECTION_KEY = '__main__'
   const templateSectionDomPrefix = `mango-case-template-section-${Math.random()
@@ -425,12 +500,18 @@
       title: '操作',
       key: 'actions',
       dataIndex: 'actions',
-      width: 170,
+      width: 160,
       align: 'center',
       fixed: 'right',
     },
   ]
 
+  const displayColumns = computed(() => props.local ? columns.filter(item => !['name', 'cleanup_strategy', 'status'].includes(item.key)) : props.readonly ? [
+    ...columns.filter(item => item.key !== 'actions'),
+    { title: '执行阶段', key: 'stage', dataIndex: 'stage', width: 90, align: 'center' },
+    { title: '执行顺序', key: 'sort', dataIndex: 'sort', width: 80, align: 'center' },
+    columns.find(item => item.key === 'actions')!,
+  ] : columns)
   const caseConfigList = ref<any[]>([])
   const templateList = ref<any[]>([])
   const datasourceAliasOptions = ref<any[]>([])
@@ -453,7 +534,7 @@
 
   const form = reactive<{
     id: number | null
-    source_type: number
+    source_type: number | undefined
     source_id: string | number | null
     project_product: string | number | null
     datasource_alias: string | number | null
@@ -476,7 +557,7 @@
     name: '',
     sort: 0,
     field_overrides: {},
-    cleanup_strategy: null,
+    cleanup_strategy: 1,
     status: 1,
     stage: 1,
   })
@@ -512,7 +593,13 @@
   }
 
   function getTemplateEntityName(template: any) {
-    return template?.entity?.name || template?.entity_name || template?.entity?.id || template?.entity || '-'
+    return (
+      template?.entity?.name ||
+      template?.entity_name ||
+      template?.entity?.id ||
+      template?.entity ||
+      '-'
+    )
   }
 
   function getTemplateTableName(template: any) {
@@ -538,14 +625,22 @@
   }
 
   function refresh() {
+    if (props.local) {
+      caseConfigList.value = props.configs.map(record => ({ ...record }))
+      emit('count-change', caseConfigList.value.length)
+      return
+    }
+    if (props.readonly) return
     if (!props.caseId || !props.sourceType) {
       caseConfigList.value = []
+      emit('count-change', 0)
       return
     }
     loading.value = true
     getDataFactoryCaseConfig({ source_type: props.sourceType, source_id: props.caseId })
       .then((res) => {
         caseConfigList.value = res.data || []
+        emit('count-change', caseConfigList.value.length)
       })
       .finally(() => {
         loading.value = false
@@ -553,6 +648,7 @@
   }
 
   function handleChange(_data: any[]) {
+    if (props.readonly || props.local) return
     caseConfigList.value = _data.map((item, index) => ({
       ...item,
       sort: index,
@@ -618,17 +714,17 @@
     const template = record?.template || {}
     form.id = record?.id || null
     form.source_type = props.sourceType
-    form.source_id = props.caseId
+    form.source_id = record?.source_id ?? props.caseId
     form.project_product =
       template?.project_product?.id || template?.project_product || props.projectProductId || null
     form.datasource_alias =
       template?.entity?.datasource_alias?.id || template?.entity?.datasource_alias || null
     form.module = template?.module?.id || template?.module || null
     form.template = template?.id || record?.template || null
-    form.name = record?.name || ''
+    form.name = props.local ? 'data' : record?.name || ''
     form.sort = record?.sort ?? caseConfigList.value.length
     form.field_overrides = record?.field_overrides || {}
-    form.cleanup_strategy = record?.cleanup_strategy ?? null
+    form.cleanup_strategy = record ? record.cleanup_strategy ?? null : 1
     form.status = record?.status ?? 1
     form.stage = record?.stage || 1
     templateOutputConfig.value = record?.template?.output_config || []
@@ -639,9 +735,30 @@
     previewResult.value = {}
   }
 
-  function open(record: any = null) {
+  async function open(record: any = null) {
+    if (props.readonly) {
+      if (record) void openReadonly(record)
+      return
+    }
+    if (props.local && (!props.localPermission || !permissions.hasPermission(props.localPermission))) return
+    readonlyError.value = false
     resetForm(record)
     visible.value = true
+    if (props.local && record?.template) {
+      const request = ++readonlyRequestVersion
+      templateLoading.value = true
+      try {
+        const id = record.template?.id || record.template
+        const response = await getDataFactoryTemplate({ id, page: 1, pageSize: 1 })
+        if (request !== readonlyRequestVersion || !visible.value) return
+        const template = (response.data || []).find((item: any) => Number(item.id) === Number(id))
+        if (!template) { readonlyError.value = true; return }
+        resetForm({ ...record, template })
+      } catch {
+        if (request === readonlyRequestVersion) readonlyError.value = true
+        return
+      } finally { if (request === readonlyRequestVersion) templateLoading.value = false }
+    }
     loadDatasourceAliases(form.project_product).then(() => {
       if (form.project_product && form.datasource_alias && form.module) {
         loadTemplates().then(() => {
@@ -665,6 +782,43 @@
     expandedTemplateItemKeys.value = []
     activeTemplateSectionKey.value = MAIN_TEMPLATE_SECTION_KEY
     previewResult.value = {}
+  }
+
+  async function openReadonly(record: any) {
+    const version = ++readonlyRequestVersion
+    resetForm(record)
+    templateList.value = []
+    readonlyError.value = false
+    visible.value = true
+    templateLoading.value = true
+    fieldLoading.value = true
+    try {
+      const response = await getDataFactoryTemplate({ id: form.template, page: 1, pageSize: 1 })
+      if (version !== readonlyRequestVersion) return
+      const template = (response.data || []).find((item: any) => Number(item.id) === Number(form.template))
+      if (!template) {
+        readonlyError.value = true
+        return
+      }
+      resetForm({ ...record, template })
+      templateList.value = [template]
+      const alias = template.entity?.datasource_alias
+      datasourceAliasOptions.value = alias && typeof alias === 'object' ? [alias] : []
+      const entityId = template.entity?.id || template.entity
+      const fieldResponse = await getDataFactoryField({ entity: entityId })
+      if (version !== readonlyRequestVersion) return
+      fieldRows.value = fieldResponse.data || []
+      await loadItemFields(version)
+      if (version !== readonlyRequestVersion) return
+      if (canPreviewConfiguration.value) await loadCasePreview()
+    } catch {
+      if (version === readonlyRequestVersion) readonlyError.value = true
+    } finally {
+      if (version === readonlyRequestVersion) {
+        templateLoading.value = false
+        fieldLoading.value = false
+      }
+    }
   }
 
   function onProjectProductChange() {
@@ -858,19 +1012,21 @@
   }
 
   function openRelationPreview() {
+    if (props.readonly && !canPreviewConfiguration.value) return
     relationPreviewVisible.value = true
     if (!previewResult.value?.dependency_tree) {
       loadCasePreview()
     }
   }
 
-  function loadItemFields() {
+  function loadItemFields(version?: number) {
     const tasks = selectedTemplateItems.value.map((item: any) => {
       const entityId = item.child_template_detail?.entity?.id || item.child_template_detail?.entity
       if (!entityId) {
         return Promise.resolve()
       }
       return getDataFactoryField({ entity: entityId }).then((res) => {
+        if (version !== undefined && version !== readonlyRequestVersion) return
         itemFieldsMap.value = {
           ...itemFieldsMap.value,
           [String(item.id)]: res.data || [],
@@ -881,6 +1037,7 @@
   }
 
   async function save() {
+    if (props.readonly || props.local && (!props.localPermission || !permissions.hasPermission(props.localPermission))) return false
     if (!form.template) {
       Message.error('请选择场景模板')
       return false
@@ -889,9 +1046,16 @@
       Message.error('请填写数据名称')
       return false
     }
-    if (!props.caseId) {
+    if (!props.local && !props.caseId) {
       Message.error('用例ID不能为空')
       return false
+    }
+    if (props.local) {
+      const template = currentTemplate.value
+      if (!template) return false
+      emit('update:configs', [{ id: 'local', name: 'data', template, field_overrides: form.field_overrides }])
+      visible.value = false
+      return true
     }
     saving.value = true
     const payload = {
@@ -922,6 +1086,7 @@
   }
 
   function switchStatus(newValue: boolean, record: any) {
+    if (props.local) return Promise.resolve(false)
     return new Promise<boolean>((resolve, reject) => {
       putDataFactoryCaseConfig({
         id: record.id,
@@ -951,6 +1116,11 @@
       cancelText: '取消',
       okText: '删除',
       onBeforeOk: () => {
+        if (props.local) {
+          if (!props.localPermission || !permissions.hasPermission(props.localPermission)) return false
+          emit('update:configs', [])
+          return true
+        }
         deleteLoading.value = record.id
         return deleteDataFactoryCaseConfig(record.id)
           .then((res) => {
@@ -974,33 +1144,33 @@
   }
 
   function loadCasePreview() {
+    if ((props.readonly || props.local) && !canPreviewConfiguration.value) return Promise.resolve()
+    const version = readonlyRequestVersion
     const templateId = form.template
     if (!templateId) {
       previewResult.value = {}
       return
     }
-    if (userStore.selected_environment == null) {
-      previewResult.value = {}
-      return
-    }
     previewLoading.value = 'form'
-    postDataFactoryCaseConfigPreview({
+    return postDataFactoryCaseConfigPreview({
       source_type: props.sourceType,
       source_id: props.caseId,
       template_id: templateId,
       field_overrides: form.field_overrides || {},
-      test_env: userStore.selected_environment,
+      preview_mode: 'configuration',
     })
       .then((res) => {
+        if ((props.readonly || props.local) && version !== readonlyRequestVersion) return
         previewResult.value = res.data || {}
       })
       .finally(() => {
+        if ((props.readonly || props.local) && version !== readonlyRequestVersion) return
         previewLoading.value = null
       })
   }
 
   watch(
-    () => [props.caseId, props.sourceType],
+    () => [props.caseId, props.sourceType, props.readonly],
     () => {
       refresh()
     }
@@ -1017,11 +1187,24 @@
     }
   )
 
+  watch(() => props.configs, () => { if (props.local) refresh() }, { deep: true })
+
+  watch(visible, next => {
+    if (!next && (props.readonly || props.local)) {
+      readonlyRequestVersion += 1
+      templateLoading.value = false
+      fieldLoading.value = false
+      previewLoading.value = null
+      relationPreviewVisible.value = false
+    }
+  })
+
   onMounted(() => {
     refresh()
   })
 
   onBeforeUnmount(() => {
+    readonlyRequestVersion += 1
     if (previewTimerId.value) {
       window.clearTimeout(previewTimerId.value)
     }
@@ -1043,9 +1226,19 @@
     width: 100%;
   }
 
-  .mango-data-factory-config-drawer {
-    height: calc(100vh - 118px);
+  :global(.mango-data-factory-config-body) {
+    display: flex;
     min-height: 0;
+    padding: var(--m-page-gap);
+    overflow: hidden;
+  }
+
+  .mango-data-factory-config-drawer {
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    container-type: inline-size;
   }
 
   .mango-data-factory-config-form {
@@ -1053,32 +1246,52 @@
     flex-direction: column;
     height: 100%;
     min-height: 0;
-    gap: 12px;
+    gap: var(--m-page-gap);
   }
 
   .mango-data-factory-base-card {
     display: grid;
-    padding: 12px;
-    gap: 8px 12px;
-    grid-template-columns:
-      minmax(150px, 0.9fr)
-      minmax(150px, 0.9fr)
-      minmax(150px, 0.85fr)
-      minmax(240px, 1.35fr)
-      minmax(210px, 1.15fr)
-      minmax(140px, 0.75fr)
-      80px;
+    flex: none;
+    padding: var(--m-card-padding);
+    gap: var(--m-page-gap);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
 
   .mango-data-factory-base-card :deep(.arco-form-item) {
     margin-bottom: 0;
   }
 
+  .mango-data-factory-base-card :deep(.arco-form-item-label-col) {
+    width: 100px;
+    white-space: nowrap;
+  }
+
+  .mango-data-factory-base-card :deep(.arco-form-item-label) {
+    white-space: nowrap;
+  }
+
+  .mango-data-factory-base-card :deep(.arco-form-item-wrapper-col) {
+    min-width: 0;
+  }
+
+  .mango-template-current-card:focus-visible,
+  .mango-template-child-card:focus-visible {
+    outline: 1px solid var(--m-primary);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mango-template-current-card,
+    .mango-template-child-card {
+      transition: none;
+    }
+  }
+
   .mango-data-factory-template-workbench {
     display: grid;
     flex: 1;
     min-height: 0;
-    gap: 12px;
+    gap: var(--m-page-gap);
     grid-template-columns: 330px minmax(0, 1fr);
   }
 
@@ -1091,8 +1304,8 @@
     display: flex;
     overflow: hidden;
     flex-direction: column;
-    padding: 12px;
-    gap: 10px;
+    padding: var(--m-card-padding);
+    gap: var(--m-page-gap);
   }
 
   .mango-template-list-spin {
@@ -1105,8 +1318,7 @@
     flex: 1;
   }
 
-  .mango-template-list-spin :deep(.arco-spin),
-  .mango-template-list-spin :deep(.arco-spin-children) {
+  .mango-template-list-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
     min-height: 0;
   }
@@ -1117,12 +1329,12 @@
     width: 100%;
     flex-shrink: 0;
     cursor: pointer;
-    padding: 10px 11px;
+    padding: var(--m-card-padding);
     border: 1px solid var(--m-primary-border);
     border-radius: var(--m-radius-md);
     background: color-mix(in srgb, var(--m-primary) 7%, var(--m-surface));
     color: var(--m-text);
-    box-shadow: var(--m-form-focus-shadow);
+    box-shadow: none;
     font: inherit;
     text-align: left;
     transition: border-color var(--m-motion-duration-fast), background var(--m-motion-duration-fast);
@@ -1177,7 +1389,7 @@
     flex: 1;
     flex-direction: column;
     min-height: 0;
-    gap: 6px;
+    gap: var(--m-space-sm);
   }
 
   .mango-template-child-card {
@@ -1186,7 +1398,7 @@
     width: 100%;
     cursor: pointer;
     flex-direction: column;
-    padding: 7px 9px;
+    padding: var(--m-space-sm) var(--m-card-padding);
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-sm);
     background: var(--m-surface);
@@ -1229,15 +1441,17 @@
     display: flex;
     overflow: hidden;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--m-page-gap);
   }
 
   .mango-template-summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 11px 12px;
-    gap: 12px;
+    flex: none;
+    flex-wrap: wrap;
+    padding: var(--m-card-padding);
+    gap: var(--m-page-gap);
     box-shadow: none;
   }
 
@@ -1269,28 +1483,30 @@
     min-height: 0;
   }
 
-  .mango-template-editor-spin :deep(.arco-spin),
-  .mango-template-editor-spin :deep(.arco-spin-children) {
+  .mango-template-editor-spin :deep(> .mango-panel-spin__content) {
     display: flex;
     flex-direction: column;
     height: 100%;
     min-height: 0;
   }
 
-  .mango-template-editor-spin :deep(.arco-spin-children) {
+  .mango-template-editor-spin :deep(> .mango-panel-spin__content) {
     overflow: hidden;
   }
 
   .mango-template-field-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m-page-gap);
     overflow-y: auto;
     flex: 1;
     height: 100%;
     min-height: 0;
-    padding-right: 2px;
+    padding-right: 0;
   }
 
-  .mango-template-field-stack :deep(.arco-space-item) {
-    flex-shrink: 0;
+  .mango-template-field-stack > .mango-section-card + .mango-section-card {
+    margin-top: 0;
   }
 
   .mango-template-empty {
@@ -1307,7 +1523,7 @@
   }
 
   .mango-case-config-field-card--collapsed {
-    padding-bottom: 12px;
+    padding-bottom: var(--m-card-padding);
   }
 
   .mango-template-item-collapsed {
@@ -1325,14 +1541,9 @@
     min-height: 0;
   }
 
-  @media (max-width: 1px) {
-    .mango-data-factory-base-card {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
+  @container (max-width: 900px) {
     .mango-data-factory-template-workbench {
-      grid-template-columns: 1fr;
+      grid-template-columns: 240px minmax(0, 1fr);
     }
-
   }
 </style>

@@ -7,7 +7,7 @@
 import time
 from django.utils.deprecation import MiddlewareMixin
 
-from src.common.tools.log_collector import log
+from src.common.logging import log
 
 
 class LogMiddleWare(MiddlewareMixin):

@@ -1,9 +1,10 @@
 <template>
   <div class="mango-avatar-container">
-    <a-dropdown size="large" trigger="hover" @select="handleSelect">
+    <a-dropdown size="large" trigger="hover" :disabled="switching" @select="handleSelect">
       <div class="mango-action-wrapper">
         <span class="mango-nick-name"> {{ userStore.selected_environment_title }} </span>
-        <icon-caret-down class="mango-tip" />
+        <a-spin v-if="switching" :size="12" />
+        <icon-caret-down v-else class="mango-tip" />
       </div>
       <template #content>
         <a-doption v-for="item of enumStore.environment_type" :key="item.key" :value="item.key">
@@ -15,7 +16,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted, watchEffect } from 'vue'
+  import { ref, watchEffect } from 'vue'
+  import { Message } from '@arco-design/web-vue'
   import useUserStore from '@/store/modules/user'
 
   import { putUserEnvironment } from '@/api/user/user'
@@ -24,14 +26,21 @@
   const enumStore = useEnum()
 
   const userStore = useUserStore()
+  const switching = ref(false)
 
   function handleSelect(key: any) {
+    if (switching.value) return
+    switching.value = true
     putUserEnvironment(userStore.userId, key)
       .then((res) => {
         userStore.selected_environment = res.data.selected_environment
-        setTitle(key)
+        setTitle(res.data.selected_environment)
+        Message.success(res.msg)
       })
       .catch(console.log)
+      .finally(() => {
+        switching.value = false
+      })
   }
 
   function setTitle(key: any) {
@@ -52,7 +61,6 @@
   watchEffect(() => {
     setTitle(userStore.selected_environment)
   })
-  onMounted(() => {})
 </script>
 
 <style lang="less" scoped>
@@ -75,7 +83,8 @@
       }
 
       .mango-nick-name {
-        margin: 0 5px;
+        margin: 0 4px;
+        font-size: 14px;
 
         .mango-tip {
           transform: rotate(0);

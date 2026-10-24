@@ -29,7 +29,7 @@ if [ "$BEFORE_REV" != "$AFTER_REV" ]; then
 fi
 
 echo "停止当前芒果业务服务，释放内存..."
-$COMPOSE stop mango_gateway mango_server scheduler_service api_worker_1 api_worker_2 mcp_service mango_actuator mango-console || true
+$COMPOSE stop mango_gateway mango_server scheduler_service api_worker_1 api_worker_2 mcp_service realtime_service mango_actuator mango-console || true
 TASK_DISPATCHER_CONTAINERS="$(docker ps -aq --filter name=task_dispatcher || true)"
 if [ -n "$TASK_DISPATCHER_CONTAINERS" ]; then
   echo "清理旧 task_dispatcher 容器..."
@@ -86,13 +86,13 @@ echo "  MCP服务:  http://127.0.0.1:8000/mcp"
 
 echo ""
 echo "关键启动日志："
-$COMPOSE logs --tail=120 mango_server scheduler_service api_worker_1 api_worker_2 mcp_service mango_actuator \
+$COMPOSE logs --tail=120 mango_server scheduler_service api_worker_1 api_worker_2 mcp_service realtime_service mango_actuator \
   | grep -E "启动：|Application startup complete|Uvicorn running|WebSocket连接成功|握手成功|Applying .* OK" \
   || echo "未找到关键启动日志，请执行：docker compose logs --tail=120 查看完整日志"
 
 echo ""
 echo "异常摘要："
-$COMPOSE logs --tail=200 mango_gateway mango_server scheduler_service api_worker_1 api_worker_2 mcp_service mango_actuator \
-  | grep -v 'GET /api/web/socket' \
+$COMPOSE logs --tail=200 mango_gateway mango_server scheduler_service api_worker_1 api_worker_2 mcp_service realtime_service mango_actuator \
+  | grep -v 'GET /ws/web/socket' \
   | grep -E "CRITICAL|ERROR|Traceback|Exception|HTTP/[0-9.]+\" 5[0-9][0-9] " \
   || echo "最近日志中未发现关键异常"

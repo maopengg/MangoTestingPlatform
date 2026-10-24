@@ -1,26 +1,19 @@
 <template>
-  <a-drawer
-    v-model:visible="localVisible"
-    :title="title"
-    :width="width"
-    :mask-closable="false"
-    unmount-on-close
-  >
+  <a-drawer v-model:visible="localVisible" :title="title" :width="width" unmount-on-close>
     <div class="mango-json-edit-drawer">
       <div v-if="description" class="mango-json-edit-drawer__tip">
         {{ description }}
       </div>
-      <a-textarea
+      <MangoJsonEditor
         v-model="localValue"
-        class="mango-json-edit-drawer__textarea"
-        allow-clear
         :placeholder="placeholder"
+        min-height="calc(100vh - 190px)"
       />
     </div>
     <template #footer>
       <div class="mango-json-edit-drawer__footer">
-        <a-button size="small" @click="handleCancel">取消</a-button>
-        <a-button size="small" type="primary" :loading="props.saving" @click="handleSave"
+        <a-button size="small" @click="handleCancel" data-testid="qa-components-editors-mangojsoneditdrawer-button-取消">取消</a-button>
+        <a-button size="small" type="primary" :loading="props.saving" @click="handleSave" data-testid="qa-components-editors-mangojsoneditdrawer-button-保存"
           >保存</a-button
         >
       </div>
@@ -30,6 +23,7 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue'
+  import MangoJsonEditor from '@/components/editors/MangoJsonEditor.vue'
 
   const props = withDefaults(
     defineProps<{
@@ -114,18 +108,9 @@
     line-height: 20px;
   }
 
-  .mango-json-edit-drawer__textarea {
+  .mango-json-edit-drawer :deep(.mango-json-editor) {
     flex: 1;
     min-height: 0;
-  }
-
-  .mango-json-edit-drawer__textarea :deep(textarea) {
-    height: calc(100vh - 190px) !important;
-    min-height: 420px;
-    resize: none;
-    font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, Menlo, monospace;
-    font-size: 13px;
-    line-height: 21px;
   }
 
   .mango-json-edit-drawer__footer {

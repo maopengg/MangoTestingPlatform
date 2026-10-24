@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" content-flush>
     <template #header>
       <TableHeader
         :show-filter="true"
@@ -12,6 +12,20 @@
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="item.optionItems"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
               </template>
               <template v-if="item.type === 'date'">
                 <a-date-picker v-model="item.value" />
@@ -33,18 +47,18 @@
     </template>
 
     <template #default>
-      <a-tabs>
+      <TableTabs>
         <template #extra>
           <a-space>
             <div>
               <span>注意：新增的定时策略需要联系管理员重启服务才会生效！</span>
             </div>
             <div>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
+              <a-button v-permission="'timing.strategy:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-timing-strategy-button-新增">新增</a-button>
             </div>
           </a-space>
         </template>
-      </a-tabs>
+      </TableTabs>
       <a-table
         :scroll="{ x: 1100 }"
         :bordered="false"
@@ -68,11 +82,14 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'timing.strategy:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'timing.strategy:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
@@ -113,9 +130,13 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { tableColumns, formItems, conditionItems } from './config'
   import { deleteSystemTime, getSystemTime, postSystemTime, putSystemTime } from '@/api/system/time'
+  import { getUserName } from '@/api/user/user'
+  import { setUpdateUserOptions } from '@/utils/update-user'
+  import { fieldNames } from '@/setting'
+  import TableTabs from '@/components/table/TableTabs.vue'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
@@ -129,6 +150,9 @@
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    if (value.update_user === null || value.update_user === '') {
+      delete value.update_user
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemTime(value)
@@ -141,7 +165,7 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
     doRefresh()
   }
@@ -154,7 +178,7 @@
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
   }
@@ -234,6 +258,7 @@
 
   onMounted(() => {
     nextTick(async () => {
+      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
       doRefresh()
     })
   })

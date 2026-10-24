@@ -1,2 +1,0 @@
-"""MCP tool registration modules."""
-

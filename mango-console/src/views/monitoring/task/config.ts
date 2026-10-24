@@ -2,6 +2,7 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 
@@ -12,16 +13,6 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '任务名称',
     type: 'input',
     placeholder: '请输入任务名称',
-    value: ref(''),
-    reset() {
-      this.value = ''
-    },
-  },
-  {
-    key: 'status',
-    label: '状态',
-    type: 'select',
-    placeholder: '请选择状态',
     value: ref(''),
     reset() {
       this.value = ''
@@ -82,6 +73,17 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '测试环境',
+    key: 'test_env',
+    value: ref(''),
+    type: 'select',
+    placeholder: '可选；选择后向脚本注入域名和数据库配置',
+    required: false,
+    validator() {
+      return true
+    },
+  },
+  {
     label: '是否通知',
     key: 'is_notice',
     value: ref(0),
@@ -126,15 +128,6 @@ export const formItems: FormItem[] = reactive([
 // 表格列
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '任务名称',
     key: 'name',
@@ -197,10 +190,21 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  updateUserColumn(),
+  updateTimeColumn(),
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

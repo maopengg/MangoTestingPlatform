@@ -1,7 +1,7 @@
 <template>
   <div
     :class="[!appStore.isCollapse ? 'mango-open-status' : 'mango-close-status', bgColor]"
-    :style="{ borderRadius: '0px', marginTop: appStore.layoutMode === 'ttb' ? '48px' : 0 }"
+    :style="{ borderRadius: '0px', marginTop: appStore.layoutMode === 'ttb' ? '43px' : 0 }"
     class="mango-side-bar-wrapper"
   >
     <transition name="logo">

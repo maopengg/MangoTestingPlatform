@@ -8,6 +8,7 @@
     :allow-clear="allowClear"
     :allow-search="allowSearch"
     :loading="loading"
+    :check-strictly="checkStrictly"
     value-key="key"
     @update:model-value="onUpdate"
     @change="onChange"
@@ -18,31 +19,21 @@
   type SharedModuleOption = {
     key: string | number
     title: string
-    superior_module_1?: string | null
-    superior_module_2?: string | null
+    level?: number
+    disabled?: boolean
+    selectionDisabledByLevel?: boolean
+    children?: SharedModuleOption[]
   }
 
-  const moduleOptionsCache = new Map<string, SharedModuleOption[]>()
   const pendingModuleRequests = new Map<string, Promise<SharedModuleOption[]>>()
 </script>
 
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue'
   import { fieldNames } from '@/setting'
-  import { getUserModuleName } from '@/api/system/module'
+  import { getUserModuleTree } from '@/api/system/module'
 
-  type ModuleOption = {
-    key: string | number
-    title: string
-    superior_module_1?: string | null
-    superior_module_2?: string | null
-  }
-
-  type ModuleCascaderOption = {
-    key: string | number
-    title: string
-    children?: ModuleCascaderOption[]
-  }
+  type ModuleOption = SharedModuleOption
 
   const props = defineProps({
     modelValue: {
@@ -73,13 +64,93 @@
       type: Boolean,
       default: true,
     },
+    checkStrictly: {
+      type: Boolean,
+      default: false,
+    },
+    refreshToken: {
+      type: [String, Number],
+      default: 0,
+    },
+    maxSelectableLevel: {
+      type: Number,
+      default: undefined,
+    },
+    selectableLevel: {
+      type: Number,
+      default: 3,
+    },
+    maxDisplayLevel: {
+      type: Number,
+      default: 3,
+    },
+    excludedKeys: {
+      type: Array,
+      default: () => [],
+    },
+    showAllOption: {
+      type: Boolean,
+      default: false,
+    },
+    allOptionLabel: {
+      type: String,
+      default: '全部模块',
+    },
   })
 
   const emit = defineEmits(['update:modelValue', 'change', 'loaded'])
   const options = ref<ModuleOption[]>([])
   const loading = ref(false)
   const loadVersion = ref(0)
-  const cascaderOptions = computed(() => buildModuleTree(options.value))
+  const cascaderOptions = computed(() => {
+    const excludedKeys = new Set(props.excludedKeys.map((item) => String(item)))
+    const hasMaxLevel =
+      props.maxSelectableLevel !== undefined &&
+      props.maxSelectableLevel !== null &&
+      Number.isFinite(Number(props.maxSelectableLevel))
+    const maxSelectableLevel = hasMaxLevel
+      ? Number(props.maxSelectableLevel)
+      : Number.POSITIVE_INFINITY
+    const selectableLevel = Number(props.selectableLevel || 0)
+    const hasMaxDisplayLevel =
+      props.maxDisplayLevel !== undefined &&
+      props.maxDisplayLevel !== null &&
+      Number.isFinite(Number(props.maxDisplayLevel))
+    const maxDisplayLevel = hasMaxDisplayLevel
+      ? Number(props.maxDisplayLevel)
+      : Number.POSITIVE_INFINITY
+
+    function normalize(items: ModuleOption[], depth: number): ModuleOption[] {
+      if (depth > maxDisplayLevel) return []
+      return (items || []).reduce<ModuleOption[]>((result, item) => {
+        if (excludedKeys.has(String(item.key))) return result
+        const { children: rawChildren, ...option } = item
+        const level = depth
+        if (level > maxDisplayLevel) return result
+        const children = level < maxDisplayLevel ? normalize(rawChildren || [], depth + 1) : []
+        if (selectableLevel > 0 && level < selectableLevel && children.length === 0) {
+          return result
+        }
+        const selectionDisabledByLevel =
+          level > maxSelectableLevel || (selectableLevel > 0 && level !== selectableLevel)
+        const normalizedOption = selectionDisabledByLevel
+          ? {
+              ...option,
+              level,
+              selectionDisabledByLevel: true,
+              disabled: children.length === 0,
+            }
+          : { ...option, level }
+        result.push(children.length ? { ...normalizedOption, children } : normalizedOption)
+        return result
+      }, [])
+    }
+
+    const normalizedOptions = normalize(options.value, 1)
+    return props.showAllOption
+      ? [{ key: '__all__', title: props.allOptionLabel, level: 0 }, ...normalizedOptions]
+      : normalizedOptions
+  })
 
   onMounted(() => {
     loadOptions()
@@ -98,6 +169,14 @@
     }
   )
 
+  watch(
+    () => props.refreshToken,
+    (value, oldValue) => {
+      if (value === oldValue) return
+      loadOptions()
+    }
+  )
+
   function getLeafValue(value: any) {
     if (Array.isArray(value)) {
       return value[value.length - 1] ?? null
@@ -107,85 +186,26 @@
 
   function getCacheKey(value: any) {
     const leafValue = getLeafValue(value)
-    return leafValue === undefined || leafValue === null || leafValue === '' ? '__all__' : String(leafValue)
+    return leafValue === undefined || leafValue === null || leafValue === ''
+      ? '__all__'
+      : String(leafValue)
   }
 
   function fetchModuleOptions(projectProductId: any) {
     const key = getCacheKey(projectProductId)
-    if (moduleOptionsCache.has(key)) {
-      return Promise.resolve(moduleOptionsCache.get(key) || [])
-    }
     const pending = pendingModuleRequests.get(key)
     if (pending) {
       return pending
     }
-    const request = getUserModuleName(getLeafValue(projectProductId))
+    const request = getUserModuleTree(getLeafValue(projectProductId))
       .then((res) => {
-        const list = Array.isArray(res.data) ? res.data : []
-        moduleOptionsCache.set(key, list)
-        return list
+        return Array.isArray(res.data) ? res.data : []
       })
       .finally(() => {
         pendingModuleRequests.delete(key)
       })
     pendingModuleRequests.set(key, request)
     return request
-  }
-
-  function normalizeName(value: string | null | undefined) {
-    return value?.trim() || ''
-  }
-
-  function getGroupOption(
-    nodes: ModuleCascaderOption[],
-    title: string,
-    path: string
-  ): ModuleCascaderOption {
-    const key = `module_group:${path}`
-    let option = nodes.find((item) => item.key === key)
-    if (!option) {
-      option = {
-        key,
-        title,
-        children: [],
-      }
-      nodes.push(option)
-    }
-    return option
-  }
-
-  function buildModuleTree(list: ModuleOption[]) {
-    const tree: ModuleCascaderOption[] = []
-    list.forEach((item) => {
-      const level1 = normalizeName(item.superior_module_1)
-      const level2 = normalizeName(item.superior_module_2)
-      const level3 = normalizeName(item.title)
-      if (!level3) {
-        return
-      }
-
-      const leaf = {
-        key: item.key,
-        title: level3,
-      }
-
-      if (!level1 && !level2) {
-        tree.push(leaf)
-        return
-      }
-
-      if (level1 && level2) {
-        const first = getGroupOption(tree, level1, level1)
-        const second = getGroupOption(first.children || [], level2, `${level1}/${level2}`)
-        second.children?.push(leaf)
-        return
-      }
-
-      const groupTitle = level1 || level2
-      const group = getGroupOption(tree, groupTitle, groupTitle)
-      group.children?.push(leaf)
-    })
-    return tree
   }
 
   function loadOptions() {
@@ -210,10 +230,25 @@
   }
 
   function onUpdate(value: any) {
+    if (!isSelectableValue(value)) return
     emit('update:modelValue', value)
   }
 
   function onChange(value: any) {
+    if (!isSelectableValue(value)) return
     emit('change', value)
+  }
+
+  function isSelectableValue(value: any) {
+    const key = getLeafValue(value)
+    if (key === undefined || key === null || key === '') return true
+    const queue = [...cascaderOptions.value]
+    while (queue.length) {
+      const option = queue.shift()
+      if (!option) continue
+      if (String(option.key) === String(key)) return !option.selectionDisabledByLevel
+      if (option.children?.length) queue.push(...option.children)
+    }
+    return false
   }
 </script>

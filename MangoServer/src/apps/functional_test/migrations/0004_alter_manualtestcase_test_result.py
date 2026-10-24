@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('functional_test', '0003_alter_functionaltestcontextresource_context_key'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='manualtestcase',
             name='test_result',
-            field=models.SmallIntegerField(choices=[(0, '失败'), (1, '通过'), (2, '待开始'), (3, '进行中'), (4, '警告')], default=2, verbose_name='测试结果'),
+            field=models.SmallIntegerField(
+                choices=[(0, '失败'), (1, '通过'), (2, '待开始'), (3, '进行中'), (4, '警告')], default=2,
+                verbose_name='测试结果'),
         ),
     ]

@@ -1,7 +1,7 @@
 <template>
   <a-cascader
     :model-value="modelValue"
-    :options="projectInfo.projectProduct"
+    :options="productOptions"
     :placeholder="placeholder"
     :disabled="disabled"
     :allow-clear="allowClear"
@@ -13,10 +13,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted } from 'vue'
+  import { computed, onMounted } from 'vue'
   import { useProject } from '@/store/modules/get-project'
 
-  defineProps({
+  const props = defineProps({
     modelValue: {
       type: [String, Number, Array],
       default: null,
@@ -37,10 +37,22 @@
       type: Boolean,
       default: true,
     },
+    currentProjectOnly: {
+      type: Boolean,
+      default: false,
+    },
   })
 
   const emit = defineEmits(['update:modelValue', 'change'])
   const projectInfo = useProject()
+  const productOptions = computed(() => {
+    if (!props.currentProjectOnly || !projectInfo.selectValue) {
+      return projectInfo.projectProduct
+    }
+    return projectInfo.projectProduct.filter(
+      (item: any) => String(item.value) === String(projectInfo.selectValue)
+    )
+  })
 
   onMounted(() => {
     projectInfo.projectProductName()

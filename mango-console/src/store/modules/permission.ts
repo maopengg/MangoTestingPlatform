@@ -1,17 +1,22 @@
 import { RouteRecordRaw } from 'vue-router'
 import { defineStore } from 'pinia'
-import useUserStore from './user'
 import router from '@/router'
 import { getMenuListByRoleId } from '@/api/url'
 import { post } from '@/api/http'
 import { findRootPathRoute, generatorRoutes, mapTwoLevelRouter } from '../help'
 import { constantRoutes } from '@/router/routes/constants'
+import { hasPermissionKeys, PermissionRequirement } from '@/utils/permission'
+
+let removePermissionRoutes: Array<() => void> = []
 
 const usePermissionStore = defineStore('permission-route', {
   state: () => {
     return {
       permissionRoutes: [] as RouteRecordRaw[],
       homePath: '/index/home',
+      permissionKeys: [] as string[],
+      statePermissionFields: {} as Record<string, string[]>,
+      isSuperAdmin: false,
     }
   },
   getters: {
@@ -36,59 +41,83 @@ const usePermissionStore = defineStore('permission-route', {
           return obj
         })
     },
+    hasPermission(state) {
+      return (permissionKey?: PermissionRequirement) =>
+        hasPermissionKeys(state.permissionKeys, state.isSuperAdmin, permissionKey,
+                          router.currentRoute.value.path === '/report/details')
+    },
   },
   actions: {
-    async getRoutes(data: { userId: number; roleId: number }) {
+    async getRoutes() {
       try {
         const res = await post({
           url: getMenuListByRoleId,
-          // 在实际的开发中，这个地方可以换成 token，让后端解析用户信息获取 userId 和 roleId，前端可以不用传 userId 和 roleId。
-          // 这样可以增加安全性
-          data,
+          data: {},
         })
-        return generatorRoutes(res.data)
+        const routeData = Array.isArray(res.data) ? res.data : res.data?.menus || []
+        const fields: Record<string, string[]> = {}
+        const collectStateFields = (items: any[]) => items.forEach((item) => {
+          if (item.permissionKey && item.statusFields?.length) fields[item.permissionKey] = item.statusFields
+          collectStateFields(item.children || [])
+        })
+        collectStateFields(routeData)
+        this.statePermissionFields = fields
+        this.permissionKeys = Array.isArray(res.data?.permissions) ? res.data.permissions : []
+        this.isSuperAdmin = !!res.data?.is_super_admin
+        return generatorRoutes(routeData)
       } catch (error) {
-        console.log(
+        console.error(
           '路由加载失败了，请清空一下Cookie和localStorage，重新登录；如果已经采用真实接口的，请确保菜单接口地址真实可用并且返回的数据格式和mock中的一样'
         )
-        return []
+        throw error
       }
     },
-    async initPermissionRoute() {
-      const userStore = useUserStore()
+    clearPermissionRoute() {
+      removePermissionRoutes.forEach((removeRoute) => removeRoute())
+      removePermissionRoutes = []
+      this.permissionRoutes = []
+      this.homePath = '/index/home'
+      this.permissionKeys = []
+      this.statePermissionFields = {}
+      this.isSuperAdmin = false
+    },
+    async initPermissionRoute(force = false) {
       // 加载路由
-      const accessRoutes = await this.getRoutes({
-        roleId: userStore.roleId,
-        userId: userStore.userId,
-      })
-      const homePath = findRootPathRoute(accessRoutes)
-      this.homePath = homePath
+      const accessRoutes = await this.getRoutes()
       const mapRoutes = mapTwoLevelRouter(accessRoutes)
+      if (force) {
+        removePermissionRoutes.forEach((removeRoute) => removeRoute())
+        removePermissionRoutes = []
+      }
+      // 首页路径必须在路由展平后计算，避免得到 `home` 这类相对路径。
+      const homePath = findRootPathRoute(mapRoutes)
+      this.homePath = homePath
       mapRoutes.forEach((it: any) => {
-        router.addRoute(it)
+        removePermissionRoutes.push(router.addRoute(it))
       })
       // 配置 `/` 路由的默认跳转地址
-      router.addRoute({
+      removePermissionRoutes.push(router.addRoute({
         path: '/',
         redirect: homePath,
         meta: {
           hidden: true,
         },
-      })
+      }))
       // 这个路由一定要放在最后
-      router.addRoute({
+      removePermissionRoutes.push(router.addRoute({
         path: '/:pathMatch(.*)*',
         redirect: '/404',
         meta: {
           hidden: true,
         },
-      })
+      }))
       this.permissionRoutes = [...constantRoutes, ...accessRoutes]
     },
     isEmptyPermissionRoute() {
       return !this.permissionRoutes || this.permissionRoutes.length === 0
     },
     reset() {
+      this.clearPermissionRoute()
       this.$reset()
     },
   },

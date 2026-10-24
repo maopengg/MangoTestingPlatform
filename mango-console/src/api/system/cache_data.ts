@@ -1,5 +1,9 @@
 import { deleted, get, post, put } from '@/api/http'
 
+export function postSystemEmailTest(recipient: string) {
+  return post({ url: '/system/email/test', data: () => ({ recipient }) })
+}
+
 export function postSystemCacheData(data: any) {
   return post({
     url: 'system/cache/data',
@@ -54,4 +58,8 @@ export function getSystemCacheDataKeyValue(key: string) {
       return { key: key }
     },
   })
+}
+
+export function postSystemRuntimeCacheClear() {
+  return post({ url: 'system/cache/runtime/clear', data: () => ({}) })
 }

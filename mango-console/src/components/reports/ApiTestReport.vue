@@ -1,10 +1,14 @@
 <template>
-  <section class="mango-api-report">
+  <section
+    class="mango-api-report"
+    :class="{ 'mango-api-report--contained': contained }"
+  >
     <div class="mango-api-report__hero">
       <div class="mango-api-report__title-block">
         <span class="mango-api-report__eyebrow">API 调用明细</span>
         <div class="mango-api-report__title-row">
           <h2>{{ resultData?.name || '未命名接口' }}</h2>
+          <a-tag v-if="resultData?.is_recovery" size="small">最终恢复</a-tag>
           <a-tag class="mango-api-report__method" color="arcoblue">{{ requestMethod }}</a-tag>
         </div>
         <p>
@@ -19,11 +23,24 @@
       </div>
     </div>
 
+    <a-space v-if="resultData?.recovery_status !== undefined && resultData?.recovery_status !== null" wrap>
+      <span>主流程：{{ resultData.main_status === 1 ? '成功' : resultData.main_status === 5 ? '已停止' : '未通过' }}</span>
+      <span>最终恢复：{{ resultData.recovery_status === 1 ? '成功' : '失败' }}</span>
+      <span v-if="resultData.recovery_errors?.length">{{ resultData.recovery_errors.join('；') }}</span>
+    </a-space>
     <div class="mango-api-report__request-line">
       <span class="mango-api-report__request-method">{{ requestMethod }}</span>
       <a-tooltip :content="requestUrl" position="top" mini>
         <span class="mango-api-report__request-url">{{ requestUrl }}</span>
       </a-tooltip>
+    </div>
+
+    <div v-if="isSnapshot" class="mango-api-report__snapshot">
+      <div>
+        <span>执行中快照</span>
+        <strong>{{ snapshotSummary }}</strong>
+      </div>
+      <a-tag color="orange" size="small">最终结果以执行完成后为准</a-tag>
     </div>
 
     <div class="mango-api-report__metrics">
@@ -55,72 +72,134 @@
     </div>
 
     <a-tabs v-model:active-key="activeTab" class="mango-api-report__tabs" lazy-load>
-      <a-tab-pane key="response" title="响应结果">
-        <div class="mango-api-report__section-grid">
-          <article
-            v-for="section in responseSections"
-            :key="section.key"
-            class="mango-api-report__evidence-card"
-            :class="{ 'mango-api-report__evidence-card--wide': section.wide }"
-          >
-            <div class="mango-api-report__section-head">
-              <div>
-                <h3>{{ section.title }}</h3>
-                <p>{{ section.description }}</p>
+      <a-tab-pane
+        key="response"
+        title="响应结果"
+        data-testid="qa-components-reports-apitestreport-tab-pane-响应结果"
+      >
+        <div
+          class="mango-api-report__tab-scroll mango-native-scrollbar"
+          role="region"
+          aria-label="响应结果内容"
+          tabindex="0"
+        >
+          <div class="mango-api-report__section-grid">
+            <article
+              v-for="section in responseSections"
+              :key="section.key"
+              class="mango-api-report__evidence-card"
+              :class="{ 'mango-api-report__evidence-card--wide': section.wide }"
+            >
+              <div class="mango-api-report__section-head">
+                <div>
+                  <h3>{{ section.title }}</h3>
+                  <p>{{ section.description }}</p>
+                </div>
               </div>
-            </div>
-            <JsonDisplay
-              :data="section.data"
-              :default-expanded="section.defaultExpanded"
-            />
-          </article>
-        </div>
-      </a-tab-pane>
-
-      <a-tab-pane key="request" title="请求信息">
-        <div class="mango-api-report__section-grid">
-          <article
-            v-for="section in requestSections"
-            :key="section.key"
-            class="mango-api-report__evidence-card"
-          >
-            <div class="mango-api-report__section-head">
-              <div>
-                <h3>{{ section.title }}</h3>
-                <p>{{ section.description }}</p>
-              </div>
-            </div>
-            <JsonDisplay :data="section.data" />
-          </article>
-        </div>
-      </a-tab-pane>
-
-      <a-tab-pane key="assertion" title="断言数据">
-        <article class="mango-api-report__evidence-card mango-api-report__evidence-card--wide">
-          <div class="mango-api-report__section-head">
-            <div>
-              <h3>断言结果</h3>
-              <p>展示实际值、预期值和断言执行消息，用于定位校验失败原因。</p>
-            </div>
+              <JsonDisplay
+                :data="section.data"
+                :default-expanded="section.defaultExpanded"
+                :show-toolbar="section.showToolbar !== false"
+              />
+            </article>
           </div>
-          <AssertionResult :data="resultData?.ass" />
-        </article>
+        </div>
       </a-tab-pane>
 
-      <a-tab-pane key="runtime" title="运行缓存">
-        <div class="mango-api-report__section-grid">
-          <article
-            v-for="section in runtimeSections"
-            :key="section.key"
-            class="mango-api-report__evidence-card"
-          >
+      <a-tab-pane
+        key="request"
+        title="请求信息"
+        data-testid="qa-components-reports-apitestreport-tab-pane-请求信息"
+      >
+        <div
+          class="mango-api-report__tab-scroll mango-native-scrollbar"
+          role="region"
+          aria-label="请求信息内容"
+          tabindex="0"
+        >
+          <div class="mango-api-report__section-grid">
+            <article
+              v-for="section in requestSections"
+              :key="section.key"
+              class="mango-api-report__evidence-card"
+              :class="{ 'mango-api-report__evidence-card--wide': section.wide }"
+            >
+              <div class="mango-api-report__section-head">
+                <div>
+                  <h3>{{ section.title }}</h3>
+                  <p>{{ section.description }}</p>
+                </div>
+              </div>
+              <JsonDisplay
+                :data="section.data"
+                :default-expanded="section.defaultExpanded"
+                :show-toolbar="section.showToolbar !== false"
+              />
+            </article>
+          </div>
+        </div>
+      </a-tab-pane>
+
+      <a-tab-pane
+        key="assertion"
+        title="断言数据"
+        data-testid="qa-components-reports-apitestreport-tab-pane-断言数据"
+      >
+        <div
+          class="mango-api-report__tab-scroll mango-native-scrollbar"
+          role="region"
+          aria-label="断言数据内容"
+          tabindex="0"
+        >
+          <article class="mango-api-report__evidence-card mango-api-report__evidence-card--wide">
+            <AssertionResult :data="resultData?.ass" />
+          </article>
+        </div>
+      </a-tab-pane>
+
+      <a-tab-pane
+        key="cache"
+        title="缓存数据"
+        data-testid="qa-components-reports-apitestreport-tab-pane-缓存数据"
+      >
+        <div
+          class="mango-api-report__tab-scroll mango-native-scrollbar"
+          role="region"
+          aria-label="缓存数据内容"
+          tabindex="0"
+        >
+          <article class="mango-api-report__evidence-card mango-api-report__evidence-card--wide">
             <div class="mango-api-report__section-head">
               <div>
-                <h3>{{ section.title }}</h3>
-                <p>{{ section.description }}</p>
+                <h3>缓存数据</h3>
+                <p>本次接口执行过程中写入或读取的缓存上下文。</p>
               </div>
             </div>
-            <JsonDisplay :data="section.data" />
+            <JsonDisplay :data="cacheData" />
+          </article>
+        </div>
+      </a-tab-pane>
+
+      <a-tab-pane
+        v-if="hasDataFactory"
+        key="factory"
+        title="数据工厂"
+        data-testid="qa-components-reports-apitestreport-tab-pane-数据工厂"
+      >
+        <div
+          class="mango-api-report__tab-scroll mango-native-scrollbar"
+          role="region"
+          aria-label="数据工厂内容"
+          tabindex="0"
+        >
+          <article class="mango-api-report__evidence-card mango-api-report__evidence-card--wide">
+            <div class="mango-api-report__section-head">
+              <div>
+                <h3>数据工厂</h3>
+                <p>数据工厂生成或传递给接口调用的上下文。</p>
+              </div>
+            </div>
+            <JsonDisplay :data="dataFactoryData" />
           </article>
         </div>
       </a-tab-pane>
@@ -139,12 +218,17 @@
     data: unknown
     wide?: boolean
     defaultExpanded?: boolean | string
+    showToolbar?: boolean
   }
 
   const props = defineProps({
     resultData: {
       type: Object as () => any,
       required: true,
+    },
+    contained: {
+      type: Boolean,
+      default: false,
     },
   })
 
@@ -157,12 +241,34 @@
     return true
   }
 
+  const hasResponseJson = (response: any) => response?.json !== null && response?.json !== undefined
+
+  const cacheData = computed(() => props.resultData?.cache_data || {})
+  const dataFactoryData = computed(() => props.resultData?.data_factory_cache_data)
+  const hasDataFactory = computed(() => hasValue(dataFactoryData.value))
+
   const requestMethod = computed(() => props.resultData?.request?.method || '-')
   const requestUrl = computed(() => props.resultData?.request?.url || '-')
   const statusCode = computed(() => props.resultData?.response?.code || '-')
+  const isSnapshot = computed(() => props.resultData?.result_mode === 'snapshot')
   const failureMessage = computed(
     () => props.resultData?.error_message || '接口调用失败，请检查响应结果与断言数据。'
   )
+  const snapshotSummary = computed(() => {
+    const retry = props.resultData?.snapshot_retry || {}
+    const progress = props.resultData?.snapshot_progress || {}
+    const parts: string[] = []
+    if (progress.done || progress.total) {
+      parts.push(`进度 ${progress.done || 0}/${progress.total || '-'}`)
+    }
+    if (retry.current || retry.max) {
+      parts.push(`重试 ${retry.current || 0}/${retry.max || '-'}`)
+    }
+    if (props.resultData?.snapshot_updated_at) {
+      parts.push(`更新于 ${props.resultData.snapshot_updated_at}`)
+    }
+    return parts.join('，') || '当前用例仍在执行'
+  })
 
   const responseTime = computed(() => {
     const value = props.resultData?.response?.time
@@ -173,8 +279,9 @@
   })
 
   const responseType = computed(() => {
+    if (hasValue(props.resultData?.response?.ws_messages)) return 'WebSocket'
     if (hasValue(props.resultData?.response?.sse_events)) return 'SSE'
-    if (hasValue(props.resultData?.response?.json)) return 'JSON'
+    if (hasResponseJson(props.resultData?.response)) return 'JSON'
     if (hasValue(props.resultData?.response?.text)) return 'Text'
     if (hasValue(props.resultData?.response?.headers)) return 'Headers'
     return '-'
@@ -189,12 +296,15 @@
   })
 
   const statusText = computed(() => {
+    if (props.resultData?.status === 3 || isSnapshot.value) return '执行中'
     if (props.resultData?.status === 1) return '测试通过'
     if (props.resultData?.status === 0) return '测试失败'
     return '未测试'
   })
 
   const statusClass = computed(() => {
+    if (props.resultData?.status === 3 || isSnapshot.value)
+      return 'mango-api-report__status-card--warning'
     if (props.resultData?.status === 1) return 'mango-api-report__status-card--success'
     if (props.resultData?.status === 0) return 'mango-api-report__status-card--danger'
     return 'mango-api-report__status-card--muted'
@@ -217,24 +327,37 @@
         title: '请求头',
         description: 'Headers 信息，常用于排查鉴权、租户和内容类型。',
         data: response.request_headers ?? request.headers,
+        wide: true,
+        defaultExpanded: false,
+        showToolbar: false,
       },
       {
         key: 'params',
         title: '参数',
         description: 'Query 参数，适合检查分页、过滤和路径查询。',
         data: response.request_params ?? request.params,
+        wide: true,
       },
       {
         key: 'body',
         title: '请求体',
         description: '实际发送的 Body，包含 JSON、Form、Raw 或 Multipart 字段。',
         data: response.request_body ?? request.request_body ?? request.data ?? request.json,
+        wide: true,
+      },
+      {
+        key: 'sse',
+        title: 'SSE 配置',
+        description: 'SSE 最大读取时长、事件数量及流结束条件。',
+        data: request.sse_config,
+        wide: true,
       },
       {
         key: 'file',
         title: '文件',
         description: '上传文件相关配置。',
         data: response.request_file ?? request.request_files ?? request.file,
+        wide: true,
       },
     ]
     return sections.filter((item) => hasValue(item.data))
@@ -242,7 +365,17 @@
 
   const responseSections = computed<EvidenceSection[]>(() => {
     const response = props.resultData?.response || {}
+    const responseJsonAvailable = hasResponseJson(response)
     const sections: EvidenceSection[] = [
+      {
+        key: 'headers',
+        title: '响应头',
+        description: '响应 Headers 默认收起，按需查看服务端元信息。',
+        data: response.headers,
+        wide: true,
+        defaultExpanded: false,
+        showToolbar: false,
+      },
       {
         key: 'json',
         title: '响应 JSON',
@@ -254,15 +387,8 @@
         key: 'text',
         title: '响应文本',
         description: '非 JSON 响应、异常文本或原始返回内容。',
-        data: response.text,
+        data: responseJsonAvailable ? null : response.text,
         wide: true,
-      },
-      {
-        key: 'headers',
-        title: '响应头',
-        description: '响应 Headers 默认收起，按需查看服务端元信息。',
-        data: response.headers,
-        defaultExpanded: false,
       },
       {
         key: 'sse',
@@ -271,45 +397,36 @@
         data: response.sse_events,
         wide: true,
       },
-    ]
-    const visibleSections = sections.filter((item) => hasValue(item.data))
-    return visibleSections.length ? visibleSections : [
       {
-        key: 'empty',
-        title: '暂无响应数据',
-        description: '本次调用没有记录响应 JSON、文本或响应头。',
-        data: {},
+        key: 'websocket',
+        title: 'WebSocket消息',
+        description: 'WebSocket执行过程中发送和接收的消息明细。',
+        data: response.ws_messages
+          ? {
+              stop_reason: response.ws_stop_reason,
+              close_code: response.ws_close_code,
+              close_reason: response.ws_close_reason,
+              messages: response.ws_messages,
+            }
+          : null,
         wide: true,
-        defaultExpanded: false,
       },
     ]
-  })
-
-  const runtimeSections = computed<EvidenceSection[]>(() => {
-    const sections: EvidenceSection[] = [
-      {
-        key: 'cache',
-        title: '缓存数据',
-        description: '本次接口执行过程中写入或读取的缓存上下文。',
-        data: props.resultData?.cache_data,
-      },
-      {
-        key: 'factory',
-        title: '数据工厂',
-        description: '数据工厂生成或传递给接口调用的上下文。',
-        data: props.resultData?.data_factory_cache_data,
-      },
-    ]
-    const visibleSections = sections.filter((item) => hasValue(item.data))
-    return visibleSections.length ? visibleSections : [
-      {
-        key: 'empty',
-        title: '暂无运行缓存',
-        description: '本次调用没有记录缓存数据或数据工厂上下文。',
-        data: {},
-        defaultExpanded: false,
-      },
-    ]
+    const visibleSections = sections.filter((item) =>
+      item.key === 'json' ? responseJsonAvailable : hasValue(item.data)
+    )
+    return visibleSections.length
+      ? visibleSections
+      : [
+          {
+            key: 'empty',
+            title: '暂无响应数据',
+            description: '本次调用没有记录响应 JSON、文本或响应头。',
+            data: {},
+            wide: true,
+            defaultExpanded: false,
+          },
+        ]
   })
 
   watch(
@@ -327,6 +444,12 @@
     flex-direction: column;
     gap: 12px;
     color: var(--m-text);
+  }
+
+  .mango-api-report--contained {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .mango-api-report__hero {
@@ -435,6 +558,14 @@
     border-left-color: var(--m-border-strong);
   }
 
+  .mango-api-report__status-card--warning {
+    border-left-color: var(--m-warning);
+  }
+
+  .mango-api-report__status-card--warning strong {
+    color: var(--m-warning);
+  }
+
   .mango-api-report__metric-value--warning {
     color: var(--m-warning);
   }
@@ -468,6 +599,33 @@
     line-height: 20px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .mango-api-report__snapshot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--m-warning) 34%, var(--m-border));
+    border-radius: var(--m-radius-md);
+    background: color-mix(in srgb, var(--m-warning) 8%, var(--m-surface));
+  }
+
+  .mango-api-report__snapshot span {
+    display: block;
+    color: var(--m-warning);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .mango-api-report__snapshot strong {
+    display: block;
+    margin-top: 2px;
+    color: var(--m-text);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
   }
 
   .mango-api-report__metrics {
@@ -534,6 +692,44 @@
     :deep(.arco-tabs-content) {
       padding-top: 0;
     }
+  }
+
+  .mango-api-report--contained .mango-api-report__tabs {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+
+    :deep(> .arco-tabs-nav) {
+      flex: 0 0 auto;
+    }
+
+    :deep(> .arco-tabs-content),
+    :deep(> .arco-tabs-content > .arco-tabs-content-list),
+    :deep(> .arco-tabs-content > .arco-tabs-content-list > .arco-tabs-content-item),
+    :deep(> .arco-tabs-content > .arco-tabs-content-list > .arco-tabs-content-item > .arco-tabs-pane) {
+      height: 100%;
+      min-height: 0;
+    }
+
+    :deep(> .arco-tabs-content) {
+      flex: 1;
+      overflow: hidden;
+    }
+  }
+
+  .mango-api-report__tab-scroll {
+    min-height: 0;
+  }
+
+  .mango-api-report--contained .mango-api-report__tab-scroll {
+    box-sizing: border-box;
+    height: 100%;
+    padding-right: 4px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
 
   .mango-api-report__section-grid {

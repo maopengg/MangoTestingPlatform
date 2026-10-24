@@ -2,10 +2,15 @@ import { AxiosResponse } from 'axios'
 import type { App } from 'vue'
 import request from './axios.config'
 import { Message } from '@arco-design/web-vue'
-
-// 用于节流登录过期提示，记录上次提示时间
-let lastExpiredMessageTime = 0
-const EXPIRED_MESSAGE_INTERVAL = 5000 // 5秒间隔
+import { handleAuthExpired, isAuthExpiredResponse } from './auth-expired'
+import { ApiBusinessError } from './errors'
+import usePermissionStore from '@/store/modules/permission'
+import { omitUnauthorizedStateFields } from '@/utils/permission'
+import {
+  containsLosslessJsonNumber,
+  parseApiConfigLosslessJson,
+  stringifyLosslessJson,
+} from '@/utils/lossless-json'
 
 // 定义请求选项
 export interface HttpOption {
@@ -13,6 +18,10 @@ export interface HttpOption {
   data?: any
   method?: string
   headers?: any
+  losslessJson?: boolean
+  silentError?: boolean
+  timeout?: number
+  permissionKey?: string
   beforeRequest?: () => void
   afterRequest?: () => void
 }
@@ -31,6 +40,10 @@ export function http<T = any>({
   data,
   method,
   headers,
+  losslessJson,
+  silentError,
+  timeout,
+  permissionKey,
   beforeRequest,
   afterRequest,
 }: HttpOption) {
@@ -40,17 +53,12 @@ export function http<T = any>({
     } else if (!res.data.msg) {
       return res.data
     }
-    if (res.data.msg === '当前用户登录已过期，请重新登录') {
-      // 节流处理，确保登录过期提示每5秒最多显示一次
-      const now = Date.now()
-      if (now - lastExpiredMessageTime > EXPIRED_MESSAGE_INTERVAL) {
-        Message.error(res.data.msg)
-        lastExpiredMessageTime = now
-      }
-    } else {
+    if (isAuthExpiredResponse(res.status, res.data.code, res.data.msg)) {
+      handleAuthExpired(res.data.msg)
+    } else if (!silentError) {
       Message.error(res.data.msg)
     }
-    throw new Error(res.data.msg || '请求失败，未知异常')
+    throw new ApiBusinessError(res.data.msg || '请求失败，未知异常', res.data.code)
   }
   const failHandler = (error: Response<Error>) => {
     afterRequest && afterRequest()
@@ -58,14 +66,34 @@ export function http<T = any>({
   }
   beforeRequest && beforeRequest()
   method = method || 'GET'
-  const params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
+  let params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
+  if (method === 'PUT' && permissionKey) {
+    const permissions = usePermissionStore()
+    params = omitUnauthorizedStateFields(params, permissions.statePermissionFields[permissionKey] || [],
+                                         permissions.hasPermission(`${permissionKey}:status`))
+  }
+  const requestData = containsLosslessJsonNumber(params) ? stringifyLosslessJson(params) : params
+  const requestConfig = {
+    headers,
+    ...(timeout === undefined ? {} : { timeout }),
+    ...(losslessJson
+      ? {
+          transformResponse: [
+            (responseData: any) =>
+              typeof responseData === 'string' && responseData
+                ? parseApiConfigLosslessJson(responseData)
+                : responseData,
+          ],
+        }
+      : {}),
+  }
   return method === 'GET'
-    ? request.get(url, { params, headers }).then(successHandler, failHandler)
+    ? request.get(url, { params, ...requestConfig }).then(successHandler, failHandler)
     : method === 'DELETE'
-    ? request.delete(url, { params, headers }).then(successHandler, failHandler)
+    ? request.delete(url, { params, ...requestConfig }).then(successHandler, failHandler)
     : method === 'PUT'
-    ? request.put(url, params, { headers: headers }).then(successHandler, failHandler)
-    : request.post(url, params, { headers: headers }).then(successHandler, failHandler)
+    ? request.put(url, requestData, requestConfig).then(successHandler, failHandler)
+    : request.post(url, requestData, requestConfig).then(successHandler, failHandler)
 }
 
 // 请求方式被固定成 'GET'的请求方法
@@ -75,13 +103,19 @@ export function get<T = any>({
   method = 'GET',
   beforeRequest,
   afterRequest,
-}: HttpOption): Promise<Response> {
+  losslessJson,
+  silentError,
+  timeout,
+}: HttpOption): Promise<Response<T>> {
   return http<T>({
     url,
     method,
     data,
     beforeRequest,
     afterRequest,
+    losslessJson,
+    silentError,
+    timeout,
   })
 }
 
@@ -93,6 +127,8 @@ export function post<T = any>({
   headers,
   beforeRequest,
   afterRequest,
+  losslessJson,
+  silentError,
 }: HttpOption): Promise<Response> {
   return http<T>({
     url,
@@ -101,6 +137,8 @@ export function post<T = any>({
     headers,
     beforeRequest,
     afterRequest,
+    losslessJson,
+    silentError,
   })
 }
 
@@ -110,6 +148,9 @@ export function put<T = any>({
   method = 'PUT',
   beforeRequest,
   afterRequest,
+  losslessJson,
+  silentError,
+  permissionKey,
 }: HttpOption): Promise<Response> {
   return http<T>({
     url,
@@ -117,6 +158,9 @@ export function put<T = any>({
     data,
     beforeRequest,
     afterRequest,
+    losslessJson,
+    silentError,
+    permissionKey,
   })
 }
 
@@ -126,6 +170,7 @@ export function deleted<T = any>({
   method = 'DELETE',
   beforeRequest,
   afterRequest,
+  silentError,
 }: HttpOption): Promise<Response> {
   return http<T>({
     url,
@@ -133,6 +178,7 @@ export function deleted<T = any>({
     data,
     beforeRequest,
     afterRequest,
+    silentError,
   })
 }
 

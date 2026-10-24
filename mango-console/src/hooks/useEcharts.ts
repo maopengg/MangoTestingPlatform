@@ -1,9 +1,10 @@
 import echarts from '../utils/echarts'
+import { makeChartDensityAware } from '@/utils/chartDensity'
 
 export default function useEcharts(dom: HTMLElement, theme?: string) {
   let instance = echarts.getInstanceByDom(dom)
   if (!instance) {
     instance = echarts.init(dom, theme, { renderer: 'svg' })
   }
-  return instance
+  return makeChartDensityAware(instance)
 }

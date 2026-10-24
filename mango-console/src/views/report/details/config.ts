@@ -1,6 +1,22 @@
 import { reactive } from 'vue'
 
+export const evaluationMetricColumns = [
+  { title: '评分器', dataIndex: 'grader_key', width: 180, ellipsis: true, tooltip: true },
+  { title: '版本', dataIndex: 'version', width: 80 },
+  { title: '平均分', dataIndex: 'average_score', width: 100 },
+  { title: '通过 / 有效', dataIndex: 'counts', width: 120 },
+  { title: '通过率', dataIndex: 'pass_rate_text', width: 100 },
+]
+
 export const uiColumns: any = reactive([
+  {
+    title: '明细ID',
+    dataIndex: '__detailId',
+    key: '__detailId',
+    width: 96,
+    align: 'center',
+    mergeCell: true,
+  },
   {
     title: '用例ID',
     dataIndex: '__caseId',
@@ -79,16 +95,32 @@ export const uiColumns: any = reactive([
     tooltip: true,
   },
   {
+    title: '排查状态',
+    dataIndex: 'disposition',
+    key: 'disposition',
+    width: 100,
+    align: 'center',
+    mergeCell: true,
+  },
+  {
     title: '操作',
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 240,
+    width: 160,
     fixed: 'right',
   },
 ])
 
 export const apiColumns: any = reactive([
+  {
+    title: '明细ID',
+    dataIndex: '__detailId',
+    key: '__detailId',
+    width: 96,
+    align: 'center',
+    mergeCell: true,
+  },
   {
     title: '用例ID',
     dataIndex: '__caseId',
@@ -162,15 +194,31 @@ export const apiColumns: any = reactive([
     tooltip: true,
   },
   {
+    title: '排查状态',
+    dataIndex: 'disposition',
+    key: 'disposition',
+    width: 100,
+    align: 'center',
+    mergeCell: true,
+  },
+  {
     title: '操作',
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 240,
+    width: 160,
     fixed: 'right',
   },
 ])
 export const pytestColumns: any = reactive([
+  {
+    title: '明细ID',
+    dataIndex: '__detailId',
+    key: '__detailId',
+    width: 96,
+    align: 'center',
+    mergeCell: true,
+  },
   {
     title: '用例ID',
     dataIndex: '__caseId',
@@ -234,11 +282,19 @@ export const pytestColumns: any = reactive([
     tooltip: true,
   },
   {
+    title: '排查状态',
+    dataIndex: 'disposition',
+    key: 'disposition',
+    width: 100,
+    align: 'center',
+    mergeCell: true,
+  },
+  {
     title: '操作',
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 240,
+    width: 160,
     fixed: 'right',
   },
 ])

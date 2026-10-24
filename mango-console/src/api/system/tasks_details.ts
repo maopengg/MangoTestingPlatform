@@ -53,12 +53,28 @@ export function postSystemTasksBatchSetCases(
   })
 }
 
+export function postSystemTasksBatchSetCaseVersions(
+  caseItems: Array<{ case_id: number; case_release_id: number }>,
+  scheduledTasksId: any,
+  type: number
+) {
+  return post({
+    url: 'system/tasks/details/batch/set/cases',
+    data: () => ({
+      case_items: caseItems,
+      scheduled_tasks_id: scheduledTasksId,
+      type,
+    }),
+  })
+}
+
 export function getSystemTasksTypeCaseName(
   type: any,
   moduleId?: number | string,
   projectProductId?: any,
   moduleIds?: Array<number | string>,
-  filters: Record<string, any> = {}
+  filters: Record<string, any> = {},
+  taskId?: number | string
 ) {
   return get({
     url: 'system/tasks/details/type/case/name',
@@ -68,6 +84,7 @@ export function getSystemTasksTypeCaseName(
         module_id: moduleId,
         project_product_id: projectProductId,
         module_ids: moduleIds?.join(','),
+        task_id: taskId,
         ...filters,
       }
     },

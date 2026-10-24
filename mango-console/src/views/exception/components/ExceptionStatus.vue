@@ -6,7 +6,7 @@
     <div class="title">
       <div>{{ statusTip }}</div>
       <div class="margin-top-lg">
-        <a-button size="small" type="primary" @click="backHome"> 返回首页</a-button>
+        <a-button class="mango-back-button" size="small" type="primary" @click="backHome" data-testid="qa-views-exception-components-exceptionstatus-button-返回首页"> 返回首页</a-button>
       </div>
     </div>
   </div>
@@ -18,6 +18,13 @@
   import image_500 from '@/assets/img_500.png'
   import { defineComponent } from 'vue'
   import usePermissionStore from '@/store/modules/permission'
+  import useUserStore from '@/store/modules/user'
+
+  function replaceHash(path) {
+    window.location.replace(
+      `${window.location.origin}${window.location.pathname}${window.location.search}#${path}`
+    )
+  }
 
   export default defineComponent({
     name: 'ExceptionStatus',
@@ -56,14 +63,26 @@
     },
     methods: {
       async backHome() {
+        const userStore = useUserStore()
+        if (userStore.isTokenExpire()) {
+          replaceHash('/login')
+          return
+        }
+
         const permissionStore = usePermissionStore()
         try {
-          permissionStore.reset()
-          await permissionStore.initPermissionRoute()
-          await this.$router.replace({ path: permissionStore.homePath || '/' })
+          await permissionStore.initPermissionRoute(true)
+          const homePath = permissionStore.homePath || '/index/home'
+          if (homePath === '/login') {
+            replaceHash('/login')
+            return
+          }
+          await this.$router.replace({ path: homePath })
+          if (['/404', '/403', '/500'].includes(this.$route.path)) {
+            replaceHash(homePath)
+          }
         } catch (error) {
-          window.location.hash = '#/'
-          window.location.reload()
+          replaceHash(permissionStore.homePath || '/index/home')
         }
       },
     },

@@ -1,9 +1,13 @@
 import { useTable, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
+
+export const tableScrollX = 1370
 
 export const conditionItems: Array<FormItem> = reactive([
   {
@@ -11,7 +15,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -35,6 +39,7 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
+  createUpdateUserCondition(),
 ])
 export const formItems: FormItem[] = reactive([
   {
@@ -57,19 +62,13 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
     title: '文件名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 280,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '文件大小',
@@ -95,11 +94,21 @@ export const tableColumns = useTableColumn([
     dataIndex: 'update_time',
     width: 180,
   },
+  updateUserColumn(),
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

@@ -9,15 +9,11 @@ export function postDataFactoryDatasourceAlias(data: object) {
 }
 
 export function putDataFactoryDatasourceAlias(data: object) {
-  return put({ url: '/data-factory/datasource-alias', data: () => data })
+  return put({ permissionKey: 'config.product', url: '/data-factory/datasource-alias', data: () => data })
 }
 
 export function deleteDataFactoryDatasourceAlias(id: number | string[] | number[]) {
   return deleted({ url: '/data-factory/datasource-alias', data: () => ({ id }) })
-}
-
-export function postDataFactoryDatasourceAliasQuery(data: object) {
-  return post({ url: '/data-factory/datasource-alias/query', data: () => data })
 }
 
 export function getDataFactoryDatasourceBinding(data: object) {
@@ -29,7 +25,7 @@ export function postDataFactoryDatasourceBinding(data: object) {
 }
 
 export function putDataFactoryDatasourceBinding(data: object) {
-  return put({ url: '/data-factory/datasource-binding', data: () => data })
+  return put({ permissionKey: 'config.product', url: '/data-factory/datasource-binding', data: () => data })
 }
 
 export function deleteDataFactoryDatasourceBinding(id: number | string[] | number[]) {
@@ -45,7 +41,7 @@ export function postDataFactoryEntity(data: object) {
 }
 
 export function putDataFactoryEntity(data: object) {
-  return put({ url: '/data-factory/entity', data: () => data })
+  return put({ permissionKey: 'data_factory.entity', url: '/data-factory/entity', data: () => data })
 }
 
 export function deleteDataFactoryEntity(id: number | string[] | number[]) {
@@ -64,6 +60,10 @@ export function putDataFactoryEntityStatus(data: object) {
   return put({ url: '/data-factory/entity/status', data: () => data })
 }
 
+export function getDataFactoryEntityStatusLog(data: object) {
+  return get({ url: '/data-factory/entity/status-log', data: () => data })
+}
+
 export function getDataFactoryField(data: object) {
   return get({ url: '/data-factory/field', data: () => data })
 }
@@ -76,10 +76,6 @@ export function postDataFactoryFieldPreviewValues(data: object) {
   return post({ url: '/data-factory/field/preview-values', data: () => data })
 }
 
-export function postDataFactoryDiscoverTestConnection(data: object) {
-  return post({ url: '/data-factory/discover/test-connection', data: () => data })
-}
-
 export function postDataFactoryDiscoverTables(data: object) {
   return post({ url: '/data-factory/discover/tables', data: () => data })
 }
@@ -88,8 +84,8 @@ export function postDataFactoryDiscoverTable(data: object) {
   return post({ url: '/data-factory/discover/table', data: () => data })
 }
 
-export function getDataFactoryTemplate(data: object) {
-  return get({ url: '/data-factory/template', data: () => data })
+export function getDataFactoryTemplate(data: object, timeout?: number) {
+  return get({ url: '/data-factory/template', data: () => data, timeout })
 }
 
 export function postDataFactoryTemplate(data: object) {
@@ -97,7 +93,7 @@ export function postDataFactoryTemplate(data: object) {
 }
 
 export function putDataFactoryTemplate(data: object) {
-  return put({ url: '/data-factory/template', data: () => data })
+  return put({ permissionKey: 'data_factory.template', url: '/data-factory/template', data: () => data })
 }
 
 export function deleteDataFactoryTemplate(id: number | string[] | number[]) {
@@ -166,4 +162,8 @@ export function getDataFactoryExecutionDetail(data: object) {
 
 export function postDataFactoryExecutionCleanup(data: object) {
   return post({ url: '/data-factory/execution/cleanup', data: () => data })
+}
+
+export function postDataFactoryExecutionBatchCleanup(data: object) {
+  return post({ url: '/data-factory/execution/batch-cleanup', data: () => data })
 }

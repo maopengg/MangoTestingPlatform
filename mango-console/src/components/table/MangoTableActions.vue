@@ -15,7 +15,7 @@
       {{ action.label }}
     </a-button>
     <a-dropdown v-if="overflowActions.length" content-class="mango-table-actions-dropdown" trigger="hover">
-      <a-button class="mango-table-action-more" size="mini" type="text">更多</a-button>
+      <a-button class="mango-table-action-more" size="mini" type="text" data-testid="qa-components-table-mangotableactions-button-更多">更多</a-button>
       <template #content>
         <a-doption
           v-for="action in overflowActions"
@@ -37,6 +37,8 @@
 
 <script setup lang="ts">
   import { computed } from 'vue'
+  import usePermissionStore from '@/store/modules/permission'
+  import type { PermissionRequirement } from '@/utils/permission'
 
   type MangoTableAction = {
     label: string
@@ -45,7 +47,9 @@
     loading?: boolean
     disabled?: boolean
     hidden?: boolean
+    overflow?: boolean
     priority?: number
+    permission?: PermissionRequirement
   }
 
   const props = withDefaults(
@@ -58,31 +62,37 @@
     }
   )
 
+  const permissionStore = usePermissionStore()
   const normalizedActions = computed(() =>
     props.actions
-      .filter((action) => !action.hidden)
+      .filter((action) => !action.hidden && permissionStore.hasPermission(action.permission))
       .map((action, index) => ({ ...action, priority: action.priority ?? index }))
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
   )
 
   const inlineActionLimit = computed(() => {
-    if (normalizedActions.value.length <= 3) {
+    if (!normalizedActions.value.some((action) => action.overflow) && normalizedActions.value.length <= 3) {
       return normalizedActions.value.length
     }
-    return Math.min(props.maxInline, 2)
+    return Math.min(props.maxInline, normalizedActions.value.length - 1)
   })
 
   const visibleInlineActions = computed(() =>
-    normalizedActions.value.slice(0, inlineActionLimit.value)
+    normalizedActions.value.filter((action) => !action.overflow).slice(0, inlineActionLimit.value)
   )
-  const overflowActions = computed(() => normalizedActions.value.slice(inlineActionLimit.value))
+  const overflowActions = computed(() => {
+    let inlineIndex = 0
+    return normalizedActions.value.filter((action) =>
+      action.overflow || inlineIndex++ >= inlineActionLimit.value
+    )
+  })
 
   function actionKey(action: MangoTableAction) {
     return `${action.label}-${action.priority ?? ''}`
   }
 
   function handleClick(action: MangoTableAction) {
-    if (action.disabled || action.loading) return
+    if (action.disabled || action.loading || !permissionStore.hasPermission(action.permission)) return
     action.onClick?.()
   }
 </script>

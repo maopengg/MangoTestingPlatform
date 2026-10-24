@@ -7,61 +7,67 @@
           <div class="mango-detail-subtitle">维护项目通知接收人、邮箱和消息测试配置</div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button size="small" @click="doResetSearch">返回</a-button>
+          <a-button v-permission="'config.project:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-notice-button-新增">新增</a-button>
+          <a-button class="mango-back-button" size="small" @click="doResetSearch" data-testid="qa-views-config-project-notice-button-返回">返回</a-button>
         </a-space>
       </div>
     </template>
 
     <template #default>
-      <a-tabs>
-        <template #extra>
-          <a-space>
-            <div>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-            </div>
-          </a-space>
-        </template>
-      </a-tabs>
-      <a-table
-        :scroll="{ x: 1100 }"
-        :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
-        :rowKey="rowKey"
-        @selection-change="onSelectionChange"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of tableColumns"
-            :key="item.key"
-            :align="item.align"
-            :data-index="item.key"
-            :ellipsis="item.ellipsis"
-            :fixed="item.fixed"
-            :title="item.title"
-            :tooltip="item.tooltip"
-            :width="item.width"
+      <section class="mango-section-card mango-project-notice-section">
+        <div class="mango-section-title">
+          <div class="mango-section-title__main">
+            <h2>通知组配置</h2>
+            <p>维护当前项目的通知接收人、邮箱和消息测试配置</p>
+          </div>
+          <a-tag size="small">{{ pagination.pageCount || 0 }}</a-tag>
+        </div>
+        <div class="mango-project-notice-table">
+          <a-table
+            :scroll="{ x: 1100 }"
+            :bordered="false"
+            :columns="tableColumns"
+            :data="table.dataList"
+            :loading="table.tableLoading.value"
+            :pagination="false"
+            :rowKey="rowKey"
+            @selection-change="onSelectionChange"
           >
-            <template v-if="item.key === 'index'" #cell="{ record }">
-              {{ record.id }}
+            <template #columns>
+              <a-table-column
+                v-for="item of tableColumns"
+                :key="item.key"
+                :align="item.align"
+                :data-index="item.key"
+                :ellipsis="item.ellipsis"
+                :fixed="item.fixed"
+                :title="item.title"
+                :tooltip="item.tooltip"
+                :width="item.width"
+              >
+                <template v-if="item.key === 'index'" #cell="{ record }">
+                  {{ record.id }}
+                </template>
+                <template v-else-if="item.key === 'mail'" #cell="{ record }">
+                  {{ Array.isArray(record.mail) ? record.mail.join(', ') : record.mail }}
+                </template>
+                <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+                  {{ record.update_user?.name || record.update_user?.username || '-' }}
+                </template>
+                <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                  <MangoTableActions
+                    :actions="[
+                      { permission: 'config.project:debug', label: '测试', onClick: () => onTest(record) },
+                      { permission: 'config.project:edit', label: '编辑', onClick: () => onUpdate(record) },
+                      { permission: 'config.project:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
+                    ]"
+                  />
+                </template>
+              </a-table-column>
             </template>
-            <template v-else-if="item.key === 'mail'" #cell="{ record }">
-              {{ Array.isArray(record.mail) ? record.mail.join(', ') : record.mail }}
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <MangoTableActions
-                :actions="[
-                  { label: '测试', onClick: () => onTest(record) },
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
-              />
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
+          </a-table>
+        </div>
+      </section>
     </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
@@ -93,7 +99,6 @@
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :scrollbar="true"
               multiple
             >
               <a-option v-for="user of data.userList" :key="user.key" :value="user.key">
@@ -135,7 +140,7 @@
   })
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
@@ -291,41 +296,20 @@
       getNickName()
     })
   })
-  onMounted(doRefresh)
 </script>
 
 <style lang="less" scoped>
-  /* 禁用表格横向滚动 */
-  .arco-table-container {
-    overflow-x: hidden !important;
+  .mango-project-notice-section {
+    display: flex;
+    height: calc(100% - var(--m-page-gap));
+    min-height: 0;
+    margin-top: var(--m-page-gap);
+    flex-direction: column;
   }
 
-  .arco-table-content {
-    overflow-x: hidden !important;
-  }
-
-  .arco-table {
-    table-layout: fixed;
-    width: 100%;
-  }
-
-  .arco-table-th {
-    white-space: nowrap;
+  .mango-project-notice-table {
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .arco-table-td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* 确保父容器不产生横向滚动 */
-  .arco-table-wrapper {
-    overflow-x: hidden;
-  }
-
-  @media (max-width: 1px) {
   }
 </style>

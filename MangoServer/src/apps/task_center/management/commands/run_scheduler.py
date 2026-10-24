@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from src.services.runtime.scheduler.runner import ScheduleRunner
+from src.processes.scheduler.runner import ScheduleRunner
 
 
 class Command(BaseCommand):

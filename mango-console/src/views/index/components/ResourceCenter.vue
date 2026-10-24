@@ -1,58 +1,38 @@
 <template>
   <div class="resource-grid">
-    <section class="resource-card mango-soft-panel">
-      <div class="resource-item" @click="handleDownloadExecutor">
-        <icon-download class="resource-icon" />
-        <div class="resource-info">
-          <div class="resource-title">执行器下载</div>
-          <div class="resource-desc">下载最新版本的执行器</div>
-        </div>
-      </div>
-    </section>
+    <button class="resource-card mango-soft-panel" type="button" @click="handleDownloadExecutor">
+      <icon-download class="resource-icon" />
+      <span class="resource-title">执行器下载</span>
+    </button>
 
-    <section class="resource-card mango-soft-panel">
-      <div class="resource-item" @click="handleDownloadPlugin">
-        <icon-download class="resource-icon" />
-        <div class="resource-info">
-          <div class="resource-title">插件下载</div>
-          <div class="resource-desc">获取元素定位插件</div>
-        </div>
-      </div>
-    </section>
+    <button class="resource-card mango-soft-panel" type="button" @click="handleViewSkill">
+      <icon-code class="resource-icon" />
+      <span class="resource-title">Skill 中心</span>
+    </button>
 
-    <section class="resource-card mango-soft-panel">
-      <div class="resource-item" @click="handleViewHelp">
-        <icon-book class="resource-icon" />
-        <div class="resource-info">
-          <div class="resource-title">帮助文档</div>
-          <div class="resource-desc">查看详细的使用说明</div>
-        </div>
-      </div>
-    </section>
+    <button class="resource-card mango-soft-panel" type="button" @click="handleViewHelp">
+      <icon-book class="resource-icon" />
+      <span class="resource-title">帮助文档</span>
+    </button>
 
-    <section class="resource-card mango-soft-panel">
-      <div class="resource-item" @click="handleContactAuthor">
-        <icon-user class="resource-icon" />
-        <div class="resource-info">
-          <div class="resource-title">联系作者</div>
-          <div class="resource-desc">获取技术支持和反馈</div>
-        </div>
-      </div>
-    </section>
+    <button class="resource-card mango-soft-panel" type="button" @click="handleContactAuthor">
+      <icon-user class="resource-icon" />
+      <span class="resource-title">联系作者</span>
+    </button>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { IconDownload, IconBook, IconUser } from '@arco-design/web-vue/es/icon'
+  import { IconDownload, IconBook, IconUser, IconCode } from '@arco-design/web-vue/es/icon'
 
-  const emit = defineEmits(['download-executor', 'download-plugin', 'view-help', 'contact-author'])
+  const emit = defineEmits(['download-executor', 'view-skill', 'view-help', 'contact-author'])
 
   function handleDownloadExecutor() {
     emit('download-executor')
   }
 
-  function handleDownloadPlugin() {
-    emit('download-plugin')
+  function handleViewSkill() {
+    emit('view-skill')
   }
 
   function handleViewHelp() {
@@ -66,19 +46,30 @@
 
 <style lang="less" scoped>
   .resource-grid {
-    display: grid;
-    height: 100%;
+    display: flex;
+    height: auto;
     min-height: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    padding-top: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-top: 2px;
   }
 
   .resource-card {
+    display: flex;
+    flex: 0 0 auto;
     cursor: pointer;
     min-height: 0;
-    padding: 8px;
+    min-width: max-content;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 4px 7px;
+    color: var(--m-text);
+    font-family: inherit;
+    text-align: left;
     transition: border-color 0.2s ease, background-color 0.2s ease;
 
     &:hover {
@@ -87,39 +78,17 @@
     }
   }
 
-  .resource-item {
-    display: flex;
-    height: 100%;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
   .resource-icon {
-    font-size: 16px;
+    flex: none;
+    font-size: 14px;
     color: var(--m-primary);
   }
 
-  .resource-info {
-    min-width: 0;
-    flex: 1;
-  }
-
   .resource-title {
-    overflow: hidden;
-    font-size: 12px;
+    display: block;
+    font-size: 11px;
     font-weight: 500;
     color: var(--m-text);
-    margin-bottom: 0px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .resource-desc {
-    overflow: hidden;
-    font-size: 10px;
-    color: var(--m-muted);
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 </style>

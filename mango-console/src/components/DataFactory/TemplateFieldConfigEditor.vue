@@ -1,112 +1,122 @@
 <template>
-  <a-table
-    :columns="columns"
-    :data="rows"
-    :loading="loading"
-    :pagination="false"
-    :row-key="'name'"
-    :scroll="{ x: 1120, y: tableScrollY }"
-    size="small"
+  <div
+    class="mango-field-config-table-region"
+    :style="{ height: scaleDensityLength(tableScrollY) }"
   >
-    <template #columns>
-      <a-table-column
-        v-for="item of columns"
-        :key="item.key"
-        :data-index="item.key"
-        :ellipsis="item.ellipsis"
-        :tooltip="item.tooltip"
-        :title="item.title"
-        :width="item.width"
-      >
-        <template v-if="item.key === 'default_generator_type'" #cell="{ record }">
-          <a-tag :color="enumStore.colors[record.generator_type]" size="small">
-            {{ enumTitle(record.generator_type) }}
-          </a-tag>
-        </template>
-        <template v-else-if="item.key === 'override_generator_type'" #cell="{ record }">
-          <a-select
-            :model-value="getOverrideType(record)"
-            :options="getOverrideTypeOptions(record)"
-            :field-names="{ value: 'key', label: 'title' }"
-            :disabled="readonly"
-            allow-clear
-            placeholder="不覆盖"
-            @change="(value) => changeOverrideType(record, value)"
-          />
-        </template>
-        <template v-else-if="item.key === 'override_config'" #cell="{ record }">
-          <a-select
-            v-if="isEnumConfig(record)"
-            :model-value="getEffectiveEnumValue(record)"
-            :options="getEnumSelectOptions(record)"
-            :disabled="readonly"
-            allow-clear
-            placeholder="请选择枚举值"
-            @change="(value) => changeEnumOverrideValue(record, value)"
-          />
-          <a-space v-else-if="isDependencyConfig(record)" direction="vertical" fill>
-            <a-input
-              :model-value="getDependencyEntityDisplay(record)"
-              disabled
-              placeholder="请先在工厂实体字段规则中选择依赖实体"
-            />
+    <a-table
+      :columns="columns"
+      :data="rows"
+      :loading="loading"
+      :pagination="false"
+      :row-key="'name'"
+      :scroll="{ x: 1670, y: '100%' }"
+      class="mango-native-scroll-table"
+      size="small"
+    >
+      <template #columns>
+        <a-table-column
+          v-for="item of columns"
+          :key="item.key"
+          :data-index="item.key"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
+          :title="item.title"
+          :width="item.width"
+        >
+          <template v-if="item.key === 'default_generator_type'" #cell="{ record }">
+            <a-tag :color="enumStore.colors[record.generator_type]" size="small">
+              {{ enumTitle(record.generator_type) }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'override_generator_type'" #cell="{ record }">
             <a-select
-              :model-value="getDependencyTemplateId(record)"
-              :options="getDependencyTemplateOptions(record)"
-              :disabled="
-                readonly ||
-                !getDependencyEntityId(record) ||
-                isDependencyTemplateSelectDisabled(record)
-              "
+              :model-value="getOverrideType(record)"
+              :options="getOverrideTypeOptions(record)"
+              :field-names="{ value: 'key', label: 'title' }"
+              :disabled="readonly"
               allow-clear
-              allow-search
-              :placeholder="getDependencyTemplatePlaceholder(record)"
-              @popup-visible-change="
-                (visible) => visible && loadDependencyTemplateOptions?.(record)
-              "
-              @change="(value) => changeDependencyTemplateValue(record, value)"
+              placeholder="不覆盖"
+              @change="(value) => changeOverrideType(record, value)"
+              data-testid="qa-components-datafactory-templatefieldconfigeditor-select-不覆盖"
             />
-          </a-space>
-          <a-input
-            v-else
-            :disabled="readonly || isDisabledConfig(record)"
-            :model-value="getConfigInputValue(record)"
-            :placeholder="getConfigPlaceholder(record)"
-            allow-clear
-            @input="(value) => changeOverrideConfigValue(record, value)"
-          />
-        </template>
-        <template v-else-if="item.key === 'output_enabled'" #cell="{ record }">
-          <a-switch
-            :model-value="isOutputEnabled(record)"
-            :disabled="readonly"
-            size="small"
-            @change="(value) => changeOutputEnabled(record, value)"
-          />
-        </template>
-        <template v-else-if="item.key === 'output_key'" #cell="{ record }">
-          <a-input
-            :disabled="readonly || !isOutputEnabled(record)"
-            :model-value="getOutputKey(record)"
-            allow-clear
-            placeholder="输出名称"
-            @input="(value) => changeOutputKey(record, value)"
-          />
-        </template>
-        <template v-else-if="item.key === 'preview_value'" #cell="{ record }">
-          {{ formatPreviewValue(getPreviewItem(record)?.value) }}
-        </template>
-        <template v-else-if="item.key === 'preview_valid'" #cell="{ record }">
-          <a-tag :color="getPreviewItem(record)?.valid ? 'green' : 'red'">
-            {{ getPreviewItem(record)?.valid ? '正常' : '需配置' }}
-          </a-tag>
-        </template>
-        <template v-else-if="item.key === 'preview_message'" #cell="{ record }">
-          {{ getPreviewItem(record)?.message || '-' }}
-        </template>
-      </a-table-column>
-    </template>
-  </a-table>
+          </template>
+          <template v-else-if="item.key === 'override_config'" #cell="{ record }">
+            <a-select
+              v-if="isEnumConfig(record)"
+              :model-value="getEffectiveEnumValue(record)"
+              :options="getEnumSelectOptions(record)"
+              :disabled="readonly"
+              allow-clear
+              placeholder="请选择枚举值"
+              @change="(value) => changeEnumOverrideValue(record, value)"
+              data-testid="qa-components-datafactory-templatefieldconfigeditor-select-请选择枚举值"
+            />
+            <a-space v-else-if="isDependencyConfig(record)" direction="vertical" fill>
+              <a-input
+                :model-value="getDependencyEntityDisplay(record)"
+                disabled
+                placeholder="请先在数据实体字段规则中选择依赖实体"
+                data-testid="qa-components-datafactory-templatefieldconfigeditor-input-请先在数据实体字段规则中选择依赖实体"
+              />
+              <a-select
+                :model-value="getDependencyTemplateId(record)"
+                :options="getDependencyTemplateOptions(record)"
+                :disabled="
+                  readonly ||
+                  !getDependencyEntityId(record) ||
+                  isDependencyTemplateSelectDisabled(record)
+                "
+                allow-clear
+                allow-search
+                :placeholder="getDependencyTemplatePlaceholder(record)"
+                @popup-visible-change="
+                  (visible) => visible && loadDependencyTemplateOptions?.(record)
+                "
+                @change="(value) => changeDependencyTemplateValue(record, value)"
+              />
+            </a-space>
+            <a-input
+              v-else
+              :disabled="readonly || isDisabledConfig(record)"
+              :model-value="getConfigInputValue(record)"
+              :placeholder="getConfigPlaceholder(record)"
+              allow-clear
+              @input="(value) => changeOverrideConfigValue(record, value)"
+            />
+          </template>
+          <template v-else-if="item.key === 'output_enabled'" #cell="{ record }">
+            <a-switch
+              :model-value="isOutputEnabled(record)"
+              :disabled="readonly"
+              size="small"
+              @change="(value) => changeOutputEnabled(record, value)"
+            />
+          </template>
+          <template v-else-if="item.key === 'output_key'" #cell="{ record }">
+            <a-input
+              :disabled="readonly || !isOutputEnabled(record)"
+              :model-value="getOutputKey(record)"
+              allow-clear
+              placeholder="输出名称"
+              @input="(value) => changeOutputKey(record, value)"
+              data-testid="qa-components-datafactory-templatefieldconfigeditor-input-输出名称"
+            />
+          </template>
+          <template v-else-if="item.key === 'preview_value'" #cell="{ record }">
+          {{ getPreviewItem(record)?.display_value || formatPreviewValue(getPreviewItem(record)?.value) }}
+          </template>
+          <template v-else-if="item.key === 'preview_valid'" #cell="{ record }">
+          <a-tag :color="getPreviewItem(record)?.deferred ? 'gray' : getPreviewItem(record)?.valid ? 'green' : 'red'">
+            {{ getPreviewItem(record)?.deferred ? '待执行' : getPreviewItem(record)?.valid ? '正常' : '需配置' }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'preview_message'" #cell="{ record }">
+            {{ getPreviewItem(record)?.message || '-' }}
+          </template>
+        </a-table-column>
+      </template>
+    </a-table>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -117,6 +127,7 @@
     DataFactoryOutputConfig,
   } from '@/types/data-factory'
   import { computed } from 'vue'
+  import { scaleDensityLength } from '@/hooks/useDisplayDensity'
   import { useEnum } from '@/store/modules/get-enum'
 
   interface EnumOption {
@@ -530,10 +541,10 @@
 
   function getDependencyTemplatePlaceholder(row: DataFactoryFieldRule) {
     if (!getDependencyEntityId(row)) {
-      return '请先在工厂实体字段规则中选择依赖实体'
+      return '请先在数据实体字段规则中选择依赖实体'
     }
     if (isDependencyTemplateSelectDisabled(row)) {
-      return '使用工厂实体默认模板'
+      return '使用数据实体默认模板'
     }
     return '请选择依赖状态模板'
   }
@@ -717,3 +728,11 @@
     emit('update:outputConfig', next)
   }
 </script>
+
+<style scoped>
+  .mango-field-config-table-region {
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+</style>

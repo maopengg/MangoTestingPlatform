@@ -3,7 +3,7 @@ import json
 import re
 from typing import Any
 
-from src.apps.ai.service.core import mask_sensitive
+from src.apps.ai.services.core import mask_sensitive
 
 
 class ApiAutomationResultExtractor:
@@ -46,8 +46,10 @@ class ApiAutomationResultExtractor:
                     return raw_value
                 if isinstance(raw_value, str) and raw_value.isdigit():
                     return int(raw_value)
-            for nested_key in ("api_case", "case", "data", "result", "binding", "output", "structuredContent", "structured_content"):
-                found = cls.extract_api_case_id(value.get(nested_key), allow_plain_id=nested_key in ("api_case", "case"))
+            for nested_key in ("api_case", "case", "data", "result", "binding", "output", "structuredContent",
+                               "structured_content"):
+                found = cls.extract_api_case_id(value.get(nested_key),
+                                                allow_plain_id=nested_key in ("api_case", "case"))
                 if found:
                     return found
             content = value.get("content")
@@ -81,7 +83,9 @@ class ApiAutomationResultExtractor:
         if isinstance(result, dict):
             content = result.get("content")
             if isinstance(content, list):
-                return "\n".join(str(item.get("text") or item.get("value") or item) if isinstance(item, dict) else str(item) for item in content)
+                return "\n".join(
+                    str(item.get("text") or item.get("value") or item) if isinstance(item, dict) else str(item) for item
+                    in content)
             if isinstance(content, str):
                 return content
         return json.dumps(mask_sensitive(result), ensure_ascii=False)

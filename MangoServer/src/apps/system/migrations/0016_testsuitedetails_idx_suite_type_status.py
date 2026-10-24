@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0015_alter_testsuite_is_notice_alter_testsuite_status_and_more'),
     ]

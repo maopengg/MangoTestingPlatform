@@ -90,7 +90,7 @@
       overflow: hidden;
 
       :deep(.arco-menu-horizontal) {
-        height: 47px;
+        height: 42px;
         width: 100%;
         color: var(--m-layout-header-text);
         background: transparent;
@@ -98,11 +98,12 @@
 
       :deep(.arco-menu-horizontal .arco-menu-inner) {
         overflow: hidden;
-        padding: 9px 10px 8px 10px;
+        padding: 8px 9px 7px;
+        font-size: 14px;
       }
 
       :deep(.arco-menu-selected-label) {
-        bottom: -8px;
+        bottom: -7px;
         height: 2px;
         background-color: var(--m-primary);
       }
@@ -117,8 +118,8 @@
       background: transparent;
 
       .mango-avatar-wrapper {
-        padding-right: 15px;
-        margin-left: 10px;
+        padding-right: 13px;
+        margin-left: 9px;
       }
     }
   }

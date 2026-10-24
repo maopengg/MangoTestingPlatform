@@ -6,17 +6,18 @@
           <div class="mango-detail-title">{{ workbenchTitle }}</div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button size="small" @click="router.back()">返回</a-button>
+          <a-button class="mango-back-button" size="small" @click="router.back()" data-testid="qa-views-functional-test-suite-details-button-返回">返回</a-button>
         </a-space>
       </div>
     </template>
 
     <template #default>
+      <div class="mango-workbench-scroll-x mango-functional-workbench-scroll">
       <div :class="['mango-functional-workbench', { 'mango-functional-workbench-case': activePane === 'cases' }]">
         <aside class="mango-functional-nav">
           <div class="mango-functional-nav-head">
-            <div class="mango-functional-nav-head-title">需求资产</div>
-            <div class="mango-functional-nav-head-subtitle">上下文资料与交付产物</div>
+            <div class="mango-functional-nav-head-title">用例生成</div>
+            <div class="mango-functional-nav-head-subtitle">上下文资料与来源用例</div>
           </div>
           <div v-for="group in navGroups" :key="group.title" class="mango-functional-nav-section">
             <div class="mango-functional-nav-title">{{ group.title }}</div>
@@ -45,25 +46,32 @@
               <div class="mango-functional-panel-subtitle">{{ currentNavItem.tip || currentNavItem.description }}</div>
             </div>
             <a-space v-if="hasActiveContextField">
-              <a-button size="small" :loading="resourceLoading || suiteLoading" @click="loadContextResources">刷新</a-button>
-              <a-button size="small" type="primary" @click="openResource()">新增资料</a-button>
+              <a-button size="small" :loading="resourceLoading || suiteLoading" @click="loadContextResources" data-testid="qa-views-functional-test-suite-details-button-刷新">刷新</a-button>
+              <a-button v-permission="'functional.suite:create'" size="small" type="primary" @click="openResource()" data-testid="qa-views-functional-test-suite-details-button-新增资料">新增资料</a-button>
             </a-space>
             <a-space v-else-if="activePane === 'cases'">
-              <a-button size="small" status="danger" :loading="caseLoading" @click="batchDeleteCases">
+              <a-button v-permission="'functional.case:delete'" size="small" status="danger" :loading="caseLoading" @click="batchDeleteCases" data-testid="qa-views-functional-test-suite-details-button-批量删除">
                 批量删除
               </a-button>
-              <a-button size="small" type="primary" status="success" :loading="suiteLoading || resourceLoading" @click="continueDialog('case')">自动生成</a-button>
-              <a-button size="small" type="primary" status="success" :loading="apiPlanSubmitting" @click="openSelectedBatchApiPlanDialog">批量API</a-button>
-              <a-button size="small" type="primary" @click="openCase()">手动新增</a-button>
+              <a-button v-permission="'ai.task:execute'" size="small" type="primary" status="success" :loading="suiteLoading || resourceLoading" @click="continueDialog('case')" data-testid="qa-views-functional-test-suite-details-button-自动生成">自动生成</a-button>
+              <a-button v-permission="'ai.task:execute'" size="small" type="primary" status="success" :loading="apiPlanSubmitting" @click="openSelectedBatchApiPlanDialog" data-testid="qa-views-functional-test-suite-details-button-批量api">批量API</a-button>
+              <a-button v-permission="'functional.case:create'" size="small" type="primary" @click="openCase()" data-testid="qa-views-functional-test-suite-details-button-手动新增">手动新增</a-button>
             </a-space>
             <a-space v-else-if="activePane === 'sync'">
-              <a-button size="small" :loading="resourceLoading" @click="loadContextResources">刷新</a-button>
-              <a-button size="small" type="primary" @click="openResource(undefined, rawCaseContextKey)">新增资料</a-button>
+              <a-button size="small" :loading="resourceLoading" @click="loadContextResources" data-testid="qa-views-functional-test-suite-details-button-刷新-2">刷新</a-button>
+              <a-button v-permission="'functional.suite:create'" size="small" type="primary" @click="openResource(undefined, rawCaseContextKey)" data-testid="qa-views-functional-test-suite-details-button-新增资料-2">新增资料</a-button>
+            </a-space>
+            <a-space v-else-if="activePane === 'basic'">
+              <a-button size="small" :loading="suiteLoading || qualityLoading" @click="refreshAll">刷新</a-button>
+            </a-space>
+            <a-space v-else-if="['plans', 'defects'].includes(String(activePane))">
+              <a-button size="small" :loading="qualityLoading" @click="loadQualityRelations">刷新</a-button>
+              <a-button v-permission="'functional.plan:create'" v-if="activePane === 'plans'" size="small" type="primary" @click="createRequirementPlan">新建测试计划</a-button>
             </a-space>
           </div>
 
           <div :class="['mango-functional-panel-body', { 'mango-functional-panel-body-case': activePane === 'cases' }]">
-            <a-spin v-if="hasActiveContextField" :loading="resourceLoading || suiteLoading">
+            <mango-panel-spin v-if="hasActiveContextField" :loading="resourceLoading || suiteLoading">
               <div class="mango-functional-resource-pane">
                 <a-empty v-if="!activeResources.length" description="暂无上下文资料" />
                 <div v-else class="mango-functional-resource-list">
@@ -85,15 +93,34 @@
                     </div>
                     <MangoTableActions
                       :actions="[
-                        { label: '原文', onClick: () => openRawResource(resource) },
-                        { label: '编辑', onClick: () => openResource(resource) },
-                        { label: '删除', danger: true, onClick: () => removeResource(resource) },
+                        { permission: 'functional.suite:detail', label: '原文', onClick: () => openRawResource(resource) },
+                        { permission: 'functional.suite:edit', label: '编辑', onClick: () => openResource(resource) },
+                        { permission: 'functional.suite:delete', label: '删除', danger: true, onClick: () => removeResource(resource) },
                       ]"
                     />
                   </div>
                 </div>
               </div>
-            </a-spin>
+            </mango-panel-spin>
+
+            <div v-else-if="activePane === 'basic'" class="mango-functional-basic-pane">
+              <a-descriptions :column="2" bordered size="small">
+                <a-descriptions-item label="需求">{{ suite?.requirement?.name || suite?.requirement_name || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="需求版本">V{{ suite?.version_no || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="项目/产品">{{ formatProjectProductPath(suite?.project_product) }}</a-descriptions-item>
+                <a-descriptions-item label="模块">{{ formatModulePath(suite?.module) }}</a-descriptions-item>
+                <a-descriptions-item label="Sprint">{{ suite?.iteration_ref?.name || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="状态">{{ enumTitle(enumStore.manual_test_suite_status, suite?.status) }}</a-descriptions-item>
+                <a-descriptions-item label="开发负责人">{{ suite?.development_owner?.name || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="测试负责人">{{ suite?.owner?.name || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="计划周期">{{ suite?.planned_start_date || '-' }} 至 {{ suite?.planned_submit_date || '-' }}</a-descriptions-item>
+                <a-descriptions-item label="测试计划">{{ suite?.plan_count || relatedPlans.length || 0 }} 个</a-descriptions-item>
+                <a-descriptions-item label="执行进度">{{ suite?.test_metrics?.executed || 0 }}/{{ suite?.test_metrics?.total || 0 }}（{{ formatPercent(suite?.test_metrics?.progress) }}）</a-descriptions-item>
+                <a-descriptions-item label="通过率">{{ formatPercent(suite?.test_metrics?.pass_rate) }}</a-descriptions-item>
+                <a-descriptions-item label="未关闭缺陷">{{ suite?.open_defect_count || 0 }}</a-descriptions-item>
+                <a-descriptions-item label="更新时间">{{ suite?.update_time || '-' }}</a-descriptions-item>
+              </a-descriptions>
+            </div>
 
             <div v-else-if="activePane === 'cases'" class="mango-functional-case-pane">
               <div class="mango-functional-case-filters">
@@ -103,31 +130,31 @@
                   :field-names="fieldNames"
                   allow-clear
                   placeholder="测试类型"
-                  @change="searchCases"
+                  @change="searchCases" data-testid="qa-views-functional-test-suite-details-select-测试类型"
                 />
                 <a-select
                   v-model="caseFilters.scenario_layer"
                   :options="enumStore.api_case_scenario_layer"
                   :field-names="fieldNames"
                   allow-clear
-                  placeholder="场景层级"
-                  @change="searchCases"
+                  placeholder="测试层级"
+                  @change="searchCases" data-testid="qa-views-functional-test-suite-details-select-测试层级"
                 />
                 <a-select
                   v-model="caseFilters.scenario_type"
                   :options="enumStore.api_case_scenario_type"
                   :field-names="fieldNames"
                   allow-clear
-                  placeholder="场景类型"
-                  @change="searchCases"
+                  placeholder="验证类型"
+                  @change="searchCases" data-testid="qa-views-functional-test-suite-details-select-验证类型"
                 />
                 <a-select
                   v-model="caseFilters.scenario_tag"
                   :options="enumStore.api_case_scenario_tag"
                   :field-names="fieldNames"
                   allow-clear
-                  placeholder="场景标签"
-                  @change="searchCases"
+                  placeholder="执行场景"
+                  @change="searchCases" data-testid="qa-views-functional-test-suite-details-select-执行场景"
                 />
                 <a-select
                   v-model="caseFilters.change_status"
@@ -135,7 +162,7 @@
                   :field-names="fieldNames"
                   allow-clear
                   placeholder="变更"
-                  @change="searchCases"
+                  @change="searchCases" data-testid="qa-views-functional-test-suite-details-select-变更"
                 />
                 <a-select
                   v-model="caseFilters.automation_impact_status"
@@ -143,14 +170,13 @@
                   :field-names="fieldNames"
                   allow-clear
                   placeholder="自动化影响"
-                  @change="searchCases"
+                  @change="searchCases" data-testid="qa-views-functional-test-suite-details-select-自动化影响"
                 />
-                <a-button size="small" @click="resetCaseFilters">重置</a-button>
+                <a-button size="small" @click="resetCaseFilters" data-testid="qa-views-functional-test-suite-details-button-重置">重置</a-button>
               </div>
               <div
                 ref="caseTableShellRef"
-                class="mango-functional-case-table mango-functional-scroll-table"
-                @wheel="onHorizontalTableWheel"
+                class="mango-functional-case-table"
               >
                 <a-table
                   :bordered="false"
@@ -161,12 +187,12 @@
                   :row-key="'id'"
                   v-model:selectedKeys="selectedCaseKeys"
                   :row-selection="{ type: 'checkbox', showCheckedAll: true }"
-                  :scroll="{ x: 2050 }"
+                  :scroll="{ x: 2810 }"
                 >
                   <template #columns>
                     <a-table-column v-for="item of caseColumns" :key="item.key" v-bind="item">
                       <template v-if="item.key === 'title'" #cell="{ record }">
-                        <a-link @click="openCase(record)">{{ record.title }}</a-link>
+                        <a-link v-permission="['functional.case:create', 'functional.case:edit']" @click="openCase(record)">{{ record.title }}</a-link>
                       </template>
                       <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                         {{ formatProjectProductPath(record.project_product) }}
@@ -210,23 +236,23 @@
                         <span v-else>-</span>
                       </template>
                       <template v-else-if="item.key === 'change_status'" #cell="{ record }">
-                        <a-tag :color="statusColor(record.change_status)" size="small">{{ enumTitle(enumStore.manual_test_change_status, record.change_status) }}</a-tag>
+                        <a-tag :color="changeStatusColor(record.change_status)" size="small">{{ enumTitle(enumStore.manual_test_change_status, record.change_status) }}</a-tag>
                       </template>
                       <template v-else-if="item.key === 'automation_impact_status'" #cell="{ record }">
-                        <a-tag :color="statusColor(record.automation_impact_status)" size="small">{{ enumTitle(enumStore.manual_test_automation_impact_status, record.automation_impact_status) }}</a-tag>
+                        <a-tag :color="impactStatusColor(record.automation_impact_status)" size="small">{{ enumTitle(enumStore.manual_test_automation_impact_status, record.automation_impact_status) }}</a-tag>
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <MangoTableActions
                           :actions="[
-                            { label: '编辑', onClick: () => openCase(record) },
-                            { label: 'API生成', loading: actionLoading === `plan-${record.id}`, onClick: () => openApiPlanDialog(record) },
-                            { label: 'UI绑定', onClick: () => openBind(record, AUTOMATION_TYPE_UI) },
-                            {
+                            { permission: 'functional.case:edit', label: '编辑', onClick: () => openCase(record) },
+                            { permission: 'ai.task:execute', label: 'API生成', loading: actionLoading === `plan-${record.id}`, onClick: () => openApiPlanDialog(record) },
+                            { permission: 'functional.case:edit', label: 'UI绑定', onClick: () => openBind(record, AUTOMATION_TYPE_UI) },
+                            { permission: 'api.case',
                               label: '前往API用例',
                               disabled: !bindingCaseId(record, AUTOMATION_TYPE_API),
                               onClick: () => goAutomationCase(record, AUTOMATION_TYPE_API),
                             },
-                            {
+                            { permission: 'ui.case',
                               label: '前往UI用例',
                               disabled: !bindingCaseId(record, AUTOMATION_TYPE_UI),
                               onClick: () => goAutomationCase(record, AUTOMATION_TYPE_UI),
@@ -241,9 +267,36 @@
               <TableFooter class="mango-functional-case-footer" :pagination="casePagination" />
             </div>
 
+            <div v-else-if="activePane === 'plans'" class="mango-functional-case-pane">
+              <a-table :data="relatedPlans" :loading="qualityLoading" :pagination="false" :scroll="{ x: 1160 }" row-key="id">
+                <template #columns>
+                  <a-table-column title="计划名称" :width="260"><template #cell="{ record }"><a-link @click="goPlan(record)">{{ record.name }}</a-link></template></a-table-column>
+                  <a-table-column title="状态" :width="100"><template #cell="{ record }">{{ enumTitle(enumStore.functional_test_plan_status, record.status) }}</template></a-table-column>
+                  <a-table-column title="执行进度" :width="160"><template #cell="{ record }">{{ record.execution_stats?.executed || 0 }}/{{ record.execution_stats?.total || 0 }}</template></a-table-column>
+                  <a-table-column title="通过率" :width="100"><template #cell="{ record }">{{ formatPercent(record.execution_stats?.pass_rate) }}</template></a-table-column>
+                  <a-table-column title="未关闭缺陷" data-index="open_defect_count" :width="110" />
+                  <a-table-column title="负责人" :width="110"><template #cell="{ record }">{{ record.owner?.name || '-' }}</template></a-table-column>
+                  <a-table-column title="更新时间" data-index="update_time" :width="165" />
+                </template>
+              </a-table>
+            </div>
+
+            <div v-else-if="activePane === 'defects'" class="mango-functional-case-pane">
+              <a-table :data="relatedDefects" :loading="qualityLoading" :pagination="false" :scroll="{ x: 1120 }" row-key="id">
+                <template #columns>
+                  <a-table-column title="缺陷编号" :width="150"><template #cell="{ record }"><a-link @click="goDefect(record)">{{ record.defect_no }}</a-link></template></a-table-column>
+                  <a-table-column title="缺陷标题" data-index="title" :width="300" ellipsis tooltip />
+                  <a-table-column title="状态" :width="110"><template #cell="{ record }">{{ enumTitle(enumStore.functional_test_defect_status, record.status) }}</template></a-table-column>
+                  <a-table-column title="严重程度" :width="110"><template #cell="{ record }">{{ enumTitle(enumStore.functional_test_defect_severity, record.severity) }}</template></a-table-column>
+                  <a-table-column title="负责人" :width="110"><template #cell="{ record }">{{ record.assignee?.name || '未分配' }}</template></a-table-column>
+                  <a-table-column title="更新时间" data-index="update_time" :width="165" />
+                </template>
+              </a-table>
+            </div>
+
             <div v-else class="mango-functional-sync-pane">
               <section class="mango-functional-sync-editor">
-                <a-spin :loading="resourceLoading">
+                <mango-panel-spin :loading="resourceLoading">
                   <a-empty v-if="!rawCaseResources.length" description="暂无原始用例文档" />
                   <div v-else class="mango-functional-resource-list">
                     <div v-for="resource in rawCaseResources" :key="resource.id" class="mango-functional-resource-item">
@@ -264,14 +317,14 @@
                       </div>
                       <MangoTableActions
                         :actions="[
-                          { label: '原文', onClick: () => openRawResource(resource) },
-                          { label: '编辑', onClick: () => openResource(resource) },
-                          { label: '删除', danger: true, onClick: () => removeResource(resource) },
+                          { permission: 'functional.suite:detail', label: '原文', onClick: () => openRawResource(resource) },
+                          { permission: 'functional.suite:edit', label: '编辑', onClick: () => openResource(resource) },
+                          { permission: 'functional.suite:delete', label: '删除', danger: true, onClick: () => removeResource(resource) },
                         ]"
                       />
                     </div>
                   </div>
-                </a-spin>
+                </mango-panel-spin>
               </section>
             </div>
           </div>
@@ -299,16 +352,24 @@
             </div>
           </div>
           <div class="mango-functional-task-card">
-            <a-spin :loading="caseDialogLoading || caseTaskLoading || contextHistoryLoading">
+            <mango-panel-spin :loading="caseDialogLoading || caseTaskLoading || contextHistoryLoading">
               <div class="mango-functional-task-card-head">
                 <div class="mango-functional-task-card-title">生成用例对话</div>
                 <div class="mango-functional-dialog-status">
                   <a-tag size="small" :color="dialogStatusColor(latestCaseTask)">{{ dialogStatusText(latestCaseTask, caseDialogHistories) }}</a-tag>
                   <a-tooltip v-if="isDialogFailed(latestCaseTask)" content="重新生成">
-                    <a-button size="mini" type="text" :loading="syncLoading" @click="retryFailedDialog('case')">
+                    <a-button v-permission="'ai.task:retry'" size="mini" type="text" :loading="syncLoading" @click="retryFailedDialog('case')">
                       <template #icon><icon-refresh /></template>
                     </a-button>
                   </a-tooltip>
+                  <a-button v-permission="'ai.task:retry'"
+                    v-if="latestCaseTask?.status === TASK_STATUS_WAITING_CONFIRM"
+                    size="mini"
+                    type="primary"
+                    @click="openAmbiguityConfirmation" data-testid="qa-views-functional-test-suite-details-button-确认"
+                  >
+                    确认
+                  </a-button>
                 </div>
               </div>
               <a-progress
@@ -329,20 +390,20 @@
                 <a-empty v-if="!caseDialogHistories.length" description="暂无对话记录" />
               </div>
               <a-space class="mango-functional-dialog-actions">
-                <a-button size="small" type="primary" :loading="suiteLoading || resourceLoading" @click="continueDialog('case')">继续追问</a-button>
-                <a-button size="small" @click="openConversationDetail('case')">查看对话</a-button>
-                <a-button size="small" status="danger" :loading="contextHistoryLoading" @click="clearConversation('case')">清空</a-button>
+                <a-button v-permission="'ai.task:execute'" size="small" type="primary" :loading="suiteLoading || resourceLoading" @click="continueDialog('case')" data-testid="qa-views-functional-test-suite-details-button-继续追问">继续追问</a-button>
+                <a-button v-permission="'ai.task:detail'" size="small" @click="openConversationDetail('case')" data-testid="qa-views-functional-test-suite-details-button-查看对话">查看对话</a-button>
+                <a-button v-permission="'ai.task:delete'" size="small" status="danger" :loading="contextHistoryLoading" @click="clearConversation('case')" data-testid="qa-views-functional-test-suite-details-button-清空">清空</a-button>
               </a-space>
-            </a-spin>
+            </mango-panel-spin>
           </div>
           <div class="mango-functional-task-card">
-            <a-spin :loading="apiDialogLoading || apiTaskLoading || contextHistoryLoading">
+            <mango-panel-spin :loading="apiDialogLoading || apiTaskLoading || contextHistoryLoading">
               <div class="mango-functional-task-card-head">
                 <div class="mango-functional-task-card-title">生成 API 自动化对话</div>
                 <div class="mango-functional-dialog-status">
                   <a-tag size="small" :color="dialogStatusColor(latestApiTask)">{{ dialogStatusText(latestApiTask, apiDialogHistories) }}</a-tag>
                   <a-tooltip v-if="isDialogFailed(latestApiTask)" :content="latestApiTask?.input_data?.mode === 'batch' ? '继续生成' : '重新生成'">
-                    <a-button size="mini" type="text" :loading="!!actionLoading" @click="retryFailedDialog('api')">
+                    <a-button v-permission="'ai.task:retry'" size="mini" type="text" :loading="!!actionLoading" @click="retryFailedDialog('api')">
                       <template #icon><icon-refresh /></template>
                     </a-button>
                   </a-tooltip>
@@ -366,22 +427,44 @@
                 <a-empty v-if="!apiDialogHistories.length" description="暂无对话记录" />
               </div>
               <a-space class="mango-functional-dialog-actions">
-                <a-button size="small" type="primary" :disabled="!currentCase" :loading="suiteLoading || resourceLoading" @click="continueDialog('api')">继续追问</a-button>
-                <a-button size="small" @click="openConversationDetail('api')">查看对话</a-button>
-                <a-button size="small" status="danger" :loading="contextHistoryLoading" @click="clearConversation('api')">清空</a-button>
+                <a-button v-permission="'ai.task:execute'" size="small" type="primary" :disabled="!currentCase" :loading="suiteLoading || resourceLoading" @click="continueDialog('api')" data-testid="qa-views-functional-test-suite-details-button-继续追问-2">继续追问</a-button>
+                <a-button v-permission="'ai.task:detail'" size="small" @click="openConversationDetail('api')" data-testid="qa-views-functional-test-suite-details-button-查看对话-2">查看对话</a-button>
+                <a-button v-permission="'ai.task:delete'" size="small" status="danger" :loading="contextHistoryLoading" @click="clearConversation('api')" data-testid="qa-views-functional-test-suite-details-button-清空-2">清空</a-button>
               </a-space>
-            </a-spin>
+            </mango-panel-spin>
           </div>
         </aside>
+      </div>
       </div>
     </template>
   </TableBody>
 
   <a-modal
+    v-model:visible="ambiguityConfirmVisible"
+    title="确认需求歧义"
+    :ok-loading="ambiguityConfirmLoading"
+    :on-before-ok="confirmRequirementAmbiguities"
+  >
+    <a-alert type="warning">以下内容会影响测试预期，请补充明确结论后继续生成。</a-alert>
+    <div class="mango-functional-ambiguity-list">
+      <div v-for="(item, index) in waitingConfirmationAmbiguities" :key="index">
+        {{ index + 1 }}. {{ item.description || item }}
+      </div>
+    </div>
+    <a-textarea
+      v-model="ambiguityConfirmationAnswer"
+      :max-length="4000"
+      :auto-size="{ minRows: 4, maxRows: 10 }"
+      show-word-limit
+      placeholder="请说明采用哪种业务规则或预期结果" data-testid="qa-views-functional-test-suite-details-textarea-请说明采用哪种业务规则或预期结果"
+    />
+  </a-modal>
+
+  <a-modal
     v-model:visible="syncDialogVisible"
     title="同步功能测试用例"
     width="760px"
-    :confirm-loading="syncSubmitting"
+    :ok-loading="syncSubmitting"
     @before-ok="submitSyncDialog"
   >
     <div class="mango-functional-ai-dialog">
@@ -404,6 +487,44 @@
           </a-checkbox-group>
         </div>
       </div>
+      <div class="mango-functional-ai-context-panel">
+        <div class="mango-functional-ai-panel-title mango-functional-ai-panel-title--actions">
+          <span>历史版本参考</span>
+          <a-button
+            size="mini"
+            :disabled="!previousRequirementVersion"
+            @click="selectPreviousRequirementVersion" data-testid="qa-views-functional-test-suite-details-button-选择上一版本"
+          >选择上一版本</a-button>
+        </div>
+        <mango-panel-spin :loading="historicalContextLoading">
+          <a-empty v-if="!historicalContextSuites.length" description="暂无可选历史上下文" />
+          <div v-else class="mango-functional-history-context-list">
+            <div v-for="item in historicalContextSuites" :key="item.suite_id" class="mango-functional-history-context-item">
+              <div class="mango-functional-history-context-head">
+                <strong>{{ item.requirement_name }}</strong>
+                <span>{{ item.relation === 'requirement_version' ? '同一需求历史版本' : '同模块历史需求' }}</span>
+              </div>
+              <small>V{{ item.version_no || '-' }} / {{ item.iteration || '未填写迭代' }} / {{ item.module_path || item.module_name || '未绑定模块' }}</small>
+              <a-checkbox-group v-model="syncForm.historical_selections" class="mango-functional-history-context-options">
+                <a-checkbox
+                  v-for="resource in item.resources || []"
+                  :key="`${item.suite_id}:resource:${resource.id}`"
+                  :value="`${item.suite_id}:resource:${resource.id}`"
+                  :disabled="!resource.selectable"
+                >
+                  {{ resource.title }}
+                </a-checkbox>
+                <a-checkbox
+                  v-if="item.case_count"
+                  :value="`${item.suite_id}:cases`" data-testid="qa-views-functional-test-suite-details-checkbox-测试平台用例-条"
+                >
+                  测试平台用例（{{ item.case_count }} 条）
+                </a-checkbox>
+              </a-checkbox-group>
+            </div>
+          </div>
+        </mango-panel-spin>
+      </div>
       <div class="mango-functional-ai-option-row">
         <div class="mango-functional-ai-option-field">
           <span>AI角色：</span>
@@ -412,7 +533,7 @@
             :options="aiRoleOptions"
             :field-names="fieldNames"
             :allow-clear="false"
-            placeholder="请选择角色提示词"
+            placeholder="请选择角色提示词" data-testid="qa-views-functional-test-suite-details-select-请选择角色提示词"
           />
         </div>
         <div class="mango-functional-ai-option-field">
@@ -423,19 +544,19 @@
             :loading="aiOptionLoading"
             :field-names="fieldNames"
             allow-clear
-            placeholder="请选择技能"
+            placeholder="请选择技能" data-testid="qa-views-functional-test-suite-details-select-请选择技能"
           />
         </div>
       </div>
       <div class="mango-functional-ai-extra-options">
-        <a-checkbox v-model="syncForm.deep_check">
+        <a-checkbox v-model="syncForm.deep_check" data-testid="qa-views-functional-test-suite-details-checkbox-深度补漏">
           深度补漏
         </a-checkbox>
         <span>开启后会在快速生成后额外核对需求和原始用例，补充可能遗漏的场景，耗时会增加。</span>
       </div>
       <a-form layout="vertical" class="mango-functional-ai-form">
         <a-form-item label="追问/补充要求">
-          <a-textarea v-model="syncForm.user_instruction" placeholder="补充本次生成用例的追问或要求" :auto-size="{ minRows: 2, maxRows: 4 }" />
+          <a-textarea v-model="syncForm.user_instruction" placeholder="补充本次生成用例的追问或要求" :auto-size="{ minRows: 2, maxRows: 4 }" data-testid="qa-views-functional-test-suite-details-textarea-补充本次生成用例的追问或要求" />
         </a-form-item>
       </a-form>
     </div>
@@ -445,7 +566,7 @@
     v-model:visible="apiPlanDialogVisible"
     :title="apiPlanDialogTitle"
     width="820px"
-    :confirm-loading="apiPlanSubmitting"
+    :ok-loading="apiPlanSubmitting"
     @before-ok="submitApiPlanDialog"
   >
     <div class="mango-functional-ai-dialog">
@@ -478,7 +599,7 @@
             v-model="apiPlanForm.ai_role"
             :options="aiRoleOptions"
             :field-names="fieldNames"
-            placeholder="请选择角色提示词"
+            placeholder="请选择角色提示词" data-testid="qa-views-functional-test-suite-details-select-请选择角色提示词-2"
           />
         </div>
         <div class="mango-functional-ai-option-field">
@@ -489,7 +610,7 @@
             :loading="aiOptionLoading"
             :field-names="fieldNames"
             allow-clear
-            placeholder="请选择技能"
+            placeholder="请选择技能" data-testid="qa-views-functional-test-suite-details-select-请选择技能-2"
           />
         </div>
         <div class="mango-functional-ai-option-field">
@@ -501,13 +622,13 @@
             :field-names="fieldNames"
             placeholder="请选择 MCP 服务"
             multiple
-            allow-clear
+            allow-clear data-testid="qa-views-functional-test-suite-details-select-请选择-mcp-服务"
           />
         </div>
       </div>
       <a-form layout="vertical" class="mango-functional-ai-form">
         <a-form-item label="追问/补充要求">
-          <a-textarea v-model="apiPlanForm.user_instruction" placeholder="补充本次 API 自动化生成要求" :auto-size="{ minRows: 2, maxRows: 4 }" />
+          <a-textarea v-model="apiPlanForm.user_instruction" placeholder="补充本次 API 自动化生成要求" :auto-size="{ minRows: 2, maxRows: 4 }" data-testid="qa-views-functional-test-suite-details-textarea-补充本次-api-自动化生成要求" />
         </a-form-item>
       </a-form>
     </div>
@@ -543,11 +664,11 @@
         </a-grid-item>
         <a-grid-item :span="2">
           <a-alert class="mango-functional-case-tip" type="info">
-            P0 核心链路/阻塞发布；P1 常规回归/重点分支；P2 边界和低频分支；P3 低价值或暂不优先自动化。
+            P0 发布阻塞风险；P1 常规回归与重点分支；P2 边界和低频分支；P3 低价值或暂不优先自动化。
           </a-alert>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="场景层级" required>
+          <a-form-item label="测试层级" required>
             <a-select
               v-model="caseForm.scenario_layer"
               :options="enumStore.api_case_scenario_layer"
@@ -556,7 +677,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="场景类型" required>
+          <a-form-item label="验证类型" required>
             <a-select
               v-model="caseForm.scenario_type"
               :options="enumStore.api_case_scenario_type"
@@ -565,7 +686,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item :span="2">
-          <a-form-item label="场景标签" required>
+          <a-form-item label="执行场景" required>
             <a-select
               v-model="caseForm.scenario_tags"
               :options="enumStore.api_case_scenario_tag"
@@ -576,7 +697,7 @@
         </a-grid-item>
         <a-grid-item :span="2">
           <a-alert class="mango-functional-case-tip" type="info">
-            层级建议：接口/组件层约 70%，Integration 集成约 20%，E2E 端到端约 10%。类型用于区分正常、异常、边界、权限、数据和流程场景；标签用于标记冒烟、回归、主流程、核心链路、高频、阻塞、生产巡检、生产回归。
+            层级建议：接口/组件层约 70%，Integration 集成约 20%，E2E 端到端约 10%。验证类型用于区分正常、异常、边界、权限、数据和流程；执行场景统一使用回归、发布验证、冒烟、稳定性监测、数据校验、效果评测、生产巡检和生产回归。
           </a-alert>
         </a-grid-item>
       </a-grid>
@@ -589,13 +710,13 @@
           :options="userOptions"
           :field-names="fieldNames"
           allow-search
-          placeholder="请选择负责人"
+          placeholder="请选择负责人" data-testid="qa-views-functional-test-suite-details-select-请选择负责人"
         />
       </a-form-item>
       <a-form-item label="前置条件">
         <a-textarea v-model="caseForm.precondition" :auto-size="{ minRows: 2, maxRows: 5 }" />
       </a-form-item>
-      <a-form-item label="测试点" required>
+      <a-form-item label="测试场景" required>
         <a-textarea v-model="caseForm.test_point" :auto-size="{ minRows: 3, maxRows: 7 }" />
       </a-form-item>
       <a-form-item label="测试数据">
@@ -614,7 +735,7 @@
     @update:visible="(val) => { contextHistoryVisible = val }"
     @cancel="contextHistoryVisible = false"
   >
-    <a-spin class="mango-functional-conversation-spin" :loading="false">
+    <mango-panel-spin class="mango-functional-conversation-spin" :loading="false">
       <div ref="conversationDetailRef" class="mango-functional-conversation-detail">
         <a-empty v-if="!activeConversationThreadMessages.length" description="暂无对话记录" />
         <div v-else-if="conversationDetailType === 'case'" class="mango-functional-case-chat-thread">
@@ -639,7 +760,7 @@
                 <div v-for="(caseInfo, index) in message.caseInfos" :key="`${message.key}-case-${index}`" class="mango-functional-case-item">
                   <div class="mango-functional-case-item-title">{{ caseInfoHeader(caseInfo, index) }}</div>
                   <div v-if="caseInfo.precondition" class="mango-functional-chat-collection-text">前置条件：{{ caseInfo.precondition }}</div>
-                  <div v-if="caseInfo.test_point" class="mango-functional-chat-collection-text">测试点：{{ caseInfo.test_point }}</div>
+                  <div v-if="caseInfo.test_point" class="mango-functional-chat-collection-text">测试场景：{{ caseInfo.test_point }}</div>
                   <div v-if="caseInfo.test_data" class="mango-functional-chat-collection-text">测试数据：{{ caseInfo.test_data }}</div>
                 </div>
               </div>
@@ -683,8 +804,33 @@
             </div>
           </div>
         </div>
+        <a-collapse
+          v-if="conversationRunEvidenceTaskId"
+          class="mango-functional-run-evidence"
+          :bordered="false"
+        >
+          <a-collapse-item key="evidence" header="运行证据">
+            <mango-panel-spin :loading="conversationRunEvidenceLoading">
+              <div class="mango-functional-run-evidence-summary">
+                <span>Harness：{{ conversationRunEvidence.task?.agent_key || '-' }} V{{ conversationRunEvidence.task?.agent_version || '-' }}</span>
+                <span>阶段：{{ conversationRunEvidence.steps?.length || 0 }}</span>
+                <span>产物：{{ conversationRunEvidence.artifacts?.length || 0 }}</span>
+                <span>评估：{{ conversationRunEvidence.evaluations?.length || 0 }}</span>
+              </div>
+              <div v-if="conversationRunEvidence.evaluations?.length" class="mango-functional-run-evaluation-list">
+                <div v-for="item in conversationRunEvidence.evaluations" :key="item.id" class="mango-functional-run-evaluation-item">
+                  <a-tag size="small" :color="item.passed ? 'green' : 'red'">{{ item.passed ? '通过' : '未通过' }}</a-tag>
+                  <strong>{{ item.evaluator_key }}</strong>
+                  <span>评分 {{ item.score }}</span>
+                  <small v-if="item.findings?.length">{{ evidenceFindingSummary(item.findings) }}</small>
+                </div>
+              </div>
+              <a-empty v-else description="暂无评估记录" />
+            </mango-panel-spin>
+          </a-collapse-item>
+        </a-collapse>
       </div>
-    </a-spin>
+    </mango-panel-spin>
   </BaseSidePanel>
 
   <BaseSidePanel
@@ -759,14 +905,14 @@
         </a-grid-item>
         <a-grid-item :span="2">
           <a-form-item label="标题" required>
-            <a-input v-model="resourceForm.title" placeholder="请输入资料标题" />
+            <a-input v-model="resourceForm.title" placeholder="请输入资料标题" data-testid="qa-views-functional-test-suite-details-input-请输入资料标题" />
           </a-form-item>
         </a-grid-item>
         <a-grid-item v-if="resourceForm.content_type === RESOURCE_CONTENT_URL" :span="2">
           <a-form-item label="URL类型">
             <a-select v-model="resourceForm.url_type" :field-names="fieldNames">
-              <a-option :value="RESOURCE_URL_NORMAL">普通URL</a-option>
-              <a-option :value="RESOURCE_URL_FEISHU" disabled>飞书文档（后续开放）</a-option>
+              <a-option :value="RESOURCE_URL_NORMAL" data-testid="qa-views-functional-test-suite-details-option-普通url">普通URL</a-option>
+              <a-option :value="RESOURCE_URL_FEISHU" disabled data-testid="qa-views-functional-test-suite-details-option-飞书文档-后续开放">飞书文档（后续开放）</a-option>
             </a-select>
           </a-form-item>
         </a-grid-item>
@@ -814,7 +960,7 @@
       </a-grid>
     </a-form>
     <template #extra-buttons>
-      <a-button type="primary" :loading="resourceLoading" @click="saveResource">保存</a-button>
+      <a-button v-permission="['functional.suite:create', 'functional.suite:edit']" type="primary" :loading="resourceLoading" @click="saveResource" data-testid="qa-views-functional-test-suite-details-button-保存">保存</a-button>
     </template>
   </BaseSidePanel>
 
@@ -833,7 +979,7 @@
       />
     </div>
     <template #extra-buttons>
-      <a-button type="primary" :loading="resourceLoading" @click="saveRawResource">保存</a-button>
+      <a-button v-permission="['functional.suite:create', 'functional.suite:edit']" type="primary" :loading="resourceLoading" @click="saveRawResource" data-testid="qa-views-functional-test-suite-details-button-保存-2">保存</a-button>
     </template>
   </BaseSidePanel>
 
@@ -841,6 +987,7 @@
     :visible="apiCaseDetailVisible"
     :title="apiCaseDetailTitle"
     width="calc(92vw - 150px)"
+    mode="page"
     @update:visible="(val) => { apiCaseDetailVisible = val }"
     @cancel="apiCaseDetailVisible = false"
   >
@@ -869,12 +1016,15 @@
   import {
     deleteAiAgentContext,
     getAiAgentContext,
+    getAiAgentRunEvents,
+    getAiAgentRunEvidence,
     getAiApiAutomationAgentStatus,
     getAiFunctionalCaseAgentStatus,
     getAiMcpServer,
     getAiSkill,
     postAiApiAutomationAgentRetry,
     postAiApiAutomationAgentStart,
+    postAiAgentRunConfirm,
     postAiFunctionalCaseAgentRetry,
     postAiFunctionalCaseAgentStart,
   } from '@/api/ai'
@@ -884,8 +1034,11 @@
     deleteFunctionalContextResource,
     deleteManualCase,
     getFunctionalContextResource,
+    getRelatedFunctionalDefects,
+    getRelatedFunctionalPlans,
     getManualCase,
     getManualSuite,
+    getManualSuiteContextCandidates,
     postFunctionalContextResource,
     postManualAutomationBind,
     postManualCase,
@@ -895,12 +1048,17 @@
   import { postUserFile } from '@/api/system/file_data'
   import { getUserName } from '@/api/user/user'
   import { formatModulePath, formatProjectProductPath } from '@/utils/business-format'
+  import {
+    getStatusTagColor,
+    MANUAL_TEST_CHANGE_STATUS_COLORS,
+    MANUAL_TEST_IMPACT_STATUS_COLORS,
+  } from '@/utils/status-color'
 
   const route = useRoute()
   const router = useRouter()
   const enumStore = useEnum()
   const fieldNames = { value: 'key', label: 'title' }
-  const casePagination = usePagination(loadCases)
+  const casePagination = usePagination(loadCases, () => caseLoading)
   const MANUAL_TEST_TYPE_MANUAL = 0
   const MANUAL_TEST_TYPE_API = 1
   const AUTOMATION_TYPE_API = 0
@@ -914,6 +1072,8 @@
   const TASK_STATUS_WAITING_CONFIRM = 4
   const TASK_STATUS_PARTIAL_SUCCESS = 5
   const TASK_STATUS_CANCELLED = 6
+  const TASK_STATUS_CLAIMED = 7
+  const TASK_STATUS_WAITING_MODEL = 8
   const RESOURCE_KEY_REQUIREMENT_DOC = 0
   const RESOURCE_KEY_DEVELOPMENT_DESIGN = 1
   const RESOURCE_KEY_API_DOC = 2
@@ -944,6 +1104,8 @@
     automation_impact_status: undefined,
   })
   const contextResources = ref<any[]>([])
+  const relatedPlans = ref<any[]>([])
+  const relatedDefects = ref<any[]>([])
   const caseDialogTask = ref<any>(null)
   const apiDialogTask = ref<any>(null)
   const contextHistories = ref<any[]>([])
@@ -951,8 +1113,12 @@
   const suiteLoading = ref(false)
   const caseLoading = ref(false)
   const resourceLoading = ref(false)
+  const qualityLoading = ref(false)
   const caseTaskLoading = ref(false)
   const apiTaskLoading = ref(false)
+  const ambiguityConfirmVisible = ref(false)
+  const ambiguityConfirmLoading = ref(false)
+  const ambiguityConfirmationAnswer = ref('')
   const contextHistoryLoading = ref(false)
   const caseDialogLoading = ref(false)
   const apiDialogLoading = ref(false)
@@ -969,12 +1135,15 @@
   const contextHistoryVisible = ref(false)
   const userMessageVisible = ref(false)
   const conversationDetailRef = ref<HTMLElement>()
+  const conversationRunEvidence = ref<any>({ task: {}, steps: [], artifacts: [], evaluations: [] })
+  const conversationRunEvidenceLoading = ref(false)
   const apiCaseDetailVisible = ref(false)
   const apiCaseDetailId = ref<number | string>('')
   const apiCaseDetailName = ref('')
   const syncDialogVisible = ref(false)
   const apiPlanDialogVisible = ref(false)
   const apiPlanMode = ref<'single' | 'batch'>('single')
+  const latestTaskEvents = reactive<Record<number, any>>({})
   const apiPlanBatchScope = ref('')
   const apiPlanBatchCases = ref<any[]>([])
   const apiPlanFilteredCount = ref(0)
@@ -993,7 +1162,16 @@
   const resourceFile = ref<File | null>(null)
   const resourceFileList = ref<any[]>([])
   const bindForm = reactive<any>({ automation_type: AUTOMATION_TYPE_UI, automation_case_id: null })
-  const syncForm = reactive<any>({ context_keys: [], ai_role: 'business_test_expert', skill_id: null, deep_check: false, user_instruction: '' })
+  const syncForm = reactive<any>({
+    context_keys: [],
+    historical_selections: [],
+    ai_role: 'business_test_expert',
+    skill_id: null,
+    deep_check: false,
+    user_instruction: '',
+  })
+  const historicalContextLoading = ref(false)
+  const historicalContextSuites = ref<any[]>([])
   const apiPlanForm = reactive<any>({ context_keys: [], ai_role: 'api_automation_expert', skill_id: null, mcp_server_ids: [], user_instruction: '' })
   const apiFollowUpInstruction = ref('')
   const aiSkills = ref<any[]>([])
@@ -1058,14 +1236,29 @@
   }
   const platformCaseNavItem = {
     key: 'cases',
-    title: '测试平台用例',
-    description: '已生成或已维护的功能测试用例',
-    tip: '测试平台用例是最终落到平台中的功能测试用例，可继续维护字段和自动化绑定。',
+    title: '来源用例',
+    description: '当前需求版本沉淀到用例库的功能用例',
+    tip: '来源用例是当前需求版本沉淀到用例库的可复用资产，可继续维护字段和自动化绑定。',
+  }
+  const basicInfoNavItem = {
+    key: 'basic',
+    title: '基本信息',
+    description: '需求版本、排期与质量概况',
   }
   const platformCaseContextItem = {
     key: RESOURCE_KEY_PLATFORM_CASE,
     title: '测试平台用例',
     description: '用于在已有平台用例基础上重新编辑',
+  }
+  const testPlanNavItem = {
+    key: 'plans',
+    title: '测试计划',
+    description: '当前需求版本的单次测试活动',
+  }
+  const defectNavItem = {
+    key: 'defects',
+    title: '缺陷',
+    description: '当前需求执行中发现的缺陷',
   }
   const contextNavItems = [
     requirementDocNavItem,
@@ -1118,12 +1311,18 @@
     contextHistories.value.filter((item) => item.context_type === 'api_case_plan')
   )
   const latestCaseTask = computed(() => caseDialogTask.value)
+  const waitingConfirmationAmbiguities = computed<any[]>(() =>
+    latestCaseTask.value?.output_data?.waiting_confirmation?.ambiguities || []
+  )
   const latestApiTask = computed(() => apiDialogTask.value)
   const conversationHistories = computed(() =>
     conversationDetailType.value === 'case' ? caseDialogHistories.value : apiDialogHistories.value
   )
   const conversationDetailTitle = computed(() =>
     conversationDetailType.value === 'case' ? '生成用例对话' : '生成 API 自动化对话'
+  )
+  const conversationRunEvidenceTaskId = computed(() =>
+    conversationDetailType.value === 'case' ? latestCaseTask.value?.id : latestApiTask.value?.id
   )
   const activeConversationThreadMessages = computed(() =>
     conversationDetailType.value === 'case' ? caseConversationThreadMessages.value : apiConversationThreadMessages.value
@@ -1195,8 +1394,8 @@
   })
   const workbenchTitle = computed(() => {
     const id = suite.value?.id || route.query.id || '-'
-    const name = suite.value?.requirement_name || '需求详情'
-    return `功能测试工作台 / ${id} / ${name}`
+    const name = suite.value?.requirement_name || '需求版本'
+    return `用例生成工作台 / ${id} / ${name}`
   })
 
   const caseColumns = [
@@ -1205,21 +1404,25 @@
     { title: '模块名称', key: 'module', dataIndex: 'module', width: 220, ellipsis: true, tooltip: true },
     { title: '标题', key: 'title', dataIndex: 'title', width: 240, ellipsis: true, tooltip: true },
     { title: '前置条件', key: 'precondition', dataIndex: 'precondition', width: 220, ellipsis: true, tooltip: true },
-    { title: '测试点', key: 'test_point', dataIndex: 'test_point', width: 260, ellipsis: true, tooltip: true },
+    { title: '测试场景', key: 'test_point', dataIndex: 'test_point', width: 260, ellipsis: true, tooltip: true },
     { title: '测试数据', key: 'test_data', dataIndex: 'test_data', width: 180, ellipsis: true, tooltip: true },
     { title: '测试类型', key: 'test_types', dataIndex: 'test_types', width: 220 },
-    { title: '场景层级', key: 'scenario_layer', dataIndex: 'scenario_layer', width: 120 },
-    { title: '场景类型', key: 'scenario_type', dataIndex: 'scenario_type', width: 110 },
-    { title: '场景标签', key: 'scenario_tags', dataIndex: 'scenario_tags', width: 220 },
+    { title: '测试层级', key: 'scenario_layer', dataIndex: 'scenario_layer', width: 120 },
+    { title: '验证类型', key: 'scenario_type', dataIndex: 'scenario_type', width: 110 },
+    { title: '执行场景', key: 'scenario_tags', dataIndex: 'scenario_tags', width: 220 },
     { title: '自动化用例ID', key: 'automation_case_ids', dataIndex: 'automation_case_ids', width: 180 },
     { title: '变更', key: 'change_status', dataIndex: 'change_status', width: 100 },
     { title: '自动化影响', key: 'automation_impact_status', dataIndex: 'automation_impact_status', width: 120 },
     { title: '备注', key: 'remark', dataIndex: 'remark', width: 180, ellipsis: true, tooltip: true },
-    { title: '操作', key: 'actions', dataIndex: 'actions', align: 'center', fixed: 'right', width: 170 },
+    { title: '操作', key: 'actions', dataIndex: 'actions', align: 'center', fixed: 'right', width: 160 },
   ]
 
   function enumTitle(options: any[] = [], value: any) {
     return options.find((item) => item.key === value)?.title || value || '-'
+  }
+
+  function formatPercent(value: any) {
+    return `${Number(value || 0).toFixed(2).replace(/\.00$/, '')}%`
   }
 
   function enumColor(value: any) {
@@ -1229,6 +1432,10 @@
   function statusColor(value: any) {
     return enumStore.status_colors?.[Number(value)]
   }
+  const changeStatusColor = (value: number) =>
+    getStatusTagColor(MANUAL_TEST_CHANGE_STATUS_COLORS, value)
+  const impactStatusColor = (value: number) =>
+    getStatusTagColor(MANUAL_TEST_IMPACT_STATUS_COLORS, value)
 
   function auditCaseStatusColor(value: string) {
     const statusMap: Record<string, number> = {
@@ -1244,6 +1451,16 @@
     return enumTitle(enumStore.ai_agent_task_status, status)
   }
 
+  function isActiveTaskStatus(status: number) {
+    return [
+      TASK_STATUS_PENDING,
+      TASK_STATUS_CLAIMED,
+      TASK_STATUS_RUNNING,
+      TASK_STATUS_WAITING_MODEL,
+      TASK_STATUS_WAITING_CONFIRM,
+    ].includes(status)
+  }
+
   function taskTypeText(type: number) {
     const labels: Record<number, string> = {
       [TASK_TYPE_MANUAL_CASE_SYNC]: '同步功能用例',
@@ -1257,26 +1474,6 @@
     return binding?.api_case_id || binding?.ui_case_id || binding?.automation_case_id
   }
 
-  function getHorizontalScrollTarget(shell?: HTMLElement) {
-    if (!shell) return null
-    const selectors = ['.arco-table-content', '.arco-scrollbar-container', '.arco-table-body']
-    for (const selector of selectors) {
-      const target = shell.querySelector<HTMLElement>(selector)
-      if (target && target.scrollWidth > target.clientWidth) return target
-    }
-    return shell.scrollWidth > shell.clientWidth ? shell : null
-  }
-
-  function onHorizontalTableWheel(event: WheelEvent) {
-    const target = getHorizontalScrollTarget(caseTableShellRef.value)
-    if (!target) return
-    const delta = Math.abs(event.deltaX) > 0 ? event.deltaX : event.shiftKey ? event.deltaY : 0
-    if (!delta) return
-    const next = Math.max(0, Math.min(target.scrollLeft + delta, target.scrollWidth - target.clientWidth))
-    if (next === target.scrollLeft) return
-    event.preventDefault()
-    target.scrollLeft = next
-  }
 
   function automationCaseLinks(record: any) {
     const links = []
@@ -1319,12 +1516,15 @@
   }
 
   function navItemCount(item: any) {
+    if (item.key === 'basic') return 1
     if (item.key === 'cases') {
       return suite.value?.case_count || casePagination.pageCount || cases.value.length || 0
     }
     if (item.key === 'sync') {
       return contextResourceCount(rawCaseContextKey)
     }
+    if (item.key === 'plans') return relatedPlans.value.length
+    if (item.key === 'defects') return relatedDefects.value.length
     if (contextFieldKeys.has(item.key)) {
       return contextResourceCount(item.key)
     }
@@ -1623,7 +1823,13 @@
   }
 
   function runningTaskConversationMessages(task: any, type: 'case' | 'api') {
-    if (!task || ![TASK_STATUS_PENDING, TASK_STATUS_RUNNING, TASK_STATUS_WAITING_CONFIRM].includes(task.status)) {
+    if (!task || ![
+      TASK_STATUS_PENDING,
+      TASK_STATUS_CLAIMED,
+      TASK_STATUS_RUNNING,
+      TASK_STATUS_WAITING_MODEL,
+      TASK_STATUS_WAITING_CONFIRM,
+    ].includes(task.status)) {
       return []
     }
     const input = task.input_data || {}
@@ -1663,8 +1869,8 @@
         role: 'ai',
         title: aiTitle,
         content: isApiBatch
-          ? `${progress?.detail || '批量生成进行中'}\n成功 ${batchSuccess}，失败 ${batchFail}${batchCurrent ? `，当前 ${batchCurrent}/${batchTotal}` : ''}`
-          : progress?.detail || progress?.stage || task.title || '任务已开始，正在等待 AI 返回。',
+          ? `${task.latest_event?.message || progress?.detail || '批量生成进行中'}\n成功 ${batchSuccess}，失败 ${batchFail}${batchCurrent ? `，当前 ${batchCurrent}/${batchTotal}` : ''}`
+          : task.latest_event?.message || progress?.detail || progress?.stage || task.title || '任务已开始，正在等待 AI 返回。',
         meta: progressText,
         time: task.update_time || task.create_time || '',
       },
@@ -1701,7 +1907,9 @@
     if (!task) return histories.length ? 100 : 0
     const progressMap: Record<number, number> = {
       [TASK_STATUS_PENDING]: 0,
+      [TASK_STATUS_CLAIMED]: 0,
       [TASK_STATUS_RUNNING]: 0,
+      [TASK_STATUS_WAITING_MODEL]: 0,
       [TASK_STATUS_WAITING_CONFIRM]: 80,
       [TASK_STATUS_SUCCESS]: 100,
       [TASK_STATUS_PARTIAL_SUCCESS]: 100,
@@ -1732,21 +1940,76 @@
     return latest ? `最近对话 / ${latest.create_time || '-'}` : '还没有开始对话'
   }
 
+  function openAmbiguityConfirmation() {
+    ambiguityConfirmationAnswer.value = ''
+    ambiguityConfirmVisible.value = true
+  }
+
+  async function confirmRequirementAmbiguities() {
+    const answer = ambiguityConfirmationAnswer.value.trim()
+    if (!answer) {
+      Message.warning('请填写对关键需求歧义的确认说明')
+      return false
+    }
+    const taskId = latestCaseTask.value?.id
+    if (!taskId) {
+      Message.error('未找到等待确认的生成任务')
+      return false
+    }
+    ambiguityConfirmLoading.value = true
+    try {
+      const res = await postAiAgentRunConfirm({
+        id: taskId,
+        confirmation: { answer },
+      })
+      caseDialogTask.value = res.data || latestCaseTask.value
+      startSyncTaskPolling(taskId)
+      Message.success('已提交确认，任务将继续执行')
+      return true
+    } finally {
+      ambiguityConfirmLoading.value = false
+    }
+  }
+
   async function openConversationDetail(type: 'case' | 'api') {
     conversationDetailType.value = type
     contextHistoryVisible.value = true
     scrollToConversationLatest()
-    refreshConversationDetail(type)
+    await refreshConversationDetail(type)
+    await loadConversationRunEvidence()
+  }
+
+  async function loadConversationRunEvidence() {
+    const taskId = conversationRunEvidenceTaskId.value
+    if (!taskId) {
+      conversationRunEvidence.value = { task: {}, steps: [], artifacts: [], evaluations: [] }
+      return
+    }
+    conversationRunEvidenceLoading.value = true
+    try {
+      const res = await getAiAgentRunEvidence({ task_id: taskId })
+      conversationRunEvidence.value = res.data || { task: {}, steps: [], artifacts: [], evaluations: [] }
+    } finally {
+      conversationRunEvidenceLoading.value = false
+    }
+  }
+
+  function evidenceFindingSummary(findings: any[]) {
+    return findings
+      .slice(0, 3)
+      .map((item) => item?.message || String(item))
+      .filter(Boolean)
+      .join('；')
   }
 
   async function refreshConversationDetail(type: 'case' | 'api') {
     try {
-      if (type === 'case' && latestCaseTask.value?.id && [TASK_STATUS_PENDING, TASK_STATUS_RUNNING, TASK_STATUS_WAITING_CONFIRM].includes(latestCaseTask.value.status)) {
+      if (type === 'case' && latestCaseTask.value?.id && isActiveTaskStatus(latestCaseTask.value.status)) {
         const res = await getAiFunctionalCaseAgentStatus({ id: latestCaseTask.value.id })
-        caseDialogTask.value = res.data || null
-      } else if (type === 'api' && latestApiTask.value?.id && [TASK_STATUS_PENDING, TASK_STATUS_RUNNING, TASK_STATUS_WAITING_CONFIRM].includes(latestApiTask.value.status)) {
+        caseDialogTask.value = await attachLatestTaskEvent(res.data || null)
+      } else if (type === 'api' && latestApiTask.value?.id && isActiveTaskStatus(latestApiTask.value.status)) {
         const res = await getAiApiAutomationAgentStatus({ id: latestApiTask.value.id })
-        apiDialogTask.value = res.data || null
+        apiDialogTask.value = await attachLatestTaskEvent(res.data || null)
       }
       await loadContextHistory()
       if (contextHistoryVisible.value && conversationDetailType.value === type) {
@@ -1982,6 +2245,37 @@
     }
   }
 
+  async function loadQualityRelations() {
+    qualityLoading.value = true
+    try {
+      const [plansRes, defectsRes] = await Promise.all([
+        getRelatedFunctionalPlans({ requirement_version_id: route.query.id }),
+        getRelatedFunctionalDefects({ requirement_version_id: route.query.id }),
+      ])
+      relatedPlans.value = plansRes.data || []
+      relatedDefects.value = defectsRes.data || []
+    } finally { qualityLoading.value = false }
+  }
+
+  function goPlan(record: any) {
+    router.push({ path: '/functional-test/plan/details', query: { id: record.id } })
+  }
+
+  function goDefect(record: any) {
+    router.push({ path: '/functional-test/defect/index', query: { defect_id: record.id } })
+  }
+
+  function createRequirementPlan() {
+    router.push({
+      path: '/functional-test/plan/index',
+      query: {
+        create: '1',
+        requirement_version: route.query.id,
+        project_product: suiteProjectProductId(),
+      },
+    })
+  }
+
   async function loadCases() {
     caseLoading.value = true
     try {
@@ -2056,7 +2350,7 @@
     caseTaskLoading.value = true
     try {
       const res = await getAiFunctionalCaseAgentStatus({ suite_id: route.query.id, ...params })
-      caseDialogTask.value = res.data || null
+      caseDialogTask.value = await attachLatestTaskEvent(res.data || null)
     } finally {
       caseTaskLoading.value = false
     }
@@ -2066,7 +2360,7 @@
     apiTaskLoading.value = true
     try {
       const res = await getAiApiAutomationAgentStatus({ suite_id: route.query.id, ...params })
-      apiDialogTask.value = res.data || null
+      apiDialogTask.value = await attachLatestTaskEvent(res.data || null)
     } finally {
       apiTaskLoading.value = false
     }
@@ -2074,6 +2368,16 @@
 
   async function loadDialogTasks() {
     await Promise.all([loadCaseDialogTask(), loadApiDialogTask()])
+  }
+
+  async function attachLatestTaskEvent(task: any) {
+    if (!task?.id) return task
+    const previous = latestTaskEvents[task.id]
+    const res = await getAiAgentRunEvents({ task_id: task.id, after_id: previous?.id || 0 })
+    const events = res.data || []
+    const latest = events[events.length - 1] || previous || null
+    if (latest) latestTaskEvents[task.id] = latest
+    return { ...task, latest_event: latest }
   }
 
   async function loadContextHistory() {
@@ -2089,7 +2393,7 @@
   }
 
   async function refreshAll() {
-    await Promise.all([loadSuite(), loadCases(), loadContextResources(), loadDialogTasks(), loadContextHistory()])
+    await Promise.all([loadSuite(), loadCases(), loadContextResources(), loadDialogTasks(), loadContextHistory(), loadQualityRelations()])
     selectBestInitialPane()
   }
 
@@ -2226,7 +2530,7 @@
   }
 
   async function openSyncDialog(task?: any) {
-    await Promise.all([loadSuite(), loadContextResources()])
+    await Promise.all([loadSuite(), loadContextResources(), loadHistoricalContextCandidates()])
     retrySourceTask.value = task || null
     syncForm.context_keys = [
       RESOURCE_KEY_REQUIREMENT_DOC,
@@ -2237,6 +2541,7 @@
     ].filter((key) => contextResourceCount(key))
     ensureSyncDialogRoleDefault()
     syncForm.skill_id = null
+    syncForm.historical_selections = []
     syncForm.deep_check = false
     syncForm.user_instruction = ''
     activePane.value = 'sync'
@@ -2245,6 +2550,60 @@
       await loadAiOptions()
       ensureSyncDialogRoleDefault()
     }
+  }
+
+  async function loadHistoricalContextCandidates() {
+    historicalContextLoading.value = true
+    try {
+      const res = await getManualSuiteContextCandidates(Number(route.query.id))
+      historicalContextSuites.value = [
+        ...(res.data?.requirement_versions || []),
+        ...(res.data?.module_requirements || []),
+      ]
+    } finally {
+      historicalContextLoading.value = false
+    }
+  }
+
+  function selectedHistoricalContext() {
+    const references = new Map<number, { suite_id: number; resource_ids: number[]; include_case_snapshot: boolean }>()
+    for (const selection of syncForm.historical_selections || []) {
+      const [suiteValue, type, value] = String(selection).split(':')
+      const suiteId = Number(suiteValue)
+      if (!suiteId) continue
+      const reference = references.get(suiteId) || {
+        suite_id: suiteId,
+        resource_ids: [],
+        include_case_snapshot: false,
+      }
+      if (type === 'resource' && Number(value)) reference.resource_ids.push(Number(value))
+      if (type === 'cases') reference.include_case_snapshot = true
+      references.set(suiteId, reference)
+    }
+    return Array.from(references.values())
+  }
+
+  const previousRequirementVersion = computed(() =>
+    historicalContextSuites.value.find((item) => item.relation === 'requirement_version')
+  )
+
+  function selectPreviousRequirementVersion() {
+    const item = previousRequirementVersion.value
+    if (!item) return
+    const selections = (item.resources || [])
+      .filter((resource: any) => resource.selectable)
+      .map((resource: any) => `${item.suite_id}:resource:${resource.id}`)
+    if (item.case_count) selections.push(`${item.suite_id}:cases`)
+    syncForm.historical_selections = Array.from(
+      new Set([...(syncForm.historical_selections || []), ...selections])
+    )
+  }
+
+  function selectedCurrentResourceIds() {
+    const selectedKeys = new Set((syncForm.context_keys || []).map(Number))
+    return contextResources.value
+      .filter((item) => item.enabled && selectedKeys.has(Number(item.context_key)))
+      .map((item) => Number(item.id))
   }
 
   async function submitSyncDialog() {
@@ -2267,6 +2626,8 @@
       const isRetry = !!retrySourceTask.value?.id
       const payload = {
         context_keys: syncForm.context_keys,
+        current_resource_ids: selectedCurrentResourceIds(),
+        historical_context: selectedHistoricalContext(),
         ai_role: syncForm.ai_role,
         skill_id: syncForm.skill_id || null,
         deep_check: syncForm.deep_check,
@@ -2278,7 +2639,7 @@
             suite_id: Number(route.query.id),
             ...payload,
           })
-      syncTask.value = res.data
+      syncTask.value = await attachLatestTaskEvent(res.data)
       syncDialogVisible.value = false
       retrySourceTask.value = null
       Message.success(isRetry ? '已继续生成用例对话' : '已创建生成用例对话，可在右侧查看进度')
@@ -2344,7 +2705,7 @@
     apiDialogLoading.value = true
     try {
       const res = await getAiApiAutomationAgentStatus({ id: taskId })
-      const task = res.data
+      const task = await attachLatestTaskEvent(res.data)
       apiDialogTask.value = task || null
       const status = task?.status
       if ([TASK_STATUS_SUCCESS, TASK_STATUS_PARTIAL_SUCCESS].includes(status)) {
@@ -2395,7 +2756,7 @@
     const required = [
       ['case_no', '请输入用例编号'],
       ['title', '请输入用例标题'],
-      ['test_point', '请输入测试点'],
+      ['test_point', '请输入测试场景'],
       ['project_product', '请选择项目产品'],
       ['module', '请选择模块名称'],
       ['owner', '请选择负责人'],
@@ -2415,15 +2776,15 @@
       return false
     }
     if (caseForm.scenario_layer === undefined || caseForm.scenario_layer === null || caseForm.scenario_layer === '') {
-      Message.error('请选择场景层级')
+      Message.error('请选择测试层级')
       return false
     }
     if (caseForm.scenario_type === undefined || caseForm.scenario_type === null || caseForm.scenario_type === '') {
-      Message.error('请选择场景类型')
+      Message.error('请选择验证类型')
       return false
     }
     if (!caseForm.scenario_tags?.length) {
-      Message.error('请选择场景标签')
+      Message.error('请选择执行场景')
       return false
     }
     return true
@@ -2578,15 +2939,23 @@
   .mango-functional-workbench {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr) 330px;
-    gap: 12px;
-    height: calc(100vh - 178px);
-    margin-top: 12px;
+    gap: var(--m-page-gap);
+    height: calc(100% - var(--m-page-gap));
+    margin-top: var(--m-page-gap);
     min-height: 0;
+  }
+
+  .mango-functional-workbench-scroll {
+    --mango-workbench-min-width: 1040px;
+  }
+
+  .mango-functional-workbench-scroll > .mango-functional-workbench {
+    min-width: var(--mango-workbench-min-width);
   }
 
   .mango-functional-workbench-case {
     align-items: stretch;
-    height: calc(100vh - 178px);
+    height: calc(100% - var(--m-page-gap));
     min-height: 0;
   }
 
@@ -2610,7 +2979,7 @@
   .mango-functional-workbench-case .mango-functional-nav,
   .mango-functional-workbench-case .mango-functional-side-panel {
     align-self: start;
-    height: calc(100vh - 186px);
+    height: 100%;
     overflow: auto;
   }
 
@@ -2764,7 +3133,7 @@
 
   .mango-functional-workbench-case .mango-functional-main-panel {
     display: flex;
-    height: calc(100vh - 186px);
+    height: 100%;
     overflow: hidden;
   }
 
@@ -2797,8 +3166,8 @@
     overflow-y: auto;
   }
 
-  :deep(.arco-spin),
-  :deep(.arco-spin-children) {
+  .mango-functional-panel-body > :deep(.arco-spin),
+  .mango-functional-panel-body > :deep(.arco-spin > .mango-panel-spin__content) {
     height: 100%;
   }
 
@@ -2863,7 +3232,7 @@
   }
 
   .mango-functional-case-table :deep(.arco-spin),
-  .mango-functional-case-table :deep(.arco-spin-children),
+  .mango-functional-case-table :deep(> .mango-panel-spin__content),
   .mango-functional-case-table :deep(.arco-table-content),
   .mango-functional-case-table :deep(.arco-scrollbar),
   .mango-functional-case-table :deep(.arco-scrollbar-container) {
@@ -2874,62 +3243,6 @@
     max-height: none;
   }
 
-  .mango-functional-scroll-table {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--m-scrollbar-thumb) transparent;
-  }
-
-  .mango-functional-scroll-table::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  .mango-functional-scroll-table::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .mango-functional-scroll-table::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: var(--m-scrollbar-thumb);
-  }
-
-  .mango-functional-scroll-table :deep(.arco-table-content),
-  .mango-functional-scroll-table :deep(.arco-scrollbar-container) {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--m-scrollbar-thumb) transparent;
-  }
-
-  .mango-functional-scroll-table :deep(.arco-table-content)::-webkit-scrollbar,
-  .mango-functional-scroll-table :deep(.arco-scrollbar-container)::-webkit-scrollbar {
-    width: 0;
-    height: 6px;
-  }
-
-  .mango-functional-scroll-table :deep(.arco-table-content)::-webkit-scrollbar-track,
-  .mango-functional-scroll-table :deep(.arco-scrollbar-container)::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .mango-functional-scroll-table :deep(.arco-table-content)::-webkit-scrollbar-thumb,
-  .mango-functional-scroll-table :deep(.arco-scrollbar-container)::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: var(--m-scrollbar-thumb);
-  }
-
-  .mango-functional-scroll-table :deep(.arco-scrollbar-track-direction-vertical),
-  .mango-functional-scroll-table :deep(.arco-scrollbar-thumb-direction-vertical),
-  .mango-functional-scroll-table :deep(.arco-scrollbar.arco-scrollbar-type-embed:hover .arco-scrollbar-thumb-direction-vertical),
-  .mango-functional-scroll-table :deep(.arco-scrollbar-track-direction-vertical::after) {
-    display: none !important;
-    width: 0 !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
 
   .mango-functional-case-footer {
     position: sticky;
@@ -3016,7 +3329,7 @@
   }
 
   .mango-functional-raw-viewer {
-    height: calc(100vh - 150px);
+    height: 100%;
     min-height: 0;
   }
 
@@ -3036,7 +3349,7 @@
   }
 
   .mango-functional-api-case-panel :deep(.mango-detail-workbench-page) {
-    height: calc(100vh - 120px);
+    height: 100%;
     min-height: 0;
   }
 
@@ -3114,6 +3427,13 @@
     line-height: 22px;
   }
 
+  .mango-functional-ai-panel-title--actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .mango-functional-ai-context-section {
     display: flex;
     flex-direction: column;
@@ -3184,6 +3504,55 @@
     line-height: 18px;
   }
 
+  .mango-functional-history-context-list {
+    display: flex;
+    max-height: 260px;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+  }
+
+  .mango-functional-history-context-item {
+    padding: 10px;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-sm);
+    background: var(--m-surface-soft);
+  }
+
+  .mango-functional-history-context-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mango-functional-history-context-head strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--m-text);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mango-functional-history-context-head span,
+  .mango-functional-history-context-item > small {
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .mango-functional-history-context-head span {
+    flex: none;
+  }
+
+  .mango-functional-history-context-options {
+    display: flex;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+  }
+
   .mango-functional-side-panel {
     overflow: auto;
   }
@@ -3239,12 +3608,12 @@
     background: var(--m-surface);
   }
 
-  .mango-functional-task-card :deep(.arco-spin),
-  .mango-functional-task-card :deep(.arco-spin-children) {
+  .mango-functional-task-card :deep(> .arco-spin),
+  .mango-functional-task-card :deep(> .arco-spin > .mango-panel-spin__content) {
     width: 100%;
   }
 
-  .mango-functional-task-card :deep(.arco-spin-children) {
+  .mango-functional-task-card :deep(> .arco-spin > .mango-panel-spin__content) {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -3348,7 +3717,7 @@
     gap: 10px;
     width: 100%;
     min-height: 0;
-    height: calc(100vh - 150px);
+    height: 100%;
     padding: 12px;
     overflow: auto;
     border: none;
@@ -3361,7 +3730,7 @@
     width: 100%;
   }
 
-  .mango-functional-conversation-spin :deep(.arco-spin-children) {
+  .mango-functional-conversation-spin :deep(> .mango-panel-spin__content) {
     width: 100%;
   }
 
@@ -3881,6 +4250,18 @@
     word-break: break-word;
   }
 
+  .mango-functional-ambiguity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 180px;
+    margin: 12px 0;
+    overflow: auto;
+    color: var(--m-text-2);
+    font-size: 13px;
+    line-height: 20px;
+  }
+
   .mango-functional-sync-pane {
     display: flex;
     flex-direction: column;
@@ -3939,5 +4320,45 @@
 
   .mango-functional-task-item-main .mango-functional-task-error {
     color: var(--m-danger);
+  }
+
+  .mango-functional-run-evidence {
+    margin-top: 16px;
+    background: var(--m-surface);
+  }
+
+  .mango-functional-run-evidence-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    color: var(--m-text-2);
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .mango-functional-run-evaluation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .mango-functional-run-evaluation-item {
+    display: grid;
+    grid-template-columns: auto minmax(120px, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--m-surface-soft);
+    border-radius: var(--m-radius-sm);
+    color: var(--m-text-2);
+    font-size: 12px;
+  }
+
+  .mango-functional-run-evaluation-item small {
+    grid-column: 2 / -1;
+    color: var(--m-danger);
+    line-height: 18px;
+    word-break: break-word;
   }
 </style>

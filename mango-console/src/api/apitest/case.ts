@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+import request from '@/api/axios.config'
 import type { ApiCaseDataFactoryPayload, ApiCasePayload, ApiCaseQuery } from '@/types/api-test/case'
 
 export function postApiImportUrl(data: Record<string, unknown>) {
@@ -16,6 +17,36 @@ export function getApiCase(data: ApiCaseQuery) {
     data: () => {
       return data
     },
+  })
+}
+
+export function getApiCaseConfigurationSummary(caseIds: number[]) {
+  return get({
+    url: '/api/case/configuration/summary',
+    data: () => ({ case_ids: caseIds.join(',') }),
+    silentError: true,
+  })
+}
+
+export function getApiCaseConfigurationDetails(id: number, page: number, pageSize: number) {
+  return get({
+    url: '/api/case/configuration/details',
+    data: () => ({ id, page, pageSize }),
+    silentError: true,
+  })
+}
+
+export function getApiCaseBoundTasks(id: number | string) {
+  return get({
+    url: '/api/case/bound/tasks',
+    data: () => ({ id }),
+  })
+}
+
+export function getApiCaseRelatedTasks(id: number | string) {
+  return get({
+    url: '/api/case/related/tasks',
+    data: () => ({ id }),
   })
 }
 
@@ -51,7 +82,9 @@ export function deleteApiCase(id: number | string[] | number[]) {
 export function getApiCaseRun(
   caseId: number | string,
   test_env: number | string,
-  caseSort: number | string | null
+  caseSort: number | string | null,
+  revisionId?: number,
+  releaseId?: number | null
 ) {
   return get({
     url: '/api/case/test',
@@ -60,18 +93,63 @@ export function getApiCaseRun(
         case_id: caseId,
         test_env: test_env,
         case_sort: caseSort,
+        revision_id: revisionId,
+        release_id: releaseId,
       }
     },
   })
 }
 
-export function postApiCaseBatchRun(caseIdList: Array<string | number>, test_env: number | string) {
+export function getApiCaseRunRaw(
+  caseId: number | string,
+  test_env: number | string,
+  caseSort: number | string | null,
+  revisionId?: number,
+  releaseId?: number | null
+) {
+  return request.get('/api/case/test', {
+    params: {
+      case_id: caseId,
+      test_env,
+      case_sort: caseSort,
+      revision_id: revisionId,
+      release_id: releaseId,
+    },
+  })
+}
+
+export function postApiCaseStepDebugRaw(data: {
+  case_id: number | string
+  case_detailed_id: number | string
+  test_env: number | string
+  context_id?: string | null
+}) {
+  return request.post('/api/case/step/debug', data)
+}
+
+export function getApiCaseExecutionOptions() {
+  return get({
+    url: '/api/case/execution/options',
+    data: () => ({}),
+  })
+}
+
+export function postApiCaseBatchRun(
+  caseIds: number[],
+  test_env: number | string,
+  executionName: string,
+  apiConcurrencyLimit?: number | null,
+  executionVersion: 'editing' | 'published' = 'editing'
+) {
   return post({
     url: '/api/case/batch',
     data: () => {
       return {
-        case_id_list: caseIdList,
+        case_id_list: caseIds,
         test_env: test_env,
+        execution_name: executionName,
+        api_concurrency_limit: apiConcurrencyLimit,
+        execution_version: executionVersion,
       }
     },
   })

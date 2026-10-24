@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI 执行 UI 自动化用例"
+  short_description: "由智能代理逐步执行 UI Case、断言并回传证据"
+  default_prompt: "使用 $mango-agent-ui-case-runner 通过 agent_ui_ MCP 协议逐步执行指定 UI Case，按保存的流程完成浏览器操作、断言、证据上传和结果回传。"

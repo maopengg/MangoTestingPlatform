@@ -1,5 +1,7 @@
 import Axios, { AxiosResponse } from 'axios'
+import { Message } from '@arco-design/web-vue'
 import qs from 'qs'
+import { normalizeIdSearchParams } from '@/utils/id-search'
 import CustomRequestInterceptor from './interceptors/CustomRequestInterceptor'
 import UserTokenExpiredInterceptor from './interceptors/UserTokenExpiredInterceptor'
 
@@ -7,9 +9,11 @@ function currentWebSocketURL(): string {
   if (typeof window === 'undefined') {
     return ''
   }
-  const host = currentApiHost()
+  const host = window.location.port === '5173'
+    ? `${window.location.hostname}:8011`
+    : window.location.host
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${host}/api/web/socket?`
+  return `${protocol}//${host}/ws/web/socket?`
 }
 
 function currentApiHost(): string {
@@ -51,9 +55,45 @@ const service = Axios.create({
   timeout: 10 * 60 * 1000,
 })
 
+const HTTP_ERROR_MESSAGE_MAP: Record<number, string> = {
+  502: '服务网关异常，请稍后重试',
+  503: '服务暂时不可用，请稍后重试或联系管理员检查服务状态',
+  504: '服务响应超时，请稍后重试',
+}
+
+const ERROR_MESSAGE_INTERVAL = 3000
+let lastHttpErrorMessageTime = 0
+
+function showHttpErrorMessage(message: string) {
+  const now = Date.now()
+  if (now - lastHttpErrorMessageTime > ERROR_MESSAGE_INTERVAL) {
+    Message.error(message)
+    lastHttpErrorMessageTime = now
+  }
+}
+
+function getHttpErrorMessage(error: any): string {
+  const status = error.response?.status
+  const responseMessage = error.response?.data?.msg
+  if (responseMessage) {
+    return responseMessage
+  }
+  if (status && HTTP_ERROR_MESSAGE_MAP[status]) {
+    return HTTP_ERROR_MESSAGE_MAP[status]
+  }
+  if (!error.response) {
+    return '服务连接异常，请检查网络或稍后重试'
+  }
+  return '服务器异常，请稍后重试'
+}
+
 // 在正式发送请求之前进行拦截配置
 service.interceptors.request.use(
   (config) => {
+    if (config.method?.toLowerCase() === 'get' && config.params &&
+        typeof config.params === 'object' && !(config.params instanceof URLSearchParams)) {
+      config.params = normalizeIdSearchParams(config.params)
+    }
     !config.headers && (config.headers = {})
     if (!config.headers[CONTENT_TYPE]) {
       config.headers[CONTENT_TYPE] = APPLICATION_JSON
@@ -79,13 +119,16 @@ service.interceptors.response.use(
     }
   },
   (error) => {
-    if (error.response.status === 403) {
+    if ([401, 403, 429].includes(error.response?.status)) {
+      UserTokenExpiredInterceptor(error.response)
       return error.response
     }
+    const message = getHttpErrorMessage(error)
+    showHttpErrorMessage(message)
     if (import.meta.env.MODE === 'dev') {
       console.log(error)
     }
-    return Promise.reject({ code: 500, msg: '服务器异常，请稍后重试…' })
+    return Promise.reject({ code: error.response?.status || 500, msg: message })
   }
 )
 

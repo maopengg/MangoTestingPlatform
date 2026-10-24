@@ -38,23 +38,13 @@ export function deleteUiPage(id: number | string[] | number[]) {
   })
 }
 
-export function getUiPageName(moduleId: number) {
+export function getUiPageName(moduleId: number | string, projectProductId?: number | string) {
   return get({
     url: '/ui/page/name',
     data: () => {
       return {
         module_id: moduleId,
-      }
-    },
-  })
-}
-
-export function postUiPageCopy(pageId: number | string) {
-  return post({
-    url: '/ui/page/copy',
-    data: () => {
-      return {
-        page_id: pageId,
+        project_product_id: projectProductId || undefined,
       }
     },
   })

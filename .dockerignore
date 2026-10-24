@@ -1,0 +1,21 @@
+# 前端镜像使用仓库根目录作为构建上下文，以便打包根目录中的项目 Skill。
+# 默认排除其他子项目，避免将后端、执行器、虚拟环境和 Git 历史发送给 Docker。
+*
+!mango-console/
+!mango-console/**
+!MangoServer/
+!MangoServer/**
+!skill/
+!skill/**
+
+mango-console/node_modules/
+mango-console/dist/
+MangoServer/.venv/
+MangoServer/runtime/
+MangoServer/**/__pycache__/
+MangoServer/**/*.pyc
+**/.DS_Store
+**/__pycache__/
+**/*.pyc
+**/.env.deploy
+**/src/settings/database.json

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0013_uicase_scenario_description_uicase_scenario_tags_and_more'),
     ]

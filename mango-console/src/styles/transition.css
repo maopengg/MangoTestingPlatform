@@ -1,7 +1,7 @@
 /* mango-fade-transform */
 .mango-fade-transform-leave-active,
 .mango-fade-transform-enter-active {
-    transition: all 0.5s;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .mango-fade-transform-enter-from {
@@ -17,7 +17,7 @@
 /* mango-down-transform */
 .mango-down-transform-leave-active,
 .mango-down-transform-enter-active {
-    transition: all 0.5s;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .mango-down-transform-enter-from {
@@ -33,7 +33,7 @@
 /* mango-scale-transform */
 .mango-scale-transform-leave-active,
 .mango-scale-transform-enter-active {
-    transition: all 0.5s;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .mango-scale-transform-enter-from {
@@ -49,7 +49,7 @@
 /* mango-opacity-transform */
 .mango-opacity-transform-leave-active,
 .mango-opacity-transform-enter-active {
-    transition: all 0.5s;
+    transition: opacity 0.2s ease;
 }
 
 .mango-opacity-transform-enter-from {
@@ -63,7 +63,7 @@
 /* breadcrumb transition */
 .mango-breadcrumb-enter-active,
 .mango-breadcrumb-leave-active {
-    transition: all 0.5s;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .mango-breadcrumb-enter-from,
@@ -73,7 +73,7 @@
 }
 
 .mango-breadcrumb-move {
-    transition: all 0.5s;
+    transition: transform 0.3s ease;
 }
 
 .mango-breadcrumb-leave-active {
@@ -83,7 +83,7 @@
 /* header transition */
 .mango-header-enter-active,
 .mango-header-leave-active {
-    transition: all 0.5s;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .mango-header-enter-from,
@@ -93,13 +93,13 @@
 }
 
 .mango-header-move {
-    transition: all 0.5s;
+    transition: transform 0.3s ease;
 }
 
 /* logo transition */
 .mango-logo-enter-active,
 .mango-logo-leave-active {
-    transition: all 0.5s;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .mango-logo-enter-from,
@@ -109,5 +109,5 @@
 }
 
 .mango-logo-move {
-    transition: all 0.5s;
+    transition: transform 0.3s ease;
 }

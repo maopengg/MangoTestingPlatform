@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_data_factory', '0007_remove_datafactorytemplateitem_cleanup_strategy_and_more'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='datafactoryexecution',
             name='source_type',
-            field=models.SmallIntegerField(choices=[(1, '模板调试'), (2, '手动执行'), (3, '系统调用'), (4, 'API用例'), (5, 'API接口场景'), (6, 'UI用例')], default=1, verbose_name='执行来源'),
+            field=models.SmallIntegerField(
+                choices=[(1, '模板调试'), (2, '手动执行'), (3, '系统调用'), (4, 'API用例'), (5, 'API接口场景'),
+                         (6, 'UI用例')], default=1, verbose_name='执行来源'),
         ),
     ]

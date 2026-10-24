@@ -1,9 +1,17 @@
 import { defineStore } from 'pinia'
 
 import defaultSetting from '@/setting'
-import { DeviceType, LayoutMode, PageAnim, SideTheme, ThemeMode } from '../types'
+import {
+  DeviceType,
+  DisplayDensity,
+  LayoutMode,
+  PageAnim,
+  SideTheme,
+  ThemeMode,
+} from '../types'
 
 import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
+import { applyDisplayDensity } from '@/hooks/useDisplayDensity'
 import usePrimaryColor from '@/hooks/usePrimaryColor'
 import useTheme from '@/hooks/useTheme'
 import { applyThemePreset, getThemePreset, ThemePresetId } from '@/theme/presets'
@@ -27,6 +35,10 @@ const useAppConfigStore = defineStore('app-config', {
     },
     changeDevice(deviceType: DeviceType) {
       this.deviceType = deviceType
+    },
+    changeDisplayDensity(displayDensity: DisplayDensity) {
+      this.displayDensity = displayDensity
+      applyDisplayDensity(displayDensity)
     },
     changeSideBarTheme(sideTheme: SideTheme) {
       this.sideTheme = sideTheme

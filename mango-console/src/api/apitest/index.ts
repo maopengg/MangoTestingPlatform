@@ -213,18 +213,6 @@
 //     },
 //   })
 // }
-//
-// export function postApiCopyInfo(id: number) {
-//   return post({
-//     url: '/api/copy/info',
-//     data: () => {
-//       return {
-//         id: id,
-//       }
-//     },
-//   })
-// }
-//
 // export function getApiPublic(data: object) {
 //   return get({
 //     url: '/api/public',

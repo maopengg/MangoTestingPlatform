@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0021_cachedata_group_cachedata_is_enabled_and_more'),
     ]

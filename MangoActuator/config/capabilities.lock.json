@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "capabilities": {
+    "pytest": {"protocol_version": 1, "requirements": "requirements/pytest.txt"},
+    "web_ui": {"protocol_version": 1, "playwright_version": "1.62.0", "browser": "chromium"},
+    "android_ui": {"protocol_version": 1, "requirements": "requirements/android.txt"},
+    "ios_ui": {"protocol_version": 1, "requirements": "requirements/ios.txt", "required_os": ["darwin"]},
+    "perf": {"protocol_version": 1, "engine": "k6", "engine_version": "2.2.0"}
+  },
+  "profiles": {
+    "minimal": [],
+    "pytest": ["pytest"],
+    "standard": ["pytest", "web_ui", "perf"],
+    "android": ["pytest", "web_ui", "android_ui", "perf"],
+    "full": ["pytest", "web_ui", "android_ui", "ios_ui", "perf"]
+  }
+}

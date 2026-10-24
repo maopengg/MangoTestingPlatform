@@ -1,6 +1,7 @@
 import { deleted, get, post, put } from '@/api/http'
+import type { UiCasePayload } from '@/types/ui-test/case'
 
-export function getUiCase(data: object) {
+export function getUiCase(data: Record<string, unknown>) {
   return get({
     url: '/ui/case',
     data: () => {
@@ -9,7 +10,7 @@ export function getUiCase(data: object) {
   })
 }
 
-export function postUiCase(data: object) {
+export function postUiCase(data: UiCasePayload) {
   return post({
     url: '/ui/case',
     data: () => {
@@ -18,12 +19,22 @@ export function postUiCase(data: object) {
   })
 }
 
-export function putUiCase(data: object) {
+export function putUiCase(data: UiCasePayload) {
   return put({
     url: '/ui/case',
     data: () => {
       return data
     },
+  })
+}
+
+export function putUiCasePublication(caseId: number, targetStatus: 'prepublished' | 'published' | 'unpublished') {
+  return put({
+    url: '/ui/case/publication',
+    data: () => ({
+      case_id: caseId,
+      target_status: targetStatus,
+    }),
   })
 }
 
@@ -61,14 +72,16 @@ export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvir
   })
 }
 
-export function getUiCaseRun(caseId: any, testingEnvironment: any) {
+export function getUiCaseRun(caseId: any, testingEnvironment: any, actuatorUsername?: string) {
   return get({
     url: '/ui/case/test',
     data: () => {
-      return {
+      const params: Record<string, any> = {
         case_id: caseId,
         test_env: testingEnvironment,
       }
+      if (actuatorUsername) params.actuator_username = actuatorUsername
+      return params
     },
   })
 }

@@ -1,122 +1,88 @@
 <template>
-  <TableBody ref="tableBody">
-    <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="项目产品配置"
-        @search="doRefresh"
+  <TableBody plain class="mango-detail-workbench-page">
+    <template #header><TableHeader title="项目与产品" /></template>
+    <template #default>
+      <ProductOverview
+        :products="table.dataList"
+        :projects="productProjectOptions"
+        :conditions="conditionItems"
+        :loading="table.tableLoading.value"
+        :error="loadError"
+        @search="onSearch"
         @reset-search="onResetSearch"
+        @refresh="doRefresh"
+        @add="onAdd"
+        @module="onModule"
+        @datasource="onDatasource"
+        @edit="onUpdate"
+        @delete="onDelete"
       >
-        <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+        <template #search>
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearch">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="project.data"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="doRefresh"
-                />
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="onSearch" />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'ui_client_type'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.drive_type"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearch"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'api_client_type'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.api_client"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearch"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'owners'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="item.optionItems"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearch"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="item.optionItems"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearch"
                 />
               </template>
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs>
-        <template #extra>
-          <a-space>
-            <div>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-            </div>
-          </a-space>
-        </template>
-      </a-tabs>
-      <a-table
-        :scroll="{ x: 1100 }"
-        :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
-        :rowKey="rowKey"
-        @selection-change="onSelectionChange"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of tableColumns"
-            :key="item.key"
-            :align="item.align"
-            :data-index="item.key"
-            :fixed="item.fixed"
-            :title="item.title"
-            :width="item.width"
-          >
-            <template v-if="item.key === 'index'" #cell="{ record }">
-              {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'project'" #cell="{ record }">
-              {{ record.project.name }}
-            </template>
-            <template v-else-if="item.key === 'ui_client_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.ui_client_type]" size="small"
-                >{{ enumStore.drive_type[record.ui_client_type]?.title }}
-              </a-tag>
-            </template>
-            <template v-else-if="item.key === 'api_client_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.api_client_type]" size="small"
-                >{{ enumStore.api_client[record.api_client_type]?.title }}
-              </a-tag>
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <MangoTableActions
-                :actions="[
-                  { label: '模块名称', onClick: () => onModule(record) },
-                  { label: '逻辑数据源', onClick: () => onDatasource(record) },
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
-              />
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-    </template>
-    <template #footer>
-      <TableFooter :pagination="pagination" />
+      </ProductOverview>
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
@@ -134,8 +100,10 @@
           <template v-else-if="item.type === 'select' && item.key === 'project'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
-              :options="project.data"
+              :options="productProjectOptions"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -145,6 +113,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'ui_client_type'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.drive_type"
               :placeholder="item.placeholder"
@@ -156,8 +126,23 @@
           <template v-else-if="item.type === 'select' && item.key === 'api_client_type'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="enumStore.api_client"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'owners'">
+            <a-select
+              v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="1"
+              :field-names="fieldNames"
+              :options="item.optionItems"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -171,33 +156,38 @@
 </template>
 
 <script lang="ts" setup>
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
-  import { conditionItems, formItems, tableColumns } from './config'
+  import { conditionItems, formItems } from './config'
+  import ProductOverview from './components/ProductOverview.vue'
+  import { loadAllProducts } from './overview'
   import {
     deleteUserProduct,
+    getProductProjectOptions,
     getUserProduct,
     postUserProduct,
     putUserProduct,
   } from '@/api/system/product'
   import { useEnum } from '@/store/modules/get-enum'
+  import { getUserName } from '@/api/user/user'
+  import { setUpdateUserOptions } from '@/utils/update-user'
 
   const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
-  const { onSelectionChange } = useRowSelection()
   const table = useTable()
-  const rowKey = useRowKey('id')
+  const loadError = ref('')
+  let requestVersion = 0
   const formModel = ref({})
   const router = useRouter()
   const project = useProject()
+  const productProjectOptions = ref<any[]>([])
 
   const data = reactive({
     isAdd: false,
@@ -207,43 +197,74 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
-    doRefresh()
+    onSearch()
   }
 
-  function doRefresh() {
-    let value = getFormItems(conditionItems)
-    clearEmptyFilter(value, 'project')
-    clearEmptyFilter(value, 'ui_client_type')
-    clearEmptyFilter(value, 'api_client_type')
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    getUserProduct(value)
+  function onSearch() {
+    conditionItems.forEach((item) => {
+      if (typeof item.value === 'string') item.value = item.value.trim()
+    })
+  }
+
+  async function doRefresh() {
+    const version = ++requestVersion
+    table.tableLoading.value = true
+    loadError.value = ''
+    try {
+      const products = await loadAllProducts(getUserProduct, () => version === requestVersion)
+      if (version === requestVersion) table.dataList.splice(0, table.dataList.length, ...products)
+    } catch {
+      if (version === requestVersion) {
+        table.dataList.splice(0)
+        loadError.value = '产品未能完整加载，请重试。'
+      }
+    } finally {
+      if (version === requestVersion) table.tableLoading.value = false
+    }
+  }
+
+  function refreshProductProjectOptions() {
+    return getProductProjectOptions()
       .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
+        productProjectOptions.value = Array.isArray(res.data) ? res.data : []
       })
       .catch(console.log)
   }
 
-  function clearEmptyFilter(value: Record<string, any>, key: string) {
-    if (value[key] === null || value[key] === '' || value[key] === undefined) {
-      delete value[key]
-    }
+  function refreshUserOptions() {
+    return getUserName()
+      .then((res) => {
+        const users = res.data || []
+        setUpdateUserOptions(conditionItems, users)
+        const ownerCondition = conditionItems.find((item) => item.key === 'owners')
+        const ownerFormItem = formItems.find((item) => item.key === 'owners')
+        if (ownerCondition) ownerCondition.optionItems = users
+        if (ownerFormItem) ownerFormItem.optionItems = users
+      })
+      .catch(console.log)
   }
 
-  function onAdd() {
+  function onAdd(projectId?: string) {
     data.actionTitle = '新增'
     data.isAdd = true
+    refreshProductProjectOptions()
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
+    if (projectId != null) {
+      const projectField = formItems.find((item) => item.key === 'project')
+      if (projectField)
+        projectField.value = productProjectOptions.value.find(
+          (item) => String(item.key) === projectId
+        )?.key
+    }
   }
 
   function onDelete(record: any) {
@@ -256,6 +277,7 @@
         return deleteUserProduct(record.id)
           .then((res) => {
             Message.success(res.msg)
+            project.invalidateAllProductModuleTreeCache()
           })
           .catch(console.log)
           .finally(() => {
@@ -270,11 +292,14 @@
     data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
+    refreshProductProjectOptions()
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        if (Array.isArray(propName)) {
+          it.value = propName.map((value) => value.id)
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
           it.value = propName
@@ -314,6 +339,7 @@
             Message.success(res.msg)
             doRefresh()
             project.projectProductName()
+            project.invalidateAllProductModuleTreeCache()
           })
           .catch((error) => {
             console.log(error)
@@ -329,6 +355,7 @@
             Message.success(res.msg)
             doRefresh()
             project.projectProductName()
+            project.invalidateAllProductModuleTreeCache()
           })
           .catch((error) => {
             console.log(error)
@@ -344,8 +371,13 @@
 
   onMounted(() => {
     nextTick(async () => {
+      refreshUserOptions()
+      refreshProductProjectOptions()
       doRefresh()
     })
+  })
+  onBeforeUnmount(() => {
+    requestVersion += 1
   })
 </script>
 

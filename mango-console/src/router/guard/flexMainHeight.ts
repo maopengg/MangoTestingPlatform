@@ -1,14 +1,19 @@
 import useAppConfigStore from '@/store/modules/app-config'
 import router from '..'
 
-// canFlexHeightRoutes 是可以让内容区变换高度的路由名称数组，也可以是路由地址，可以根据实际的情况去填写内容
-const canFlexHeightRoutes = ['Home']
+const fixedHeightRouteNames = ['Home']
+const fixedHeightRoutePaths = [
+  '/functional-test/case/index',
+  '/functional-test/plan/details',
+]
 
 function useFlexMainHeightGuard() {
-  router.beforeEach((to) => {
+  router.afterEach((to, _from, failure) => {
+    if (failure) return
     const appConfigStore = useAppConfigStore()
-    appConfigStore.setFlexMainHeight(canFlexHeightRoutes.includes(to.name as string))
-    return true
+    appConfigStore.setFlexMainHeight(
+      fixedHeightRouteNames.includes(to.name as string) || fixedHeightRoutePaths.includes(to.path)
+    )
   })
 }
 

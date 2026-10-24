@@ -14,9 +14,6 @@ def set_env_from_argv():
 def main():
     """Run administrative tasks."""
     set_env_from_argv()
-    from src.common.tools import project_dir
-
-    project_dir.init_folder()
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
     try:
         from django.core.management import execute_from_command_line
@@ -31,3 +28,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # python manage.py makemigrations
+    # python manage.py migrate --env=dev

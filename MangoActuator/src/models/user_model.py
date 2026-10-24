@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: 
+# @Description:
 # @Time   : 2024-09-21 11:23
 # @Author : 毛鹏
 from datetime import datetime
@@ -14,7 +14,7 @@ class UserConfigModel(BaseModel):
 
 
 @singleton
-class UserModel(BaseModel):
+class ActuatorUserProfile(BaseModel):
     """用户表"""
     id: int
     create_time: datetime

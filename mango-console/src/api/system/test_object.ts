@@ -19,7 +19,7 @@ export function postUserTestObject(data: object) {
 }
 
 export function putUserTestObject(data: object) {
-  return put({
+  return put({ permissionKey: 'config.test_object',
     url: '/system/test/object',
     data: () => {
       return data

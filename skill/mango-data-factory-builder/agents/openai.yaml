@@ -1,0 +1,4 @@
+interface:
+  display_name: "数据工厂创建与修复"
+  short_description: "按真实表结构和代码语义创建、修复可清理的数据工厂场景"
+  default_prompt: "使用 $mango-data-factory-builder，通过 MCP 按真实表结构、字段注释和后端代码语义创建或修复数据工厂资产，完成枚举、依赖、默认值、上下文字段、场景、清理和自动化绑定校验。"

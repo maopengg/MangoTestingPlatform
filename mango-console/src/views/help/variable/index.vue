@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" :embedded="props.embedded">
     <template #header></template>
     <template #default>
       <section class="mango-section-card variable-shell">
@@ -18,18 +18,24 @@
                 search-button
                 button-text="测试一下"
                 placeholder="请输入变量表达式"
-                @search="obtain(input)"
+                @search="obtain(input)" data-testid="qa-views-help-variable-input-search-请输入变量表达式"
               />
               <div class="usage-panel">
                 <div class="usage-title">用法说明</div>
                 <div class="usage-list">
                   <div class="usage-item">
-                    <span class="usage-label">直接生成</span>
+                    <span class="usage-label">变量表达式</span>
+                    <span class="usage-action">直接生成</span>
                     <span class="inline-code">{{ wrapExpression('方法名(参数)') }}</span>
+                    <span class="usage-action">生成并缓存</span>
+                    <span class="inline-code">{{ wrapExpression('方法名()|缓存key') }}</span>
                   </div>
                   <div class="usage-item">
-                    <span class="usage-label">生成并缓存</span>
-                    <span class="inline-code">{{ wrapExpression('方法名()|缓存key') }}</span>
+                    <span class="usage-label">自定义函数</span>
+                    <span class="inline-code">self.test_data.方法名(参数)</span>
+                    <span class="usage-note">
+                      当前函数上下文提供 self 时，可通过 self.test_data 调用本页方法
+                    </span>
                   </div>
                 </div>
               </div>
@@ -38,7 +44,12 @@
 
           <a-space direction="vertical" fill :size="12">
             <div class="section-tip">
-              随机数据方法可直接生成测试数据；平台自定义方法属于扩展能力，部分方法会依赖上传文件或运行环境。
+              <template v-if="currentClassGroup?.typeValue === 'performance'">
+                仅此分类的 perf_* 方法可编译到 k6：在API自动化 Case 中填写表达式并发布，性能运行时每次命中都会生成新值，无需预建大量参数组。
+              </template>
+              <template v-else>
+                随机数据方法可直接生成测试数据；平台自定义方法属于扩展能力，部分方法会依赖上传文件或运行环境。
+              </template>
             </div>
             <div v-if="classGroups.length" class="method-layout">
               <div class="category-panel">
@@ -91,6 +102,15 @@
   import { Button, Message, Notification, Table, Tag } from '@arco-design/web-vue'
   import { getSystemRandomData, getSystemRandomList } from '@/api/system/system'
 
+  const props = withDefaults(
+    defineProps<{
+      embedded?: boolean
+    }>(),
+    {
+      embedded: false,
+    }
+  )
+
   type MethodItem = {
     label: string
     value: string
@@ -139,9 +159,11 @@
 
   const menuSections = computed(() => {
     const testData = classGroups.value.filter((item) => item.typeValue === 'data')
-    const tools = classGroups.value.filter((item) => item.typeValue !== 'data')
+    const performance = classGroups.value.filter((item) => item.typeValue === 'performance')
+    const tools = classGroups.value.filter((item) => !['data', 'performance'].includes(item.typeValue || ''))
     return [
       { title: '测试数据', value: 'data', children: testData },
+      { title: '性能测试', value: 'performance', children: performance },
       { title: '工具', value: 'tools', children: tools },
     ].filter((item) => item.children.length)
   })
@@ -184,6 +206,7 @@
         Notification.success({
           title: '${{' + expression + '}}',
           content: String(res.data),
+          closable: true,
         })
       })
       .catch(console.log)
@@ -241,6 +264,7 @@
     },
     emits: ['test'],
     setup(props, { emit }) {
+      const showExampleActions = !['cache', 'json'].includes(props.group.typeValue || '')
       const columns = [
         {
           title: '方法',
@@ -274,27 +298,31 @@
             )
           },
         },
-        {
-          title: '示例',
-          width: 260,
-          render: ({ record }: { record: MethodItem }) =>
-            h('span', { class: 'expression' }, wrapExpression(buildExample(record))),
-        },
-        {
-          title: '操作',
-          width: 110,
-          align: 'center' as const,
-          render: ({ record }: { record: MethodItem }) =>
-            h(
-              Button,
+        ...(showExampleActions
+          ? [
               {
-                size: 'mini',
-                type: 'text',
-                onClick: () => emit('test', buildExample(record)),
+                title: '示例',
+                width: 260,
+                render: ({ record }: { record: MethodItem }) =>
+                  h('span', { class: 'expression' }, wrapExpression(buildExample(record))),
               },
-              () => '测试'
-            ),
-        },
+              {
+                title: '操作',
+                width: 110,
+                align: 'center' as const,
+                render: ({ record }: { record: MethodItem }) =>
+                  h(
+                    Button,
+                    {
+                      size: 'mini',
+                      type: 'text',
+                      onClick: () => emit('test', buildExample(record)),
+                    },
+                    () => '测试'
+                  ),
+              },
+            ]
+          : []),
       ]
 
       return () =>
@@ -337,7 +365,7 @@
     align-items: flex-start;
     padding: 12px 14px;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
@@ -364,8 +392,17 @@
   }
 
   .usage-label {
-    width: 72px;
+    width: 84px;
     color: var(--m-text-2);
+    font-weight: 500;
+  }
+
+  .usage-action {
+    color: var(--m-muted);
+  }
+
+  .usage-note {
+    color: var(--m-muted);
   }
 
   .section-tip {
@@ -379,7 +416,7 @@
   .method-layout {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
-    gap: 14px;
+    gap: var(--m-page-gap);
     align-items: flex-start;
   }
 
@@ -388,7 +425,7 @@
     top: 12px;
     overflow: hidden;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
@@ -495,7 +532,7 @@
   .method-group-card {
     overflow: hidden;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 

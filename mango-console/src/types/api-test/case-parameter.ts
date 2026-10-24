@@ -1,16 +1,19 @@
 import type { ApiKeyValueItem, JsonObject, JsonValue } from './case'
 
 export interface ApiJsonPathAssertionItem {
+  assertion_type?: 'jsonpath' | 'regex' | 'cache'
+  group_name?: string
+  group_logic?: 'AND' | 'OR'
   actual: string
   method: string
-  expect: string
+  expect: unknown | null
 }
 
 export interface ApiSqlAssertionItem {
   actual: string
   method: string
   expect: string
-  datasource_alias?: number | null
+  datasource_alias: number
 }
 
 export interface ApiGeneralAssertionParameter {
@@ -28,6 +31,8 @@ export interface ApiGeneralAssertionValue {
 }
 
 export interface ApiGeneralAssertionItem {
+  group_name?: string
+  group_logic?: 'AND' | 'OR'
   method: string
   value: ApiGeneralAssertionValue
 }
@@ -121,6 +126,11 @@ export interface ApiAssertionResult {
   group_name?: string | null
   group_logic?: string | null
   group_result?: boolean | null
+  source_type?: string | null
+  actual_source?: unknown
+  expect_source?: unknown
+  raw_config?: unknown
+  resolved_config?: unknown
   status: number
 }
 
@@ -136,4 +146,25 @@ export interface ApiCaseStepResult {
   response?: ApiResponseResult | null
   cache_data: JsonObject
   data_factory_cache_data: JsonObject
+}
+
+export interface ApiAssertionVerifyPayload {
+  id: number
+  test_env: number
+  assertions: Pick<
+    ApiCaseParameterPayload,
+    'ass_json_all' | 'ass_text_all' | 'ass_jsonpath' | 'ass_schema' | 'ass_general'
+  >
+}
+
+export interface ApiAssertionVerifyResult {
+  parameter_id: number
+  passed: boolean
+  status: number
+  error_message?: string | null
+  result_count: number
+  passed_count: number
+  failed_count: number
+  source_test_time?: string | null
+  assertions: ApiAssertionResult[]
 }

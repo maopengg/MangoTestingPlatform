@@ -1,9 +1,19 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
+
+export const publicationTabs = [
+  { key: 'all', title: '全部' },
+  { key: 'published', title: '已发布' },
+  { key: 'prepublished', title: '预发布' },
+  { key: 'unpublished', title: '未发布' },
+]
 
 export const conditionItems: Array<FormItem> = reactive([
   {
@@ -11,7 +21,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入用例ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -55,28 +65,28 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'scenario_layer',
-    label: '场景层级',
+    label: '测试层级',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择场景层级',
+    placeholder: '请选择测试层级',
     optionItems: [],
     reset: function () {},
   },
   {
     key: 'scenario_type',
-    label: '场景类型',
+    label: '验证类型',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择场景类型',
+    placeholder: '请选择验证类型',
     optionItems: [],
     reset: function () {},
   },
   {
     key: 'scenario_tags',
-    label: '场景标签',
+    label: '执行场景',
     value: ref([]),
     type: 'select',
-    placeholder: '请选择场景标签',
+    placeholder: '请选择执行场景',
     optionItems: [],
     reset: function () {
       this.value = []
@@ -85,22 +95,55 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'case_people',
     label: '用例负责人',
-    value: ref(''),
+    value: ref([]),
     type: 'select',
+    multiple: true,
+    searchOperator: 'in',
     placeholder: '请选择用例负责人',
     optionItems: [],
-    reset: function () {},
+    reset: function () {
+      this.value = []
+    },
+  },
+  createUpdateUserCondition(),
+  {
+    key: 'execution_configuration',
+    label: '执行配置',
+    value: ref([]),
+    type: 'select',
+    placeholder: '请选择执行配置',
+    optionItems: [],
+    reset: function () { this.value = [] },
+  },
+  {
+    key: 'scheduled_task',
+    label: '手动绑定状态',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择手动绑定状态',
+    optionItems: [
+      { key: 'bound', title: '已手动绑定' },
+      { key: 'unbound', title: '未手动绑定' },
+    ],
+    reset: function () {
+      this.value = ''
+    },
   },
   {
     key: 'status',
     label: '测试结果',
-    value: ref(''),
+    value: ref([]),
     type: 'select',
+    multiple: true,
+    searchOperator: 'in',
     placeholder: '请选择测试结果',
     optionItems: [],
-    reset: function () {},
+    reset: function () {
+      this.value = []
+    },
   },
 ])
+enableMultiSelectSearch(conditionItems)
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
@@ -164,12 +207,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '场景层级',
+    label: '测试层级',
     key: 'scenario_layer',
     value: ref(0),
     type: 'select',
     required: true,
-    placeholder: '请选择场景层级',
+    placeholder: '请选择测试层级',
     reset: function () {
       this.value = 0
     },
@@ -183,12 +226,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '场景类型',
+    label: '验证类型',
     key: 'scenario_type',
     value: ref(0),
     type: 'select',
     required: true,
-    placeholder: '请选择场景类型',
+    placeholder: '请选择验证类型',
     reset: function () {
       this.value = 0
     },
@@ -202,11 +245,11 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '场景标签',
+    label: '执行场景',
     key: 'scenario_tags',
     value: ref([]),
     type: 'select',
-    placeholder: '请选择场景标签',
+    placeholder: '请选择执行场景',
     reset: function () {
       this.value = []
     },
@@ -241,29 +284,11 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '模块名称',
-    key: 'module',
-    dataIndex: 'module',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
     title: '用例名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    width: 300,
+    width: 240,
     ellipsis: true,
     tooltip: true,
   },
@@ -272,7 +297,7 @@ export const tableColumns = useTableColumn([
     key: 'scenario_description',
     dataIndex: 'scenario_description',
     align: 'left',
-    width: 260,
+    width: 220,
     ellipsis: true,
     tooltip: true,
   },
@@ -280,36 +305,47 @@ export const tableColumns = useTableColumn([
     title: '负责人',
     key: 'case_people',
     dataIndex: 'case_people',
-    width: 90,
+    width: 80,
   },
   {
-    title: '状态',
+    title: '结果',
     key: 'status',
     dataIndex: 'status',
     width: 70,
   },
   {
-    title: '场景层级',
+    title: '测试层级',
     key: 'scenario_layer',
     dataIndex: 'scenario_layer',
     align: 'left',
     width: 120,
   },
   {
-    title: '场景标签',
+    title: '执行场景',
     key: 'scenario_tags',
     dataIndex: 'scenario_tags',
     align: 'left',
-    width: 110,
-    ellipsis: true,
-    tooltip: true,
+    width: 180,
   },
   {
-    title: '场景类型',
+    title: '验证类型',
     key: 'scenario_type',
     dataIndex: 'scenario_type',
     align: 'left',
     width: 100,
+  },
+  {
+    title: '发布状态',
+    key: 'publication_status',
+    dataIndex: 'publication_status',
+    width: 100,
+  },
+  {
+    title: '执行配置',
+    key: 'execution_configuration',
+    dataIndex: 'execution_configuration',
+    width: 180,
+    align: 'left',
   },
   {
     title: '优先级',
@@ -326,11 +362,36 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
+  updateUserColumn(),
+  {
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
+    width: 180,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+  },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

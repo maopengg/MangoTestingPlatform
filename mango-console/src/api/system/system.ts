@@ -46,9 +46,14 @@ export function getSystemAssertionList() {
 }
 
 export function postSystemAssertionTest(data: {
-  method: string
-  actual?: string | number | boolean | null
-  expect?: string | number | boolean | null
+  method?: string
+  actual?: unknown
+  expect?: unknown
+  assertions?: Array<{
+    name: string
+    logic: 'AND' | 'OR'
+    items: Array<Record<string, unknown> & { method: string }>
+  }>
 }) {
   return post({
     url: '/system/assertion/test',
@@ -61,6 +66,15 @@ export function postSystemSetDebugLog(is_debug: any) {
     url: '/system/set/debug/log',
     data: () => {
       return { is_debug: is_debug }
+    },
+  })
+}
+
+export function postSystemMethodCacheRefresh(type: string) {
+  return post({
+    url: '/system/method/cache/refresh',
+    data: () => {
+      return { type }
     },
   })
 }

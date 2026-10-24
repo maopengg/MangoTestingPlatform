@@ -22,6 +22,15 @@ export function getUserProductName(projectId: number | null = null) {
   })
 }
 
+export function getProductProjectOptions() {
+  return get({
+    url: '/system/product/project-options',
+    data: () => {
+      return {}
+    },
+  })
+}
+
 export function getUserProduct(data: object) {
   return get({
     url: '/system/product',
@@ -41,7 +50,7 @@ export function postUserProduct(data: object) {
 }
 
 export function putUserProduct(data: object) {
-  return put({
+  return put({ permissionKey: 'config.product',
     url: '/system/product',
     data: () => {
       return data

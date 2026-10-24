@@ -1,63 +1,189 @@
 <template>
-  <div class="flow-container">
-    <div class="left-panel">
-      <div class="flow-panel-head">
-        <div class="flow-panel-title">操作面板</div>
-        <div class="flow-panel-subtitle">拖入节点类型</div>
-      </div>
-      <div class="drag-panel">
-        <div class="node-types">
-          <div
-            v-for="nodeType in nodeTypes"
-            :key="nodeType.type"
-            class="node-type-item"
-            draggable="true"
-            @dragstart="onDragStart($event, nodeType.type.toString())"
-          >
-            <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
-            {{ nodeType.label }}
+  <div :class="['flow-container', { 'flow-container-compact': compact }]">
+    <div v-if="!compact" class="left-column">
+      <section class="step-control-panel">
+        <div class="flow-panel-head">
+          <div class="flow-panel-title">步骤调试控制</div>
+          <div class="flow-panel-subtitle">仅对本次调试生效</div>
+        </div>
+        <div class="step-control-list">
+          <div class="step-control-item">
+            <span>执行后关闭浏览器</span>
+            <a-switch v-model="controlState.close_after_execution" size="small" />
+          </div>
+          <div class="step-control-item">
+            <span>执行前等待</span>
+            <a-input-number
+              :model-value="controlState.before_wait_seconds"
+              size="small"
+              :min="0"
+              :max="3600"
+              :precision="0"
+              @change="updateControlWait('before_wait_seconds', $event)"
+            >
+              <template #suffix>秒</template>
+            </a-input-number>
+          </div>
+          <div class="step-control-item">
+            <span>执行后等待</span>
+            <a-input-number
+              :model-value="controlState.after_wait_seconds"
+              size="small"
+              :min="0"
+              :max="3600"
+              :precision="0"
+              @change="updateControlWait('after_wait_seconds', $event)"
+            >
+              <template #suffix>秒</template>
+            </a-input-number>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section class="step-healing-panel">
+        <div class="step-healing-summary">
+          <button class="step-healing-summary__main" type="button" @click="emit('openStepHealing')">
+            <span class="flow-panel-title">流程自愈</span>
+            <span class="flow-panel-subtitle">
+              {{ healingEnabled ? (healingGoal || '已启用，点击查看配置') : '未启用，点击配置目标和条件' }}
+            </span>
+          </button>
+          <div class="step-healing-summary__footer">
+            <span
+              :class="[
+                'step-healing-status',
+                {
+                  'step-healing-status--enabled': healingEnabled && !healingPendingReviewCount,
+                  'step-healing-status--pending': healingPendingReviewCount,
+                },
+              ]"
+            >
+              {{
+                healingPendingReviewCount
+                  ? `${healingPendingReviewCount} 个节点待检查`
+                  : healingEnabled
+                    ? '已启用'
+                    : '未启用'
+              }}
+            </span>
+            <a-space class="step-healing-summary__actions" :size="4">
+              <a-button v-permission="'ui.page_steps:edit'"
+                v-if="healingPendingReviewCount"
+                size="small"
+                type="primary"
+                status="warning"
+                :loading="healingReviewConfirming"
+                @click="emit('confirmHealingReview')"
+              >
+                确认修复
+              </a-button>
+              <a-button size="small" type="text" @click="emit('openStepHealing')">
+                查看配置
+              </a-button>
+            </a-space>
+          </div>
+        </div>
+      </section>
+
+      <section class="canvas-nodes-panel">
+        <div class="flow-panel-head">
+          <div class="flow-panel-title">画布节点</div>
+          <div class="flow-panel-subtitle">拖至画布添加节点</div>
+        </div>
+        <div class="drag-panel">
+          <section class="palette-section">
+            <div class="node-types">
+              <div
+                v-for="nodeType in nodeTypes"
+                :key="nodeType.type"
+                class="node-type-card"
+                draggable="true"
+                @dragstart="onDragStart($event, nodeType.type.toString())"
+              >
+                <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
+                <span>{{ nodeType.label }}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
     </div>
 
     <div class="center-panel">
       <div class="flow-panel-head center-panel-head">
         <div>
           <div class="flow-panel-title">流程画布</div>
-          <div class="flow-panel-subtitle">从左侧拖入节点，连接执行顺序后保存画布</div>
+          <div class="flow-title-row">
+            <div class="flow-panel-subtitle">画布修改后自动保存，执行前需完成节点配置与连线</div>
+            <span
+              v-if="debugStatusText"
+              :class="['flow-debug-status', `flow-debug-status-${debugStatusType || 'running'}`]"
+            >
+              {{ debugStatusText }}
+            </span>
+          </div>
         </div>
-        <div class="flow-stats">
-          <span v-if="flowIssueSummary.unsaved" class="flow-stat-issue">
-            未保存 {{ flowIssueSummary.unsaved }}
-          </span>
-          <span v-if="flowIssueSummary.isolated" class="flow-stat-issue">
-            未连接 {{ flowIssueSummary.isolated }}
-          </span>
-          <span v-if="flowIssueSummary.decisionIncomplete" class="flow-stat-issue">
-            判断待连 {{ flowIssueSummary.decisionIncomplete }}
-          </span>
-          <span>节点 {{ flowNodes.length }}</span>
-          <span>连线 {{ flowEdges.length }}</span>
-          <span>步骤 {{ tableData?.length || 0 }}</span>
+        <div v-if="!compact || showStepDetailAction || showCacheDataAction" class="flow-head-side">
+          <div class="flow-actions">
+            <a-button v-permission="'ui.page_steps:detail'"
+              v-if="showStepDetailAction"
+              size="small"
+              type="primary"
+              @click="emit('openStepDetail')" data-testid="qa-views-uitest-page-steps-details-flowchart-button-步骤详情"
+            >
+              步骤详情
+            </a-button>
+            <a-button
+              v-if="showCacheDataAction"
+              size="small"
+              type="primary"
+              @click="emit('openCacheData')"
+              data-testid="qa-views-uitest-page-steps-details-flowchart-button-缓存数据"
+            >
+              缓存数据
+            </a-button>
+            <template v-if="!compact">
+              <a-button size="small" type="outline" @click="emit('canvasBeautify')" data-testid="qa-views-uitest-page-steps-details-flowchart-button-美化画布">
+                美化画布
+              </a-button>
+              <a-button v-permission="'ui.page_steps:edit'"
+                size="small"
+                type="primary"
+                :loading="flowSaving"
+                :disabled="flowSaveStatus === 'saved'"
+                @click="emit('canvasSave')"
+              >
+                {{ flowSaveButtonText }}
+              </a-button>
+            </template>
+          </div>
+          <div v-if="!compact" class="flow-stats">
+            <span v-if="flowIssueSummary.unsaved" class="flow-stat-issue">
+              未保存 {{ flowIssueSummary.unsaved }}
+            </span>
+            <span v-if="flowIssueSummary.isolated" class="flow-stat-issue">
+              未连接 {{ flowIssueSummary.isolated }}
+            </span>
+            <span v-if="flowIssueSummary.decisionIncomplete" class="flow-stat-issue">
+              判断待连 {{ flowIssueSummary.decisionIncomplete }}
+            </span>
+          </div>
         </div>
       </div>
-      <div class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
+      <div ref="flowCanvasRef" class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
         <div v-if="!flowNodes.length" class="flow-empty">
           <div class="flow-empty-title">从左侧拖入节点开始编排</div>
-          <div class="flow-empty-desc">新增节点后先保存配置，再连接步骤顺序并保存画布。</div>
+          <div class="flow-empty-desc">画布会自动保存草稿；调试前请完成节点配置和流程连线。</div>
         </div>
-        <VueFlow
+        <UiFlowCanvas
           :id="flowId"
           v-model:nodes="flowNodes"
           v-model:edges="flowEdges"
           class="ui-step-flow"
           :nodes-draggable="!readonly"
           :nodes-connectable="!readonly"
+          :connection-mode="ConnectionMode.Loose"
           :elements-selectable="true"
-          :delete-key-code="null"
-          :min-zoom="0.25"
-          :max-zoom="1.2"
           @connect="onConnect"
           @node-click="onNodeClick"
           @edge-click="onEdgeClick"
@@ -69,58 +195,84 @@
               :popup-visible="activePopoverNodeId === id"
               content-class="step-node-popover"
             >
-              <div
-                :class="[
-                  'step-node',
-                  `step-node-${getNodeStatus(id)}`,
-                  { 'step-node-selected': selected },
-                ]"
-                :style="{ '--node-color': data.color }"
+              <UiFlowNodeCard
+                class="step-node"
+                :badges="getNodeBadges(id)"
+                :color="data.color"
+                :operation="getNodeOperation(id)"
+                :selected="selected || selectedNodeId === id"
+                :status-key="getNodeStatus(id)"
+                :title="getNodeTitle(id)"
+                :type-text="getNodeTypeLabel(Number(data.uiType))"
+                @pointerdown.capture="activateNodeShortcut(id)"
                 @mouseenter="startNodePopoverTimer(id)"
                 @mousemove="restartNodePopoverTimer(id)"
                 @mouseleave="hideNodePopover(id)"
               >
-                <Handle
-                  id="top"
-                  type="target"
-                  :position="FlowPosition.Top"
-                  :connectable="!readonly"
-                  class="step-handle step-handle-top"
-                />
-                <button
-                  v-if="!readonly"
-                  class="node-delete"
-                  type="button"
-                  title="删除节点"
-                  @click.stop="deleteNodeById(id)"
-                >
-                  ×
-                </button>
-                <div class="node-main">
-                  <div class="node-kicker">
-                    <span>{{ data.label }}</span>
-                    <span class="node-status-text">{{ getNodeStatusText(id) }}</span>
-                  </div>
-                  <div class="node-title" :title="getNodeTitle(id)">
-                    {{ getNodeTitle(id) }}
-                  </div>
-                  <div class="node-content" :title="getNodeLocator(id)">
-                    <span>{{ getNodeOperation(id) }}</span>
-                    <span v-if="getNodeLocator(id)" class="node-locator">
-                      {{ getNodeLocator(id) }}
-                    </span>
-                  </div>
-                </div>
-                <Handle
-                  id="bottom"
-                  type="source"
-                  :position="FlowPosition.Bottom"
-                  :connectable="!readonly"
-                  class="step-handle step-handle-bottom"
-                />
-              </div>
+                <template #before>
+                  <Handle
+                    id="top"
+                    type="target"
+                    :position="FlowPosition.Top"
+                    :connectable="!readonly"
+                    class="step-handle step-handle-top"
+                  />
+                  <Handle
+                    id="left"
+                    type="target"
+                    :position="FlowPosition.Left"
+                    :connectable="!readonly"
+                    class="step-handle step-handle-side step-handle-left"
+                  />
+                  <Handle
+                    id="right"
+                    type="target"
+                    :position="FlowPosition.Right"
+                    :connectable="!readonly"
+                    class="step-handle step-handle-side step-handle-right"
+                  />
+                </template>
+                <template #actions>
+                  <button
+                    v-if="!readonly"
+                    class="node-delete"
+                    type="button"
+                    title="删除节点"
+                    @click.stop="deleteNodeById(id)" data-testid="qa-views-uitest-page-steps-details-flowchart-button-删除节点"
+                  >
+                    ×
+                  </button>
+                </template>
+                <template #after>
+                  <Handle
+                    id="bottom"
+                    type="source"
+                    :position="FlowPosition.Bottom"
+                    :connectable="!readonly"
+                    class="step-handle step-handle-bottom"
+                  />
+                  <Handle
+                    id="left"
+                    type="source"
+                    :position="FlowPosition.Left"
+                    :connectable="!readonly"
+                    class="step-handle step-handle-side step-handle-left"
+                  />
+                  <Handle
+                    id="right"
+                    type="source"
+                    :position="FlowPosition.Right"
+                    :connectable="!readonly"
+                    class="step-handle step-handle-side step-handle-right"
+                  />
+                </template>
+              </UiFlowNodeCard>
               <template #content>
-                <div class="node-popover">
+                <div
+                  class="node-popover"
+                  @mouseenter="keepNodePopover(id)"
+                  @mouseleave="hideNodePopover(id)"
+                >
                   <div class="node-popover-title">{{ getNodeTitle(id) }}</div>
                   <div
                     v-for="section in getNodeInfoSections(id)"
@@ -144,19 +296,16 @@
               </template>
             </a-popover>
           </template>
-          <Background pattern-color="var(--m-border)" :gap="18" />
-          <MiniMap pannable zoomable class="flow-minimap" />
-          <Controls />
-        </VueFlow>
+        </UiFlowCanvas>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import { VueFlow, Handle, Position as FlowPosition, useVueFlow } from '@vue-flow/core'
+  import { Handle, ConnectionMode, Position as FlowPosition, useVueFlow } from '@vue-flow/core'
   import type {
     Connection,
     Edge,
@@ -165,55 +314,125 @@
     NodeMouseEvent,
     EdgeMouseEvent,
   } from '@vue-flow/core'
-  import { Background, Controls, MiniMap } from '@vue-flow/additional-components'
-  import '@vue-flow/core/dist/style.css'
-  import '@vue-flow/core/dist/theme-default.css'
   import type {
     Connector,
     ConnectorPosition,
     FlowData,
     Position,
+    UiStepControl,
     UIEdge,
     UINode,
   } from '@/types/components'
+  import { useEnum } from '@/store/modules/get-enum'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import UiFlowCanvas from '@/components/display/UiFlowCanvas.vue'
+  import UiFlowNodeCard from '@/components/display/UiFlowNodeCard.vue'
+  import type { UiFlowNodeBadge, UiFlowNodeTone } from '@/components/display/ui-flow'
+  import {
+    UI_FLOW_INITIAL_MAX_ZOOM,
+    UI_FLOW_NODE_HEIGHT,
+    UI_FLOW_NODE_WIDTH,
+    UI_FLOW_RESPONSIVE_MAX_ZOOM,
+  } from '@/components/display/ui-flow'
 
+  const enumStore = useEnum()
   const useSelectValue = useSelectValueStore()
 
   interface Props {
     flowData?: FlowData
     readonly?: boolean
+    compact?: boolean
+    showStepDetailAction?: boolean
+    showCacheDataAction?: boolean
     allowDrop?: boolean
     tableData: any[]
     nodeTypes: Array<{ type: number; label: string; color: string }>
+    healingEnabled?: boolean
+    healingGoal?: string
+    healingPendingReviewCount?: number
+    healingReviewConfirming?: boolean
+    resultData?: any
+    flowSaving?: boolean
+    flowSaveStatus?: 'saved' | 'dirty' | 'saving' | 'error'
+    debugStatusText?: string
+    debugStatusType?: string
+    debugRunning?: boolean
+    draftNodeIds?: string[]
+    decisionDraft?: {
+      nodeId?: string
+      opeKey?: string
+    }
+    stepControl?: UiStepControl
   }
 
   const props = withDefaults(defineProps<Props>(), {
     flowData: () => ({ nodes: [], edges: [] }),
     readonly: false,
+    compact: false,
+    showStepDetailAction: false,
+    showCacheDataAction: false,
     allowDrop: true,
     tableData: () => [],
     nodeTypes: () => [],
+    healingEnabled: false,
+    healingGoal: '',
+    healingPendingReviewCount: 0,
+    healingReviewConfirming: false,
+    resultData: null,
+    flowSaving: false,
+    flowSaveStatus: 'saved',
+    debugStatusText: '',
+    debugStatusType: '',
+    debugRunning: false,
+    draftNodeIds: () => [],
+    decisionDraft: () => ({
+      nodeId: '',
+      opeKey: '',
+    }),
+    stepControl: () => ({
+      close_after_execution: false,
+      before_wait_seconds: 1,
+      after_wait_seconds: 1,
+      close_live_after_execution: false,
+    }),
   })
 
   const emit = defineEmits<{
-    nodeClick: [node: UINode]
-    nodeSelect: [node: UINode | null]
-    flowChange: [flowData: FlowData]
-    edgeDelete: [edge: UIEdge]
-    nodeDelete: [node: UINode]
+    (event: 'nodeClick', node: UINode): void
+    (event: 'nodeSelect', node: UINode | null): void
+    (event: 'flowChange', flowData: FlowData): void
+    (event: 'edgeDelete', edge: UIEdge): void
+    (event: 'nodeDelete', node: UINode): void
+    (event: 'nodeDuplicate', node: UINode): void
+    (event: 'canvasBeautify'): void
+    (event: 'canvasSave'): void
+    (event: 'openStepDetail'): void
+    (event: 'openCacheData'): void
+    (event: 'controlChange', control: UiStepControl): void
+    (event: 'openStepHealing'): void
+    (event: 'confirmHealingReview'): void
   }>()
 
-  const NODE_WIDTH = 184
-  const NODE_HEIGHT = 76
-  const INITIAL_MAX_ZOOM = 0.85
   const flowId = `ui-step-flow-${Math.random().toString(36).slice(2)}`
   const flowNodes = ref<Node[]>([])
   const flowEdges = ref<Edge[]>([])
+  const flowCanvasRef = ref<HTMLElement | null>(null)
+  const controlState = ref<UiStepControl>({
+    ...defaultStepControl(),
+    ...(props.stepControl || {}),
+  })
   const selectedNodeId = ref('')
+  const shortcutNodeId = ref('')
+  const copiedNodeId = ref('')
   const activePopoverNodeId = ref('')
+  const decisionMethodDrafts = ref<Record<string, string>>({})
   const lastEmittedSignature = ref('')
   let popoverTimer: ReturnType<typeof setTimeout> | null = null
+  let popoverCloseTimer: ReturnType<typeof setTimeout> | null = null
+  let canvasResizeTimer: ReturnType<typeof setTimeout> | null = null
+  let canvasResizeObserver: ResizeObserver | null = null
+  let canvasWidth = 0
+  let canvasHeight = 0
   let syncingFromProps = false
 
   const { fitView, screenToFlowCoordinate } = useVueFlow(flowId)
@@ -224,8 +443,13 @@
     nodes: legacyNodes.value,
     edges: legacyEdges.value,
   }))
+  const resultList = computed(() =>
+    Array.isArray(props.resultData?.element_result_list) ? props.resultData.element_result_list : []
+  )
   const flowIssueSummary = computed(() => {
-    const unsaved = legacyNodes.value.filter((node) => !node.config?.id).length
+    const unsaved = legacyNodes.value.filter(
+      (node) => !node.config?.id || props.draftNodeIds.includes(node.id)
+    ).length
     const isolated =
       legacyNodes.value.length <= 1
         ? 0
@@ -239,6 +463,12 @@
     }).length
     return { unsaved, isolated, decisionIncomplete }
   })
+  const flowSaveButtonText = computed(() => {
+    if (props.flowSaveStatus === 'error') return '重试保存'
+    if (props.flowSaveStatus === 'dirty') return '立即保存'
+    if (props.flowSaveStatus === 'saving') return '保存中'
+    return '已自动保存'
+  })
 
   watch(
     () => props.flowData,
@@ -248,22 +478,68 @@
       if (incomingSignature === lastEmittedSignature.value) {
         return
       }
+      lastEmittedSignature.value = incomingSignature
       syncingFromProps = true
       flowNodes.value = normalized.nodes.map(toVueNode)
       flowEdges.value = normalized.edges
         .map((edge) => toVueEdge(edge, normalized.edges))
         .filter(isValidVueEdge)
-      selectedNodeId.value = flowNodes.value.some((node) => node.id === selectedNodeId.value)
-        ? selectedNodeId.value
-        : ''
+      const previousSelectedNodeId = selectedNodeId.value
+      selectedNodeId.value = flowNodes.value.some((node) => node.id === previousSelectedNodeId)
+        ? previousSelectedNodeId
+        : flowNodes.value[0]?.id || ''
       nextTick(() => {
         syncingFromProps = false
         if (flowNodes.value.length) {
-          fitView({ padding: 0.35, maxZoom: INITIAL_MAX_ZOOM, duration: 200 })
+          fitView({ padding: 0.35, maxZoom: UI_FLOW_INITIAL_MAX_ZOOM, duration: 200 })
+        }
+        if (selectedNodeId.value && selectedNodeId.value !== previousSelectedNodeId) {
+          emitSelectedNode(selectedNodeId.value)
         }
       })
     },
     { immediate: true, deep: true }
+  )
+
+  watch(
+    () => props.tableData,
+    () => {
+      if (selectedNodeId.value) {
+        emitSelectedNode(selectedNodeId.value)
+      }
+      refreshRuntimeEdgeStyles()
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => props.decisionDraft,
+    (draft) => {
+      const nodeId = String(draft?.nodeId || '')
+      if (nodeId) {
+        decisionMethodDrafts.value = {
+          ...decisionMethodDrafts.value,
+          [nodeId]: String(draft?.opeKey || ''),
+        }
+      }
+      refreshRuntimeEdgeStyles()
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => props.resultData,
+    () => {
+      refreshRuntimeEdgeStyles()
+    },
+    { deep: true }
+  )
+
+  watch(
+    () => props.debugRunning,
+    () => {
+      refreshRuntimeEdgeStyles()
+    }
   )
 
   watch(
@@ -275,15 +551,157 @@
     { deep: true }
   )
 
-  onBeforeUnmount(() => {
-    clearNodePopoverTimer()
+  watch(
+    controlState,
+    (value) => {
+      emit('controlChange', { ...value })
+    },
+    { deep: true }
+  )
+
+  onMounted(() => {
+    document.addEventListener('keydown', handleDuplicateShortcut, true)
+    document.addEventListener('pointerdown', handleShortcutPointerDown, true)
+    window.addEventListener('resize', scheduleCanvasFit)
+    nextTick(() => {
+      const canvas = flowCanvasRef.value
+      if (!canvas || typeof ResizeObserver === 'undefined') return
+      const rect = canvas.getBoundingClientRect()
+      canvasWidth = rect.width
+      canvasHeight = rect.height
+      canvasResizeObserver = new ResizeObserver(([entry]) => {
+        const nextWidth = entry?.contentRect.width || 0
+        const nextHeight = entry?.contentRect.height || 0
+        if (Math.abs(nextWidth - canvasWidth) < 1 && Math.abs(nextHeight - canvasHeight) < 1) {
+          return
+        }
+        canvasWidth = nextWidth
+        canvasHeight = nextHeight
+        scheduleCanvasFit()
+      })
+      canvasResizeObserver.observe(canvas)
+    })
   })
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handleDuplicateShortcut, true)
+    document.removeEventListener('pointerdown', handleShortcutPointerDown, true)
+    window.removeEventListener('resize', scheduleCanvasFit)
+    canvasResizeObserver?.disconnect()
+    canvasResizeObserver = null
+    if (canvasResizeTimer) {
+      clearTimeout(canvasResizeTimer)
+      canvasResizeTimer = null
+    }
+    clearNodePopoverTimer()
+    clearNodePopoverCloseTimer()
+  })
+
+  function scheduleCanvasFit() {
+    if (canvasResizeTimer) {
+      clearTimeout(canvasResizeTimer)
+    }
+    canvasResizeTimer = setTimeout(() => {
+      canvasResizeTimer = null
+      if (!flowNodes.value.length) return
+      fitView({
+        padding: 0.28,
+        maxZoom: UI_FLOW_RESPONSIVE_MAX_ZOOM,
+        duration: 160,
+      })
+    }, 120)
+  }
+
+  function handleDuplicateShortcut(event: KeyboardEvent) {
+    if (
+      props.readonly ||
+      event.repeat ||
+      event.altKey ||
+      event.shiftKey ||
+      !(event.ctrlKey || event.metaKey)
+    ) {
+      return
+    }
+    if (!shortcutNodeId.value || !getLegacyNode(shortcutNodeId.value)) return
+    const target = event.target
+    if (
+      target instanceof HTMLElement &&
+      target.closest('input, textarea, select, [contenteditable="true"]')
+    ) {
+      return
+    }
+    const shortcutKey = event.code || `Key${String(event.key || '').toUpperCase()}`
+    if (shortcutKey === 'KeyC') {
+      if (window.getSelection()?.toString()) return
+      event.preventDefault()
+      copiedNodeId.value = shortcutNodeId.value
+      Message.success('节点已复制，按 ⌘V / Ctrl+V 粘贴')
+      return
+    }
+    if (shortcutKey === 'KeyV') {
+      if (!copiedNodeId.value) {
+        Message.warning('请先选中节点并按 ⌘C / Ctrl+C 复制')
+        return
+      }
+      const copiedNode = getLegacyNode(copiedNodeId.value)
+      if (!copiedNode) {
+        copiedNodeId.value = ''
+        Message.warning('复制的节点已不存在，请重新复制')
+        return
+      }
+      event.preventDefault()
+      emit('nodeDuplicate', copiedNode)
+      return
+    }
+    if (shortcutKey !== 'KeyD') return
+    const selectedNode = getLegacyNode(shortcutNodeId.value)
+    if (!selectedNode) return
+    event.preventDefault()
+    emit('nodeDuplicate', selectedNode)
+  }
+
+  function handleShortcutPointerDown(event: PointerEvent) {
+    const target = event.target
+    if (!(target instanceof Element)) {
+      shortcutNodeId.value = ''
+      return
+    }
+    const canvas = flowCanvasRef.value
+    if (!canvas?.contains(target) || !target.closest('.vue-flow__node')) {
+      shortcutNodeId.value = ''
+    }
+  }
+
+  function activateNodeShortcut(nodeId: string) {
+    if (props.readonly || !getLegacyNode(nodeId)) return
+    shortcutNodeId.value = nodeId
+    selectedNodeId.value = nodeId
+  }
 
   function normalizeFlowData(data?: FlowData): FlowData {
     return {
       nodes: Array.isArray(data?.nodes) ? data!.nodes : [],
       edges: Array.isArray(data?.edges) ? data!.edges : [],
     }
+  }
+
+  function defaultStepControl(): UiStepControl {
+    return {
+      close_after_execution: false,
+      before_wait_seconds: 1,
+      after_wait_seconds: 1,
+      close_live_after_execution: false,
+    }
+  }
+
+  function updateControlWait(
+    key: 'before_wait_seconds' | 'after_wait_seconds',
+    value: number | undefined
+  ) {
+    const normalizedValue = Number.isFinite(Number(value))
+      ? Math.min(3600, Math.max(0, Math.trunc(Number(value))))
+      : 1
+    controlState.value[key] = normalizedValue
   }
 
   function getFlowSignature(data: FlowData) {
@@ -306,6 +724,7 @@
   function notifyDataChange() {
     const data = legacyFlowData.value
     const signature = getFlowSignature(data)
+    if (signature === lastEmittedSignature.value) return
     lastEmittedSignature.value = signature
     emit('flowChange', data)
   }
@@ -315,7 +734,7 @@
       id: node.id,
       type: 'uiStepNode',
       position: node.position || { x: 0, y: 0 },
-      dimensions: { width: NODE_WIDTH, height: NODE_HEIGHT },
+      dimensions: { width: UI_FLOW_NODE_WIDTH, height: UI_FLOW_NODE_HEIGHT },
       data: {
         uiType: node.type,
         label: node.label,
@@ -340,15 +759,22 @@
 
   function toVueEdge(edge: UIEdge, edgeList = legacyEdges.value): Edge {
     const decisionLabel = getDecisionEdgeLabel(edge, edgeList)
+    const runtimeStatus = getEdgeRuntimeStatus(edge)
+    const isDecisionEdge = isDecisionNode(getLegacyNode(edge.source.node_id)?.type)
+    const edgeClass = [`flow-edge-${runtimeStatus}`, isDecisionEdge ? 'flow-edge-decision' : '']
+      .filter(Boolean)
+      .join(' ')
     return {
       id: edge.id,
       source: edge.source.node_id,
       target: edge.target.node_id,
       sourceHandle: edge.source.position || 'bottom',
       targetHandle: edge.target.position || 'top',
-      type: 'smoothstep',
-      animated: isDecisionNode(getLegacyNode(edge.source.node_id)?.type),
-      style: { stroke: 'var(--m-muted)' },
+      type: 'default',
+      pathOptions: { curvature: 0.3 },
+      animated: runtimeStatus === 'running',
+      class: edgeClass,
+      style: { stroke: getEdgeStrokeColor(runtimeStatus) },
       markerEnd: 'arrowclosed',
       label: decisionLabel,
       labelStyle: { fill: 'var(--m-text-2)', fontSize: 12 },
@@ -378,7 +804,9 @@
   }
 
   function normalizeHandlePosition(value: any, fallback: ConnectorPosition): ConnectorPosition {
-    return value === 'top' || value === 'bottom' ? value : fallback
+    return value === 'top' || value === 'right' || value === 'bottom' || value === 'left'
+      ? value
+      : fallback
   }
 
   function getLegacyNode(nodeId: string) {
@@ -394,10 +822,14 @@
   function getNodeTitle(nodeId: string) {
     const node = getLegacyNode(nodeId)
     const step = getStepDataByNodeId(nodeId)
+    const nodeTypeLabel = node ? getNodeTypeLabel(node.type) : ''
+    const nodeLabel =
+      node?.label && node.label !== nodeTypeLabel && !node.label.endsWith('节点') ? node.label : ''
     return (
       step?.ele_name?.name ||
+      nodeLabel ||
       useSelectValue.getSelectLabel(step?.ope_key) ||
-      node?.label ||
+      nodeTypeLabel ||
       '未保存节点'
     )
   }
@@ -405,48 +837,165 @@
   function getNodeOperation(nodeId: string) {
     const node = getLegacyNode(nodeId)
     const step = getStepDataByNodeId(nodeId)
+    if (Number(node?.type) === 6) {
+      const seconds = (step?.ope_value || []).find((item: any) => item?.f === 'seconds')?.v
+      return seconds === undefined || seconds === null ? '强制等待' : `等待 ${seconds} 秒`
+    }
     return useSelectValue.getSelectLabel(step?.ope_key) || node?.label || '待配置'
-  }
-
-  function getNodeLocator(nodeId: string) {
-    const step = getStepDataByNodeId(nodeId)
-    return step?.ele_name?.loc || step?.sql || step?.func || ''
   }
 
   function getNodeInfoSections(nodeId: string) {
     const node = getLegacyNode(nodeId)
     const step = getStepDataByNodeId(nodeId)
+    const result = getNodeResultByNodeId(nodeId)
     const elementInfo = step?.ele_name || null
-    const operationInfo = step
-      ? Object.fromEntries(Object.entries(step).filter(([key]) => key !== 'ele_name'))
-      : null
-
-    return [
+    const sections = [
       {
         title: '节点信息',
         rows: toInfoRows({
-          node_id: node?.id,
-          node_type: node?.type,
-          node_type_name: node ? getNodeTypeLabel(node.type) : '',
-          status: getNodeStatusText(nodeId),
-          label: node?.label,
-          position: node?.position,
-          config: node?.config,
+          节点类型: node ? getNodeTypeLabel(node.type) : '',
+          配置状态: getNodeConfigStatusText(nodeId),
+          测试状态: getNodeRuntimeStatusText(nodeId),
+          节点名称: getNodeTitle(nodeId),
+          执行方法: getNodeOperation(nodeId),
         }),
       },
       {
         title: '元素信息',
         rows: elementInfo
-          ? toInfoRows(elementInfo)
+          ? toInfoRows({
+              元素名称: elementInfo.name,
+              定位类型: getElementExpText(elementInfo.exp),
+              定位表达式: elementInfo.loc,
+              匹配下标: elementInfo.sub,
+              iframe: elementInfo.is_iframe ? '是' : '',
+              创建时间: elementInfo.create_time,
+              更新时间: elementInfo.update_time,
+            })
           : [{ label: '暂无元素信息', value: '-', multiline: false }],
       },
       {
         title: '操作信息',
-        rows: operationInfo
-          ? toInfoRows(operationInfo)
+        rows: step
+          ? toInfoRows({
+              步骤类型: step.type !== undefined ? getNodeTypeLabel(Number(step.type)) : '',
+              执行方法: useSelectValue.getSelectLabel(step?.ope_key) || step?.ope_key,
+              条件值: step.condition_value?.expect ?? step.condition_value,
+              自定义变量: formatCustomVariables(step.custom),
+              SQL配置: formatSqlExecute(step.sql_execute),
+              操作参数: formatOperationValues(step.ope_value),
+              创建时间: step.create_time,
+              更新时间: step.update_time,
+            })
           : [{ label: '暂无操作信息', value: '-', multiline: false }],
       },
     ]
+    if (result) {
+      sections.push({
+        title: '测试结果',
+        rows: toInfoRows({
+          测试状态: getResultStatusText(result),
+          执行方法:
+            useSelectValue.getSelectLabel(result?.ope_key || step?.ope_key) || result?.ope_key,
+          等待时间: formatSleep(result?.sleep),
+          元素数量: getElementRows(result).length,
+          错误提示: result?.error_message,
+          断言提示: result?.ass_msg,
+          失败截图: result?.picture_name,
+          元素文本: getResultElementText(result),
+        }),
+      })
+    }
+    return sections
+  }
+
+  function getNodeResultByNodeId(nodeId: string) {
+    const step = getStepDataByNodeId(nodeId)
+    if (!step?.id) return null
+    return (
+      [...resultList.value].reverse().find((item: any) => String(item?.id) === String(step.id)) ||
+      null
+    )
+  }
+
+  function getActiveRuntimeNodeId() {
+    if (!props.debugRunning) return ''
+    const results = resultList.value
+    if (!results.length) {
+      const rootNode = legacyNodes.value.find(
+        (node) => getNodeConnections(node.id).inputs.length === 0
+      )
+      return rootNode?.id || legacyNodes.value[0]?.id || ''
+    }
+    const lastResult = results[results.length - 1]
+    if (lastResult?.status === 0 || !lastResult?.next_node_id) return ''
+    return getNodeByStepId(lastResult.next_node_id)?.id || ''
+  }
+
+  function getResultStatusText(result: any) {
+    if (!result) return '未测试'
+    if (result.status === 1) return '通过'
+    if (result.status === 0) return '失败'
+    return '未测试'
+  }
+
+  function formatSleep(value: any) {
+    if (value === null || value === undefined || value === '') return '-'
+    return `${value} 秒`
+  }
+
+  function getElementRows(result: any) {
+    if (Array.isArray(result?.elements) && result.elements.length) return result.elements
+    if (result?.ele_name) return [result.ele_name]
+    if (result?.loc) return [{ loc: result.loc }]
+    return []
+  }
+
+  function getElementExpText(value: any) {
+    if (Array.isArray(value)) return value.map(getElementExpText).filter(Boolean).join(' / ')
+    return enumStore.element_exp?.find((item: any) => item.key === value)?.title || value || '-'
+  }
+
+  function formatOperationValues(values: any) {
+    if (!Array.isArray(values)) return ''
+    const rows = values
+      .filter((item: any) => item?.d || item?.v !== undefined)
+      .map(
+        (item: any) =>
+          `${item.n || item.f || '参数'}=${formatInfoValue(item.v ?? item.value ?? '')}`
+      )
+      .filter((item: string) => !item.endsWith('='))
+    return rows.join('\n')
+  }
+
+  function formatCustomVariables(values: any) {
+    if (!Array.isArray(values)) return ''
+    return values
+      .map((item: any) => `${item.key || '变量'}=${formatInfoValue(item.value)}`)
+      .filter((item: string) => !item.endsWith('='))
+      .join('\n')
+  }
+
+  function formatSqlExecute(values: any) {
+    if (!Array.isArray(values)) return ''
+    return values
+      .map((item: any) =>
+        [
+          item.key_list ? `缓存变量=${formatInfoValue(item.key_list)}` : '',
+          item.sql ? `SQL=${formatInfoValue(item.sql)}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      )
+      .filter(Boolean)
+      .join('\n')
+  }
+
+  function getResultElementText(result: any) {
+    return getElementRows(result)
+      .map((item: any) => item?.element_text)
+      .filter(Boolean)
+      .join('\n')
   }
 
   function toInfoRows(record: Record<string, any>) {
@@ -498,8 +1047,13 @@
 
   function startNodePopoverTimer(nodeId: string) {
     clearNodePopoverTimer()
+    clearNodePopoverCloseTimer()
+    if (activePopoverNodeId.value && activePopoverNodeId.value !== nodeId) {
+      activePopoverNodeId.value = ''
+    }
     popoverTimer = setTimeout(() => {
       activePopoverNodeId.value = nodeId
+      popoverTimer = null
     }, 1000)
   }
 
@@ -508,17 +1062,33 @@
     startNodePopoverTimer(nodeId)
   }
 
+  function keepNodePopover(nodeId: string) {
+    clearNodePopoverCloseTimer()
+    activePopoverNodeId.value = nodeId
+  }
+
   function hideNodePopover(nodeId: string) {
     clearNodePopoverTimer()
-    if (activePopoverNodeId.value === nodeId) {
-      activePopoverNodeId.value = ''
-    }
+    clearNodePopoverCloseTimer()
+    popoverCloseTimer = setTimeout(() => {
+      if (activePopoverNodeId.value === nodeId) {
+        activePopoverNodeId.value = ''
+      }
+      popoverCloseTimer = null
+    }, 50)
   }
 
   function clearNodePopoverTimer() {
     if (popoverTimer) {
       clearTimeout(popoverTimer)
       popoverTimer = null
+    }
+  }
+
+  function clearNodePopoverCloseTimer() {
+    if (popoverCloseTimer) {
+      clearTimeout(popoverCloseTimer)
+      popoverCloseTimer = null
     }
   }
 
@@ -536,15 +1106,63 @@
 
   function isExpectDecisionNode(nodeId: string) {
     const node = getLegacyNode(nodeId)
-    if (!isDecisionNode(node?.type) || !node?.config?.id) return false
-    const step = props.tableData.find((item: any) => item.id === node.config?.id)
-    const parameter = useSelectValue.findItemByValue(step?.ope_key)?.parameter || []
+    if (!isDecisionNode(node?.type)) return false
+    const step = node?.config?.id
+      ? props.tableData.find((item: any) => item.id === node.config?.id)
+      : null
+    const hasDraft = Object.prototype.hasOwnProperty.call(decisionMethodDrafts.value, nodeId)
+    const opeKey = hasDraft ? decisionMethodDrafts.value[nodeId] : step?.ope_key
+    const parameter = useSelectValue.findItemByValue(opeKey)?.parameter || []
     return parameter.some((item: any) => item.f === 'expect')
   }
 
-  function getNodeStatus(nodeId: string) {
+  function getDecisionBranchValue(edge: UIEdge) {
+    const targetNode = getLegacyNode(edge.target.node_id)
+    if (!targetNode?.config?.id) return ''
+    const targetStep = props.tableData.find((item: any) => item.id === targetNode.config?.id)
+    const value = targetStep?.condition_value?.expect ?? targetStep?.condition_value
+    if (value === null || value === undefined || value === '') return ''
+    return typeof value === 'object' ? JSON.stringify(value) : String(value)
+  }
+
+  function getNodeStatus(nodeId: string): UiFlowNodeTone {
+    return (getNodeRuntimeStatus(nodeId) || getNodeConfigStatus(nodeId)) as UiFlowNodeTone
+  }
+
+  function getNodeBadges(nodeId: string): UiFlowNodeBadge[] {
+    const badges: UiFlowNodeBadge[] = []
     const node = getLegacyNode(nodeId)
-    if (!node?.config?.id) return 'unsaved'
+    if (node?.config?.ai_healed) {
+      const aiReviewPending = node.config.ai_review_status !== 'confirmed'
+      badges.push({
+        label: aiReviewPending ? 'AI待检查' : 'AI修复',
+        title: aiReviewPending ? 'AI修复·待检查' : 'AI修复',
+        tone: aiReviewPending ? 'warning' : 'ready',
+      })
+    }
+    const runtimeStatus = getNodeRuntimeStatus(nodeId)
+    if (runtimeStatus) {
+      badges.push({
+        label: getNodeRuntimeStatusText(nodeId),
+        tone: runtimeStatus as UiFlowNodeTone,
+      })
+    }
+    const configStatus = getNodeConfigStatus(nodeId) as UiFlowNodeTone
+    badges.push({ label: getNodeConfigStatusText(nodeId), tone: configStatus })
+    return badges
+  }
+
+  function getNodeRuntimeStatus(nodeId: string) {
+    const runtimeResult = getNodeResultByNodeId(nodeId)
+    if (runtimeResult?.status === 0) return 'failed'
+    if (runtimeResult?.status === 1) return 'passed'
+    if (props.debugRunning && getActiveRuntimeNodeId() === nodeId) return 'running'
+    return ''
+  }
+
+  function getNodeConfigStatus(nodeId: string) {
+    const node = getLegacyNode(nodeId)
+    if (!node?.config?.id || props.draftNodeIds.includes(nodeId)) return 'unsaved'
     const connections = getNodeConnections(nodeId)
     if (legacyNodes.value.length > 1 && !connections.inputs.length && !connections.outputs.length) {
       return 'isolated'
@@ -555,12 +1173,70 @@
     return 'ready'
   }
 
-  function getNodeStatusText(nodeId: string) {
-    const status = getNodeStatus(nodeId)
+  function getNodeConfigStatusText(nodeId: string) {
+    const status = getNodeConfigStatus(nodeId)
     if (status === 'unsaved') return '未保存'
     if (status === 'isolated') return '未连接'
     if (status === 'warning') return '待连分支'
     return '已配置'
+  }
+
+  function getNodeRuntimeStatusText(nodeId: string) {
+    const status = getNodeRuntimeStatus(nodeId)
+    if (status === 'failed') return '失败'
+    if (status === 'passed') return '通过'
+    if (status === 'running') return '执行中'
+    return '未测试'
+  }
+
+  function getNodeByStepId(stepId: any) {
+    return legacyNodes.value.find((node) => String(node.config?.id) === String(stepId))
+  }
+
+  function getEdgeRuntimeStatus(edge: UIEdge) {
+    const sourceNode = getLegacyNode(edge.source.node_id)
+    const targetNode = getLegacyNode(edge.target.node_id)
+    if (!sourceNode || !targetNode) return 'pending'
+    const sourceResult = getNodeResultByNodeId(sourceNode.id)
+    const targetResult = getNodeResultByNodeId(targetNode.id)
+    const selectedTargetId = sourceResult?.next_node_id
+    const followsRuntimePath =
+      selectedTargetId !== null &&
+      selectedTargetId !== undefined &&
+      String(selectedTargetId) === String(targetNode.config?.id)
+    if (!followsRuntimePath) return 'pending'
+    if (targetResult?.status === 0) return 'failed'
+    if (targetResult?.status === 1) return 'passed'
+    if (props.debugRunning && getActiveRuntimeNodeId() === targetNode.id) return 'running'
+    if (sourceResult?.status === 1) return 'passed'
+    return 'pending'
+  }
+
+  function getEdgeStrokeColor(status: string) {
+    if (status === 'running') return 'var(--m-primary)'
+    if (status === 'passed') return 'var(--m-success)'
+    if (status === 'failed') return 'var(--m-danger)'
+    return 'var(--m-muted)'
+  }
+
+  function refreshRuntimeEdgeStyles() {
+    if (!flowEdges.value.length) return
+    syncingFromProps = true
+    const edgeList = legacyEdges.value
+    flowEdges.value.forEach((edge) => {
+      const runtimeEdge = toVueEdge(toLegacyEdge(edge), edgeList)
+      // Vue Flow 会为边维护内部渲染状态。运行结果变化只更新展示字段，
+      // 保留原边对象，避免调试开始时整组替换导致 vnode 与 DOM 脱节。
+      edge.animated = runtimeEdge.animated
+      edge.class = runtimeEdge.class
+      edge.style = runtimeEdge.style
+      edge.label = runtimeEdge.label
+      edge.labelStyle = runtimeEdge.labelStyle
+      edge.labelBgStyle = runtimeEdge.labelBgStyle
+    })
+    nextTick(() => {
+      syncingFromProps = false
+    })
   }
 
   function getDecisionEdgeLabel(edge: UIEdge, edgeList = legacyEdges.value) {
@@ -572,7 +1248,7 @@
       if (index === 0) return 'True'
       if (index === 1) return 'False'
     }
-    return `分支 ${index + 1}`
+    return getDecisionBranchValue(edge) || `分支 ${index + 1} · 待填写判断值`
   }
 
   function getNodeConnections(nodeId: string) {
@@ -599,12 +1275,16 @@
     if (!type) return
     const nodeType = parseInt(type, 10)
     const id = `${type}-${Date.now()}`
-    const position = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
+    const pointerPosition = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
+    const position = {
+      x: pointerPosition.x - UI_FLOW_NODE_WIDTH / 2,
+      y: pointerPosition.y - UI_FLOW_NODE_HEIGHT / 2,
+    }
     flowNodes.value = flowNodes.value.concat({
       id,
       type: 'uiStepNode',
       position: constrainPosition(position),
-      dimensions: { width: NODE_WIDTH, height: NODE_HEIGHT },
+      dimensions: { width: UI_FLOW_NODE_WIDTH, height: UI_FLOW_NODE_HEIGHT },
       data: {
         uiType: nodeType,
         label: getNodeTypeLabel(nodeType),
@@ -615,13 +1295,11 @@
   }
 
   function constrainPosition(position: Position): Position {
-    const minX = 10
-    const minY = 10
-    const maxX = 3000 - NODE_WIDTH - 10
-    const maxY = 2000 - NODE_HEIGHT - 10
+    const x = Number(position.x)
+    const y = Number(position.y)
     return {
-      x: Math.max(minX, Math.min(maxX, position.x)),
-      y: Math.max(minY, Math.min(maxY, position.y)),
+      x: Number.isFinite(x) ? x : 0,
+      y: Number.isFinite(y) ? y : 0,
     }
   }
 
@@ -681,27 +1359,21 @@
     } else if (isStartDecision) {
       if (!isExpectDecisionNode(source.node_id) && startConnections.outputs.length >= 2) {
         errorMessage = '无期望值判断节点只允许 True / False 两个分支'
-      } else if (target.position === 'top' && endConnections.inputs.length > 0) {
-        errorMessage = '普通节点最多只能有一个输入连接'
-      } else if (target.position === 'bottom') {
-        errorMessage = '普通节点只能从上方接收连接'
+      } else if (endConnections.inputs.length >= 1) {
+        errorMessage = '普通节点最多只能有一条输入线'
       } else {
         isValid = true
       }
     } else if (isEndDecision) {
-      if (source.position === 'bottom' && startConnections.outputs.length > 0) {
-        errorMessage = '普通节点最多只能有一个输出连接'
-      } else if (source.position === 'top') {
-        errorMessage = '普通节点只能从下方发出连接'
+      if (startConnections.outputs.length >= 1) {
+        errorMessage = '普通节点最多只能有一条输出线'
       } else {
         isValid = true
       }
-    } else if (source.position !== 'bottom' || target.position !== 'top') {
-      errorMessage = '普通节点只能从上方接收连接，从下方发出连接'
-    } else if (startConnections.outputs.length > 0) {
-      errorMessage = '普通节点最多只能有一个输出连接'
-    } else if (endConnections.inputs.length > 0) {
-      errorMessage = '普通节点最多只能有一个输入连接'
+    } else if (startConnections.outputs.length >= 1) {
+      errorMessage = '普通节点最多只能有一条输出线'
+    } else if (endConnections.inputs.length >= 1) {
+      errorMessage = '普通节点最多只能有一条输入线'
     } else {
       isValid = true
     }
@@ -713,8 +1385,13 @@
   }
 
   function onNodeClick(event: NodeMouseEvent) {
-    selectedNodeId.value = event.node.id
-    const node = getLegacyNode(event.node.id)
+    activateNodeShortcut(event.node.id)
+    emitSelectedNode(event.node.id)
+  }
+
+  function emitSelectedNode(nodeId: string) {
+    selectedNodeId.value = nodeId
+    const node = getLegacyNode(nodeId)
     if (node) {
       emit('nodeClick', node)
       emit('nodeSelect', node)
@@ -746,13 +1423,24 @@
     if (props.readonly) return
     const node = getLegacyNode(nodeId)
     if (!node) return
+    if (Object.prototype.hasOwnProperty.call(decisionMethodDrafts.value, nodeId)) {
+      const nextDrafts = { ...decisionMethodDrafts.value }
+      delete nextDrafts[nodeId]
+      decisionMethodDrafts.value = nextDrafts
+    }
     flowEdges.value = flowEdges.value.filter(
       (edge) => edge.source !== nodeId && edge.target !== nodeId
     )
     flowNodes.value = flowNodes.value.filter((item) => item.id !== nodeId)
     if (selectedNodeId.value === nodeId) {
-      selectedNodeId.value = ''
-      emit('nodeSelect', null)
+      shortcutNodeId.value = ''
+      const nextNode = flowNodes.value[0]
+      if (nextNode) {
+        emitSelectedNode(nextNode.id)
+      } else {
+        selectedNodeId.value = ''
+        emit('nodeSelect', null)
+      }
     }
     emit('nodeDelete', node)
   }
@@ -761,82 +1449,243 @@
     if (flowNodes.value.length === 0) return
     const nodes = legacyNodes.value
     const edges = legacyEdges.value
-    const startNodes = nodes.filter(
-      (node) => !edges.some((edge) => edge.target.node_id === node.id)
-    )
-    if (startNodes.length === 0 && nodes.length) {
-      startNodes.push(nodes[0])
-    }
     const startX = 80
     const startY = 80
     const horizontalGap = 260
     const verticalGap = 150
-    const processedNodes = new Set<string>()
-    const nodeLevels = new Map<string, number>()
-    const levelNodes = new Map<number, string[]>()
+    const nodePositions = new Map<string, Position>()
+    const connectedNodeIds = new Set(
+      edges.flatMap((edge) => [edge.source.node_id, edge.target.node_id])
+    )
+    const connectedNodes = nodes.filter((node) => connectedNodeIds.has(node.id))
+    const isolatedNodes = nodes.filter((node) => !connectedNodeIds.has(node.id))
+    const outgoing = new Map<string, UIEdge[]>()
+    const incoming = new Map<string, UIEdge[]>()
+    nodes.forEach((node) => {
+      outgoing.set(node.id, [])
+      incoming.set(node.id, [])
+    })
+    edges.forEach((edge) => {
+      outgoing.get(edge.source.node_id)?.push(edge)
+      incoming.get(edge.target.node_id)?.push(edge)
+    })
+    const hasBranching = connectedNodes.some(
+      (node) =>
+        (outgoing.get(node.id)?.length || 0) > 1 ||
+        (incoming.get(node.id)?.length || 0) > 1 ||
+        isDecisionNode(node.type)
+    )
+    let arrangedEdges = edges.map((edge) => ({
+      ...edge,
+      source: { ...edge.source, position: 'bottom' as ConnectorPosition },
+      target: { ...edge.target, position: 'top' as ConnectorPosition },
+    }))
 
-    const calculateLevel = (nodeId: string, level: number) => {
-      if (processedNodes.has(nodeId)) return
-      processedNodes.add(nodeId)
-      nodeLevels.set(nodeId, level)
-      if (!levelNodes.has(level)) {
-        levelNodes.set(level, [])
-      }
-      levelNodes.get(level)!.push(nodeId)
-      edges
-        .filter((edge) => edge.source.node_id === nodeId)
-        .forEach((edge) => calculateLevel(edge.target.node_id, level + 1))
+    if (hasBranching) {
+      layoutBranchingFlow(
+        connectedNodes,
+        arrangedEdges,
+        nodePositions,
+        startX,
+        startY,
+        horizontalGap,
+        verticalGap
+      )
+    } else {
+      arrangedEdges = layoutSequentialFlow(
+        connectedNodes,
+        arrangedEdges,
+        nodePositions,
+        startX,
+        startY,
+        horizontalGap,
+        verticalGap
+      )
     }
 
-    startNodes.forEach((node) => calculateLevel(node.id, 0))
-    nodes
-      .filter((node) => !processedNodes.has(node.id))
-      .forEach((node) => calculateLevel(node.id, 0))
-
-    const nodePositions = new Map<string, Position>()
-    levelNodes.forEach((nodeIds, level) => {
-      const y = startY + level * verticalGap
-      nodeIds.forEach((nodeId, index) => {
-        nodePositions.set(nodeId, { x: startX + index * horizontalGap, y })
+    const usedPositions = Array.from(nodePositions.values())
+    const isolatedStartX =
+      (usedPositions.length ? Math.max(...usedPositions.map((position) => position.x)) : startX) +
+      horizontalGap
+    isolatedNodes.sort(compareNodePosition).forEach((node, index) => {
+      nodePositions.set(node.id, {
+        x: isolatedStartX,
+        y: startY + index * 110,
       })
     })
-
-    const maxLevel = Math.max(...Array.from(levelNodes.keys()))
-    for (let level = maxLevel - 1; level >= 0; level--) {
-      const nodeIds = levelNodes.get(level) || []
-      nodeIds.forEach((nodeId) => {
-        const childPositions = edges
-          .filter((edge) => edge.source.node_id === nodeId)
-          .map((edge) => nodePositions.get(edge.target.node_id))
-          .filter((position) => position !== undefined) as Position[]
-        if (!childPositions.length) return
-        const minX = Math.min(...childPositions.map((position) => position.x))
-        const maxX = Math.max(...childPositions.map((position) => position.x))
-        const current = nodePositions.get(nodeId)
-        if (current) {
-          nodePositions.set(nodeId, { x: (minX + maxX) / 2, y: current.y })
-        }
-      })
-    }
 
     flowNodes.value = flowNodes.value.map((node) => ({
       ...node,
       position: constrainPosition(nodePositions.get(node.id) || node.position),
     }))
-    nextTick(() => fitView({ padding: 0.35, maxZoom: INITIAL_MAX_ZOOM, duration: 200 }))
+    flowEdges.value = arrangedEdges.map((edge) => toVueEdge(edge, arrangedEdges))
+    nextTick(() => fitView({ padding: 0.35, maxZoom: UI_FLOW_INITIAL_MAX_ZOOM, duration: 200 }))
+  }
+
+  function compareNodePosition(left: UINode, right: UINode) {
+    return left.position.y - right.position.y || left.position.x - right.position.x
+  }
+
+  function layoutSequentialFlow(
+    nodes: UINode[],
+    edges: UIEdge[],
+    positions: Map<string, Position>,
+    startX: number,
+    startY: number,
+    horizontalGap: number,
+    verticalGap: number
+  ) {
+    const nodeMap = new Map(nodes.map((node) => [node.id, node]))
+    const outgoing = new Map<string, UIEdge>()
+    const incomingIds = new Set<string>()
+    edges.forEach((edge) => {
+      outgoing.set(edge.source.node_id, edge)
+      incomingIds.add(edge.target.node_id)
+    })
+    const visited = new Set<string>()
+    const chains: string[][] = []
+    const starts = nodes.filter((node) => !incomingIds.has(node.id)).sort(compareNodePosition)
+    const appendChain = (startId: string) => {
+      if (visited.has(startId)) return
+      const chain: string[] = []
+      let currentId: string | undefined = startId
+      while (currentId && !visited.has(currentId) && nodeMap.has(currentId)) {
+        chain.push(currentId)
+        visited.add(currentId)
+        currentId = outgoing.get(currentId)?.target.node_id
+      }
+      if (chain.length) chains.push(chain)
+    }
+    starts.forEach((node) => appendChain(node.id))
+    nodes
+      .filter((node) => !visited.has(node.id))
+      .sort(compareNodePosition)
+      .forEach((node) => appendChain(node.id))
+
+    const nodesPerRow = 4
+    let groupStartY = startY
+    const edgePositions = new Map<
+      string,
+      { source: ConnectorPosition; target: ConnectorPosition }
+    >()
+    chains.forEach((chain) => {
+      chain.forEach((nodeId, index) => {
+        const row = Math.floor(index / nodesPerRow)
+        const columnInRow = index % nodesPerRow
+        const leftToRight = row % 2 === 0
+        const column = leftToRight ? columnInRow : nodesPerRow - 1 - columnInRow
+        positions.set(nodeId, {
+          x: startX + column * horizontalGap,
+          y: groupStartY + row * verticalGap,
+        })
+        const nextNodeId = chain[index + 1]
+        if (!nextNodeId) return
+        const edge = edges.find(
+          (item) => item.source.node_id === nodeId && item.target.node_id === nextNodeId
+        )
+        if (!edge) return
+        const nextRow = Math.floor((index + 1) / nodesPerRow)
+        if (nextRow !== row) {
+          edgePositions.set(edge.id, { source: 'bottom', target: 'top' })
+        } else if (leftToRight) {
+          edgePositions.set(edge.id, { source: 'right', target: 'left' })
+        } else {
+          edgePositions.set(edge.id, { source: 'left', target: 'right' })
+        }
+      })
+      groupStartY += Math.ceil(chain.length / nodesPerRow) * verticalGap + 80
+    })
+    return edges.map((edge) => {
+      const handles = edgePositions.get(edge.id)
+      if (!handles) return edge
+      return {
+        ...edge,
+        source: { ...edge.source, position: handles.source },
+        target: { ...edge.target, position: handles.target },
+      }
+    })
+  }
+
+  function layoutBranchingFlow(
+    nodes: UINode[],
+    edges: UIEdge[],
+    positions: Map<string, Position>,
+    startX: number,
+    startY: number,
+    horizontalGap: number,
+    verticalGap: number
+  ) {
+    const nodeMap = new Map(nodes.map((node) => [node.id, node]))
+    const indegree = new Map(nodes.map((node) => [node.id, 0]))
+    const levels = new Map(nodes.map((node) => [node.id, 0]))
+    edges.forEach((edge) => {
+      if (indegree.has(edge.target.node_id)) {
+        indegree.set(edge.target.node_id, (indegree.get(edge.target.node_id) || 0) + 1)
+      }
+    })
+    const queue = nodes
+      .filter((node) => (indegree.get(node.id) || 0) === 0)
+      .sort(compareNodePosition)
+    const processed = new Set<string>()
+    while (queue.length) {
+      const node = queue.shift()!
+      if (processed.has(node.id)) continue
+      processed.add(node.id)
+      edges
+        .filter((edge) => edge.source.node_id === node.id)
+        .forEach((edge) => {
+          const targetId = edge.target.node_id
+          levels.set(targetId, Math.max(levels.get(targetId) || 0, (levels.get(node.id) || 0) + 1))
+          indegree.set(targetId, Math.max(0, (indegree.get(targetId) || 0) - 1))
+          if (indegree.get(targetId) === 0 && nodeMap.has(targetId)) {
+            queue.push(nodeMap.get(targetId)!)
+          }
+        })
+    }
+    nodes.filter((node) => !processed.has(node.id)).forEach((node) => levels.set(node.id, 0))
+    const levelNodes = new Map<number, UINode[]>()
+    nodes.forEach((node) => {
+      const level = levels.get(node.id) || 0
+      if (!levelNodes.has(level)) levelNodes.set(level, [])
+      levelNodes.get(level)!.push(node)
+    })
+    const maxNodesAtLevel = Math.max(
+      1,
+      ...Array.from(levelNodes.values()).map((items) => items.length)
+    )
+    levelNodes.forEach((items, level) => {
+      items.sort((left, right) => {
+        const parentCenter = (node: UINode) => {
+          const parents = edges
+            .filter((edge) => edge.target.node_id === node.id)
+            .map((edge) => positions.get(edge.source.node_id)?.x)
+            .filter((value): value is number => value !== undefined)
+          return parents.length
+            ? parents.reduce((sum, value) => sum + value, 0) / parents.length
+            : node.position.x
+        }
+        return parentCenter(left) - parentCenter(right) || compareNodePosition(left, right)
+      })
+      const rowWidth = (items.length - 1) * horizontalGap
+      const maxWidth = (maxNodesAtLevel - 1) * horizontalGap
+      const rowStartX = startX + (maxWidth - rowWidth) / 2
+      items.forEach((node, index) => {
+        positions.set(node.id, {
+          x: rowStartX + index * horizontalGap,
+          y: startY + level * verticalGap,
+        })
+      })
+    })
   }
 
   defineExpose({
     clearSelection: () => {
       selectedNodeId.value = ''
+      shortcutNodeId.value = ''
       emit('nodeSelect', null)
     },
     selectNode: (nodeId: string) => {
-      selectedNodeId.value = nodeId
-      const node = getLegacyNode(nodeId)
-      if (node) {
-        emit('nodeSelect', node)
-      }
+      emitSelectedNode(nodeId)
     },
     getFlowData: () => legacyFlowData.value,
     beautifyLayout,
@@ -845,14 +1694,21 @@
 
 <style scoped>
   .flow-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--steps-left-panel-width, 220px) minmax(0, 1fr);
     width: 100%;
     height: 100%;
     min-height: 0;
-    gap: 12px;
+    gap: var(--steps-panel-gap, 12px);
   }
 
-  .left-panel,
+  .flow-container-compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .step-control-panel,
+  .step-healing-panel,
+  .canvas-nodes-panel,
   .center-panel {
     display: flex;
     min-height: 0;
@@ -863,12 +1719,30 @@
     overflow: hidden;
   }
 
-  .left-panel {
-    flex: 0 0 220px;
+  .left-column {
+    display: flex;
+    width: var(--steps-left-panel-width, 220px);
+    min-width: var(--steps-left-panel-width, 220px);
+    max-width: var(--steps-left-panel-width, 220px);
+    min-height: 0;
+    flex-direction: column;
+    gap: var(--steps-panel-gap, 12px);
+  }
+
+  .step-control-panel {
+    flex: none;
+  }
+
+  .step-healing-panel {
+    flex: none;
+  }
+
+  .canvas-nodes-panel {
+    flex: 1;
   }
 
   .center-panel {
-    flex: 1;
+    width: 100%;
     min-width: 0;
   }
 
@@ -887,6 +1761,21 @@
     gap: 12px;
   }
 
+  .flow-head-side {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .flow-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
   .flow-panel-title {
     color: var(--m-text);
     font-size: 15px;
@@ -899,6 +1788,56 @@
     color: var(--m-muted);
     font-size: 12px;
     line-height: 18px;
+  }
+
+  .flow-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .flow-title-row .flow-panel-subtitle {
+    margin-top: 0;
+  }
+
+  .flow-debug-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 1px 8px;
+    color: var(--m-primary);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    border: 1px solid var(--m-primary-border);
+    border-radius: var(--m-radius-pill);
+    background: var(--m-primary-soft);
+  }
+
+  .flow-debug-status-warning {
+    color: var(--m-warning);
+    border-color: color-mix(in srgb, var(--m-warning) 36%, transparent);
+    background: color-mix(in srgb, var(--m-warning) 10%, transparent);
+  }
+
+  .flow-debug-status-pending {
+    color: var(--m-muted);
+    border-color: var(--m-border);
+    background: var(--m-surface-soft);
+  }
+
+  .flow-debug-status-done {
+    color: var(--m-success);
+    border-color: color-mix(in srgb, var(--m-success) 36%, transparent);
+    background: color-mix(in srgb, var(--m-success) 10%, transparent);
+  }
+
+  .flow-debug-status-failed {
+    color: var(--m-danger);
+    border-color: color-mix(in srgb, var(--m-danger) 36%, transparent);
+    background: color-mix(in srgb, var(--m-danger) 10%, transparent);
   }
 
   .flow-stats {
@@ -924,45 +1863,177 @@
   }
 
   .drag-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     flex: 1;
     min-height: 0;
     padding: 10px;
     overflow: auto;
   }
 
-  .node-types {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .palette-section {
+    flex: none;
   }
 
-  .node-type-item {
+  .step-healing-summary {
     display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 10px 8px;
+    color: var(--m-text);
+    text-align: left;
+    border: 0;
+    background: var(--m-surface);
+    transition: background-color 160ms ease;
+  }
+
+  .step-healing-summary:has(.step-healing-summary__main:hover) {
+    background: var(--m-surface-soft);
+  }
+
+  .step-healing-summary__main {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+    padding: 0 2px;
+    color: inherit;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .step-healing-summary__main:focus-visible {
+    outline: 2px solid var(--m-primary);
+    outline-offset: 2px;
+  }
+
+  .step-healing-summary .flow-panel-subtitle {
+    display: -webkit-box;
+    min-height: 36px;
+    margin-top: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .step-healing-summary__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 0;
+    color: var(--m-primary);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .step-healing-status {
+    color: var(--m-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .step-healing-status--enabled {
+    color: var(--m-success);
+  }
+
+  .step-healing-status--pending {
+    color: var(--m-warning);
+  }
+
+  .step-healing-summary__actions {
+    justify-content: flex-end;
+  }
+
+  .step-control-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .step-control-item {
+    display: flex;
+    min-width: 0;
     align-items: center;
-    padding: 10px 12px;
+    justify-content: space-between;
+    gap: 8px;
     color: var(--m-text-2);
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .step-control-item > span {
+    min-width: 0;
+  }
+
+  .step-control-item :deep(.arco-input-number) {
+    width: 82px;
+    flex: none;
+  }
+
+  .palette-section-title {
+    color: var(--m-text);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  .palette-section-subtitle {
+    margin-top: 2px;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .node-types {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .node-type-card {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    gap: 9px;
+    padding: 8px 10px;
+    color: var(--m-text-2);
+    font-size: 12px;
+    line-height: 18px;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
-    background: var(--m-surface);
+    background: var(--m-surface-soft);
     cursor: grab;
     transition: all 0.2s;
   }
 
-  .node-type-item:hover {
+  .node-type-card:hover {
     border-color: var(--m-primary-border);
     background: var(--m-primary-soft);
   }
 
-  .node-type-item:active {
+  .node-type-card:active {
     cursor: grabbing;
+  }
+
+  .node-type-card span:last-child {
+    overflow: hidden;
+    color: var(--m-text);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .color-dot {
     flex-shrink: 0;
     width: 8px;
     height: 8px;
-    margin-right: 8px;
     border-radius: 50%;
   }
 
@@ -1012,46 +2083,6 @@
       var(--m-surface-soft);
   }
 
-  .step-node {
-    position: relative;
-    width: 184px;
-    min-height: 76px;
-    padding: 10px 12px;
-    border: 1px solid var(--m-border);
-    border-left: 4px solid var(--node-color, var(--m-primary));
-    border-radius: var(--m-radius-md);
-    background: var(--m-surface);
-    box-shadow: var(--m-shadow);
-    cursor: pointer;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  }
-
-  .step-node:hover {
-    border-color: var(--node-color, var(--m-primary));
-    transform: translateY(-1px);
-  }
-
-  .step-node-selected {
-    border-color: var(--node-color, var(--m-primary));
-    box-shadow: var(--m-form-focus-shadow);
-  }
-
-  .step-node-unsaved {
-    border-color: var(--m-warning);
-    border-left-color: var(--m-warning);
-  }
-
-  .step-node-isolated,
-  .step-node-warning {
-    border-color: color-mix(in srgb, var(--m-warning) 64%, var(--m-border));
-    border-left-color: var(--node-color, var(--m-primary));
-  }
-
-  .step-node-ready {
-    border-color: color-mix(in srgb, var(--m-success) 22%, var(--m-border));
-    border-left-color: var(--node-color, var(--m-primary));
-  }
-
   .node-delete {
     position: absolute;
     top: -8px;
@@ -1076,75 +2107,6 @@
 
   .step-node:hover .node-delete {
     opacity: 1;
-  }
-
-  .node-main {
-    min-width: 0;
-  }
-
-  .node-kicker {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 2px;
-    overflow: hidden;
-    color: var(--m-muted);
-    font-size: 11px;
-    line-height: 15px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .node-kicker > span:first-child {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .node-status-text {
-    flex: none;
-    color: var(--m-muted);
-    font-size: 11px;
-    font-weight: 500;
-  }
-
-  .node-title {
-    margin-bottom: 4px;
-    overflow: hidden;
-    color: var(--m-text);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .node-content {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: 6px;
-    overflow: hidden;
-    color: var(--m-muted);
-    font-size: 11px;
-    line-height: 16px;
-  }
-
-  .node-content > span:first-child {
-    flex: none;
-    max-width: 56px;
-    overflow: hidden;
-    color: var(--node-color, var(--m-primary));
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .node-locator {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .node-popover {
@@ -1243,6 +2205,24 @@
     bottom: -7px;
   }
 
+  .step-handle-side {
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+
+  .step-node:hover .step-handle-side,
+  .step-node.mango-ui-flow-node--selected .step-handle-side {
+    opacity: 1;
+  }
+
+  .step-handle-left {
+    left: -7px;
+  }
+
+  .step-handle-right {
+    right: -7px;
+  }
+
   :deep(.vue-flow__edge-path) {
     stroke: var(--m-muted);
     stroke-width: 2;
@@ -1251,6 +2231,46 @@
   :deep(.vue-flow__edge.selected .vue-flow__edge-path),
   :deep(.vue-flow__edge:hover .vue-flow__edge-path) {
     stroke: var(--m-primary);
+  }
+
+  :deep(.vue-flow__edge.flow-edge-pending .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-pending.selected .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-pending:hover .vue-flow__edge-path) {
+    stroke: var(--m-muted);
+  }
+
+  :deep(.vue-flow__edge.flow-edge-passed .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-passed.selected .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-passed:hover .vue-flow__edge-path) {
+    stroke: var(--m-success);
+  }
+
+  :deep(.vue-flow__edge.flow-edge-failed .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-failed.selected .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-failed:hover .vue-flow__edge-path) {
+    stroke: var(--m-danger);
+  }
+
+  :deep(.vue-flow__edge.flow-edge-decision .vue-flow__edge-path) {
+    stroke-dasharray: 8 8;
+  }
+
+  :deep(.vue-flow__edge.flow-edge-running .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-running.selected .vue-flow__edge-path),
+  :deep(.vue-flow__edge.flow-edge-running:hover .vue-flow__edge-path) {
+    stroke: var(--m-primary);
+    stroke-dasharray: 8 8;
+    animation: mango-flow-edge-running 1.1s linear infinite;
+  }
+
+  @keyframes mango-flow-edge-running {
+    from {
+      stroke-dashoffset: 16;
+    }
+
+    to {
+      stroke-dashoffset: 0;
+    }
   }
 
   :deep(.vue-flow__controls) {

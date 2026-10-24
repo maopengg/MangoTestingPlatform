@@ -1,4 +1,5 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { reactive, ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
@@ -27,6 +28,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
 ])
+enableMultiSelectSearch(conditionItems)
 
 // 表格列
 export const tableColumns = useTableColumn([
@@ -80,6 +82,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

@@ -4,7 +4,7 @@
     :data="flatRows"
     :loading="loading"
     :pagination="false"
-    :scroll="{ x: 1280 }"
+    :scroll="{ x: 1480 }"
     :span-method="spanMethod"
     class="case-summary-table"
     row-key="__rowKey"
@@ -35,27 +35,30 @@
         <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
           <span>{{ formatDateTime(record.stop) }}</span>
         </template>
+        <template v-else-if="itemRow.key === 'disposition'" #cell="{ record }">
+          <ReportDispositionStatus :record="record.__sourceRecord" />
+        </template>
         <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
-          <div class="action-cell">
-            <a-button
-              v-if="!record.children"
-              type="text"
-              size="mini"
-              @click="$emit('show-details', record.__detailRecord || record)"
-            >
-              详细报告
-            </a-button>
-            <span v-else></span>
-            <a-button
-              v-if="canRetry && record.__isFirstCaseRow"
-              type="text"
-              size="mini"
-              @click="$emit('retry', record.__caseSourceId)"
-            >
-              重试
-            </a-button>
-            <span v-else class="action-placeholder">重试</span>
-          </div>
+          <ReportDisposition :record="record.__sourceRecord"
+            :editable="canRetry && record.__isFirstCaseRow" @saved="$emit('disposition-saved')">
+            <template #default="{ open, eligible }">
+          <MangoTableActions
+            :actions="[
+              { permission: 'report:exclude', label: '排查与排除', hidden: !eligible, overflow: true, priority: 100, onClick: open },
+              { permission: 'report:detail',
+                label: '详细报告',
+                hidden: !!record.children,
+                onClick: () => $emit('show-details', record.__detailRecord || record),
+              },
+              { permission: 'report:retry',
+                label: '重试',
+                hidden: !(canRetry && record.__isFirstCaseRow),
+                onClick: () => $emit('retry', record.__caseSourceId),
+              },
+            ]"
+          />
+            </template>
+          </ReportDisposition>
         </template>
       </a-table-column>
     </template>
@@ -64,6 +67,9 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import ReportDisposition from './ReportDisposition.vue'
+  import ReportDispositionStatus from './ReportDispositionStatus.vue'
   import { pytestColumns } from './config'
 
   const props = defineProps<{
@@ -76,6 +82,7 @@
   defineEmits<{
     (event: 'show-details', record: any): void
     (event: 'retry', id: any): void
+    (event: 'disposition-saved'): void
   }>()
 
   const flatRows = computed(() =>
@@ -93,15 +100,19 @@
         case_type: row?.case_type ?? 2,
         name: row?.name || item?.case_name || item?.name,
         __rowKey: `${item?.id || caseId}-${row?.id || index}-${index}`,
+        __detailId: item?.id || '-',
         __caseId: caseId,
         __caseName: caseName,
         __caseCount: Number(item?.case_sum || displayRows.length || 0),
         __caseRowSpan: index === 0 ? rowSpan : 0,
         __caseSourceId: item?.id,
         __isFirstCaseRow: index === 0,
+        __sourceRecord: item,
         __isWarningRow: row?.__isWarningRow,
         __detailRecord: {
           ...row,
+          test_suite_detail_id: item?.id,
+          __caseSourceId: item?.id,
           error_message: row?.statusDetails?.message || row?.error_message,
           case_type: row?.case_type ?? 2,
           name: row?.name || item?.case_name || item?.name,
@@ -111,7 +122,7 @@
   )
 
   function spanMethod({ record, columnIndex }: any) {
-    if (columnIndex >= 3) return undefined
+    if (!pytestColumns[columnIndex]?.mergeCell) return undefined
     return {
       rowspan: record.__caseRowSpan,
       colspan: record.__caseRowSpan > 0 ? 1 : 0,

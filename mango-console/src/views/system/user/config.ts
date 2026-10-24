@@ -1,16 +1,20 @@
 import { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
+export const tableScrollX = 1810
+
 export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'id',
     label: 'ID',
     type: 'input',
     placeholder: '请输入用户ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -53,15 +57,30 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '账号',
+    label: '登录邮箱',
     key: 'username',
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入用户账号',
+    placeholder: '请输入登录邮箱',
     validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(this.value || ''))) {
+        Message.error('请输入正确的登录邮箱')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '登录邮箱',
+    key: 'email',
+    value: ref(''),
+    type: 'input',
+    required: true,
+    placeholder: '请输入登录邮箱',
+    validator: function () {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(this.value || ''))) {
+        Message.error('请输入正确的邮箱地址')
         return false
       }
       return true
@@ -89,8 +108,8 @@ export const formItems: FormItem[] = reactive([
     key: 'role',
     value: ref(''),
     type: 'select',
-    required: true,
-    placeholder: '请选择用户角色',
+    required: false,
+    placeholder: '请选择用户角色，留空为游客',
     validator: function () {
       if (this.value === null && this.value === '') {
         Message.error(this.placeholder || '')
@@ -100,19 +119,20 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '邮箱',
-    key: 'mailbox',
+    label: '超级管理员',
+    key: 'is_super_admin',
+    value: ref(false),
+    type: 'switch',
+    required: false,
+    placeholder: '',
+  },
+  {
+    label: '所属部门',
+    key: 'department_ids',
     value: ref([]),
-    type: 'input-tag',
-    required: true,
-    placeholder: '请输入邮箱，然后按回车',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
+    type: 'department-select',
+    required: false,
+    placeholder: '请选择用户所属部门',
   },
 ])
 export const tableColumns = useTableColumn([
@@ -126,7 +146,7 @@ export const tableColumns = useTableColumn([
     width: 200,
   },
   {
-    title: '账号',
+    title: '登录邮箱',
     key: 'username',
     dataIndex: 'username',
     align: 'left',
@@ -139,24 +159,23 @@ export const tableColumns = useTableColumn([
     align: 'left',
     width: 200,
   },
+  {
+    title: '超管',
+    key: 'is_super_admin',
+    dataIndex: 'is_super_admin',
+    align: 'center',
+    width: 90,
+  },
+  {
+    title: '部门',
+    key: 'departments',
+    dataIndex: 'departments',
+    align: 'left',
+    width: 220,
+    ellipsis: true,
+    tooltip: true,
+  },
 
-  {
-    title: '邮箱',
-    key: 'mailbox',
-    dataIndex: 'mailbox',
-    align: 'left',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: 'MCP APIKey',
-    key: 'api_key',
-    dataIndex: 'api_key',
-    align: 'left',
-    width: 260,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '登录IP',
     key: 'ip',
@@ -170,11 +189,13 @@ export const tableColumns = useTableColumn([
     dataIndex: 'last_login_time',
     width: 180,
   },
+  updateUserColumn(),
+  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

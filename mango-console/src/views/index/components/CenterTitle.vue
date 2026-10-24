@@ -58,13 +58,13 @@
       justify-content: center;
       align-items: center;
       color: var(--m-primary);
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 500;
     }
 
     .center {
       flex: 1;
-      font-size: 16px;
+      font-size: 18px;
       display: flex;
       justify-content: center;
       padding: 5px;

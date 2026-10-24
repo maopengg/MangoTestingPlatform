@@ -1,15 +1,20 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="配置测试对象"
+      <TableHeader title="测试文件" />
+    </template>
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        :model-value="projectProductCondition?.value"
+        :reset-key="sidebarResetKey"
+        @filter-change="onNavigationFilterChange"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
-        <template #search-content>
+        <template #search>
           <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+            <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -29,8 +34,10 @@
               <template v-else-if="item.type === 'select'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="item.key === 'update_user' ? item.optionItems : project.data"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -54,22 +61,18 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-    <template #default>
-      <a-tabs>
-        <template #extra>
+        <template #toolbar>
           <a-space>
             <div>
-              <a-button type="primary" @click="onOpenUploadModal">上传</a-button>
+              <a-button v-permission="'config.test_files:create'" size="small" type="primary" @click="onOpenUploadModal" data-testid="qa-views-config-test-files-button-上传">上传</a-button>
             </div>
           </a-space>
         </template>
         <a-table
-          :scroll="{ x: 1100 }"
-          class="full-width"
+          :scroll="{ x: tableScrollX, y: '100%' }"
+          class="full-width mango-native-scroll-table"
           :bordered="false"
-          :columns="tableColumns"
+          :columns="visibleTableColumns"
           :data="table.dataList"
           :loading="table.tableLoading.value"
           :pagination="false"
@@ -78,19 +81,18 @@
         >
           <template #columns>
             <a-table-column
-              v-for="item of tableColumns"
+              v-for="item of visibleTableColumns"
               :key="item.key"
               :align="item.align"
               :data-index="item.key"
+              :ellipsis="item.ellipsis"
               :fixed="item.fixed"
               :title="item.title"
+              :tooltip="item.tooltip"
               :width="item.width"
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
-              </template>
-              <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                {{ formatProjectProductPath(record?.project_product) }}
               </template>
               <template v-else-if="item.key === 'file_size'" #cell="{ record }">
                 {{ record.file_size_display || formatFileSize(record.file_size) }}
@@ -100,26 +102,32 @@
                   {{ isAllowDownload(record) ? '允许下载' : '限制下载' }}
                 </a-tag>
               </template>
+              <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                {{ formatProjectProductPath(record.project_product) }}
+              </template>
+              <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+                {{ record.update_user?.name || record.update_user?.username || '-' }}
+              </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    {
+                    { permission: 'config.test_files:download',
                       label: '下载',
                       disabled: isDownloadDisabled(record),
                       onClick: () => onDownload(record),
                     },
-                    { label: '编辑', onClick: () => onUpdate(record) },
-                    { label: '删除', danger: true, onClick: () => onDelete(record) },
+                    { permission: 'config.test_files:edit', label: '编辑', onClick: () => onUpdate(record) },
+                    { permission: 'config.test_files:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                   ]"
                 />
               </template>
             </a-table-column>
           </template>
         </a-table>
-      </a-tabs>
-    </template>
-    <template #footer>
-      <TableFooter :pagination="pagination" />
+        <template #footer>
+          <TableFooter :pagination="pagination" />
+        </template>
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" title="编辑" @confirm="onDataForm">
@@ -166,8 +174,8 @@
       </a-form-item>
     </a-form>
     <template #footer>
-      <a-button @click="onCloseUploadModal">取消</a-button>
-      <a-button type="primary" :loading="uploadLoading" @click="onUploadFile">上传</a-button>
+      <a-button @click="onCloseUploadModal" data-testid="qa-views-config-test-files-button-取消">取消</a-button>
+      <a-button v-permission="'config.test_files:create'" type="primary" :loading="uploadLoading" @click="onUploadFile" data-testid="qa-views-config-test-files-button-上传-2">上传</a-button>
     </template>
   </a-modal>
 </template>
@@ -175,8 +183,8 @@
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
-  import { tableColumns, conditionItems, formItems } from './config'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+  import { tableColumns, conditionItems, formItems, tableScrollX } from './config'
   import {
     deleteUserFile,
     getUserFile,
@@ -189,13 +197,24 @@
   import { ModalDialogType } from '@/types/components'
   import { useProject } from '@/store/modules/get-project'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
+  import { getUserName } from '@/api/user/user'
+  import { setUpdateUserOptions } from '@/utils/update-user'
 
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const project = useProject()
   const rowKey = useRowKey('id')
+  const sidebarResetKey = ref(0)
+  const projectProductCondition = computed(() =>
+    conditionItems.find((item) => item.key === 'project_product')
+  )
+  const headerConditionItems = computed(() =>
+    conditionItems.filter((item) => item.key !== 'project_product')
+  )
+  const visibleTableColumns = tableColumns
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const uploadModalVisible = ref(false)
@@ -215,6 +234,9 @@
     if (value['project_product'] === null || value['project_product'] === '') {
       delete value['project_product']
     }
+    if (value.update_user === null || value.update_user === '') {
+      delete value.update_user
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     value['type'] = 0
@@ -225,10 +247,16 @@
       })
       .catch(console.log)
   }
+  function onNavigationFilterChange({ projectProduct }: { projectProduct: any }) {
+    if (projectProductCondition.value) projectProductCondition.value.value = projectProduct ?? ''
+    pagination.page = 1
+    doRefresh()
+  }
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
+    sidebarResetKey.value += 1
     doRefresh()
   }
 
@@ -407,6 +435,7 @@
   onMounted(() => {
     nextTick(async () => {
       project.getProject()
+      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
       doRefresh()
     })
   })

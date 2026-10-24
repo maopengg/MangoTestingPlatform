@@ -2,6 +2,7 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 
@@ -112,10 +113,12 @@ export const tableColumns = useTableColumn([
     tooltip: true,
     width: 150,
   },
+  updateUserColumn(),
+  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
-    width: 170,
+    width: 160,
   },
 ])

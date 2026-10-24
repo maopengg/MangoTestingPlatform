@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from src.network.http.apis.base import BaseHttpClient
 
-from src.enums.system_enum import ClientTypeEnum
+from mangotools.enums import ClientTypeEnum
 from src.tools.set_config import SetConfig
 from src.tools.log_collector import log
 
@@ -26,6 +26,10 @@ class AuthManager:
         self.token: str | None = None
 
     def set_token(self, token: str):
+        if isinstance(token, bytes):
+            token = token.decode()
+        if isinstance(token, str) and token.startswith("b'") and token.endswith("'"):
+            token = token[2:-1]
         self.token = token
 
     def clear_token(self):
@@ -71,6 +75,11 @@ def reinit_client():
 
 from src.network.http.apis.system import SystemApi  # noqa: E402
 from src.network.http.apis.user import UserApi      # noqa: E402
+from src.network.http.apis.actuator_tasks import ActuatorTaskApi  # noqa: E402
+from src.network.http.apis.ui_element import UiElementApi  # noqa: E402
+from src.network.http.apis.ui_page_step import UiPageStepApi  # noqa: E402
+from src.network.http.apis.data_source import DataSourceApi  # noqa: E402
+from src.network.http.apis.perf import PerfApi  # noqa: E402
 
 
 class _HTTP:
@@ -81,7 +90,7 @@ class _HTTP:
         from src.network import HTTP
 
         await HTTP.system.login(username, password)
-        await HTTP.system.download_file('xxx.zip')
+        await HTTP.system.download_file_by_id(1)
         await HTTP.system.upload_file(path, name)
         await HTTP.system.user_register(data)
 
@@ -96,6 +105,11 @@ class _HTTP:
         client = get_client()
         self.system = SystemApi(client, auth_manager)
         self.user = UserApi(client, auth_manager)
+        self.actuator_tasks = ActuatorTaskApi(client, auth_manager)
+        self.ui_element = UiElementApi(client, auth_manager)
+        self.ui_page_step = UiPageStepApi(client, auth_manager)
+        self.data_source = DataSourceApi(client, auth_manager)
+        self.perf = PerfApi(client, auth_manager)
 
     def refresh(self):
         """token / base_url 变更后调用，重建所有 API 实例"""

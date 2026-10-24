@@ -8,15 +8,15 @@
     </div>
     <div class="manual-layout">
       <nav class="manual-nav">
-        <a href="#UI自动化">UI自动化</a>
-        <a href="#接口自动化">接口自动化</a>
-        <a href="#系统设置">系统设置</a>
+        <a href="#UI自动化" data-testid="qa-views-help-manual-a-ui自动化">UI自动化</a>
+        <a href="#API自动化" data-testid="qa-views-help-manual-a-API自动化">API自动化</a>
+        <a href="#系统设置" data-testid="qa-views-help-manual-a-系统设置">系统设置</a>
       </nav>
 
       <div class="manual-content">
         <h1 id="UI自动化">UI自动化</h1>
         <p> 的呢啊我能打文凭佛呢我发发呢啊我贫困的哇破倒卖瓦尔v大二偶的卡位【的口味 </p>
-        <h1 id="接口自动化">接口自动化</h1>
+        <h1 id="API自动化">API自动化</h1>
         <p> 的呢啊我能打文凭佛呢我发发呢啊我贫困的哇破倒卖瓦尔v大二偶的卡位【的口味 </p>
         <h1 id="系统设置">系统设置</h1>
         <p> 的呢啊我能打文凭佛呢我发发呢啊我贫困的哇破倒卖瓦尔v大二偶的卡位【的口味 </p>
@@ -36,7 +36,7 @@
   .manual-layout {
     display: grid;
     grid-template-columns: 180px minmax(0, 1fr);
-    gap: 16px;
+    gap: var(--m-page-gap);
   }
 
   .manual-nav {

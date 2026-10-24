@@ -3,23 +3,22 @@
 # @Description: 
 # @Time   : 2024-12-05 18:25
 # @Author : 毛鹏
-import platform
 import subprocess
-
-if platform.system() != "Linux":
-    from PySide6.QtCore import QThread
-    from PySide6.QtCore import Signal
-else:
-    class QThread:
-        pass
+import threading
 
 
-    class Signal:
-        def __init__(self, *args, **kwargs):
-            pass
+class Signal:
+    """Small callback signal used without coupling command execution to a UI framework."""
 
-        def emit(self, *args, **kwargs):
-            pass
+    def __init__(self, *_args, **_kwargs):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args, **kwargs):
+        for callback in tuple(self._callbacks):
+            callback(*args, **kwargs)
 
 
 def run_command(command):
@@ -27,13 +26,14 @@ def run_command(command):
     return result.stdout, result.stderr
 
 
-class CommandThread(QThread):
-    output_signal = Signal(str)
-    error_signal = Signal(str)
+class CommandThread(threading.Thread):
 
     def __init__(self, parent=None, command=None):
-        super().__init__(parent)
+        super().__init__(daemon=True)
+        self.parent = parent
         self.command = command
+        self.output_signal = Signal(str)
+        self.error_signal = Signal(str)
 
     def run(self):
         output, error = run_command(self.command)

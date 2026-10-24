@@ -1,0 +1,1 @@
+"""Performance-test Pydantic schemas."""

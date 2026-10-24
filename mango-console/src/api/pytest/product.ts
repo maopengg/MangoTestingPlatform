@@ -1,8 +1,8 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function postPytestProduct(data: any) {
+export function postPytestProductImport(data: any) {
   return post({
-    url: 'pytest/product',
+    url: 'pytest/product/import',
     data: () => {
       return data
     },
@@ -38,38 +38,15 @@ export function putPytestProduct(data: object) {
   })
 }
 
-export function getPytestUpdate() {
+export function getPytestProductTestDirectories(
+  id?: number,
+  projectPath?: string,
+  repositoryId?: number
+) {
   return get({
-    url: 'pytest/product/update',
+    url: 'pytest/product/test-directories',
     data: () => {
-      return {}
-    },
-  })
-}
-
-export function getPytestPush() {
-  return get({
-    url: 'pytest/product/push',
-    data: () => {
-      return {}
-    },
-  })
-}
-
-export function getPytestProductRead(id: any) {
-  return get({
-    url: 'pytest/product/read',
-    data: () => {
-      return { id: id }
-    },
-  })
-}
-
-export function postPytestProductWrite(id: any, file_content: any) {
-  return post({
-    url: 'pytest/product/write',
-    data: () => {
-      return { id: id, file_content: file_content }
+      return { id: id, project_path: projectPath, repository_id: repositoryId }
     },
   })
 }

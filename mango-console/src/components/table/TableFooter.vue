@@ -3,10 +3,12 @@
     <div :class="[innerPosition]" class="mango-table-footer__inner">
       <a-pagination
         v-model:current="pagination.page"
-        v-model:pageSize="pagination.pageSize"
+        v-model:page-size="pagination.pageSize"
         :page-size-options="pagination.pageSizes"
         :show-page-size="pagination.showSizePicker"
         :total="pagination?.pageCount || 0"
+        :base-size="compactPages ? 4 : 6"
+        :buffer-size="compactPages ? 1 : 2"
         show-total
         size="small"
         @change="onChange"
@@ -34,6 +36,10 @@
   export default defineComponent({
     name: 'TableFooter',
     props: {
+      compactPages: {
+        type: Boolean,
+        default: false,
+      },
       pagination: {
         type: Object,
         default: () => ({}),
@@ -65,6 +71,7 @@
       }
 
       function onPageSizeChange(pageSize: number) {
+        ;(pagination as any).value.page = 1
         ;(pagination as any).value.pageSize = pageSize
         ;(pagination as any).value.onChange()
       }
@@ -100,7 +107,6 @@
     justify-content: center;
     color: var(--m-text-2);
     background: var(--m-surface);
-    border-top: 1px solid var(--m-border);
     box-shadow: none;
   }
 
@@ -114,6 +120,8 @@
     align-items: center;
     width: 100%;
     min-width: 0;
+    box-sizing: border-box;
+    padding-right: var(--m-page-gap);
   }
 
   .mango-table-footer__refresh {

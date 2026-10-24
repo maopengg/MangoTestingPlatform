@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_data_factory', '0004_datafactorytemplate_is_default'),
     ]
@@ -38,6 +37,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='datafactorytemplate',
             name='config_status',
-            field=models.SmallIntegerField(choices=[(0, '待完善'), (1, '已就绪')], db_index=True, default=0, verbose_name='配置状态'),
+            field=models.SmallIntegerField(choices=[(0, '待完善'), (1, '已就绪')], db_index=True, default=0,
+                                           verbose_name='配置状态'),
         ),
     ]

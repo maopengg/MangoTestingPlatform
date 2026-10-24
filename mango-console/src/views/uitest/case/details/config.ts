@@ -3,48 +3,6 @@ import { FormItem } from '@/types/components'
 import { Message } from '@arco-design/web-vue'
 import { isValidInteger } from '@/utils/form'
 
-export const columns: any = reactive([
-  {
-    title: '步骤名称',
-    dataIndex: 'page_step_name',
-    ellipsis: true,
-    tooltip: true,
-    width: 240,
-  },
-  {
-    title: '切换URL',
-    key: 'switch_step_open_url',
-    dataIndex: 'switch_step_open_url',
-    width: 90,
-  },
-  {
-    title: '重试',
-    key: 'error_retry',
-    dataIndex: 'error_retry',
-    width: 70,
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    width: 80,
-  },
-  {
-    title: '失败提示',
-    dataIndex: 'error_message',
-    align: 'left',
-    ellipsis: true,
-    tooltip: true,
-    width: 360,
-  },
-  {
-    title: '操作',
-    dataIndex: 'actions',
-    align: 'center',
-    width: 170,
-    fixed: 'right',
-  },
-])
-
 export const formItems: FormItem[] = reactive([
   {
     label: '模块名称',

@@ -1,0 +1,76 @@
+id: report.quality_effectiveness.insight
+version: "6"
+owner: test_center
+description: 质量效能报告单组件解读
+templates:
+  system: >-
+    你正在解读自动化质量报告中的“{{ title }}”组件。{{ focus }}
+    只依据输入数据输出一句60至120字的中文业务结论，必须同时说明有价值的结果和需要关注的问题；不能只复述数字，必须解释这些数字意味着什么。
+    不得虚构节省工时、金额、缺陷数量或业务影响；失败和警告只能称为异常信号或问题结果。
+    禁止输出字段名、英文枚举、key=value、Markdown标题和“AI解读”等前缀。
+    输出必须是JSON object，且只能包含insight字段。
+  user: |-
+    请解读该组件数据：
+    {{ payload }}
+values:
+  configs:
+    overview:
+      title: 汇报结论
+      data_keys: [ cards, comparison, convergence, benefits ]
+      focus: 判断整体质量是改善、稳定还是下降，同时点出最明确的正向结果和首要风险。
+    status:
+      title: 四周期质量环比
+      data_keys: [ period_quality, comparison ]
+      focus: 对比本周期及前三个等长周期的执行规模、最终通过率与问题结果，判断质量改善或下降是否连续，并指出执行规模变化是否影响结论可信度。
+    modules:
+      title: 模块质量
+      data_keys: [ module_quality, module_risks ]
+      focus: 指出稳定模块、高风险模块和最需要优先治理的模块，不要只罗列通过率。
+    benefits:
+      title: 自动化收益
+      data_keys: [ benefits, comparison, convergence ]
+      focus: 重点回答自动化替代了多少重复回归、完成了多少持续巡检、覆盖多少用例与环境、识别多少异常信号、恢复多少用例以及反馈效率如何。明确说明收益是否可验证；不能把失败结果直接称为缺陷，也不能虚构节省工时。
+    trend:
+      title: 问题收敛趋势
+      data_keys: [ trend, convergence, comparison ]
+      focus: 判断问题是否持续收敛、是否存在反弹或执行日期中断，并同时说明通过率变化。
+    environment:
+      title: 测试环境质量
+      data_keys: [ environment_quality ]
+      focus: 对比表现最好与风险最高的环境，指出差距及最值得关注的环境。
+    task_type:
+      title: 执行场景质量
+      data_keys: [ scene_distribution ]
+      focus: 对比回归、巡检、冒烟等执行场景的执行规模与质量，解释不同场景产生的价值和风险。
+    coverage_scope:
+      title: 执行范围质量
+      data_keys: [ scope_distribution ]
+      focus: 对比产品全量、模块全量和手动指定的质量表现，指出执行范围短板。
+    module_risk:
+      title: 模块风险四象限
+      data_keys: [ module_quality, module_risks ]
+      focus: 结合执行规模、通过率与问题数量，识别高执行量且高风险的优先治理模块。
+    issue_pareto:
+      title: 问题贡献排行
+      data_keys: [ module_quality, module_risks ]
+      focus: 指出问题最集中的少数模块及其贡献程度，避免平均化描述。
+    environment_task_matrix:
+      title: 环境与执行场景交叉质量
+      data_keys: [ scene_matrix ]
+      focus: 识别环境与执行场景组合中的最佳表现和风险组合，指出需要优先排查的交叉区域。
+    module_change:
+      title: 模块环比升降榜
+      data_keys: [ module_quality ]
+      focus: 同时指出改善最明显和下降最明显的模块，并说明变化是否值得关注。
+    automation_type:
+      title: 自动化类型效能
+      data_keys: [ automation_type_quality ]
+      focus: 对比 API、UI、Pytest 等自动化类型的执行规模、质量和恢复能力，指出各自贡献。
+    task_health:
+      title: 定时任务健康
+      data_keys: [ task_health ]
+      focus: 识别连续异常、长期未成功或通过率偏低的任务，同时说明健康任务的稳定性。
+    failed_case_ranking:
+      title: 失败用例排行
+      data_keys: [ failed_case_ranking ]
+      focus: 按本周期失败出现次数识别高频失败用例，指出出现次数、影响范围和优先排查对象。

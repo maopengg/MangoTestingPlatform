@@ -1,7 +1,10 @@
 <template>
   <a-sub-menu :key="menuInfo.key">
     <template #title>
-      <span class="mango-sub-menu-label">{{ menuInfo.label }}</span>
+      <span class="mango-sub-menu-label">
+        <span class="mango-sub-menu-label__text">{{ menuInfo.label }}</span>
+        <MenuStatusBadge v-if="menuInfo.isBeta" value="Beta" />
+      </span>
     </template>
     <template #icon>
       <component
@@ -15,7 +18,10 @@
           <template #icon>
             <component :is="item.icon || 'icon-menu'" />
           </template>
-          {{ item.label }}
+          <span class="mango-sub-menu-label">
+            <span class="mango-sub-menu-label__text">{{ item.label }}</span>
+            <MenuStatusBadge v-if="item.isBeta" value="Beta" />
+          </span>
         </a-menu-item>
       </template>
       <template v-else>
@@ -27,9 +33,11 @@
 
 <script lang="ts">
   import { defineComponent } from 'vue'
+  import MenuStatusBadge from './MenuStatusBadge.vue'
 
   export default defineComponent({
     name: 'SubMenu',
+    components: { MenuStatusBadge },
     props: {
       menuInfo: {
         type: Object,
@@ -40,7 +48,21 @@
 </script>
 <style scoped>
   .mango-sub-menu-label {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 4px;
+    margin-left: 2px;
+    padding-right: 3px;
+  }
+
+  .mango-sub-menu-label__text {
     flex: 1;
-    margin-left: 3px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

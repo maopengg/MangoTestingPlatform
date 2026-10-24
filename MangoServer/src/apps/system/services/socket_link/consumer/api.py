@@ -1,0 +1,20 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description:
+# @Time   : 2023-04-29 11:20
+# @Author : 毛鹏
+
+from mangotools.contracts import ApiRecordingContract
+
+from src.apps.auto_api.schemas.recording import ApiRecordingSchema
+from src.apps.auto_api.services.api_import.recording import Recording
+from src.common.decorators.retry import async_task_db_connection
+
+
+class APIConsumer:
+
+    @classmethod
+    @async_task_db_connection(max_retries=1, retry_delay=1)
+    def a_recording_api(cls, data: dict):
+        contract = ApiRecordingContract.model_validate(data)
+        Recording.write(ApiRecordingSchema.from_contract(contract))

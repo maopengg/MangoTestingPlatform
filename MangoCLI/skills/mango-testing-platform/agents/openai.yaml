@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mango Testing Platform"
+  short_description: "通过 Mango CLI 操作测试平台 REST API"
+  default_prompt: "Use $mango-testing-platform to inspect the requested platform resource and perform the scoped operation through the Mango CLI."

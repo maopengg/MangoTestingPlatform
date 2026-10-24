@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
-  import * as echarts from 'echarts'
+  import type { ECharts } from 'echarts'
+  import useEcharts from '@/hooks/useEcharts'
 
   // 定义 props
   const props = defineProps<{
@@ -9,11 +10,18 @@
     warning?: number // 未执行/警告（可选）
     pending?: number // 进行中（可选）
     todo?: number // 待开始（可选）
+    stopped?: number // 已停止（可选）
+    other?: number // 合并后的其他状态（可选）
     loading?: boolean
+    totalLabel?: string
+    centerLabel?: string
+    centerValue?: string | number
   }>()
 
   const pieChart = ref<HTMLElement | null>(null)
-  let myChart: echarts.ECharts | null = null
+  let myChart: ECharts | null = null
+  let resizeObserver: ResizeObserver | null = null
+  let resizeFrame = 0
 
   const token = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -25,20 +33,28 @@
     token('--m-primary', '#165dff'),
     token('--m-muted', '#64748b'),
   ]
+  const palette = ref(getPalette())
 
   const chartItems = computed(() => {
+    const colors = palette.value
     const items = [
-      { name: '通过', value: Number(props.success || 0), color: getPalette()[0] },
-      { name: '失败', value: Number(props.fail || 0), color: getPalette()[1] },
+      { name: '通过', value: Number(props.success || 0), color: colors[0] },
+      { name: '失败', value: Number(props.fail || 0), color: colors[1] },
     ]
     if (props.warning !== undefined) {
-      items.push({ name: '警告', value: Number(props.warning || 0), color: getPalette()[2] })
+      items.push({ name: '警告', value: Number(props.warning || 0), color: colors[2] })
     }
     if (props.pending !== undefined) {
-      items.push({ name: '进行中', value: Number(props.pending || 0), color: getPalette()[3] })
+      items.push({ name: '进行中', value: Number(props.pending || 0), color: colors[3] })
     }
     if (props.todo !== undefined) {
-      items.push({ name: '待开始', value: Number(props.todo || 0), color: getPalette()[4] })
+      items.push({ name: '待开始', value: Number(props.todo || 0), color: colors[4] })
+    }
+    if (props.stopped !== undefined) {
+      items.push({ name: '已停止', value: Number(props.stopped || 0), color: colors[4] })
+    }
+    if (props.other !== undefined) {
+      items.push({ name: '其他', value: Number(props.other || 0), color: colors[4] })
     }
     const total = items.reduce((sum, item) => sum + item.value, 0)
     return items.map((item) => ({
@@ -54,7 +70,7 @@
   const initPieChart = () => {
     if (!pieChart.value) return
 
-    myChart = echarts.init(pieChart.value)
+    myChart = useEcharts(pieChart.value)
     updateChart()
   }
 
@@ -77,6 +93,11 @@
       tooltip: {
         trigger: 'item',
         formatter: '{b}<br />{d}% | {c}',
+        padding: 9,
+        textStyle: {
+          fontSize: 14,
+          lineHeight: 18,
+        },
       },
       series: [
         {
@@ -86,15 +107,15 @@
           center: ['50%', '50%'],
           avoidLabelOverlap: false,
           itemStyle: {
-            borderRadius: 6,
+            borderRadius: 5,
             borderColor: token('--m-surface', '#fff'),
-            borderWidth: 4,
+            borderWidth: 3,
           },
           label: {
             show: false,
           },
           emphasis: {
-            scaleSize: 4,
+            scaleSize: 3,
           },
           labelLine: {
             show: false,
@@ -105,9 +126,31 @@
     })
   }
 
+  const updateTheme = () => {
+    palette.value = getPalette()
+    updateChart()
+  }
+
+  const resizeChart = () => {
+    if (!myChart) return
+    if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+    resizeFrame = window.requestAnimationFrame(() => {
+      myChart?.resize()
+      resizeFrame = 0
+    })
+  }
+
   // 监听数据变化，更新图表
   watch(
-    () => [props.success, props.fail, props.warning, props.pending, props.todo],
+    () => [
+      props.success,
+      props.fail,
+      props.warning,
+      props.pending,
+      props.todo,
+      props.stopped,
+      props.other,
+    ],
     () => {
       updateChart()
     },
@@ -116,24 +159,32 @@
 
   onMounted(() => {
     initPieChart()
-    window.addEventListener('mango-theme-change', updateChart)
+    window.addEventListener('mango-theme-change', updateTheme)
+    window.addEventListener('resize', resizeChart)
+    if (pieChart.value && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(resizeChart)
+      resizeObserver.observe(pieChart.value)
+    }
   })
 
   onBeforeUnmount(() => {
-    window.removeEventListener('mango-theme-change', updateChart)
+    window.removeEventListener('mango-theme-change', updateTheme)
+    window.removeEventListener('resize', resizeChart)
+    resizeObserver?.disconnect()
+    if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
     myChart?.dispose()
   })
 </script>
 
 <template>
   <div class="mango-status-chart">
-    <a-spin :loading="props.loading" class="mango-chart-spin">
+    <mango-panel-spin :loading="props.loading" class="mango-chart-spin">
       <div class="mango-status-chart__content">
         <div class="mango-status-donut">
           <div ref="pieChart" class="mango-chart"></div>
           <div class="mango-status-total">
-            <span>总数</span>
-            <strong>{{ total }}</strong>
+            <span>{{ centerLabel || totalLabel || '总数' }}</span>
+            <strong>{{ centerValue ?? total }}</strong>
           </div>
         </div>
         <div class="mango-status-list">
@@ -152,7 +203,7 @@
           </div>
         </div>
       </div>
-    </a-spin>
+    </mango-panel-spin>
   </div>
 </template>
 
@@ -163,7 +214,7 @@
   }
 
   .mango-chart-spin,
-  :deep(.mango-chart-spin .arco-spin-children) {
+  :deep(.mango-chart-spin > .mango-panel-spin__content) {
     display: grid;
     height: 100%;
     min-height: 0;
@@ -173,15 +224,15 @@
     display: grid;
     height: 100%;
     min-height: 0;
-    grid-template-columns: 42% minmax(0, 1fr);
+    grid-template-columns: 40% minmax(0, 1fr);
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .mango-status-donut {
     position: relative;
     height: 100%;
-    min-height: 180px;
+    min-height: 162px;
   }
 
   .mango-chart {
@@ -194,8 +245,8 @@
     top: 50%;
     left: 50%;
     display: flex;
-    width: 78px;
-    height: 78px;
+    width: 90px;
+    height: 70px;
     align-items: center;
     justify-content: center;
     flex-direction: column;
@@ -208,11 +259,12 @@
     }
 
     strong {
-      max-width: 74px;
+      max-width: 86px;
       overflow: hidden;
       color: var(--m-text);
-      font-size: 20px;
-      line-height: 24px;
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+      line-height: 19px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -220,22 +272,25 @@
 
   .mango-status-list {
     display: flex;
+    height: 100%;
     min-width: 0;
+    min-height: 0;
+    justify-content: center;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
   }
 
   .mango-status-item {
     display: grid;
     min-width: 0;
-    grid-template-columns: 10px minmax(0, 1fr) 72px;
+    grid-template-columns: 9px minmax(0, 1fr) 97px;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
   }
 
   .mango-status-dot {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
   }
 
@@ -247,15 +302,15 @@
       overflow: hidden;
       color: var(--m-text-2);
       font-size: 12px;
-      line-height: 18px;
+      line-height: 16px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
   }
 
   .mango-status-bar {
-    height: 4px;
-    margin-top: 4px;
+    height: 3px;
+    margin-top: 3px;
     overflow: hidden;
     border-radius: 999px;
     background: var(--m-border);
@@ -269,11 +324,15 @@
   }
 
   .mango-status-value {
+    display: grid;
+    align-items: baseline;
+    grid-template-columns: 52px minmax(30px, 1fr);
     text-align: right;
+    gap: 3px;
 
     strong,
     span {
-      display: block;
+      display: inline-block;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -281,14 +340,16 @@
 
     strong {
       color: var(--m-primary);
-      font-size: 12px;
-      line-height: 17px;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      line-height: 14px;
     }
 
     span {
       color: var(--m-muted);
       font-size: 11px;
-      line-height: 16px;
+      font-variant-numeric: tabular-nums;
+      line-height: 13px;
     }
   }
 </style>

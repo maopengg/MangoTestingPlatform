@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mango 测试平台统一资产治理"
+  short_description: "治理测试资产、定时任务并修复风险待办异常"
+  default_prompt: "使用 $mango-test-platform-asset-governance 审计并安全治理测试平台资产；需要处理风险待办时，修复底层授权或数据工厂异常并验证待办关闭。"

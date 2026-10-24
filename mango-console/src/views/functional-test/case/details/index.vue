@@ -2,12 +2,12 @@
   <div class="mango-detail-workbench">
     <div class="mango-detail-toolbar">
       <a-space>
-        <a-button @click="router.back()">返回</a-button>
+        <a-button class="mango-back-button" @click="router.back()" data-testid="qa-views-functional-test-case-details-button-返回">返回</a-button>
         <strong>{{ detail?.title || '功能用例详情' }}</strong>
       </a-space>
       <a-space>
-        <a-button type="primary" :loading="planLoading" @click="openPlanDialog">生成 API 自动化</a-button>
-        <a-button disabled>生成 UI 自动化</a-button>
+        <a-button type="primary" :loading="planLoading" @click="openPlanDialog" data-testid="qa-views-functional-test-case-details-button-生成-api-自动化">生成 API 自动化</a-button>
+        <a-button disabled data-testid="qa-views-functional-test-case-details-button-生成-ui-自动化">生成 UI 自动化</a-button>
       </a-space>
     </div>
     <a-spin :loading="loading">
@@ -21,7 +21,7 @@
                 <a-tag :color="enumColor(detail?.priority)" size="small">{{ enumTitle(enumStore.case_level, detail?.priority) }}</a-tag>
               </a-descriptions-item>
               <a-descriptions-item label="前置条件">{{ detail?.precondition || '-' }}</a-descriptions-item>
-              <a-descriptions-item label="测试点">{{ detail?.test_point || '-' }}</a-descriptions-item>
+              <a-descriptions-item label="测试场景">{{ detail?.test_point || '-' }}</a-descriptions-item>
               <a-descriptions-item label="测试数据">{{ detail?.test_data || '-' }}</a-descriptions-item>
               <a-descriptions-item label="备注">{{ detail?.remark || '-' }}</a-descriptions-item>
             </a-descriptions>
@@ -49,7 +49,7 @@
                     {{ record.api_case_id || record.ui_case_id || record.automation_case_id }}
                   </template>
                   <template v-else-if="item.key === 'optimize_status'" #cell="{ record }">
-                    <a-tag :color="statusColor(record.optimize_status)" size="small">{{ enumTitle(enumStore.manual_test_optimize_status, record.optimize_status) }}</a-tag>
+                    <a-tag :color="optimizeStatusColor(record.optimize_status)" size="small">{{ enumTitle(enumStore.manual_test_optimize_status, record.optimize_status) }}</a-tag>
                   </template>
                 </a-table-column>
               </template>
@@ -62,10 +62,10 @@
             <a-descriptions :column="2" bordered size="small">
               <a-descriptions-item label="来源片段">{{ detail?.source_text || '-' }}</a-descriptions-item>
               <a-descriptions-item label="变更状态">
-                <a-tag :color="statusColor(detail?.change_status)" size="small">{{ enumTitle(enumStore.manual_test_change_status, detail?.change_status) }}</a-tag>
+                <a-tag :color="changeStatusColor(detail?.change_status)" size="small">{{ enumTitle(enumStore.manual_test_change_status, detail?.change_status) }}</a-tag>
               </a-descriptions-item>
               <a-descriptions-item label="自动化影响">
-                <a-tag :color="statusColor(detail?.automation_impact_status)" size="small">{{ enumTitle(enumStore.manual_test_automation_impact_status, detail?.automation_impact_status) }}</a-tag>
+                <a-tag :color="impactStatusColor(detail?.automation_impact_status)" size="small">{{ enumTitle(enumStore.manual_test_automation_impact_status, detail?.automation_impact_status) }}</a-tag>
               </a-descriptions-item>
             </a-descriptions>
           </div>
@@ -77,7 +77,7 @@
       v-model:visible="planDialogVisible"
       title="生成 API 自动化用例"
       width="720px"
-      :confirm-loading="planLoading"
+      :ok-loading="planLoading"
       @ok="makePlan"
     >
       <a-form :model="planForm" layout="vertical">
@@ -86,7 +86,7 @@
             v-model="planForm.ai_role"
             :options="aiRoleOptions"
             :field-names="fieldNames"
-            placeholder="请选择角色提示词"
+            placeholder="请选择角色提示词" data-testid="qa-views-functional-test-case-details-select-请选择角色提示词"
           />
         </a-form-item>
         <a-form-item label="技能">
@@ -96,7 +96,7 @@
             :field-names="fieldNames"
             :loading="aiOptionLoading"
             allow-clear
-            placeholder="请选择 Skill"
+            placeholder="请选择 Skill" data-testid="qa-views-functional-test-case-details-select-请选择-skill"
           />
         </a-form-item>
         <a-form-item label="MCP 服务">
@@ -107,20 +107,20 @@
             :loading="aiOptionLoading"
             allow-clear
             multiple
-            placeholder="请选择 MCP 服务"
+            placeholder="请选择 MCP 服务" data-testid="qa-views-functional-test-case-details-select-请选择-mcp-服务"
           />
         </a-form-item>
         <a-form-item label="追问/补充要求">
-          <a-textarea v-model="planForm.user_instruction" placeholder="补充本次 API 自动化生成要求" :auto-size="{ minRows: 2, maxRows: 4 }" />
+          <a-textarea v-model="planForm.user_instruction" placeholder="补充本次 API 自动化生成要求" :auto-size="{ minRows: 2, maxRows: 4 }" data-testid="qa-views-functional-test-case-details-textarea-补充本次-api-自动化生成要求" />
         </a-form-item>
         <a-form-item label="携带上下文">
           <a-checkbox-group v-model="planForm.context_keys" direction="vertical">
-            <a-checkbox :value="0">产品角色 / 需求文档</a-checkbox>
-            <a-checkbox :value="1">开发角色 / 开发设计</a-checkbox>
-            <a-checkbox :value="2">开发角色 / 接口文档</a-checkbox>
-            <a-checkbox :value="3">开发角色 / 开发代码</a-checkbox>
-            <a-checkbox :value="4">开发角色 / SQL语句</a-checkbox>
-            <a-checkbox :value="5">测试角色 / 原始用例文档</a-checkbox>
+            <a-checkbox :value="0" data-testid="qa-views-functional-test-case-details-checkbox-产品角色-需求文档">产品角色 / 需求文档</a-checkbox>
+            <a-checkbox :value="1" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-开发设计">开发角色 / 开发设计</a-checkbox>
+            <a-checkbox :value="2" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-接口文档">开发角色 / 接口文档</a-checkbox>
+            <a-checkbox :value="3" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-开发代码">开发角色 / 开发代码</a-checkbox>
+            <a-checkbox :value="4" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-sql语句">开发角色 / SQL语句</a-checkbox>
+            <a-checkbox :value="5" data-testid="qa-views-functional-test-case-details-checkbox-测试角色-原始用例文档">测试角色 / 原始用例文档</a-checkbox>
           </a-checkbox-group>
         </a-form-item>
       </a-form>
@@ -134,6 +134,12 @@
   import { computed, onMounted, reactive, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useEnum } from '@/store/modules/get-enum'
+  import {
+    getStatusTagColor,
+    MANUAL_TEST_CHANGE_STATUS_COLORS,
+    MANUAL_TEST_IMPACT_STATUS_COLORS,
+    MANUAL_TEST_OPTIMIZE_STATUS_COLORS,
+  } from '@/utils/status-color'
   import { getAiMcpServer, getAiSkill, postAiApiAutomationAgentStart } from '@/api/ai'
   import { getManualCaseDetail } from '@/api/functional-test'
 
@@ -178,9 +184,12 @@
   function enumColor(value: any) {
     return enumStore.colors?.[Number(value)]
   }
-  function statusColor(value: any) {
-    return enumStore.status_colors?.[Number(value)]
-  }
+  const optimizeStatusColor = (value: number) =>
+    getStatusTagColor(MANUAL_TEST_OPTIMIZE_STATUS_COLORS, value)
+  const changeStatusColor = (value: number) =>
+    getStatusTagColor(MANUAL_TEST_CHANGE_STATUS_COLORS, value)
+  const impactStatusColor = (value: number) =>
+    getStatusTagColor(MANUAL_TEST_IMPACT_STATUS_COLORS, value)
   async function loadDetail() {
     loading.value = true
     try {

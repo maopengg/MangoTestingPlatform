@@ -9,8 +9,9 @@ export function formatProjectProductPath(projectProduct: any) {
   if (!projectProduct) {
     return '-'
   }
-  const projectName = projectProduct?.project?.name
-  const productName = projectProduct?.name
+  const resolvedProjectProduct = projectProduct?.project_product || projectProduct
+  const projectName = resolvedProjectProduct?.project?.name
+  const productName = resolvedProjectProduct?.name
   return [projectName, productName].filter(Boolean).join('/') || '-'
 }
 
@@ -18,12 +19,29 @@ export function formatModulePath(module: any) {
   if (!module) {
     return '-'
   }
-  const paths = [
-    module.superior_module_1 || module.superior_module,
-    module.superior_module_2,
-    module.name,
-  ].filter(Boolean)
-  return paths.length ? paths.join('/') : '-'
+  if (module.full_path) {
+    return module.full_path
+  }
+  const parentPaths: string[] = []
+  const visited = new Set<any>()
+  let current = module
+  while (current && typeof current === 'object' && !visited.has(current.id)) {
+    visited.add(current.id)
+    if (current.name) parentPaths.unshift(current.name)
+    current = current.parent
+  }
+  return parentPaths.length ? parentPaths.join('/') : '-'
+}
+
+export function getEnumTagColor(
+  options: Array<{ key: string | number; title: string }> | null | undefined,
+  value: string | number | null | undefined,
+  colors: string[],
+  fallback = 'gray'
+) {
+  if (!colors.length) return fallback
+  const optionIndex = (options || []).findIndex((item) => String(item.key) === String(value))
+  return optionIndex >= 0 ? colors[optionIndex % colors.length] : fallback
 }
 
 export function getItemValue(items: any[], key: string) {

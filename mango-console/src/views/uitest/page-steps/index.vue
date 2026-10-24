@@ -1,15 +1,27 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="调试页面步骤"
+      <TableHeader title="页面步骤" />
+    </template>
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        show-modules
+        emit-initial-filter
+        :model-value="getConditionValue('project_product')"
+        :module-value="getConditionValue('module')"
+        :reset-key="sidebarResetKey"
+        @filter-change="onSidebarFilterChange"
         @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
-        <template #search-content>
+        <template #search>
           <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+                <a-form-item
+                  v-for="item of headerConditionItems"
+                  :key="item.key"
+                  :label="item.label"
+                >
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -38,6 +50,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'page_id'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="data.pageName"
                   :placeholder="item.placeholder"
@@ -50,8 +64,24 @@
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.task_status"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="item.optionItems"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -75,24 +105,29 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs>
-        <template #extra>
+        <template #toolbar>
           <a-space>
-            <div>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-            </div>
-            <div>
-              <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
-            </div>
+            <a-button v-permission="'ui.page_steps:create'"
+              size="small"
+              type="primary"
+              @click="onAdd"
+              data-testid="qa-views-uitest-page-steps-button-新增"
+            >
+              新增
+            </a-button>
+            <a-button v-permission="'ui.page_steps:delete'"
+              size="small"
+              status="danger"
+              @click="onDelete(null)"
+              data-testid="qa-views-uitest-page-steps-button-批量删除"
+            >
+              批量删除
+            </a-button>
           </a-space>
         </template>
-      </a-tabs>
       <a-table
-        :scroll="{ x: 1100 }"
+        class="mango-native-scroll-table"
+        :scroll="{ x: 1180, y: '100%' }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -117,12 +152,6 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ formatModulePath(record?.module) }}
-            </template>
             <template v-else-if="item.key === 'page'" #cell="{ record }">
               {{ record.page.name }}
             </template>
@@ -131,22 +160,33 @@
                 >{{ enumStore.task_status[record.status]?.title || '-' }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ formatModulePath(record.module) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '调试', loading: caseRunning, onClick: () => onRunCase(record) },
-                  { label: '步骤', onClick: () => onClick(record) },
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'ui.page_steps:debug', label: '调试', loading: caseRunning, onClick: () => onRunCase(record) },
+                  { permission: 'ui.page_steps:detail', label: '步骤', onClick: () => onClick(record) },
+                  { permission: 'ui.page_steps:detail', label: '用例', onClick: () => onShowReferencedCases(record) },
+                  { permission: 'ui.page_steps:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'ui.page_steps:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
           </a-table-column>
         </template>
       </a-table>
-    </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
+    </template>
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
@@ -180,6 +220,8 @@
           <template v-else-if="item.type === 'select' && item.key === 'page'">
             <a-select
               v-model="item.value"
+              :multiple="item.multiple"
+              :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
               :options="data.pageName"
               :placeholder="item.placeholder"
@@ -192,27 +234,111 @@
       </a-form>
     </template>
   </ModalDialog>
+
+  <BaseSidePanel
+    v-model:visible="caseReferencePanel.visible"
+    :title="caseReferencePanel.title"
+    width="64%"
+    @cancel="closeCaseReferencePanel"
+  >
+    <a-spin class="mango-page-step-reference-loading" :loading="caseReferencePanel.loading">
+      <div class="mango-page-step-reference-summary">
+        <span>当前步骤被</span>
+        <strong>{{ caseReferencePanel.cases.length }}</strong>
+        <span>个用例引用</span>
+      </div>
+      <div
+        v-if="!caseReferencePanel.loading && caseReferencePanel.cases.length === 0"
+        class="mango-empty-state mango-page-step-reference-empty"
+      >
+        该步骤暂未被任何用例引用
+      </div>
+      <a-table
+        v-else
+        :bordered="false"
+        :columns="referencedCaseColumns"
+        :data="caseReferencePanel.cases"
+        :pagination="false"
+        :scroll="{ x: 1100 }"
+        row-key="id"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of referencedCaseColumns"
+            :key="item.key"
+            :align="item.align"
+            :data-index="item.key"
+            :ellipsis="item.ellipsis"
+            :fixed="item.fixed"
+            :title="item.title"
+            :tooltip="item.tooltip"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ formatModulePath(record.module) }}
+            </template>
+            <template v-else-if="item.key === 'case_people'" #cell="{ record }">
+              {{ record.case_people?.name || record.case_people?.username || '-' }}
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-tag :color="enumStore.status_colors[record.status]" size="small">
+                {{ enumStore.task_status[record.status]?.title || '-' }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
+              <MangoTableActions
+                :actions="[{ permission: 'ui.page_steps:detail', label: '步骤', onClick: () => openReferencedCase(record) }]"
+              />
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+    </a-spin>
+  </BaseSidePanel>
+
+  <BaseSidePanel
+    v-model:visible="caseDetailPanel.visible"
+    title="界面用例配置"
+    width="80%"
+    mode="page"
+    @cancel="closeCaseDetailPanel"
+  >
+    <UiCaseDetails
+      v-if="caseDetailPanel.visible && caseDetailPanel.caseId"
+      :key="caseDetailPanel.caseId"
+      embedded
+      :case-id="caseDetailPanel.caseId"
+      :project-product-id="caseDetailPanel.projectProductId"
+      @close="closeCaseDetailPanel"
+    />
+  </BaseSidePanel>
 </template>
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { useLatestRequest } from '@/hooks/use-latest-request'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import {
-    formatModulePath,
     formatProjectProductPath,
+    formatModulePath,
     getItemValue,
     setItemValue,
   } from '@/utils/business-format'
   import {
     deleteUiSteps,
+    getUiPageStepReferencedCases,
     getUiPageStepsCopy,
     getUiSteps,
     getUiStepsTest,
@@ -220,16 +346,25 @@
     putUiSteps,
   } from '@/api/uitest/page-steps'
   import { getUiPageName } from '@/api/uitest/page'
-  import { conditionItems, formItems, tableColumns } from './config'
+  import { getUserName } from '@/api/user/user'
+  import { conditionItems, formItems, referencedCaseColumns, tableColumns } from './config'
+  import { setUpdateUserOptions } from '@/utils/update-user'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
+  import UiCaseDetails from '@/views/uitest/case/details/index.vue'
 
   const enumStore = useEnum()
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
+  const { beginRequest, isLatestRequest } = useLatestRequest()
   const rowKey = useRowKey('id')
+  const sidebarResetKey = ref(0)
+  const headerConditionItems = computed(() =>
+    conditionItems.filter((item) => item.key !== 'project_product' && item.key !== 'module')
+  )
   const userStore = useUserStore()
 
   const formModel = ref({})
@@ -241,6 +376,49 @@
   })
   const caseRunning = ref(false)
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
+  const caseReferencePanel = reactive({
+    visible: false,
+    loading: false,
+    title: '引用用例',
+    cases: [] as any[],
+  })
+  const caseDetailPanel = reactive({
+    visible: false,
+    caseId: '' as string | number,
+    projectProductId: '' as string | number,
+  })
+
+  async function onShowReferencedCases(record: any) {
+    caseReferencePanel.visible = true
+    caseReferencePanel.loading = true
+    caseReferencePanel.title = `引用用例 · ${record.name || `步骤 ${record.id}`}`
+    caseReferencePanel.cases = []
+    try {
+      const res = await getUiPageStepReferencedCases(record.id)
+      caseReferencePanel.cases = Array.isArray(res.data) ? res.data : []
+    } catch (error) {
+      caseReferencePanel.cases = []
+    } finally {
+      caseReferencePanel.loading = false
+    }
+  }
+
+  function closeCaseReferencePanel() {
+    caseReferencePanel.visible = false
+    closeCaseDetailPanel()
+  }
+
+  function openReferencedCase(record: any) {
+    caseDetailPanel.caseId = record.id
+    caseDetailPanel.projectProductId = record.project_product?.id || ''
+    caseDetailPanel.visible = true
+  }
+
+  function closeCaseDetailPanel() {
+    caseDetailPanel.visible = false
+    caseDetailPanel.caseId = ''
+    caseDetailPanel.projectProductId = ''
+  }
 
   function clearPollingTimer() {
     if (pollingTimer.value) {
@@ -279,12 +457,27 @@
     doRefresh(null, false, true)
   }
 
+  function onSidebarFilterChange(filter: { projectProduct: any; module: any }) {
+    setItemValue(conditionItems, 'project_product', filter.projectProduct)
+    setItemValue(conditionItems, 'module', filter.module)
+    setItemValue(conditionItems, 'page_id', '')
+    data.pageName = []
+    if (filter.module) onModulePage(filter.module, false)
+    pagination.page = 1
+    selectedRowKeys.value = []
+    doRefresh(null, false, true)
+  }
+
   function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
     clearPollingTimer()
+    const requestId = beginRequest()
     if (showLoading) {
       table.tableLoading.value = true
     }
     let value = getFormItems(conditionItems)
+    if (value.update_user === null || value.update_user === '') {
+      delete value.update_user
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {
@@ -292,6 +485,7 @@
     }
     getUiSteps(value)
       .then((res) => {
+        if (!isLatestRequest(requestId)) return
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
         const hasRunningItem =
@@ -304,9 +498,11 @@
           }, 5000)
         }
       })
-      .catch(console.log)
+      .catch((error) => {
+        if (isLatestRequest(requestId)) console.log(error)
+      })
       .finally(() => {
-        if (showLoading) {
+        if (isLatestRequest(requestId)) {
           table.tableLoading.value = false
         }
       })
@@ -314,8 +510,9 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
+    sidebarResetKey.value += 1
     doRefresh(null, false, true)
   }
 
@@ -327,7 +524,7 @@
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
   }
@@ -471,7 +668,7 @@
 
   onMounted(() => {
     nextTick(async () => {
-      doRefresh()
+      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
       onModulePage(null, false)
     })
   })
@@ -479,3 +676,27 @@
     clearPollingTimer()
   })
 </script>
+
+<style scoped>
+  .mango-page-step-reference-loading {
+    display: block;
+    min-height: 240px;
+    padding: 0;
+  }
+
+  .mango-page-step-reference-summary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+    color: var(--m-text-2);
+  }
+
+  .mango-page-step-reference-summary strong {
+    color: var(--m-text);
+  }
+
+  .mango-page-step-reference-empty {
+    min-height: 200px;
+  }
+</style>

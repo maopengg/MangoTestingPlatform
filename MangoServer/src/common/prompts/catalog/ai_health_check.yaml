@@ -1,0 +1,7 @@
+id: ai.health_check
+version: "1"
+owner: system
+description: AI 文本与视觉配置连通性探测
+values:
+  text: Reply with OK.
+  vision: 请确认已收到图片，只回复 OK。

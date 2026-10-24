@@ -1,0 +1,2410 @@
+{
+  "ActuatorPresenceUpdate": {
+    "properties": {
+      "debug": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Debug"
+      },
+      "is_open": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Is Open"
+      },
+      "status": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Status"
+      },
+      "username": {
+        "title": "Username",
+        "type": "string"
+      },
+      "web_live_stream_supported": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Web Live Stream Supported"
+      }
+    },
+    "required": [
+      "username"
+    ],
+    "title": "ActuatorPresenceUpdate",
+    "type": "object"
+  },
+  "ActuatorSystemErrorContract": {
+    "properties": {
+      "exception_type": {
+        "maxLength": 128,
+        "minLength": 1,
+        "title": "Exception Type",
+        "type": "string"
+      },
+      "message": {
+        "maxLength": 500,
+        "minLength": 1,
+        "title": "Message",
+        "type": "string"
+      },
+      "operation": {
+        "maxLength": 255,
+        "minLength": 1,
+        "title": "Operation",
+        "type": "string"
+      },
+      "traceback": {
+        "anyOf": [
+          {
+            "maxLength": 50000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Traceback"
+      }
+    },
+    "required": [
+      "operation",
+      "exception_type",
+      "message"
+    ],
+    "title": "ActuatorSystemErrorContract",
+    "type": "object"
+  },
+  "ApiRecordingContract": {
+    "description": "API recording payload emitted by an actuator and consumed by the server.",
+    "properties": {
+      "body_config": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Body Config"
+      },
+      "body_type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Body Type"
+      },
+      "client": {
+        "default": 0,
+        "title": "Client",
+        "type": "integer"
+      },
+      "data": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Data"
+      },
+      "file": {
+        "anyOf": [
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File"
+      },
+      "header": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Header"
+      },
+      "json": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Json"
+      },
+      "method": {
+        "title": "Method",
+        "type": "integer"
+      },
+      "module": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Module"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "params": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Params"
+      },
+      "project_product": {
+        "title": "Project Product",
+        "type": "integer"
+      },
+      "protocol_type": {
+        "default": "http",
+        "title": "Protocol Type",
+        "type": "string"
+      },
+      "sse_config": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Sse Config"
+      },
+      "status": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Status"
+      },
+      "type": {
+        "default": 0,
+        "title": "Type",
+        "type": "integer"
+      },
+      "url": {
+        "title": "Url",
+        "type": "string"
+      },
+      "username": {
+        "title": "Username",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project_product",
+      "username",
+      "name",
+      "url",
+      "method"
+    ],
+    "title": "ApiRecordingContract",
+    "type": "object"
+  },
+  "ExecutorTaskClaimContract": {
+    "properties": {
+      "capability_capacities": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Capability Capacities",
+        "type": "object"
+      },
+      "capacity": {
+        "default": 1,
+        "maximum": 20,
+        "minimum": 1,
+        "title": "Capacity",
+        "type": "integer"
+      },
+      "connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Connection Id"
+      },
+      "protocol_versions": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Protocol Versions",
+        "type": "object"
+      },
+      "supported_task_types": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Supported Task Types",
+        "type": "array"
+      },
+      "task_type_capacities": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Task Type Capacities",
+        "type": "object"
+      }
+    },
+    "title": "ExecutorTaskClaimContract",
+    "type": "object"
+  },
+  "ExecutorTaskDrainingContract": {
+    "properties": {
+      "connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Connection Id"
+      },
+      "draining": {
+        "default": true,
+        "title": "Draining",
+        "type": "boolean"
+      }
+    },
+    "title": "ExecutorTaskDrainingContract",
+    "type": "object"
+  },
+  "ExecutorTaskHeartbeatContract": {
+    "properties": {
+      "connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Connection Id"
+      }
+    },
+    "title": "ExecutorTaskHeartbeatContract",
+    "type": "object"
+  },
+  "ExecutorTaskProgressContract": {
+    "properties": {
+      "current": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Current"
+      },
+      "current_node_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Current Node Id"
+      },
+      "message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Message"
+      },
+      "percent": {
+        "anyOf": [
+          {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Percent"
+      },
+      "total": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total"
+      }
+    },
+    "title": "ExecutorTaskProgressContract",
+    "type": "object"
+  },
+  "ExecutorTaskProgressRequestContract": {
+    "$defs": {
+      "ExecutorTaskProgressContract": {
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Current"
+          },
+          "current_node_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Current Node Id"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Percent"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          }
+        },
+        "title": "ExecutorTaskProgressContract",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Connection Id"
+      },
+      "progress": {
+        "$ref": "#/$defs/ExecutorTaskProgressContract"
+      }
+    },
+    "required": [
+      "progress"
+    ],
+    "title": "ExecutorTaskProgressRequestContract",
+    "type": "object"
+  },
+  "ExecutorTaskResultContract": {
+    "properties": {
+      "attempt": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Attempt",
+        "type": "integer"
+      },
+      "connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Connection Id"
+      },
+      "error_code": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Code"
+      },
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      },
+      "result_data": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Result Data"
+      },
+      "success": {
+        "title": "Success",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "success"
+    ],
+    "title": "ExecutorTaskResultContract",
+    "type": "object"
+  },
+  "PytestExecutionCommand": {
+    "properties": {
+      "case_people": {
+        "title": "Case People",
+        "type": "string"
+      },
+      "class_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Class Name"
+      },
+      "commit_hash": {
+        "title": "Commit Hash",
+        "type": "string"
+      },
+      "dispatch_id": {
+        "title": "Dispatch Id",
+        "type": "string"
+      },
+      "file_path": {
+        "title": "File Path",
+        "type": "string"
+      },
+      "git_access_token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Git Access Token"
+      },
+      "git_api_base_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Git Api Base Url"
+      },
+      "git_credential_ref": {
+        "title": "Git Credential Ref",
+        "type": "string"
+      },
+      "git_password": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Git Password"
+      },
+      "git_project": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "title": "Git Project"
+      },
+      "git_provider": {
+        "title": "Git Provider",
+        "type": "string"
+      },
+      "git_ref": {
+        "title": "Git Ref",
+        "type": "string"
+      },
+      "git_url": {
+        "title": "Git Url",
+        "type": "string"
+      },
+      "git_username": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Git Username"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "method_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Method Name"
+      },
+      "module_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Module Name"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "node_type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Node Type"
+      },
+      "nodeid": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Nodeid"
+      },
+      "parameter_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Parameter Id"
+      },
+      "project_path": {
+        "title": "Project Path",
+        "type": "string"
+      },
+      "project_product": {
+        "title": "Project Product",
+        "type": "integer"
+      },
+      "project_product_name": {
+        "title": "Project Product Name",
+        "type": "string"
+      },
+      "pytest_config_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pytest Config Path"
+      },
+      "pytest_project_id": {
+        "title": "Pytest Project Id",
+        "type": "integer"
+      },
+      "pytest_project_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pytest Project Name"
+      },
+      "repository_id": {
+        "title": "Repository Id",
+        "type": "integer"
+      },
+      "repository_name": {
+        "title": "Repository Name",
+        "type": "string"
+      },
+      "send_user": {
+        "title": "Send User",
+        "type": "string"
+      },
+      "source_snapshot": {
+        "additionalProperties": true,
+        "title": "Source Snapshot",
+        "type": "object"
+      },
+      "test_env": {
+        "title": "Test Env",
+        "type": "integer"
+      },
+      "test_suite_details": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Test Suite Details"
+      },
+      "test_suite_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Test Suite Id"
+      },
+      "working_directory": {
+        "title": "Working Directory",
+        "type": "string"
+      }
+    },
+    "required": [
+      "dispatch_id",
+      "send_user",
+      "test_suite_details",
+      "test_suite_id",
+      "id",
+      "name",
+      "project_product",
+      "project_product_name",
+      "test_env",
+      "case_people",
+      "file_path",
+      "repository_id",
+      "repository_name",
+      "pytest_project_id",
+      "project_path",
+      "working_directory",
+      "source_snapshot",
+      "git_url",
+      "commit_hash",
+      "git_provider",
+      "git_project",
+      "git_credential_ref",
+      "git_ref"
+    ],
+    "title": "PytestExecutionCommand",
+    "type": "object"
+  },
+  "PytestExecutionResult": {
+    "properties": {
+      "dispatch_id": {
+        "title": "Dispatch Id",
+        "type": "string"
+      },
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "result_data": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Result Data"
+      },
+      "source_snapshot": {
+        "additionalProperties": true,
+        "title": "Source Snapshot",
+        "type": "object"
+      },
+      "status": {
+        "title": "Status",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "dispatch_id",
+      "source_snapshot",
+      "id",
+      "name",
+      "status"
+    ],
+    "title": "PytestExecutionResult",
+    "type": "object"
+  },
+  "PytestSourceSnapshotContract": {
+    "properties": {
+      "branch": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Branch"
+      },
+      "commit_hash": {
+        "title": "Commit Hash",
+        "type": "string"
+      },
+      "file_path": {
+        "title": "File Path",
+        "type": "string"
+      },
+      "nodeid": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Nodeid"
+      },
+      "project_path": {
+        "title": "Project Path",
+        "type": "string"
+      },
+      "pytest_config_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pytest Config Path"
+      },
+      "pytest_project_id": {
+        "title": "Pytest Project Id",
+        "type": "integer"
+      },
+      "pytest_project_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pytest Project Name"
+      },
+      "repository_id": {
+        "title": "Repository Id",
+        "type": "integer"
+      },
+      "repository_name": {
+        "title": "Repository Name",
+        "type": "string"
+      },
+      "version": {
+        "default": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "working_directory": {
+        "title": "Working Directory",
+        "type": "string"
+      }
+    },
+    "required": [
+      "repository_id",
+      "repository_name",
+      "pytest_project_id",
+      "commit_hash",
+      "project_path",
+      "working_directory",
+      "file_path"
+    ],
+    "title": "PytestSourceSnapshotContract",
+    "type": "object"
+  },
+  "SocketCommandContract": {
+    "properties": {
+      "dispatch_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Dispatch Id"
+      },
+      "func_args": {
+        "anyOf": [
+          {
+            "items": {},
+            "type": "array"
+          },
+          {},
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Func Args"
+      },
+      "func_name": {
+        "title": "Func Name",
+        "type": "string"
+      },
+      "message_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Message Id"
+      }
+    },
+    "required": [
+      "func_name"
+    ],
+    "title": "SocketCommandContract",
+    "type": "object"
+  },
+  "SocketEnvelopeContract": {
+    "$defs": {
+      "ClientTypeEnum": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "ClientTypeEnum",
+        "type": "integer"
+      },
+      "SocketCommandContract": {
+        "properties": {
+          "dispatch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dispatch Id"
+          },
+          "func_args": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Func Args"
+          },
+          "func_name": {
+            "title": "Func Name",
+            "type": "string"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Id"
+          }
+        },
+        "required": [
+          "func_name"
+        ],
+        "title": "SocketCommandContract",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "code": {
+        "title": "Code",
+        "type": "integer"
+      },
+      "connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Connection Id"
+      },
+      "data": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SocketCommandContract"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "dispatch_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Dispatch Id"
+      },
+      "is_notice": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ClientTypeEnum"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Is Notice"
+      },
+      "message_id": {
+        "title": "Message Id",
+        "type": "string"
+      },
+      "msg": {
+        "title": "Msg",
+        "type": "string"
+      },
+      "protocol_version": {
+        "default": 1,
+        "title": "Protocol Version",
+        "type": "integer"
+      },
+      "sent_at": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Sent At"
+      },
+      "user": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "User"
+      }
+    },
+    "required": [
+      "code",
+      "msg"
+    ],
+    "title": "SocketEnvelopeContract",
+    "type": "object"
+  },
+  "TaskPullRequest": {
+    "$defs": {
+      "TestCaseTypeEnum": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "title": "TestCaseTypeEnum",
+        "type": "integer"
+      }
+    },
+    "properties": {
+      "type": {
+        "$ref": "#/$defs/TestCaseTypeEnum"
+      },
+      "username": {
+        "title": "Username",
+        "type": "string"
+      }
+    },
+    "required": [
+      "type",
+      "username"
+    ],
+    "title": "TaskPullRequest",
+    "type": "object"
+  },
+  "TestSuiteDetailResultContract": {
+    "$defs": {
+      "TestCaseTypeEnum": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "title": "TestCaseTypeEnum",
+        "type": "integer"
+      }
+    },
+    "properties": {
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "result_data": {
+        "title": "Result Data"
+      },
+      "status": {
+        "title": "Status",
+        "type": "integer"
+      },
+      "test_suite": {
+        "title": "Test Suite",
+        "type": "integer"
+      },
+      "type": {
+        "$ref": "#/$defs/TestCaseTypeEnum"
+      }
+    },
+    "required": [
+      "id",
+      "type",
+      "test_suite",
+      "status",
+      "result_data"
+    ],
+    "title": "TestSuiteDetailResultContract",
+    "type": "object"
+  },
+  "UiAuthStorageItemContract": {
+    "properties": {
+      "key": {
+        "title": "Key",
+        "type": "string"
+      },
+      "origin": {
+        "title": "Origin",
+        "type": "string"
+      },
+      "value": {
+        "default": "",
+        "title": "Value",
+        "type": "string"
+      }
+    },
+    "required": [
+      "origin",
+      "key"
+    ],
+    "title": "UiAuthStorageItemContract",
+    "type": "object"
+  },
+  "UiCaseExecutionContract": {
+    "properties": {
+      "case_people": {
+        "title": "Case People",
+        "type": "string"
+      },
+      "data_factory_auto_cleanup_execution_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Data Factory Auto Cleanup Execution Ids",
+        "type": "array"
+      },
+      "data_factory_cache_data": {
+        "additionalProperties": true,
+        "title": "Data Factory Cache Data",
+        "type": "object"
+      },
+      "data_factory_execution_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Data Factory Execution Ids",
+        "type": "array"
+      },
+      "execution_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Execution Id"
+      },
+      "executor_connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Executor Connection Id"
+      },
+      "front_custom": {
+        "items": {},
+        "title": "Front Custom",
+        "type": "array"
+      },
+      "front_sql": {
+        "items": {},
+        "title": "Front Sql",
+        "type": "array"
+      },
+      "gray_config_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Gray Config Ids",
+        "type": "array"
+      },
+      "gray_execution_log_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Gray Execution Log Ids",
+        "type": "array"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "module_name": {
+        "title": "Module Name",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "parametrize": {
+        "items": {},
+        "title": "Parametrize",
+        "type": "array"
+      },
+      "posterior_sql": {
+        "items": {},
+        "title": "Posterior Sql",
+        "type": "array"
+      },
+      "project_product": {
+        "title": "Project Product",
+        "type": "integer"
+      },
+      "project_product_name": {
+        "title": "Project Product Name",
+        "type": "string"
+      },
+      "send_user": {
+        "title": "Send User",
+        "type": "string"
+      },
+      "slot_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Slot Id"
+      },
+      "steps": {
+        "items": {},
+        "title": "Steps",
+        "type": "array"
+      },
+      "test_env": {
+        "title": "Test Env",
+        "type": "integer"
+      },
+      "test_suite_details": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Test Suite Details"
+      },
+      "test_suite_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Test Suite Id"
+      },
+      "ui_auth_cache": {
+        "default": null,
+        "title": "Ui Auth Cache"
+      }
+    },
+    "required": [
+      "send_user",
+      "test_suite_details",
+      "test_suite_id",
+      "id",
+      "name",
+      "project_product",
+      "project_product_name",
+      "module_name",
+      "test_env",
+      "case_people",
+      "front_custom",
+      "front_sql",
+      "posterior_sql",
+      "parametrize",
+      "steps"
+    ],
+    "title": "UiCaseExecutionContract",
+    "type": "object"
+  },
+  "UiCaseResultContract": {
+    "properties": {
+      "data_factory_auto_cleanup_execution_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Data Factory Auto Cleanup Execution Ids",
+        "type": "array"
+      },
+      "data_factory_cache_data": {
+        "additionalProperties": true,
+        "title": "Data Factory Cache Data",
+        "type": "object"
+      },
+      "data_factory_execution_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Data Factory Execution Ids",
+        "type": "array"
+      },
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      },
+      "execution_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Execution Id"
+      },
+      "executor_connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Executor Connection Id"
+      },
+      "gray_config_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Gray Config Ids",
+        "type": "array"
+      },
+      "gray_execution_log_ids": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Gray Execution Log Ids",
+        "type": "array"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "module_name": {
+        "title": "Module Name",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "project_product_id": {
+        "title": "Project Product Id",
+        "type": "integer"
+      },
+      "project_product_name": {
+        "title": "Project Product Name",
+        "type": "string"
+      },
+      "slot_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Slot Id"
+      },
+      "status": {
+        "title": "Status",
+        "type": "integer"
+      },
+      "steps": {
+        "items": {},
+        "title": "Steps",
+        "type": "array"
+      },
+      "stop_time": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Stop Time"
+      },
+      "test_env": {
+        "title": "Test Env",
+        "type": "integer"
+      },
+      "test_time": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Test Time"
+      },
+      "video_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Video Path"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "project_product_id",
+      "project_product_name",
+      "module_name",
+      "test_env",
+      "status"
+    ],
+    "title": "UiCaseResultContract",
+    "type": "object"
+  },
+  "UiEnvironmentContract": {
+    "$defs": {
+      "TestTargetConfig": {
+        "additionalProperties": false,
+        "description": "按执行缓存变量选择地址，未命中时统一使用默认地址。",
+        "properties": {
+          "default": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Default",
+            "type": "string"
+          },
+          "mapping": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Mapping",
+            "type": "object"
+          },
+          "selector": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Selector",
+            "type": "string"
+          }
+        },
+        "title": "TestTargetConfig",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "target_config": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/TestTargetConfig"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "test_object_value": {
+        "title": "Test Object Value",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "test_object_value"
+    ],
+    "title": "UiEnvironmentContract",
+    "type": "object"
+  },
+  "UiFlowRuntimeNodeContract": {
+    "$defs": {
+      "UiFlowRuntimeNodeContract": {
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/$defs/UiFlowRuntimeNodeContract"
+            },
+            "title": "Children",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Type"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "UiFlowRuntimeNodeContract",
+        "type": "object"
+      }
+    },
+    "$ref": "#/$defs/UiFlowRuntimeNodeContract"
+  },
+  "UiPageStepExecutionContract": {
+    "$defs": {
+      "TestTargetConfig": {
+        "additionalProperties": false,
+        "description": "按执行缓存变量选择地址，未命中时统一使用默认地址。",
+        "properties": {
+          "default": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Default",
+            "type": "string"
+          },
+          "mapping": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Mapping",
+            "type": "object"
+          },
+          "selector": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Selector",
+            "type": "string"
+          }
+        },
+        "title": "TestTargetConfig",
+        "type": "object"
+      },
+      "UiEnvironmentContract": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "target_config": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TestTargetConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "test_object_value": {
+            "title": "Test Object Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "test_object_value"
+        ],
+        "title": "UiEnvironmentContract",
+        "type": "object"
+      },
+      "UiPublicVariableContract": {
+        "properties": {
+          "datasource_alias": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Datasource Alias"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Id"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "key",
+          "value"
+        ],
+        "title": "UiPublicVariableContract",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "config_version": {
+        "default": 1,
+        "title": "Config Version",
+        "type": "integer"
+      },
+      "element_list": {
+        "title": "Element List"
+      },
+      "entry_criteria": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Entry Criteria"
+      },
+      "environment_config": {
+        "$ref": "#/$defs/UiEnvironmentContract"
+      },
+      "error_retry": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Retry"
+      },
+      "flow_data": {
+        "default": null,
+        "title": "Flow Data"
+      },
+      "goal": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Goal"
+      },
+      "healing_enabled": {
+        "default": false,
+        "title": "Healing Enabled",
+        "type": "boolean"
+      },
+      "healing_policy": {
+        "additionalProperties": true,
+        "title": "Healing Policy",
+        "type": "object"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "is_auth_step": {
+        "default": false,
+        "title": "Is Auth Step",
+        "type": "boolean"
+      },
+      "module_name": {
+        "title": "Module Name",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "project_product": {
+        "title": "Project Product",
+        "type": "integer"
+      },
+      "project_product_name": {
+        "title": "Project Product Name",
+        "type": "string"
+      },
+      "public_data_list": {
+        "items": {
+          "$ref": "#/$defs/UiPublicVariableContract"
+        },
+        "title": "Public Data List",
+        "type": "array"
+      },
+      "step_control": {
+        "default": null,
+        "title": "Step Control"
+      },
+      "success_criteria": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Success Criteria"
+      },
+      "switch_step_open_url": {
+        "title": "Switch Step Open Url",
+        "type": "boolean"
+      },
+      "test_env": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Test Env"
+      },
+      "type": {
+        "title": "Type",
+        "type": "integer"
+      },
+      "url": {
+        "title": "Url",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "project_product",
+      "project_product_name",
+      "module_name",
+      "type",
+      "url",
+      "switch_step_open_url",
+      "environment_config"
+    ],
+    "title": "UiPageStepExecutionContract",
+    "type": "object"
+  },
+  "UiPageStepResultContract": {
+    "properties": {
+      "cache_data": {
+        "additionalProperties": true,
+        "title": "Cache Data",
+        "type": "object"
+      },
+      "case_step_details_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Case Step Details Id"
+      },
+      "data_factory_cache_data": {
+        "additionalProperties": true,
+        "title": "Data Factory Cache Data",
+        "type": "object"
+      },
+      "element_result_list": {
+        "title": "Element Result List"
+      },
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      },
+      "execution_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Execution Id"
+      },
+      "executor_connection_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Executor Connection Id"
+      },
+      "id": {
+        "title": "Id",
+        "type": "integer"
+      },
+      "is_auth_step": {
+        "default": false,
+        "title": "Is Auth Step",
+        "type": "boolean"
+      },
+      "is_final": {
+        "default": false,
+        "title": "Is Final",
+        "type": "boolean"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "progress_sequence": {
+        "default": 0,
+        "title": "Progress Sequence",
+        "type": "integer"
+      },
+      "project_product_id": {
+        "title": "Project Product Id",
+        "type": "integer"
+      },
+      "project_product_name": {
+        "title": "Project Product Name",
+        "type": "string"
+      },
+      "slot_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Slot Id"
+      },
+      "status": {
+        "title": "Status",
+        "type": "integer"
+      },
+      "stop_time": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Stop Time"
+      },
+      "test_env": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Test Env"
+      },
+      "test_object": {
+        "title": "Test Object",
+        "type": "string"
+      },
+      "test_time": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Test Time"
+      },
+      "type": {
+        "title": "Type",
+        "type": "integer"
+      },
+      "workspace_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Workspace Id"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "type",
+      "project_product_id",
+      "project_product_name",
+      "cache_data",
+      "test_object",
+      "status"
+    ],
+    "title": "UiPageStepResultContract",
+    "type": "object"
+  },
+  "UiPublicVariableContract": {
+    "properties": {
+      "datasource_alias": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Datasource Alias"
+      },
+      "id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Id"
+      },
+      "key": {
+        "title": "Key",
+        "type": "string"
+      },
+      "type": {
+        "title": "Type",
+        "type": "integer"
+      },
+      "value": {
+        "title": "Value",
+        "type": "string"
+      }
+    },
+    "required": [
+      "type",
+      "key",
+      "value"
+    ],
+    "title": "UiPublicVariableContract",
+    "type": "object"
+  },
+  "UiRecordingCommand": {
+    "properties": {
+      "url_list": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Url List",
+        "type": "array"
+      }
+    },
+    "required": [
+      "url_list"
+    ],
+    "title": "UiRecordingCommand",
+    "type": "object"
+  },
+  "UiStepDataContract": {
+    "properties": {
+      "condition_value": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Condition Value"
+      },
+      "ope_key": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ope Key"
+      },
+      "page_step_details_data": {
+        "anyOf": [
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Page Step Details Data"
+      },
+      "page_step_details_id": {
+        "title": "Page Step Details Id",
+        "type": "integer"
+      },
+      "page_step_details_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Page Step Details Name"
+      },
+      "type": {
+        "title": "Type",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "type",
+      "page_step_details_id"
+    ],
+    "title": "UiStepDataContract",
+    "type": "object"
+  }
+}

@@ -5,6 +5,35 @@ import { reactive, ref } from 'vue'
 
 const table = useTable()
 
+export function sortLogicalDatasources<T extends { db_type?: number | string | null }>(rows: T[]): T[] {
+  const typeOrder = [0, 1, 2, 3, 4, 10, 20]
+  const rank = (value: T['db_type']) => {
+    const index = value == null ? -1 : typeOrder.indexOf(Number(value))
+    return index < 0 ? typeOrder.length : index
+  }
+  return [...rows].sort((left, right) => rank(left.db_type) - rank(right.db_type))
+}
+
+export const discoveryColumns = [
+  { title: '表名 / 索引', dataIndex: 'name', width: 260, ellipsis: true, tooltip: true },
+  { title: '说明', dataIndex: 'comment', ellipsis: true, tooltip: true },
+  {
+    title: '操作',
+    slotName: 'actions',
+    width: 160,
+    fixed: 'right' as const,
+    align: 'center' as const,
+  },
+]
+export const schemaColumns = [
+  { title: '字段', dataIndex: 'name', width: 220, ellipsis: true, tooltip: true },
+  { title: '类型', dataIndex: 'db_type', width: 160 },
+  { title: '说明', dataIndex: 'label', width: 200, ellipsis: true, tooltip: true },
+  { title: '可空', slotName: 'nullable', width: 70, align: 'center' as const },
+  { title: '主键', slotName: 'primary_key', width: 70, align: 'center' as const },
+  { title: '自增', slotName: 'autoincrement', width: 70, align: 'center' as const },
+]
+
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -13,6 +42,12 @@ export const tableColumns = useTableColumn([
     dataIndex: 'name',
     align: 'left',
     width: 180,
+  },
+  {
+    title: '分类',
+    key: 'source_category',
+    dataIndex: 'source_category',
+    width: 130,
   },
   {
     title: '数据库类型',
@@ -39,7 +74,7 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 210,
+    width: 160,
   },
 ])
 
@@ -50,7 +85,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入逻辑数据源名称',
+    placeholder: '请输入逻辑数据库名称',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
@@ -60,19 +95,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '编码',
-    key: 'code',
-    value: ref(''),
-    type: 'input',
+    label: '数据库分类',
+    key: 'source_category',
+    value: ref(0),
+    type: 'select',
     required: true,
-    placeholder: '请输入唯一编码，例如 contract_mysql',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
+    placeholder: '请选择数据库分类',
   },
   {
     label: '数据库类型',

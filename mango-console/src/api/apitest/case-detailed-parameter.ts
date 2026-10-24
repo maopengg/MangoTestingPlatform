@@ -1,5 +1,7 @@
 import { deleted, get, post, put } from '@/api/http'
 import type {
+  ApiAssertionVerifyPayload,
+  ApiAssertionVerifyResult,
   ApiCaseParameterPayload,
   ApiCaseParameterQuery,
 } from '@/types/api-test/case-parameter'
@@ -7,6 +9,7 @@ import type {
 export function getApiCaseDetailedParameter(data: ApiCaseParameterQuery) {
   return get({
     url: '/api/case/detailed/parameter',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -17,6 +20,7 @@ export function postApiCaseDetailedParameter(data: ApiCaseParameterPayload) {
   // @ts-ignore
   return post({
     url: '/api/case/detailed/parameter',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -28,6 +32,7 @@ export function postApiCaseDetailedParameterCopy(
 ) {
   return post({
     url: '/api/case/detailed/parameter/copy',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -38,6 +43,7 @@ export function putApiCaseDetailedParameter(data: ApiCaseParameterPayload) {
   // @ts-ignore
   return put({
     url: '/api/case/detailed/parameter',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -81,5 +87,12 @@ export function putSetSchema(id: number) {
         id: id,
       }
     },
+  })
+}
+
+export function postVerifyApiCaseAssertions(data: ApiAssertionVerifyPayload) {
+  return post<ApiAssertionVerifyResult>({
+    url: '/api/case/detailed/parameter/assertion/verify',
+    data: () => data,
   })
 }

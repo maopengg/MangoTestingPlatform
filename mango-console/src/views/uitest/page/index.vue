@@ -1,15 +1,26 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
     <template #header>
-      <TableHeader
-        :show-filter="true"
-        title="Ui元素页面对象"
+      <TableHeader title="页面元素" />
+    </template>
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        show-modules
+        :model-value="getConditionValue('project_product')"
+        :module-value="getConditionValue('module')"
+        :reset-key="sidebarResetKey"
+        @filter-change="onSidebarFilterChange"
         @search="onSearchRefresh"
         @reset-search="onResetSearch"
       >
-        <template #search-content>
+        <template #search>
           <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
-            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+                <a-form-item
+                  v-for="item of headerConditionItems"
+                  :key="item.key"
+                  :label="item.label"
+                >
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -36,12 +47,30 @@
                 />
               </template>
               <template
-                v-else-if="item.type === 'select' && item.key === 'project_product__ui_client_type'"
+                    v-else-if="
+                      item.type === 'select' && item.key === 'project_product__ui_client_type'
+                    "
               >
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.drive_type"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="onSearchRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="item.optionItems"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -52,23 +81,30 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs>
-        <template #extra>
+        <template #toolbar>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+                  <a-button v-permission="'ui.page:create'"
+                    type="primary"
+                    size="small"
+                    @click="onAdd"
+                    data-testid="qa-views-uitest-page-button-新增"
+                    >新增</a-button
+                  >
             </div>
             <div>
-              <a-button status="danger" size="small" @click="onDelete(null)">批量删除</a-button>
+                  <a-button v-permission="'ui.page:delete'"
+                    status="danger"
+                    size="small"
+                    @click="onDelete(null)"
+                    data-testid="qa-views-uitest-page-button-批量删除"
+                    >批量删除</a-button
+                  >
             </div>
           </a-space>
         </template>
-      </a-tabs>
       <a-table
+        class="mango-native-scroll-table"
         :bordered="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :loading="table.tableLoading.value"
@@ -76,7 +112,7 @@
         :columns="tableColumns"
         :pagination="false"
         :rowKey="rowKey"
-        :scroll="{ x: 1160 }"
+        :scroll="{ x: 1310, y: '100%' }"
         @selection-change="onSelectionChange"
       >
         <template #columns>
@@ -94,33 +130,36 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ formatModulePath(record?.module) }}
-            </template>
             <template v-else-if="item.key === 'client'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.project_product.ui_client_type]" size="small"
                 >{{ enumStore.drive_type[record.project_product.ui_client_type]?.title || '-' }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ formatModulePath(record.module) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '添加元素', onClick: () => onClick(record) },
-                  { label: '复制', onClick: () => onPageCopy(record.id) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'ui.page:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'ui.page:create', label: '添加元素', onClick: () => onClick(record) },
+                  { permission: 'ui.page:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
           </a-table-column>
         </template>
       </a-table>
-    </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
+    </template>
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
@@ -164,11 +203,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { deleteUiPage, getUiPage, postUiPage, postUiPageCopy, putUiPage } from '@/api/uitest/page'
+  import { deleteUiPage, getUiPage, postUiPage, putUiPage } from '@/api/uitest/page'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { useLatestRequest } from '@/hooks/use-latest-request'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
@@ -176,19 +216,22 @@
   import { useEnum } from '@/store/modules/get-enum'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import {
-    formatModulePath,
-    formatProjectProductPath,
-    getItemValue,
-    setItemValue,
-  } from '@/utils/business-format'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import { formatProjectProductPath, formatModulePath, getItemValue, setItemValue } from '@/utils/business-format'
   import { fieldNames } from '@/setting'
+  import { getUserName } from '@/api/user/user'
+  import { setUpdateUserOptions } from '@/utils/update-user'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
+  const { beginRequest, isLatestRequest } = useLatestRequest()
   const rowKey = useRowKey('id')
+  const sidebarResetKey = ref(0)
+  const headerConditionItems = computed(() =>
+    conditionItems.filter((item) => item.key !== 'project_product' && item.key !== 'module')
+  )
   const formModel = ref({})
   const router = useRouter()
   const enumStore = useEnum()
@@ -201,8 +244,9 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
+    sidebarResetKey.value += 1
     doRefresh(null, false, true)
   }
 
@@ -214,7 +258,7 @@
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
   }
@@ -322,7 +366,16 @@
     doRefresh(null, false, true)
   }
 
+  function onSidebarFilterChange(filter: { projectProduct: any; module: any }) {
+    setItemValue(conditionItems, 'project_product', filter.projectProduct)
+    setItemValue(conditionItems, 'module', filter.module)
+    pagination.page = 1
+    selectedRowKeys.value = []
+    doRefresh(null, false, true)
+  }
+
   function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
+    const requestId = beginRequest()
     if (showLoading) {
       table.tableLoading.value = true
     }
@@ -330,17 +383,21 @@
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     clearEmptyFilter(value, 'project_product__ui_client_type')
+    clearEmptyFilter(value, 'update_user')
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
     }
     getUiPage(value)
       .then((res) => {
+        if (!isLatestRequest(requestId)) return
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
       })
-      .catch(console.log)
+      .catch((error) => {
+        if (isLatestRequest(requestId)) console.log(error)
+      })
       .finally(() => {
-        if (showLoading) {
+        if (isLatestRequest(requestId)) {
           table.tableLoading.value = false
         }
       })
@@ -350,15 +407,6 @@
     if (value[key] === null || value[key] === '') {
       delete value[key]
     }
-  }
-
-  function onPageCopy(id: number) {
-    postUiPageCopy(id)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
   }
 
   function onClick(record: any) {
@@ -374,7 +422,8 @@
 
   onMounted(() => {
     nextTick(async () => {
-      doRefresh()
+      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
+      doRefresh(null, false, true)
     })
   })
 </script>

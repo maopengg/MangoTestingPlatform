@@ -1,37 +1,52 @@
 <template>
-  <div class="mango-json-display-toolbar">
-    <a-space v-if="showJsonpathButton" class="mango-json-display-toolbar__path">
-      <a-input v-model="jsonpathInput" placeholder="请输入jsonpath语法，如: $.name" />
-      <a-button type="outline" status="warning" @click="jsonpathTest">提取</a-button>
+  <div v-if="showToolbar" class="mango-json-display-toolbar">
+    <a-space v-if="showExtractControls" class="mango-json-display-toolbar__path">
+      <a-select v-model="extractType" class="mango-json-display-toolbar__extract-type">
+        <a-option value="jsonpath" data-testid="qa-components-display-jsondisplay-option-jsonpath">JSONPath</a-option>
+        <a-option value="regex" data-testid="qa-components-display-jsondisplay-option-正则-re">正则（re）</a-option>
+      </a-select>
+      <a-input v-model="extractExpression" placeholder="请输入 JSONPath 或正则表达式" data-testid="qa-components-display-jsondisplay-input-请输入-jsonpath-或正则表达式" />
+      <a-button
+        type="outline"
+        status="warning"
+        :loading="extractLoading"
+        @click="extractTest" data-testid="qa-components-display-jsondisplay-button-提取"
+        >提取</a-button
+      >
     </a-space>
     <a-space class="mango-json-display-toolbar__actions">
-      <a-button type="outline" status="success" @click="copyToClipboard">复制</a-button>
-      <a-button v-if="isLargeJson && !largePreviewEnabled" type="outline" @click="enableLargePreview">
-        渲染预览
-      </a-button>
-      <a-button
-        v-if="!isLargeJson && (isObjectOrArray || (isString && isValidJson))"
-        type="outline"
-        @click="toggleExpand"
-      >
+      <a-button type="outline" status="success" @click="copyToClipboard" data-testid="qa-components-display-jsondisplay-button-复制">复制</a-button>
+      <a-button v-if="canExpandJson" type="outline" @click="toggleExpand">
         {{ isExpanded ? '收起' : '展开' }}
       </a-button>
-      <a-button v-if="canPreviewJson" type="outline" @click="openJsonDrawer">查看JSON</a-button>
+      <a-button
+        v-if="isLargeJson && !largePreviewEnabled"
+        type="outline"
+        @click="enableLargePreview" data-testid="qa-components-display-jsondisplay-button-渲染预览"
+      >
+        渲染预览
+      </a-button>
+      <a-button v-if="showDrawerButton && canPreviewJson" type="outline" @click="openJsonDrawer" data-testid="qa-components-display-jsondisplay-button-查看json"
+        >查看JSON</a-button
+      >
     </a-space>
   </div>
   <div class="mango-json-display-content mango-code-panel">
-    <div v-if="isLargeJson && !largePreviewEnabled" class="mango-json-large-placeholder">
+    <div v-if="shouldDeferLargePreview" class="mango-json-large-placeholder">
       <div>
         <strong>JSON 数据较大，已暂停树渲染</strong>
         <span>{{ largeJsonSummary }}</span>
       </div>
       <a-space>
-        <a-button size="small" type="primary" @click="openJsonDrawer">查看JSON</a-button>
-        <a-button size="small" @click="enableLargePreview">渲染预览</a-button>
+        <a-button v-if="showDrawerButton" size="small" type="primary" @click="openJsonDrawer" data-testid="qa-components-display-jsondisplay-button-查看json-2"
+          >查看JSON</a-button
+        >
+        <a-button size="small" @click="enableLargePreview" data-testid="qa-components-display-jsondisplay-button-渲染预览-2">渲染预览</a-button>
       </a-space>
     </div>
     <vue-json-pretty
       v-else-if="isObjectOrArray && showComponent"
+      :key="`object-${jsonTreeDeep}`"
       :data="parsedData"
       :deep="jsonTreeDeep"
       :show-length="true"
@@ -41,6 +56,7 @@
     <pre v-else-if="isString && !isValidJson">{{ parsedData }}</pre>
     <vue-json-pretty
       v-else-if="isString && isValidJson && showComponent"
+      :key="`string-${jsonTreeDeep}`"
       :data="jsonFromString"
       :deep="jsonTreeDeep"
       :show-length="true"
@@ -65,6 +81,7 @@
       <div class="mango-json-drawer-content mango-code-panel">
         <div v-if="showDrawerComponent" class="mango-json-drawer-render">
           <vue-json-pretty
+            :key="`drawer-${drawerJsonTreeDeep}`"
             :data="drawerJsonData"
             :deep="drawerJsonTreeDeep"
             :show-length="true"
@@ -95,14 +112,31 @@
       type: Boolean,
       default: false,
     },
+    extractText: {
+      type: String,
+      default: '',
+    },
     defaultExpanded: {
       type: [Boolean, String],
       default: 'auto',
     },
+    showDrawerButton: {
+      type: Boolean,
+      default: true,
+    },
+    showExpandButton: {
+      type: Boolean,
+      default: true,
+    },
+    showToolbar: {
+      type: Boolean,
+      default: true,
+    },
   })
 
-  // JSONPath输入框的值
-  const jsonpathInput = ref('')
+  const extractType = ref('jsonpath')
+  const extractExpression = ref('')
+  const extractLoading = ref(false)
   // 控制是否完全展开；默认只展示 JSON 第一层级
   const isExpanded = ref(false)
   // 控制是否显示组件
@@ -244,15 +278,16 @@
     return props.data
   })
 
-  /**
-   * 判断是否显示JSONPath按钮
-   */
-  const showJsonpathButton = computed(() => {
+  const showExtractControls = computed(() => {
     return props.jsonpath && (isObjectOrArray.value || isJsonpathCompatibleString.value)
   })
 
   const canPreviewJson = computed(() => {
     return isObjectOrArray.value || (isString.value && isValidJson.value)
+  })
+
+  const canExpandJson = computed(() => {
+    return props.showExpandButton && canPreviewJson.value
   })
 
   const estimatedJsonSize = computed(() => {
@@ -274,6 +309,10 @@
     }
     return false
   })
+
+  const shouldDeferLargePreview = computed(
+    () => props.showToolbar && isLargeJson.value && !largePreviewEnabled.value
+  )
 
   const largeJsonSummary = computed(() => {
     if (isString.value) {
@@ -360,30 +399,52 @@
     }
   }
 
-  const jsonpathTest = () => {
-    if (!jsonpathInput.value.trim()) {
-      Message.error('请输入JSONPath语法！')
+  const extractTest = async () => {
+    const expression = extractExpression.value.trim()
+    if (!expression) {
+      Message.error('请输入 JSONPath 或正则表达式！')
       return
     }
 
-    const jsonData = isObjectOrArray.value ? props.data : jsonFromString.value
-    if (jsonData === null || (typeof jsonData !== 'object' && !Array.isArray(jsonData))) {
-      Message.error('响应JSON不是对象或数组，无法进行JSONPath测试！')
-      return
+    let responseData
+    if (extractType.value === 'jsonpath') {
+      responseData = isObjectOrArray.value ? props.data : jsonFromString.value
+      if (
+        responseData === null ||
+        (typeof responseData !== 'object' && !Array.isArray(responseData))
+      ) {
+        Message.error('响应 JSON 不是对象或数组，无法进行 JSONPath 提取！')
+        return
+      }
+    } else {
+      responseData = props.extractText || formatCopyValue(parsedData.value)
     }
 
-    postCaseDetailedParameterTestExtractResponseAfter(
-      'jsonpath',
-      jsonpathInput.value.trim(),
-      jsonData
-    )
-      .then((res) => {
-        Message.success('测试成功，提取的值：【' + res.data.value + '】')
-      })
-      .catch(console.log)
+    extractLoading.value = true
+    try {
+      const res = await postCaseDetailedParameterTestExtractResponseAfter(
+        extractType.value,
+        expression,
+        responseData
+      )
+      Message.success(`测试成功，提取的值：【${formatCopyValue(res.data.value)}】`)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      extractLoading.value = false
+    }
   }
 
   const toggleExpand = () => {
+    if (isLargeJson.value && !largePreviewEnabled.value) {
+      largePreviewEnabled.value = true
+      showComponent.value = false
+      isExpanded.value = true
+      window.setTimeout(() => {
+        showComponent.value = true
+      }, 80)
+      return
+    }
     isExpanded.value = !isExpanded.value
   }
 
@@ -418,7 +479,7 @@
       isExpanded.value = shouldExpandFullyByDefault.value
       drawerExpanded.value = shouldExpandFullyByDefault.value
       await nextTick()
-      showComponent.value = !isLargeJson.value
+      showComponent.value = !isLargeJson.value || !props.showToolbar
       showDrawerComponent.value = jsonDrawerVisible.value
     }
     // 去掉 immediate: true，首次渲染由 onMounted 处理，避免挂载时触发两次重建
@@ -429,7 +490,7 @@
     isExpanded.value = shouldExpandFullyByDefault.value
     drawerExpanded.value = shouldExpandFullyByDefault.value
     await nextTick()
-    showComponent.value = !isLargeJson.value
+    showComponent.value = !isLargeJson.value || !props.showToolbar
   })
 </script>
 
@@ -446,6 +507,11 @@
   .mango-json-display-toolbar__path {
     flex: 1;
     min-width: 260px;
+  }
+
+  .mango-json-display-toolbar__extract-type {
+    width: 112px;
+    flex: none;
   }
 
   .mango-json-display-toolbar__actions {

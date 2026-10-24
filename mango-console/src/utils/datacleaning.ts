@@ -1,4 +1,4 @@
-import { FormItem } from '@/types/components'
+import type { FormItem } from '@/types/components'
 
 interface Option {
   key: number
@@ -77,10 +77,16 @@ export function getFormItems(formItems: FormItem[]): KeyValueObject {
   const obj: any = {}
   formItems.forEach((item: any) => {
     // 特殊处理多选框，过滤掉空字符串
-    if (item.type === 'select' && Array.isArray(item.value)) {
+    if ((item.type === 'select' || item.searchOperator === 'in') && Array.isArray(item.value)) {
       // 过滤掉空字符串和无效值
       const filteredValues = item.value.filter((val: any) => val !== '' && val != null)
-      obj[item.key] = filteredValues.length > 0 ? filteredValues : null
+      const queryKey = item.searchOperator === 'in' ? `${item.key}__in` : item.key
+      obj[queryKey] =
+        filteredValues.length > 0
+          ? item.searchOperator === 'in'
+            ? filteredValues.join(',')
+            : filteredValues
+          : null
     }
     // 特殊处理input-tag类型，确保它作为数组发送
     else if (item.type === 'input-tag') {

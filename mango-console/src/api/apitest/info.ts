@@ -23,8 +23,20 @@ export function getApiInfoName(moduleId: any) {
 export function getApiInfo(data: object) {
   return get({
     url: '/api/info',
+    losslessJson: true,
     data: () => {
       return data
+    },
+  })
+}
+
+export function getApiInfoBoundCases(id: number | string) {
+  return get({
+    url: '/api/info/bound/cases',
+    data: () => {
+      return {
+        id,
+      }
     },
   })
 }
@@ -32,6 +44,7 @@ export function getApiInfo(data: object) {
 export function postApiInfo(data: object) {
   return post({
     url: '/api/info',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -41,6 +54,7 @@ export function postApiInfo(data: object) {
 export function putApiInfo(data: object) {
   return put({
     url: '/api/info',
+    losslessJson: true,
     data: () => {
       return data
     },
@@ -58,40 +72,39 @@ export function deleteApiInfo(id: number | string[] | number[]) {
   })
 }
 
-export function getApiCaseInfoRun(id: number | string[], testObj: any) {
-  return get({
+export function getApiInfoExecutionParameters(target: { id: number | string; revision_id?: number; release_id?: number }) {
+  return get({ url: '/api/info/execution/parameters', data: () => target })
+}
+
+export function getApiCaseInfoRun(id: number | string[] | string, testObj: any, version?: object, runtimeParameters?: Record<string, unknown>) {
+  return post({
     url: '/api/info/test',
     data: () => {
       return {
         id: id,
         test_env: testObj,
+        ...(version || {}),
+        runtime_parameters: runtimeParameters || {},
       }
     },
   })
 }
 
-export function putApiPutApiInfoType(idList: string[], type: number) {
-  return put({
-    url: '/api/info/type',
-    data: () => {
-      return {
-        id_list: idList,
-        type: type,
-      }
-    },
-  })
-}
-
-export function postApiCopyInfo(id: number) {
+export function postApiInfoBatchRun(
+  apiItems: Array<{ api_info_id: number | string; api_info_release_id: number | string }>,
+  testEnv: number | string,
+  runtimeParameters?: Record<string, unknown>
+) {
   return post({
-    url: '/api/info/copy',
-    data: () => {
-      return {
-        id: id,
-      }
-    },
+    url: '/api/info/batch',
+    data: () => ({
+      api_items: apiItems,
+      test_env: testEnv,
+      runtime_parameters: runtimeParameters || {},
+    }),
   })
 }
+
 export function putSetSchema(id: number) {
   return put({
     url: '/api/info/schema',
@@ -103,9 +116,8 @@ export function putSetSchema(id: number) {
   })
 }
 
-export function postApiUploadApi(type: number, file?: File) {
+export function postApiUploadApi(file?: File) {
   const formData = new FormData()
-  formData.append('type', type.toString())
   if (file) {
     formData.append('file', file)
   }
@@ -116,5 +128,33 @@ export function postApiUploadApi(type: number, file?: File) {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+  })
+}
+
+export function getGrpcServices(data: object) {
+  return get({
+    url: '/api/grpc/service',
+    data: () => data,
+  })
+}
+
+export function getGrpcMethods(data: object) {
+  return get({
+    url: '/api/grpc/method',
+    data: () => data,
+  })
+}
+
+export function postGrpcMethodSync(data: object) {
+  return post({
+    url: '/api/grpc/method/sync',
+    data: () => data,
+  })
+}
+
+export function postGrpcMethodImportApiInfo(data: object) {
+  return post({
+    url: '/api/grpc/method/import/api-info',
+    data: () => data,
   })
 }

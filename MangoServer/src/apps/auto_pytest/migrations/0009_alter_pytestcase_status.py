@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_pytest', '0008_pytestcase_feature_file_path'),
     ]

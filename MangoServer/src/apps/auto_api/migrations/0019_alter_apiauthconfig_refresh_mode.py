@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_api', '0018_apipublic_datasource_alias'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='apiauthconfig',
             name='refresh_mode',
-            field=models.SmallIntegerField(choices=[(0, '执行时检测刷新'), (1, '定时刷新'), (2, '执行时检测+定时刷新'), (3, '手动刷新')], db_index=True, default=0, verbose_name='刷新方式'),
+            field=models.SmallIntegerField(
+                choices=[(0, '执行时检测刷新'), (1, '定时刷新'), (2, '执行时检测+定时刷新'), (3, '手动刷新')],
+                db_index=True, default=0, verbose_name='刷新方式'),
         ),
     ]

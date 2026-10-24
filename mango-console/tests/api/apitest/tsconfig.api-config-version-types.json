@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../../..",
+    "paths": {
+      "axios": [
+        "tests/api/apitest/api-config-version-api-types.test.ts"
+      ],
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "target": "ES2019",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2019",
+      "DOM"
+    ],
+    "types": [
+      "vite/client"
+    ],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "files": [
+    "api-config-version-api-types.test.ts"
+  ]
+}

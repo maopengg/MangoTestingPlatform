@@ -1,6 +1,7 @@
 import { useTable, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 
 const table = useTable()
 
@@ -45,30 +46,15 @@ export const executionConditionItems: Array<FormItem> = reactive([
     label: '清理状态',
     type: 'select',
     placeholder: '请选择清理状态',
-    value: ref(''),
+    value: ref<number[]>([]),
+    multiple: true,
+    searchOperator: 'in',
   },
 ])
+enableMultiSelectSearch(executionConditionItems)
 
 export const executionTableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '模块名称',
-    key: 'module',
-    dataIndex: 'module',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '执行编号',
     key: 'execution_no',
@@ -119,13 +105,30 @@ export const executionTableColumns = useTableColumn([
     dataIndex: 'cleanup_status',
     width: 100,
   },
-
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+  },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 120,
   },
 ])
 
@@ -144,6 +147,15 @@ export const executionItemColumns = useTableColumn([
     width: 150,
   },
   {
+    title: '实际落库位置',
+    key: 'storage_snapshot',
+    dataIndex: 'storage_snapshot',
+    width: 260,
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
     title: '清理顺序',
     key: 'cleanup_order',
     dataIndex: 'cleanup_order',
@@ -156,22 +168,11 @@ export const executionItemColumns = useTableColumn([
     width: 120,
   },
   {
-    title: '清理SQL',
-    key: 'cleanup_sql',
-    dataIndex: 'cleanup_sql',
-    width: 320,
+    title: 'SQL执行记录',
+    key: 'sql_executions',
+    dataIndex: 'sql_executions',
+    width: 420,
     align: 'left',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '插入SQL',
-    key: 'insert_sql',
-    dataIndex: 'insert_sql',
-    width: 320,
-    align: 'left',
-    ellipsis: true,
-    tooltip: true,
   },
   {
     title: '创建数据',

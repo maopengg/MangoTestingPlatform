@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" content-flush>
     <template #header>
       <TableHeader
         :show-filter="true"
@@ -16,7 +16,10 @@
               <template v-else-if="item.type === 'select' && item.key === 'user'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
+                  :loading="data.userOptionsLoading"
                   :options="data.userList"
                   :placeholder="item.placeholder"
                   allow-clear
@@ -28,6 +31,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'source_type'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="enumStore.cline_type"
                   :placeholder="item.placeholder"
@@ -37,9 +42,23 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'method'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="fieldNames"
+                  :options="requestMethodOptions"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'status_code'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="[
                     { key: '等于200', title: '等于200' },
@@ -73,7 +92,7 @@
 
     <template #default>
       <a-table
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: tableScrollX }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -100,7 +119,7 @@
               {{ record.user?.name }}
             </template>
             <template v-else-if="item.key === 'source_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.source_type]" size="small"
+              <a-tag :color="sourceTypeColor(record.source_type)" size="small"
                 >{{ sourceTypeText(record.source_type) }}
               </a-tag>
             </template>
@@ -119,21 +138,24 @@
   import { onMounted, nextTick, reactive } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { conditionItems, tableColumns } from './config'
+  import { conditionItems, requestMethodOptions, tableColumns, tableScrollX } from './config'
   import { getUserName } from '@/api/user/user'
   import { getUserLogs } from '@/api/user/user-logs'
   import { useEnum } from '@/store/modules/get-enum'
+  import { getEnumTagColor } from '@/utils/business-format'
 
   const enumStore = useEnum()
 
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const table = useTable()
   const rowKey = useRowKey('id')
   const data = reactive({
     userList: [],
+    userOptionsLoading: false,
   })
 
   function doRefresh() {
+    table.tableLoading.value = true
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -148,41 +170,48 @@
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
       })
-      .catch(console.log)
+      .catch(() => {
+        table.tableLoading.value = false
+      })
   }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
     doRefresh()
   }
 
   function getNickName() {
+    data.userOptionsLoading = true
     getUserName()
       .then((res) => {
         data.userList = res.data
       })
       .catch(console.log)
+      .finally(() => {
+        data.userOptionsLoading = false
+      })
   }
 
   function sourceTypeText(sourceType: number | string) {
     if (sourceType === 'MCP') return 'MCP'
-    return enumStore.cline_type[sourceType]?.title || '-'
+    return (
+      enumStore.cline_type.find((item: any) => String(item.key) === String(sourceType))?.title ||
+      '-'
+    )
+  }
+
+  function sourceTypeColor(sourceType: number | string) {
+    if (sourceType === 'MCP') return 'purple'
+    return getEnumTagColor(enumStore.cline_type, sourceType, enumStore.colors)
   }
 
   onMounted(() => {
     nextTick(async () => {
+      await enumStore.getEnum()
       doRefresh()
       getNickName()
     })
   })
 </script>
-
-<style scoped>
-  .title-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-</style>

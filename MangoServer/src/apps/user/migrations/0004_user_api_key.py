@@ -22,7 +22,6 @@ def fill_user_api_keys(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("auto_user", "0003_userlogs_method_userlogs_request_data_and_more"),
     ]

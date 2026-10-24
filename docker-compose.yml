@@ -2,6 +2,7 @@ x-mango-server-env: &mango-server-env
   TZ: ${TZ:-Asia/Shanghai}
   DJANGO_SETTINGS_MODULE: src.settings
   DJANGO_ENV: ${DJANGO_ENV}
+  MANGO_RUNTIME_DIR: /app/runtime
   FILE_STORAGE_BACKEND: ${FILE_STORAGE_BACKEND:-minio}
   MINIO_STORAGE_ENDPOINT: minio:9000
   MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
@@ -10,10 +11,20 @@ x-mango-server-env: &mango-server-env
   MINIO_STORAGE_MEDIA_BUCKET_NAME: mango-file
   MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET: "true"
   MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-/minio/mango-file}
+  LIVE_STREAM_SIGNING_KEY: ${LIVE_STREAM_SIGNING_KEY:-}
+  LIVE_STREAM_PREVIOUS_SIGNING_KEY: ${LIVE_STREAM_PREVIOUS_SIGNING_KEY:-}
+  REALTIME_MESSAGE_BATCH_SIZE: ${REALTIME_MESSAGE_BATCH_SIZE:-100}
+  REALTIME_MESSAGE_ACTIVE_INTERVAL: ${REALTIME_MESSAGE_ACTIVE_INTERVAL:-0.2}
+  REALTIME_MESSAGE_IDLE_INTERVAL: ${REALTIME_MESSAGE_IDLE_INTERVAL:-1}
+  REALTIME_MESSAGE_SEND_TIMEOUT: ${REALTIME_MESSAGE_SEND_TIMEOUT:-5}
+  REALTIME_MESSAGE_LEASE_SECONDS: ${REALTIME_MESSAGE_LEASE_SECONDS:-30}
+  REALTIME_MESSAGE_MAX_RETRIES: ${REALTIME_MESSAGE_MAX_RETRIES:-7}
 
 x-mango-server-common: &mango-server-common
   image: mango-server:${DJANGO_ENV}
   restart: unless-stopped
+  volumes:
+    - /mango_data/server_runtime:/app/runtime
   environment:
     <<: *mango-server-env
   networks:
@@ -64,24 +75,37 @@ services:
       app_network:
         aliases: [minio]
 
+  system_init:
+    <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: system-init
+      MANGO_SERVICE_INSTANCE: system-init-1
+    command: python manage.py init_system_data --env=${DJANGO_ENV}
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
   mango_server:
     <<: *mango-server-common
     environment:
       <<: *mango-server-env
       MANGO_SERVICE_NAME: core-api
       MANGO_SERVICE_INSTANCE: core-api-1
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
     build:
-      context: ./MangoServer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: MangoServer/Dockerfile
       args:
         DJANGO_ENV: ${DJANGO_ENV}
     expose:
       - "8000"
     depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_started
+      system_init:
+        condition: service_completed_successfully
     networks:
       app_network:
         aliases: [server]
@@ -104,7 +128,7 @@ services:
       <<: *mango-server-env
       MANGO_SERVICE_NAME: api-worker
       MANGO_SERVICE_INSTANCE: api-worker-1
-    command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-1 --concurrency=5 --db-idle-seconds=1800
+    command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-1 --thread-pool-size=5 --db-idle-seconds=1800
     depends_on:
       mango_server:
         condition: service_started
@@ -115,7 +139,7 @@ services:
       <<: *mango-server-env
       MANGO_SERVICE_NAME: api-worker
       MANGO_SERVICE_INSTANCE: api-worker-2
-    command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-2 --concurrency=5 --db-idle-seconds=1800
+    command: python manage.py run_api_worker --env=${DJANGO_ENV} --worker-name=api-worker-2 --thread-pool-size=5 --db-idle-seconds=1800
     depends_on:
       mango_server:
         condition: service_started
@@ -126,9 +150,38 @@ services:
       <<: *mango-server-env
       MANGO_SERVICE_NAME: mcp-service
       MANGO_SERVICE_INSTANCE: mcp-1
-    command: python manage.py run_mcp_service --env=${DJANGO_ENV} --host=0.0.0.0 --port=8010
+    command: python manage.py run_mcp_service --env=${DJANGO_ENV} --host=0.0.0.0 --port=8010 --workers=${MCP_WORKERS:-1}
     expose:
       - "8010"
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  realtime_service:
+    <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: realtime-service
+      MANGO_SERVICE_INSTANCE: realtime-1
+    command: python manage.py run_realtime_service --env=${DJANGO_ENV} --host=0.0.0.0 --port=8011 --workers=1
+    expose:
+      - "8011"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8011/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      mango_server:
+        condition: service_started
+
+  monitoring_service:
+    <<: *mango-server-common
+    environment:
+      <<: *mango-server-env
+      MANGO_SERVICE_NAME: monitoring-service
+      MANGO_SERVICE_INSTANCE: monitoring-1
+    command: python manage.py run_monitoring_service --env=${DJANGO_ENV} --instance-name=monitoring-1 --poll-interval=2
     depends_on:
       mango_server:
         condition: service_started
@@ -147,6 +200,8 @@ services:
         condition: service_started
       mcp_service:
         condition: service_started
+      realtime_service:
+        condition: service_healthy
       mango-console:
         condition: service_started
       minio:
@@ -156,8 +211,9 @@ services:
 
   mango-console:
     build:
-      context: ./mango-console
-      dockerfile: Dockerfile
+      # 前端构建需要将仓库根目录 skill/ 一并打包进静态资源。
+      context: .
+      dockerfile: mango-console/Dockerfile
       args:
         VUE_ENV: ${VUE_ENV}
     restart: unless-stopped
@@ -170,12 +226,34 @@ services:
   mango_actuator:
     build:
       context: ./MangoActuator
-      dockerfile: Dockerfile
+      dockerfile: deploy/docker/Dockerfile
       args:
-        EXECUTOR_TYPE: ${EXECUTOR_TYPE}
+        ACTUATOR_PROFILE: ${ACTUATOR_PROFILE:-standard}
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Shanghai}
+      MANGO_ACTUATOR_RUNTIME_DIR: /app/runtime
+    command:
+      - python
+      - headless_main.py
+      - --profile
+      - ${ACTUATOR_PROFILE:-standard}
+      - --host
+      - ${ACTUATOR_HOST}
+      - --username
+      - ${ACTUATOR_USERNAME}
+      - --password
+      - ${ACTUATOR_PASSWORD}
+      - --web-parallel
+      - ${ACTUATOR_WEB_PARALLEL:-5}
+      - --ui-queue-size
+      - ${ACTUATOR_UI_QUEUE_SIZE:-10}
+      - --pytest-parallel
+      - ${ACTUATOR_PYTEST_PARALLEL:-5}
+      - --pytest-queue-size
+      - ${ACTUATOR_PYTEST_QUEUE_SIZE:-10}
+    volumes:
+      - /mango_data/actuator_runtime:/app/runtime
     depends_on:
       mango_server:
         condition: service_started

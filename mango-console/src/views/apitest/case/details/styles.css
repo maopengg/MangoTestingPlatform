@@ -1,0 +1,649 @@
+.api-case-workbench {
+  display: grid;
+  grid-template-columns: minmax(220px, 14fr) minmax(360px, 38fr) minmax(520px, 48fr);
+  gap: var(--m-page-gap);
+  height: calc(100% - var(--m-page-gap));
+  min-height: 0;
+  transition: grid-template-columns 0.18s ease;
+}
+
+.api-case-workbench-scroll {
+  --mango-workbench-min-width: 1124px;
+}
+
+.api-case-workbench-scroll--scenario-expanded {
+  --mango-workbench-min-width: 1144px;
+}
+
+.api-case-workbench--scenario-expanded {
+  grid-template-columns: minmax(200px, 14fr) minmax(280px, 26fr) minmax(640px, 62fr);
+}
+
+.api-case-version-snapshot-box {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  grid-column: 2 / 4;
+}
+
+.api-case-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface);
+}
+
+.api-case-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--m-border);
+  background: var(--m-surface);
+}
+
+.api-case-panel-head > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.api-case-panel-actions {
+  flex: none;
+  white-space: nowrap;
+}
+
+.api-case-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--m-text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.api-case-panel-title > span:first-child {
+  flex: none;
+}
+
+.api-case-latest-time-tag {
+  max-width: 260px;
+  overflow: hidden;
+  flex: 0 1 auto;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-case-panel-subtitle {
+  overflow: hidden;
+  max-width: 680px;
+  margin-top: 2px;
+  color: var(--m-muted);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-case-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.api-case-panel-body :deep(.arco-tabs-content) {
+  min-height: 0;
+}
+
+.api-case-edit-locked :deep(.arco-input-wrapper),
+.api-case-edit-locked :deep(.arco-textarea-wrapper),
+.api-case-edit-locked :deep(.arco-select-view),
+.api-case-edit-locked :deep(.arco-cascader-view),
+.api-case-edit-locked :deep(.arco-radio-group),
+.api-case-edit-locked :deep(.arco-checkbox),
+.api-case-edit-locked :deep(.arco-input-number),
+.api-case-edit-locked :deep(.mango-key-value-container button),
+.api-case-edit-locked :deep(.arco-table-drag-handle) {
+  pointer-events: none;
+  opacity: 0.62;
+}
+
+.api-case-edit-locked :deep(.arco-tabs-tab),
+.api-case-edit-locked :deep(.arco-tabs-nav),
+.api-case-edit-locked :deep(.arco-collapse-item-header),
+.api-case-edit-locked :deep(.json-display),
+.api-case-edit-locked :deep(.vue-json-pretty) {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.api-case-right :deep(.arco-tabs-content) {
+  padding: 3px 3px 3px 3px;
+}
+
+.mango-api-case-response-summary {
+  display: flex;
+  min-width: 0;
+  margin: 8px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mango-api-case-response-summary__url {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-soft);
+}
+
+.mango-api-case-response-summary__url > span {
+  flex: none;
+  color: var(--m-muted);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.mango-api-case-response-summary__url strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--m-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mango-api-case-response-summary__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.mango-api-case-response-summary__metric {
+  display: flex;
+  min-width: 0;
+  min-height: 68px;
+  padding: 10px 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface);
+}
+
+.mango-api-case-response-summary__metric > span {
+  color: var(--m-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.mango-api-case-response-summary__metric > strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--m-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-case-failure-reason {
+  display: flex;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--m-danger) 28%, var(--m-border));
+  border-radius: var(--m-radius-md);
+  background: color-mix(in srgb, var(--m-danger) 8%, var(--m-surface));
+  line-height: 20px;
+}
+
+.api-case-failure-reason > span {
+  flex: none;
+  color: var(--m-danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.api-case-failure-reason > strong {
+  display: -webkit-box;
+  overflow: hidden;
+  min-width: 0;
+  color: var(--m-text-2);
+  font-size: 13px;
+  font-weight: 500;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.scenario-actions {
+  margin-bottom: 8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.scenario-loading-spin {
+  min-height: min(520px, 100%);
+  border-radius: var(--m-radius-md);
+}
+
+.scenario-loading-spin :deep(> .mango-panel-spin__content) {
+  min-height: min(520px, 100%);
+}
+
+.scenario-loading-spin :deep(.arco-spin-mask) {
+  border-radius: var(--m-radius-md);
+  background: color-mix(in srgb, var(--m-surface) 82%, transparent);
+}
+
+.scenario-loading-spin :deep(.arco-spin) {
+  color: var(--m-primary);
+}
+
+.scenario-loading-spin :deep(.arco-spin-tip) {
+  margin-top: 10px;
+  color: var(--m-muted);
+  font-size: 13px;
+}
+
+.scenario-tab-loading-spin {
+  display: block;
+  min-height: 360px;
+}
+
+.scenario-tab-loading-spin :deep(> .mango-panel-spin__content) {
+  width: 100%;
+  min-height: 360px;
+}
+
+.scenario-tab-loading-spin :deep(.arco-spin-mask) {
+  border-radius: var(--m-radius-md);
+  background: color-mix(in srgb, var(--m-surface) 86%, transparent);
+}
+
+.scenario-tab-loading-spin :deep(.arco-spin-tip) {
+  color: var(--m-muted);
+  font-size: 13px;
+}
+
+.request-header-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 220px;
+  margin: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.request-header-panel :deep(.mango-case-global-table) {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
+.request-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.mango-response-headers {
+  display: grid;
+  gap: 10px;
+  padding: 8px;
+}
+
+.mango-response-headers__section {
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-soft);
+}
+
+.mango-response-headers__title {
+  margin-bottom: 4px;
+  color: var(--m-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.mango-request-data {
+  display: grid;
+  gap: 10px;
+  padding: 8px;
+}
+
+.mango-request-data__section {
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-soft);
+}
+
+.mango-request-data__head {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mango-request-data__head strong {
+  flex: none;
+  color: var(--m-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.mango-request-data__head span {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  color: var(--m-muted);
+  font-size: 12px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scenario-expand-body {
+  height: 400px;
+  overflow: hidden;
+}
+
+.scenario-expand-body :deep(.scenario-root-tabs) {
+  height: 100%;
+  min-height: 0;
+}
+
+.scenario-expand-body :deep(.scenario-root-tabs > .arco-tabs-nav) {
+  height: 100%;
+}
+
+.scenario-expand-body
+  :deep(.scenario-root-tabs > .arco-tabs-nav.arco-tabs-nav-vertical .arco-tabs-tab) {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.api-case-left :deep(.case-config-tabs > .arco-tabs-nav.arco-tabs-nav-vertical .arco-tabs-tab) {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.scenario-expand-body :deep(.scenario-root-tabs > .arco-tabs-content) {
+  height: 400px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.scenario-tab-title {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scenario-tab-count {
+  display: inline-flex;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--m-fill-1);
+  color: var(--m-text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+}
+
+:deep(.arco-tabs-tab-active) .scenario-tab-count {
+  background: var(--m-primary-soft);
+  color: var(--m-primary);
+}
+
+.api-case-right :deep(.arco-collapse-item-content) {
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+.api-case-right :deep(.arco-collapse-item-content > .arco-collapse-item-content-box) {
+  padding-right: 8px !important;
+  padding-left: 8px !important;
+}
+
+.mango-api-wait-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px;
+  padding: 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-radius-md);
+  background: var(--m-fill-1);
+}
+
+.mango-api-wait-config__field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mango-api-wait-config__label {
+  flex: 0 0 64px;
+  color: var(--m-text-2);
+  font-size: 13px;
+}
+
+.sleep-input {
+  width: min(260px, calc(100% - 76px));
+}
+
+.mango-api-wait-config__hint {
+  padding-left: 76px;
+  color: var(--m-muted);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.mango-api-wait-config__hint--warning {
+  color: var(--m-warning);
+}
+
+/* ── Collapse header ─────────────────────────────────────────────── */
+/* 强制 arco collapse header 插槽撑满整行 */
+:deep(.arco-collapse-item-header-title) {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.assertion-parameters-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 2;
+  min-width: 300px;
+}
+
+.parameter-item-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.parameter-label-inline {
+  font-size: 12px;
+  color: var(--m-muted);
+  font-weight: 500;
+}
+
+.parameter-input-inline {
+  width: 100%;
+}
+
+/* ── Deep 样式穿透 ───────────────────────────────────────────────── */
+:deep(.mango-test-btn) {
+  flex-shrink: 0;
+  margin-top: 18px;
+  min-width: fit-content;
+}
+
+.collapse-content-loading {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--m-muted);
+}
+
+:deep(.assertion-group-select) {
+  width: 100%;
+  min-width: 0;
+}
+
+.mango-horizontal-scroll-region--assertion :deep(.mango-key-value-container),
+.mango-horizontal-scroll-region--assertion-compact :deep(.mango-key-value-container) {
+  min-width: var(--mango-horizontal-scroll-min-width, 720px);
+}
+
+.mango-horizontal-scroll-region--assertion :deep(.mango-key-value-item),
+.mango-horizontal-scroll-region--assertion-compact :deep(.mango-key-value-item) {
+  padding: 10px;
+}
+
+.mango-horizontal-scroll-region--assertion :deep(.mango-key-value-row),
+.mango-horizontal-scroll-region--assertion-compact :deep(.mango-key-value-row) {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
+.mango-horizontal-scroll-region--assertion :deep(.mango-button-container),
+.mango-horizontal-scroll-region--assertion-compact :deep(.mango-button-container) {
+  width: 44px;
+  min-width: 44px;
+  justify-content: center;
+}
+
+.mango-horizontal-scroll-region--assertion :deep(.mango-remove-btn),
+.mango-horizontal-scroll-region--assertion-compact :deep(.mango-remove-btn) {
+  padding: 0 4px;
+}
+
+:deep(.assertion-relation-field) {
+  flex: 0 0 72px;
+  min-width: 72px;
+}
+
+:deep(.assertion-type-field) {
+  flex: 0 0 108px;
+  min-width: 108px;
+}
+
+:deep(.assertion-method-cascader) {
+  width: 100%;
+  min-width: 0;
+}
+
+:deep(.assertion-method-field) {
+  flex: 0 1 152px;
+  min-width: 132px;
+}
+
+:deep(.assertion-expression-field) {
+  flex: 1 1 190px;
+  min-width: 170px;
+}
+
+:deep(.assertion-expect-field) {
+  flex: 1 1 168px;
+  min-width: 150px;
+}
+
+:deep(.assertion-parameters-inline) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 2;
+  min-width: 300px;
+  margin-top: 0;
+}
+
+.scenario-allow-failure-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-protocol-expectation-control {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scenario-protocol-expectation-control .scenario-allow-failure-control__hint {
+  color: var(--m-muted);
+  font-size: 12px;
+}
+
+.scenario-allow-failure-control__hint {
+  color: var(--m-warning);
+}
+
+/* ── 响应式 ──────────────────────────────────────────────────────── */
+@media (max-width: 1px) {
+  .api-case-workbench {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .api-case-workbench--scenario-expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .api-case-panel {
+    min-height: 560px;
+  }
+}
+
+@media (max-width: 1px) {
+  :deep(.mango-test-btn) {
+    margin-top: 0;
+    align-self: center;
+  }
+}

@@ -1,31 +1,10 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: 
+# @Description:
 # @Time   : 2023-09-28 16:45
 # @Author : 毛鹏
-from typing import Union, Optional, TypeVar
-
 from mangotools.decorator import singleton
-from pydantic import BaseModel, ConfigDict
-
-from src.enums.system_enum import ClientTypeEnum
-
-T = TypeVar('T')
-
-
-class QueueModel(BaseModel):
-    func_name: str
-    func_args: Optional[Union[list[T], T]]
-
-
-class SocketDataModel(BaseModel):
-    model_config = ConfigDict(use_enum_values=True)
-
-    code: int
-    msg: str
-    user: str | None = None
-    is_notice: ClientTypeEnum | None | int = None
-    data: QueueModel | None = None
+from pydantic import BaseModel
 
 
 @singleton
@@ -39,8 +18,15 @@ class LoginModel(BaseModel):
     name: str | None = None
 
 
-class ResponseModel(BaseModel):
+class HttpApiResponse(BaseModel):
     code: int
     msg: str
     data: list[dict] | dict | str | None = None
     totalSize: int | None = None
+
+
+class FileUploadResultModel(BaseModel):
+    success: bool
+    path: str | None = None
+    error_type: str | None = None
+    error_message: str | None = None

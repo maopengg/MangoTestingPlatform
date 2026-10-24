@@ -1,0 +1,4 @@
+interface:
+  display_name: "定时任务失败用例排查与修复"
+  short_description: "仅处理定时任务生成的 API 报告失败 Case"
+  default_prompt: "使用 $mango-scheduled-api-report-maintainer 排查指定项目产品的定时 API 报告；授权后连续修复、验证并提交预发布，输出英文逗号分隔的可复制 Case ID，交用户页面手动发布，确认并核验版本后精确重试。待发布不阻断其他修复；未修复项列明产品代码、平台或外部条件的证据及责任动作。"

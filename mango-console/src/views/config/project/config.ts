@@ -1,7 +1,9 @@
 import { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 export const formItems: FormItem[] = reactive([
@@ -27,7 +29,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入项目ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -42,16 +44,18 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  createUpdateUserCondition(),
 ])
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '创建时间',
-    key: 'create_time',
-    dataIndex: 'create_time',
-    width: 180,
+    title: '项目名称',
+    key: 'name',
+    dataIndex: 'name',
+    align: 'left',
   },
+  updateUserColumn(),
   {
     title: '更新时间',
     key: 'update_time',
@@ -59,10 +63,10 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
-    title: '项目名称',
-    key: 'name',
-    dataIndex: 'name',
-    align: 'left',
+    title: '创建时间',
+    key: 'create_time',
+    dataIndex: 'create_time',
+    width: 180,
   },
   {
     title: '状态',
@@ -75,6 +79,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

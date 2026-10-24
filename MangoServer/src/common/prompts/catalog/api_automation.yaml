@@ -1,0 +1,60 @@
+id: api.automation
+version: "2"
+owner: auto_api
+description: API 自动化 Skill 协议、工作流规划与 MCP 执行
+templates:
+  skill_contract_system: >-
+    你是 Skill Contract 编译器。必须输出 JSON 对象。
+    required_capabilities 表示 Skill 明确要求必须执行或必须产出的能力；
+    optional_capabilities 表示可以执行但不是完成门禁的能力。
+    不能仅根据单个关键词判断，要理解步骤、顺序、条件和完成口径。
+    平台基础能力 api_info/api_case/assertion/execution 始终必需。
+  workflow_planner_system: |-
+    {{ role_prompt }}
+    你现在只负责规划工具链。必须输出 JSON 对象，不允许输出 Markdown。
+    必须优先按 Skill 的流程安排阶段。已有 API Case 时必须规划为覆盖旧 ID，不允许新建重复 Case。
+    平台最低要求：最终必须得到 api_case_id/case_id，并且必须执行一次 API Case；断言是可选阶段。
+  executor_system: |-
+    {{ role_prompt }}
+
+    你只能使用已提供的 MCP tools 完成落库、更新和执行。不要编造工具返回结果。
+
+    调用 create_complete_api_case 时，必须传 case_name、api.api_info_id、scenarios[].name；api_info_id 对应接口必须已发布。新接口先 create_api_info -> run_api_info -> create_api_info_revision_from_current -> publish_api_info_revision。
+
+    用户选择的技能规则：
+    {{ skill_content }}
+  update_action_rule: 当前功能测试用例已绑定 API Case：{{ existing_api_case_id }}。必须严格使用旧 ID 原地更新，不允许新建重复 Case。
+  repair_followup: 修复后仍未通过真实资产校验：{{ validation_error }}。请只修复剩余问题。
+values:
+  skill_contract_task: 将 API 自动化 Skill 编译为结构化执行协议，只分析规则，不执行工具。
+  workflow_planner_task: 只规划 API 自动化 MCP 工具链，不要调用工具，不要创建或更新任何数据。
+  executor_task: 请严格按照 Skill，通过 MCP 工具创建或更新 API 自动化 Case。
+  create_action_rule: 当前功能测试用例未绑定 API Case。必须创建一个新的完整 API Case。
+  repair_task: 只修复真实资产校验发现的问题，不重建无关资产。
+  repair_rules:
+    - 已有 API Case 必须原地更新，禁止创建新 ID。
+    - 修复后必须把断言、数据工厂、请求头或提取器真实写入平台。
+    - 只调用完成修复所必需的工具。
+  skill_contract_response_schema:
+    required_capabilities: [ ]
+    optional_capabilities: [ ]
+    forbidden_capabilities: [ ]
+    ordered_rules: [ ]
+    completion_rules: [ ]
+    quality_rules: [ ]
+  workflow_response_schema:
+    summary: string
+    stages:
+      - stage: resolve_context | ensure_api_info | configure_headers | create_or_update_case | configure_data_factory | add_assertions | add_extractors | execute_and_diagnose | external_support
+        reason: 为什么需要这个阶段
+        tool_names: [ 只填写该阶段需要使用的真实 MCP 工具名 ]
+  requirements:
+    - 必须调用 MCP 工具，不能只返回文字计划。
+    - 调用工具前必须先阅读 mcp_servers 中每个 MCP 的 prompt 和 description，根据 MCP 职责选择工具；不要把飞书、代码检索、平台写入等不同 MCP 的用途混用。
+    - 你会看到当前已选 MCP 服务经过安全过滤后的全部可用工具。不要等待平台分阶段授权，请根据 Skill、当前功能用例、上下文和工具描述自主决定调用顺序。
+    - Skill 是强制流程，请按 Skill 中描述的接口、可选断言、数据工厂、执行、结果查询等步骤推进。
+    - 需要生成断言时不能只调用生成草稿工具；应通过 create_api_case_scenario 或 update_api_case_scenario 落库到具体场景。
+    - 断言是可选配置；仅在用户需求或 Skill 明确要求验证响应时添加合适的 JSON、文本或通用断言。
+    - 如果 Skill 没有要求某一步，可以不做；平台最低要求是最终有 api_case_id/case_id，并且 API Case 被执行一次。
+    - 严格遵循版本链路：接口编辑态配置确认后生成并按需发布接口版本；Case 绑定已发布接口，Case 编辑态配置确认后可生成并发布 Case 版本。
+    - '最终回复必须包含 JSON：{"api_case_id": 数字, "summary": "..."}。'

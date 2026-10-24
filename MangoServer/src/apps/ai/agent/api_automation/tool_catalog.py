@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import hashlib
+import json
+
 from src.apps.ai.models import AiMcpTool
 
 
@@ -18,6 +21,17 @@ class ApiAutomationToolStageCatalog:
             "create_api_info",
             "create_api_info_from_curl",
             "update_api_info",
+            "create_grpc_service",
+            "update_grpc_service",
+            "list_grpc_services",
+            "get_grpc_service_detail",
+            "sync_grpc_methods",
+            "list_grpc_methods",
+            "import_grpc_method_to_api_info",
+            "import_mcp_tool_to_api_info",
+            "run_api_info",
+            "create_api_info_revision_from_current",
+            "publish_api_info_revision",
         ],
         "headers": [
             "list_api_headers",
@@ -45,7 +59,6 @@ class ApiAutomationToolStageCatalog:
             "update_api_case_scenario",
         ],
         "extractors": [
-            "get_api_extractor_schema",
             "generate_api_case_scenario_extractors",
         ],
         "data_factory": [
@@ -76,12 +89,13 @@ class ApiAutomationToolStageCatalog:
             "bind_data_factory_to_case_source",
             "list_data_factory_executions",
             "get_data_factory_execution_detail",
-            "get_data_factory_execution_context",
         ],
         "execution": [
             "run_api_case",
             "get_api_case_run_result",
             "analyze_api_case_failure",
+            "create_api_case_revision_from_current",
+            "update_api_case_publication_status",
         ],
     }
     STAGE_DEFINITIONS = [
@@ -125,6 +139,11 @@ class ApiAutomationToolStageCatalog:
             "name": "执行 API Case 并诊断结果",
             "groups": ["execution"],
         },
+        {
+            "stage": "external_support",
+            "name": "调用外部 MCP 辅助能力",
+            "groups": [],
+        },
     ]
     DEFAULT_STAGES = [
         "resolve_context",
@@ -139,20 +158,54 @@ class ApiAutomationToolStageCatalog:
     @classmethod
     def catalog_for_tools(cls, tool_map: dict[str, AiMcpTool]) -> list[dict]:
         available_names = {tool.name for tool in tool_map.values()}
+        classified_names = {
+            name
+            for names in cls.TOOL_GROUPS.values()
+            for name in names
+        }
         catalog = []
         for item in cls.STAGE_DEFINITIONS:
             tool_names = []
             for group in item["groups"]:
                 tool_names.extend(name for name in cls.TOOL_GROUPS.get(group, []) if name in available_names)
+            if item["stage"] == "external_support":
+                tool_names.extend(name for name in available_names if name not in classified_names)
+            stage_tools = [
+                cls.tool_summary(safe_name, tool)
+                for safe_name, tool in tool_map.items()
+                if tool.name in tool_names
+            ]
             catalog.append(
                 {
                     "stage": item["stage"],
                     "name": item["name"],
                     "groups": item["groups"],
                     "available_tool_names": sorted(set(tool_names)),
+                    "available_tools": sorted(stage_tools, key=lambda tool: (tool["server_id"], tool["name"])),
                 }
             )
         return catalog
+
+    @staticmethod
+    def tool_summary(safe_name: str, tool: AiMcpTool) -> dict:
+        schema_payload = {
+            "input": tool.input_schema or {},
+            "output": tool.output_schema or {},
+        }
+        schema_hash = hashlib.sha256(
+            json.dumps(schema_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        return {
+            "safe_name": safe_name,
+            "name": tool.name,
+            "title": tool.title or "",
+            "description": (tool.description or "")[:1200],
+            "server_id": tool.server_id,
+            "risk_level": tool.risk_level,
+            "write_operation": tool.write_operation,
+            "require_confirm": tool.require_confirm,
+            "schema_hash": schema_hash,
+        }
 
     @classmethod
     def stage_definition_map(cls) -> dict[str, dict]:
@@ -168,6 +221,17 @@ class ApiAutomationToolStageCatalog:
 
     @classmethod
     def tools_for_stage(cls, tool_map: dict[str, AiMcpTool], stage_name: str) -> dict[str, AiMcpTool]:
+        if stage_name == "external_support":
+            classified_names = {
+                name
+                for names in cls.TOOL_GROUPS.values()
+                for name in names
+            }
+            return {
+                safe_name: tool
+                for safe_name, tool in tool_map.items()
+                if tool.name not in classified_names
+            }
         allowed_names = cls.stage_tool_names(stage_name)
         return {safe_name: tool for safe_name, tool in tool_map.items() if tool.name in allowed_names}
 
@@ -177,13 +241,34 @@ class ApiAutomationToolStageCatalog:
         return [tool for tool in tools if (tool.get("function") or {}).get("name") in safe_names]
 
     @classmethod
-    def normalize_plan(cls, raw_plan: dict | None, skill_content: str) -> dict:
+    def normalize_plan(
+            cls,
+            raw_plan: dict | None,
+            skill_content: str,
+            required_capabilities: list[str] | None = None,
+            forbidden_capabilities: list[str] | None = None,
+    ) -> dict:
         definition_map = cls.stage_definition_map()
+        capability_stage_map = {
+            "api_info": "ensure_api_info",
+            "api_case": "create_or_update_case",
+            "assertion": "add_assertions",
+            "execution": "execute_and_diagnose",
+            "headers": "configure_headers",
+            "extractor": "add_extractors",
+            "data_factory": "configure_data_factory",
+            "diagnosis": "execute_and_diagnose",
+        }
+        forbidden_stages = {
+            capability_stage_map[capability]
+            for capability in forbidden_capabilities or []
+            if capability in capability_stage_map
+        }
         normalized = []
         seen = set()
         for item in (raw_plan or {}).get("stages") or []:
             stage_name = item.get("stage") if isinstance(item, dict) else None
-            if stage_name not in definition_map or stage_name in seen:
+            if stage_name not in definition_map or stage_name in seen or stage_name in forbidden_stages:
                 continue
             definition = definition_map[stage_name]
             normalized.append(
@@ -195,8 +280,8 @@ class ApiAutomationToolStageCatalog:
                 }
             )
             seen.add(stage_name)
-        for stage_name in cls.default_stage_names(skill_content):
-            if stage_name in seen:
+        for stage_name in cls.default_stage_names(skill_content, required_capabilities):
+            if stage_name in seen or stage_name in forbidden_stages:
                 continue
             definition = definition_map[stage_name]
             normalized.append(
@@ -215,9 +300,18 @@ class ApiAutomationToolStageCatalog:
         }
 
     @classmethod
-    def default_stage_names(cls, skill_content: str) -> list[str]:
+    def default_stage_names(
+            cls,
+            skill_content: str,
+            required_capabilities: list[str] | None = None,
+    ) -> list[str]:
         stages = list(cls.DEFAULT_STAGES)
         skill_text = (skill_content or "").lower()
-        if ("数据工厂" in skill_text or "data factory" in skill_text) and "configure_data_factory" not in stages:
+        required = set(required_capabilities or [])
+        if (
+                "data_factory" in required
+                or "数据工厂" in skill_text
+                or "data factory" in skill_text
+        ) and "configure_data_factory" not in stages:
             stages.insert(stages.index("add_assertions"), "configure_data_factory")
         return stages

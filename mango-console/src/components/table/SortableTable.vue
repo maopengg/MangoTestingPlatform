@@ -6,8 +6,8 @@
   >
     <template #content>
       <div class="mango-sortable-table-header">
-        <a-checkbox v-model="allChecked" @change="onAllChange"> 全选</a-checkbox>
-        <a-button type="text" @click="onReset"> 重置</a-button>
+        <a-checkbox v-model="allChecked" @change="onAllChange" data-testid="qa-components-table-sortabletable-checkbox-全选"> 全选</a-checkbox>
+        <a-button type="text" @click="onReset" data-testid="qa-components-table-sortabletable-button-重置"> 重置</a-button>
       </div>
       <div id="sortColumnWrapper" class="mango-sortable-table-list">
         <div v-for="item of innerTableProps" :key="item.key" class="mango-column-item">

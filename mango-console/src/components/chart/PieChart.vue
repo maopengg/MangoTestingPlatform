@@ -1,11 +1,11 @@
 <template>
   <div class="mango-chart-item-container">
-    <a-spin :loading="loading" class="mango-chart-spin">
+    <mango-panel-spin :loading="loading" class="mango-chart-spin">
       <div class="mango-chart-content">
         <div class="mango-donut-wrap">
           <div ref="chartRef" class="mango-chart-item"></div>
           <div class="mango-donut-total">
-            <span>总数</span>
+            <span>{{ totalLabel }}</span>
             <strong>{{ total }}</strong>
           </div>
         </div>
@@ -33,7 +33,7 @@
           </div>
         </div>
       </div>
-    </a-spin>
+    </mango-panel-spin>
   </div>
 </template>
 
@@ -51,6 +51,10 @@
     loading: {
       type: Boolean,
       default: false,
+    },
+    totalLabel: {
+      type: String,
+      default: '总数',
     },
   })
 
@@ -203,7 +207,7 @@
   }
 
   .mango-chart-spin,
-  :deep(.mango-chart-spin .arco-spin-children) {
+  :deep(.mango-chart-spin > .mango-panel-spin__content) {
     display: grid;
     height: 100%;
     width: 100%;

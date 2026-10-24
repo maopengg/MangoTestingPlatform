@@ -5,7 +5,22 @@
     type="button"
     @click="goHome"
   >
-    <img v-if="showLogo" class="mango-logo-img" src="../../assets/logo.png" />
+    <svg
+      v-if="showLogo"
+      :aria-label="projectName"
+      class="mango-logo-img"
+      role="img"
+      viewBox="0 0 64 64"
+    >
+      <path
+        class="mango-logo-symbol"
+        d="M9 53V31C9 19 16 11 27 8l5 12 6-11c10 2 17 10 17 22v22H44V32c0-5-2-8-5-11l-7 18-8-18c-3 3-4 7-4 11v21H9Z"
+      />
+      <path
+        class="mango-logo-leaf"
+        d="M37 10C43 3 52 3 58 8c-6 6-14 7-21 2Z"
+      />
+    </svg>
     <div
       v-if="showTitle"
       :class="[!appStore.isCollapse || alwaysShow ? 'mango-show-title' : 'mango-close-title']"
@@ -73,10 +88,19 @@
     }
 
     .mango-logo-img {
-      width: 30px;
+      width: 27px;
+    }
+
+    .mango-logo-symbol {
+      fill: var(--m-primary);
+    }
+
+    .mango-logo-leaf {
+      fill: var(--m-warning);
     }
 
     .mango-logo-title {
+      font-size: 16px;
       font-weight: bold;
     }
 

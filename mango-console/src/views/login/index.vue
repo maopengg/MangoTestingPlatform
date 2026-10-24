@@ -1,62 +1,122 @@
 <template>
-  <div class="login-container">
-    <div class="background-animation"></div>
-    <div class="particles-container">
-      <div class="particle" v-for="i in 20" :key="i"></div>
+  <main class="login-container">
+    <div class="login-code-background" aria-hidden="true">
+      <div class="code-texture-track">
+        <img class="code-texture" :src="loginCodeTexture" alt="" />
+        <img class="code-texture" :src="loginCodeTexture" alt="" />
+      </div>
     </div>
-    <div class="floating-elements">
-      <div class="floating-element element-1"></div>
-      <div class="floating-element element-2"></div>
-      <div class="floating-element element-3"></div>
-      <div class="floating-element element-4"></div>
-    </div>
-    <div class="center">
-      <div class="left">
-        <div class="welcome-content">
-          <!-- <div class="logo-placeholder">
-            <div class="logo-inner">
-              <icon-apps class="logo-icon" />
-            </div>
-          </div> -->
-          <h2 class="welcome-title">欢迎使用</h2>
-          <p class="welcome-subtitle">{{ projectName }}</p>
-          <div class="welcome-desc">专业的测试平台，助力高效开发</div>
-          <div class="features">
-            <div class="feature-item">
-              <icon-check-circle-fill class="feature-icon" />
-              <span>接口测试</span>
-            </div>
-            <div class="feature-item">
-              <icon-check-circle-fill class="feature-icon" />
-              <span>UI自动化</span>
-            </div>
-            <div class="feature-item">
-              <icon-check-circle-fill class="feature-icon" />
-              <span>Pytest测试</span>
+
+    <section class="login-stage" aria-label="芒果测试平台登录">
+      <div class="login-copy">
+        <div class="brand-row">
+          <div class="brand-mark">
+            <img :src="brandLogo" alt="" />
+          </div>
+          <div>
+            <div class="brand-name">{{ projectName }}</div>
+            <div class="brand-meta">QA Automation Control Center</div>
+          </div>
+        </div>
+        <div class="hero-copy">
+          <h2>面向测试团队的一站式自动化平台</h2>
+          <div class="module-viewport" aria-label="平台核心能力">
+            <div class="module-track">
+              <div class="module-card">
+                <icon-desktop />
+                <div>
+                  <strong>UI 自动化</strong>
+                  <span>页面、元素、步骤、公共能力与执行链路统一管理</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-code />
+                <div>
+                  <strong>API 自动化</strong>
+                  <span>接口用例、断言、环境变量和场景编排</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-storage />
+                <div>
+                  <strong>数据工厂</strong>
+                  <span>实体、关系、变量与测试数据快速构造</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-bar-chart />
+                <div>
+                  <strong>测试报告</strong>
+                  <span>执行趋势、失败定位和质量结果追踪</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-experiment />
+                <div>
+                  <strong>功能测试</strong>
+                  <span>需求资产、平台用例和自动化绑定闭环维护</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-clock-circle />
+                <div>
+                  <strong>定时任务</strong>
+                  <span>回归计划、执行策略、通知和执行器调度</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-apps />
+                <div>
+                  <strong>测试配置</strong>
+                  <span>项目产品、模块、环境、文件和测试对象配置</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-file />
+                <div>
+                  <strong>灰度配置</strong>
+                  <span>仓库、配置文件、开关和执行记录统一追踪</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-code-square />
+                <div>
+                  <strong>Pytest 自动化</strong>
+                  <span>代码用例、Fixture、Allure 和分层架构管理</span>
+                </div>
+              </div>
+              <div class="module-card">
+                <icon-robot />
+                <div>
+                  <strong>脚本运行器</strong>
+                  <span>执行器节点、脚本任务和运行结果统一调度</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="form-wrapper">
+
+      <aside class="login-panel">
         <div v-if="baseData.isLogin === true" class="form-content">
-          <div class="title">账号登录</div>
-          <div class="subtitle">请输入您的登录信息</div>
-          <div class="item-wrapper mt-8">
+          <div class="form-kicker">secure sign in</div>
+          <h1 class="title">登录测试平台</h1>
+          <p class="subtitle">进入用例、报告、灰度和自动化执行工作台</p>
+          <div class="item-wrapper">
             <a-input
               v-model="baseData.username"
-              placeholder="请输入用户名/手机号"
+              placeholder="请输入账号邮箱"
               allow-clear
               size="large"
               class="custom-input"
-              @focus="handleInputFocus"
-              @blur="handleInputBlur"
+              data-testid="qa-views-login-input-请输入用户名-手机号"
             >
               <template #prefix>
                 <icon-user />
               </template>
             </a-input>
           </div>
-          <div class="item-wrapper mt-6">
+          <div class="item-wrapper">
             <a-input-password
               v-model="baseData.password"
               placeholder="请输入密码"
@@ -64,8 +124,7 @@
               size="large"
               class="custom-input"
               @keyup.enter="onLogin"
-              @focus="handleInputFocus"
-              @blur="handleInputBlur"
+              data-testid="qa-views-login-input-password-请输入密码"
             >
               <template #prefix>
                 <icon-lock />
@@ -73,126 +132,118 @@
             </a-input-password>
           </div>
           <div class="remember-forgot">
-            <a-checkbox v-model="baseData.remember">记住我</a-checkbox>
-            <a-link @click="forgotPassword">忘记密码？</a-link>
+            <a-checkbox v-model="baseData.remember" data-testid="qa-views-login-checkbox-记住我"
+              >记住我</a-checkbox
+            >
+            <a-link @click="forgotPassword" data-testid="qa-views-login-link-忘记密码"
+              >忘记密码？</a-link
+            >
           </div>
-          <div class="flex-1"></div>
-          <div class="mt-10">
-            <a-button type="primary" class="login-btn" :loading="baseData.loading" @click="onLogin">
-              登录
-            </a-button>
-          </div>
+          <a-button
+            type="primary"
+            class="login-btn"
+            :loading="baseData.loading"
+            @click="onLogin"
+            data-testid="qa-views-login-button-登录"
+          >
+            登录
+          </a-button>
         </div>
         <div v-else class="form-content">
-          <div class="title">注册用户</div>
-          <div class="subtitle">创建您的账户</div>
-          <div class="item-wrapper mt-6">
+          <div class="form-kicker">create account</div>
+          <h1 class="title">注册用户</h1>
+          <p class="subtitle">注册后，随机初始密码将发送到您的邮箱</p>
+          <div class="item-wrapper">
             <a-input
               v-model="baseData.name"
               placeholder="请输入用户昵称"
               allow-clear
               size="large"
               class="custom-input"
-              @focus="handleInputFocus"
-              @blur="handleInputBlur"
+              data-testid="qa-views-login-input-请输入用户昵称"
             />
           </div>
-          <div class="item-wrapper mt-6">
+          <div class="item-wrapper">
             <a-input
-              v-model="baseData.username"
-              placeholder="请输入登录用户名"
+              v-model="baseData.email"
+              placeholder="请输入登录邮箱"
               allow-clear
               size="large"
               class="custom-input"
-              @focus="handleInputFocus"
-              @blur="handleInputBlur"
+              data-testid="qa-views-login-input-请输入登录用户名"
             >
               <template #prefix>
-                <icon-user />
+                <icon-email />
               </template>
             </a-input>
           </div>
-          <div class="item-wrapper mt-6">
-            <a-input-password
-              v-model="baseData.password"
-              placeholder="请输入密码"
-              allow-clear
-              size="large"
-              class="custom-input"
-              @keyup.enter="onLogin"
-              @focus="handleInputFocus"
-              @blur="handleInputBlur"
-            >
-              <template #prefix>
-                <icon-lock />
-              </template>
-            </a-input-password>
-          </div>
-          <div class="item-wrapper mt-6">
-            <a-input-password
-              v-model="baseData.confirm_password"
-              placeholder="再次输入密码"
-              allow-clear
-              size="large"
-              class="custom-input"
-              @keyup.enter="onLogin"
-              @focus="handleInputFocus"
-              @blur="handleInputBlur"
-            >
-              <template #prefix>
-                <icon-lock />
-              </template>
-            </a-input-password>
-          </div>
-          <div class="flex-1"></div>
-          <div class="mt-10">
-            <a-button
-              type="primary"
-              class="login-btn"
-              :loading="baseData.loading"
-              @click="onRegister"
-            >
-              注册
-            </a-button>
-          </div>
+          <a-button
+            type="primary"
+            class="login-btn"
+            :loading="baseData.loading"
+            @click="onRegister"
+            data-testid="qa-views-login-button-注册"
+          >
+            注册
+          </a-button>
         </div>
-        <div class="links-wrapper mt-6">
-          <div class="flex justify-between">
-            <a-link
-              v-if="baseData.isLogin === true"
-              :underline="false"
-              type="primary"
-              @click="register1"
-              >注册用户
-            </a-link>
-            <a-link
-              v-if="baseData.isLogin === false"
-              :underline="false"
-              type="primary"
-              @click="returnToLogin"
-              >返回登录
-            </a-link>
-          </div>
+        <div class="links-wrapper">
+          <a-link
+            v-if="baseData.isLogin === true"
+            :underline="false"
+            type="primary"
+            :loading="registrationState.loading"
+            :disabled="registrationState.loading"
+            @click="register1"
+            data-testid="qa-views-login-link-注册用户"
+            >注册用户</a-link
+          >
+          <a-link
+            v-if="baseData.isLogin === false"
+            :underline="false"
+            type="primary"
+            @click="returnToLogin"
+            data-testid="qa-views-login-link-返回登录"
+            >返回登录</a-link
+          >
         </div>
-      </div>
-    </div>
-    <div class="bottom">芒果测试平台 Copyright © 芒果味 2022-至今 Version：{{ version }}</div>
-    <!--    不支持修改平台名称和作者署名！-->
-  </div>
+      </aside>
+    </section>
+    <a-modal
+      v-model:visible="resetPassword.visible"
+      title="通过邮箱重置密码"
+      width="540px"
+      :on-before-ok="resetPasswordByEmail"
+      @cancel="resetPassword.email = ''"
+    >
+      <a-form layout="vertical" :model="resetPassword">
+        <a-form-item class="mango-form-item__require" label="登录邮箱">
+          <a-input v-model="resetPassword.email" placeholder="请输入注册时使用的邮箱" allow-clear>
+            <template #prefix><icon-email /></template>
+          </a-input>
+          <template #extra>系统将生成新的随机密码并发送到该邮箱。</template>
+        </a-form-item>
+      </a-form>
+    </a-modal>
+    <div class="bottom">芒果测试平台 Copyright © 芒果味 2022年-至今 Version：{{ version }}</div>
+  </main>
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref, onMounted } from 'vue'
+  import { reactive, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { post, Response } from '@/api/http'
+  import { get, post, Response } from '@/api/http'
   import { md5 } from 'js-md5'
 
   import { login, register } from '@/api/url'
   import { Message } from '@arco-design/web-vue'
   import { UserState } from '@/store/types'
   import setting from '../../setting'
+  import brandLogo from '@/assets/logo.svg'
+  import loginCodeTexture from '@/assets/login-code-texture.jpg'
   import useAppInfo from '@/hooks/useAppInfo'
   import useAppConfigStore from '@/store/modules/app-config'
+  import usePermissionStore from '@/store/modules/permission'
   import useUserStore from '@/store/modules/user'
   import { connectWebSocket, markWebSocketLoginSession } from '@/utils/socket'
 
@@ -201,9 +252,12 @@
   const router = useRouter()
   const route = useRoute()
   const userStore = useUserStore()
+  const permissionStore = usePermissionStore()
   const appStore = useAppConfigStore()
+  const registrationState = reactive({ loading: false })
   const baseData: any = reactive({
     name: '',
+    email: '',
     username: '',
     password: '',
     confirm_password: '',
@@ -211,57 +265,107 @@
     loading: false,
     isLogin: true,
   })
-
-  const focusedInput = ref('')
-
-  function handleInputFocus(event: FocusEvent) {
-    const target = event.target as HTMLInputElement
-    focusedInput.value = target.tagName
-  }
-
-  function handleInputBlur() {
-    focusedInput.value = ''
-  }
+  const resetPassword = reactive({
+    visible: false,
+    email: '',
+  })
 
   function forgotPassword() {
-    Message.info('请联系管理员找回密码！')
+    resetPassword.email = ''
+    resetPassword.visible = true
   }
 
-  const onLogin = () => {
+  function isEmail(value: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  }
+
+  async function resetPasswordByEmail() {
+    const email = resetPassword.email.trim().toLowerCase()
+    if (!isEmail(email)) {
+      Message.error('请输入正确的邮箱地址')
+      return false
+    }
+    const res = await post({ url: '/reset-password', data: { email } })
+    Message.success(res.msg)
+    return true
+  }
+
+  function passwordDigest(password: string) {
+    return md5(md5(password))
+  }
+
+  const onLogin = async () => {
+    const username = baseData.username?.trim()
+    const password = baseData.password?.trim()
+    if (!username) {
+      Message.error('请输入用户名/手机号')
+      return
+    }
+    if (!password) {
+      Message.error('请输入密码')
+      return
+    }
+    if (username === 'open') {
+      Message.warning('open账号默认给执行器登录使用，请使用个人账号登录测试平台')
+      return
+    }
     baseData.loading = true
-    post({
-      url: login,
-      data: {
-        username: baseData.username,
-        password: md5(baseData.password),
-        type: 1,
-      },
-    })
-      .then((res: Response) => {
-        const data = res.data as UserState
-        userStore.saveUser(data, md5(baseData.password)).then(() => {
-          // 登录成功后立即连接 WebSocket
-          markWebSocketLoginSession()
-          connectWebSocket(baseData.username, md5(baseData.password))
+    const encryptedPassword = passwordDigest(password)
+    try {
+      const res = await post({
+        url: login,
+        data: {
+          username,
+          password: encryptedPassword,
+          type: 1,
+        },
+      })
+      const data = res.data as UserState
+      await userStore.saveUser(data, encryptedPassword)
 
-          router
-            .replace({
-              path: '/index/home',
-            })
-            .then(() => {
-              Message.success('登录成功，欢迎：' + data.name)
-              baseData.loading = false
-            })
-        })
-      })
-      .catch((error) => {
-        baseData.loading = false
-        // Message.error(error.message)
-      })
+      // 每次登录都清理旧路由并重新请求菜单，菜单加载完成后才允许跳转。
+      await permissionStore.initPermissionRoute(true)
+
+      markWebSocketLoginSession()
+      connectWebSocket(username, encryptedPassword)
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+      const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : ''
+      await router.replace(safeRedirect || permissionStore.homePath || '/index/home')
+      const roleName = data.roles?.[0]?.roleName || '游客'
+      const permissionType = data.is_super_admin ? '超级管理员' : '普通用户'
+      Message.success(
+        `登录成功，欢迎用户：${data.name}，您的角色是：${roleName}，您的权限是：${permissionType}`
+      )
+    } catch (error) {
+      console.error('登录流程执行失败', error)
+    } finally {
+      baseData.loading = false
+    }
   }
 
-  function register1() {
-    baseData.isLogin = false
+  async function register1() {
+    if (registrationState.loading) return
+    registrationState.loading = true
+    try {
+      const res = await get<{ allow_registration: boolean; disabled_message: string }>({
+        url: '/user/registration-config',
+        silentError: true,
+        timeout: 10_000,
+      })
+      if (typeof res.data?.allow_registration !== 'boolean' || typeof res.data.disabled_message !== 'string') {
+        Message.error('注册配置加载失败，请稍后重试')
+        return
+      }
+      if (!res.data.allow_registration) {
+        Message.info(res.data.disabled_message)
+        return
+      }
+      baseData.isLogin = false
+    } catch {
+      Message.error('注册配置加载失败，请稍后重试')
+    } finally {
+      registrationState.loading = false
+    }
   }
 
   function returnToLogin() {
@@ -269,568 +373,533 @@
   }
 
   function onRegister() {
-    if (
-      baseData.username === '' ||
-      baseData.name === '' ||
-      baseData.password === '' ||
-      baseData.confirm_password === ''
-    ) {
-      Message.error('用户昵称，用户名，密码不允许为空')
+    const name = baseData.name?.trim()
+    const email = baseData.email?.trim().toLowerCase()
+    if (!name || !email) {
+      Message.error('用户昵称和登录邮箱不允许为空')
       return
-    } else {
-      if (baseData.password !== baseData.confirm_password) {
-        Message.error('两次密码输入不一致')
-        return
-      }
-      baseData.loading = true
-      post({
-        url: register,
-        data: {
-          name: baseData.name,
-          username: baseData.username,
-          password: md5(baseData.password),
-        },
-      })
-        .then((res: Response) => {
-          if (res.code === 200) {
-            Message.success(res.msg)
-            returnToLogin()
-            baseData.loading = false
-          }
-        })
-        .catch(() => {
-          baseData.loading = false
-        })
     }
+    if (!isEmail(email)) {
+      Message.error('请输入正确的邮箱地址')
+      return
+    }
+    baseData.loading = true
+    post({
+      url: register,
+      data: {
+        name,
+        email,
+      },
+    })
+      .then((res: Response) => {
+        if (res.code === 200) {
+          Message.success(res.msg)
+          baseData.username = email
+          baseData.password = ''
+          returnToLogin()
+        }
+      })
+      .finally(() => {
+        baseData.loading = false
+      })
   }
 
   onMounted(() => {
     appStore.applyCurrentThemePreset()
-    // 初始化粒子动画
-    const particles = document.querySelectorAll('.particle')
-    particles.forEach((particle, index) => {
-      const size = Math.random() * 12 + 6
-      const posX = Math.random() * 100
-      const posY = Math.random() * 100
-      const delay = Math.random() * 5
-      const duration = Math.random() * 15 + 15
-
-      particle.setAttribute(
-        'style',
-        `
-        width: ${size}px;
-        height: ${size}px;
-        left: ${posX}%;
-        top: ${posY}%;
-        animation-delay: ${delay}s;
-        animation-duration: ${duration}s;
-      `
-      )
-    })
   })
 </script>
 
 <style lang="less" scoped>
-  @leftWith: 35%;
   .login-container {
     position: relative;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: clamp(28px, 5vh, 48px) clamp(24px, 4vw, 56px) 64px;
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--m-bg) 82%, transparent) 0%,
+        transparent 46%
+      ),
+      linear-gradient(160deg, var(--m-bg) 0%, var(--m-surface-soft) 48%, var(--m-bg) 100%);
+  }
 
-    .background-animation {
-      position: absolute;
-      top: 0;
-      left: 0;
+  .login-container::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background-image: linear-gradient(
+        color-mix(in srgb, var(--m-border) 42%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--m-border) 42%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 48px 48px;
+    mask-image: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--m-text) 72%, transparent),
+      transparent 82%
+    );
+    opacity: 0.42;
+  }
+
+  .login-code-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .login-code-background::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--m-bg) 28%, transparent) 0%,
+        transparent 18%,
+        transparent 54%,
+        color-mix(in srgb, var(--m-bg) 88%, transparent) 70%,
+        var(--m-bg) 100%
+      ),
+      linear-gradient(
+        0deg,
+        color-mix(in srgb, var(--m-bg) 58%, transparent) 0%,
+        transparent 22%,
+        color-mix(in srgb, var(--m-bg) 48%, transparent) 100%
+      );
+  }
+
+  .code-texture-track {
+    position: absolute;
+    top: clamp(-118px, -11vh, -64px);
+    left: clamp(72px, 12vw, 190px);
+    width: clamp(760px, 64vw, 1080px);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    animation: code-texture-scroll 160s linear infinite;
+    transform: rotate(7deg);
+    transform-origin: left top;
+  }
+
+  .code-texture {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--m-radius-sm);
+    box-shadow: var(--m-shadow);
+    opacity: 0.68;
+    filter: saturate(0.74) contrast(1.04);
+    user-select: none;
+  }
+
+  @keyframes code-texture-scroll {
+    from {
+      transform: rotate(7deg) translateY(0);
+    }
+
+    to {
+      transform: rotate(7deg) translateY(-50%);
+    }
+  }
+
+  .login-stage {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) minmax(360px, 420px);
+    gap: clamp(22px, 3vw, 34px);
+    width: min(1120px, 100%);
+    min-height: min(620px, calc(100dvh - 132px));
+  }
+
+  .login-panel {
+    border: 1px solid color-mix(in srgb, var(--m-border) 72%, transparent);
+    border-radius: var(--m-radius);
+    background: color-mix(in srgb, var(--m-surface) 94%, transparent);
+    box-shadow: var(--m-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .login-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: clamp(18px, 4vh, 34px) 0;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--m-primary-border);
+    border-radius: var(--m-radius-sm);
+    background: var(--m-primary-soft);
+    padding: 8px;
+
+    img {
+      display: block;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle at 18% 18%, var(--m-primary-soft) 0%, transparent 28%),
-        linear-gradient(135deg, var(--m-bg) 0%, var(--m-surface-soft) 100%);
-      opacity: 0.9;
-      z-index: 1;
+    }
+  }
 
-      &::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(
-          circle,
-          color-mix(in srgb, var(--m-surface) 32%, transparent) 0%,
-          transparent 70%
+  .brand-name {
+    color: var(--m-text);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 30px;
+  }
+
+  .brand-meta,
+  .form-kicker {
+    font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .brand-meta {
+    margin-top: 3px;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .hero-copy {
+    max-width: clamp(390px, 38vw, 460px);
+    margin-top: clamp(24px, 4vh, 34px);
+  }
+
+  .hero-copy h2 {
+    margin: 0;
+    color: var(--m-text);
+    font-size: clamp(34px, 3.6vw, 42px);
+    font-weight: 760;
+    line-height: 1.26;
+  }
+
+  .module-viewport {
+    position: relative;
+    margin-top: clamp(18px, 3vh, 24px);
+  }
+
+  .module-track {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .module-card {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 62px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--m-border) 70%, transparent);
+    border-radius: var(--m-radius-sm);
+    background: color-mix(in srgb, var(--m-surface) 78%, transparent);
+    box-shadow: var(--m-shadow-sm);
+    backdrop-filter: blur(14px);
+  }
+
+  .module-card > svg {
+    width: 34px;
+    height: 34px;
+    padding: 8px;
+    border: 1px solid var(--m-primary-border);
+    border-radius: var(--m-radius-sm);
+    background: var(--m-primary-soft);
+    color: var(--m-primary);
+  }
+
+  .module-card div {
+    min-width: 0;
+  }
+
+  .module-card strong,
+  .module-card span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .module-card strong {
+    color: var(--m-text);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 22px;
+  }
+
+  .module-card span {
+    margin-top: 3px;
+    color: var(--m-text-2);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .login-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 42px;
+  }
+
+  .form-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .form-kicker {
+    margin-bottom: 8px;
+    color: var(--m-primary);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+    text-transform: uppercase;
+  }
+
+  .title {
+    margin: 0;
+    color: var(--m-text);
+    font-size: 30px;
+    font-weight: 750;
+    line-height: 38px;
+  }
+
+  .subtitle {
+    margin: 10px 0 28px;
+    color: var(--m-muted);
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .item-wrapper + .item-wrapper {
+    margin-top: 14px;
+  }
+
+  .custom-input {
+    width: 100%;
+
+    :deep(.arco-input-wrapper) {
+      height: 46px;
+      border-color: var(--m-form-border);
+      border-radius: var(--m-radius-sm);
+      background: var(--m-form-bg);
+      box-shadow: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    :deep(.arco-input-wrapper:hover),
+    :deep(.arco-input-focus) {
+      border-color: var(--m-primary);
+      background: var(--m-surface);
+      box-shadow: var(--m-form-focus-shadow);
+    }
+
+    :deep(.arco-input-prefix) {
+      color: var(--m-primary);
+      font-size: 18px;
+    }
+  }
+
+  .remember-forgot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 18px 0 24px;
+  }
+
+  .login-btn {
+    width: 100%;
+    height: 46px;
+    border: none;
+    border-radius: var(--m-radius-sm);
+    background: linear-gradient(135deg, var(--m-primary) 0%, var(--m-primary-hover) 100%);
+    color: var(--m-on-primary);
+    font-size: 16px;
+    font-weight: 700;
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .login-btn:hover {
+    filter: brightness(1.04);
+    box-shadow: var(--m-shadow);
+  }
+
+  .links-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+
+  .bottom {
+    position: fixed;
+    right: 24px;
+    bottom: 18px;
+    left: 24px;
+    z-index: 2;
+    overflow: hidden;
+    color: var(--m-muted);
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 1180px) {
+    .login-stage {
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 392px);
+      width: min(1040px, 100%);
+      min-height: min(580px, calc(100dvh - 120px));
+    }
+
+    .login-panel {
+      padding: 36px;
+    }
+
+    .code-texture-track {
+      top: -82px;
+      left: clamp(42px, 9vw, 118px);
+      width: clamp(720px, 68vw, 900px);
+    }
+
+    .code-texture {
+      opacity: 0.64;
+    }
+  }
+
+  @media (max-width: 920px) {
+    .login-container {
+      align-items: flex-start;
+      padding: 24px 16px 56px;
+    }
+
+    .login-code-background::after {
+      background: linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--m-bg) 64%, transparent) 0%,
+          transparent 52%,
+          color-mix(in srgb, var(--m-bg) 82%, transparent) 100%
+        ),
+        linear-gradient(
+          0deg,
+          color-mix(in srgb, var(--m-bg) 72%, transparent) 0%,
+          transparent 32%,
+          color-mix(in srgb, var(--m-bg) 58%, transparent) 100%
         );
-        animation: rotate 25s linear infinite;
-      }
-
-      &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(
-            circle at 10% 20%,
-            color-mix(in srgb, var(--m-primary) 18%, transparent) 0%,
-            transparent 20%
-          ),
-          radial-gradient(
-            circle at 90% 80%,
-            color-mix(in srgb, var(--m-success) 14%, transparent) 0%,
-            transparent 20%
-          );
-        animation: pulse 8s ease-in-out infinite;
-      }
     }
 
-    .particles-container {
-      position: absolute;
-      top: 0;
-      left: 0;
+    .login-stage {
+      grid-template-columns: 1fr;
+      gap: 20px;
+      width: min(680px, 100%);
+      min-height: 0;
+    }
+
+    .login-copy {
+      padding: 10px 0 0;
+    }
+
+    .hero-copy {
+      margin-top: 22px;
+      max-width: 100%;
+    }
+
+    .hero-copy h2 {
+      max-width: 540px;
+      font-size: 30px;
+      line-height: 38px;
+    }
+
+    .login-panel {
+      padding: 28px 24px;
+    }
+
+    .code-texture-track {
+      top: -54px;
+      left: clamp(-180px, -18vw, -90px);
+      width: 820px;
+    }
+
+    .code-texture {
+      opacity: 0.42;
+    }
+
+    .module-viewport {
+      margin-top: 16px;
+    }
+
+    .module-track {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .login-code-background {
+      display: none;
+    }
+
+    .login-copy {
+      display: block;
+    }
+
+    .brand-row {
+      justify-content: center;
+    }
+
+    .hero-copy {
+      display: none;
+    }
+
+    .login-stage {
       width: 100%;
-      height: 100%;
-      z-index: 2;
-      pointer-events: none;
-
-      .particle {
-        position: absolute;
-        background: color-mix(in srgb, var(--m-primary) 24%, transparent);
-        border-radius: 50%;
-        animation: float 20s infinite ease-in-out;
-      }
     }
 
-    .floating-elements {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 3;
-      pointer-events: none;
-
-      .floating-element {
-        position: absolute;
-        border-radius: 50%;
-        background: color-mix(in srgb, var(--m-primary) 16%, transparent);
-        animation: float 20s infinite ease-in-out;
-        backdrop-filter: blur(2px);
-
-        &.element-1 {
-          width: 100px;
-          height: 100px;
-          top: 15%;
-          left: 8%;
-          animation-delay: 0s;
-        }
-
-        &.element-2 {
-          width: 140px;
-          height: 140px;
-          top: 65%;
-          left: 85%;
-          animation-delay: -5s;
-        }
-
-        &.element-3 {
-          width: 70px;
-          height: 70px;
-          top: 75%;
-          left: 15%;
-          animation-delay: -10s;
-        }
-
-        &.element-4 {
-          width: 120px;
-          height: 120px;
-          top: 25%;
-          left: 80%;
-          animation-delay: -15s;
-        }
-      }
+    .login-panel {
+      padding: 28px 20px;
     }
 
-    @keyframes rotate {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
+    .title {
+      font-size: 26px;
+      line-height: 34px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
     }
 
-    @keyframes float {
-      0%,
-      100% {
-        transform: translate(0, 0) rotate(0deg);
-      }
-      25% {
-        transform: translate(30px, 30px) rotate(90deg);
-      }
-      50% {
-        transform: translate(50px, 0) rotate(180deg);
-      }
-      75% {
-        transform: translate(30px, -30px) rotate(270deg);
-      }
-    }
-
-    @keyframes pulse {
-      0%,
-      100% {
-        opacity: 0.8;
-      }
-      50% {
-        opacity: 1;
-      }
-    }
-
-    .bottom {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 3%;
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--m-muted);
-      text-align: center;
-      z-index: 10;
-      text-shadow: none;
-      letter-spacing: 0.5px;
-    }
-
-    .center {
-      position: relative;
-      z-index: 9;
-      width: 950px;
-      height: 620px;
-      border-radius: 28px;
-      display: flex;
-      align-items: center;
-      background-color: var(--m-surface);
-      box-shadow: var(--m-shadow);
-
-      .left {
-        position: relative;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(135deg, var(--m-primary-soft) 0%, var(--m-surface-soft) 100%);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: var(--m-text);
-        padding: 40px;
-        text-align: center;
-        border-right: 1px solid var(--m-border);
-
-        .welcome-content {
-          position: relative;
-          z-index: 2;
-
-          .logo-placeholder {
-            width: 100px;
-            height: 100px;
-            background: color-mix(in srgb, var(--m-surface) 72%, transparent);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 25px;
-            backdrop-filter: blur(8px);
-            box-shadow: var(--m-shadow);
-            animation: logo-pulse 3s infinite ease-in-out;
-            border: 1px solid var(--m-border);
-
-            .logo-inner {
-              width: 70px;
-              height: 70px;
-              background: color-mix(in srgb, var(--m-surface) 86%, transparent);
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 1px solid var(--m-border);
-
-              .logo-icon {
-                font-size: 45px;
-                color: var(--m-primary);
-              }
-            }
-          }
-
-          .welcome-title {
-            font-size: 42px;
-            font-weight: 800;
-            margin-bottom: 12px;
-            letter-spacing: 2px;
-            text-shadow: none;
-            animation: title-appear 1s ease-out;
-            color: var(--m-text);
-          }
-
-          .welcome-subtitle {
-            font-size: 30px;
-            font-weight: 600;
-            margin-bottom: 30px;
-            opacity: 0.9;
-            animation: subtitle-appear 1.2s ease-out;
-            color: var(--m-text-2);
-          }
-
-          .welcome-desc {
-            font-size: 19px;
-            opacity: 0.8;
-            max-width: 340px;
-            line-height: 1.8;
-            margin-bottom: 35px;
-            animation: desc-appear 1.4s ease-out;
-            color: var(--m-muted);
-          }
-
-          .features {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-
-            .feature-item {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 15px;
-              font-size: 18px;
-              font-weight: 500;
-              animation: feature-appear 1.6s ease-out;
-              color: var(--m-text-2);
-
-              .feature-icon {
-                color: var(--m-primary);
-                font-size: 24px;
-                flex-shrink: 0; /* 防止图标压缩 */
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              }
-
-              span {
-                display: flex;
-                align-items: center;
-                height: 24px; /* 与图标高度一致 */
-              }
-            }
-          }
-        }
-      }
-
-      .form-wrapper {
-        width: 50%;
-        padding: 50px 60px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-
-        .form-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-
-          .title {
-            font-size: 36px;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-align: center;
-            color: var(--m-text);
-            letter-spacing: 1px;
-          }
-
-          .subtitle {
-            font-size: 18px;
-            color: var(--m-muted);
-            text-align: center;
-            margin-bottom: 40px;
-          }
-
-          .remember-forgot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 25px;
-
-            :deep(.arco-checkbox) {
-              font-size: 16px;
-              color: var(--m-text-2);
-            }
-
-            :deep(.arco-link) {
-              font-size: 16px;
-            }
-          }
-        }
-
-        .custom-input {
-          :deep(.arco-input-wrapper) {
-            border-radius: 14px;
-            height: 55px;
-            border-color: var(--m-form-border);
-            transition: all 0.4s cubic-bezier(0.645, 0.045, 0.355, 1);
-            box-shadow: none;
-            background-color: var(--m-form-bg);
-
-            &:hover {
-              border-color: var(--m-primary);
-              box-shadow: var(--m-form-focus-shadow);
-            }
-
-            &.arco-input-focus {
-              border-color: var(--m-primary);
-              box-shadow: var(--m-form-focus-shadow);
-              background-color: var(--m-surface);
-            }
-          }
-
-          :deep(.arco-input-prefix) {
-            color: var(--m-primary);
-            font-size: 22px;
-          }
-        }
-
-        .login-btn {
-          width: 100%;
-          height: 55px;
-          border-radius: 14px;
-          font-size: 20px;
-          font-weight: 600;
-          background: linear-gradient(135deg, var(--m-primary) 0%, var(--m-primary-hover) 100%);
-          border: none;
-          box-shadow: var(--m-shadow);
-          transition: all 0.3s ease;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: var(--m-on-primary);
-
-          &:hover {
-            background: linear-gradient(135deg, var(--m-primary-hover) 0%, var(--m-primary) 100%);
-            box-shadow: var(--m-shadow);
-            transform: translateY(-2px);
-          }
-
-          &:active {
-            transform: translateY(0);
-          }
-        }
-
-        .links-wrapper {
-          margin-top: 35px;
-
-          :deep(.arco-link) {
-            font-size: 18px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            color: var(--m-primary);
-
-            &:hover {
-              color: var(--m-primary-hover);
-              text-decoration: none;
-            }
-          }
-        }
-      }
-    }
-
-    @keyframes logo-pulse {
-      0%,
-      100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-    }
-
-    @keyframes title-appear {
-      0% {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes subtitle-appear {
-      0% {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes desc-appear {
-      0% {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes feature-appear {
-      0% {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    @media (max-width: 1px) {
-      .center {
-        width: 90%;
-        max-width: 500px;
-        flex-direction: column;
-        height: auto;
-
-        .left {
-          width: 100%;
-          height: 250px;
-          padding: 35px;
-          border-right: none;
-          border-bottom: 1px solid var(--m-border);
-        }
-
-        .form-wrapper {
-          width: 100%;
-          padding: 45px 35px;
-        }
-      }
-    }
-
-    @media (max-width: 1px) {
-      .center {
-        .form-wrapper {
-          padding: 40px 30px;
-
-          .form-content {
-            .title {
-              font-size: 32px;
-            }
-          }
-        }
-      }
+    .code-texture-track {
+      animation: none !important;
     }
   }
 </style>

@@ -1,10 +1,28 @@
 <template>
-  <TableBody>
+  <TableBody
+    plain
+    class="mango-detail-workbench-page"
+    :sticky-horizontal-scroll="false"
+  >
     <template #header>
-      <TableHeader title="数据工厂 / 工厂实体" @search="doRefresh" @reset-search="onResetSearch">
-        <template #search-content>
+      <TableHeader title="数据工厂 / 数据实体" />
+    </template>
+
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        :sticky-horizontal-scroll="false"
+        :model-value="getSearchItemValue('project_product')"
+        :module-value="getSearchItemValue('module')"
+        :reset-key="sidebarResetKey"
+        show-modules
+        @filter-change="onNavigationFilterChange"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search>
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
-            <a-form-item v-for="item of entityConditionItems" :key="item.key" :label="item.label">
+            <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -33,6 +51,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'datasource_alias'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="{ value: 'id', label: 'name' }"
                   :options="datasourceAliasOptions"
                   :placeholder="item.placeholder"
@@ -44,8 +64,24 @@
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="enumFieldNames"
                   :options="statusOptions"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="enumFieldNames"
+                  :options="item.optionItems"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -56,48 +92,38 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs>
-        <template #extra>
+        <template #toolbar>
           <div>
             <a-space>
-              <a-button size="small" type="primary" @click="openEntity()">新增实体</a-button>
-              <a-button size="small" @click="openBatchGenerate">批量生成</a-button>
+              <a-button v-permission="'data_factory.entity:create'" size="small" type="primary" @click="openEntity()" data-testid="qa-views-data-factory-entity-button-新增实体">新增实体</a-button>
+              <a-button v-permission="'data_factory.entity:create'" size="small" @click="openBatchGenerate" data-testid="qa-views-data-factory-entity-button-批量生成">批量生成</a-button>
             </a-space></div
           >
         </template>
-      </a-tabs>
-      <a-table
-        :columns="entityTableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
-        :row-key="'id'"
-        :scroll="{ x: 1560 }"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of entityTableColumns"
-            :key="item.key"
-            :align="item.align"
-            :data-index="item.key"
-            :fixed="item.fixed"
-            :ellipsis="item.ellipsis"
-            :tooltip="item.tooltip"
-            :title="item.title"
-            :width="item.width"
+        <StickyHorizontalTable :scroll-x="2050">
+          <a-table
+            class="mango-native-scroll-table"
+            :columns="visibleTableColumns"
+            :data="table.dataList"
+            :loading="table.tableLoading.value"
+            :pagination="false"
+            :row-key="'id'"
+            :scroll="{ x: 2050, y: '100%' }"
           >
+            <template #columns>
+              <a-table-column
+                v-for="item of visibleTableColumns"
+                :key="item.key"
+                :align="item.align"
+                :data-index="item.key"
+                :fixed="item.fixed"
+                :ellipsis="item.ellipsis"
+                :tooltip="item.tooltip"
+                :title="item.title"
+                :width="item.width"
+              >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ formatModulePath(record?.module) }}
             </template>
             <template v-else-if="item.key === 'datasource_alias'" #cell="{ record }">
               {{ record?.datasource_alias?.name || '-' }}
@@ -107,22 +133,48 @@
                 {{ enumTitle(enumStore.data_factory_operation_type, record.create_type || 2) }}
               </a-tag>
             </template>
+            <template v-else-if="item.key === 'delete_type'" #cell="{ record }">
+              <a-tag color="arcoblue" size="small">SQL</a-tag>
+            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
-                :beforeChange="(newValue) => switchEntityStatus(newValue, record.id)"
-                :default-checked="record.status === 1"
-              />
+              <a-tooltip :content="entityStatusTooltip(record)">
+                <a-switch v-permission="'data_factory.entity:status'"
+                  :beforeChange="(newValue) => switchEntityStatus(newValue, record.id)"
+                  :default-checked="record.status === 1"
+                />
+              </a-tooltip>
+            </template>
+            <template v-else-if="item.key === 'status_change_source'" #cell="{ record }">
+              <a-tooltip :content="entityStatusTooltip(record)">
+                <a-tag :color="statusSourceColor(record.status_change_source)" size="small">
+                  {{ statusSourceTitle(record.status_change_source) }}
+                </a-tag>
+              </a-tooltip>
+            </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ formatModulePath(record.module) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '编辑', onClick: () => openEntity(record) },
-                  {
+                  { permission: 'data_factory.entity:edit', label: '编辑', onClick: () => openEntity(record) },
+                  { permission: 'data_factory.entity:detail',
                     label: '字段规则',
                     loading: actionLoading === `fields-${record.id}`,
                     onClick: () => openFields(record),
                   },
-                  {
+                  { permission: 'data_factory.entity:detail',
+                    label: '状态记录',
+                    loading: actionLoading === `status-log-${record.id}`,
+                    onClick: () => openStatusLogs(record),
+                  },
+                  { permission: 'data_factory.entity:delete',
                     label: '删除',
                     danger: true,
                     loading: actionLoading === `delete-${record.id}`,
@@ -131,17 +183,18 @@
                 ]"
               />
             </template>
-          </a-table-column>
+              </a-table-column>
+            </template>
+          </a-table>
+        </StickyHorizontalTable>
+        <template #footer>
+          <TableFooter :pagination="pagination" />
         </template>
-      </a-table>
-    </template>
-
-    <template #footer>
-      <TableFooter :pagination="pagination" />
+      </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
 
-  <a-drawer v-model:visible="batchVisible" title="批量生成工厂实体" width="50%">
+  <a-drawer v-model:visible="batchVisible" title="批量生成数据实体" width="50%">
     <a-form :model="batchForm" layout="vertical">
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
@@ -162,7 +215,7 @@
           </a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="逻辑数据源" required>
+          <a-form-item label="逻辑数据库" required>
             <a-select
               v-model="batchForm.datasource_alias"
               :field-names="{ value: 'id', label: 'name' }"
@@ -184,8 +237,8 @@
           checked-text="跳过已存在"
           unchecked-text="已存在报错"
         />
-        <a-button :loading="batchLoading" type="primary" @click="loadBatchTables">加载表</a-button>
-        <a-button :loading="batchGenerating" status="success" @click="batchGenerateEntities"
+        <a-button v-permission="'data_factory.entity:debug'" :loading="batchLoading" type="primary" @click="loadBatchTables" data-testid="qa-views-data-factory-entity-button-加载表">加载表</a-button>
+        <a-button :loading="batchGenerating" status="success" @click="batchGenerateEntities" data-testid="qa-views-data-factory-entity-button-生成"
           >生成</a-button
         >
       </a-space>
@@ -227,13 +280,13 @@
     </a-table>
     <template #footer>
       <a-space>
-        <a-button @click="batchVisible = false">关闭</a-button>
-        <a-button :loading="batchLoading" @click="loadBatchTables">重新加载</a-button>
-        <a-button
+        <a-button @click="batchVisible = false" data-testid="qa-views-data-factory-entity-button-关闭">关闭</a-button>
+        <a-button :loading="batchLoading" @click="loadBatchTables" data-testid="qa-views-data-factory-entity-button-重新加载">重新加载</a-button>
+        <a-button v-permission="'data_factory.entity:create'"
           :loading="batchGenerating"
           status="success"
           type="primary"
-          @click="batchGenerateEntities"
+          @click="batchGenerateEntities" data-testid="qa-views-data-factory-entity-button-确认生成"
         >
           确认生成
         </a-button>
@@ -248,17 +301,19 @@
     :title="entityForm.id ? '编辑实体' : '新增实体'"
     width="760px"
   >
-    <a-form :model="entityForm" layout="vertical">
-      <a-grid :cols="2" :col-gap="16">
-        <a-grid-item>
+    <a-form :model="entityForm" layout="horizontal" class="mango-entity-edit-form">
+      <section class="mango-entity-form-section" aria-labelledby="mango-entity-basic-title">
+        <h3 id="mango-entity-basic-title" class="mango-entity-form-title">基础信息</h3>
+        <div class="mango-entity-form-grid">
+        <div>
           <a-form-item label="产品" required>
             <ProjectProductSelect
               v-model="entityForm.project_product"
               @change="onEntityProjectChange"
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
+        </div>
+        <div>
           <a-form-item label="模块名称" required>
             <ProductModuleSelect
               v-model="entityForm.module"
@@ -266,9 +321,9 @@
               :auto-clear="false"
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
-          <a-form-item label="逻辑数据源" required>
+        </div>
+        <div>
+          <a-form-item label="逻辑数据库" required>
             <a-select
               v-model="entityForm.datasource_alias"
               :field-names="{ value: 'id', label: 'name' }"
@@ -278,8 +333,11 @@
               @change="onEntityDatasourceChange"
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item>
+        </div>
+        <div>
+          <a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item>
+        </div>
+        <div class="mango-entity-form-full">
           <a-form-item label="表名" required>
             <a-input-group class="entity-table-select-group">
               <a-select
@@ -290,45 +348,66 @@
                 allow-search
                 placeholder="选择逻辑源和环境后自动读取表"
                 class="entity-table-select"
-                @change="onEntityTableChange"
+                @change="onEntityTableChange" data-testid="qa-views-data-factory-entity-select-选择逻辑源和环境后自动读取表"
               />
-              <a-button
+              <a-button v-permission="'data_factory.entity:delete'"
                 :loading="entityTableRefreshLoading"
                 class="entity-table-refresh"
-                @click="refreshEntityTables"
+                @click="refreshEntityTables" data-testid="qa-views-data-factory-entity-button-清理缓存重试"
                 >清理缓存重试</a-button
               >
             </a-input-group>
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item
-          ><a-form-item label="实体名称" required><a-input v-model="entityForm.name" /></a-form-item
-        ></a-grid-item>
-        <a-grid-item
-          ><a-form-item label="主键字段"><a-input v-model="entityForm.primary_key" /></a-form-item
-        ></a-grid-item>
-        <a-grid-item
-          ><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item
-        ></a-grid-item>
-        <a-grid-item>
+        </div>
+        <div class="mango-entity-form-full">
+          <a-form-item label="Schema"><a-input v-model="entityForm.schema_name" placeholder="仅 PostgreSQL 使用，按实际表所属 Schema 填写" /></a-form-item>
+          <a-form-item label="描述"><a-textarea v-model="entityForm.description" :auto-size="{ minRows: 2, maxRows: 4 }" /></a-form-item>
+        </div>
+        </div>
+      </section>
+      <section class="mango-entity-form-section" aria-labelledby="mango-entity-rule-title">
+        <h3 id="mango-entity-rule-title" class="mango-entity-form-title">字段与操作</h3>
+        <div class="mango-entity-form-grid">
+        <div><a-form-item label="主键字段"><a-input v-model="entityForm.primary_key" /></a-form-item></div>
+        <div><a-form-item label="唯一字段"><a-input v-model="entityForm.unique_key" /></a-form-item></div>
+        <div>
           <a-form-item label="创建方式">
             <a-select
               v-model="entityForm.create_type"
               :field-names="enumFieldNames"
-              :options="enumStore.data_factory_operation_type"
+              :options="sqlOperationOptions"
               disabled
             />
           </a-form-item>
-        </a-grid-item>
-        <a-grid-item
-          ><a-form-item label="清理顺序"
-            ><a-input-number v-model="entityForm.cleanup_order" class="full-width" /></a-form-item
-        ></a-grid-item>
-      </a-grid>
-      <a-form-item label="同步字段规则">
-        <a-switch v-model="syncFieldsAfterSave" checked-text="保存后同步" unchecked-text="不同步" />
-      </a-form-item>
-      <a-form-item label="描述"><a-textarea v-model="entityForm.description" /></a-form-item>
+        </div>
+        <div>
+          <a-form-item label="删除方式">
+            <a-select
+              v-model="entityForm.delete_type"
+              :field-names="enumFieldNames"
+              :options="sqlOperationOptions"
+              disabled
+            />
+          </a-form-item>
+        </div>
+        </div>
+      </section>
+      <section class="mango-entity-form-section" aria-labelledby="mango-entity-cleanup-title">
+        <h3 id="mango-entity-cleanup-title" class="mango-entity-form-title">清理与同步</h3>
+        <div class="mango-entity-form-grid">
+          <div>
+            <a-form-item label="清理顺序">
+              <a-input-number v-model="entityForm.cleanup_order" class="full-width" />
+              <template #extra>数值越小越先清理，引用表应排在主表前。</template>
+            </a-form-item>
+          </div>
+          <div>
+            <a-form-item label="同步字段规则">
+              <a-switch v-model="syncFieldsAfterSave" checked-text="保存后同步" unchecked-text="不同步" />
+            </a-form-item>
+          </div>
+        </div>
+      </section>
     </a-form>
   </a-modal>
 
@@ -339,20 +418,23 @@
     :title="`${currentEntity?.name || ''} 字段规则`"
     width="1180px"
   >
-    <a-space class="entity-toolbar">
-      <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
-      <a-button :loading="fieldSyncLoading" type="primary" @click="syncCurrentEntityFields"
-        >同步当前表字段</a-button
-      >
-      <a-button :loading="fieldPreviewLoading" @click="previewFieldValues">生成实际值</a-button>
-      <a-switch v-model="replaceFields" checked-text="替换" unchecked-text="追加" />
-    </a-space>
+    <div class="entity-toolbar entity-field-toolbar">
+      <a-space wrap>
+        <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
+        <a-button v-permission="'data_factory.entity:edit'" :loading="fieldSyncLoading" type="primary" @click="syncCurrentEntityFields" data-testid="qa-views-data-factory-entity-button-同步当前表字段"
+          >同步当前表字段</a-button
+        >
+        <a-button v-permission="'data_factory.entity:debug'" :loading="fieldPreviewLoading" @click="previewFieldValues" data-testid="qa-views-data-factory-entity-button-生成实际值">生成实际值</a-button>
+        <a-switch v-model="replaceFields" checked-text="替换" unchecked-text="追加" />
+      </a-space>
+      <VariableReferencePanel />
+    </div>
     <a-table
       :columns="fieldRuleColumns"
       :data="fieldRows"
       :loading="fieldSyncLoading || fieldPreviewLoading"
       :pagination="false"
-      :scroll="{ x: 1600, y: 460 }"
+      :scroll="{ x: 1620, y: 460 }"
     >
       <template #columns>
         <a-table-column
@@ -369,30 +451,11 @@
           <template v-if="item.key === 'label'" #cell="{ record }">
             <a-input v-model="record.label" />
           </template>
-          <template v-else-if="item.key === 'db_type'" #cell="{ record }">
-            <a-tooltip :content="record.db_type || '-'">
-              <span class="field-rule-db-type">{{ record.db_type || '-' }}</span>
-            </a-tooltip>
-          </template>
-          <template v-else-if="item.key === 'nullable'" #cell="{ record }">
-            <a-tag :color="enumStore.colors[record.nullable]" size="small">
-              {{ record.nullable ? '可空' : '必填' }}
-            </a-tag>
-          </template>
-          <template v-else-if="item.key === 'primary_key'" #cell="{ record }">
-            <a-tag :color="enumStore.colors[record.primary_key]" size="small">
-              {{ record.primary_key ? '主键' : '普通' }}
-            </a-tag>
-          </template>
-          <template v-else-if="item.key === 'autoincrement'" #cell="{ record }">
-            <a-tag :color="enumStore.colors[record.autoincrement]" size="small">
-              {{ record.autoincrement ? '自增' : '非自增' }}
-            </a-tag>
-          </template>
-          <template v-else-if="item.key === 'platform_type'" #cell="{ record }">
-            <a-tag :color="enumStore.colors[record.platform_type]" size="small">
-              {{ record.platform_type }}
-            </a-tag>
+          <template
+            v-else-if="['nullable', 'primary_key', 'autoincrement', 'db_type', 'platform_type'].includes(item.key)"
+            #cell="{ record }"
+          >
+            <DataFactoryFieldTag :record="record" :field="item.key" />
           </template>
           <template v-else-if="item.key === 'generator_type'" #cell="{ record }">
             <a-select
@@ -416,7 +479,7 @@
                 allow-search
                 path-mode
                 placeholder="请选择模块/实体/字段"
-                @change="(value) => changeDependencyCascader(record, value)"
+                @change="(value) => changeDependencyCascader(record, value)" data-testid="qa-views-data-factory-entity-cascader-请选择模块-实体-字段"
               />
             </a-space>
             <a-space
@@ -429,9 +492,9 @@
                 :options="getEnumSelectOptions(record)"
                 allow-clear
                 placeholder="请选择默认枚举值"
-                @change="refreshEnumConfigValue(record)"
+                @change="refreshEnumConfigValue(record)" data-testid="qa-views-data-factory-entity-select-请选择默认枚举值"
               />
-              <a-button size="mini" type="text" @click="openEnumEditor(record)">
+              <a-button v-permission="'data_factory.entity:edit'" size="mini" type="text" @click="openEnumEditor(record)" data-testid="qa-views-data-factory-entity-button-配置枚举-项">
                 配置枚举（{{ getEnumOptionRows(record).length }}项）
               </a-button>
             </a-space>
@@ -489,14 +552,71 @@
           <a-input v-model="option.value" />
         </a-grid-item>
         <a-grid-item :span="4">
-          <a-button size="mini" status="danger" type="text" @click="removeEnumOption(index)">
+          <a-button size="mini" status="danger" type="text" @click="removeEnumOption(index)" data-testid="qa-views-data-factory-entity-button-删除">
             删除
           </a-button>
         </a-grid-item>
       </a-grid>
-      <a-button type="dashed" @click="addEnumOption">新增枚举项</a-button>
+      <a-button type="dashed" @click="addEnumOption" data-testid="qa-views-data-factory-entity-button-新增枚举项">新增枚举项</a-button>
     </a-space>
   </a-modal>
+
+  <a-drawer
+    v-model:visible="statusLogVisible"
+    :title="`${statusLogEntity?.name || ''} · 状态变更记录`"
+    width="820px"
+  >
+    <a-table
+      :columns="entityStatusLogColumns"
+      :data="statusLogRows"
+      :loading="statusLogLoading"
+      :pagination="false"
+      :row-key="'id'"
+      :scroll="{ x: 1000 }"
+    >
+      <template #columns>
+        <a-table-column
+          v-for="item of entityStatusLogColumns"
+          :key="item.key"
+          :align="item.align"
+          :data-index="item.key"
+          :ellipsis="item.ellipsis"
+          :tooltip="item.tooltip"
+          :title="item.title"
+          :width="item.width"
+        >
+          <template v-if="item.key === 'create_time'" #cell="{ record }">
+            {{ formatStatusTime(record.create_time) }}
+          </template>
+          <template v-else-if="item.key === 'status_change'" #cell="{ record }">
+            {{ record.from_status_name }} → {{ record.to_status_name }}
+          </template>
+          <template v-else-if="item.key === 'source_name'" #cell="{ record }">
+            <a-tag :color="statusSourceColor(record.source)" size="small">
+              {{ record.source_name }}
+            </a-tag>
+          </template>
+          <template v-else-if="item.key === 'operator'" #cell="{ record }">
+            {{ record.operator?.name || record.operator?.username || '系统' }}
+          </template>
+          <template v-else-if="item.key === 'reference'" #cell="{ record }">
+            {{ formatStatusReference(record) }}
+          </template>
+        </a-table-column>
+      </template>
+    </a-table>
+    <div class="mango-entity-status-log-pagination">
+      <a-pagination
+        v-model:current="statusLogPagination.current"
+        v-model:page-size="statusLogPagination.pageSize"
+        :total="statusLogPagination.total"
+        show-total
+        show-page-size
+        @change="loadStatusLogs"
+        @page-size-change="onStatusLogPageSizeChange"
+      />
+    </div>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
@@ -504,6 +624,7 @@
     deleteDataFactoryEntity,
     getDataFactoryDatasourceAlias,
     getDataFactoryEntity,
+    getDataFactoryEntityStatusLog,
     getDataFactoryField,
     postDataFactoryDiscoverTable,
     postDataFactoryDiscoverTables,
@@ -521,18 +642,30 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, reactive, ref } from 'vue'
+  import { getUserName } from '@/api/user/user'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import { formatModulePath, formatProjectProductPath, getItemValue } from '@/utils/business-format'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import StickyHorizontalTable from '@/components/table/StickyHorizontalTable.vue'
+  import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
+  import DataFactoryFieldTag from '@/components/display/DataFactoryFieldTag.vue'
+  import { formatProjectProductPath, formatModulePath, getItemValue } from '@/utils/business-format'
+  import { setUpdateUserOptions } from '@/utils/update-user'
   import {
     batchEntityTableColumns,
     entityConditionItems,
+    entityStatusLogColumns,
     entityTableColumns,
     fieldRuleColumns,
   } from './config'
 
   const table = useTable()
-  const pagination = usePagination(doRefresh)
+  const sidebarResetKey = ref(0)
+  const headerConditionItems = computed(() =>
+    entityConditionItems.filter((item) => !['project_product', 'module'].includes(item.key))
+  )
+  const visibleTableColumns = entityTableColumns
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const enumStore = useEnum()
   const productModule = useProductModule()
   const userStore = useUserStore()
@@ -555,6 +688,11 @@
   const fieldSaving = ref(false)
   const fieldSyncLoading = ref(false)
   const actionLoading = ref('')
+  const statusLogVisible = ref(false)
+  const statusLogLoading = ref(false)
+  const statusLogEntity = ref<any>(null)
+  const statusLogRows = ref<any[]>([])
+  const statusLogPagination = reactive({ current: 1, pageSize: 10, total: 0 })
   const currentEntity = ref<any>(null)
   const fieldRows = ref<any[]>([])
   const batchRows = ref<any[]>([])
@@ -601,6 +739,7 @@
     { key: 1, title: '启用' },
     { key: 0, title: '禁用' },
   ]
+  const sqlOperationOptions = [{ key: 2, title: 'SQL' }]
   const enumEditorVisible = ref(false)
   const currentEnumRow = ref<any>(null)
   const enumOptionRows = ref<any[]>([])
@@ -633,6 +772,43 @@
     return options.find((item: any) => Number(item.key) === Number(value))?.title || value
   }
 
+  function statusSourceTitle(value: any) {
+    const source = (enumStore.data_factory_entity_status_change_source || []).find(
+      (item: any) => Number(item.key) === Number(value)
+    )
+    return source?.title || '历史来源未知'
+  }
+
+  function statusSourceColor(value: any) {
+    const colorMap: Record<number, string> = {
+      0: 'gray',
+      1: 'arcoblue',
+      2: 'purple',
+      3: 'orange',
+      4: 'cyan',
+      5: 'blue',
+    }
+    return colorMap[Number(value)] || 'gray'
+  }
+
+  function formatStatusTime(value: any) {
+    return value ? String(value).replace('T', ' ').replace(/\.\d+(?=\+|Z|$)/, '') : '-'
+  }
+
+  function entityStatusTooltip(record: any) {
+    const source = statusSourceTitle(record.status_change_source)
+    const reason = record.status_change_reason || '未记录原因'
+    const changedAt = formatStatusTime(record.status_changed_at)
+    return `来源：${source}；原因：${reason}；时间：${changedAt}`
+  }
+
+  function formatStatusReference(record: any) {
+    if (!record.source_record_type) return '-'
+    return record.source_record_id
+      ? `${record.source_record_type} #${record.source_record_id}`
+      : record.source_record_type
+  }
+
   function getSearchItem(key: string) {
     return entityConditionItems.find((item) => item.key === key)
   }
@@ -654,10 +830,21 @@
     doRefresh()
   }
 
+  function onNavigationFilterChange({ projectProduct, module }: { projectProduct: any; module: any }) {
+    const projectItem = getSearchItem('project_product')
+    const moduleItem = getSearchItem('module')
+    if (projectItem) projectItem.value = projectProduct ?? ''
+    if (moduleItem) moduleItem.value = module ?? ''
+    pagination.page = 1
+    loadDatasourceAliases(projectProduct)
+    doRefresh()
+  }
+
   function onEntityProjectChange(value: any) {
     entityForm.module = null
     entityForm.datasource_alias = null
     entityForm.table_name = ''
+    entityForm.schema_name = ''
     entityDiscoveredColumns.value = []
     entityTableOptions.value = []
     loadDatasourceAliases(value)
@@ -690,18 +877,22 @@
       name: record?.name || '',
       description: record?.description || '',
       table_name: record?.table_name || '',
+      schema_name: record?.schema_name || '',
       primary_key: record?.primary_key || 'id',
       unique_key: record?.unique_key || '',
       create_type: 2,
-      delete_type: record?.delete_type || 2,
+      delete_type: 2,
       cleanup_order: record?.cleanup_order || 100,
-      status: record?.status || 1,
+      status: record?.status ?? 1,
     })
   }
 
   function doRefresh() {
     table.tableLoading.value = true
     const query = getFormItems(entityConditionItems)
+    if (query.update_user === null || query.update_user === '') {
+      delete query.update_user
+    }
     getDataFactoryEntity({ ...query, page: pagination.page, pageSize: pagination.pageSize }).then(
       (res) => {
         table.handleSuccess(res)
@@ -712,9 +903,10 @@
 
   function onResetSearch() {
     entityConditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
     datasourceAliasOptions.value = []
+    sidebarResetKey.value += 1
     doRefresh()
   }
 
@@ -790,7 +982,7 @@
       return false
     }
     if (!entityForm.datasource_alias) {
-      Message.error('请选择逻辑数据源')
+      Message.error('请选择逻辑数据库')
       return false
     }
     if (!entityForm.table_name) {
@@ -802,6 +994,7 @@
       return false
     }
     entityForm.create_type = 2
+    entityForm.delete_type = 2
     fillEntitySystemFields()
     const request = entityForm.id ? putDataFactoryEntity : postDataFactoryEntity
     entitySaving.value = true
@@ -832,6 +1025,7 @@
 
   function onEntityDatasourceChange(value: any) {
     entityForm.table_name = ''
+    entityForm.schema_name = ''
     entityForm.primary_key = 'id'
     entityForm.unique_key = ''
     entityDiscoveredColumns.value = []
@@ -859,6 +1053,7 @@
       project_product: getOptionId(projectProduct),
       test_env: userStore.selected_environment,
       refresh,
+      schema_name: entityForm.schema_name || '',
     })
       .then((res) => {
         entityTableOptions.value = (res.data || []).map(normalizeTableOption)
@@ -870,7 +1065,7 @@
 
   function refreshEntityTables() {
     if (!entityForm.datasource_alias) {
-      Message.error('请先选择逻辑数据源')
+      Message.error('请先选择逻辑数据库')
       return
     }
     entityTableRefreshLoading.value = true
@@ -893,15 +1088,18 @@
       label: comment ? `${name} / ${comment}` : name,
       value: name,
       comment,
+      schema_name: table.schema_name || '',
     }
   }
 
   function normalizeBatchTable(table: any, existsMap: Map<string, any>) {
     const name = typeof table === 'string' ? table : table.name || table.table || ''
     const comment = typeof table === 'string' ? '' : table.comment || table.table_comment || ''
-    const existed = existsMap.get(name)
+    const schemaName = typeof table === 'string' ? '' : table.schema_name || ''
+    const existed = existsMap.get(JSON.stringify([schemaName, name]))
     return {
       table_name: name,
+      schema_name: schemaName,
       table_comment: comment,
       name: existed?.name || comment || name,
       status: existed ? 'exists' : 'ready',
@@ -920,7 +1118,7 @@
       return
     }
     if (!batchForm.datasource_alias) {
-      Message.error('请选择逻辑数据源')
+      Message.error('请选择逻辑数据库')
       return
     }
     if (!ensureSelectedEnvironment()) {
@@ -943,7 +1141,7 @@
     ])
       .then(([tableRes, entityRes]) => {
         const existsMap = new Map(
-          (entityRes.data || []).map((entity: any) => [entity.table_name, entity])
+          (entityRes.data || []).map((entity: any) => [JSON.stringify([entity.schema_name || '', entity.table_name]), entity])
         )
         batchRows.value = (tableRes.data || []).map((it: any) => normalizeBatchTable(it, existsMap))
         batchSelectedKeys.value = batchRows.value
@@ -988,6 +1186,7 @@
       skip_exists: batchForm.skip_exists,
       tables: selectedRows.map((it) => ({
         table_name: it.table_name,
+        schema_name: it.schema_name || '',
         name: it.name,
       })),
     })
@@ -1055,8 +1254,10 @@
       project_product: getOptionId(entityForm.project_product),
       test_env: userStore.selected_environment,
       table_name: tableName,
+      schema_name: entityForm.schema_name || '',
     }).then((res) => {
       const schema = res.data || {}
+      entityForm.schema_name = schema.schema_name || ''
       entityDiscoveredColumns.value = schema.columns || []
       entityForm.primary_key = schema.primary_keys?.[0] || entityForm.primary_key || 'id'
       const uniqueIndex = (schema.indexes || []).find(
@@ -1143,6 +1344,38 @@
     })
   }
 
+  function openStatusLogs(record: any) {
+    statusLogEntity.value = record
+    statusLogPagination.current = 1
+    statusLogVisible.value = true
+    loadStatusLogs()
+  }
+
+  function loadStatusLogs() {
+    if (!statusLogEntity.value?.id) return Promise.resolve()
+    actionLoading.value = `status-log-${statusLogEntity.value.id}`
+    statusLogLoading.value = true
+    return getDataFactoryEntityStatusLog({
+      entity_id: statusLogEntity.value.id,
+      page: statusLogPagination.current,
+      pageSize: statusLogPagination.pageSize,
+    })
+      .then((res) => {
+        statusLogRows.value = res.data || []
+        statusLogPagination.total = Number((res as any).totalSize || 0)
+      })
+      .finally(() => {
+        actionLoading.value = ''
+        statusLogLoading.value = false
+      })
+  }
+
+  function onStatusLogPageSizeChange(pageSize: number) {
+    statusLogPagination.current = 1
+    statusLogPagination.pageSize = pageSize
+    loadStatusLogs()
+  }
+
   function openFields(record: any) {
     actionLoading.value = `fields-${record.id}`
     currentEntity.value = record
@@ -1167,7 +1400,7 @@
       return
     }
     if (!currentEntity.value?.datasource_alias || !ensureSelectedEnvironment()) {
-      Message.error('请先选择逻辑数据源和顶部测试环境')
+      Message.error('请先选择逻辑数据库和顶部测试环境')
       return
     }
     fieldSyncLoading.value = true
@@ -1390,7 +1623,10 @@
     if (row.generator_type === GENERATOR_TYPE_DEPENDENCY_FIELD) {
       return { field: 'id' }
     }
-    if (row.generator_type === GENERATOR_TYPE_FIXED || row.generator_type === GENERATOR_TYPE_FUNCTION) {
+    if (
+      row.generator_type === GENERATOR_TYPE_FIXED ||
+      row.generator_type === GENERATOR_TYPE_FUNCTION
+    ) {
       return { value: '' }
     }
     return {}
@@ -1794,12 +2030,68 @@
 
   onMounted(() => {
     enumStore.getEnum()
+    getUserName().then((res) => setUpdateUserOptions(entityConditionItems, res.data || []))
     loadOptions()
     doRefresh()
   })
 </script>
 
 <style scoped>
+  .mango-entity-edit-form {
+    min-width: 0;
+  }
+
+  .mango-entity-form-section + .mango-entity-form-section {
+    margin-top: var(--m-card-padding);
+    padding-top: var(--m-card-padding);
+    border-top: 1px solid var(--m-border);
+  }
+
+  .mango-entity-form-title {
+    margin: 0 0 var(--m-page-gap);
+    color: var(--m-text);
+    font-size: var(--m-font-body);
+    font-weight: 600;
+  }
+
+  .mango-entity-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: var(--m-page-gap);
+  }
+
+  .mango-entity-form-grid > div {
+    min-width: 0;
+  }
+
+  .mango-entity-form-full {
+    grid-column: 1 / -1;
+  }
+
+  .mango-entity-edit-form :deep(.arco-form-item) {
+    margin-bottom: 0;
+  }
+
+  .mango-entity-edit-form :deep(.arco-form-item-label-col) {
+    flex: 0 0 100px;
+    width: 100px;
+    max-width: none;
+    white-space: nowrap;
+  }
+
+  .mango-entity-edit-form :deep(.arco-form-item-wrapper-col) {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+  }
+
+  .mango-entity-status-log-pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--m-space-md);
+  }
+
   .entity-table-select-group {
     display: flex;
     width: 100%;
@@ -1814,18 +2106,17 @@
     flex: 0 0 112px;
   }
 
-  .field-rule-db-type {
-    display: inline-block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: middle;
-    white-space: nowrap;
-  }
-
   .entity-toolbar,
   .entity-alert {
     margin-bottom: 12px;
+  }
+
+  .entity-field-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
   .full-width {

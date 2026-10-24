@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_data_factory', '0008_alter_datafactoryexecution_source_type'),
     ]
@@ -13,6 +12,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='datafactorytemplate',
             name='usage_scope',
-            field=models.SmallIntegerField(choices=[(1, '用例可直接选择'), (2, '仅场景内部引用')], db_index=True, default=1, verbose_name='场景用途'),
+            field=models.SmallIntegerField(choices=[(1, '用例可直接选择'), (2, '仅场景内部引用')], db_index=True,
+                                           default=1, verbose_name='场景用途'),
         ),
     ]

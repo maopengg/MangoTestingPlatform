@@ -1,10 +1,14 @@
 <template>
   <div class="mango-data-factory-preview">
     <div class="mango-preview-summary">
-      <a-alert :type="canDebugRun ? 'success' : 'warning'" class="mango-summary-alert" show-icon>
+      <a-alert :type="configurationPreview ? 'info' : canDebugRun ? 'success' : 'warning'" class="mango-summary-alert" show-icon>
         {{
-          canDebugRun
+          configurationPreview
+            ? '当前展示配置示例，不访问业务数据库；自增、依赖和运行时变量在执行时获取。'
+            : canDebugRun
             ? '当前依赖链路已能生成数据，可以继续调试运行。'
+            : summary.invalidPostUpdateCount
+            ? `插入后回写存在 ${summary.invalidPostUpdateCount} 项异常，请检查回写关系。`
             : `当前依赖链路还有 ${summary.missingCount} 个字段需要配置，暂不能调试运行。`
         }}
       </a-alert>
@@ -25,6 +29,10 @@
           <span class="mango-metric-value">{{ summary.reuseCount }}</span>
           <span class="mango-metric-label">复用</span>
         </div>
+        <div :class="['mango-metric-item', { 'metric-danger': summary.invalidPostUpdateCount }]">
+          <span class="mango-metric-value">{{ postInsertUpdates.length }}</span>
+          <span class="mango-metric-label">回写</span>
+        </div>
         <div :class="['mango-metric-item', { 'metric-danger': summary.missingCount }]">
           <span class="mango-metric-value">{{ summary.missingCount }}</span>
           <span class="mango-metric-label">缺失字段</span>
@@ -35,6 +43,7 @@
     <div class="mango-preview-body">
       <DataFactoryRelationFlow
         :dependency-tree="dependencyTree"
+        :post-insert-updates="postInsertUpdates"
         :focus-node-key="focusNodeKey"
         :editable-root="editableRoot"
         :flow-loading="flowLoading"
@@ -43,7 +52,7 @@
         @select-node="onRelationNodeSelect"
       >
         <template #extra>
-          <a-button size="mini" type="primary" @click.stop="flowDrawerVisible = true">
+          <a-button size="mini" type="primary" @click.stop="flowDrawerVisible = true" data-testid="qa-components-datafactory-datafactorydependencypreview-button-放大查看">
             放大查看
           </a-button>
         </template>
@@ -52,10 +61,10 @@
       <div class="mango-field-panel">
         <div class="mango-field-panel-header">
           <div>
-            <div class="mango-field-title">{{
+            <div class="mango-field-title" :title="selectedNode?.entity_name || selectedNode?.template_name">{{
               selectedNode?.entity_name || selectedNode?.template_name || '-'
             }}</div>
-            <div class="mango-field-subtitle">
+            <div class="mango-field-subtitle" :title="`${selectedNode?.table_name || '-'} / ${selectedNode?.template_name || '-'}`">
               {{ selectedNode?.table_name || '-' }} / {{ selectedNode?.template_name || '-' }}
             </div>
           </div>
@@ -66,12 +75,12 @@
             v-if="canOpenSelectedTemplate"
             size="mini"
             type="text"
-            @click="emit('openTemplate', selectedNode)"
+            @click="emit('openTemplate', selectedNode)" data-testid="qa-components-datafactory-datafactorydependencypreview-button-前往配置该模板"
           >
             前往配置该模板
           </a-button>
         </div>
-        <a-spin :loading="fieldLoading" class="mango-field-spin" tip="字段明细加载中...">
+        <mango-panel-spin :loading="fieldLoading" class="mango-field-spin" tip="字段明细加载中...">
           <a-alert
             v-if="selectedNodeIssues.length"
             class="mango-node-issues"
@@ -101,7 +110,7 @@
             />
           </div>
           <div v-else class="mango-empty-state mango-dependency-empty">当前节点暂无字段明细</div>
-        </a-spin>
+        </mango-panel-spin>
       </div>
     </div>
   </div>
@@ -116,6 +125,7 @@
     <div class="mango-relation-drawer-body">
       <DataFactoryRelationFlow
         :dependency-tree="dependencyTree"
+        :post-insert-updates="postInsertUpdates"
         :focus-node-key="focusNodeKey"
         :editable-root="editableRoot"
         :flow-loading="flowLoading"
@@ -162,10 +172,23 @@
     children?: PreviewNode[]
   }
 
+  interface PostInsertUpdate {
+    target_node?: string
+    target_alias?: string
+    target_field?: string
+    source_node?: string
+    source_alias?: string
+    source_field?: string
+    valid?: boolean
+    message?: string
+  }
+
   const props = withDefaults(
     defineProps<{
       dependencyTree?: PreviewNode | null
+      postInsertUpdates?: PostInsertUpdate[]
       canDebugRun?: boolean
+      configurationPreview?: boolean
       generatorOptions: EnumOption[]
       fieldTableScrollY?: number | string
       editableRoot?: boolean
@@ -181,7 +204,9 @@
     }>(),
     {
       dependencyTree: null,
+      postInsertUpdates: () => [],
       canDebugRun: false,
+      configurationPreview: false,
       fieldTableScrollY: 'calc(100vh - 320px)',
       editableRoot: false,
       rootFields: () => [],
@@ -245,11 +270,12 @@
     const items = flattenTree(props.dependencyTree)
     return {
       nodeCount: items.length,
-      dependencyCount: Math.max(items.length - 1, 0),
+      dependencyCount: Math.max(items.length - 1, 0) + props.postInsertUpdates.length,
       createCount: items.filter(
         (item) => item.node.action === 'create' || item.node.action === 'root'
       ).length,
       reuseCount: items.filter((item) => item.node.reused || item.node.action === 'reuse').length,
+      invalidPostUpdateCount: props.postInsertUpdates.filter((item) => item.valid === false).length,
       missingCount: items.reduce((total, item) => total + Number(item.node.missing_count || 0), 0),
     }
   })
@@ -321,8 +347,9 @@
   .mango-data-factory-preview {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--m-page-gap);
     height: 100%;
+    min-width: 0;
     min-height: 0;
   }
 
@@ -330,16 +357,18 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: var(--m-page-gap);
+    padding: var(--m-card-padding);
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface);
   }
 
   .mango-summary-alert {
-    flex: 1;
-    min-width: 320px;
+    flex: 1 1 280px;
+    min-width: 0;
     border: 0;
     background: transparent;
     padding-left: 0;
@@ -347,10 +376,10 @@
 
   .mango-summary-metrics {
     display: grid;
-    grid-template-columns: repeat(5, minmax(58px, 1fr));
-    gap: 8px;
-    flex-shrink: 0;
-    min-width: 360px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--m-page-gap);
+    flex: 1 1 430px;
+    min-width: 0;
   }
 
   .mango-metric-item {
@@ -389,8 +418,9 @@
 
   .mango-preview-body {
     display: grid;
-    grid-template-columns: minmax(380px, 34%) minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
+    gap: var(--m-page-gap);
+    min-width: 0;
     min-height: 0;
     flex: 1;
   }
@@ -399,6 +429,7 @@
     display: flex;
     overflow: hidden;
     flex-direction: column;
+    min-width: 0;
     min-height: 0;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
@@ -412,13 +443,12 @@
     flex: 1;
   }
 
-  .mango-field-spin :deep(.arco-spin),
-  .mango-field-spin :deep(.arco-spin-children) {
+  .mango-field-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
     min-height: 0;
   }
 
-  .mango-field-spin :deep(.arco-spin-children) {
+  .mango-field-spin :deep(> .mango-panel-spin__content) {
     display: flex;
     overflow: hidden;
     flex-direction: column;
@@ -434,9 +464,11 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: var(--m-page-gap);
     min-height: 58px;
-    padding: 10px 12px;
+    padding: var(--m-card-padding);
     border-bottom: 1px solid var(--m-border);
   }
 
@@ -447,9 +479,9 @@
 
   .mango-node-issues {
     box-sizing: border-box;
-    width: calc(100% - 24px);
-    max-width: calc(100% - 24px);
-    margin: 10px 12px 10px;
+    width: calc(100% - 2 * var(--m-card-padding));
+    max-width: calc(100% - 2 * var(--m-card-padding));
+    margin: var(--m-card-padding);
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -484,6 +516,9 @@
   }
 
   .mango-field-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--m-text);
     font-size: 15px;
     font-weight: 600;
@@ -491,6 +526,9 @@
   }
 
   .mango-field-subtitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     margin-top: 2px;
     color: var(--m-muted);
     font-size: 12px;
@@ -498,7 +536,7 @@
   }
 
   .mango-dependency-empty {
-    margin: 12px;
+    margin: var(--m-card-padding);
     min-height: 160px;
   }
 
@@ -507,19 +545,4 @@
     min-height: 0;
   }
 
-  @media (max-width: 1px) {
-    .mango-preview-summary {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .mango-summary-metrics {
-      width: 100%;
-      min-width: 0;
-    }
-
-    .mango-preview-body {
-      grid-template-columns: 1fr;
-    }
-  }
 </style>

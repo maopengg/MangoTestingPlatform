@@ -1,16 +1,21 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
+export const tableScrollX = 2080
+
 export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'id',
     label: 'ID',
     type: 'input',
     placeholder: '请输入参数ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -34,16 +39,17 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
-    key: 'test_env',
+    key: 'test_envs',
     label: '环境',
-    value: ref(''),
+    value: ref([]),
     type: 'select',
     placeholder: '请选择环境',
     optionItems: [],
     reset: function () {
-      this.value = ''
+      this.value = []
     },
   },
+  createUpdateUserCondition(),
   {
     key: 'name',
     label: '参数名称',
@@ -64,7 +70,18 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+  {
+    key: 'value',
+    label: 'value',
+    type: 'input',
+    placeholder: '请输入value',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
 ])
+enableMultiSelectSearch(conditionItems)
 
 export const formItems: FormItem[] = reactive([
   {
@@ -100,7 +117,7 @@ export const formItems: FormItem[] = reactive([
   },
   {
     label: '环境',
-    key: 'test_env',
+    key: 'test_envs',
     value: ref(''),
     type: 'select',
     required: false,
@@ -144,12 +161,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '逻辑数据源',
+    label: '逻辑数据库',
     key: 'datasource_alias',
     value: ref(''),
     type: 'select',
     required: false,
-    placeholder: '请选择逻辑数据源',
+    placeholder: '请选择逻辑数据库',
     reset: function () {
       this.value = ''
     },
@@ -173,15 +190,6 @@ export const formItems: FormItem[] = reactive([
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '环境',
     key: 'test_env',
@@ -209,7 +217,7 @@ export const tableColumns = useTableColumn([
     width: 300,
   },
   {
-    title: '逻辑数据源',
+    title: '逻辑数据库',
     key: 'datasource_alias',
     dataIndex: 'datasource_alias',
     align: 'left',
@@ -220,20 +228,37 @@ export const tableColumns = useTableColumn([
     key: 'value',
     dataIndex: 'value',
     align: 'left',
+    width: 320,
     ellipsis: true,
     tooltip: true,
   },
   {
-    title: '状态',
+    title: '默认开启',
     key: 'status',
     dataIndex: 'status',
-    width: 70,
+    width: 90,
+  },
+  updateUserColumn(),
+  {
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
+    width: 180,
+  },
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

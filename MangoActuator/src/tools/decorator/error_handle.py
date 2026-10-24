@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: 
+# @Description:
 # @Time   : 2024-07-18 18:15
 # @Author : 毛鹏
 import traceback
 
-from src.enums.system_enum import ClientTypeEnum
+from mangotools.enums import ClientTypeEnum
 from src.tools.log_collector import log
 
 
@@ -17,6 +17,11 @@ def async_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 log.error(trace)
+                from src.tools.executor_task_context import is_executor_task
+                if is_executor_task():
+                    # 数据库任务由统一工作器负责记录失败终态和可靠回传；这里继续
+                    # 吞错会让工作器把实际失败误判为成功。
+                    raise
                 from src.network import socket_conn
                 await socket_conn.async_send(
                     code=300,
@@ -40,6 +45,9 @@ def sync_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 log.error(trace)
+                from src.tools.executor_task_context import is_executor_task
+                if is_executor_task():
+                    raise
                 from src.network import socket_conn
                 socket_conn.sync_send(
                     code=300,

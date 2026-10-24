@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from src.services.runtime.mcp.runner import run_mcp_service
+from src.processes.mcp.runner import run_mcp_service
 
 
 class Command(BaseCommand):
@@ -9,9 +9,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--host', default='0.0.0.0')
         parser.add_argument('--port', type=int, default=8010)
+        parser.add_argument('--workers', type=int, default=1)
 
     def handle(self, *args, **options):
         try:
-            run_mcp_service(options['host'], options['port'])
+            run_mcp_service(options['host'], options['port'], options['workers'])
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING('mcp-service 已停止'))

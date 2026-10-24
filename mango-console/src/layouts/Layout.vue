@@ -28,14 +28,15 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+  import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
   import useEmit from '@/hooks/useEmit'
   import { AxiosResponse } from 'axios'
   import UserTokenExpiredInterceptor from '@/api/interceptors/UserTokenExpiredInterceptor'
   import useAxios from '@/hooks/useAxios'
   import useAppConfigStore from '@/store/modules/app-config'
   import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
-  import { DeviceType } from '@/store/types'
+  import { applyDisplayDensity } from '@/hooks/useDisplayDensity'
+  import { DeviceType, DisplayDensity } from '@/store/types'
   import CustomRequestInterceptor from '@/api/interceptors/CustomRequestInterceptor'
 
   export default defineComponent({
@@ -44,7 +45,18 @@
       const settingRef = ref()
       const searchContentRef = ref()
       const appStore = useAppConfigStore()
-      useChangeMenuWidth(appStore.sideWidth)
+      const persistedDensity = appStore.displayDensity || DisplayDensity.AUTO
+      appStore.changeDisplayDensity(persistedDensity)
+      // 189px 与 210px 均为旧版默认值；迁移到当前宽度，用户自定义值保持不变。
+      if (
+        appStore.sideWidth === 189 ||
+        appStore.sideWidth === 203 ||
+        appStore.sideWidth === 210
+      ) {
+        appStore.changeSideWidth(199)
+      } else {
+        useChangeMenuWidth(appStore.sideWidth)
+      }
       appStore.applyCurrentThemePreset()
       const emitter = useEmit()
       const axios = useAxios()
@@ -63,17 +75,17 @@
       onMounted(() => {
         handleScreenResize()
         window.addEventListener('resize', handleScreenResize)
+        nextTick(() => {
+          applyDisplayDensity(appStore.displayDensity)
+        })
       })
       onBeforeUnmount(() => {
         window.removeEventListener('resize', handleScreenResize)
       })
 
       function handleScreenResize() {
-        const minWidth = Number.parseInt(
-          getComputedStyle(document.documentElement).getPropertyValue('--m-app-min-width'),
-          10
-        )
-        const appMinWidth = Number.isNaN(minWidth) ? 960 : minWidth
+        const displayScale = applyDisplayDensity(appStore.displayDensity)
+        const appMinWidth = 1200 * displayScale
         if (window.innerWidth < appMinWidth) {
           appStore.changeDevice(DeviceType.PC)
           appStore.toggleCollapse(false)
@@ -112,7 +124,7 @@
 <style lang="less">
   .mango-layout-container {
     height: 100%;
-    width: max(100vw, var(--m-app-min-width));
+    width: 100%;
     min-width: var(--m-app-min-width);
     position: relative;
     overflow-x: hidden;

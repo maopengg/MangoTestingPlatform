@@ -17,6 +17,21 @@ export const formItemsElementOpe: any = reactive([
       return true
     },
   },
+  {
+    label: '选择元素',
+    key: 'ele_name',
+    value: ref(''),
+    type: 'element-cascader',
+    required: true,
+    placeholder: '请选择一个元素',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
 ])
 export const formItemsElementAss: any = reactive([
   {
@@ -52,39 +67,6 @@ export const formItemsElement4: any = reactive([
     },
   },
 ])
-export const formItemsElementSql: any = reactive([
-  {
-    label: 'key_list',
-    key: 'key_list',
-    value: ref(''),
-    type: 'textarea',
-    required: true,
-    placeholder: '请输入sql查询结果的key_list',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error('请输入sql查询结果的key_list')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: 'sql语句',
-    key: 'sql',
-    value: ref(''),
-    type: 'textarea',
-    required: true,
-    placeholder: '请输入sql',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
-
 export const formItemsElementKey: any = reactive([
   {
     label: 'key',
@@ -120,12 +102,12 @@ export const formItemsElementKey: any = reactive([
 
 export const formItemsElementCondition: any = reactive([
   {
-    label: '判断值',
+    label: '期望值',
     key: 'condition_value',
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入判断值',
+    placeholder: '请输入期望值',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
@@ -147,6 +129,29 @@ export const formItemsElementCode: any = reactive([
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+])
+export const formItemsForceWait: any = reactive([
+  {
+    label: '等待时长',
+    key: 'seconds-ope_value',
+    field: 'seconds',
+    value: ref(1),
+    type: 'input-number',
+    required: true,
+    min: 0,
+    max: 3600,
+    precision: 1,
+    suffix: '秒',
+    placeholder: '请输入等待秒数',
+    validator: function () {
+      const seconds = Number(this.value)
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 3600) {
+        Message.error('等待时长必须在 0 到 3600 秒之间')
         return false
       }
       return true

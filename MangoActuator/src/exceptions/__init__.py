@@ -3,7 +3,16 @@
 # @Description:
 # @Time   : 2023-07-07 10:14
 # @Author : 毛鹏
-from src.exceptions.error_msg import *
+from src.exceptions.error_msg import (
+    ERROR_MSG_0001,
+    ERROR_MSG_0003,
+    ERROR_MSG_0004,
+    ERROR_MSG_0005,
+    ERROR_MSG_0007,
+    ERROR_MSG_0010,
+    ERROR_MSG_0025,
+    ERROR_MSG_0026,
+)
 from src.settings import settings
 from src.tools.log_collector import log
 

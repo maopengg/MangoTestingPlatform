@@ -10,47 +10,68 @@
           </div>
         </div>
         <a-space class="assertion-page" direction="vertical" fill :size="16">
-          <div class="try-card mango-soft-panel">
-            <a-space direction="vertical" fill :size="12">
-              <div class="try-title">测试断言方法</div>
-              <a-grid :cols="{ xs: 1, sm: 1, md: 2, lg: 3 }" :col-gap="12" :row-gap="12">
-                <a-grid-item>
-                  <a-cascader
-                    v-model="selectedMethodValue"
-                    :options="assertionList"
-                    allow-search
-                    expand-trigger="hover"
-                    placeholder="请选择断言方法"
-                    @change="handleMethodChange"
-                  />
-                </a-grid-item>
-                <a-grid-item>
-                  <a-textarea v-model="actualValue" auto-size placeholder="请输入实际值" />
-                </a-grid-item>
-                <a-grid-item>
-                  <a-textarea
-                    v-model="expectValue"
-                    auto-size
-                    :disabled="!currentMethodNeedsExpect"
-                    :placeholder="currentMethodNeedsExpect ? '请输入预期值' : '无需预期值'"
-                  />
-                </a-grid-item>
-              </a-grid>
-              <div class="try-actions">
-                <a-button @click="fillSelectedMethodExample">填入示例</a-button>
-                <a-button @click="clearTestForm">清空</a-button>
-                <a-button type="primary" :loading="testing" @click="testAssertion">
-                  测试断言
-                </a-button>
-              </div>
-              <a-alert
-                v-if="testResult"
-                :type="testResult.status ? 'success' : 'error'"
-                :title="testResult.status ? '断言通过' : '断言失败'"
+          <div class="try-card">
+            <AssertionGroupEditor
+              ref="assertionEditorRef"
+              v-model="assertionGroups"
+              :methods="assertionList"
+              :method-scopes="assertionMethodScopes"
+              :disabled="testing"
+              @testability-change="testAvailability = $event"
+            />
+            <div class="try-actions">
+              <a-button @click="assertionEditorRef?.fillExamples()" data-testid="qa-views-help-assertion-button-填入示例">填入示例</a-button>
+              <a-button @click="assertionEditorRef?.clearValues()" data-testid="qa-views-help-assertion-button-清空参数">清空参数</a-button>
+              <a-tooltip :content="testAvailability.reason" :disabled="testAvailability.allowed">
+                <span>
+                  <a-button v-permission="'help.assertion:debug'"
+                    type="primary"
+                    :loading="testing"
+                    :disabled="!testAvailability.allowed"
+                    @click="testAssertion" data-testid="qa-views-help-assertion-button-测试全部断言"
+                  >
+                    测试全部断言
+                  </a-button>
+                </span>
+              </a-tooltip>
+            </div>
+            <a-alert
+              v-if="testResult"
+              :type="testResult.status ? 'success' : 'error'"
+              :title="testResult.status ? '断言通过' : '断言失败'"
+            >
+              {{ testResult.message }}
+            </a-alert>
+            <div v-if="testResult?.groups?.length" class="assertion-test-results">
+              <div
+                v-for="group in testResult.groups"
+                :key="`${group.name}-${group.logic}`"
+                class="assertion-test-result-group"
               >
-                {{ testResult.message }}
-              </a-alert>
-            </a-space>
+                <div class="assertion-test-result-group__header">
+                  <div>
+                    <strong>{{ group.name }}</strong>
+                    <a-tag size="small">{{ group.logic === 'AND' ? '且' : '或' }}</a-tag>
+                  </div>
+                  <a-tag size="small" :color="group.status ? 'green' : 'red'">
+                    {{ group.status ? '通过' : '失败' }}
+                  </a-tag>
+                </div>
+                <div class="assertion-test-result-group__items">
+                  <div
+                    v-for="(item, itemIndex) in group.items"
+                    :key="`${item.method}-${itemIndex}`"
+                    class="assertion-test-result-item"
+                  >
+                    <span>{{ itemIndex + 1 }}. {{ item.label || item.method }}</span>
+                    <span :class="item.status ? 'is-success' : 'is-error'">
+                      {{ item.status ? '通过' : '失败' }}
+                    </span>
+                    <span>{{ item.message }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <a-space direction="vertical" fill :size="12">
@@ -99,46 +120,40 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, defineComponent, h, onMounted, ref } from 'vue'
+  import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
   import { Button, Message, Table, Tag } from '@arco-design/web-vue'
   import { getSystemAssertionList, postSystemAssertionTest } from '@/api/system/system'
+  import AssertionGroupEditor from '@/components/forms/AssertionGroupEditor.vue'
+  import type {
+    AssertionEditorGroup,
+    AssertionMethodClassGroup,
+    AssertionMethodItem,
+    AssertionMethodScope,
+    AssertionMethodTypeGroup,
+    AssertionTestAvailability,
+    AssertionTestGroupResult,
+  } from '@/types/assertion'
 
-  type MethodParameter = {
-    f: string
-    n?: string | null
-    p?: string | null
-    d?: boolean
-    v?: string | number | boolean | null
-  }
-
-  type MethodItem = {
-    label: string
-    value: string
-    parameter?: MethodParameter[]
-  }
-
-  type MethodClassGroup = {
-    label: string
-    value: string
+  type MethodItem = AssertionMethodItem
+  type MethodClassGroup = AssertionMethodClassGroup & {
     menuKey?: string
     typeValue?: string
     typeLabel?: string
-    children: MethodItem[]
   }
-
-  type MethodTypeGroup = {
-    label: string
-    value: string
-    children: MethodClassGroup[]
-  }
+  type MethodTypeGroup = AssertionMethodTypeGroup
 
   const assertionList = ref<MethodTypeGroup[]>([])
+  const assertionMethodScopes: AssertionMethodScope[] = ['public', 'mysql', 'web', 'android']
   const activeGroupValue = ref('')
-  const selectedMethodValue = ref('')
-  const actualValue = ref('')
-  const expectValue = ref('')
+  const assertionEditorRef = ref<InstanceType<typeof AssertionGroupEditor> | null>(null)
+  const assertionGroups = ref<AssertionEditorGroup[]>([])
   const testing = ref(false)
-  const testResult = ref<{ status: boolean; message: string } | null>(null)
+  const testAvailability = ref<AssertionTestAvailability>({ allowed: true, reason: '' })
+  const testResult = ref<{
+    status: boolean
+    message: string
+    groups?: AssertionTestGroupResult[]
+  } | null>(null)
 
   const classGroups = computed(() =>
     assertionList.value.flatMap((typeGroup) =>
@@ -179,21 +194,13 @@
     )
   )
 
-  const selectedMethod = computed(
-    () => flatMethods.value.find((item) => item.value === selectedMethodValue.value) || null
-  )
-
-  const currentMethodNeedsExpect = computed(() =>
-    Boolean(selectedMethod.value?.parameter?.some((item) => item.f === 'expect'))
-  )
-
   onMounted(() => {
     getSystemAssertionList()
       .then((res) => {
         assertionList.value = sortAssertionGroups(res.data)
         activeGroupValue.value = classGroups.value[0]?.menuKey || ''
-        selectedMethodValue.value = flatMethods.value[0]?.value || ''
-        fillSelectedMethodExample()
+        assertionGroups.value = createInitialGroups(flatMethods.value[0]?.value || '')
+        nextTick(() => assertionEditorRef.value?.fillExamples())
       })
       .catch(console.log)
   })
@@ -210,46 +217,50 @@
     })
   }
 
-  function handleMethodChange() {
-    testResult.value = null
-    fillSelectedMethodExample()
-  }
-
   function selectMethodForTest(record: MethodItem) {
-    selectedMethodValue.value = record.value
-    fillMethodExample(record)
+    assertionEditorRef.value?.setSingleMethod(record.value)
     testResult.value = null
+    document.querySelector('.try-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  function fillSelectedMethodExample() {
-    if (!selectedMethod.value) {
-      return
-    }
-    fillMethodExample(selectedMethod.value)
-  }
-
-  function fillMethodExample(record: MethodItem) {
-    actualValue.value = String(getParameterExample(record, 'actual') ?? '')
-    expectValue.value = String(getParameterExample(record, 'expect') ?? '')
-  }
-
-  function clearTestForm() {
-    actualValue.value = ''
-    expectValue.value = ''
-    testResult.value = null
+  function createInitialGroups(method: string): AssertionEditorGroup[] {
+    return [
+      {
+        id: `group-${Date.now()}`,
+        name: '断言组1',
+        logic: 'AND',
+        assertions: [
+          {
+            id: `assertion-${Date.now()}`,
+            method,
+            values: {},
+          },
+        ],
+      },
+    ]
   }
 
   function testAssertion() {
-    if (!selectedMethodValue.value) {
-      Message.warning('请先选择断言方法')
+    if (!testAvailability.value.allowed) {
+      Message.warning(testAvailability.value.reason)
+      return
+    }
+    const assertions = assertionGroups.value.flatMap((group) => group.assertions)
+    if (!assertions.length || assertions.some((item) => !item.method)) {
+      Message.warning('请为每条断言选择断言方法')
       return
     }
     testing.value = true
     testResult.value = null
     postSystemAssertionTest({
-      method: selectedMethodValue.value,
-      actual: actualValue.value,
-      expect: currentMethodNeedsExpect.value ? expectValue.value : null,
+      assertions: assertionGroups.value.map((group) => ({
+        name: group.name,
+        logic: group.logic,
+        items: group.assertions.map((item) => ({
+          method: item.method,
+          ...item.values,
+        })),
+      })),
     })
       .then((res) => {
         testResult.value = res.data
@@ -258,19 +269,6 @@
       .finally(() => {
         testing.value = false
       })
-  }
-
-  function getParameterExample(record: MethodItem, key: string) {
-    const parameter = record.parameter || []
-    const item = parameter.find((option) => option.f === key)
-    if (item?.v !== undefined && item.v !== null) {
-      return item.v
-    }
-    const exampleValueMap: Record<string, string> = {
-      actual: 'mango',
-      expect: 'mango',
-    }
-    return exampleValueMap[key] || ''
   }
 
   const MethodClassCard = defineComponent({
@@ -327,7 +325,7 @@
                 type: 'text',
                 onClick: () => emit('test', record),
               },
-              () => '测试'
+              () => (record.testable === false ? '配置' : '测试')
             ),
         },
       ]
@@ -358,19 +356,64 @@
   }
 
   .try-card {
-    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .try-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--m-text);
+  .assertion-test-result-group__header,
+  .assertion-test-result-group__header > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .try-actions {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+  }
+
+  .assertion-test-results,
+  .assertion-test-result-group__items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .assertion-test-result-group {
+    overflow: hidden;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-sm);
+    background: var(--m-surface);
+  }
+
+  .assertion-test-result-group__header {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--m-border);
+    background: var(--m-surface-soft);
+  }
+
+  .assertion-test-result-group__items {
+    padding: 8px 10px;
+  }
+
+  .assertion-test-result-item {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.8fr) 54px minmax(0, 2fr);
+    gap: 10px;
+    align-items: start;
+    color: var(--m-text-2);
+    font-size: 13px;
+  }
+
+  .assertion-test-result-item .is-success {
+    color: var(--m-success);
+  }
+
+  .assertion-test-result-item .is-error {
+    color: var(--m-danger);
   }
 
   .section-tip {
@@ -384,7 +427,7 @@
   .method-layout {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
-    gap: 14px;
+    gap: var(--m-page-gap);
     align-items: flex-start;
   }
 
@@ -393,7 +436,7 @@
     top: 12px;
     overflow: hidden;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 
@@ -486,7 +529,7 @@
   .method-group-card {
     overflow: hidden;
     border: 1px solid var(--m-border);
-    border-radius: 6px;
+    border-radius: var(--m-radius-lg);
     background: var(--m-surface);
   }
 

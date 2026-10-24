@@ -1,9 +1,7 @@
 import { useUserStoreContext } from '@/store/modules/user'
 import { AxiosRequestConfig } from 'axios'
-import { useProject } from '@/store/modules/get-project'
 
 export default function (config: AxiosRequestConfig) {
-  const project = useProject()
   const useStore = useUserStoreContext()
   if (config) {
     if (!config.headers) {
@@ -12,12 +10,6 @@ export default function (config: AxiosRequestConfig) {
     config.headers['Source-Type'] = '1'
     if (useStore.token && !config.headers['Authorization']) {
       config.headers['Authorization'] = useStore.token
-    }
-    if (project.scopeType === 'project' && project.scopeId) {
-      config.headers['X-Project-Id'] = project.scopeId.toString()
-    }
-    if (project.scopeType === 'project_product' && project.scopeId) {
-      config.headers['X-Project-Product-Id'] = project.scopeId.toString()
     }
   }
   return config

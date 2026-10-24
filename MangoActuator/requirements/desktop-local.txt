@@ -1,0 +1,2 @@
+./local_packages/mangotools-2.0.8-py3-none-any.whl
+./local_packages/mangoautomation-2.1.0-py3-none-any.whl

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_api', '0015_apiauthconfig'),
     ]
@@ -13,6 +12,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='apipublic',
             name='type',
-            field=models.SmallIntegerField(choices=[(0, '自定义-第一加载'), (1, 'SQL-第二加载')], db_index=True, default=0, verbose_name='自定义变量类型'),
+            field=models.SmallIntegerField(choices=[(0, '自定义-第一加载'), (1, 'SQL-第二加载')], db_index=True,
+                                           default=0, verbose_name='自定义变量类型'),
         ),
     ]

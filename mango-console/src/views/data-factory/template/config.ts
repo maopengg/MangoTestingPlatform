@@ -1,6 +1,9 @@
 import { useTable, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
+import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 
 const table = useTable()
 
@@ -10,7 +13,7 @@ export const templateConditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入ID',
-    value: ref(''),
+    value: createIdSearchValue(),
   },
   {
     key: 'project_product',
@@ -28,9 +31,9 @@ export const templateConditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'entity',
-    label: '实体',
+    label: '实体名称',
     type: 'select',
-    placeholder: '请选择实体',
+    placeholder: '请选择实体名称',
     value: ref(''),
   },
   {
@@ -61,40 +64,29 @@ export const templateConditionItems: Array<FormItem> = reactive([
     placeholder: '请选择状态',
     value: ref(''),
   },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(templateConditionItems)
 
 export const templateTableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '模块名称',
-    key: 'module',
-    dataIndex: 'module',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: '名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
   },
   {
-    title: '实体',
+    title: '实体名称',
     key: 'entity',
     dataIndex: 'entity',
     align: 'left',
-    width: 180,
+    width: 260,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '描述',
@@ -136,10 +128,30 @@ export const templateTableColumns = useTableColumn([
     width: 90,
   },
   {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+  },
+  updateUserColumn(),
+  updateTimeColumn(),
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_data_factory', '0003_remove_datafactoryexecution_test_object'),
     ]

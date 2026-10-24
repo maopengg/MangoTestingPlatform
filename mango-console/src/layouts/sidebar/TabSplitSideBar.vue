@@ -16,6 +16,7 @@
           >
             <component :is="item.icon || 'icon-menu'" style="font-size: 18px" />
             <span class="mango-tab-split-title">{{ item.label }}</span>
+            <MenuStatusBadge v-if="item.isBeta" value="Beta" />
           </div>
         </div>
       </Scrollbar>
@@ -36,10 +37,11 @@
   import useAppConfigStore from '@/store/modules/app-config'
   import { transformSplitTabMenu } from '@/store/help'
   import { SideTheme, SplitTab } from '@/store/types'
+  import MenuStatusBadge from './components/MenuStatusBadge.vue'
 
   export default defineComponent({
     name: 'TabSplitSideBar',
-    components: { IconMenu },
+    components: { IconMenu, MenuStatusBadge },
     props: {
       showLogo: {
         type: Boolean,
@@ -143,7 +145,7 @@
 
 <style>
   .mango-tab-split-scrollbar-wrapper {
-    height: calc(100% - 48px) !important;
+    height: calc(100% - 43px) !important;
   }
 </style>
 
@@ -330,8 +332,8 @@
 
         .mango-label-item-wrapper {
           position: relative;
-          min-height: @logoHeight * 1.2;
-          padding: 10px 0;
+          min-height: @logoHeight * 1.15;
+          padding: 9px 0;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -348,8 +350,12 @@
             text-overflow: ellipsis;
             text-align: center;
             font-size: 12px;
-            line-height: 14px;
-            margin-top: 5px;
+            line-height: 12px;
+            margin-top: 4px;
+          }
+
+          :deep(.mango-menu-status-badge) {
+            margin-top: 3px;
           }
 
           &:hover {

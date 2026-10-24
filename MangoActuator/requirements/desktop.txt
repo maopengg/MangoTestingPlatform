@@ -1,0 +1,14 @@
+pyinstaller
+pystray>=0.19.5
+Pillow>=10.4.0
+
+websockets==10.4
+websocket-client==1.5.1
+
+Pympler==1.0.1
+psutil==5.9.5
+
+httpx==0.28.1
+socksio==1.0.0
+pydantic==2.9.2
+python-docx>=1.1.2

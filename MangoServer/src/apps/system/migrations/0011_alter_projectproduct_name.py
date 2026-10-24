@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0010_testsuitedetails_case_sum_testsuitedetails_fail_and_more'),
     ]

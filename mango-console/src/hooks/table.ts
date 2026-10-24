@@ -115,9 +115,22 @@ export const useTableIndexColumn = function () {
   }
 }
 
-export const usePagination = function (callback: () => void) {
+type PaginationLoadingTarget = Ref<boolean> | (() => Ref<boolean>)
+
+export const usePagination = function (
+  callback: () => unknown,
+  loadingTarget: PaginationLoadingTarget
+) {
+  function startLoading() {
+    const loading = typeof loadingTarget === 'function' ? loadingTarget() : loadingTarget
+    if (loading) {
+      loading.value = true
+    }
+  }
+
   function onChange() {
-    callback()
+    startLoading()
+    return callback()
   }
 
   const paginationInfo = reactive({

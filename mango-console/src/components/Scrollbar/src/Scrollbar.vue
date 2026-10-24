@@ -1,5 +1,5 @@
 <template>
-  <div class="mango-scrollbar">
+  <div :class="['mango-scrollbar', { 'mango-scrollbar--always': always }]">
     <div
       ref="wrap"
       :class="[
@@ -65,6 +65,7 @@
         default: '',
       },
       noresize: Boolean, // 如果 container 尺寸不会发生变化，最好设置它可以优化性能
+      always: Boolean,
       tag: {
         type: String,
         default: 'div',
@@ -210,7 +211,8 @@
 
   .mango-scrollbar:active > .mango-scrollbar__bar,
   .mango-scrollbar:focus > .mango-scrollbar__bar,
-  .mango-scrollbar:hover > .mango-scrollbar__bar {
+  .mango-scrollbar:hover > .mango-scrollbar__bar,
+  .mango-scrollbar--always > .mango-scrollbar__bar {
     opacity: 100%;
     transition: opacity 340ms ease-out;
   }

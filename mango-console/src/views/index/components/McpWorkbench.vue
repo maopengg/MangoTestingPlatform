@@ -1,12 +1,12 @@
 <template>
-  <div class="mango-mcp-workbench">
-    <div class="mango-mcp-head">
+  <div class="mango-mcp-workbench" :class="{ 'is-compact': compact }">
+    <div v-if="!compact" class="mango-mcp-head">
       <div>
         <div class="mango-mcp-title-row">
           <span class="mango-mcp-pulse"></span>
           <strong>MCP 智能接入</strong>
         </div>
-        <p>让 AI 直接创建、执行和分析 Mango 测试资产</p>
+        <p>让 AI 直接创建、执行和分析测试平台资产</p>
       </div>
       <a-tag :color="apiKey ? 'green' : 'orange'" size="small">
         {{ apiKey ? 'APIKey 已就绪' : '待配置 APIKey' }}
@@ -14,6 +14,22 @@
     </div>
 
     <div class="mango-mcp-scroll-area mango-custom-scrollbar">
+      <div class="mango-mcp-prompt-panel">
+        <div class="mango-mcp-prompt-head">
+          <span>推荐指令</span>
+          <a-button size="mini" type="text" @click="nextPrompt">
+            <template #icon><icon-swap /></template>
+          </a-button>
+        </div>
+        <button
+          class="mango-mcp-prompt-text"
+          type="button"
+          @click="copyText(activePrompt, '推荐指令')"
+        >
+          {{ activePrompt }}
+        </button>
+      </div>
+
       <div class="mango-mcp-endpoint-box">
         <div class="mango-mcp-endpoint-main">
           <span>MCP 地址</span>
@@ -28,7 +44,7 @@
         </a-tooltip>
       </div>
 
-      <div class="mango-mcp-status-grid">
+      <div v-if="!compact" class="mango-mcp-status-grid">
         <div class="mango-mcp-status-item">
           <span>当前环境</span>
           <strong>{{ modeText }}</strong>
@@ -43,7 +59,7 @@
         </div>
       </div>
 
-      <div class="mango-mcp-api-key-box">
+      <div v-if="!compact" class="mango-mcp-api-key-box">
         <div class="mango-mcp-api-key-main">
           <span>MCP APIKey</span>
           <a-typography-paragraph class="mango-mcp-api-key-text" :ellipsis="{ rows: 1 }">
@@ -64,7 +80,11 @@
         </a-space>
       </div>
 
-      <div class="mango-mcp-capability-grid">
+      <div
+        ref="capabilityGridRef"
+        class="mango-mcp-capability-grid mango-custom-scrollbar"
+        :class="{ 'mango-mcp-capability-grid--single': capabilityColumns === 1 }"
+      >
         <div v-for="item in capabilities" :key="item.key" class="mango-mcp-capability-item">
           <component :is="item.icon" class="mango-mcp-capability-icon" />
           <div>
@@ -73,26 +93,26 @@
           </div>
         </div>
       </div>
-
-      <div class="mango-mcp-prompt-panel">
-        <div class="mango-mcp-prompt-head">
-          <span>推荐指令</span>
-          <a-button size="mini" type="text" @click="nextPrompt">
-            <template #icon><icon-swap /></template>
-          </a-button>
-        </div>
-        <button class="mango-mcp-prompt-text" type="button" @click="copyText(activePrompt, '推荐指令')">
-          {{ activePrompt }}
-        </button>
-      </div>
     </div>
 
     <div class="mango-mcp-action-row">
-      <a-button size="small" type="primary" long :disabled="!apiKey" @click="copyInstallPrompt">
+      <a-button
+        size="small"
+        type="primary"
+        long
+        :disabled="!apiKey"
+        @click="copyInstallPrompt"
+        data-testid="qa-views-index-components-mcpworkbench-button-复制一键安装说明"
+      >
         <template #icon><icon-code /></template>
         复制一键安装说明
       </a-button>
-      <a-button size="small" long @click="openConfig">
+      <a-button
+        size="small"
+        long
+        @click="openConfig"
+        data-testid="qa-views-index-components-mcpworkbench-button-查看配置"
+      >
         <template #icon><icon-book /></template>
         查看配置
       </a-button>
@@ -113,6 +133,7 @@
             type="text"
             :disabled="!apiKey"
             @click="copyText(installPrompt, '一键安装说明')"
+            data-testid="qa-views-index-components-mcpworkbench-button-复制"
           >
             <template #icon><icon-copy /></template>
             复制
@@ -122,18 +143,14 @@
       </div>
       <div class="mango-mcp-config-section">
         <div class="mango-mcp-config-title">
-          <span>Codex 配置</span>
-          <a-button size="mini" type="text" @click="copyText(codexConfig, 'Codex 配置')">
-            <template #icon><icon-copy /></template>
-            复制
-          </a-button>
-        </div>
-        <a-textarea :model-value="codexConfig" readonly :auto-size="{ minRows: 6, maxRows: 8 }" />
-      </div>
-      <div class="mango-mcp-config-section">
-        <div class="mango-mcp-config-title">
           <span>Authorization</span>
-          <a-button size="mini" type="text" :disabled="!apiKey" @click="copyAuthHeader">
+          <a-button
+            size="mini"
+            type="text"
+            :disabled="!apiKey"
+            @click="copyAuthHeader"
+            data-testid="qa-views-index-components-mcpworkbench-button-复制-2"
+          >
             <template #icon><icon-copy /></template>
             复制
           </a-button>
@@ -143,14 +160,19 @@
       <div class="mango-mcp-config-note">
         一键安装说明适合直接发送给支持 MCP 的 AI 工具；手动配置时使用下方 MCP 地址和
         Authorization。APIKey 代表当前用户身份，创建、执行和上传类操作都会使用该用户权限。
-        <a-link :href="docsUrl" target="_blank">查看使用文档</a-link>
+        <a-link
+          :href="docsUrl"
+          target="_blank"
+          data-testid="qa-views-index-components-mcpworkbench-link-查看使用文档"
+          >查看使用文档</a-link
+        >
       </div>
     </a-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import {
     IconBook,
@@ -165,29 +187,92 @@
     IconSwap,
   } from '@arco-design/web-vue/es/icon'
   import useUserStore from '@/store/modules/user'
-  import { getUserInfo, putUserApiKey } from '@/api/user/user'
+  import { useHomeMenuIcon } from '@/views/index/composables/use-home-menu-icon'
+  import { getCurrentUserApiKey, putUserApiKey } from '@/api/user/user'
   import { baseURL } from '@/api/axios.config'
+  import { displayDensityScale, scaleDensityPixels } from '@/hooks/useDisplayDensity'
+
+  withDefaults(defineProps<{ compact?: boolean }>(), {
+    compact: false,
+  })
 
   const userStore = useUserStore()
+  const { resolveMenuIcon } = useHomeMenuIcon()
   const apiKey = ref('')
   const configVisible = ref(false)
   const resetting = ref(false)
+  const capabilityGridRef = ref<HTMLElement | null>(null)
+  const capabilityColumns = ref<1 | 2>(2)
+  let capabilityResizeObserver: ResizeObserver | null = null
+  let capabilityLayoutFrame = 0
 
-  const capabilities = [
-    { key: 'api', title: 'API 自动化', desc: '接口、用例、执行、失败分析', icon: IconRobot },
-    { key: 'factory', title: '数据工厂', desc: '实体、模板、前置数据绑定', icon: IconStorage },
-    { key: 'report', title: '测试报告', desc: '失败筛选、聚类和诊断', icon: IconBug },
-    { key: 'project', title: '项目上下文', desc: '环境、模块、负责人查询', icon: IconSafe },
-    { key: 'file', title: '文件上传', desc: '上传并生成 get_file 引用', icon: IconFile },
-  ]
+  const capabilities = computed(() => [
+    {
+      key: 'api',
+      title: 'API自动化',
+      desc: '接口、用例、场景、执行和失败分析',
+      icon: resolveMenuIcon('/apitest', markRaw(IconRobot)),
+    },
+    {
+      key: 'ui',
+      title: 'UI自动化',
+      desc: '页面、元素、步骤、用例和执行',
+      icon: resolveMenuIcon('/uitest', markRaw(IconCode)),
+    },
+    {
+      key: 'pytest',
+      title: 'Pytest自动化',
+      desc: '项目绑定、仓库同步、文件读写和执行',
+      icon: resolveMenuIcon('/pytest', markRaw(IconBook)),
+    },
+    {
+      key: 'factory',
+      title: '数据工厂',
+      desc: '数据库、实体、模板、SQL 查询和清理',
+      icon: resolveMenuIcon('/data-factory', markRaw(IconStorage)),
+    },
+    {
+      key: 'report',
+      title: '测试报告',
+      desc: '报告查询、失败分析和安全重试',
+      icon: resolveMenuIcon('/report', markRaw(IconBug)),
+    },
+    {
+      key: 'task',
+      title: '定时任务',
+      desc: '批量绑定或解绑 UI/API 用例',
+      icon: resolveMenuIcon('/timing', markRaw(IconRefresh)),
+    },
+    {
+      key: 'functional',
+      title: '功能测试',
+      desc: '需求、用例、资料和自动化绑定',
+      icon: resolveMenuIcon('/functional-test', markRaw(IconSafe)),
+    },
+    {
+      key: 'ai',
+      title: 'AI 资产',
+      desc: 'Skill、MCP 工具快照和 Agent 记录',
+      icon: resolveMenuIcon('/ai', markRaw(IconRobot)),
+    },
+    {
+      key: 'file',
+      title: '系统文件',
+      desc: '文件查询、上传和下载地址获取',
+      icon: resolveMenuIcon('/system', markRaw(IconFile)),
+    },
+  ])
 
   const mcpServerName =
     String(import.meta.env.VITE_APP_MCP_SERVER_NAME || '').trim() || 'mango-test-platform'
   const prompts = [
     `使用 ${mcpServerName} MCP 查询当前平台开放了哪些能力。`,
+    `使用 ${mcpServerName} MCP 查询当前用户的项目、测试环境和可用模块。`,
     `使用 ${mcpServerName} MCP 创建一个 API case，执行后分析失败原因。`,
-    `使用 ${mcpServerName} MCP 分析 test_suite_id=662993174721 的失败 API 用例。`,
-    `使用 ${mcpServerName} MCP 为指定表创建数据工厂实体和状态模板。`,
+    `使用 ${mcpServerName} MCP 创建一个 UI 页面步骤并绑定到 UI 用例中。`,
+    `使用 ${mcpServerName} MCP 为指定表创建数据实体和模板，并预览生成数据。`,
+    `使用 ${mcpServerName} MCP 查询测试报告，筛选失败用例并生成排查结论。`,
+    `使用 ${mcpServerName} MCP 查询 AI Skill 和 MCP 工具快照。`,
   ]
   const promptIndex = ref(Math.floor(Math.random() * prompts.length))
 
@@ -197,7 +282,7 @@
     if (!baseURL || baseURL.startsWith('/')) {
       return window.location.origin.replace(/\/+$/, '')
     }
-    return baseURL.replace(/\/+$/, '')
+    return baseURL.replace(/\/+$/, '').replace(/\/api$/i, '')
   })
   const mcpUrl = computed(() => `${backendBaseUrl.value}/mcp`)
   const modeText = computed(() => import.meta.env.MODE || '-')
@@ -211,27 +296,21 @@
     apiKey.value ? `Bearer ${apiKey.value}` : 'Bearer <MCP APIKey>'
   )
   const installPrompt = computed(
-    () => `请根据下面的配置帮我安装 Mango MCP 服务，并在安装后查询这个 MCP 服务开放了哪些能力。
+    () => `请根据下面的配置帮我安装 Mango MCP 服务。安装完成后，请查询并向我说明这个 MCP 服务开放的功能，以及服务端提供了哪些 Skill。
 
 MCP 服务名称：${mcpServerName}
 URL：${mcpUrl.value}
 Headers：
 Authorization: ${authHeader.value}
 
-说明：
-1. 这是 Mango 测试平台的 MCP 服务。
-2. 请使用 streamable HTTP 方式连接。
-3. 安装完成后优先调用服务发现能力，确认 API 自动化、数据工厂、测试报告、项目上下文、文件上传等能力是否可用。
-4. 后续创建、执行、上传等操作都使用这个 Authorization 对应的 Mango 用户权限。`
+要求：
+1. 使用 Streamable HTTP 方式连接，将 Authorization 直接保存到 MCP 配置中，不要作为系统变量注入。
+2. 安装后读取 MCP 初始化说明并调用 get_mcp_server_info，确认连接成功。
+3. 完整查询 Tools、Resources、Resource Templates 和 Prompts，并按服务实际返回归纳功能。本步骤只查看工具清单及元数据，不调用清单中的任何业务工具。
+4. 读取 mango://skills/catalog；如果客户端不支持 MCP Resource，则调用 list_mcp_skills 并处理全部分页。列出每个 Skill 的名称、标题、分类、用途和当前版本，并说明如何按任务读取对应 Skill。
+5. 明确说明 Skill 更新方式：后续调用 list_mcp_skills 时通过 known_versions 传入本地已知版本；发现 update_available=true 后重新获取对应 Skill，无需重新安装 MCP。
+6. 安装完成后的回复包含安装及连接结果、MCP 功能清单、Skill 清单以及 Skill 使用与更新方式。`
   )
-  const codexConfig = computed(
-    () => `[mcp_servers.${mcpServerName}]
-url = "${mcpUrl.value}"
-env_http_headers = { Authorization = "MANGO_TEST_PLATFORM_AUTH_HEADER" }
-
-MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
-  )
-
   function nextPrompt() {
     promptIndex.value = (promptIndex.value + 1) % prompts.length
   }
@@ -288,11 +367,9 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
 
   function loadCurrentUserApiKey() {
     if (!userStore.userId) return
-    getUserInfo({ id: userStore.userId, page: 1, pageSize: 1 })
+    getCurrentUserApiKey()
       .then((res) => {
-        const list = Array.isArray(res.data) ? res.data : []
-        const current = list.find((item: any) => item.id === userStore.userId) || list[0]
-        apiKey.value = current?.api_key || ''
+        apiKey.value = res.data?.api_key || ''
       })
       .catch(console.log)
   }
@@ -306,7 +383,7 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
       okText: '重置',
       onBeforeOk: () => {
         resetting.value = true
-        return putUserApiKey({ id: userStore.userId })
+        return putUserApiKey({})
           .then((res) => {
             Message.success(`${res.msg}，请复制新的 APIKey 更新 MCP 客户端配置`)
             apiKey.value = res.data?.api_key || ''
@@ -320,8 +397,42 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     })
   }
 
+  function updateCapabilityColumns() {
+    const container = capabilityGridRef.value
+    if (!container) return
+    const gap = Number.parseFloat(getComputedStyle(container).rowGap) || 0
+    const minimumRowHeight = scaleDensityPixels(48)
+    const singleColumnHeight =
+      capabilities.value.length * minimumRowHeight +
+      Math.max(0, capabilities.value.length - 1) * gap
+    capabilityColumns.value = container.clientHeight >= singleColumnHeight ? 1 : 2
+  }
+
+  function scheduleCapabilityLayout() {
+    if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
+    capabilityLayoutFrame = window.requestAnimationFrame(() => {
+      updateCapabilityColumns()
+      capabilityLayoutFrame = 0
+    })
+  }
+
   onMounted(() => {
     loadCurrentUserApiKey()
+    scheduleCapabilityLayout()
+    if (capabilityGridRef.value && typeof ResizeObserver !== 'undefined') {
+      capabilityResizeObserver = new ResizeObserver(scheduleCapabilityLayout)
+      capabilityResizeObserver.observe(capabilityGridRef.value)
+    } else {
+      window.addEventListener('resize', scheduleCapabilityLayout)
+    }
+  })
+
+  watch(displayDensityScale, scheduleCapabilityLayout)
+
+  onBeforeUnmount(() => {
+    capabilityResizeObserver?.disconnect()
+    window.removeEventListener('resize', scheduleCapabilityLayout)
+    if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
   })
 </script>
 
@@ -344,7 +455,7 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     flex: 1 1 auto;
     flex-direction: column;
     gap: 8px;
-    overflow-y: auto;
+    overflow: hidden;
     padding-right: 2px;
   }
 
@@ -370,11 +481,21 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
   }
 
   .mango-mcp-pulse {
-    width: 8px;
-    height: 8px;
+    display: grid;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    place-items: center;
     border-radius: 50%;
-    background: var(--m-success);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--m-success) 18%, transparent);
+    background: color-mix(in srgb, var(--m-success) 18%, transparent);
+
+    &::after {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--m-success);
+      content: '';
+    }
   }
 
   .mango-mcp-endpoint-box,
@@ -444,8 +565,17 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
 
   .mango-mcp-capability-grid {
     display: grid;
+    flex: 1 1 170px;
+    min-height: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    align-content: start;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .mango-mcp-capability-grid--single {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .mango-mcp-capability-item {
@@ -588,6 +718,10 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
       padding: 6px;
     }
 
+    .mango-mcp-capability-grid {
+      flex-basis: 142px;
+    }
+
     .mango-mcp-prompt-panel {
       min-height: 76px;
       padding: 7px;
@@ -619,7 +753,7 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     }
 
     .mango-mcp-capability-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      flex-basis: 118px;
     }
 
     .mango-mcp-capability-item {
@@ -638,6 +772,52 @@ MANGO_TEST_PLATFORM_AUTH_HEADER=${authHeader.value}`
     .mango-mcp-action-row {
       grid-template-columns: 1fr;
       padding-top: 2px;
+    }
+  }
+
+  .mango-mcp-workbench.is-compact {
+    gap: 5px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+
+    .mango-mcp-scroll-area {
+      flex: 1 1 auto;
+      gap: 5px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .mango-mcp-endpoint-box,
+    .mango-mcp-api-key-box {
+      min-height: 56px;
+      padding: 8px 10px;
+    }
+
+    .mango-mcp-endpoint-main span,
+    .mango-mcp-api-key-main span {
+      margin-bottom: 4px;
+    }
+
+    .mango-mcp-endpoint-text,
+    .mango-mcp-api-key-text {
+      line-height: 18px;
+    }
+
+    .mango-mcp-action-row {
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      padding: 1px 0 0;
+    }
+
+    .mango-mcp-capability-grid {
+      flex: 0 0 auto;
+      overflow: visible;
+    }
+
+    :deep(.arco-btn-size-small) {
+      height: 26px;
+      padding: 0 7px;
+      font-size: 11px;
     }
   }
 </style>

@@ -5,7 +5,7 @@
         :status="border ? 'success' : 'normal'"
         shape="circle"
         size="small"
-        @click="updateBorder"
+        @click="updateBorder" data-testid="qa-components-table-tableconfig-button-b"
       >
         B
       </a-button>
@@ -15,7 +15,7 @@
         :status="striped ? 'success' : 'normal'"
         shape="circle"
         size="small"
-        @click="updateStriped"
+        @click="updateStriped" data-testid="qa-components-table-tableconfig-button-s"
       >
         S
       </a-button>

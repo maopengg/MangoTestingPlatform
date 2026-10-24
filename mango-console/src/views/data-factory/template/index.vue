@@ -1,10 +1,23 @@
 <template>
-  <TableBody>
+  <TableBody plain class="mango-detail-workbench-page">
     <template #header>
-      <TableHeader title="数据工厂 / 场景模板" @search="doRefresh" @reset-search="onResetSearch">
-        <template #search-content>
+      <TableHeader title="数据工厂 / 场景模板" />
+    </template>
+
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        contained-body
+        :model-value="getSearchItemValue('project_product')"
+        :module-value="getSearchItemValue('module')"
+        :reset-key="sidebarResetKey"
+        show-modules
+        @filter-change="onNavigationFilterChange"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search>
           <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
-            <a-form-item v-for="item of templateConditionItems" :key="item.key" :label="item.label">
+            <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
@@ -33,8 +46,11 @@
               <template v-else-if="item.type === 'select' && item.key === 'entity'">
                 <a-select
                   v-model="item.value"
-                  :field-names="{ value: 'id', label: 'name' }"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="{ value: 'id', label: 'display_name' }"
                   :options="searchEntityOptions"
+                  :filter-option="filterEntityOption"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -44,6 +60,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'cleanup_strategy'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="enumFieldNames"
                   :options="enumStore.data_factory_cleanup_strategy"
                   :placeholder="item.placeholder"
@@ -56,6 +74,8 @@
               <template v-else-if="item.type === 'select' && item.key === 'usage_scope'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="enumFieldNames"
                   :options="enumStore.data_factory_template_usage_scope"
                   :placeholder="item.placeholder"
@@ -68,8 +88,24 @@
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="enumFieldNames"
                   :options="statusOptions"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'update_user'">
+                <a-select
+                  v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
+                  :field-names="enumFieldNames"
+                  :options="item.optionItems"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -80,24 +116,14 @@
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <a-tabs>
-        <template #extra>
-          <div>
-            <a-space>
-              <a-button size="small" type="primary" @click="openTemplate()"
-                >新增场景模板</a-button
-              ></a-space
-            >
-          </div>
+        <template #toolbar>
+          <a-button v-permission="'data_factory.template:create'" size="small" type="primary" @click="openTemplate()" data-testid="qa-views-data-factory-template-button-新增场景模板">新增场景模板</a-button>
         </template>
-      </a-tabs>
       <a-table
-        :scroll="{ x: 1210 }"
-        :columns="templateTableColumns"
+        class="mango-native-scroll-table"
+        :scroll="{ x: 2110, y: '100%' }"
+        :bordered="false"
+        :columns="visibleTableColumns"
         :data="table.dataList"
         :loading="table.tableLoading.value"
         :pagination="false"
@@ -105,7 +131,7 @@
       >
         <template #columns>
           <a-table-column
-            v-for="item of templateTableColumns"
+            v-for="item of visibleTableColumns"
             :key="item.key"
             :align="item.align"
             :data-index="item.key"
@@ -118,14 +144,8 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'module'" #cell="{ record }">
-              {{ formatModulePath(record?.module) }}
-            </template>
             <template v-else-if="item.key === 'entity'" #cell="{ record }">
-              {{ record.entity?.name || record.entity }}
+              {{ formatEntityLabel(record.entity) }}
             </template>
             <template v-else-if="item.key === 'cleanup_strategy'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.cleanup_strategy]" size="small">
@@ -153,26 +173,42 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
+              <a-switch v-permission="'data_factory.template:status'"
+                size="small"
                 :beforeChange="(newValue) => switchTemplateStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
             </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ formatProjectProductPath(record.project_product) }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ formatModulePath(record.module) }}
+            </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  {
+                  { permission: 'data_factory.template:detail',
                     label: '场景配置',
                     loading: actionLoading === `detail-${record.id}`,
                     onClick: () => openTemplateDetail(record),
                   },
-                  { label: '编辑', onClick: () => openTemplate(record) },
-                  {
+                  { permission: 'data_factory.template:edit', label: '编辑', onClick: () => openTemplate(record) },
+                  { permission: 'data_factory.template:debug',
+                    label: '校验',
+                    hidden: Number(record.config_status) !== 0,
+                    loading: actionLoading === `validate-${record.id}`,
+                    onClick: () => validateTemplate(record.id),
+                  },
+                  { permission: 'data_factory.template:copy',
                     label: '复制',
                     loading: actionLoading === `copy-${record.id}`,
                     onClick: () => copyTemplate(record),
                   },
-                  {
+                  { permission: 'data_factory.template:delete',
                     label: '删除',
                     danger: true,
                     loading: actionLoading === `delete-${record.id}`,
@@ -184,9 +220,9 @@
           </a-table-column>
         </template>
       </a-table>
+        <template #footer><TableFooter :pagination="pagination" /></template>
+      </ProjectProductNavigationWorkbench>
     </template>
-
-    <template #footer><TableFooter :pagination="pagination" /></template>
   </TableBody>
 
   <a-modal
@@ -215,11 +251,12 @@
           /></a-form-item>
         </a-grid-item>
         <a-grid-item>
-          <a-form-item label="实体" required
+          <a-form-item label="实体名称" required
             ><a-select
               v-model="templateForm.entity"
               :options="templateEntityOptions"
-              :field-names="{ value: 'id', label: 'name' }"
+              :field-names="{ value: 'id', label: 'display_name' }"
+              :filter-option="filterEntityOption"
               allow-search
           /></a-form-item>
         </a-grid-item>
@@ -247,6 +284,7 @@
               :options="enumStore.data_factory_template_usage_scope"
               :field-names="enumFieldNames"
               placeholder="请选择场景用途"
+              data-testid="qa-views-data-factory-template-select-请选择场景用途"
             />
           </a-form-item>
         </a-grid-item>
@@ -272,26 +310,28 @@
   } from '@/api/data-factory'
   import { usePagination, useTable } from '@/hooks/table'
   import { useEnum } from '@/store/modules/get-enum'
-  import useUserStore from '@/store/modules/user'
   import { usePageData } from '@/store/page-data'
   import { getFormItems } from '@/utils/datacleaning'
   import type { DataFactoryFieldOverrides, DataFactoryOutputConfig } from '@/types/data-factory'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, reactive, ref, watch } from 'vue'
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
+  import { getUserName } from '@/api/user/user'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import {
-    formatModulePath,
-    formatProjectProductPath,
-    getItemValue,
-  } from '@/utils/business-format'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import { formatProjectProductPath, formatModulePath, getItemValue } from '@/utils/business-format'
+  import { setUpdateUserOptions } from '@/utils/update-user'
   import { templateConditionItems, templateTableColumns } from './config'
 
   const table = useTable()
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
+  const sidebarResetKey = ref(0)
+  const headerConditionItems = computed(() =>
+    templateConditionItems.filter((item) => !['project_product', 'module'].includes(item.key))
+  )
+  const visibleTableColumns = templateTableColumns
   const enumStore = useEnum()
-  const userStore = useUserStore()
   const pageData = usePageData()
   const router = useRouter()
   const enumFieldNames = { value: 'key', label: 'title' }
@@ -327,6 +367,29 @@
       return value[value.length - 1] ?? null
     }
     return value?.id ?? value
+  }
+
+  function formatEntityLabel(entity: any) {
+    if (!entity || typeof entity !== 'object') {
+      return entity || '-'
+    }
+    const tableName = String(entity.table_name || '').trim()
+    const alias = String(entity.name || '').trim()
+    if (tableName && alias && tableName !== alias) {
+      return `${tableName}（${alias}）`
+    }
+    return tableName || alias || entity.id || '-'
+  }
+
+  function filterEntityOption(inputValue: string, option: any) {
+    const keyword = String(inputValue || '').trim().toLowerCase()
+    if (!keyword) {
+      return true
+    }
+    const entity = option?.raw || option?.data || option || {}
+    return [entity.table_name, entity.name, entity.display_name, entity.label]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(keyword))
   }
 
   function getSearchItem(key: string) {
@@ -366,6 +429,16 @@
     doRefresh()
   }
 
+  function onNavigationFilterChange({ projectProduct, module }: { projectProduct: any; module: any }) {
+    const projectItem = getSearchItem('project_product')
+    const moduleItem = getSearchItem('module')
+    if (projectItem) projectItem.value = projectProduct ?? ''
+    if (moduleItem) moduleItem.value = module ?? ''
+    pagination.page = 1
+    loadSearchEntities({ project_product: getOptionId(projectProduct), module: getOptionId(module) })
+    doRefresh()
+  }
+
   function resetTemplateForm(record?: any) {
     resettingTemplateForm.value = true
     Object.keys(templateForm).forEach((key) => delete templateForm[key])
@@ -378,10 +451,10 @@
       description: record?.description || '',
       field_overrides: (record?.field_overrides || {}) as DataFactoryFieldOverrides,
       output_config: (record?.output_config || []) as DataFactoryOutputConfig,
-      cleanup_strategy: record?.cleanup_strategy || 2,
+      cleanup_strategy: record?.cleanup_strategy ?? 1,
       is_default: record?.is_default || false,
       usage_scope: Number(record?.usage_scope) === 2 ? 2 : 1,
-      status: record?.status || 1,
+      status: record?.status ?? 1,
     })
     resettingTemplateForm.value = false
   }
@@ -389,6 +462,9 @@
   function doRefresh() {
     table.tableLoading.value = true
     const query = getFormItems(templateConditionItems)
+    if (query.update_user === null || query.update_user === '') {
+      delete query.update_user
+    }
     getDataFactoryTemplate({ ...query, page: pagination.page, pageSize: pagination.pageSize }).then(
       (res) => {
         table.handleSuccess(res)
@@ -399,8 +475,9 @@
 
   function onResetSearch() {
     templateConditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
+    sidebarResetKey.value += 1
     doRefresh()
   }
 
@@ -415,7 +492,10 @@
       query.module = getOptionId(module)
     }
     return getDataFactoryEntity(query).then((res) => {
-      target.value = res.data || []
+      target.value = (res.data || []).map((entity: any) => ({
+        ...entity,
+        display_name: formatEntityLabel(entity),
+      }))
     })
   }
 
@@ -427,7 +507,7 @@
     return loadEntityOptions(params, templateEntityOptions)
   }
 
-  function onTemplateProjectChange(value: any) {
+  function onTemplateProjectChange(_value: any) {
     templateForm.module = null
     templateForm.entity = null
     templateForm.field_overrides = {}
@@ -456,7 +536,7 @@
       !templateForm.name ||
       !templateForm.usage_scope
     ) {
-      Message.error('请先填写产品、模块名称、实体、场景名称和场景用途')
+      Message.error('请先填写产品、模块名称、实体名称、场景名称和场景用途')
       return false
     }
 
@@ -464,13 +544,16 @@
       ...templateForm,
       field_overrides: templateForm.field_overrides || {},
       output_config: templateForm.output_config || [],
-      test_env: userStore.selected_environment,
     }
     const request = payload.id ? putDataFactoryTemplate : postDataFactoryTemplate
     templateSaving.value = true
     try {
       const res = await request(payload)
-      Message.success(res.msg)
+      if (Number(res.data?.config_status) === 0) {
+        Message.warning('配置已保存，待校验后可执行；请通过校验操作完成校验')
+      } else {
+        Message.success(res.msg)
+      }
       doRefresh()
       return true
     } catch (error) {
@@ -519,6 +602,17 @@
     })
   }
 
+  async function validateTemplate(id: number) {
+    actionLoading.value = `validate-${id}`
+    try {
+      await putDataFactoryTemplateStatus({ id, status: 1 })
+      Message.success('校验通过，场景模板已启用')
+      doRefresh()
+    } finally {
+      actionLoading.value = ''
+    }
+  }
+
   function openTemplateDetail(record: any) {
     if (!record?.id) {
       Message.error('场景模板不存在，请刷新后重试')
@@ -537,13 +631,14 @@
 
   onMounted(() => {
     enumStore.getEnum()
+    getUserName().then((res) => setUpdateUserOptions(templateConditionItems, res.data || []))
     loadSearchEntities()
     doRefresh()
   })
 
   watch(
     () => templateForm.entity,
-    (entityId) => {
+    (_entityId) => {
       if (!templateVisible.value || resettingTemplateForm.value) {
         return
       }

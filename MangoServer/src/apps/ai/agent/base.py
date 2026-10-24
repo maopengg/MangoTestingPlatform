@@ -1,43 +1,66 @@
 # -*- coding: utf-8 -*-
-from threading import Thread
-
-from django.db import close_old_connections
-
-from src.apps.ai.agent.task_step import AiAgentTaskStepService
+from src.apps.ai.enums import AiAgentTaskStatusEnum
+from src.apps.ai.exceptions import ai_service_error
 from src.apps.ai.models import AiAgentTask
-from src.apps.ai.service.core import AiTaskService
-from src.common.enums.ai_enum import AiAgentTaskStatusEnum
+from src.apps.ai.services.agent.task_step import AiAgentTaskStepService
+from src.apps.ai.services.core import AiTaskService
+from src.apps.ai.services.harness.artifact import AgentEventService
+from src.apps.ai.services.harness.definition import AgentDefinitionService
 
 
 class BaseAgent:
     task_type: int | None = None
+    agent_key: str | None = None
     step_defs: list[dict] = []
 
     @classmethod
     def create_task(cls, title: str, input_data: dict, user_id: int | None = None, skill=None) -> AiAgentTask:
-        task = AiTaskService.create_task(cls.task_type, title, input_data, user_id=user_id, skill=skill)
+        definition = AgentDefinitionService.active(cls.agent_key)
+        task = AiTaskService.create_task(
+            cls.task_type,
+            title,
+            input_data,
+            user_id=user_id,
+            skill=skill,
+            definition=definition,
+        )
         AiAgentTaskStepService.create_steps(task, cls.step_defs)
         return task
 
     @classmethod
     def dispatch(cls, task_id: int):
-        Thread(target=cls.run_safely, args=(task_id,), daemon=True).start()
+        task = AiAgentTask.objects.get(id=task_id)
+        AgentEventService.emit(task, "task_queued", "任务已进入 Agent Worker 队列")
+
+    @classmethod
+    def execute_checkpointed_step(
+            cls,
+            task: AiAgentTask,
+            step_key: str,
+            operation,
+            *,
+            input_data: dict | None = None,
+            summarize=None,
+            artifact_status: str = "validated",
+    ):
+        checkpoint = AiAgentTaskStepService.load_checkpoint(task, step_key)
+        if checkpoint is not None:
+            return checkpoint
+        AiAgentTaskStepService.start_step(task, step_key, input_data)
+        result = operation()
+        output = summarize(result) if summarize else result
+        AiAgentTaskStepService.finish_step(
+            task,
+            step_key,
+            output if isinstance(output, dict) else {"value": output},
+            checkpoint_data=result,
+            artifact_status=artifact_status,
+        )
+        return result
 
     @classmethod
     def run_safely(cls, task_id: int):
-        close_old_connections()
-        task = None
-        try:
-            task = AiAgentTask.objects.get(id=task_id, task_type=cls.task_type)
-            AiTaskService.mark_running(task)
-            cls.run(task)
-        except Exception as exc:
-            if task:
-                AiTaskService.fail_task(task, str(exc))
-        finally:
-            if task:
-                AiTaskService.clear_running(task)
-            close_old_connections()
+        raise ai_service_error("请使用 python manage.py run_agent_worker 执行 Agent 任务")
 
     @classmethod
     def run(cls, task: AiAgentTask):
@@ -77,15 +100,26 @@ class BaseAgent:
     @classmethod
     def retry(cls, task_id: int, input_patch: dict | None = None):
         task = AiAgentTask.objects.get(id=task_id, task_type=cls.task_type)
-        if task.status == AiAgentTaskStatusEnum.RUNNING.value:
-            raise ValueError("当前任务正在运行中，请等待完成后再操作")
+        if task.status in [
+            AiAgentTaskStatusEnum.PENDING.value,
+            AiAgentTaskStatusEnum.CLAIMED.value,
+            AiAgentTaskStatusEnum.RUNNING.value,
+            AiAgentTaskStatusEnum.WAITING_MODEL.value,
+        ]:
+            raise ai_service_error("当前任务正在运行中，请等待完成后再操作")
         if input_patch:
             input_data = dict(task.input_data or {})
             input_data.update(input_patch)
             task.input_data = input_data
-        task.status = AiAgentTaskStatusEnum.RUNNING.value
+        task.status = AiAgentTaskStatusEnum.PENDING.value
         task.error_message = None
         task.output_data = {}
-        task.save(update_fields=["status", "error_message", "output_data", "input_data", "update_time"])
+        task.worker_id = None
+        task.lease_expires_at = None
+        task.cancel_requested = False
+        task.save(
+            update_fields=["status", "error_message", "output_data", "input_data", "worker_id", "lease_expires_at",
+                           "cancel_requested", "update_time"])
+        AiAgentTaskStepService.reset_steps(task, cls.step_defs)
         cls.dispatch(task.id)
         return task

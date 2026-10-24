@@ -1,4 +1,4 @@
-import { DeviceType } from '@/store/types'
+import { DeviceType, DisplayDensity } from '@/store/types'
 
 export const projectName = '芒果测试平台'
 
@@ -9,7 +9,8 @@ export default {
   themePreset: 'mango-blue',
   projectName,
   layoutMode: 'ltr',
-  sideWidth: 210,
+  sideWidth: 199,
+  displayDensity: DisplayDensity.AUTO,
   pageAnim: 'opacity',
   isFixedNavBar: true,
   deviceType: DeviceType.PC,

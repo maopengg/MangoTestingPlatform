@@ -1,55 +1,248 @@
 <template>
-  <TableBody ref="tableBody" class="mango-detail-workbench-page">
+  <TableBody
+    ref="tableBody"
+    :embedded="props.embedded"
+    :show-embedded-header="props.embedded"
+    class="mango-detail-workbench-page"
+  >
     <template #header>
-      <div class="mango-detail-toolbar">
-        <div class="mango-detail-heading">
-          <div class="mango-detail-title">{{ apiCaseDetailTitle }}</div>
-          <div class="mango-detail-subtitle">维护用例前后置、接口编排、断言和执行结果</div>
-        </div>
-        <a-space class="mango-detail-actions" wrap>
-          <a-button
-            size="small"
-            status="success"
-            :loading="caseRunning"
-            :disabled="caseRunning"
-            @click="caseRun(null)"
-          >
-            执行
-          </a-button>
-          <a-button size="small" @click="doResetSearch">返回</a-button>
-        </a-space>
-      </div>
+      <ApiCasePageHeader
+        :title="apiCaseDetailTitle"
+        :case-id="apiCaseId"
+        :running="caseRunning"
+        :execution-disabled="caseExecutionActive"
+        :analysis-disabled="caseExecutionActive || !selectedExecutionResultSummary?.id"
+        @execute="caseRun(null)"
+        @analyze="caseDiagnosisDrawerRef?.open()"
+        @search="openConfigSearch"
+        @history="versionPanelRef?.openResultHistoryDrawer()"
+        @back="doResetSearch"
+      >
+        <VariableReferencePanel />
+      </ApiCasePageHeader>
     </template>
     <template #default>
-      <div class="api-case-workbench mango-detail-workbench">
-        <section class="api-case-panel api-case-left">
-          <div class="api-case-panel-head">
-            <div>
-              <div class="api-case-panel-title">用例编排</div>
-              <div class="api-case-panel-subtitle"> 前置处理、接口步骤和用例后置配置 </div>
-            </div>
-            <a-tag size="small" color="arcoblue">{{ data.data.length || 0 }} 个步骤</a-tag>
-          </div>
-          <div class="api-case-panel-body">
-            <a-tabs :active-key="data.apiType" @tab-click="(key) => switchType(key)">
-              <template #extra>
-                <a-space v-if="showCaseAddButton">
-                  <a-button size="small" type="primary" @click="addData">增加</a-button>
-                </a-space>
-              </template>
-              <a-tab-pane key="1" title="用例前置">
-                <a-tabs position="left" @tab-click="(key) => switchSonType(key)">
-                  <a-tab-pane key="11" title="自定义参数">
+      <div
+        class="mango-workbench-scroll-x api-case-workbench-scroll"
+        :class="{ 'api-case-workbench-scroll--scenario-expanded': scenarioWorkbenchExpanded }"
+      >
+        <div
+          class="api-case-workbench mango-detail-workbench"
+          :class="{ 'api-case-workbench--scenario-expanded': scenarioWorkbenchExpanded }"
+        >
+          <section class="api-case-panel api-case-version-sidebar">
+            <ApiCaseVersionPanel
+              ref="versionPanelRef"
+              :case-id="apiCaseId"
+              :current-payload="apiCaseCompareCurrentPayload"
+              @select="selectExecutionVersion"
+              @detail="showVersionDetail"
+              @current="showCurrentConfiguration"
+              @execute="executeSelectedVersion"
+              @published="doRefresh"
+              @show-trace="showExecutionTrace"
+            />
+          </section>
+
+          <ApiCaseOrchestrationPanel
+            :active-key="data.apiType"
+            :step-count="data.data.length || 0"
+            :edit-locked="caseEditLocked"
+            :show-add="showCaseAddButton"
+            :loading="data.caseConfigLoading"
+            @change="switchType"
+            @add="addData"
+          >
+            <template #preparation>
+              <a-tabs
+                :active-key="data.apiSonType"
+                class="case-config-tabs"
+                position="left"
+                @tab-click="(key) => switchSonType(key)"
+              >
+                <a-tab-pane key="15">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      全局变量
+                      <span class="scenario-tab-count">{{ getCaseConfigCount('public') }}</span>
+                    </span>
+                  </template>
+                  <div class="mango-case-global-options">
+                    <div class="mango-case-global-option">
+                      <TipMessage
+                        message="开启可选的 key 如果跟默认开启的 key 重复，则会覆盖默认开启的变量值"
+                      />
+                      <div class="mango-case-global-table mango-case-global-table--public">
+                        <div class="mango-case-global-table__head">
+                          <span></span>
+                          <span>名称</span>
+                          <span>Key</span>
+                          <span>类型</span>
+                          <span>环境</span>
+                          <span>状态</span>
+                        </div>
+                        <a-checkbox-group
+                          class="mango-case-global-table__body"
+                          v-model="frontPublicCheckedValues"
+                          :disabled="caseEditLocked || caseGlobalSaving"
+                          direction="vertical"
+                          @change="changeCaseGlobalOptions"
+                        >
+                          <a-checkbox
+                            v-for="item in data.publicOptions"
+                            :key="item.value"
+                            :value="item.value"
+                            :disabled="caseEditLocked || item.disabled || caseGlobalSaving"
+                          >
+                            <span class="mango-case-global-table__row">
+                              <span class="mango-case-global-table__cell" :title="item.name">{{
+                                item.name
+                              }}</span>
+                              <span class="mango-case-global-table__cell" :title="item.key">{{
+                                item.key
+                              }}</span>
+                              <span class="mango-case-global-table__cell">
+                                <a-tag :color="enumStore.colors[item.type]" size="small">{{
+                                  item.typeText
+                                }}</a-tag>
+                              </span>
+                              <span class="mango-case-global-table__cell">
+                                <a-tag v-if="item.isCommonEnv" size="small">环境通用</a-tag>
+                                <a-space v-else wrap :size="4">
+                                  <a-tag
+                                    v-for="env in item.testEnvs"
+                                    :key="env"
+                                    :color="enumStore.colors[env]"
+                                    size="small"
+                                  >
+                                    {{ formatEnvironmentText(env) }}
+                                  </a-tag>
+                                </a-space>
+                              </span>
+                              <span class="mango-case-global-table__cell">
+                                <a-tag :color="item.disabled ? 'green' : 'gray'" size="small">
+                                  {{ item.statusText }}
+                                </a-tag>
+                              </span>
+                            </span>
+                          </a-checkbox>
+                        </a-checkbox-group>
+                      </div>
+                    </div>
+                  </div>
+                </a-tab-pane>
+                <a-tab-pane key="16">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      授权管理
+                      <span class="scenario-tab-count">{{ getCaseConfigCount('auth') }}</span>
+                    </span>
+                  </template>
+                  <div class="mango-case-global-options">
+                    <div class="mango-case-global-option">
+                      <div class="mango-case-global-table mango-case-global-table--auth">
+                        <div class="mango-case-global-table__head">
+                          <span></span>
+                          <span>授权名称</span>
+                          <span>授权方式</span>
+                          <span>环境</span>
+                          <span>状态</span>
+                        </div>
+                        <a-checkbox-group
+                          class="mango-case-global-table__body"
+                          v-model="frontAuthConfigCheckedValues"
+                          :disabled="caseEditLocked || caseGlobalSaving"
+                          direction="vertical"
+                          @change="changeCaseGlobalOptions"
+                        >
+                          <a-checkbox
+                            v-for="item in data.authConfigOptions"
+                            :key="item.value"
+                            :value="item.value"
+                            :disabled="caseEditLocked || item.disabled || caseGlobalSaving"
+                          >
+                            <span class="mango-case-global-table__row">
+                              <span class="mango-case-global-table__cell" :title="item.name">{{
+                                item.name
+                              }}</span>
+                              <span class="mango-case-global-table__cell">
+                                <a-tag :color="enumStore.colors[item.authType]" size="small">{{
+                                  item.authTypeText
+                                }}</a-tag>
+                              </span>
+                              <span class="mango-case-global-table__cell">
+                                <a-tag v-if="item.isCommonEnv" size="small">{{
+                                  item.envText
+                                }}</a-tag>
+                                <a-tag
+                                  v-else
+                                  :color="enumStore.colors[item.testEnv]"
+                                  size="small"
+                                  >{{ item.envText }}</a-tag
+                                >
+                              </span>
+                              <span class="mango-case-global-table__cell">
+                                <a-tag :color="item.disabled ? 'green' : 'gray'" size="small">{{
+                                  item.statusText
+                                }}</a-tag>
+                              </span>
+                            </span>
+                          </a-checkbox>
+                        </a-checkbox-group>
+                      </div>
+                    </div>
+                  </div>
+                </a-tab-pane>
+                <a-tab-pane key="11">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      自定义变量
+                      <span class="scenario-tab-count">{{ getCaseConfigCount('custom') }}</span>
+                    </span>
+                  </template>
+                  <div
+                    class="mango-horizontal-scroll-region mango-horizontal-scroll-region--compact mango-case-custom-variable-list"
+                  >
                     <KeyValueList
                       :data-list="pageData.record.front_custom"
+                      layout="environment-key-value"
                       :field-config="[
-                        { field: 'key', label: 'Key', placeholder: '请输入缓存key' },
-                        { field: 'value', label: 'Value', placeholder: '请输入value' },
+                        {
+                          field: 'test_envs',
+                          label: '适用环境',
+                          type: 'select',
+                          placeholder: '请选择环境',
+                          options: caseVariableEnvironmentOptions,
+                          fieldNames: fieldNames,
+                          multiple: true,
+                          className: 'mango-env-select',
+                          containerClassName: 'mango-case-custom-env-field',
+                          getValue: getVariableEnvironmentValue,
+                          setValue: setVariableEnvironmentValue,
+                        },
+                        {
+                          field: 'key',
+                          label: 'Key',
+                          type: 'input',
+                          placeholder: '请输入缓存key',
+                          className: 'mango-case-custom-key-input',
+                          containerClassName: 'mango-case-custom-key-field',
+                          showTitle: true,
+                        },
+                        {
+                          field: 'value',
+                          label: 'Value',
+                          type: 'input',
+                          placeholder: '请输入value',
+                          className: 'mango-case-custom-value-input',
+                          containerClassName: 'mango-case-custom-value-field',
+                          showTitle: true,
+                        },
                       ]"
                       :on-delete-item="
-                        (index) => removeFrontSql1(pageData.record.front_custom, index)
+                        (index) => removeFrontSql1(pageData.record.front_custom, index, false)
                       "
-                      :on-save="upDataCase"
+                      :on-save="upDataCaseWithoutScenarioRefresh"
                       @update:item="
                         (index, value) =>
                           updateArrayItem(
@@ -58,174 +251,176 @@
                             value,
                             pageData.record,
                             'front_custom',
-                            upDataCase
+                            upDataCaseWithoutScenarioRefresh
                           )
                       "
                     />
-                  </a-tab-pane>
-                  <a-tab-pane key="12" title="sql参数">
-                    <KeyValueList
-                      :data-list="pageData.record.front_sql"
-                      :field-config="[
-                        {
-                          field: 'key',
-                          label: 'Key',
-                          placeholder: '请输入缓存key,示例：key1,key2',
-                        },
-                        sqlDatasourceField,
-                        { field: 'value', label: 'Sql语句', placeholder: '请输入sql语句' },
-                      ]"
-                      :on-delete-item="(index) => removeFrontSql1(pageData.record.front_sql, index)"
-                      :on-save="upDataCase"
-                      @update:item="
-                        (index, value) =>
-                          updateArrayItem(
-                            pageData.record.front_sql,
-                            index,
-                            value,
-                            pageData.record,
-                            'front_sql',
-                            upDataCase
-                          )
-                      "
-                    />
-                  </a-tab-pane>
-                  <a-tab-pane key="14" title="数据工厂">
-                    <DataFactoryCaseConfigPanel
-                      v-if="data.apiType === '1' && data.apiSonType === '14'"
-                      ref="dataFactoryPanelRef"
-                      :case-id="apiCaseId as string"
-                      :project-product-id="apiProjectProductId as string"
-                      :source-type="1"
-                    />
-                  </a-tab-pane>
-                  <a-tab-pane key="13" title="默认请求头">
-                    <a-space direction="vertical">
-                      <TipMessage message="此处请求头会应用到所有场景扩展中" />
-                      <a-checkbox-group
-                        v-for="item of data.headers_list"
-                        :key="item.id"
-                        v-model="pageData.record.front_headers"
-                        direction="vertical"
-                        @change="changeHeaders"
-                      >
-                        <a-checkbox :value="item.id">
-                          {{ item.key + ': ' + item.value }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </a-space>
-                  </a-tab-pane>
-                </a-tabs>
-              </a-tab-pane>
-
-              <a-tab-pane key="2" title="用例步骤">
-                <a-table
-                  :bordered="false"
-                  :columns="columns"
-                  :data="data.data"
-                  :loading="stepTableLoading"
-                  :draggable="{ type: 'handle', width: 40 }"
-                  :pagination="false"
-                  :scroll="{ x: 760 }"
-                  @change="handleChange"
-                  @row-click="select"
-                >
-                  <template #columns>
-                    <a-table-column
-                      v-for="item of columns"
-                      :key="item.key"
-                      :align="item.align"
-                      :data-index="item.dataIndex"
-                      :ellipsis="item.ellipsis"
-                      :fixed="item.fixed"
-                      :title="item.title"
-                      :tooltip="item.tooltip"
-                      :width="item.width"
-                    >
-                      <template v-if="item.dataIndex === 'api_name'" #cell="{ record }">
-                        {{ record.api_info.name }}
-                      </template>
-                      <template v-else-if="item.dataIndex === 'name'" #cell="{ record }">
-                        <a-tag>{{ record.name }}</a-tag>
-                      </template>
-                      <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
-                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                          >{{ enumStore.task_status[record.status]?.title || '-' }}
-                        </a-tag>
-                      </template>
-                      <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                        <MangoTableActions
-                          :actions="[
-                            {
-                              label: '执行到这',
-                              loading: caseRunning,
-                              onClick: () => caseRun(record.case_sort),
-                            },
-                            { label: '同步', onClick: () => refresh(record.id) },
-                            {
-                              label: '接口详情',
-                              disabled: !getApiInfoId(record),
-                              onClick: () => openApiInfoDetail(record),
-                            },
-                            { label: '删除', danger: true, onClick: () => onDelete(record) },
-                          ]"
-                        />
-                      </template>
-                    </a-table-column>
+                  </div>
+                </a-tab-pane>
+                <a-tab-pane key="12">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      数据库操作
+                      <span class="scenario-tab-count">{{ getCaseConfigCount('frontSql') }}</span>
+                    </span>
                   </template>
-                </a-table>
-              </a-tab-pane>
-              <a-tab-pane key="3" title="用例后置">
-                <a-tabs position="left" @tab-click="(key) => switchSonType(key)">
-                  <a-tab-pane key="31" title="sql参数">
-                    <KeyValueList
-                      :data-list="pageData.record.posterior_sql"
-                      :field-config="[
-                        {
-                          field: 'key',
-                          label: 'Key（不会显示到缓存数据中）',
-                          placeholder: '请输入key，可以为空',
-                        },
-                        sqlDatasourceField,
-                        { field: 'value', label: 'Sql语句', placeholder: '请输入sql语句' },
-                      ]"
-                      :on-delete-item="
-                        (index) => removeFrontSql1(pageData.record.posterior_sql, index)
-                      "
-                      :on-save="upDataCase"
-                      empty-text='暂无sql参数语句，点击上方"增加"按钮添加'
-                      @update:item="
-                        (index, value) =>
-                          updateArrayItem(
-                            pageData.record.posterior_sql,
-                            index,
-                            value,
-                            pageData.record,
-                            'posterior_sql',
-                            upDataCase
-                          )
-                      "
-                    />
-                  </a-tab-pane>
-                </a-tabs>
-              </a-tab-pane>
-            </a-tabs>
-          </div>
-        </section>
-        <section class="api-case-panel api-case-right">
-          <div class="api-case-panel-head">
-            <div>
-              <div class="api-case-panel-title">场景扩展</div>
-              <div class="api-case-panel-subtitle">{{ selectedStepSummary }}</div>
-            </div>
-            <a-space wrap>
-              <a-button size="small" type="primary" @click="addParameter">增加场景</a-button>
-            </a-space>
-          </div>
-          <div class="api-case-panel-body">
+                  <DataSourceOperationList
+                    :data-list="pageData.record.front_sql"
+                    :datasource-options="data.datasourceAliasOptions"
+                    :environment-options="sqlEnvironmentOptions"
+                    :project-product-id="apiProjectProductId"
+                    :test-env="userStore.selected_environment"
+                    :on-delete-item="(index) => removeFrontSql1(pageData.record.front_sql, index)"
+                    :on-save="upDataCase"
+                    @update:item="
+                      (index, value) =>
+                        updateArrayItem(
+                          pageData.record.front_sql,
+                          index,
+                          value,
+                          pageData.record,
+                          'front_sql',
+                          upDataCase
+                        )
+                    "
+                  />
+                </a-tab-pane>
+                <a-tab-pane key="14">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      数据工厂
+                      <span class="scenario-tab-count">{{ getCaseConfigCount('factory') }}</span>
+                    </span>
+                  </template>
+                  <DataFactoryCaseConfigPanel
+                    v-if="data.apiType === '1' && data.apiSonType === '14'"
+                    ref="dataFactoryPanelRef"
+                    :case-id="apiCaseId as string"
+                    :project-product-id="apiProjectProductId as string"
+                    :source-type="1"
+                    @count-change="setCaseDataFactoryCount"
+                  />
+                </a-tab-pane>
+                <a-tab-pane key="13">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      默认请求头
+                      <span class="scenario-tab-count">{{ getCaseConfigCount('headers') }}</span>
+                    </span>
+                  </template>
+                  <div class="mango-case-global-options">
+                    <div class="mango-case-global-option">
+                      <TipMessage message="此处请求头会应用到所有场景扩展中" />
+                      <div class="mango-case-global-table mango-case-global-table--headers">
+                        <div class="mango-case-global-table__head">
+                          <span></span>
+                          <span>Key</span>
+                          <span>Value</span>
+                        </div>
+                        <a-checkbox-group
+                          class="mango-case-global-table__body"
+                          v-model="pageData.record.front_headers"
+                          :disabled="caseEditLocked"
+                          direction="vertical"
+                          @change="changeHeaders"
+                        >
+                          <a-checkbox
+                            v-for="item of data.headers_list"
+                            :key="item.id"
+                            :value="item.id"
+                          >
+                            <span class="mango-case-global-table__row">
+                              <span class="mango-case-global-table__cell" :title="item.key">{{
+                                item.key
+                              }}</span>
+                              <span class="mango-case-global-table__cell" :title="item.value">{{
+                                item.value
+                              }}</span>
+                            </span>
+                          </a-checkbox>
+                        </a-checkbox-group>
+                      </div>
+                    </div>
+                  </div>
+                </a-tab-pane>
+              </a-tabs>
+            </template>
+            <template #steps>
+              <ApiCaseStepTable
+                :columns="columns"
+                :data="data.data"
+                :loading="stepTableLoading"
+                :selected-step-id="data.tabelJson?.id"
+                :debug-running-step-id="debugRunningStepId"
+                :edit-locked="caseEditLocked"
+                :execution-active="caseExecutionActive"
+                :status-text="runtimeStatusText"
+                :status-color="runtimeStatusColor"
+                :get-api-info-id="getApiInfoId"
+                @reorder="handleChange"
+                @select="select"
+                @debug="debugCaseStep"
+                @refresh="refresh"
+                @api-info="openApiInfoDetail"
+                @delete="onDelete"
+                @recovery="openRecoveryConfig"
+              />
+            </template>
+            <template #cleanup>
+              <a-tabs
+                :active-key="data.apiSonType"
+                class="case-config-tabs"
+                position="left"
+                @tab-click="(key) => switchSonType(key)"
+              >
+                <a-tab-pane key="31">
+                  <template #title>
+                    <span class="scenario-tab-title">
+                      数据库操作
+                      <span class="scenario-tab-count">{{
+                        getCaseConfigCount('posteriorSql')
+                      }}</span>
+                    </span>
+                  </template>
+                  <DataSourceOperationList
+                    :data-list="pageData.record.posterior_sql"
+                    :datasource-options="data.datasourceAliasOptions"
+                    :environment-options="sqlEnvironmentOptions"
+                    :project-product-id="apiProjectProductId"
+                    :test-env="userStore.selected_environment"
+                    :on-delete-item="
+                      (index) => removeFrontSql1(pageData.record.posterior_sql, index)
+                    "
+                    :on-save="upDataCase"
+                    empty-text="暂无数据库操作配置，点击上方“增加”按钮添加"
+                    @update:item="
+                      (index, value) =>
+                        updateArrayItem(
+                          pageData.record.posterior_sql,
+                          index,
+                          value,
+                          pageData.record,
+                          'posterior_sql',
+                          upDataCase
+                        )
+                    "
+                  />
+                </a-tab-pane>
+              </a-tabs>
+            </template>
+          </ApiCaseOrchestrationPanel>
+          <ApiCaseScenarioWorkspace
+            :edit-locked="caseEditLocked"
+            :latest-execution-label="latestScenarioExecutionLabel"
+            :result-outdated="selectedRuntimeResultOutdated"
+            :summary="selectedStepSummary"
+            :expanded="scenarioWorkbenchExpanded"
+            @add="addParameter"
+            @toggle-size="toggleScenarioWorkbench"
+          >
             <a-space direction="vertical" fill>
               <a-space direction="vertical" fill>
-                <a-spin
+                <mango-panel-spin
                   :loading="data.collapseLoading"
                   tip="场景数据加载中..."
                   class="scenario-loading-spin full-width"
@@ -238,836 +433,164 @@
                   >
                     <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
                       <template #header>
-                        <div class="custom-header">
-                          <span class="custom-header__name">{{ '场景名称：' + item.name }}</span>
-                          <div class="custom-header__tags">
-                            <a-tag :color="enumStore.status_colors[item.status]">
-                              {{ enumStore.task_status[item.status]?.title || '-' }}
-                            </a-tag>
-                            <a-tag color="purple">
-                              {{
-                                item.error_retry
-                                  ? `重试 ${item.error_retry} 次 / ${
-                                      item.retry_interval ? item.retry_interval : 0
-                                    }s`
-                                  : '不重试'
-                              }}
-                            </a-tag>
-                          </div>
-                        </div>
-                      </template>
-                      <template #extra>
-                        <a-button size="mini" type="text" @click.stop="parameterEditing(item)"
-                          >编辑
-                        </a-button>
-                        <a-button size="mini" type="text" @click.stop="parameterCopy(item)"
-                          >复制
-                        </a-button>
-                        <a-button
-                          size="mini"
-                          status="danger"
-                          type="text"
-                          @click.stop="parameterDelete(item)"
-                          >删除
-                        </a-button>
+                        <ApiCaseScenarioHeader
+                          :item="item"
+                          :edit-locked="caseEditLocked"
+                          :status-text="runtimeStatusText"
+                          :status-color="runtimeStatusColor"
+                          :is-failure="isRuntimeFailure"
+                          :failure-message="runtimeFailureMessage"
+                          @edit="parameterEditing(item)"
+                          @copy="parameterCopy(item)"
+                          @delete="parameterDelete(item)"
+                        />
                       </template>
                       <div
                         v-if="isMountedCollapseItem(index)"
                         v-show="isActiveCollapseItem(index)"
                         class="scenario-expand-body"
                       >
-                        <a-spin
-                          :loading="data.caseDetailTabLoading"
+                        <mango-panel-spin
+                          :loading="!data.collapseLoading && data.caseDetailTabLoading"
                           tip="页签内容加载中..."
                           class="scenario-tab-loading-spin"
                         >
-                          <a-tabs
+                          <ApiCaseScenarioNav
                             :active-key="data.caseDetailsTypeKey"
-                            class="scenario-root-tabs"
-                            position="left"
-                            @tab-click="(key) => switchApiInfoType(key, item)"
+                            :counts="{
+                              front: getScenarioTabCount(item, 'front'),
+                              request: getScenarioTabCount(item, 'request'),
+                              response: getScenarioTabCount(item, 'response'),
+                              posterior: getScenarioTabCount(item, 'posterior'),
+                              assertion: getScenarioTabCount(item, 'assertion'),
+                              runtime: getScenarioTabCount(item, 'cache'),
+                              factory: getScenarioTabCount(item, 'factory'),
+                              assertionResult: getScenarioTabCount(item, 'assertionResult'),
+                            }"
+                            @change="switchApiInfoType($event, item)"
                           >
-                            <a-tab-pane key="1" title="前置处理">
-                              <a-tabs
+                            <template #front>
+                              <ApiCaseScenarioFrontPanel
+                                :item="item"
                                 :active-key="data.tabsKey"
-                                @tab-click="(key) => tabsChange(key, item)"
-                              >
-                                <template #extra>
-                                  <a-space v-if="data.assClickAdd">
-                                    <a-button size="small" type="primary" @click="clickAdd(item)"
-                                      >增加
-                                    </a-button>
-                                    <a-button
-                                      v-if="isAssertionGroupTab"
-                                      size="small"
-                                      type="outline"
-                                      @click="clickAddOrAssertionGroup(item)"
-                                    >
-                                      增加或关系
-                                    </a-button>
-                                  </a-space>
-                                </template>
-                                <a-tab-pane key="10" title="前置sql">
-                                  <div class="m-2">
-                                    <KeyValueList
-                                      :data-list="item.front_sql"
-                                      :field-config="[
-                                        {
-                                          field: 'key',
-                                          label: 'Key',
-                                          placeholder: '请输入缓存key',
-                                        },
-                                        sqlDatasourceField,
-                                        {
-                                          field: 'value',
-                                          label: 'Sql语句',
-                                          placeholder: '请输入sql语句',
-                                        },
-                                      ]"
-                                      :on-delete-item="
-                                        (index) =>
-                                          removeFrontSql(
-                                            item.front_sql,
-                                            index,
-                                            'front_sql',
-                                            item.id
-                                          )
-                                      "
-                                      :on-save="
-                                        () => blurSave('front_sql', item.front_sql, item.id)
-                                      "
-                                      @update:item="
-                                        (index, value) =>
-                                          updateArrayItem(
-                                            item.front_sql,
-                                            index,
-                                            value,
-                                            item,
-                                            'front_sql',
-                                            () => blurSave('front_sql', item.front_sql, item.id)
-                                          )
-                                      "
-                                      empty-text='暂无前置sql语句，点击上方"增加"按钮添加'
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="11" title="前置函数">
-                                  <div class="m-2">
-                                    <CodeEditor
-                                      v-model="item.front_func"
-                                      :line-height="280"
-                                      :code-style="{ width: '100%' }"
-                                      placeholder="根据帮助文档，输入自定义前置函数"
-                                      @focus="
-                                        recordCodeSnapshot('front_func', item.front_func, item.id)
-                                      "
-                                      @blur="
-                                        saveCodeIfChanged('front_func', item.front_func, item.id)
-                                      "
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="12" title="数据工厂">
-                                  <div class="m-2">
-                                    <DataFactoryCaseConfigPanel
-                                      v-if="isActiveCaseDetailTab('1', '12')"
-                                      :ref="(el) => setParameterDataFactoryPanelRef(item.id, el)"
-                                      :case-id="item.id"
-                                      :project-product-id="apiProjectProductId as string"
-                                      :source-type="3"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                              </a-tabs>
-                            </a-tab-pane>
-                            <a-tab-pane key="0" title="请求配置">
-                              <a-tabs
+                                :active="isActiveCaseDetailTab('1', '12')"
+                                :edit-locked="caseEditLocked"
+                                :datasource-options="data.datasourceAliasOptions"
+                                :environment-options="sqlEnvironmentOptions"
+                                :project-product-id="apiProjectProductId"
+                                :test-env="userStore.selected_environment"
+                                @change="tabsChange($event, item)"
+                                @count-change="setScenarioDataFactoryCount"
+                              />
+                            </template>
+                            <template #request>
+                              <ApiCaseRequestPanel
+                                :item="item"
                                 :active-key="data.tabsKey"
-                                @tab-click="(key) => tabsChange(key, item)"
-                              >
-                                <a-tab-pane key="00" title="请求头">
-                                  <div class="request-header-panel">
-                                    <TipMessage
-                                      message="场景勾选请求头后优先使用场景请求头；未勾选则使用用例请求头；用例也未勾选时使用请求头管理中已开启的请求头"
-                                    />
-                                    <a-space direction="vertical" class="full-width">
-                                      <a-checkbox-group
-                                        v-for="header of data.parameter_headers_list"
-                                        :key="header.id"
-                                        v-model="item.headers"
-                                        direction="vertical"
-                                        @change="
-                                          (selectedValues) => changeHeadersApi(selectedValues, item)
-                                        "
-                                      >
-                                        <a-checkbox :value="header.id">
-                                          {{ header.key + ': ' + header.value }}
-                                        </a-checkbox>
-                                      </a-checkbox-group>
-                                    </a-space>
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="01" title="参数">
-                                  <div class="m-2">
-                                    <div class="request-editor-actions">
-                                      <a-button
-                                        size="small"
-                                        type="outline"
-                                        @click="openJsonEditDrawer('params', '参数', item)"
-                                      >
-                                        展开编辑
-                                      </a-button>
-                                    </div>
-                                    <a-textarea
-                                      v-model="item.params"
-                                      allow-clear
-                                      :auto-size="{ minRows: 6 }"
-                                      placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
-                                      @blur="blurSave('params', item.params, item.id)"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="02" title="请求体">
-                                  <div class="m-2">
-                                    <ApiRequestBodyEditor
-                                      :protocol-type="getScenarioProtocolType(item)"
-                                      :body-type="getScenarioBodyType(item)"
-                                      :body-config="item.body_config"
-                                      :sse-config="item.sse_config"
-                                      :project-product-id="apiProjectProductId"
-                                      :body-type-readonly="true"
-                                      @save="(value) => saveScenarioRequestBody(item, value)"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                              </a-tabs>
-                            </a-tab-pane>
-                            <a-tab-pane key="2" title="响应结果">
-                              <a-tabs
+                                :edit-locked="caseEditLocked"
+                                :header-options="data.parameter_headers_list"
+                                :project-product-id="apiProjectProductId"
+                                :protocol-type="getScenarioProtocolType(item)"
+                                :body-type="getScenarioBodyType(item)"
+                                @change="tabsChange($event, item)"
+                                @edit-json="openJsonEditDrawer"
+                                @saving-change="changeScenarioSavingCount"
+                              />
+                            </template>
+                            <template #response>
+                              <ApiCaseResponsePanel
+                                :item="item"
                                 :active-key="data.tabsKey"
-                                @tab-click="(key) => tabsChange(key, item)"
-                              >
-                                <a-tab-pane key="20" title="基础信息">
-                                  <div class="m-2">
-                                    <a-space direction="vertical">
-                                      <span>URL：{{ item.result_data?.request?.url }}</span>
-                                      <span>请求方法：{{ item.result_data?.request?.method }}</span>
-                                      <span>响应code：{{ item.result_data?.response?.code }}</span>
-                                      <span>测试时间：{{ item.result_data?.test_time }}</span>
-                                      <span
-                                        >响应时间：{{
-                                          item.result_data?.response?.time.toFixed(2)
-                                        }}
-                                        秒</span
-                                      >
-                                      <a-tooltip
-                                        v-if="item.result_data?.error_message"
-                                        :content="item.result_data?.error_message"
-                                        position="top"
-                                        mini
-                                      >
-                                        <span class="api-case-failure-reason">
-                                          失败原因：{{ item.result_data?.error_message }}
-                                        </span>
-                                      </a-tooltip>
-                                    </a-space>
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="21" title="请求头">
-                                  <div class="m-2">
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '21')"
-                                      :data="item.result_data?.response?.request_headers"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="25" title="请求数据">
-                                  <div
-                                    class="m-2"
-                                    v-if="hasDisplayValue(getResultRequestBody(item))"
-                                  >
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '25')"
-                                      :data="getResultRequestBody(item)"
-                                    />
-                                  </div>
-                                  <div
-                                    class="m-2"
-                                    v-if="hasDisplayValue(getResultRequestParams(item))"
-                                  >
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '25')"
-                                      :data="getResultRequestParams(item)"
-                                    />
-                                  </div>
-                                  <div
-                                    class="m-2"
-                                    v-if="hasDisplayValue(getResultRequestFiles(item))"
-                                  >
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '25')"
-                                      :data="getResultRequestFiles(item)"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="22" title="响应头">
-                                  <div class="m-2">
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '22')"
-                                      :data="item.result_data?.response?.headers"
-                                      :default-expanded="false"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="23" title="响应JSON">
-                                  <div class="m-2">
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '23')"
-                                      :data="item.result_data?.response?.json"
-                                      :jsonpath="true"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="24" title="响应文本">
-                                  <div class="m-2">
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '24')"
-                                      :data="item.result_data?.response?.text"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="26" title="SSE事件">
-                                  <div class="m-2">
-                                    <JsonDisplay
-                                      v-if="isActiveCaseDetailTab('2', '26')"
-                                      :data="item.result_data?.response?.sse_events"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                              </a-tabs>
-                            </a-tab-pane>
-                            <a-tab-pane key="4" title="后置处理">
-                              <a-tabs
+                                :active-root="data.caseDetailsTypeKey === '2'"
+                                :protocol-type="getScenarioProtocolType(item)"
+                                :body-type="getScenarioBodyType(item)"
+                                @change="tabsChange($event, item)"
+                              />
+                            </template>
+                            <template #posterior>
+                              <ApiCasePosteriorPanel
+                                :item="item"
                                 :active-key="data.tabsKey"
-                                @tab-click="(key) => tabsChange(key, item)"
-                              >
-                                <template #extra>
-                                  <a-space v-if="data.assClickAdd">
-                                    <a-button size="small" type="primary" @click="clickAdd(item)"
-                                      >增加
-                                    </a-button>
-                                  </a-space>
-                                </template>
-                                <a-tab-pane key="40" title="响应JSON提取">
-                                  <div class="m-2">
-                                    <TipMessage
-                                      message="从响应json中提取，请输入jsonpath语法的表达式，并点击测试按钮进行测试"
-                                    />
-                                    <KeyValueList
-                                      :data-list="item.posterior_response"
-                                      :field-config="[
-                                        {
-                                          field: 'value',
-                                          label: 'jsonpath语法',
-                                          placeholder: '请输入jsonpath语法',
-                                        },
-                                        {
-                                          field: 'key',
-                                          label: 'Key',
-                                          placeholder: '请输入缓存key',
-                                        },
-                                      ]"
-                                      :on-delete-item="
-                                        (index) =>
-                                          removeFrontSql(
-                                            item.posterior_response,
-                                            index,
-                                            'posterior_response',
-                                            item.id
-                                          )
-                                      "
-                                      :on-save="
-                                        () =>
-                                          blurSave(
-                                            'posterior_response',
-                                            item.posterior_response,
-                                            item.id
-                                          )
-                                      "
-                                      @update:item="
-                                        (index, value) =>
-                                          updateArrayItem(
-                                            item.posterior_response,
-                                            index,
-                                            value,
-                                            item,
-                                            'posterior_response',
-                                            () =>
-                                              blurSave(
-                                                'posterior_response',
-                                                item.posterior_response,
-                                                item.id
-                                              )
-                                          )
-                                      "
-                                      empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
-                                    >
-                                      <template #extra="{ index }">
-                                        <a-button
-                                          size="small"
-                                          status="success"
-                                          @click="testExtractResponseAfter('jsonpath', item, index)"
-                                          class="mango-test-btn"
-                                        >
-                                          测试
-                                        </a-button>
-                                      </template>
-                                    </KeyValueList>
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="44" title="响应文本提取">
-                                  <div class="m-2">
-                                    <KeyValueList
-                                      :data-list="item.posterior_response_text"
-                                      :field-config="[
-                                        {
-                                          field: 'value',
-                                          label: '正则语法',
-                                          placeholder: '请输入正则语法',
-                                        },
-                                        {
-                                          field: 'key',
-                                          label: 'Key',
-                                          placeholder: '请输入缓存key',
-                                        },
-                                      ]"
-                                      :on-delete-item="
-                                        (index) =>
-                                          removeFrontSql(
-                                            item.posterior_response_text,
-                                            index,
-                                            'posterior_response_text',
-                                            item.id
-                                          )
-                                      "
-                                      :on-save="
-                                        () =>
-                                          blurSave(
-                                            'posterior_response_text',
-                                            item.posterior_response_text,
-                                            item.id
-                                          )
-                                      "
-                                      @update:item="
-                                        (index, value) =>
-                                          updateArrayItem(
-                                            item.posterior_response_text,
-                                            index,
-                                            value,
-                                            item,
-                                            'posterior_response_text',
-                                            () =>
-                                              blurSave(
-                                                'posterior_response_text',
-                                                item.posterior_response_text,
-                                                item.id
-                                              )
-                                          )
-                                      "
-                                      empty-text='暂无响应结果提取，点击上方"增加"按钮添加'
-                                    >
-                                      <template #extra="{ index }">
-                                        <a-button
-                                          size="small"
-                                          status="success"
-                                          @click="testExtractResponseAfter('re', item, index)"
-                                          class="mango-test-btn"
-                                        >
-                                          测试
-                                        </a-button>
-                                      </template>
-                                    </KeyValueList>
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="41" title="后置sql处理">
-                                  <div class="m-2">
-                                    <KeyValueList
-                                      :data-list="item.posterior_sql"
-                                      :field-config="[
-                                        {
-                                          field: 'key',
-                                          label: 'Key',
-                                          placeholder: '请输入缓存key，示例：key1,key2',
-                                        },
-                                        sqlDatasourceField,
-                                        {
-                                          field: 'value',
-                                          label: 'Sql语句',
-                                          placeholder: '请输入sql语句',
-                                        },
-                                      ]"
-                                      :on-delete-item="
-                                        (index) =>
-                                          removeFrontSql(
-                                            item.posterior_sql,
-                                            index,
-                                            'posterior_sql',
-                                            item.id
-                                          )
-                                      "
-                                      :on-save="
-                                        () => blurSave('posterior_sql', item.posterior_sql, item.id)
-                                      "
-                                      @update:item="
-                                        (index, value) =>
-                                          updateArrayItem(
-                                            item.posterior_sql,
-                                            index,
-                                            value,
-                                            item,
-                                            'posterior_sql',
-                                            () =>
-                                              blurSave('posterior_sql', item.posterior_sql, item.id)
-                                          )
-                                      "
-                                      empty-text='暂无后置sql处理语句，点击上方"增加"按钮添加'
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="42" title="强制等待">
-                                  <div class="m-2">
-                                    <a-space direction="vertical">
-                                      <a-space direction="vertical">
-                                        <a-input
-                                          v-model="item.posterior_sleep"
-                                          placeholder="请输入强制等待时间，单位是秒"
-                                          class="sleep-input"
-                                          @blur="
-                                            blurSave(
-                                              'posterior_sleep',
-                                              item.posterior_sleep,
-                                              item.id
-                                            )
-                                          "
-                                        />
-                                      </a-space>
-                                    </a-space>
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="43" title="后置函数">
-                                  <div class="m-2">
-                                    <CodeEditor
-                                      v-model="item.posterior_func"
-                                      :line-height="280"
-                                      :code-style="{ width: '100%' }"
-                                      placeholder="根据帮助文档，输入自定义后置函数"
-                                      @focus="
-                                        recordCodeSnapshot(
-                                          'posterior_func',
-                                          item.posterior_func,
-                                          item.id
-                                        )
-                                      "
-                                      @blur="
-                                        saveCodeIfChanged(
-                                          'posterior_func',
-                                          item.posterior_func,
-                                          item.id
-                                        )
-                                      "
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                              </a-tabs>
-                            </a-tab-pane>
-                            <a-tab-pane key="3" title="接口断言">
-                              <a-tabs
+                                :edit-locked="caseEditLocked"
+                                :datasource-options="data.datasourceAliasOptions"
+                                :environment-options="sqlEnvironmentOptions"
+                                :project-product-id="apiProjectProductId"
+                                :test-env="userStore.selected_environment"
+                                @change="tabsChange($event, item)"
+                              />
+                            </template>
+                            <template #assertion>
+                              <ApiCaseAssertionPanel
+                                :item="item"
                                 :active-key="data.tabsKey"
-                                @tab-click="(key) => tabsChange(key)"
-                              >
-                                <template #extra>
-                                  <a-space v-if="data.assClickAdd">
-                                    <a-button size="small" type="primary" @click="clickAdd(item)">
-                                      增加
-                                    </a-button>
-                                  </a-space>
-                                </template>
-                                <a-tab-pane key="30" title="json一致断言">
-                                  <div class="m-2">
-                                    <TipMessage
-                                      margin-bottom="8px"
-                                      message="注意以你输入的断言json的key和value为主，你没有输入响应中key和value则不断言"
-                                    />
-                                    <a-textarea
-                                      v-model="item.ass_json_all"
-                                      :auto-size="{ minRows: 9, maxRows: 9 }"
-                                      allow-clear
-                                      placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
-                                      @blur="blurSave('ass_json_all', item.ass_json_all, item.id)"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="31" title="jsonpath断言">
-                                  <div class="m-2">
-                                    <TipMessage
-                                      message="只能输入jsonpath语法提取响应的json进行断言"
-                                    />
-                                    <KeyValueList
-                                      :data-list="item.ass_jsonpath"
-                                      :field-config="[
-                                        {
-                                          field: 'group_logic',
-                                          label: '关系',
-                                          type: 'select',
-                                          options: assertionGroupLogicOptions,
-                                          placeholder: '默认且',
-                                          className: 'assertion-group-select',
-                                          containerClassName: 'assertion-relation-field',
-                                          onChange: (value, currentItem, currentIndex) =>
-                                            handleAssertionGroupLogicChange(
-                                              value,
-                                              currentItem,
-                                              currentIndex,
-                                              item,
-                                              'ass_jsonpath'
-                                            ),
-                                        },
-                                        {
-                                          field: 'method',
-                                          label: '断言方法',
-                                          type: 'cascader',
-                                          options: data.textAss,
-                                          placeholder: '请选择断言方法',
-                                          className: 'assertion-method-cascader',
-                                          containerClassName: 'assertion-method-field',
-                                          expandTrigger: 'hover',
-                                          valueKey: 'key',
-                                          onChange: (value, currentItem, currentIndex) =>
-                                            handleJsonpathMethodChange(
-                                              value,
-                                              currentItem,
-                                              currentIndex,
-                                              item
-                                            ),
-                                        },
-                                        {
-                                          field: 'actual',
-                                          label: '实际值',
-                                          placeholder: '请输入jsonpath提取的实际结果',
-                                        },
-                                        {
-                                          field: 'expect',
-                                          label: '预期值',
-                                          placeholder: '请输入预期值',
-                                          visible: shouldShowJsonpathExpect,
-                                        },
-                                      ]"
-                                      :on-delete-item="
-                                        (index) =>
-                                          removeFrontSql(
-                                            item.ass_jsonpath,
-                                            index,
-                                            'ass_jsonpath',
-                                            item.id
-                                          )
-                                      "
-                                      :on-save="
-                                        () => blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
-                                      "
-                                      @update:item="
-                                        (index, value) =>
-                                          updateArrayItem(
-                                            item.ass_jsonpath,
-                                            index,
-                                            value,
-                                            item,
-                                            'ass_jsonpath',
-                                            () =>
-                                              blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
-                                          )
-                                      "
-                                      empty-text='暂无jsonpath断言，点击上方"增加"按钮添加'
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="33" title="文本一致断言">
-                                  <div class="m-2">
-                                    <TipMessage
-                                      margin-bottom="8px"
-                                      message="响应的text全匹配断言"
-                                    />
-                                    <a-textarea
-                                      v-model="item.ass_text_all"
-                                      :auto-size="{ minRows: 9, maxRows: 9 }"
-                                      allow-clear
-                                      placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
-                                      @blur="blurSave('ass_text_all', item.ass_text_all, item.id)"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="32" title="通用断言">
-                                  <div class="m-2">
-                                    <TipMessage
-                                      message="支持任意类型断言，实际值和预期值均可输入缓存变量"
-                                    />
-                                    <KeyValueList
-                                      :data-list="item.ass_general"
-                                      :field-config="[
-                                        {
-                                          field: 'group_logic',
-                                          label: '关系',
-                                          type: 'select',
-                                          options: assertionGroupLogicOptions,
-                                          placeholder: '默认且',
-                                          className: 'assertion-group-select',
-                                          containerClassName: 'assertion-relation-field',
-                                          onChange: (value, currentItem, currentIndex) =>
-                                            handleAssertionGroupLogicChange(
-                                              value,
-                                              currentItem,
-                                              currentIndex,
-                                              item,
-                                              'ass_general'
-                                            ),
-                                        },
-                                        {
-                                          field: 'method',
-                                          label: '断言方法',
-                                          type: 'cascader',
-                                          options: data.ass,
-                                          placeholder: '请选择断言方法',
-                                          className: 'assertion-method-cascader',
-                                          containerClassName: 'assertion-method-field',
-                                          expandTrigger: 'hover',
-                                          valueKey: 'key',
-                                          onChange: (value, currentItem, currentIndex) =>
-                                            handleGeneralMethodChange(
-                                              value,
-                                              currentItem,
-                                              currentIndex,
-                                              item
-                                            ),
-                                        },
-                                      ]"
-                                      :on-delete-item="
-                                        (index) =>
-                                          removeFrontSql(
-                                            item.ass_general,
-                                            index,
-                                            'ass_general',
-                                            item.id
-                                          )
-                                      "
-                                      :on-save="
-                                        () => blurSave('ass_general', item.ass_general, item.id)
-                                      "
-                                      @update:item="
-                                        (index, value) =>
-                                          updateArrayItem(
-                                            item.ass_general,
-                                            index,
-                                            value,
-                                            item,
-                                            'ass_general',
-                                            () => blurSave('ass_general', item.ass_general, item.id)
-                                          )
-                                      "
-                                      empty-text='暂无通用断言，点击上方"增加"按钮添加'
-                                    >
-                                      <template #extra="{ index, item: assItem }">
-                                        <div
-                                          v-if="assItem?.value && assItem?.value?.parameter"
-                                          class="assertion-parameters-inline"
-                                        >
-                                          <div
-                                            v-for="(param, pIdx) in assItem.value.parameter"
-                                            :key="param.f"
-                                            class="parameter-item-inline"
-                                          >
-                                            <span class="parameter-label-inline"
-                                              >{{ param.n }}:</span
-                                            >
-                                            <a-textarea
-                                              v-model="assItem.value.parameter[pIdx].v"
-                                              :placeholder="param.p"
-                                              :required="param.d"
-                                              :auto-size="{ minRows: 1, maxRows: 2 }"
-                                              class="parameter-input-inline"
-                                              @blur="
-                                                blurSave('ass_general', item.ass_general, item.id)
-                                              "
-                                            />
-                                          </div>
-                                        </div>
-                                      </template>
-                                    </KeyValueList>
-                                  </div>
-                                </a-tab-pane>
-                                <a-tab-pane key="34" title="结构化断言">
-                                  <div class="m-2">
-                                    <a-space>
-                                      <TipMessage
-                                        message="如果接口管理中开启了则会默认使用进行断言，如果你输入了则会覆盖"
-                                      />
-                                      <a-button
-                                        size="mini"
-                                        type="primary"
-                                        :loading="schemaLoadingId === item.id"
-                                        @click="setSchema(item.id)"
-                                        >自动生成</a-button
-                                      >
-                                    </a-space>
-                                    <a-textarea
-                                      v-model="item.ass_schema"
-                                      :auto-size="{ minRows: 9, maxRows: 9 }"
-                                      allow-clear
-                                      placeholder="请输入响应的结构化类型"
-                                      @blur="blurSave('ass_schema', item.ass_schema, item.id)"
-                                    />
-                                  </div>
-                                </a-tab-pane>
-                              </a-tabs>
-                            </a-tab-pane>
-                            <a-tab-pane key="5" title="缓存数据">
-                              <div class="m-2">
-                                <JsonDisplay
-                                  v-if="data.caseDetailsTypeKey === '5'"
-                                  :data="item.result_data?.cache_data"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="7" title="数据工厂">
-                              <div class="m-2">
-                                <JsonDisplay
-                                  v-if="data.caseDetailsTypeKey === '7'"
-                                  :data="item.result_data?.data_factory_cache_data"
-                                />
-                              </div>
-                            </a-tab-pane>
-                            <a-tab-pane key="6" title="断言结果">
+                                :edit-locked="caseEditLocked"
+                                :verifying="assertionVerifyLoadingId === item.id"
+                                :schema-loading="schemaLoadingId === item.id"
+                                :compare-open="Boolean(item.__assertion_compare_open)"
+                                :compare-results="getAssertionResultData(item)"
+                                :compare-source="Array.isArray(item.__assertion_verify_result) ? 'verify' : 'runtime'"
+                                :compare-stale="isAssertionVerifyStale(item)"
+                                :text-methods="data.textAss"
+                                :general-methods="data.ass"
+                                :sql-datasource-options="sqlAssertionDatasourceOptions"
+                                :sql-method-options="sqlAssertionMethodOptions"
+                                @change="tabsChange($event)"
+                                @save="blurSave"
+                                @verify="verifyAssertions(item)"
+                                @toggle-compare="item.__assertion_compare_open = !item.__assertion_compare_open"
+                                @generate-schema="setSchema(item.id)"
+                              />
+                            </template>
+                            <template #runtime>
+                              <ApiCaseRuntimeCachePanel
+                                :active="data.caseDetailsTypeKey === '5'"
+                                :data="item.result_data?.cache_data"
+                              />
+                            </template>
+                            <template #factory>
+                              <ApiCaseDataFactoryPanel
+                                :active="data.caseDetailsTypeKey === '7'"
+                                :data="item.result_data?.data_factory_cache_data"
+                              />
+                            </template>
+                            <template #assertion-result>
                               <div class="m-2">
                                 <AssertionResult
                                   v-if="data.caseDetailsTypeKey === '6'"
-                                  :data="item.result_data?.ass"
+                                  :data="getAssertionResultData(item)"
+                                  :stale="isAssertionVerifyStale(item)"
                                 />
                               </div>
-                            </a-tab-pane>
-                          </a-tabs>
-                        </a-spin>
+                            </template>
+                          </ApiCaseScenarioNav>
+                        </mango-panel-spin>
                       </div>
                       <div v-else-if="isActiveCollapseItem(index)" class="collapse-content-loading">
                         <a-spin tip="内容加载中..." />
                       </div>
                     </a-collapse-item>
                   </a-collapse>
-                </a-spin>
+                </mango-panel-spin>
               </a-space>
             </a-space>
-          </div>
-        </section>
+          </ApiCaseScenarioWorkspace>
+        </div>
       </div>
     </template>
   </TableBody>
+  <ApiCaseConfigSearchModal
+    v-model:visible="configSearch.visible"
+    v-model:keyword="configSearch.keyword"
+    :loading="configSearch.loading"
+    :searched="configSearch.searched"
+    :truncated="configSearch.truncated"
+    :completed="configSearch.completed"
+    :total="configSearch.total"
+    :matches="configSearch.matches"
+    :limit="CONFIG_SEARCH_LIMIT"
+    @search="runConfigSearch"
+    @select="locateConfigSearchResult"
+  />
   <MangoJsonEditDrawer
     v-model:visible="jsonEditDrawer.visible"
     v-model="jsonEditDrawer.value"
@@ -1076,33 +599,17 @@
     :saving="jsonEditSaving"
     @save="saveJsonEditDrawer"
   />
-  <BaseSidePanel
-    :visible="apiInfoDetailPanel.visible"
-    title="接口管理详情"
-    width="calc(92vw - 150px)"
-    @update:visible="
-      (val) => {
-        apiInfoDetailPanel.visible = val
-      }
-    "
-    @cancel="apiInfoDetailPanel.visible = false"
-  >
-    <div class="mango-api-case-api-info-panel">
-      <ApiInfoDetails
-        v-if="apiInfoDetailPanel.visible && apiInfoDetailPanel.apiInfoId"
-        :key="apiInfoDetailPanel.apiInfoId"
-        embedded
-        :api-info-id="apiInfoDetailPanel.apiInfoId"
-        @close="apiInfoDetailPanel.visible = false"
-      />
-    </div>
-  </BaseSidePanel>
+  <ApiCaseInfoDetailPanel ref="apiInfoDetailPanelRef" />
+  <ApiCaseRecoveryConfig ref="recoveryConfigRef" @saved="doRefresh" />
+  <ApiCaseExecutionTraceDrawer ref="traceDrawerRef" />
+  <ApiCaseDiagnosisDrawer ref="caseDiagnosisDrawerRef" :result-id="selectedExecutionResultSummary?.id" />
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
         <a-form-item
           v-for="item of formItems"
           :key="item.key"
+          v-show="!item.hidden"
           :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
@@ -1126,6 +633,16 @@
               allow-clear
               allow-search
               value-key="key"
+              @change="loadApiInfoRevisions"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'pinned_api_info_revision'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="data.apiRevisionList"
+              :placeholder="item.placeholder"
+              allow-clear
             />
           </template>
         </a-form-item>
@@ -1141,12 +658,25 @@
       <a-form :model="formParameterModel">
         <a-form-item
           v-for="item of formParameterItems"
+          v-show="isParameterFormItemVisible(item)"
           :key="item.key"
           :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
+          </template>
+          <template v-else-if="item.type === 'select'">
+            <div class="scenario-protocol-expectation-control">
+              <a-select v-model="item.value" :options="item.optionItems" />
+              <span class="scenario-allow-failure-control__hint">{{ item.placeholder }}</span>
+            </div>
+          </template>
+          <template v-else-if="item.type === 'switch'">
+            <div class="scenario-allow-failure-control">
+              <a-switch v-model="item.value" size="small" />
+              <span class="scenario-allow-failure-control__hint">{{ item.placeholder }}</span>
+            </div>
           </template>
         </a-form-item>
       </a-form>
@@ -1155,7 +685,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
@@ -1163,8 +693,19 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj } from '@/utils/tools'
+  import {
+    COMMON_ENV_VALUE,
+    normalizeEnvironmentSelectChange,
+    normalizeEnvironmentValues,
+    toEnvironmentSelectValue,
+  } from '@/utils/environment-scope'
   import { columns, formItems, formParameterItems } from './config'
-  import { getApiCase, getApiCaseRun, putApiCase } from '@/api/apitest/case'
+  import {
+    getApiCase,
+    getApiCaseRunRaw,
+    postApiCaseStepDebugRaw,
+    putApiCase,
+  } from '@/api/apitest/case'
   import {
     deleteApiCaseDetailed,
     getApiCaseDetailed,
@@ -1176,12 +717,14 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
+  import { getApiPublic } from '@/api/apitest/public'
+  import { getApiAuthConfig } from '@/api/apitest/auth-config'
   import {
     deleteApiCaseDetailedParameter,
     getApiCaseDetailedParameter,
     postApiCaseDetailedParameter,
     postApiCaseDetailedParameterCopy,
-    postCaseDetailedParameterTestExtractResponseAfter,
+    postVerifyApiCaseAssertions,
     putApiCaseDetailedParameter,
     putSetSchema,
   } from '@/api/apitest/case-detailed-parameter'
@@ -1190,12 +733,46 @@
   import AssertionResult from '@/components/feedback/AssertionResult.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue' // 引入断言结果组件
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
-  import CodeEditor from '@/components/editors/CodeEditor.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
-  import ApiInfoDetails from '@/views/apitest/info/details/index.vue'
+  import DataSourceOperationList from '@/components/forms/DataSourceOperationList.vue'
+  import ApiCaseVersionPanel from './components/ApiCaseVersionPanel.vue'
+  import ApiCasePageHeader from './components/ApiCasePageHeader.vue'
+  import ApiCaseConfigSearchModal from './components/ApiCaseConfigSearchModal.vue'
+  import ApiCaseExecutionTraceDrawer from './components/ApiCaseExecutionTraceDrawer.vue'
+  import ApiCaseDiagnosisDrawer from './components/ApiCaseDiagnosisDrawer.vue'
+  import ApiCaseInfoDetailPanel from './components/ApiCaseInfoDetailPanel.vue'
+  import ApiCaseStepTable from './components/ApiCaseStepTable.vue'
+  import ApiCaseRecoveryConfig from './components/ApiCaseRecoveryConfig.vue'
+  import ApiCaseOrchestrationPanel from './components/ApiCaseOrchestrationPanel.vue'
+  import ApiCaseScenarioHeader from './components/ApiCaseScenarioHeader.vue'
+  import ApiCaseScenarioWorkspace from './components/ApiCaseScenarioWorkspace.vue'
+  import ApiCaseScenarioFrontPanel from './components/ApiCaseScenarioFrontPanel.vue'
+  import ApiCaseRequestPanel from './components/ApiCaseRequestPanel.vue'
+  import ApiCaseResponsePanel from './components/ApiCaseResponsePanel.vue'
+  import ApiCasePosteriorPanel from './components/ApiCasePosteriorPanel.vue'
+  import ApiCaseAssertionPanel from './components/ApiCaseAssertionPanel.vue'
+  import ApiCaseRuntimeCachePanel from './components/ApiCaseRuntimeCachePanel.vue'
+  import ApiCaseDataFactoryPanel from './components/ApiCaseDataFactoryPanel.vue'
+  import ApiCaseScenarioNav from './components/ApiCaseScenarioNav.vue'
+  import { mapWithConcurrency, useApiCaseConfigSearch } from './composables/useApiCaseConfigSearch'
+  import type {
+    ConfigSearchDocument,
+    ConfigSearchMatch,
+    ConfigSearchTarget,
+  } from './composables/useApiCaseConfigSearch'
+  import { useApiCaseExecution } from './composables/useApiCaseExecution'
+  import { useApiCasePanelLoader } from './composables/useApiCasePanelLoader'
+  import { useApiCaseSelection } from './composables/useApiCaseSelection'
+  import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
+  import type { ApiCaseRevisionDetail } from '@/types/api-test/case-version'
+  import { parseApiCaseRevisionPayload } from '@/types/api-test/case-revision-payload'
+  import type { ApiCaseExecutionVersion } from '@/utils/api-case-revision'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
   import { getDataFactoryCaseConfig, getDataFactoryDatasourceAlias } from '@/api/data-factory'
-  import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
+  import {
+    getExecutionResultDetailResolved,
+    getExecutionResultList,
+  } from '@/api/system/execution_result'
 
   const userStore = useUserStore()
   const FRONT_FUNC_TEMPLATE = `def func(self, request):
@@ -1245,7 +822,7 @@
     headers = response.headers or {}  # 响应头
     json_body = response.json  # 解析后的 JSON，可能是 dict/list/str/number/bool/null
     text = response.text  # 原始响应文本，非 JSON 或文本断言可使用
-    response_mode = response.response_mode  # 响应模式：http/sse
+    response_mode = response.response_mode  # 响应模式：http/sse/grpc/websocket
     sse_events = response.sse_events  # SSE 事件列表，仅 SSE 场景有值
     sse_stop_reason = response.sse_stop_reason  # SSE 停止原因
     request_body = response.request_body  # 实际发送的请求体
@@ -1266,10 +843,6 @@
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const modalDialogRefParameter = ref<ModalDialogType | null>(null)
   const dataFactoryPanelRef = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
-  const parameterDataFactoryPanelRefs = new Map<
-    number,
-    InstanceType<typeof DataFactoryCaseConfigPanel>
-  >()
   const formModel = ref({})
   const formParameterModel = ref({})
   const pageData: any = usePageData()
@@ -1306,6 +879,8 @@
     front_custom: [],
     front_sql: [],
     front_headers: [],
+    front_public: [],
+    front_auth_config: [],
     posterior_sql: [],
     project_product: apiProjectProductId.value ? { id: apiProjectProductId.value } : null,
   })
@@ -1313,6 +888,27 @@
     pageData.setRecord(defaultCaseRecord())
   }
   const enumStore = useEnum()
+  const caseVariableEnvironmentOptions = computed(() => [
+    { key: COMMON_ENV_VALUE, title: '环境通用' },
+    ...enumStore.environment_type,
+  ])
+  const versionPanelRef = ref<InstanceType<typeof ApiCaseVersionPanel> | null>(null)
+  const selectedExecutionVersion = ref<ApiCaseExecutionVersion | null>(null)
+  const selectedExecutionResultSummary = ref<any>(null)
+  const selectedCaseVersionDetail = ref<ApiCaseRevisionDetail | null>(null)
+  const snapshotParametersByStep = new Map<string, any[]>()
+  const liveCaseRecord = ref<any>(null)
+  const liveCaseRows = ref<any[]>([])
+  const caseVersionPayloadActive = ref(false)
+  const caseVersionEditUnlocked = ref(false)
+  const apiCaseCompareCurrentPayload = computed(() => buildApiCaseCompareCurrentPayload())
+  const CONFIG_SEARCH_LIMIT = 200
+  const {
+    state: configSearch,
+    reset: resetConfigSearch,
+    search: runConfigSearch,
+    setDocuments: setConfigSearchDocuments,
+  } = useApiCaseConfigSearch(CONFIG_SEARCH_LIMIT)
   const jsonEditDrawer = reactive({
     visible: false,
     field: '',
@@ -1321,22 +917,28 @@
     value: '',
     item: null as any,
   })
-  const apiInfoDetailPanel = reactive({
-    visible: false,
-    apiInfoId: '',
-  })
+  const apiInfoDetailPanelRef = ref<InstanceType<typeof ApiCaseInfoDetailPanel> | null>(null)
+  const recoveryConfigRef = ref<InstanceType<typeof ApiCaseRecoveryConfig> | null>(null)
+
+  function openRecoveryConfig(step: any) {
+    if (!ensureCaseEditable() || caseExecutionActive.value) return
+    recoveryConfigRef.value?.open(step)
+  }
   const data: any = reactive({
-    actionTitle: '新增',
+    actionTitle: '新增执行编排',
 
     assClickAdd: true,
     results: null,
     selectDataObj: [],
     data: [],
     apiList: [],
+    apiRevisionList: [],
     ass: [],
     textAss: [],
     caseHeadersList: [],
     caseDetailsHeadersList: [],
+    headers_list: [],
+    parameter_headers_list: [],
     apiType: '2',
     apiSonType: '0',
     caseDetailsTypeKey: '2',
@@ -1350,26 +952,73 @@
     activeCollapseKey: [0],
     mountedCollapseKeys: [],
     collapseLoading: false, // 列表整体 loading
+    caseConfigLoading: false,
     caseDetailTabLoading: false,
     expandingIndex: -1, // 正在展开中的 item index，-1 表示无
     datasourceAliasOptions: [],
+    publicOptions: [],
+    authConfigOptions: [],
   })
 
-  const caseRunning = ref(false)
+  const {
+    caseRunning,
+    caseRequestPending,
+    debugRunningStepId,
+    debugRequestPending,
+    lastTraceId,
+    caseRunRefreshTimer,
+    startCaseRunRefresh,
+    stopCaseRunRefresh,
+    startCaseRunLoadingLimit,
+    stopCaseRunLoadingLimit,
+    startDebugRunLoadingLimit,
+    stopDebugRunLoadingLimit,
+    disposeExecutionTimers,
+  } = useApiCaseExecution(() => refreshCaseRunStatusByStep())
   const stepTableLoading = ref(false)
+  const caseGlobalSaving = ref(false)
+  const caseDataFactoryCount = ref(0)
+  const scenarioWorkbenchExpanded = ref(false)
+  const scenarioHeaderSavingCount = ref(0)
+
+  function changeScenarioSavingCount(saving: boolean) {
+    scenarioHeaderSavingCount.value = Math.max(
+      0,
+      scenarioHeaderSavingCount.value + (saving ? 1 : -1)
+    )
+  }
   const schemaLoadingId = ref<number | null>(null)
+  const assertionVerifyLoadingId = ref<number | null>(null)
   const jsonEditSaving = ref(false)
-  const assertionGroupLogicOptions = [
-    { label: '且', value: 'AND' },
-    { label: '或', value: 'OR' },
-  ]
-  const isAssertionGroupTab = computed(() => data.tabsKey === '31' || data.tabsKey === '32')
-  const showCaseAddButton = computed(() => !(data.apiType === '1' && data.apiSonType === '13'))
+  const deprecatedRegexAssertionMethods = new Set(['p_matches', 'p_does_not_match'])
+  const caseEditLocked = computed(
+    () => caseVersionPayloadActive.value && !caseVersionEditUnlocked.value
+  )
+  const showCaseAddButton = computed(
+    () => !(data.apiType === '1' && ['13', '15', '16'].includes(data.apiSonType))
+  )
+  const toggleScenarioWorkbench = () => {
+    scenarioWorkbenchExpanded.value = !scenarioWorkbenchExpanded.value
+  }
   const apiCaseDetailTitle = computed(() => {
     const id = apiCaseId.value || '-'
     const name = pageData.record?.name || '-'
     return `组合用例场景配置 / ${id} / ${name}`
   })
+  const frontPublicCheckedValues = computed({
+    get: () => mergeCheckedOptionValues(pageData.record.front_public, data.publicOptions),
+    set: (value: any[]) => {
+      pageData.record.front_public = filterOptionalOptionValues(value, data.publicOptions)
+    },
+  })
+  const frontAuthConfigCheckedValues = computed({
+    get: () => mergeCheckedOptionValues(pageData.record.front_auth_config, data.authConfigOptions),
+    set: (value: any[]) => {
+      pageData.record.front_auth_config = filterOptionalOptionValues(value, data.authConfigOptions)
+    },
+  })
+  const traceDrawerRef = ref<InstanceType<typeof ApiCaseExecutionTraceDrawer> | null>(null)
+  const caseDiagnosisDrawerRef = ref<InstanceType<typeof ApiCaseDiagnosisDrawer> | null>(null)
   const selectedStepSummary = computed(() => {
     const step = data.tabelJson
     if (!step?.api_info) {
@@ -1380,16 +1029,66 @@
     const name = step.api_info.name || '未命名接口'
     return `${name} / ${method} ${url} / 可扩展多组场景参数、前后置处理、断言和结果`
   })
-  const dataFactoryConfigCache = new Map<number, boolean>()
-  const codeEditorSnapshots = new Map<string, string>()
+  const selectedRuntimeResultOutdated = computed(
+    () =>
+      Boolean(data.tabelJson?.runtime_result_outdated) ||
+      data.selectDataObj.some((item: any) => item.runtime_result_outdated)
+  )
+  const latestScenarioExecutionLabel = computed(() => {
+    const testTime =
+      selectedExecutionResultSummary.value?.create_time || getLatestScenarioTestTime()
+    if (!testTime) return ''
+    const environment = selectedExecutionResultSummary.value
+      ? selectedExecutionResultSummary.value.test_env_name ||
+        formatEnvironmentText(selectedExecutionResultSummary.value.test_env)
+      : ''
+    const outdatedText = selectedRuntimeResultOutdated.value ? ' · 执行后配置已变更' : ''
+    return `最近执行：${testTime}${
+      environment && environment !== '-' ? ` · ${environment}` : ''
+    }${outdatedText}`
+  })
+  const caseExecutionActive = computed(
+    () =>
+      caseRequestPending.value ||
+      debugRequestPending.value ||
+      scenarioHeaderSavingCount.value > 0 ||
+      caseRunRefreshTimer.value !== null ||
+      hasRunningCaseStep(data.data)
+  )
+  const dataFactoryConfigCache = reactive(new Map<string, number>())
+  const parameterCacheByStep = new Map<string, any[]>()
+  let latestExecutionResultData: any = null
+  const {
+    nextParameterLoadToken,
+    isCurrentParameterLoad,
+    nextExecutionResultLoadToken,
+    isCurrentExecutionResultLoad,
+    invalidateExecutionResultLoad,
+  } = useApiCaseSelection()
+  const {
+    panelLoaded,
+    markPanelLoaded,
+    runWithPanelLoading: runCaseDetailTabLoading,
+  } = useApiCasePanelLoader(data)
+  let caseConfigLoadingCount = 0
 
-  const sqlDatasourceField = computed(() => ({
-    field: 'datasource_alias',
-    label: '数据源',
-    type: 'select',
-    placeholder: '单库可不选',
-    options: data.datasourceAliasOptions,
-  }))
+  async function runCaseConfigLoading(task: () => void | Promise<void>) {
+    caseConfigLoadingCount += 1
+    data.caseConfigLoading = true
+    try {
+      await task()
+    } finally {
+      caseConfigLoadingCount = Math.max(0, caseConfigLoadingCount - 1)
+      data.caseConfigLoading = caseConfigLoadingCount > 0
+    }
+  }
+
+  const sqlEnvironmentOptions = computed(() =>
+    (enumStore.environment_type || []).map((item: any) => ({
+      label: item.title,
+      value: item.key,
+    }))
+  )
 
   function formatMethodTitle(method: any) {
     const methods = Array.isArray(enumStore.method) ? enumStore.method : []
@@ -1397,27 +1096,14 @@
     return found?.title || method || '-'
   }
 
-  function codeSnapshotKey(id: number, key: string) {
-    return `${id}:${key}`
-  }
-
-  function normalizeCodeValue(value: string | null | undefined) {
-    return value || ''
-  }
-
-  function recordCodeSnapshot(key: string, value: string | null | undefined, id: number) {
-    codeEditorSnapshots.set(codeSnapshotKey(id, key), normalizeCodeValue(value))
-  }
-
-  function saveCodeIfChanged(key: string, value: string | null | undefined, id: number) {
-    const snapshotKey = codeSnapshotKey(id, key)
-    const currentValue = normalizeCodeValue(value)
-    const previousValue = codeEditorSnapshots.get(snapshotKey) ?? currentValue
-    if (currentValue === previousValue) {
-      return
+  function getLatestScenarioTestTime() {
+    const rows = Array.isArray(data.selectDataObj) ? data.selectDataObj : []
+    for (let index = rows.length - 1; index >= 0; index--) {
+      const row = rows[index]
+      const testTime = row?.result_data?.test_time || row?.test_time
+      if (testTime) return testTime
     }
-    codeEditorSnapshots.set(snapshotKey, currentValue)
-    blurSave(key, value || null, id)
+    return ''
   }
 
   function isActiveCollapseItem(index: number) {
@@ -1451,70 +1137,244 @@
     return data.caseDetailsTypeKey === caseDetailsTypeKey && data.tabsKey === tabsKey
   }
 
-  function setParameterDataFactoryPanelRef(id: number, el: any) {
-    if (el) {
-      parameterDataFactoryPanelRefs.set(id, el)
-    } else {
-      parameterDataFactoryPanelRefs.delete(id)
-    }
+  function isRuntimeResultTab() {
+    return data.caseDetailsTypeKey === '2' || data.caseDetailsTypeKey === '6'
   }
 
-  function findItemByValue(data: any, value: string) {
-    for (let i = 0; i < data.length; i++) {
-      const item = data[i]
-      if (item.value === value) {
-        return item
-      }
-      if (item.children) {
-        const childItem = findItemByValue(item.children, value)
-        if (childItem) {
-          return childItem
-        }
-      }
-    }
-    return undefined
-  }
-
-  function switchType(key: any) {
+  async function switchType(key: any) {
     if (key === '1') {
-      data.apiSonType = '11'
+      data.apiSonType = '15'
     } else if (key === '3') {
       data.apiSonType = '31'
     }
     data.apiType = key
+    if (key !== '2') {
+      await runCaseConfigLoading(() => ensureActiveCasePanelLoaded())
+    }
   }
 
-  function waitFrame() {
-    return new Promise<void>((resolve) => {
-      requestAnimationFrame(() => resolve())
-    })
+  function selectExecutionVersion(version: ApiCaseExecutionVersion) {
+    selectedExecutionVersion.value = version
+    caseVersionEditUnlocked.value = false
+    clearDisplayedRuntimeResults()
   }
 
-  function delay(ms: number) {
-    return new Promise<void>((resolve) => {
-      window.setTimeout(resolve, ms)
-    })
+  function showVersionDetail(detail: ApiCaseRevisionDetail) {
+    if (selectedExecutionVersion.value?.revisionId !== detail.id) return
+    caseVersionEditUnlocked.value = false
+    selectedCaseVersionDetail.value = detail
+    applyCaseVersionPayload(detail.payload, detail.api_revision_dependencies)
+    void refreshSelectedRuntimeResult()
   }
 
-  async function runCaseDetailTabLoading(task: () => void | Promise<void>) {
-    let finished = false
-    const loadingTimer = window.setTimeout(() => {
-      if (!finished) {
-        data.caseDetailTabLoading = true
+  function showCurrentConfiguration() {
+    selectedCaseVersionDetail.value = null
+    caseVersionPayloadActive.value = false
+    caseVersionEditUnlocked.value = false
+    snapshotParametersByStep.clear()
+    if (liveCaseRecord.value) {
+      pageData.setRecord(normalizeCaseRecord(liveCaseRecord.value))
+    }
+    void Promise.all([doRefresh(), loadCaseDataFactoryCount()]).then(() =>
+      refreshSelectedRuntimeResult()
+    )
+  }
+
+  function ensureCaseEditable() {
+    if (!caseEditLocked.value) return true
+    Message.warning('当前正在查看只读快照，请先在版本栏迁出到编辑态后再修改')
+    return false
+  }
+
+  function cloneVersionValue<T>(value: T): T {
+    return value == null ? value : cloneLosslessJson(value)
+  }
+
+  function pickCaseEditablePayload(record: Record<string, any>) {
+    const fields = [
+      'id',
+      'name',
+      'front_custom',
+      'front_sql',
+      'front_headers',
+      'front_public',
+      'front_auth_config',
+      'posterior_sql',
+      'parametrize',
+    ]
+    return fields.reduce<Record<string, any>>((result, field) => {
+      result[field] = cloneVersionValue(record?.[field])
+      return result
+    }, {})
+  }
+
+  function pickCaseStepEditablePayload(row: Record<string, any>, index: number) {
+    const apiInfoId = getSnapshotApiInfoId(row) || getApiInfoId(row)
+    const fields = ['id', 'logical_id', 'case_sort', 'posterior_sql', 'api_info_revision_id',
+      'execution_config']
+    const step = fields.reduce<Record<string, any>>((result, field) => {
+      result[field] = cloneVersionValue(row?.[field])
+      return result
+    }, {})
+    step.id = step.id || `step-${index + 1}`
+    step.logical_id = step.logical_id || `step-${step.id}`
+    step.case_sort = step.case_sort ?? index + 1
+    if (!Object.keys(step.execution_config || {}).length) {
+      delete step.execution_config
+    }
+    step.api_info_id = apiInfoId
+    step.api_case_detailed_parameter = getCurrentStepParameters(row)
+    return step
+  }
+
+  function getCurrentStepParameters(row: Record<string, any>) {
+    const snapshotParameters = snapshotParametersByStep.get(String(row?.id))
+    if (snapshotParameters) return cloneVersionValue(snapshotParameters)
+    if (Array.isArray(row?.api_case_detailed_parameter)) {
+      return cloneVersionValue(row.api_case_detailed_parameter)
+    }
+    if (data.tabelJson && String(data.tabelJson.id) === String(row?.id)) {
+      return cloneVersionValue(data.selectDataObj || [])
+    }
+    return []
+  }
+
+  function buildApiCaseCompareCurrentPayload() {
+    return {
+      api_case: pickCaseEditablePayload(pageData.record || {}),
+      api_case_detailed: (Array.isArray(data.data) ? data.data : []).map(
+        (row: Record<string, any>, index: number) => pickCaseStepEditablePayload(row, index)
+      ),
+    }
+  }
+
+  function getSnapshotApiInfoId(step: Record<string, any>) {
+    return step.api_info ?? step.api_info_id ?? ''
+  }
+
+  function applyCaseVersionPayload(
+    payload: Record<string, any>,
+    dependencies: ApiCaseRevisionDetail['api_revision_dependencies'] = []
+  ) {
+    if (!payload || typeof payload !== 'object') return
+    if (!caseVersionPayloadActive.value) {
+      liveCaseRecord.value = cloneVersionValue(pageData.record)
+      liveCaseRows.value = cloneVersionValue(Array.isArray(data.data) ? data.data : [])
+    }
+    caseVersionPayloadActive.value = true
+    const currentRows = liveCaseRows.value
+    const revisionPayload = parseApiCaseRevisionPayload(payload)
+    const casePayload = revisionPayload.api_case
+    const steps = revisionPayload.api_case_detailed
+    dataFactoryConfigCache.clear()
+    setCaseDataFactoryCount(0)
+    revisionPayload.dependencies.data_factory_configs.forEach((config) => {
+      if (Number(config.source_type) === 1) {
+        setCaseDataFactoryCount(caseDataFactoryCount.value + 1)
+        return
       }
-    }, 180)
-    try {
-      await task()
-      await nextTick()
-      await waitFrame()
-      await waitFrame()
-      if (data.caseDetailTabLoading) {
-        await delay(120)
+      if (Number(config.source_type) !== 3) return
+      const sourceId = String(config.source_id || '')
+      if (!sourceId) return
+      dataFactoryConfigCache.set(sourceId, (dataFactoryConfigCache.get(sourceId) || 0) + 1)
+    })
+    const dependencyByLogicalId = new Map(dependencies.map((item) => [item.step_logical_id, item]))
+    snapshotParametersByStep.clear()
+    const rows = steps.map((step: any, index: number) => {
+      const apiInfoId = getSnapshotApiInfoId(step)
+      const sourceId = String(step.id || '').replace(/^step-/, '')
+      const current =
+        currentRows.find((row: any) => String(row.id) === sourceId) ||
+        currentRows.find((row: any) => String(getApiInfoId(row)) === String(apiInfoId)) ||
+        {}
+      const apiInfoSnapshot = step.api_info_snapshot || {}
+      const apiRuntimePayload = apiInfoSnapshot.payload?.api_info || {}
+      const dependency = dependencyByLogicalId.get(step.logical_id)
+      const row = {
+        ...current,
+        ...cloneVersionValue(step),
+        execution_config: cloneVersionValue(step.execution_config || {}),
+        id: step.id || current.id || `version-step-${index + 1}`,
+        api_info: {
+          ...(current.api_info || {}),
+          ...cloneVersionValue(apiRuntimePayload),
+          id: apiInfoId,
+          name:
+            apiInfoSnapshot.name ||
+            current.api_info?.name ||
+            dependency?.api_info_name ||
+            `接口 ${apiInfoId}`,
+        },
+        api_info_snapshot_source_missing: Boolean(dependency && dependency.status !== 'available'),
+        pinned_api_info_revision: step.api_info_revision_id,
       }
-    } finally {
-      finished = true
-      window.clearTimeout(loadingTimer)
-      data.caseDetailTabLoading = false
+      snapshotParametersByStep.set(
+        String(row.id),
+        cloneVersionValue(step.api_case_detailed_parameter || [])
+      )
+      return normalizeCaseDetailRow(row)
+    })
+    pageData.setRecord(
+      normalizeCaseRecord({ ...pageData.record, ...cloneVersionValue(casePayload) })
+    )
+    data.caseHeadersList = pageData.record.front_headers
+    data.data = rows
+    if (rows.length) select(rows[0])
+    else {
+      data.tabelJson = null
+      data.selectDataObj = []
+    }
+  }
+
+  function executeSelectedVersion(version: ApiCaseExecutionVersion) {
+    selectedExecutionVersion.value = version
+    caseRun(null, version)
+  }
+
+  async function ensureCasePanelLoaded(panelKey: string, record: any = data.tabelJson) {
+    if (panelKey === 'case-public') {
+      await loadCasePublicOptions()
+    } else if (panelKey === 'case-auth') {
+      await loadCaseAuthOptions()
+    } else if (panelKey === 'case-headers') {
+      await loadCaseHeaders()
+    } else if (panelKey === 'datasource-aliases') {
+      await loadDatasourceAliases()
+    } else if (panelKey === 'parameter-headers') {
+      await loadParameterHeaders(record?.api_info?.project_product)
+    }
+  }
+
+  async function ensureActiveCasePanelLoaded(record: any = data.tabelJson) {
+    if (data.apiType === '1') {
+      if (data.apiSonType === '15') {
+        await ensureCasePanelLoaded('case-public', record)
+      } else if (data.apiSonType === '16') {
+        await ensureCasePanelLoaded('case-auth', record)
+      } else if (data.apiSonType === '12') {
+        await ensureCasePanelLoaded('datasource-aliases', record)
+      } else if (data.apiSonType === '13') {
+        await ensureCasePanelLoaded('case-headers', record)
+      }
+      return
+    }
+    if (data.apiType === '3') {
+      if (data.apiSonType === '31') {
+        await ensureCasePanelLoaded('datasource-aliases', record)
+      }
+      return
+    }
+    if (data.apiType !== '2') {
+      return
+    }
+    if (data.caseDetailsTypeKey === '0' && data.tabsKey === '00') {
+      await ensureCasePanelLoaded('parameter-headers', record)
+    }
+    if (['10', '41'].includes(String(data.tabsKey))) {
+      await ensureCasePanelLoaded('datasource-aliases', record)
+    }
+    if (isRuntimeResultTab()) {
+      await refreshSelectedRuntimeResult()
     }
   }
 
@@ -1534,6 +1394,120 @@
     if (Array.isArray(value)) return value.length > 0
     if (typeof value === 'object') return Object.keys(value).length > 0
     return true
+  }
+
+  function configuredItemCount(value: any) {
+    if (!hasConfigValue(value)) return 0
+    if (Array.isArray(value)) return value.length
+    return 1
+  }
+
+  function resultItemCount(value: any) {
+    if (!hasDisplayValue(value)) return 0
+    if (Array.isArray(value)) return value.length
+    if (typeof value === 'object') return Object.keys(value).length
+    return 1
+  }
+
+  function setCaseDataFactoryCount(count: number) {
+    caseDataFactoryCount.value = Math.max(0, Number(count) || 0)
+  }
+
+  async function loadCaseDataFactoryCount() {
+    if (!apiCaseId.value) {
+      setCaseDataFactoryCount(0)
+      return
+    }
+    try {
+      const res = await getDataFactoryCaseConfig({ source_type: 1, source_id: apiCaseId.value })
+      setCaseDataFactoryCount(Array.isArray(res.data) ? res.data.length : 0)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  function getCaseConfigCount(
+    type: 'public' | 'auth' | 'custom' | 'frontSql' | 'factory' | 'headers' | 'posteriorSql'
+  ) {
+    if (type === 'public') return configuredItemCount(frontPublicCheckedValues.value)
+    if (type === 'auth') return configuredItemCount(frontAuthConfigCheckedValues.value)
+    if (type === 'custom') return configuredItemCount(pageData.record?.front_custom)
+    if (type === 'frontSql') return configuredItemCount(pageData.record?.front_sql)
+    if (type === 'factory') return caseDataFactoryCount.value
+    if (type === 'headers') return configuredItemCount(pageData.record?.front_headers)
+    return configuredItemCount(pageData.record?.posterior_sql)
+  }
+
+  function setScenarioDataFactoryCount(id: number | string, count: number) {
+    dataFactoryConfigCache.set(String(id), Math.max(0, Number(count) || 0))
+  }
+
+  async function loadScenarioDataFactoryCounts(items: any[]) {
+    await Promise.allSettled(
+      items.map(async (item) => {
+        const cacheKey = String(item?.id || '')
+        if (!cacheKey || dataFactoryConfigCache.has(cacheKey)) return
+        const res = await getDataFactoryCaseConfig({ source_type: 3, source_id: item.id })
+        setScenarioDataFactoryCount(item.id, Array.isArray(res.data) ? res.data.length : 0)
+      })
+    )
+  }
+
+  function getScenarioTabCount(
+    item: any,
+    tab:
+      | 'front'
+      | 'request'
+      | 'response'
+      | 'posterior'
+      | 'assertion'
+      | 'cache'
+      | 'factory'
+      | 'assertionResult'
+  ) {
+    if (tab === 'front') {
+      return (
+        configuredItemCount(item?.front_sql) +
+        configuredItemCount(item?.front_func) +
+        (dataFactoryConfigCache.get(String(item?.id)) || 0)
+      )
+    }
+    if (tab === 'request') {
+      const hasBody =
+        getScenarioBodyType(item) !== 'none' || hasConfigValue(item?.body_config) ? 1 : 0
+      return (
+        configuredItemCount(item?.headers) +
+        configuredItemCount(item?.params) +
+        hasBody +
+        configuredItemCount(item?.sse_config)
+      )
+    }
+    if (tab === 'response') return hasConfigValue(item?.result_data) ? 1 : 0
+    if (tab === 'posterior') {
+      return (
+        configuredItemCount(item?.posterior_response) +
+        configuredItemCount(item?.posterior_response_text) +
+        configuredItemCount(item?.posterior_sql) +
+        configuredItemCount(item?.posterior_sleep) +
+        configuredItemCount(item?.posterior_file) +
+        configuredItemCount(item?.posterior_func)
+      )
+    }
+    if (tab === 'assertion') {
+      return (
+        configuredItemCount(item?.ass_json_all) +
+        configuredItemCount(item?.ass_text_all) +
+        configuredItemCount(item?.ass_jsonpath) +
+        configuredItemCount(item?.ass_sql) +
+        configuredItemCount(item?.ass_schema) +
+        configuredItemCount(item?.ass_general)
+      )
+    }
+    if (tab === 'cache') return resultItemCount(item?.result_data?.cache_data)
+    if (tab === 'factory') {
+      return resultItemCount(item?.result_data?.data_factory_cache_data)
+    }
+    return getAssertionResultData(item).length
   }
 
   function getResultRequestParams(item: any) {
@@ -1556,6 +1530,60 @@
     return result.response?.request_file ?? result.request?.request_files ?? result.request?.file
   }
 
+  function scenarioProtocolLabel(value: any) {
+    const protocol = String(value || 'http').toLowerCase()
+    const labels: Record<string, string> = {
+      http: 'HTTP',
+      sse: 'SSE',
+      websocket: 'WebSocket',
+      grpc: 'gRPC',
+      mcp: 'MCP',
+    }
+    return labels[protocol] || String(value || '-').toUpperCase()
+  }
+
+  function scenarioBodyTypeLabel(value: any) {
+    const bodyType = String(value || 'none').toLowerCase()
+    const labels: Record<string, string> = {
+      none: '无请求体',
+      json: 'JSON',
+      form: 'Form',
+      raw: 'Raw',
+      multipart: 'Multipart',
+    }
+    return labels[bodyType] || String(value || '-')
+  }
+
+  function responseHeaderValue(headers: any, name: string) {
+    if (!headers || typeof headers !== 'object' || Array.isArray(headers)) return ''
+    const targetName = name.toLowerCase()
+    const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === targetName)
+    return entry?.[1] === undefined || entry?.[1] === null ? '' : String(entry[1])
+  }
+
+  function hasResultResponseJson(item: any) {
+    const value = item?.result_data?.response?.json
+    return value !== undefined && value !== null && value !== ''
+  }
+
+  function getScenarioResponseMode(item: any) {
+    const mode =
+      item?.result_data?.response?.response_mode ||
+      item?.result_data?.response?.request_protocol_type ||
+      getScenarioProtocolType(item)
+    return String(mode || 'http').toLowerCase()
+  }
+
+  function isScenarioResponseMode(item: any, mode: string) {
+    return getScenarioResponseMode(item) === mode
+  }
+
+  function getResultResponseTabKey(item: any) {
+    if (isScenarioResponseMode(item, 'sse')) return '26'
+    if (isScenarioResponseMode(item, 'websocket')) return '27'
+    return hasResultResponseJson(item) ? '23' : '24'
+  }
+
   async function switchApiInfoType(key: any, item: any) {
     if (data.caseDetailTabLoading) {
       return
@@ -1563,26 +1591,29 @@
     await runCaseDetailTabLoading(async () => {
       data.caseDetailsTypeKey = key
       if (key === '0') {
-        if (hasConfigValue(item?.headers)) {
-          data.tabsKey = '00'
+        if (hasConfigValue(item?.body_config) || getScenarioBodyType(item) !== 'none') {
+          data.tabsKey = '02'
         } else if (hasConfigValue(item?.params)) {
           data.tabsKey = '01'
-        } else if (hasConfigValue(item?.body_config) || item?.body_type !== 'none') {
-          data.tabsKey = '02'
+        } else if (hasConfigValue(item?.headers)) {
+          data.tabsKey = '00'
         } else {
           data.tabsKey = '02'
         }
       } else if (key === '1') {
         await switchFrontProcessTab(item)
       } else if (key === '2') {
-        data.tabsKey = '23'
+        data.tabsKey = getResultResponseTabKey(item)
       } else if (key === '3') {
-        if (item.ass_general && item.ass_general.length > 0) {
+        if (item.ass_sql && item.ass_sql.length > 0) {
+          data.tabsKey = '35'
+          data.assClickAdd = true
+        } else if (item.ass_general && item.ass_general.length > 0) {
           data.tabsKey = '32'
           data.assClickAdd = true
         } else if (item.ass_jsonpath && item.ass_jsonpath.length > 0) {
           data.tabsKey = '31'
-          data.assClickAdd = false
+          data.assClickAdd = true
         } else if (item.ass_text_all) {
           data.tabsKey = '33'
           data.assClickAdd = false
@@ -1594,20 +1625,26 @@
           data.assClickAdd = false
         }
       } else if (key === '4') {
-        if (item.posterior_sql && item.posterior_sql.length > 0) {
-          data.tabsKey = '41'
-        } else if (item.posterior_func && item.posterior_func.length > 0) {
-          data.tabsKey = '43'
-        } else if (item.posterior_response_text) {
+        if (hasConfigValue(item.posterior_response)) {
+          data.tabsKey = '40'
+        } else if (hasConfigValue(item.posterior_response_text)) {
           data.tabsKey = '44'
-        } else if (item.posterior_sleep) {
+        } else if (hasConfigValue(item.posterior_sql)) {
+          data.tabsKey = '41'
+        } else if (hasConfigValue(item.posterior_sleep)) {
           data.tabsKey = '42'
+        } else if (hasConfigValue(item.posterior_func)) {
+          data.tabsKey = '43'
         } else {
           data.tabsKey = '40'
         }
-        data.assClickAdd = true
+        data.assClickAdd = !['42', '43'].includes(String(data.tabsKey))
       } else if (key === '5') {
         data.tabsKey = '50'
+      }
+      await ensureActiveCasePanelLoaded(item)
+      if (key === '2') {
+        data.tabsKey = getResultResponseTabKey(item)
       }
     })
   }
@@ -1624,13 +1661,13 @@
       return
     }
     try {
-      let hasDataFactoryConfig = dataFactoryConfigCache.get(item.id)
-      if (hasDataFactoryConfig === undefined) {
+      let dataFactoryConfigCount = dataFactoryConfigCache.get(String(item.id))
+      if (dataFactoryConfigCount === undefined) {
         const res = await getDataFactoryCaseConfig({ source_type: 3, source_id: item.id })
-        hasDataFactoryConfig = Boolean(res.data && res.data.length > 0)
-        dataFactoryConfigCache.set(item.id, hasDataFactoryConfig)
+        dataFactoryConfigCount = Array.isArray(res.data) ? res.data.length : 0
+        setScenarioDataFactoryCount(item.id, dataFactoryConfigCount)
       }
-      if (hasDataFactoryConfig) {
+      if (dataFactoryConfigCount > 0) {
         data.tabsKey = '12'
         data.assClickAdd = true
         return
@@ -1642,18 +1679,18 @@
     data.assClickAdd = true
   }
 
-  function switchSonType(key: any) {
+  async function switchSonType(key: any) {
     data.apiSonType = key
+    await runCaseConfigLoading(() => ensureActiveCasePanelLoaded())
   }
 
   function fillDefaultFunc(item: any, key: string | number) {
+    if (caseEditLocked.value) return
     if (!item) return
     if (key === '11' && !item.front_func) {
       item.front_func = FRONT_FUNC_TEMPLATE
-      recordCodeSnapshot('front_func', item.front_func, item.id)
     } else if (key === '43' && !item.posterior_func) {
       item.posterior_func = POSTERIOR_FUNC_TEMPLATE
-      recordCodeSnapshot('posterior_func', item.posterior_func, item.id)
     }
   }
 
@@ -1661,7 +1698,11 @@
     if (data.caseDetailTabLoading) {
       return
     }
-    await runCaseDetailTabLoading(() => {
+    if (isRuntimeResultTab()) {
+      data.tabsKey = key
+      return
+    }
+    await runCaseDetailTabLoading(async () => {
       data.tabsKey = key
       fillDefaultFunc(item, key)
       data.assClickAdd = !(
@@ -1671,64 +1712,29 @@
         key === '43' ||
         key === '11'
       )
+      await ensureActiveCasePanelLoaded(item)
     })
   }
 
-  function clickAdd(item: any = null) {
-    if ('10' === data.tabsKey) {
-      item['front_sql'].push({ key: '', value: '', datasource_alias: null })
-    } else if ('31' === data.tabsKey) {
-      item['ass_jsonpath'].push({
-        group_name: '',
-        group_logic: 'AND',
-        actual: '',
-        method: '',
-        expect: null,
-      })
-    } else if ('32' === data.tabsKey) {
-      item['ass_general'].push({ group_name: '', group_logic: 'AND', method: '', value: {} })
-    } else if ('40' === data.tabsKey) {
-      item['posterior_response'].push({ key: '', value: '' })
-    } else if ('41' === data.tabsKey) {
-      item['posterior_sql'].push({ key: '', value: '', datasource_alias: null })
-    } else if ('44' === data.tabsKey) {
-      item['posterior_response_text'].push({ key: '', value: '' })
-    } else if ('12' === data.tabsKey) {
-      parameterDataFactoryPanelRefs.get(item.id)?.open()
-    }
-  }
-
-  function clickAddOrAssertionGroup(item: any = null) {
-    if (!item) return
-    const groupName = `或关系${Date.now().toString().slice(-4)}`
-    if ('31' === data.tabsKey) {
-      item.ass_jsonpath.push(
-        { group_name: groupName, group_logic: 'OR', actual: '', method: '', expect: null },
-        { group_name: groupName, group_logic: 'OR', actual: '', method: '', expect: null }
-      )
-      blurSave('ass_jsonpath', item.ass_jsonpath, item.id)
-    } else if ('32' === data.tabsKey) {
-      item.ass_general.push(
-        { group_name: groupName, group_logic: 'OR', method: '', value: {} },
-        { group_name: groupName, group_logic: 'OR', method: '', value: {} }
-      )
-      blurSave('ass_general', item.ass_general, item.id)
-    }
-  }
-
   function addData() {
+    if (!ensureCaseEditable()) return
     if (data.apiType == '2') {
       addApiInfo()
       return
     }
     if (data.apiSonType === '11') {
-      pageData.record.front_custom.push({ key: '', value: '' })
+      pageData.record.front_custom.push({ key: '', value: '', test_envs: [] })
     } else if (data.apiSonType === '12') {
-      pageData.record.front_sql.push({ key: '', value: '', datasource_alias: null })
+      pageData.record.front_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
     } else if (data.apiSonType === '14') {
       dataFactoryPanelRef.value?.open()
     } else if (data.apiSonType === '31') {
-      pageData.record.posterior_sql.push({ key: '', value: '', datasource_alias: null })
+      pageData.record.posterior_sql.push({
+        key: '',
+        value: '',
+        datasource_alias: null,
+        test_envs: [],
+      })
     }
   }
 
@@ -1741,12 +1747,13 @@
   }
 
   function setSchema(id: number) {
+    if (!ensureCaseEditable()) return
     if (schemaLoadingId.value) return
     schemaLoadingId.value = id
     putSetSchema(id)
       .then((res) => {
         Message.success(res.msg)
-        doRefreshParameter(data.tabelJson.id)
+        doRefreshParameter(data.tabelJson.id, { force: true })
       })
       .catch(console.log)
       .finally(() => {
@@ -1754,7 +1761,99 @@
       })
   }
 
+  function parseAssertionJsonValue(label: string, value: any) {
+    if (value === null || value === undefined || value === '') {
+      return null
+    }
+    if (typeof value === 'object') {
+      return value
+    }
+    const parsedValue = formatJsonObj(label, value)
+    if (parsedValue === false) {
+      throw new Error(`${label}格式不正确`)
+    }
+    return parsedValue
+  }
+
+  function getAssertionResultData(item: any) {
+    if (Array.isArray(item?.__assertion_verify_result)) {
+      return item.__assertion_verify_result
+    }
+    return Array.isArray(item?.result_data?.ass) ? item.result_data.ass : []
+  }
+
+  function getAssertionVerifySignature(item: any) {
+    return JSON.stringify([
+      Number(userStore.selected_environment ?? 0),
+      item.ass_json_all,
+      item.ass_text_all,
+      item.ass_jsonpath,
+      item.ass_schema,
+      item.ass_general,
+      item.ass_sql,
+    ])
+  }
+
+  function isAssertionVerifyStale(item: any) {
+    return Boolean(item?.__assertion_verify_result) && (
+      Boolean(item.__assertion_verify_stale)
+      || item.__assertion_verify_signature !== getAssertionVerifySignature(item)
+    )
+  }
+
+  function clearAssertionVerifyResults() {
+    data.selectDataObj.forEach((item: any) => {
+      item.__assertion_verify_result = null
+      item.__assertion_verify_signature = null
+      item.__assertion_verify_stale = false
+      item.__assertion_compare_open = false
+    })
+  }
+
+  async function verifyAssertions(item: any) {
+    if (!item?.id || assertionVerifyLoadingId.value !== null) return
+    let assJsonAll: any
+    let assSchema: any
+    try {
+      assJsonAll = parseAssertionJsonValue('JSON一致断言', item.ass_json_all)
+      assSchema = parseAssertionJsonValue('结构化断言', item.ass_schema)
+    } catch {
+      return
+    }
+
+    assertionVerifyLoadingId.value = item.id
+    const verifySignature = getAssertionVerifySignature(item)
+    try {
+      const res = await postVerifyApiCaseAssertions({
+        id: item.id,
+        test_env: Number(userStore.selected_environment ?? 0),
+        assertions: {
+          ass_json_all: assJsonAll,
+          ass_text_all: item.ass_text_all || null,
+          ass_jsonpath: normalizeAssJsonpath(item.ass_jsonpath),
+          ass_schema: assSchema,
+          ass_general: normalizeAssGeneral(item.ass_general),
+          ass_sql: normalizeAssSql(item.ass_sql),
+        },
+      })
+      item.__assertion_verify_result = res.data.assertions
+      item.__assertion_verify_signature = verifySignature
+      item.__assertion_verify_stale = false
+      item.__assertion_compare_open = true
+      if (res.data.passed) {
+        Message.success('全部断言验证通过')
+      } else {
+        Message.error(`断言验证完成，共 ${res.data.failed_count} 项未通过`)
+      }
+    } catch (error) {
+      console.log(error)
+    } finally {
+      assertionVerifyLoadingId.value = null
+    }
+  }
+
   function parameterEditing(item: any) {
+    if (!ensureCaseEditable()) return
     data.actionParameterTitle = '编辑接口场景名称'
     data.isAdd = false
     data.isCopy = false
@@ -1763,7 +1862,16 @@
     modalDialogRefParameter.value?.toggle()
     nextTick(() => {
       formParameterItems.forEach((it) => {
-        const propName = item[it.key]
+        const expectation = item.body_config?.protocol_expectation || {}
+        const legacyStatusCodes = getLegacyExpectedStatusCodes(item)
+        const propName =
+          it.key === 'protocol_expectation_mode'
+            ? expectation.mode || (legacyStatusCodes.length ? 'codes' : 'auto')
+            : it.key === 'protocol_expectation_codes'
+            ? (expectation.status_codes || legacyStatusCodes).join(',')
+            : it.key === 'allow_failure'
+            ? Boolean(item[it.key])
+            : item[it.key]
         if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
@@ -1774,6 +1882,7 @@
   }
 
   function parameterCopy(item: any) {
+    if (!ensureCaseEditable()) return
     data.actionParameterTitle = '复制接口场景'
     data.isAdd = false
     data.isCopy = true
@@ -1782,7 +1891,16 @@
     modalDialogRefParameter.value?.toggle()
     nextTick(() => {
       formParameterItems.forEach((it) => {
-        const propName = item[it.key]
+        const expectation = item.body_config?.protocol_expectation || {}
+        const legacyStatusCodes = getLegacyExpectedStatusCodes(item)
+        const propName =
+          it.key === 'protocol_expectation_mode'
+            ? expectation.mode || (legacyStatusCodes.length ? 'codes' : 'auto')
+            : it.key === 'protocol_expectation_codes'
+            ? (expectation.status_codes || legacyStatusCodes).join(',')
+            : it.key === 'allow_failure'
+            ? Boolean(item[it.key])
+            : item[it.key]
         if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
@@ -1793,6 +1911,7 @@
   }
 
   function parameterDelete(item: any) {
+    if (!ensureCaseEditable()) return
     Modal.confirm({
       title: '提示',
       content: '确定要删除此数据吗？',
@@ -1802,20 +1921,22 @@
         return deleteApiCaseDetailedParameter(item.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefreshParameter(data.tabelJson.id)
+            doRefreshParameter(data.tabelJson.id, { force: true })
           })
           .catch(console.log)
       },
     })
   }
 
-  function removeFrontSql1(item: any, index: number) {
+  function removeFrontSql1(item: any, index: number, refreshScenario = true) {
+    if (!ensureCaseEditable()) return
     item.splice(index, 1)
 
-    upDataCase()
+    upDataCase({ refreshScenario })
   }
 
   function openJsonEditDrawer(field: string, label: string, item: any) {
+    if (!ensureCaseEditable()) return
     jsonEditDrawer.visible = true
     jsonEditDrawer.field = field
     jsonEditDrawer.label = label
@@ -1825,6 +1946,7 @@
   }
 
   function saveJsonEditDrawer(value = jsonEditDrawer.value) {
+    if (!ensureCaseEditable()) return
     const item = jsonEditDrawer.item
     const field = jsonEditDrawer.field
     if (!item || !field) return
@@ -1846,6 +1968,7 @@
   }
 
   function changeHeaders(selectedValues: any) {
+    if (!ensureCaseEditable()) return
     const value = {
       id: pageData.record.id,
       front_headers: selectedValues,
@@ -1858,15 +1981,83 @@
       .catch(console.log)
   }
 
-  function changeHeadersApi(selectedValues: any, item: any) {
-    putApiCaseDetailedParameter({ id: item.id, headers: selectedValues })
-      .then((res) => {
-        Message.success(res.msg)
+  async function changeCaseGlobalOptions() {
+    if (!ensureCaseEditable()) return
+    if (caseGlobalSaving.value) return
+    caseGlobalSaving.value = true
+    const frontPublic = filterOptionalOptionValues(pageData.record.front_public, data.publicOptions)
+    const frontAuthConfig = filterOptionalOptionValues(
+      pageData.record.front_auth_config,
+      data.authConfigOptions
+    )
+    pageData.record.front_public = frontPublic
+    pageData.record.front_auth_config = frontAuthConfig
+    try {
+      const res = await putApiCase({
+        id: pageData.record.id,
+        front_public: frontPublic,
+        front_auth_config: frontAuthConfig,
       })
-      .catch(console.log)
+      Message.success(res.msg)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      caseGlobalSaving.value = false
+    }
   }
 
-  function upDataCase() {
+  function filterOptionalOptionValues(values: any[], options: any[]) {
+    const disabledValues = new Set(
+      (options || []).filter((item) => item.disabled).map((item) => item.value)
+    )
+    return (values || []).filter((item) => !disabledValues.has(item))
+  }
+
+  function mergeCheckedOptionValues(values: any[], options: any[]) {
+    const result = new Set(values || [])
+    ;(options || []).forEach((item) => {
+      if (item.disabled) result.add(item.value)
+    })
+    return Array.from(result)
+  }
+
+  function getEnumTitle(options: any, value: any, fallback = '-') {
+    if (value === null || value === undefined || value === '') return fallback
+    if (!Array.isArray(options)) return fallback
+    return (
+      options[Number(value)]?.title ||
+      options.find((item: any) => String(item.key) === String(value))?.title ||
+      fallback
+    )
+  }
+
+  function formatEnvironmentText(value: any) {
+    if (value === null || value === undefined || value === '') return '环境通用'
+    return getEnumTitle(enumStore.environment_type, value, `环境${value}`)
+  }
+
+  function getVariableEnvironmentValue(item: any) {
+    return toEnvironmentSelectValue(item?.test_envs)
+  }
+
+  function setVariableEnvironmentValue(value: any, item: any) {
+    item.test_envs = normalizeEnvironmentValues(normalizeEnvironmentSelectChange(value))
+  }
+
+  function normalizeEnvironmentList(value: any) {
+    return Array.isArray(value)
+      ? value
+      : value === null || value === undefined || value === ''
+      ? []
+      : [value]
+  }
+
+  function formatDefaultStatusText(status: any) {
+    return Number(status) === 1 ? '默认开启' : '可选'
+  }
+
+  function upDataCase(options: { refreshScenario?: boolean } = {}) {
+    if (!ensureCaseEditable()) return
     putApiCase({
       id: pageData.record.id,
       name: pageData.record.name,
@@ -1874,15 +2065,40 @@
       front_sql: pageData.record.front_sql,
       front_custom: pageData.record.front_custom,
       front_headers: pageData.record.front_headers,
+      front_public: pageData.record.front_public,
+      front_auth_config: pageData.record.front_auth_config,
     })
       .then((res) => {
         Message.success(res.msg)
-        doRefresh()
+        if (options.refreshScenario !== false) {
+          doRefresh()
+        }
       })
       .catch(console.log)
   }
 
+  function upDataCaseWithoutScenarioRefresh() {
+    upDataCase({ refreshScenario: false })
+  }
+
   function blurSave(key: string, item: string | null, id: number) {
+    if (!ensureCaseEditable()) return null
+    if (
+      [
+        'ass_json_all',
+        'ass_text_all',
+        'ass_jsonpath',
+        'ass_schema',
+        'ass_general',
+        'ass_sql',
+      ].includes(key)
+    ) {
+      const currentItem = data.selectDataObj.find((scenario: any) => scenario.id === id)
+      if (currentItem?.__assertion_verify_result
+        && currentItem.__assertion_verify_signature !== getAssertionVerifySignature(currentItem)) {
+        currentItem.__assertion_verify_stale = true
+      }
+    }
     const not_serialize = [
       'url',
       'headers',
@@ -1891,7 +2107,6 @@
       'front_func',
       'ass_text_all',
       'params',
-      'body_type',
     ]
     const in_serialize = ['ass_json_all', 'ass_schema']
     const payload: any = {
@@ -1925,90 +2140,62 @@
       .catch(console.log)
   }
 
-  function saveScenarioRequestBody(item: any, value: any) {
-    item.body_config = value.body_config
-    item.sse_config = value.sse_config
-    return putApiCaseDetailedParameter({
-      id: item.id,
-      body_config: value.body_config,
-      sse_config: value.sse_config,
-    })
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
-
   function getScenarioProtocolType(item: any) {
     return data.tabelJson?.api_info?.protocol_type || item?.api_info?.protocol_type || 'http'
   }
 
+  function isParameterFormItemVisible(item: any) {
+    const protocolType = String(data.tabelJson?.api_info?.protocol_type || 'http').toLowerCase()
+    if (['mcp', 'grpc', 'websocket'].includes(protocolType)) {
+      return !String(item.key).startsWith('protocol_expectation_')
+    }
+    if (item.key === 'protocol_expectation_codes') {
+      return (
+        formParameterItems.find((formItem) => formItem.key === 'protocol_expectation_mode')
+          ?.value === 'codes'
+      )
+    }
+    return true
+  }
+
+  function getLegacyExpectedStatusCodes(item: any) {
+    const codes = new Set<number>()
+    const addCode = (value: unknown) => {
+      const code = Number(value)
+      if (Number.isInteger(code) && code >= 100 && code <= 599) {
+        codes.add(code)
+        return
+      }
+      const prefix = Number(String(value || '').slice(0, 3))
+      if ([400, 404, 405, 409, 422].includes(prefix)) codes.add(prefix)
+    }
+    let jsonAll = item?.ass_json_all
+    if (typeof jsonAll === 'string') {
+      try {
+        jsonAll = JSON.parse(jsonAll)
+      } catch {
+        jsonAll = null
+      }
+    }
+    if (jsonAll && typeof jsonAll === 'object') addCode(jsonAll.code)
+    ;(item?.ass_jsonpath || []).forEach((assertion: any) => {
+      const actual = String(assertion?.actual || '').trim()
+      const method = String(assertion?.method || '').toLowerCase()
+      if (
+        ['$.code', '$["code"]', "$['code']"].includes(actual) &&
+        (!method || method.includes('equal'))
+      ) {
+        addCode(assertion.expect)
+      }
+    })
+    addCode(item?.ass_schema?.properties?.code?.const)
+    const latestHttpStatus = Number(item?.result_data?.response?.code)
+    if ([400, 404, 405, 409, 422].includes(latestHttpStatus)) codes.add(latestHttpStatus)
+    return Array.from(codes).sort((left, right) => left - right)
+  }
+
   function getScenarioBodyType(item: any) {
     return data.tabelJson?.api_info?.body_type || item?.api_info?.body_type || 'none'
-  }
-
-  function removeFrontSql(item: any, index: number, key: string, id: number) {
-    item.splice(index, 1)
-    blurSave(key, item, id)
-  }
-
-  function testExtractResponseAfter(type: string, item: any, index: number) {
-    // 1. 验证 result_data 是否存在
-    if (!item.result_data) {
-      Message.error('测试数据不存在：result_data 为空！')
-      return
-    }
-
-    // 2. 验证 response 是否存在
-    if (!item.result_data.response) {
-      Message.error('响应数据不存在：response 为空！')
-      return
-    }
-
-    // 3. 验证 json/text 是否存在且格式正确
-    if (type === 'jsonpath') {
-      if (item.result_data.response.json === null) {
-        Message.error('响应JSON是空，无法进行测试！')
-        return
-      }
-      if (
-        !Array.isArray(item.result_data.response.json) &&
-        typeof item.result_data.response.json !== 'object'
-      ) {
-        Message.error('响应JSON不是对象或数组，无法进行JSONPath测试！')
-        return
-      }
-    } else {
-      if (!item.result_data.response.text) {
-        Message.error('响应文本为空，无法进行测试！')
-        return
-      }
-    }
-
-    // 4. 验证后置响应数据是否存在
-    if (type === 'jsonpath') {
-      if (!item.posterior_response || !item.posterior_response[index]) {
-        Message.error('后置响应数据不存在！')
-        return
-      }
-    } else {
-      if (!item.posterior_response_text || !item.posterior_response_text[index]) {
-        Message.error('后置响应文本数据不存在！')
-        return
-      }
-    }
-
-    postCaseDetailedParameterTestExtractResponseAfter(
-      type,
-      type === 'jsonpath' ? item.posterior_response[index] : item.posterior_response_text[index],
-      type === 'jsonpath' ? item.result_data.response.json : item.result_data.response.text
-    )
-      .then((res) => {
-        Message.success(
-          '测试成功，key：【' + res.data.key + '】，value：【' + res.data.value + '】'
-        )
-      })
-      .catch(console.log)
   }
 
   // 通用断言测试方法
@@ -2032,7 +2219,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   function getCacheDataKeyValue() {
     getSystemCacheDataKeyValue('ass_select_value')
       .then((res) => {
-        res.data.forEach((item: any) => {
+        filterDeprecatedAssertionMethods(res.data).forEach((item: any) => {
           if (item.value.includes('断言')) {
             data.ass.push(item)
           }
@@ -2054,7 +2241,24 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       front_custom: Array.isArray(record?.front_custom) ? record.front_custom : [],
       front_sql: Array.isArray(record?.front_sql) ? record.front_sql : [],
       front_headers: Array.isArray(record?.front_headers) ? record.front_headers : [],
+      front_public: Array.isArray(record?.front_public) ? record.front_public : [],
+      front_auth_config: Array.isArray(record?.front_auth_config) ? record.front_auth_config : [],
       posterior_sql: Array.isArray(record?.posterior_sql) ? record.posterior_sql : [],
+    }
+  }
+
+  function normalizeCaseDetailRow(row: any) {
+    return {
+      ...(row || {}),
+      front_sql: Array.isArray(row?.front_sql) ? row.front_sql : [],
+      ass_jsonpath: Array.isArray(row?.ass_jsonpath) ? row.ass_jsonpath : [],
+      ass_general: Array.isArray(row?.ass_general) ? row.ass_general : [],
+      ass_sql: Array.isArray(row?.ass_sql) ? row.ass_sql : [],
+      posterior_response: Array.isArray(row?.posterior_response) ? row.posterior_response : [],
+      posterior_sql: Array.isArray(row?.posterior_sql) ? row.posterior_sql : [],
+      posterior_response_text: Array.isArray(row?.posterior_response_text)
+        ? row.posterior_response_text
+        : [],
     }
   }
 
@@ -2070,26 +2274,32 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     pageData.setRecord(normalizeCaseRecord(record || { id: caseId }))
   }
 
-  function doRefresh() {
-    if (!apiCaseId.value) return
+  function doRefresh(options: { loadParameters?: boolean } = {}) {
+    if (!apiCaseId.value) return Promise.resolve()
     stepTableLoading.value = true
     data.caseHeadersList = pageData.record.front_headers
-    getApiCaseDetailed(apiCaseId.value)
+    return getApiCaseDetailed(apiCaseId.value)
       .then((res) => {
-        const rows = Array.isArray(res.data) ? res.data : []
+        const rows = Array.isArray(res.data) ? res.data.map(normalizeCaseDetailRow) : []
         data.data = rows
+        let selectionRefresh: Promise<void> = Promise.resolve()
         if (data.tabelJson && rows.length) {
-          rows.forEach((item: any) => {
-            if (item.id === data.tabelJson.id) {
-              select(item)
-            }
-          })
+          const selected = rows.find((item: any) => item.id === data.tabelJson.id)
+          if (selected) {
+            selectionRefresh = select(selected, {
+              loadParameters: options.loadParameters !== false,
+            })
+          }
         } else if (rows.length) {
-          select(rows[0])
+          selectionRefresh = select(rows[0], {
+            loadParameters: options.loadParameters !== false,
+          })
         } else {
           data.tabelJson = null
           data.selectDataObj = []
         }
+        syncCaseRunRefreshByRows(rows)
+        return selectionRefresh
       })
       .catch(console.log)
       .finally(() => {
@@ -2097,42 +2307,308 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       })
   }
 
-  function doRefreshParameter(id: number) {
+  function doRefreshParameter(id: number, options: { force?: boolean } = {}): Promise<boolean> {
+    const cacheKey = String(id)
+    const loadToken = nextParameterLoadToken()
+    const isCurrentSelection = () =>
+      isCurrentParameterLoad(loadToken) && String(data.tabelJson?.id || '') === cacheKey
+    if (!options.force && parameterCacheByStep.has(cacheKey)) {
+      if (!isCurrentSelection()) return Promise.resolve(false)
+      data.collapseLoading = false
+      data.selectDataObj = cloneVersionValue(parameterCacheByStep.get(cacheKey) || [])
+      data.activeCollapseKey = data.selectDataObj.length ? [0] : []
+      data.mountedCollapseKeys = []
+      data.expandingIndex = -1
+      onCollapseChange(data.selectDataObj.length ? [0] : [])
+      void loadScenarioDataFactoryCounts(data.selectDataObj)
+      return Promise.resolve(true)
+    }
     data.collapseLoading = true
     dataFactoryConfigCache.clear()
-    parameterDataFactoryPanelRefs.clear()
     data.mountedCollapseKeys = []
     data.expandingIndex = -1
     return getApiCaseDetailedParameter({ case_detailed_id: id })
-      .then((res) => {
-        // 先清空，解除旧数据的响应式绑定，让 Vue 立即释放旧 DOM
-        data.selectDataObj = []
-        if (!res.data || res.data.length === 0) {
-          data.collapseLoading = false
-          return
-        }
+      .then(
+        (res) =>
+          new Promise<boolean>((resolve) => {
+            const formattedItems: any[] = []
+            if (!res.data || res.data.length === 0) {
+              parameterCacheByStep.set(cacheKey, [])
+              if (isCurrentSelection()) {
+                data.selectDataObj = []
+                data.activeCollapseKey = []
+                data.collapseLoading = false
+                resolve(true)
+              } else {
+                resolve(false)
+              }
+              return
+            }
 
-        const BATCH_SIZE = 5 // 每帧渲染条数，可按实际数据量调整
-        let index = 0
+            const BATCH_SIZE = 5 // 每帧渲染条数，可按实际数据量调整
+            let index = 0
 
-        function writeBatch() {
-          const end = Math.min(index + BATCH_SIZE, res.data.length)
-          for (; index < end; index++) {
-            data.selectDataObj.push(formatParameterJsonFields(res.data[index]))
-          }
-          if (index < res.data.length) {
-            // 还有数据，下一帧继续写入，让浏览器有机会响应用户操作
+            function writeBatch() {
+              if (!isCurrentSelection()) {
+                resolve(false)
+                return
+              }
+              const end = Math.min(index + BATCH_SIZE, res.data.length)
+              for (; index < end; index++) {
+                formattedItems.push(formatParameterJsonFields(res.data[index]))
+              }
+              if (index < res.data.length) {
+                // 还有数据，下一帧继续写入，让浏览器有机会响应用户操作
+                requestAnimationFrame(writeBatch)
+              } else {
+                parameterCacheByStep.set(cacheKey, cloneVersionValue(formattedItems))
+                data.selectDataObj = formattedItems
+                data.activeCollapseKey = formattedItems.length ? [0] : []
+                data.collapseLoading = false
+                onCollapseChange(formattedItems.length ? [0] : [])
+                void loadScenarioDataFactoryCounts(formattedItems)
+                resolve(true)
+              }
+            }
+
             requestAnimationFrame(writeBatch)
-          } else {
-            data.collapseLoading = false
-          }
-        }
+          })
+      )
+      .catch(() => {
+        if (isCurrentSelection()) data.collapseLoading = false
+        return false
+      })
+  }
 
-        requestAnimationFrame(writeBatch)
+  function normalizeExecutionResultSteps(resultData: any) {
+    if (Array.isArray(resultData)) return resultData
+    return Array.isArray(resultData?.steps) ? resultData.steps : []
+  }
+
+  function findScenarioResult(resultData: any, scenarioId: any) {
+    const steps = normalizeExecutionResultSteps(resultData)
+    return (
+      steps.find((step: any) => String(step?.parameter_id) === String(scenarioId)) ||
+      steps
+        .flatMap((step: any) => (Array.isArray(step?.parameters) ? step.parameters : []))
+        .find((parameter: any) => String(parameter?.id) === String(scenarioId)) ||
+      null
+    )
+  }
+
+  function clearDisplayedRuntimeResults() {
+    invalidateExecutionResultLoad()
+    latestExecutionResultData = null
+    parameterCacheByStep.clear()
+    selectedExecutionResultSummary.value = null
+    data.data.forEach((row: any) => {
+      row.status = 2
+      row.error_message = null
+      row.runtime_result_outdated = false
+    })
+    data.selectDataObj.forEach((parameter: any) => {
+      parameter.status = 2
+      parameter.result_data = null
+      parameter.error_message = null
+      parameter.runtime_result_outdated = false
+    })
+  }
+
+  async function getLatestCaseExecutionResult() {
+    if (!apiCaseId.value) return null
+    const query: any = {
+      target_type: 'api_case',
+      target_id: apiCaseId.value,
+      page: 1,
+      pageSize: 1,
+    }
+    if (userStore.selected_environment != null) {
+      query.test_env = userStore.selected_environment
+    }
+    if (selectedExecutionVersion.value?.revisionId) {
+      query.revision_id = selectedExecutionVersion.value.revisionId
+    } else {
+      query.revision_id_isnull = 1
+    }
+    const listRes = await getExecutionResultList(query)
+    const latest = Array.isArray(listRes.data) ? listRes.data[0] : null
+    if (!latest?.id) return null
+    const detailRes = await getExecutionResultDetailResolved(latest.id)
+    return {
+      summary: latest,
+      resultData: detailRes.data?.result_data || null,
+    }
+  }
+
+  async function refreshSelectedRuntimeResult() {
+    const loadToken = nextExecutionResultLoadToken()
+    latestExecutionResultData = null
+    selectedExecutionResultSummary.value = null
+    data.data.forEach((row: any) => {
+      row.runtime_result_outdated = false
+    })
+    data.selectDataObj.forEach((parameter: any) => {
+      parameter.result_data = null
+      parameter.error_message = null
+      parameter.runtime_result_outdated = false
+    })
+    try {
+      const latest = await getLatestCaseExecutionResult()
+      if (!isCurrentExecutionResultLoad(loadToken)) return
+      if (!latest?.resultData) return
+      selectedExecutionResultSummary.value = latest.summary
+      latestExecutionResultData = latest.resultData
+      applyLatestExecutionResultToSnapshot(latest.resultData)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  function applyLatestExecutionResultToSnapshot(resultData: any) {
+    const resultSteps = normalizeExecutionResultSteps(resultData)
+    const configChangedAfterExecution =
+      Boolean(pageData.record?.update_time) &&
+      Boolean(selectedExecutionResultSummary.value?.create_time) &&
+      String(pageData.record.update_time) > String(selectedExecutionResultSummary.value.create_time)
+    data.data.forEach((row: any) => {
+      const stepResults = resultSteps.filter((item: any) => String(item?.id) === String(row?.id))
+      row.runtime_result_outdated = !stepResults.length && configChangedAfterExecution
+      if (!stepResults.length) return
+      const failed = stepResults.find((item: any) => Number(item?.status) === 0)
+      const warning = stepResults.find((item: any) => Number(item?.status) === 4)
+      const running = stepResults.find((item: any) => Number(item?.status) === 3)
+      const result = failed || warning || running || stepResults[stepResults.length - 1]
+      row.status = result.status
+      row.error_message = result.error_message
+      if (String(data.tabelJson?.id) === String(row.id)) {
+        data.tabelJson = row
+      }
+    })
+    data.selectDataObj.forEach((parameter: any) => {
+      const result = findScenarioResult(resultData, parameter.id)
+      parameter.runtime_result_outdated = !result && configChangedAfterExecution
+      if (!result) return
+      parameter.status = result.status
+      parameter.result_data = result
+      parameter.error_message = result.error_message
+    })
+    if (!caseVersionPayloadActive.value && data.tabelJson?.id) {
+      parameterCacheByStep.set(String(data.tabelJson.id), cloneVersionValue(data.selectDataObj))
+    }
+  }
+
+  async function refreshCaseDetailAfterRun() {
+    parameterCacheByStep.clear()
+    try {
+      if (caseVersionPayloadActive.value) {
+        await refreshSelectedRuntimeResult()
+        return
+      }
+      await doRefresh({ loadParameters: true })
+      await refreshSelectedRuntimeResult()
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  function hasRunningCaseStep(rows: any[]) {
+    return rows.some((item: any) => Number(item?.status) === 3)
+  }
+
+  function syncCaseRunRefreshByRows(rows: any[]) {
+    if (hasRunningCaseStep(rows)) {
+      startCaseRunRefresh()
+    } else if (!caseRequestPending.value && !debugRequestPending.value) {
+      stopCaseRunRefresh()
+    }
+  }
+
+  function mergeCaseStepRows(rows: any[]) {
+    data.data = rows
+    const selectedId = data.tabelJson?.id
+    if (!selectedId) {
+      if (rows.length > 0) data.tabelJson = rows[0]
+      return
+    }
+    const latestSelected = rows.find((item: any) => String(item.id) === String(selectedId))
+    if (latestSelected) data.tabelJson = latestSelected
+  }
+
+  function refreshCaseRunStatusByStep() {
+    if (!apiCaseId.value) return Promise.resolve(false)
+    return getApiCaseDetailed(apiCaseId.value)
+      .then(async (res) => {
+        const rows = Array.isArray(res.data) ? res.data : []
+        mergeCaseStepRows(rows)
+        if (isRuntimeResultTab()) {
+          await refreshSelectedRuntimeResult()
+        }
+        const running = hasRunningCaseStep(rows)
+        if (running || caseRequestPending.value || debugRequestPending.value) {
+          startCaseRunRefresh()
+        } else {
+          stopCaseRunRefresh()
+        }
+        return running
       })
-      .catch((e) => {
-        data.collapseLoading = false
+      .catch((error) => {
+        console.log(error)
+        return null
       })
+  }
+
+  function getStepDebugContextStorageKey() {
+    if (!apiCaseId.value || userStore.selected_environment == null) return ''
+    return [
+      'mango:api-case-step-debug',
+      userStore.userId,
+      apiCaseId.value,
+      userStore.selected_environment,
+    ].join(':')
+  }
+
+  function getStepDebugContextId() {
+    const key = getStepDebugContextStorageKey()
+    if (!key) return null
+    try {
+      return window.sessionStorage.getItem(key)
+    } catch (error) {
+      console.log(error)
+      return null
+    }
+  }
+
+  function saveStepDebugContextId(contextId: any) {
+    const key = getStepDebugContextStorageKey()
+    if (!key || !contextId) return
+    try {
+      window.sessionStorage.setItem(key, String(contextId))
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  function clearStepDebugContextId() {
+    const key = getStepDebugContextStorageKey()
+    if (!key) return
+    try {
+      window.sessionStorage.removeItem(key)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  function handleStepDebugResponse(res: any) {
+    const payload = res?.data || {}
+    const runResult = payload.run_result || {}
+    if (payload.context_id) saveStepDebugContextId(payload.context_id)
+    if (runResult.trace_id) lastTraceId.value = runResult.trace_id
+    if ([1117, 1118].includes(Number(res?.code))) clearStepDebugContextId()
+    if (Number(res?.code) === 200) {
+      Message.success(res.msg || '当前步骤调试完成')
+    } else {
+      Message.error(res?.msg || runResult.error_message || '当前步骤调试失败')
+    }
   }
 
   function formatParameterJsonFields(item: any) {
@@ -2144,6 +2620,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     })
     item.ass_jsonpath = normalizeAssJsonpath(item.ass_jsonpath)
     item.ass_general = normalizeAssGeneral(item.ass_general)
+    item.ass_sql = normalizeAssSql(item.ass_sql)
+    item.headers = Array.isArray(item.headers) ? item.headers : []
+    item.__persistedHeaders = [...item.headers]
+    item.__headersSaving = false
     item.__formatted = true
     return item
   }
@@ -2169,42 +2649,681 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  function doRefreshHeaders(project_product_id: any, is_parameter = false) {
+  function getProjectProductId(value: any = apiProjectProductId.value) {
+    if (value && typeof value === 'object') return value.id
+    return value
+  }
+
+  function addConfigSearchDocument(
+    documents: ConfigSearchDocument[],
+    location: string,
+    fieldLabel: string,
+    value: any,
+    target: ConfigSearchTarget = {}
+  ) {
+    if (!hasConfigValue(value)) return
+    documents.push({ location, fieldLabel, value, ...target })
+  }
+
+  function scenarioSearchFieldConfig(): Array<{
+    key: string
+    label: string
+    detailType?: string
+    detailTab?: string
+  }> {
+    return [
+      { key: 'name', label: '场景名称' },
+      { key: 'front_sql', label: '前置数据库', detailType: '1', detailTab: '10' },
+      { key: 'front_func', label: '前置函数', detailType: '1', detailTab: '11' },
+      { key: 'headers', label: '请求头', detailType: '0', detailTab: '00' },
+      { key: 'resolved_headers', label: '实际请求头', detailType: '0', detailTab: '00' },
+      { key: 'params', label: '请求参数', detailType: '0', detailTab: '01' },
+      { key: 'body_config', label: '请求体', detailType: '0', detailTab: '02' },
+      { key: 'sse_config', label: 'SSE配置', detailType: '0', detailTab: '02' },
+      { key: 'posterior_response', label: '响应JSON提取', detailType: '4', detailTab: '40' },
+      {
+        key: 'posterior_response_text',
+        label: '响应文本提取',
+        detailType: '4',
+        detailTab: '44',
+      },
+      { key: 'posterior_sql', label: '后置数据库', detailType: '4', detailTab: '41' },
+      { key: 'posterior_sleep', label: '强制等待', detailType: '4', detailTab: '42' },
+      { key: 'posterior_file', label: '响应文件', detailType: '4', detailTab: '40' },
+      { key: 'posterior_func', label: '后置函数', detailType: '4', detailTab: '43' },
+      { key: 'ass_json_all', label: 'JSON一致断言', detailType: '3', detailTab: '30' },
+      { key: 'ass_text_all', label: '文本一致断言', detailType: '3', detailTab: '33' },
+      { key: 'ass_jsonpath', label: '响应字段断言', detailType: '3', detailTab: '31' },
+      { key: 'ass_sql', label: 'SQL断言', detailType: '3', detailTab: '35' },
+      { key: 'ass_schema', label: '结构化断言', detailType: '3', detailTab: '34' },
+      { key: 'ass_general', label: '通用断言', detailType: '3', detailTab: '32' },
+    ]
+  }
+
+  function appendScenarioSearchDocuments(
+    documents: ConfigSearchDocument[],
+    step: any,
+    parameter: any
+  ) {
+    const stepName = step?.api_info?.name || `步骤 ${step?.id || '-'}`
+    const scenarioName = parameter?.name || `场景 ${parameter?.id || '-'}`
+    const location = `${stepName} / ${scenarioName}`
+    scenarioSearchFieldConfig().forEach((field) => {
+      addConfigSearchDocument(documents, location, field.label, parameter?.[field.key], {
+        stepId: step.id,
+        scenarioId: parameter.id,
+        detailType: field.detailType || '0',
+        detailTab: field.detailTab || '02',
+      })
+    })
+  }
+
+  function appendScenarioExecutionSearchDocuments(
+    documents: ConfigSearchDocument[],
+    step: any,
+    parameter: any,
+    resultData: any
+  ) {
+    // 优先使用刚查询到的最近执行结果；页面已经展示结果时保留当前场景结果作为兜底，
+    // 避免版本筛选或历史接口短暂失败造成“看得到却搜不到”。
+    const runtimeResult = findScenarioResult(resultData, parameter?.id) || parameter?.result_data
+    if (!runtimeResult) return
+    const stepName = step?.api_info?.name || `步骤 ${step?.id || '-'}`
+    const scenarioName = parameter?.name || `场景 ${parameter?.id || '-'}`
+    const location = `${stepName} / ${scenarioName} / 最近执行`
+    const target = {
+      stepId: step.id,
+      scenarioId: parameter.id,
+    }
+    const runtimeItem = { ...parameter, result_data: runtimeResult }
+    const responseTab = getResultResponseTabKey(runtimeItem)
+    const request = runtimeResult?.request || {}
+    const response = runtimeResult?.response || {}
+    const append = (label: string, value: any, detailType: string, detailTab: string) => {
+      addConfigSearchDocument(documents, location, label, value, {
+        ...target,
+        detailType,
+        detailTab,
+      })
+    }
+
+    const requestMethod = request.method ?? response.request_method
+    const protocolType =
+      request.protocol_type ?? response.request_protocol_type ?? response.response_mode
+    const requestBodyType = request.body_type ?? response.request_body_type
+    append('HTTP状态码', response.code, '2', '20')
+    append('协议状态', runtimeResult.protocol_status, '2', '20')
+    append('请求方法', requestMethod, '2', '20')
+    append(
+      '协议类型',
+      protocolType
+        ? { value: protocolType, label: scenarioProtocolLabel(protocolType) }
+        : protocolType,
+      '2',
+      '20'
+    )
+    append(
+      '请求体类型',
+      requestBodyType
+        ? { value: requestBodyType, label: scenarioBodyTypeLabel(requestBodyType) }
+        : requestBodyType,
+      '2',
+      '20'
+    )
+    append('响应模式', response.response_mode, '2', '20')
+    append(
+      '请求Content-Type',
+      response.request_content_type ?? request.request_content_type,
+      '2',
+      '20'
+    )
+    append('响应Content-Type', responseHeaderValue(response.headers, 'content-type'), '2', '20')
+    append('实际请求URL', request.url ?? response.request_url ?? response.url, '2', '20')
+    append('实际请求头', response.request_headers ?? request.headers, '2', '21')
+    append('响应头', response.headers, '2', '21')
+    append('实际请求参数', getResultRequestParams(runtimeItem), '2', '25')
+    append('实际请求体', getResultRequestBody(runtimeItem), '2', '25')
+    append('实际请求文件', getResultRequestFiles(runtimeItem), '2', '25')
+    append('响应JSON', response.json, '2', responseTab)
+    append('响应文本', response.text, '2', responseTab)
+    append('SSE事件', response.sse_events, '2', '26')
+    append('WebSocket消息', response.ws_messages, '2', '27')
+    append('运行缓存', runtimeResult.cache_data, '5', '50')
+    append('工厂缓存', runtimeResult.data_factory_cache_data, '7', '70')
+    append('断言结果', runtimeResult.ass, '6', '60')
+    append('失败信息', runtimeResult.error_message, '2', '20')
+  }
+
+  async function loadConfigSearchDocuments() {
+    const documents: ConfigSearchDocument[] = []
+    const caseLocation = `Case ${apiCaseId.value} / ${pageData.record?.name || '-'}`
+    const caseFields: Array<{
+      key: string
+      label: string
+      caseApiType?: string
+      caseApiSonType?: string
+    }> = [
+      { key: 'name', label: '用例名称' },
+      { key: 'scenario_description', label: '场景描述' },
+      { key: 'parametrize', label: '参数化' },
+      { key: 'front_custom', label: '自定义变量', caseApiType: '1', caseApiSonType: '11' },
+      { key: 'front_sql', label: 'SQL变量', caseApiType: '1', caseApiSonType: '12' },
+      { key: 'posterior_sql', label: '后置数据库', caseApiType: '3', caseApiSonType: '31' },
+    ]
+    caseFields.forEach((field) => {
+      addConfigSearchDocument(documents, caseLocation, field.label, pageData.record?.[field.key], {
+        caseApiType: field.caseApiType,
+        caseApiSonType: field.caseApiSonType,
+      })
+    })
+
+    const steps = Array.isArray(data.data) ? data.data : []
+    const stepParameters = new Map<string, any[]>()
+    const latestExecutionPromise = getLatestCaseExecutionResult().catch((error) => {
+      console.log(error)
+      return null
+    })
+    configSearch.total = steps.length + 1
+    configSearch.completed = 0
+    await mapWithConcurrency(steps, async (step) => {
+      const stepKey = String(step.id)
+      let parameters: any[] = []
+      if (caseVersionPayloadActive.value) {
+        parameters = cloneVersionValue(snapshotParametersByStep.get(stepKey) || [])
+      } else if (parameterCacheByStep.has(stepKey)) {
+        parameters = cloneVersionValue(parameterCacheByStep.get(stepKey) || [])
+      } else {
+        try {
+          const response = await getApiCaseDetailedParameter({ case_detailed_id: step.id })
+          parameters = Array.isArray(response.data) ? response.data : []
+          parameterCacheByStep.set(stepKey, cloneVersionValue(parameters))
+        } catch (error) {
+          console.log(error)
+        }
+      }
+      stepParameters.set(stepKey, parameters)
+      configSearch.completed += 1
+    })
+    const latestExecution = await latestExecutionPromise
+    configSearch.completed += 1
+
+    steps.forEach((step) => {
+      const stepName = step?.api_info?.name || `步骤 ${step?.id || '-'}`
+      const apiInfoFields = [
+        { key: 'name', label: '接口名称', detailTab: '20' },
+        { key: 'url', label: '接口URL', detailTab: '20' },
+        { key: 'headers', label: '接口请求头', detailTab: '00' },
+        { key: 'params', label: '接口请求参数', detailTab: '01' },
+        { key: 'body_config', label: '接口请求体', detailTab: '02' },
+        { key: 'sse_config', label: '接口SSE配置', detailTab: '02' },
+      ]
+      apiInfoFields.forEach((field) => {
+        addConfigSearchDocument(documents, stepName, field.label, step?.api_info?.[field.key], {
+          stepId: step.id,
+          detailType: field.detailTab === '20' ? '2' : '0',
+          detailTab: field.detailTab,
+        })
+      })
+      const apiInfo = step?.api_info || {}
+      if (hasConfigValue(apiInfo.method)) {
+        addConfigSearchDocument(
+          documents,
+          stepName,
+          '请求方法',
+          { value: apiInfo.method, label: formatMethodTitle(apiInfo.method) },
+          { stepId: step.id, detailType: '2', detailTab: '20' }
+        )
+      }
+      if (hasConfigValue(apiInfo.protocol_type)) {
+        addConfigSearchDocument(
+          documents,
+          stepName,
+          '协议类型',
+          {
+            value: apiInfo.protocol_type,
+            label: scenarioProtocolLabel(apiInfo.protocol_type),
+          },
+          { stepId: step.id, detailType: '2', detailTab: '20' }
+        )
+      }
+      if (hasConfigValue(apiInfo.body_type)) {
+        addConfigSearchDocument(
+          documents,
+          stepName,
+          '请求体类型',
+          { value: apiInfo.body_type, label: scenarioBodyTypeLabel(apiInfo.body_type) },
+          { stepId: step.id, detailType: '2', detailTab: '20' }
+        )
+      }
+      ;(stepParameters.get(String(step.id)) || []).forEach((parameter) => {
+        appendScenarioSearchDocuments(documents, step, parameter)
+        appendScenarioExecutionSearchDocuments(
+          documents,
+          step,
+          parameter,
+          latestExecution?.resultData
+        )
+      })
+    })
+
+    if (caseVersionPayloadActive.value && selectedCaseVersionDetail.value?.payload) {
+      const snapshot = parseApiCaseRevisionPayload(selectedCaseVersionDetail.value.payload)
+      addConfigSearchDocument(
+        documents,
+        `${caseLocation} / 默认请求头`,
+        '已解析请求头',
+        snapshot.runtime.resolved_front_headers,
+        { caseApiType: '1', caseApiSonType: '13' }
+      )
+      snapshot.dependencies.data_factory_configs.forEach((factoryConfig) => {
+        const sourceType = Number(factoryConfig.source_type)
+        const sourceId = String(factoryConfig.source_id || '')
+        const step = steps.find((item) =>
+          (stepParameters.get(String(item.id)) || []).some(
+            (parameter) => String(parameter.id) === sourceId
+          )
+        )
+        const parameter = step
+          ? (stepParameters.get(String(step.id)) || []).find((item) => String(item.id) === sourceId)
+          : null
+        addConfigSearchDocument(
+          documents,
+          sourceType === 1
+            ? `${caseLocation} / 数据工厂`
+            : `${step?.api_info?.name || '步骤'} / ${parameter?.name || '场景'} / 数据工厂`,
+          '数据工厂配置',
+          factoryConfig,
+          sourceType === 1
+            ? { caseApiType: '1', caseApiSonType: '14' }
+            : {
+                stepId: step?.id,
+                scenarioId: parameter?.id,
+                detailType: '1',
+                detailTab: '12',
+              }
+        )
+      })
+    } else {
+      const productId = getProjectProductId(pageData.record?.project_product)
+      const [headersResult, publicResult, authResult, caseFactoryResult] = await Promise.allSettled(
+        [
+          getApiHeaders({ page: 1, pageSize: 10000, project_product_id: productId }),
+          getApiPublic({ page: 1, pageSize: 10000, project_product_id: productId }),
+          getApiAuthConfig({ page: 1, pageSize: 10000, project_product_id: productId }),
+          getDataFactoryCaseConfig({ source_type: 1, source_id: apiCaseId.value }),
+        ]
+      )
+      const responseData = (result: PromiseSettledResult<any>) =>
+        result.status === 'fulfilled' && Array.isArray(result.value?.data) ? result.value.data : []
+      const headerMap = new Map<string, any>(
+        responseData(headersResult).map((item: any): [string, any] => [String(item.id), item])
+      )
+      const publicMap = new Map<string, any>(
+        responseData(publicResult).map((item: any): [string, any] => [String(item.id), item])
+      )
+      const authMap = new Map<string, any>(
+        responseData(authResult).map((item: any): [string, any] => [String(item.id), item])
+      )
+      const appendReferencedConfig = (
+        ids: any[],
+        source: Map<string, any>,
+        location: string,
+        label: string,
+        target: ConfigSearchTarget
+      ) => {
+        ;(Array.isArray(ids) ? ids : []).forEach((id) => {
+          const item = source.get(String(id))
+          if (!item) return
+          const searchableValue =
+            label === '授权配置'
+              ? {
+                  name: item.name,
+                  auth_type: item.auth_type,
+                  api_info: item.api_info,
+                  custom_code: item.custom_code,
+                }
+              : label === '全局变量'
+              ? {
+                  name: item.name,
+                  key: item.key,
+                  value: item.value,
+                  type: item.type,
+                  test_envs: item.test_envs,
+                }
+              : { key: item.key, value: item.value }
+          addConfigSearchDocument(documents, location, `${label} #${id}`, searchableValue, target)
+        })
+      }
+      appendReferencedConfig(
+        pageData.record?.front_headers,
+        headerMap,
+        `${caseLocation} / 默认请求头`,
+        '请求头',
+        { caseApiType: '1', caseApiSonType: '13' }
+      )
+      appendReferencedConfig(
+        pageData.record?.front_public,
+        publicMap,
+        `${caseLocation} / 全局变量`,
+        '全局变量',
+        { caseApiType: '1', caseApiSonType: '15' }
+      )
+      appendReferencedConfig(
+        pageData.record?.front_auth_config,
+        authMap,
+        `${caseLocation} / 授权管理`,
+        '授权配置',
+        { caseApiType: '1', caseApiSonType: '16' }
+      )
+      responseData(caseFactoryResult).forEach((item: any) => {
+        addConfigSearchDocument(documents, `${caseLocation} / 数据工厂`, '数据工厂配置', item, {
+          caseApiType: '1',
+          caseApiSonType: '14',
+        })
+      })
+      const scenarioEntries = steps.flatMap((step) =>
+        (stepParameters.get(String(step.id)) || []).map((parameter) => ({ step, parameter }))
+      )
+      configSearch.total += scenarioEntries.length
+      await mapWithConcurrency(scenarioEntries, async ({ step, parameter }) => {
+        try {
+          const response = await getDataFactoryCaseConfig({
+            source_type: 3,
+            source_id: parameter.id,
+          })
+          ;(Array.isArray(response.data) ? response.data : []).forEach((item: any) => {
+            addConfigSearchDocument(
+              documents,
+              `${step?.api_info?.name || '步骤'} / ${parameter?.name || '场景'} / 数据工厂`,
+              '数据工厂配置',
+              item,
+              {
+                stepId: step.id,
+                scenarioId: parameter.id,
+                detailType: '1',
+                detailTab: '12',
+              }
+            )
+          })
+        } catch (error) {
+          console.log(error)
+        } finally {
+          configSearch.completed += 1
+        }
+      })
+      steps.forEach((step) => {
+        ;(stepParameters.get(String(step.id)) || []).forEach((parameter) => {
+          appendReferencedConfig(
+            parameter.headers,
+            headerMap,
+            `${step?.api_info?.name || '步骤'} / ${parameter?.name || '场景'} / 请求头`,
+            '请求头',
+            { stepId: step.id, scenarioId: parameter.id, detailType: '0', detailTab: '00' }
+          )
+        })
+      })
+    }
+    setConfigSearchDocuments(documents)
+  }
+
+  async function openConfigSearch() {
+    configSearch.visible = true
+    resetConfigSearch()
+    try {
+      await loadConfigSearchDocuments()
+    } catch (error) {
+      console.log(error)
+      Message.error('当前 Case 数据加载失败，请重试')
+    } finally {
+      configSearch.loading = false
+    }
+  }
+
+  async function locateConfigSearchResult(result: ConfigSearchMatch) {
+    configSearch.visible = false
+    if (result.caseApiType) {
+      data.apiType = result.caseApiType
+      data.apiSonType = result.caseApiSonType || data.apiSonType
+      await runCaseDetailTabLoading(() => ensureActiveCasePanelLoaded())
+      return
+    }
+    if (!result.stepId) return
+    const step = data.data.find((item: any) => String(item.id) === String(result.stepId))
+    if (!step) return
+    data.apiType = '2'
+    await select(step)
+    if (result.scenarioId) {
+      const scenarioIndex = data.selectDataObj.findIndex(
+        (item: any) => String(item.id) === String(result.scenarioId)
+      )
+      if (scenarioIndex >= 0) onCollapseChange([scenarioIndex])
+    }
+    data.caseDetailsTypeKey = result.detailType || '0'
+    data.tabsKey = result.detailTab || '02'
+    await runCaseDetailTabLoading(() => ensureActiveCasePanelLoaded(step))
+  }
+
+  function loadCaseHeaders(project_product_id: any = apiProjectProductId.value) {
+    const productId = getProjectProductId(project_product_id)
+    if (!productId) return Promise.resolve()
+    const cacheKey = `case-headers:${productId}`
+    if (panelLoaded(cacheKey)) return Promise.resolve()
     const value = {
       page: 1,
       pageSize: 10000,
-      project_product_id: project_product_id,
+      project_product_id: productId,
     }
-    getApiHeaders(value)
+    return getApiHeaders(value)
       .then((res) => {
-        if (is_parameter) {
-          data.parameter_headers_list = res.data
-        } else {
-          data.headers_list = res.data
-        }
+        data.headers_list = res.data
+        markPanelLoaded(cacheKey)
       })
       .catch(console.log)
   }
 
-  const caseRun = async (param) => {
+  function loadParameterHeaders(project_product_id: any) {
+    const productId = getProjectProductId(project_product_id)
+    if (!productId) return Promise.resolve()
+    const cacheKey = `parameter-headers:${productId}`
+    if (panelLoaded(cacheKey)) return Promise.resolve()
+    const value = {
+      page: 1,
+      pageSize: 10000,
+      project_product_id: productId,
+    }
+    return getApiHeaders(value)
+      .then((res) => {
+        data.parameter_headers_list = res.data
+        markPanelLoaded(cacheKey)
+      })
+      .catch(console.log)
+  }
+
+  function loadCasePublicOptions(project_product_id: any = apiProjectProductId.value) {
+    const productId = getProjectProductId(project_product_id)
+    if (!productId) return Promise.resolve()
+    const cacheKey = `case-public:${productId}`
+    if (panelLoaded(cacheKey)) return Promise.resolve()
+    const params = {
+      page: 1,
+      pageSize: 10000,
+      project_product_id: productId,
+    }
+    return getApiPublic(params)
+      .then((res) => {
+        data.publicOptions = (res.data || []).map((item: any) => ({
+          value: item.id,
+          name: item.name || item.key || `全局变量 ${item.id}`,
+          key: item.key || '-',
+          type: item.type,
+          typeText: getEnumTitle(enumStore.api_public_type, item.type),
+          testEnvs: normalizeEnvironmentList(item.test_envs),
+          isCommonEnv: normalizeEnvironmentList(item.test_envs).length === 0,
+          statusText: formatDefaultStatusText(item.status),
+          disabled: Number(item.status) === 1,
+        }))
+        markPanelLoaded(cacheKey)
+      })
+      .catch(console.log)
+  }
+
+  function loadCaseAuthOptions(project_product_id: any = apiProjectProductId.value) {
+    const productId = getProjectProductId(project_product_id)
+    if (!productId) return Promise.resolve()
+    const cacheKey = `case-auth:${productId}`
+    if (panelLoaded(cacheKey)) return Promise.resolve()
+    const params = {
+      page: 1,
+      pageSize: 10000,
+      project_product_id: productId,
+    }
+    return getApiAuthConfig(params)
+      .then((res) => {
+        data.authConfigOptions = (res.data || []).map((item: any) => ({
+          value: item.id,
+          name: item.name || `授权配置 ${item.id}`,
+          authType: item.auth_type,
+          authTypeText: getEnumTitle(enumStore.api_auth_type, item.auth_type),
+          testEnv: item.test_env,
+          isCommonEnv:
+            item.test_env === null || item.test_env === undefined || item.test_env === '',
+          envText: formatEnvironmentText(item.test_env),
+          statusText: formatDefaultStatusText(item.status),
+          disabled: Number(item.status) === 1,
+        }))
+        markPanelLoaded(cacheKey)
+      })
+      .catch(console.log)
+  }
+
+  const caseRun = async (
+    param: number | string | null,
+    executionVersion: ApiCaseExecutionVersion | null = selectedExecutionVersion.value
+  ) => {
     if (!apiCaseId.value) return
+    if (!executionVersion && !pageData.record?.published_release_id) {
+      await versionPanelRef.value?.selectPreferredRevision()
+      Message.warning(
+        pageData.record?.publication_status === 'prepublished'
+          ? '当前预发布修订尚未通过，已定位到版本盒子；可等待产品负责人发布，或执行当前配置验证'
+          : '当前用例尚未发布，已定位到版本盒子；请先创建修订并提交预发布，或执行当前配置验证'
+      )
+      return
+    }
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    if (caseRunning.value) return
+    if (caseExecutionActive.value) return
+    clearAssertionVerifyResults()
+    caseRequestPending.value = true
     caseRunning.value = true
+    startCaseRunLoadingLimit()
     try {
-      const res = await getApiCaseRun(apiCaseId.value, userStore.selected_environment, param)
-      Message.success(res.msg)
+      const response = await getApiCaseRunRaw(
+        apiCaseId.value,
+        userStore.selected_environment,
+        param,
+        executionVersion?.revisionId,
+        executionVersion?.releaseId
+      )
+      const res = response.data || {}
+      lastTraceId.value = res.data?.trace_id || ''
+      saveStepDebugContextId(res.data?.execution_context_id)
+      if (res.code === 200) {
+        Message.success(res.msg)
+      } else if (Number(res.code) === 1125) {
+        await versionPanelRef.value?.selectPreferredRevision()
+        Message.warning('当前用例尚未发布，已定位到版本盒子；请先创建或选择修订')
+      } else {
+        Message.error(res.msg || '执行失败')
+      }
     } catch (e) {
+      console.log(e)
     } finally {
+      caseRequestPending.value = false
       caseRunning.value = false
-      doRefresh()
+      stopCaseRunLoadingLimit()
+      await refreshCaseDetailAfterRun()
+      stopCaseRunRefresh()
     }
   }
 
+  const debugCaseStep = async (record: any) => {
+    if (!apiCaseId.value || !record?.id) return
+    if (userStore.selected_environment == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    if (caseExecutionActive.value) return
+    clearAssertionVerifyResults()
+    debugRequestPending.value = true
+    debugRunningStepId.value = record.id
+    startDebugRunLoadingLimit()
+    try {
+      const response = await postApiCaseStepDebugRaw({
+        case_id: apiCaseId.value,
+        case_detailed_id: record.id,
+        test_env: userStore.selected_environment,
+        context_id: getStepDebugContextId(),
+      })
+      handleStepDebugResponse(response.data || {})
+    } catch (error: any) {
+      const res = error?.response?.data
+      if (res) {
+        handleStepDebugResponse(res)
+      } else {
+        console.log(error)
+        Message.error('当前步骤调试请求失败，请检查网络或服务状态')
+      }
+    } finally {
+      debugRequestPending.value = false
+      debugRunningStepId.value = null
+      stopDebugRunLoadingLimit()
+      const running = await refreshCaseRunStatusByStep()
+      if (running !== false) {
+        startCaseRunRefresh()
+      } else {
+        stopCaseRunRefresh()
+      }
+    }
+  }
+
+  async function showExecutionTrace(query: {
+    result_id?: number | string
+    trace_id?: string
+    test_suite_detail_id?: any
+    case_id?: any
+  }) {
+    await traceDrawerRef.value?.open(query)
+  }
+
+  function runtimeStatusText(record: any) {
+    if (record?.runtime_result_outdated) return '配置变更后未执行'
+    return enumStore.task_status[record?.status]?.title || '-'
+  }
+
+  function runtimeStatusColor(record: any) {
+    if (record?.runtime_result_outdated) return 'orange'
+    return enumStore.status_colors[record?.status]
+  }
+
+  function isRuntimeFailure(record: any) {
+    return !record?.runtime_result_outdated && [0, 4].includes(Number(record?.status))
+  }
+
+  function runtimeFailureMessage(record: any) {
+    return (
+      record?.error_message || record?.result_data?.error_message || '执行失败，暂无详细错误信息'
+    )
+  }
+
   function getModuleApi(moduleId: number) {
+    data.apiRevisionList = []
+    const apiInfoItem = formItems.find((item) => item.key === 'api_info')
+    const revisionItem = formItems.find((item) => item.key === 'pinned_api_info_revision')
+    if (apiInfoItem) apiInfoItem.value = ''
+    if (revisionItem) revisionItem.value = ''
     getApiInfoName(moduleId)
       .then((res) => {
         data.apiList = res.data
@@ -2212,17 +3331,41 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       .catch(console.log)
   }
 
+  function loadApiInfoRevisions(apiInfoId: number | string) {
+    const revisionItem = formItems.find((item) => item.key === 'pinned_api_info_revision')
+    data.apiRevisionList = []
+    if (revisionItem) revisionItem.value = ''
+    if (!apiInfoId) return
+    const selectedApi = data.apiList.find((item: any) => String(item.key) === String(apiInfoId))
+    if (!selectedApi?.published_revision_id) {
+      Message.warning('该接口未发布，不能添加到 Case')
+      return
+    }
+    data.apiRevisionList = [
+      {
+        key: selectedApi.published_revision_id,
+        title: selectedApi.published_version_label || '当前发布版本',
+      },
+    ]
+    if (revisionItem) revisionItem.value = selectedApi.published_revision_id
+  }
+
   function loadDatasourceAliases() {
-    if (!apiProjectProductId.value) return
-    getDataFactoryDatasourceAlias({
-      project_product: apiProjectProductId.value,
+    const productId = getProjectProductId(apiProjectProductId.value)
+    if (!productId) return Promise.resolve()
+    const cacheKey = `datasource-aliases:${productId}`
+    if (panelLoaded(cacheKey)) return Promise.resolve()
+    return getDataFactoryDatasourceAlias({
+      project_product: productId,
       status: 1,
     })
       .then((res) => {
         data.datasourceAliasOptions = (res.data || []).map((item: any) => ({
           label: item.name,
           value: item.id,
+          dbType: item.db_type,
         }))
+        markPanelLoaded(cacheKey)
       })
       .catch(console.log)
   }
@@ -2244,6 +3387,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function onDataForm() {
+    if (!ensureCaseEditable()) {
+      modalDialogRef.value?.setConfirmLoading(false)
+      return
+    }
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       if (!apiCaseId.value) return
       let value = getFormItems(formItems)
@@ -2267,9 +3414,30 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function onDataFormParameter() {
+    if (!ensureCaseEditable()) {
+      modalDialogRefParameter.value?.setConfirmLoading(false)
+      return
+    }
     if (formParameterItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRefParameter.value?.toggle()
       let value = getFormItems(formParameterItems)
+      const expectationMode = value.protocol_expectation_mode || 'auto'
+      const protocolType = String(data.tabelJson?.api_info?.protocol_type || 'http').toLowerCase()
+      if (!['mcp', 'grpc', 'websocket'].includes(protocolType)) {
+        value.protocol_expectation = {
+          mode: expectationMode,
+          status_codes:
+            expectationMode === 'codes'
+              ? String(value.protocol_expectation_codes || '')
+                  .split(',')
+                  .map((code) => code.trim())
+                  .filter(Boolean)
+                  .map((code) => Number(code))
+              : [],
+        }
+      }
+      delete value.protocol_expectation_mode
+      delete value.protocol_expectation_codes
       if (data.isCopy) {
         value['id'] = data.copyParameterId
         postApiCaseDetailedParameterCopy(value)
@@ -2277,7 +3445,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
             Message.success(res.msg)
             data.isCopy = false
             data.copyParameterId = null
-            doRefreshParameter(data.tabelJson.id)
+            doRefreshParameter(data.tabelJson.id, { force: true })
           })
           .catch(console.log)
       } else if (data.isAdd) {
@@ -2286,7 +3454,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         postApiCaseDetailedParameter(value)
           .then((res) => {
             Message.success(res.msg)
-            doRefreshParameter(data.tabelJson.id)
+            doRefreshParameter(data.tabelJson.id, { force: true })
           })
           .catch(console.log)
       } else {
@@ -2294,7 +3462,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         putApiCaseDetailedParameter(value)
           .then((res) => {
             Message.success(res.msg)
-            doRefreshParameter(data.tabelJson.id)
+            doRefreshParameter(data.tabelJson.id, { force: true })
           })
           .catch(console.log)
       }
@@ -2302,6 +3470,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function onDelete(record: any) {
+    if (!ensureCaseEditable()) return
     Modal.confirm({
       title: '提示',
       content: '是否要删除此接口？',
@@ -2321,7 +3490,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function addApiInfo() {
-    data.actionTitle = '新增'
+    if (!ensureCaseEditable()) return
+    data.actionTitle = '新增执行编排'
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
       if (it.reset) {
@@ -2330,9 +3500,11 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         it.value = ''
       }
     })
+    data.apiRevisionList = []
   }
 
   function addParameter() {
+    if (!ensureCaseEditable()) return
     data.actionParameterTitle = '增加接口场景'
     data.isAdd = true
     data.isCopy = false
@@ -2348,6 +3520,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function refresh(id: number) {
+    if (!ensureCaseEditable()) return
     Modal.confirm({
       title: '提示',
       content: '是否确实从接口管理中同步接口数据？点击确认后，原始数据会丢失！',
@@ -2375,32 +3548,49 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       Message.error('未找到接口ID')
       return
     }
-    apiInfoDetailPanel.apiInfoId = String(apiInfoId)
-    apiInfoDetailPanel.visible = true
+    apiInfoDetailPanelRef.value?.open(apiInfoId)
   }
 
-  function select(record: any) {
+  function select(record: any, options: { loadParameters?: boolean } = {}): Promise<void> {
     if (!record?.api_info) {
       data.tabelJson = record || null
       data.selectDataObj = []
-      return
+      return Promise.resolve()
     }
     data.tabelJson = record
-    doRefreshHeaders(record.api_info.project_product, true)
-    doRefreshParameter(data.tabelJson.id).then(() => {
-      switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0])
-      onCollapseChange([0])
+    if (options.loadParameters === false) {
+      data.selectDataObj = []
+      data.activeCollapseKey = []
+      data.mountedCollapseKeys = []
+      data.expandingIndex = -1
+      return Promise.resolve()
+    }
+    if (caseVersionPayloadActive.value) {
+      const parameters = snapshotParametersByStep.get(String(record.id)) || []
+      data.selectDataObj = parameters.map((item: any) => formatParameterJsonFields(item))
+      if (latestExecutionResultData) applyLatestExecutionResultToSnapshot(latestExecutionResultData)
+      switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0] || record)
+      onCollapseChange(data.selectDataObj.length ? [0] : [])
+      return Promise.resolve()
+    }
+    return doRefreshParameter(record.id).then(async (applied) => {
+      if (!applied || String(data.tabelJson?.id) !== String(record.id)) return
+      if (latestExecutionResultData) applyLatestExecutionResultToSnapshot(latestExecutionResultData)
+      await switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0] || record)
+      onCollapseChange(data.selectDataObj.length ? [0] : [])
     })
   }
 
   onMounted(() => {
     nextTick(async () => {
       await ensureCaseRecord()
-      doRefresh()
-      doRefreshHeaders(apiProjectProductId.value)
+      void Promise.all([doRefresh(), loadCaseDataFactoryCount()])
       getCacheDataKeyValue()
-      loadDatasourceAliases()
     })
+  })
+
+  onUnmounted(() => {
+    disposeExecutionTimers()
   })
 
   function updateArrayItem(
@@ -2411,6 +3601,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     fieldName: string,
     saveCallback?: () => void
   ) {
+    if (!ensureCaseEditable()) return
     // 更新数组元素
     if (array && index < array.length) {
       array[index] = value
@@ -2426,54 +3617,25 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     return logic === 'OR' ? 'OR' : 'AND'
   }
 
-  function getDefaultAssertionRelationName(fieldName: 'ass_jsonpath' | 'ass_general') {
-    return fieldName === 'ass_jsonpath' ? 'JSONPath关系' : '通用断言关系'
+  type AssertionType = 'jsonpath' | 'regex' | 'cache'
+
+  function normalizeAssertionType(value: any): AssertionType {
+    const assertionType = String(value || 'jsonpath').toLowerCase()
+    if (assertionType === 'regex' || assertionType === 'cache') {
+      return assertionType
+    }
+    return 'jsonpath'
   }
 
-  function handleAssertionGroupLogicChange(
-    value: any,
-    currentItem: any,
-    currentIndex: number,
-    item: any,
-    fieldName: 'ass_jsonpath' | 'ass_general'
-  ) {
-    const currentAssertion = currentItem[currentIndex]
-    const groupLogic = normalizeGroupLogic(value)
-    const groupName = currentAssertion?.group_name || getDefaultAssertionRelationName(fieldName)
-    if (!currentAssertion?.group_name) {
-      currentAssertion.group_name = groupName
-    }
-    item[fieldName].forEach((assertion: any) => {
-      if (!assertion.group_name || assertion.group_name === groupName) {
-        assertion.group_name = groupName
-        assertion.group_logic = groupLogic
-      }
-    })
-    blurSave(fieldName, item[fieldName], item.id)
-  }
-
-  function handleJsonpathMethodChange(value: any, item: any, index: number, item1) {
-    const inputItem = findItemByValue(data.textAss, value)
-    if (inputItem && !jsonpathMethodUsesExpect(inputItem)) {
-      item[index].expect = null
-    }
-    blurSave('ass_jsonpath', item, item1.id)
-  }
-
-  function shouldShowJsonpathExpect(item: any) {
-    if (!item?.method) {
-      return true
-    }
-    const inputItem = findItemByValue(data.textAss, item?.method)
-    if (!inputItem) {
-      return true
-    }
-    return jsonpathMethodUsesExpect(inputItem)
-  }
-
-  function jsonpathMethodUsesExpect(methodItem: any) {
-    const parameters = Array.isArray(methodItem?.parameter) ? methodItem.parameter : []
-    return parameters.some((param: any) => param.f === 'expect')
+  function filterDeprecatedAssertionMethods(items: any[]): any[] {
+    return (Array.isArray(items) ? items : [])
+      .filter((item: any) => !deprecatedRegexAssertionMethods.has(item?.value))
+      .map((item: any) => ({
+        ...item,
+        children: Array.isArray(item?.children)
+          ? filterDeprecatedAssertionMethods(item.children)
+          : item?.children,
+      }))
   }
 
   function normalizeAssGeneral(assGeneral: any) {
@@ -2495,11 +3657,45 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     return assJsonpath.map((assItem: any) => ({
       group_name: assItem?.group_name || '',
       group_logic: normalizeGroupLogic(assItem?.group_logic),
+      assertion_type: normalizeAssertionType(assItem?.assertion_type),
       actual: assItem?.actual || '',
       method: assItem?.method || '',
       expect: assItem?.expect ?? null,
     }))
   }
+
+  function normalizeAssSql(assSql: any) {
+    if (!Array.isArray(assSql)) {
+      return []
+    }
+    return assSql.map((assItem: any) => ({
+      actual: assItem?.actual || '',
+      method: assItem?.method || '',
+      expect: assItem?.expect ?? '',
+      datasource_alias: assItem?.datasource_alias ?? null,
+    }))
+  }
+
+  const sqlAssertionDatasourceOptions = computed(() =>
+    data.datasourceAliasOptions.filter((item: any) => [0, 1, 2].includes(Number(item.dbType)))
+  )
+
+  const sqlAssertionMethodOptions = computed(() => {
+    const result: Array<{ label: string; value: string }> = []
+    const walk = (items: any[]) => {
+      for (const item of items || []) {
+        if (String(item?.value || '').startsWith('assert_sql_')) {
+          result.push({
+            label: item.label || item.title || item.value,
+            value: item.value,
+          })
+        }
+        if (Array.isArray(item?.children)) walk(item.children)
+      }
+    }
+    walk(data.ass)
+    return result
+  })
 
   function normalizeAssGeneralValue(value: any) {
     return {
@@ -2516,336 +3712,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         : [],
     }
   }
-
-  function handleGeneralMethodChange(
-    value: any,
-    currentItem: any,
-    currentIndex: number,
-    item: any
-  ) {
-    const inputItem = findItemByValue(data.ass, value)
-    if (inputItem && Array.isArray(inputItem.parameter)) {
-      inputItem.parameter.forEach((param) => {
-        if (typeof param.v === 'object' && param.v !== null) {
-          try {
-            param.v = JSON.stringify(param.v)
-          } catch {
-            param.v = ''
-          }
-        }
-      })
-    }
-    item.ass_general[currentIndex].value = normalizeAssGeneralValue(inputItem)
-    // 保存更改
-    blurSave('ass_general', item.ass_general, item.id)
-  }
 </script>
 
-<style scoped>
-  .api-case-workbench {
-    display: grid;
-    grid-template-columns: minmax(400px, 45fr) minmax(520px, 55fr);
-    gap: 12px;
-    height: calc(100vh - 166px);
-    min-height: 0;
-  }
-
-  .api-case-panel {
-    display: flex;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    flex-direction: column;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-md);
-    background: var(--m-surface);
-  }
-
-  .api-case-panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 58px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--m-border);
-    background: var(--m-surface);
-  }
-
-  .api-case-panel-title {
-    color: var(--m-text);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 22px;
-  }
-
-  .api-case-panel-subtitle {
-    overflow: hidden;
-    max-width: 680px;
-    margin-top: 2px;
-    color: var(--m-muted);
-    font-size: 12px;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .api-case-panel-body {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    padding: 12px;
-  }
-
-  .api-case-panel-body :deep(.arco-tabs-content) {
-    min-height: 0;
-  }
-
-  .api-case-right :deep(.arco-tabs-content) {
-    padding: 3px 3px 3px 3px;
-  }
-
-  .api-case-failure-reason {
-    display: -webkit-box;
-    overflow: hidden;
-    color: var(--m-text-2);
-    line-height: 22px;
-    word-break: break-word;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
-
-  .scenario-actions {
-    margin-bottom: 8px;
-  }
-
-  .full-width {
-    width: 100%;
-  }
-
-  .scenario-loading-spin {
-    min-height: min(520px, calc(100vh - 300px));
-    border-radius: var(--m-radius-md);
-  }
-
-  .scenario-loading-spin :deep(.arco-spin-children) {
-    min-height: min(520px, calc(100vh - 300px));
-  }
-
-  .scenario-loading-spin :deep(.arco-spin-mask) {
-    border-radius: var(--m-radius-md);
-    background: color-mix(in srgb, var(--m-surface) 82%, transparent);
-  }
-
-  .scenario-loading-spin :deep(.arco-spin) {
-    color: var(--m-primary);
-  }
-
-  .scenario-loading-spin :deep(.arco-spin-tip) {
-    margin-top: 10px;
-    color: var(--m-muted);
-    font-size: 13px;
-  }
-
-  .scenario-tab-loading-spin {
-    display: block;
-    min-height: 360px;
-  }
-
-  .scenario-tab-loading-spin :deep(.arco-spin),
-  .scenario-tab-loading-spin :deep(.arco-spin-children) {
-    width: 100%;
-    min-height: 360px;
-  }
-
-  .scenario-tab-loading-spin :deep(.arco-spin-mask) {
-    border-radius: var(--m-radius-md);
-    background: color-mix(in srgb, var(--m-surface) 86%, transparent);
-  }
-
-  .scenario-tab-loading-spin :deep(.arco-spin-tip) {
-    color: var(--m-muted);
-    font-size: 13px;
-  }
-
-  .request-header-panel {
-    height: 220px;
-    margin: 8px;
-    overflow-y: auto;
-  }
-
-  .request-editor-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 8px;
-  }
-
-  .scenario-expand-body {
-    height: 400px;
-    overflow: hidden;
-  }
-
-  .scenario-expand-body :deep(.scenario-root-tabs) {
-    height: 100%;
-    min-height: 0;
-  }
-
-  .scenario-expand-body :deep(.scenario-root-tabs > .arco-tabs-nav) {
-    height: 100%;
-  }
-
-  .scenario-expand-body :deep(.scenario-root-tabs > .arco-tabs-content) {
-    height: 400px;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  .api-case-right :deep(.arco-collapse-item-content) {
-    padding-right: 0 !important;
-    padding-left: 0 !important;
-  }
-
-  .api-case-right :deep(.arco-collapse-item-content > .arco-collapse-item-content-box) {
-    padding-right: 8px !important;
-    padding-left: 8px !important;
-  }
-
-  .sleep-input {
-    width: min(300px, 100%);
-  }
-
-  /* ── Collapse header ─────────────────────────────────────────────── */
-  /* 强制 arco collapse header 插槽撑满整行 */
-  :deep(.arco-collapse-item-header-title) {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .custom-header {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    width: 100%;
-    overflow: hidden;
-  }
-
-  .custom-header__name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--m-text);
-  }
-
-  .custom-header__tags {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 6px;
-    /* 固定宽度保证所有行 tag 起始位置对齐 */
-    width: 200px;
-  }
-
-  .assertion-parameters-inline {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    flex: 2;
-    min-width: 300px;
-  }
-
-  .parameter-item-inline {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    min-width: 140px;
-  }
-
-  .parameter-label-inline {
-    font-size: 12px;
-    color: var(--m-muted);
-    font-weight: 500;
-  }
-
-  .parameter-input-inline {
-    width: 100%;
-  }
-
-  /* ── Deep 样式穿透 ───────────────────────────────────────────────── */
-  :deep(.mango-test-btn) {
-    flex-shrink: 0;
-    margin-top: 18px;
-    min-width: fit-content;
-  }
-
-  .collapse-content-loading {
-    min-height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--m-muted);
-  }
-
-  .mango-api-case-api-info-panel {
-    min-height: calc(100vh - 112px);
-  }
-
-  .mango-api-case-api-info-panel :deep(.mango-detail-workbench-page) {
-    min-height: calc(100vh - 136px);
-  }
-
-  :deep(.assertion-group-select) {
-    width: 100%;
-    min-width: 0;
-  }
-
-  :deep(.assertion-relation-field) {
-    flex: 0 0 76px;
-    min-width: 76px;
-  }
-
-  :deep(.assertion-method-cascader) {
-    width: 100%;
-    min-width: 0;
-  }
-
-  :deep(.assertion-method-field) {
-    flex: 0 1 148px;
-    min-width: 148px;
-  }
-
-  :deep(.assertion-parameters-inline) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    flex: 2;
-    min-width: 300px;
-    margin-top: 0;
-  }
-
-  /* ── 响应式 ──────────────────────────────────────────────────────── */
-  @media (max-width: 1px) {
-    .api-case-workbench {
-      grid-template-columns: 1fr;
-      height: auto;
-    }
-
-    .api-case-panel {
-      min-height: 560px;
-    }
-  }
-
-  @media (max-width: 1px) {
-    :deep(.mango-test-btn) {
-      margin-top: 0;
-      align-self: center;
-    }
-  }
-</style>
+<style scoped src="./styles.css"></style>

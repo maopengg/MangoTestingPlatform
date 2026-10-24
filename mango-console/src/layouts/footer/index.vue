@@ -1,6 +1,6 @@
 <template>
   <a-card :bordered="false" class="mango-footer-container">
-    Copyright © 芒果味 2022-至今 Version：{{ version }}</a-card
+    Copyright © 芒果味 2022年-至今 Version：{{ version }}</a-card
   >
   <!--  禁止修改作者署名-->
 </template>
@@ -17,5 +17,6 @@
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
+    font-size: 14px;
   }
 </style>

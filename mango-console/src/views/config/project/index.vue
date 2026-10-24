@@ -1,9 +1,9 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody ref="tableBody" content-flush>
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="项目管理"
+        title="项目配置"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
@@ -16,8 +16,10 @@
               <template v-else-if="item.type === 'select'">
                 <a-select
                   v-model="item.value"
+                  :multiple="item.multiple"
+                  :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
-                  :options="project.data"
+                  :options="item.key === 'update_user' ? item.optionItems : project.data"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -32,15 +34,15 @@
     </template>
 
     <template #default>
-      <a-tabs>
+      <TableTabs>
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
+              <a-button v-permission="'config.project:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-button-新增">新增</a-button>
             </div>
           </a-space>
         </template>
-      </a-tabs>
+      </TableTabs>
       <a-table
         :scroll="{ x: 1100 }"
         :bordered="false"
@@ -65,17 +67,20 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
+              <a-switch v-permission="'config.project:status'"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, record.name)"
                 :default-checked="record.status === 1"
               />
             </template>
+            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
+              {{ record.update_user?.name || record.update_user?.username || '-' }}
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { label: '编辑', onClick: () => onUpdate(record) },
-                  { label: '通知组', onClick: () => clickNotice(record) },
-                  { label: '删除', danger: true, onClick: () => onDelete(record) },
+                  { permission: 'config.project:edit', label: '编辑', onClick: () => onUpdate(record) },
+                  { permission: 'config.project:detail', label: '通知组', onClick: () => clickNotice(record) },
+                  { permission: 'config.project:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
                 ]"
               />
             </template>
@@ -122,9 +127,12 @@
   } from '@/api/system/project'
   import { usePageData } from '@/store/page-data'
   import { useRouter } from 'vue-router'
+  import { getUserName } from '@/api/user/user'
+  import { setUpdateUserOptions } from '@/utils/update-user'
+  import TableTabs from '@/components/table/TableTabs.vue'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh)
+  const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
@@ -140,13 +148,16 @@
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
-      it.value = ''
+      it.value = it.multiple ? [] : ''
     })
     doRefresh()
   }
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    if (value.update_user === null || value.update_user === '') {
+      delete value.update_user
+    }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getUserDepartmentList(value)
@@ -165,7 +176,7 @@
       if (it.reset) {
         it.reset()
       } else {
-        it.value = ''
+        it.value = it.multiple ? [] : ''
       }
     })
   }
@@ -180,6 +191,7 @@
         return deleteUserDepartmentList(record.id)
           .then((res) => {
             Message.success(res.msg)
+            project.invalidateAllProductModuleTreeCache()
           })
           .catch(console.log)
           .finally(() => {
@@ -220,6 +232,7 @@
             doRefresh()
             project.getProject()
             project.projectProductName()
+            project.invalidateAllProductModuleTreeCache()
           })
           .catch((error) => {
             console.log(error)
@@ -236,6 +249,7 @@
             doRefresh()
             project.getProject()
             project.projectProductName()
+            project.invalidateAllProductModuleTreeCache()
           })
           .catch((error) => {
             console.log(error)
@@ -263,6 +277,7 @@
               Message.success(res.msg)
               value = res.code === 200
               project.getProject()
+              project.invalidateAllProductModuleTreeCache()
             })
             .catch(reject)
           resolve(value)
@@ -286,6 +301,7 @@
   }
   onMounted(() => {
     nextTick(async () => {
+      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
       doRefresh()
     })
   })

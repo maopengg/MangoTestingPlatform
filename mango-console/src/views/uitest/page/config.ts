@@ -1,7 +1,10 @@
 import { FormItem } from '@/types/components'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 export const conditionItems: Array<FormItem> = reactive([
@@ -10,7 +13,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入页面ID',
-    value: ref(''),
+    value: createIdSearchValue(),
     reset: function () {
       this.value = ''
     },
@@ -62,7 +65,9 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
+  createUpdateUserCondition(),
 ])
+enableMultiSelectSearch(conditionItems)
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
@@ -128,24 +133,6 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '模块名称',
-    key: 'module',
-    dataIndex: 'module',
-    align: 'left',
-    width: 180,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
     title: '页面名称',
     key: 'name',
     dataIndex: 'name',
@@ -170,10 +157,30 @@ export const tableColumns = useTableColumn([
     width: 110,
   },
   {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    align: 'left',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+  },
+  updateUserColumn(),
+  updateTimeColumn(),
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 170,
+    width: 160,
   },
 ])
