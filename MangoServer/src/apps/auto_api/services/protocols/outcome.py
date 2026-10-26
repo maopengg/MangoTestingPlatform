@@ -6,6 +6,7 @@ from xml.etree import ElementTree
 from mangotools.enums import StatusEnum
 
 from src.apps.auto_api.enums import ApiProtocolTypeEnum
+from src.apps.auto_api.exceptions import MCP_API_SCENARIO_INVALID
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
 
 
@@ -54,10 +55,11 @@ class ProtocolCallOutcomeService:
             expected_http_status_codes: list[int] | None = None,
             accept_any_http_status: bool = False,
             display_name: str | None = None,
+            expected_mcp_error: bool = False,
     ) -> ProtocolCallOutcome:
         protocol_type = response.request_protocol_type or response.response_mode or ApiProtocolTypeEnum.HTTP.value
         if protocol_type == ApiProtocolTypeEnum.MCP.value:
-            outcome = cls.evaluate_mcp(response)
+            outcome = cls.evaluate_mcp(response, expected_error=expected_mcp_error)
         elif protocol_type == ApiProtocolTypeEnum.GRPC.value:
             outcome = cls.evaluate_grpc(response)
         elif protocol_type == ApiProtocolTypeEnum.WEBSOCKET.value:
@@ -172,9 +174,13 @@ class ProtocolCallOutcomeService:
         return f'{text[:300]}…' if len(text) > 300 else text
 
     @staticmethod
-    def evaluate_mcp(response: ApiExecutionResponse) -> ProtocolCallOutcome:
+    def evaluate_mcp(response: ApiExecutionResponse, *, expected_error: bool = False) -> ProtocolCallOutcome:
         if response.mcp_protocol_error:
             return ProtocolCallOutcome(False, 'MCP protocol error', 'MCP 服务返回协议错误，工具调用没有正常完成。')
+        if expected_error:
+            if response.mcp_is_error is True:
+                return ProtocolCallOutcome(True, 'MCP expected isError=true')
+            return ProtocolCallOutcome(False, 'MCP expected error missing', MCP_API_SCENARIO_INVALID.message)
         if response.mcp_is_error is True:
             return ProtocolCallOutcome(False, 'MCP isError=true', 'MCP 工具执行失败，请查看工具返回内容中的具体原因。')
         return ProtocolCallOutcome(True, 'MCP success')

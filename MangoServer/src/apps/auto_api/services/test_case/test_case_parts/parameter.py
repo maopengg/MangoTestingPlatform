@@ -233,6 +233,7 @@ class ApiTestCaseParameterMixin:
                         expected_http_status_codes=expected_codes,
                         accept_any_http_status=accept_any_status,
                         display_name=api_info.name,
+                        expected_mcp_error=(mcp_config or {}).get('expected_result') == 'error',
                     )
                     request_summary = {
                         'code': res_model.response.code,

@@ -23,6 +23,17 @@ def response(**kwargs) -> ApiExecutionResponse:
 
 
 class ProtocolCallOutcomeServiceTest(TestCase):
+    def test_expected_mcp_business_error_can_reach_assertions(self):
+        result = response(code=None, request_protocol_type='mcp', response_mode='mcp', mcp_is_error=True)
+        self.assertTrue(ProtocolCallOutcomeService.evaluate(result, expected_mcp_error=True).success)
+        self.assertFalse(ProtocolCallOutcomeService.evaluate(result).success)
+
+    def test_expected_mcp_error_does_not_accept_success_or_protocol_failure(self):
+        for values in ({'mcp_is_error': False}, {'mcp_is_error': None},
+                       {'mcp_is_error': True, 'mcp_protocol_error': {'code': -32603}}):
+            result = response(code=None, request_protocol_type='mcp', response_mode='mcp', **values)
+            self.assertFalse(ProtocolCallOutcomeService.evaluate(result, expected_mcp_error=True).success)
+
     def test_http_accepts_all_2xx_and_rejects_3xx_or_above(self):
         for code in (200, 201, 204, 206):
             with self.subTest(code=code):
