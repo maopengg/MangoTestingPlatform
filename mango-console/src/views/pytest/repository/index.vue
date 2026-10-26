@@ -269,7 +269,7 @@
           <div class="mango-section-title__main">
             <h2>访问凭证</h2>
             <p>
-              新建时填写 Token 或密码即保存凭证；Gitee 下载仓库快照需要 Token，其他公开仓库可尝试不填。编辑时留空表示不修改。
+              公开仓库选择“无需认证”，也可清空认证方式。已有凭证会在保存后移除；保留认证方式时，Token / 密码留空表示不修改。推送需要写入权限。
             </p>
           </div>
         </div>
@@ -278,13 +278,15 @@
             ><a-form-item label="认证方式"
               ><a-select
                 v-model="repositoryForm.credential_auth_type"
+                allow-clear
+                placeholder="无需认证（公开仓库）"
                 :options="credentialTypeOptions" /></a-form-item
           ></a-grid-item>
           <a-grid-item v-if="repositoryForm.credential_auth_type === 'username_password'"
             ><a-form-item label="用户名"
               ><a-input v-model="repositoryForm.credential_username" /></a-form-item
           ></a-grid-item>
-          <a-grid-item
+          <a-grid-item v-if="repositoryForm.credential_auth_type && repositoryForm.credential_auth_type !== 'none'"
             ><a-form-item label="Token / 密码"
               ><a-input-password
                 v-model="repositoryForm.credential_secret"
@@ -386,6 +388,7 @@
     }
   }
   const credentialTypeOptions = [
+    { label: '无需认证（公开仓库）', value: 'none' },
     { label: 'Access Token', value: 'token' },
     { label: '用户名 / 密码', value: 'username_password' },
   ]
@@ -649,7 +652,7 @@
       api_base_url: record?.api_base_url || '',
       remote_project: record?.remote_project || '',
       default_branch: record?.default_branch || 'master',
-      credential_auth_type: record?.credential?.auth_type || 'token',
+      credential_auth_type: record?.credential?.auth_type || 'none',
       credential_username: record?.credential?.username || '',
       credential_secret: '',
     })
@@ -675,7 +678,14 @@
     }
     saving.value = true
     try {
-      const response = await savePytestRepository({ ...repositoryForm })
+      const response = await savePytestRepository({
+        ...repositoryForm,
+        credential_auth_type: repositoryForm.credential_auth_type || 'none',
+        credential_username: !repositoryForm.credential_auth_type || repositoryForm.credential_auth_type === 'none'
+          ? '' : repositoryForm.credential_username,
+        credential_secret: !repositoryForm.credential_auth_type || repositoryForm.credential_auth_type === 'none'
+          ? '' : repositoryForm.credential_secret,
+      })
       Message.success(response.msg)
       await loadRepositories()
       done(true)

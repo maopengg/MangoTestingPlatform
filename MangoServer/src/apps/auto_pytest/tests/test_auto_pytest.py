@@ -101,14 +101,17 @@ class PytestCaseRuntimeAuditTests(SimpleTestCase):
             with self.assertRaises(AutoPytestError):
                 service.test_connection()
 
-    def test_gitee_api_connection_requires_token_for_archive_sync(self):
-        repository = SimpleNamespace(id=12, provider='gitee')
+    def test_gitee_public_repository_connection_does_not_require_token(self):
+        repository = SimpleNamespace(id=12, provider='gitee', default_branch='master',
+                                     remote_project='example/repository')
         service = RepositoryGitService(repository)
-        config = GitProviderConfig(provider='gitee', base_url='https://gitee.com', access_token='')
-        with patch.object(service, 'provider_config', return_value=config), self.assertRaises(AutoPytestError) as error:
-            service.test_connection()
-
-        self.assertIn('Access Token', error.exception.msg)
+        client = Mock()
+        client.get_branch.return_value = SimpleNamespace(commit_hash='abc123')
+        client.list_branches.return_value = [GitBranchInfo(name='master', commit_hash='abc123')]
+        with patch.object(service, 'api_client', return_value=client):
+            result = service.test_connection()
+        self.assertTrue(result['success'])
+        client.get_project.assert_called_once_with(project='example/repository')
 
     def test_repository_sync_time_uses_platform_datetime_format(self):
         repository = PytestRepository(

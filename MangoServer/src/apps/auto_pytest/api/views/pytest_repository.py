@@ -8,7 +8,6 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_pytest.api.serializers.pytest_repository import PytestRepositorySerializer
 from src.apps.auto_pytest.enums import (
-    PytestRepositoryCredentialTypeEnum,
     PytestRepositoryProviderEnum,
     PytestRepositorySyncStatusEnum,
 )
@@ -24,7 +23,6 @@ from src.apps.auto_pytest.exceptions import (
 from src.apps.auto_pytest.models import (
     PytestProduct,
     PytestRepository,
-    PytestRepositoryCredential,
 )
 from src.apps.auto_pytest.services.git_management.repository_lock import GitRepositoryLockService
 from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
@@ -213,36 +211,16 @@ class PytestRepositoryViews(ViewSet):
                 repo_url=repo_url,
         ).exists():
             raise AutoPytestError(PYTEST_REPOSITORY_REQUIRED_CODE_REPOSITORY_REQUIRED)
-        credential = repository.credential if repository is not None else None
-        credential_secret = str(data.get("credential_secret") or "")
-        if credential is not None or credential_secret:
-            credential_auth_type = str(
-                data.get("credential_auth_type")
-                or (credential.auth_type if credential else None)
-                or PytestRepositoryCredentialTypeEnum.TOKEN.value
-            )
-            if credential_auth_type not in PytestRepositoryCredentialTypeEnum.obj():
-                raise AutoPytestError(PYTEST_REPOSITORY_REQUIRED_CODE_REPOSITORY_REQUIRED)
-            if credential is None:
-                credential = PytestRepositoryCredential(create_user_id=_request_user_id(request))
-            credential.auth_type = credential_auth_type
-            credential.username = str(data.get("credential_username") or "").strip() or None
-            credential.update_user_id = _request_user_id(request)
-            if credential_secret:
-                PytestRepositoryCredentialService.set_secret(
-                    credential,
-                    secret=(
-                        ""
-                        if credential_auth_type == PytestRepositoryCredentialTypeEnum.USERNAME_PASSWORD.value
-                        else credential_secret
-                    ),
-                    password=(
-                        credential_secret
-                        if credential_auth_type == PytestRepositoryCredentialTypeEnum.USERNAME_PASSWORD.value
-                        else ""
-                    ),
-                )
-            credential.save()
+        previous_credential = repository.credential if repository is not None else None
+        previous_auth = (
+            (previous_credential.auth_type, previous_credential.username)
+            if previous_credential is not None else None
+        )
+        credential = PytestRepositoryCredentialService.save_from_request(
+            data, previous_credential, operator_id=_request_user_id(request),
+        )
+        current_auth = (credential.auth_type, credential.username) if credential is not None else None
+        credentials_changed = previous_auth != current_auth or bool(data.get("credential_secret"))
         is_create = repository is None
         previous_default_branch = repository.default_branch if repository is not None else None
         if repository is None:
@@ -274,8 +252,10 @@ class PytestRepositoryViews(ViewSet):
         if not repository.name or not repository.remote_project:
             raise AutoPytestError(PYTEST_REPOSITORY_REQUIRED_CODE_REPOSITORY_REQUIRED)
         repository.save()
-        if is_create or source_changed or repository.default_branch != previous_default_branch:
+        if is_create or source_changed or credentials_changed or repository.default_branch != previous_default_branch:
             RepositoryGitService(repository).test_connection()
+        if previous_credential is not None and credential is None:
+            previous_credential.delete()
         log.pytest.info(
             f'Pytest仓库保存完成：repository_id={repository.id}，operator_id={_request_user_id(request)}'
         )

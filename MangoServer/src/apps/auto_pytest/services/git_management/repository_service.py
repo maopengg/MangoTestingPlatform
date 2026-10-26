@@ -38,6 +38,7 @@ from src.apps.auto_pytest.exceptions import (
     PYTEST_REPOSITORY_CONFIG_INVALID,
 )
 from src.apps.auto_pytest.models import PytestProduct, PytestRepository
+from src.apps.auto_pytest.services.git_management.public_repository import download_public_git_archive
 from src.apps.auto_pytest.services.repository_credentials import PytestRepositoryCredentialService
 
 
@@ -119,8 +120,6 @@ class RepositoryGitService:
         return result
 
     def test_connection(self) -> dict:
-        if self.repository.provider == "gitee" and not self.provider_config().access_token:
-            raise AutoPytestError(PYTEST_REPOSITORY_CONFIG_INVALID)
         client = self.api_client()
         client.get_project(project=self.repository.remote_project)
         try:
@@ -440,7 +439,11 @@ class RepositoryGitService:
 
     def _install_snapshot(self, branch: str, commit_hash: str | None = None):
         commit = commit_hash or self._branch(branch).commit_hash
-        archive = self.api_client().download_archive(commit, project=self.repository.remote_project)
+        config = self.provider_config()
+        if self.repository.provider == "gitee" and not (config.access_token or config.password):
+            archive = download_public_git_archive(self.repo_url(), commit)
+        else:
+            archive = self.api_client().download_archive(commit, project=self.repository.remote_project)
         parent = os.path.dirname(self.local_dir())
         os.makedirs(parent, exist_ok=True)
         temporary_root = tempfile.mkdtemp(prefix=f".repository_{self.repository_id}_api_", dir=parent)

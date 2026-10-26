@@ -75,7 +75,7 @@ PYTEST_REPOSITORY_CODE_CONFIG_INVALID = ErrorDefinition(code=32046, message='推
 PYTEST_FILE_REPOSITORY_INVALID = ErrorDefinition(code=32047,
                                                  message='Git API 仅支持推送 UTF-8 文本文件，请通过仓库客户端处理二进制文件')
 PYTEST_REPOSITORY_CONFIG_INVALID = ErrorDefinition(code=32048,
-                                                   message='Gitee 仓库通过 Git API 同步时需要配置 Access Token')
+                                                   message='仓库访问配置无效，请检查仓库权限和认证信息')
 AUTO_PYTEST_GENERAL_TASK_RELATION_DELETE_BINDING_INVALID = ErrorDefinition(code=32049,
                                                                            message='定时任务详情-有关联数据，请先删除绑定的数据后再删除！')
 PYTEST_PUBLICATION_NOT_FOUND = ErrorDefinition(code=32050, message='Pytest 用例不存在或项目产品未绑定')
