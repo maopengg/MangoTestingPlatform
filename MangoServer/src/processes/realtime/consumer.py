@@ -6,6 +6,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
 from mangotools.contracts import SocketEnvelopeContract
+from mangotools.enums import ActuatorPytestEventEnum
 from uvicorn.protocols.utils import ClientDisconnected
 
 from src.apps.system.enums import ClientNameEnum, ClientTypeEnum, SocketEnum
@@ -25,6 +26,8 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
         "u_page_steps",
         "u_test_case",
         "u_test_suite_details",
+        ActuatorPytestEventEnum.TEST_CASE.value,
+        ActuatorPytestEventEnum.TEST_CASE_BATCH.value,
     }
 
     def __init__(self, *args, registry: LocalConnectionRegistry, service_instance: str, **kwargs):

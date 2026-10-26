@@ -2,7 +2,7 @@ pyinstaller
 pystray>=0.19.5
 Pillow>=10.4.0
 
-websockets==10.4
+websockets==15.0.1
 websocket-client==1.5.1
 
 Pympler==1.0.1
