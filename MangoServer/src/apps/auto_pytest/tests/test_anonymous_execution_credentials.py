@@ -14,7 +14,7 @@ class AnonymousExecutionCredentialsTests(SimpleTestCase):
         result = PytestGitCredentialService.issue(
             'example-executor', SimpleNamespace(id=1, credential=None), 'example-dispatch',
         )
-        self.assertIsNone(result)
+        self.assertEqual(result, '')
         cache_set.assert_not_called()
 
     @patch('src.apps.auto_pytest.services.git_credentials.cache.get')

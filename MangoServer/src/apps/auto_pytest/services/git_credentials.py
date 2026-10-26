@@ -25,7 +25,7 @@ class PytestGitCredentialService:
             executor_username: str | None,
             repository: PytestRepository,
             dispatch_id: str,
-    ) -> str | None:
+    ) -> str:
         reference = uuid4().hex
         git_service = RepositoryGitService(repository)
         provider_config = git_service.provider_config()
@@ -41,7 +41,7 @@ class PytestGitCredentialService:
                 access_token = ""
         if not (access_token or username or password):
             # 匿名快照不依赖临时凭据；批量排队时也不应被缓存淘汰阻断。
-            return None
+            return ''
         cache.set(
             cls._cache_key(reference),
             {
