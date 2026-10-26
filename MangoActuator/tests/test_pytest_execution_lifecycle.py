@@ -45,6 +45,31 @@ def build_case_model():
 
 
 class PytestExecutionLifecycleTests(IsolatedAsyncioTestCase):
+    async def test_workspace_failure_is_not_silently_suppressed(self):
+        runner = TestCase(None, build_case_model(), report_result=False)
+        with patch.object(runner, 'resolve_git_credentials', new=AsyncMock()), \
+                patch.object(PytestGitWorkspace, 'prepare', side_effect=RuntimeError('snapshot unavailable')):
+            with self.assertRaisesRegex(RuntimeError, 'snapshot unavailable'):
+                async with runner:
+                    await runner.test_case()
+
+    @patch('src.services.pytest.git_workspace.GitClientFactory.create_api_client')
+    @patch('src.services.pytest.git_workspace.download_public_git_archive', return_value=b'archive')
+    @patch.object(PytestGitWorkspace, '_write_marker')
+    @patch.object(PytestGitWorkspace, '_extract_archive')
+    def test_anonymous_gitee_downloads_exact_commit_via_git(
+            self, extract, _marker, download, api_client,
+    ):
+        from tempfile import TemporaryDirectory
+        case = build_case_model().model_copy(update={'git_provider': 'gitee', 'git_credential_ref': None})
+        with TemporaryDirectory() as directory, patch(
+                'src.services.pytest.git_workspace.project_dir.cache', return_value=directory,
+        ):
+            PytestGitWorkspace.prepare(case)
+        download.assert_called_once_with(case.git_url, case.commit_hash)
+        api_client.assert_not_called()
+        extract.assert_called_once()
+
     @patch('src.consumer.pytest.TestCase')
     async def test_executor_task_waits_for_real_pytest_result(self, test_case_class):
         runner = SimpleNamespace(

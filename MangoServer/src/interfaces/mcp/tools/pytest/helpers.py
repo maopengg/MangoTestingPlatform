@@ -112,8 +112,7 @@ def _case_detail(case_id: int) -> dict:
         "project_product__repository", "module", "case_people"
     ).get(id=case_id)
     if (
-            case.file_status == FileStatusEnum.DELETED.value
-            or case.source_status == PytestSourceStatusEnum.MISSING.value
+            case.source_status == PytestSourceStatusEnum.MISSING.value
             or not RepositoryGitService.for_product(
         case.project_product,
     ).repository_file_exists(case.file_path)

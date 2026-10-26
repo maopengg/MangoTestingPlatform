@@ -11,6 +11,7 @@ from mangotools.git import GitClientFactory, GitProviderConfig
 from mangotools.contracts import PytestExecutionCommand
 from src.tools import project_dir
 from src.tools.log_collector import log
+from src.services.pytest.public_repository import download_public_git_archive
 
 
 class PytestGitWorkspace:
@@ -28,19 +29,20 @@ class PytestGitWorkspace:
             if key in cls._synced and cls._is_prepared(local_dir, case_model.commit_hash):
                 return local_dir
 
-            client = GitClientFactory.create_api_client(
-                GitProviderConfig(
-                    provider=case_model.git_provider,
-                    base_url=case_model.git_api_base_url or "",
-                    access_token=case_model.git_access_token or "",
-                    username=case_model.git_username,
-                    password=case_model.git_password,
-                    default_project=case_model.git_project,
-                    default_branch=case_model.git_ref,
-                ),
-                log=log,
+            config = GitProviderConfig(
+                provider=case_model.git_provider,
+                base_url=case_model.git_api_base_url or "",
+                access_token=case_model.git_access_token or "",
+                username=case_model.git_username,
+                password=case_model.git_password,
+                default_project=case_model.git_project,
+                default_branch=case_model.git_ref,
             )
-            archive = client.download_archive(case_model.commit_hash, project=case_model.git_project)
+            if config.provider == 'gitee' and not (config.access_token or config.username or config.password):
+                archive = download_public_git_archive(case_model.git_url, case_model.commit_hash)
+            else:
+                client = GitClientFactory.create_api_client(config, log=log)
+                archive = client.download_archive(case_model.commit_hash, project=case_model.git_project)
             cls._extract_archive(archive, local_dir)
             cls._write_marker(local_dir, case_model.commit_hash)
             cls._synced.add(key)
@@ -114,6 +116,8 @@ class PytestGitWorkspace:
             with zipfile.ZipFile(io.BytesIO(archive)) as archive_file:
                 base_dir = os.path.realpath(tmp_dir)
                 for member in archive_file.infolist():
+                    if (member.external_attr >> 16) & 0o170000 == 0o120000:
+                        raise ValueError('Pytest 仓库压缩包不允许符号链接')
                     member_path = os.path.realpath(os.path.join(base_dir, member.filename))
                     if member_path != base_dir and not member_path.startswith(f'{base_dir}{os.sep}'):
                         raise ValueError(f'Pytest 仓库压缩包包含越界路径：{member.filename}')
