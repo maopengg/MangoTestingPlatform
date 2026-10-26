@@ -10,6 +10,11 @@ class SystemError(MangoServerError):
     pass
 
 
+SYSTEM_NOTICE_WEBHOOK_FAILED = ErrorDefinition(code=38042, message='机器人通知发送失败，请检查 Webhook 配置或网络')
+SYSTEM_NOTICE_EMAIL_FAILED = ErrorDefinition(code=38043, message='邮件发送失败，请检查邮箱配置或网络')
+SYSTEM_NOTICE_FILE_FAILED = ErrorDefinition(code=38044, message='通知文件上传或发送失败，请检查机器人配置')
+
+
 SYSTEM_ID_SEQUENCE_EXHAUSTED = ErrorDefinition(code=38039, message='系统ID号段分配失败，请稍后重试')
 SYSTEM_ID_SEQUENCE_PROTECTED = ErrorDefinition(code=38040, message='系统ID序列不允许手动修改或删除')
 

@@ -11,10 +11,16 @@ from src.apps.task_center.formatters import format_scheduled_task
 from src.apps.test_center.api.serializers.product_module_mutation import ProductModuleSerializers
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
+from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.services.product_module import ProductModuleService
 from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
 from src.apps.user.formatters import format_user
 from src.common.validators.serializer_fields import RelatedObjectField
+
+
+class TestSuiteOfflineExportSerializer(serializers.Serializer):
+    source_kind = serializers.ChoiceField(choices=ReportSourceEnum.choices())
+    source_id = serializers.IntegerField(min_value=1, max_value=9223372036854775807)
 
 
 class TestSuiteSerializers(serializers.ModelSerializer):

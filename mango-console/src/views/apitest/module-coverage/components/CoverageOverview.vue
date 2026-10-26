@@ -1,17 +1,17 @@
 <template>
   <div class="mango-coverage-overview">
-    <MangoPanelSpin :loading="loading" class="mango-coverage-overview__spin">
       <div
         class="mango-coverage-overview__scroll mango-native-scrollbar"
         role="region"
         aria-label="覆盖概览内容"
         tabindex="0"
       >
-        <div v-if="error" class="mango-empty-state">
+        <div v-if="error && !data" class="mango-empty-state">
           覆盖概览加载失败，<a-link @click="emit('retry')">重新加载</a-link>
         </div>
-        <div v-else-if="data" class="mango-coverage-overview__layout">
-          <div v-if="!data.modules.length" class="mango-empty-state"
+        <div v-else-if="data || loading" class="mango-coverage-overview__layout">
+          <a-alert v-if="error" type="warning">覆盖概览刷新失败，当前保留上次结果。<a-link @click="emit('retry')">重试</a-link></a-alert>
+          <div v-if="!loading && !data?.modules.length" class="mango-empty-state"
             >当前范围暂无模块，请选择项目/产品或创建模块。</div
           >
           <template v-else>
@@ -23,7 +23,9 @@
                     ><h2>模块扫描进度</h2><p>项目/产品级统计，不随左侧模块选择变化</p></div
                   ></header
                 >
-                <div ref="scanChart" class="mango-coverage-overview__chart"></div>
+                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
+                  <div ref="scanChart" class="mango-coverage-overview__chart"></div>
+                </MangoPanelSpin>
               </section>
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
@@ -31,8 +33,9 @@
                     ><h2>接口录入状态</h2><p>已发现接口的 ApiInfo 绑定情况；点击待录入筛选模块</p></div
                   ></header
                 >
+                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
                 <div
-                  v-if="data.summary.interface_count"
+                  v-if="loading || data?.summary.interface_count"
                   ref="entryChart"
                   class="mango-coverage-overview__chart"
                   role="img"
@@ -41,6 +44,7 @@
                 <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
                   >暂无已发现接口</div
                 >
+                </MangoPanelSpin>
               </section>
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
@@ -48,8 +52,9 @@
                     ><h2>接口覆盖率</h2><p>已覆盖 / 已发现接口；全部目标场景有效完成才算覆盖</p></div
                   ></header
                 >
+                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
                 <div
-                  v-if="data.summary.interface_count"
+                  v-if="loading || data?.summary.interface_count"
                   ref="coverageChart"
                   class="mango-coverage-overview__chart"
                   role="img"
@@ -58,6 +63,7 @@
                 <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
                   >暂无已发现接口</div
                 >
+                </MangoPanelSpin>
               </section>
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
@@ -65,8 +71,9 @@
                     ><h2>用例自动化进度</h2><p>按 Case 场景统计，待复核、失效计入未完成</p></div
                   ></header
                 >
+                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
                 <div
-                  v-if="statusTotal"
+                  v-if="loading || statusTotal"
                   ref="statusChart"
                   class="mango-coverage-overview__chart"
                   role="img"
@@ -75,6 +82,7 @@
                 <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
                   >暂无自动化场景</div
                 >
+                </MangoPanelSpin>
               </section>
             </div>
             </div>
@@ -82,7 +90,7 @@
               <header class="mango-section-title mango-coverage-overview__toolbar">
                 <div class="mango-section-title__main"
                   ><h2>模块进度</h2
-                  ><p>当前 {{ filtered.length }} 个模块，点击录入或自动化进度查看明细</p></div
+                  ><p>{{ loading && !data ? '正在加载模块进度…' : `当前 ${filtered.length} 个模块，点击录入或自动化进度查看明细` }}</p></div
                 >
                 <div class="mango-section-actions mango-coverage-overview__filters">
                   <a-input
@@ -108,9 +116,10 @@
                     class="mango-native-scroll-table"
                     :data="visibleModules"
                     :columns="overviewModuleColumns"
+                    :loading="loading"
                     :bordered="false"
                     :pagination="false"
-                    :scroll="{ x: overviewModuleScrollX, y: '100%' }"
+                    :scroll="{ x: overviewModuleScrollX, y: overviewModuleScrollY }"
                     row-key="id"
                     size="small"
                   >
@@ -131,7 +140,7 @@
                     <template #actions="{ record }">
                       <MangoTableActions :actions="[{ label: '扫描记录', permission: 'api.module_coverage:detail', onClick: () => drill(record, 'scans') }]" />
                     </template>
-                    <template #empty><div class="mango-empty-state">当前条件没有模块。</div></template>
+                    <template #empty><div class="mango-empty-state">{{ loading ? '正在加载模块进度…' : '当前条件没有模块。' }}</div></template>
                   </a-table>
                 </StickyHorizontalTable>
               </div>
@@ -147,16 +156,17 @@
                 ><div class="mango-section-title__main"
                   ><h2>待完成接口</h2
                   ><p
-                    >共 {{ data.interface_gap_count }} 个，展示前 20
+                    >共 {{ data?.interface_gap_count ?? '—' }} 个，展示前 20
                     个；点击模块进度可查看全部明细</p
                   ></div
                 ></header
               >
-              <div v-if="!data.interface_gaps.length" class="mango-empty-state"
-                >已发现接口暂无录入或自动化缺口，未扫描模块仍需扫描确认。</div
+              <MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin">
+              <div v-if="!data?.interface_gaps.length" class="mango-empty-state"
+                >{{ loading ? '正在加载待完成接口…' : '已发现接口暂无录入或自动化缺口，未扫描模块仍需扫描确认。' }}</div
               >
               <div
-                v-for="item in data.interface_gaps"
+                v-for="item in data?.interface_gaps || []"
                 :key="item.id"
                 class="mango-coverage-overview__gap"
               >
@@ -180,11 +190,11 @@
                   >查看场景</a-link
                 >
               </div>
+              </MangoPanelSpin>
             </section>
           </template>
         </div>
       </div>
-    </MangoPanelSpin>
   </div>
 </template>
 
@@ -202,7 +212,7 @@
   import type { CoverageOverview, CoverageModuleOverview } from '@/api/apitest/module-coverage'
   import {
     getAutomationStatusData, getInterfaceCoverageData, overviewFilters,
-    overviewModuleColumns, overviewModuleScrollX,
+    overviewModuleColumns, overviewModuleScrollX, overviewModuleScrollY,
   } from '../config'
 
   use([TitleComponent])
@@ -452,7 +462,7 @@
   watch([keyword, gapFilter, () => props.data], () => {
     pagination.page = 1
   })
-  watch(() => [props.data, props.error], update)
+  watch(() => [props.data, props.error, props.loading], update)
   onMounted(() => {
     observer = new ResizeObserver(resize)
     window.addEventListener('mango-theme-change', render)
@@ -478,14 +488,10 @@
     container-type: inline-size;
     container-name: mango-coverage-overview;
   }
-  .mango-coverage-overview__spin,
-  .mango-coverage-overview__spin :deep(> .mango-panel-spin__content) {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-  }
-  .mango-coverage-overview__spin {
+  .mango-coverage-overview__chart-spin,
+  .mango-coverage-overview__gaps-spin {
     display: block;
+    width: 100%;
   }
   .mango-coverage-overview__scroll {
     height: 100%;
@@ -552,6 +558,9 @@
     height: 440px;
     min-width: 0;
     min-height: 0;
+  }
+  .mango-coverage-overview__table :deep(.arco-table-body) {
+    overscroll-behavior: contain;
   }
   .mango-coverage-overview__progress small,
   .mango-coverage-overview__gap small {

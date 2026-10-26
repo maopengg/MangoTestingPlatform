@@ -2422,9 +2422,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       page: 1,
       pageSize: 1,
     }
-    if (userStore.selected_environment != null) {
-      query.test_env = userStore.selected_environment
-    }
+    // 全局环境只决定执行目标；结果查看按修订隔离，展示该修订跨环境的最近一次执行。
     if (selectedExecutionVersion.value?.revisionId) {
       query.revision_id = selectedExecutionVersion.value.revisionId
     } else {

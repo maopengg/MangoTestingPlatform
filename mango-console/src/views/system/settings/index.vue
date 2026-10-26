@@ -181,7 +181,8 @@
                       :key="item.key"
                       class="mango-system-settings__item"
                     >
-                      <div class="mango-system-settings__row">
+                      <ReportDeliveryEditor v-if="item.key === 'REPORT_DELIVERY_CONFIG'" v-model="item.value" :loading="itemSaving(item)" @save="saveItem(group, item)" />
+                      <div v-else class="mango-system-settings__row">
                         <div class="mango-system-settings__label-wrap">
                           <span class="mango-system-settings__label">{{ itemLabel(item) }}</span>
                         </div>
@@ -406,6 +407,7 @@
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import EnvironmentNameOverrides from './components/EnvironmentNameOverrides.vue'
   import EvaluationAiProfilesEditor from './components/EvaluationAiProfilesEditor.vue'
+  import ReportDeliveryEditor from './components/ReportDeliveryEditor.vue'
   import {
     getSystemCacheDataGrouped,
     getSystemCacheDataKeyValue,
@@ -473,6 +475,7 @@
       fallback: 'icon-user-group',
     },
     retention: { paths: [], fallback: 'icon-history' },
+    'report-delivery': { paths: [], fallback: 'icon-file' },
     'cache-performance': { paths: [], fallback: 'icon-dashboard' },
     api: { paths: ['/apitest'], fallback: 'icon-thunderbolt' },
     ui: { paths: ['/uitest'], fallback: 'icon-desktop' },
@@ -518,11 +521,12 @@
   }
 
   const navigationDefinitions = [
+    { key: 'report-delivery', title: '报告生成与交付', description: '离线 HTML、对象存储与通知交付', groupKeys: ['report_delivery'] },
     {
       key: SYSTEM_SERVICES_GROUP_KEY,
       title: '系统服务',
-      description: '基础服务、邮件与系统域名',
-      groupKeys: ['system', 'email', 'report'],
+      description: '基础服务与邮件',
+      groupKeys: ['system', 'email'],
       includeBackendService: true,
     },
     {
@@ -675,7 +679,6 @@
   const groupTitle = (group: ConfigGroup) => {
     const titles: Record<string, string> = {
       system: '环境显示名称',
-      report: '本系统域名',
       api: 'API 自动化配置',
       ui: 'UI 自动化配置',
       pytest: 'Pytest 自动化配置',
@@ -763,7 +766,7 @@
       return '当前执行器支持 OpenAI 兼容协议：openai_compatible、openai、azure_openai。'
     if (item.key.startsWith('AI_VISION_'))
       return '仅在“使用独立视觉模型配置”开启时生效，不影响文本定位模型。'
-    if (isSystemDomain(item)) return '用于发送邮件中的平台访问链接。'
+    if (isSystemDomain(item)) return '用于邮件、机器人通知中的平台访问链接。'
     if (item.key === 'API_TIMEOUT') return '单位：秒，限制单次接口请求的等待时间。'
     return CONFIG_FIELD_HELP[item.key] || item.placeholder || ''
   }
@@ -860,6 +863,10 @@
   }
 
   const normalizeEditValue = (item: ConfigItem) => {
+    if (item.key === 'REPORT_DELIVERY_CONFIG') {
+      if (typeof item.value !== 'string') return { ...(item.value || {}) }
+      try { return JSON.parse(item.value) } catch { return {} }
+    }
     if (item.key === 'EVALUATION_AI_PROFILES') return Array.isArray(item.value) ? item.value : []
     if (isEnvironmentDisplayNames(item)) {
       let names = item.value || {}
@@ -1574,25 +1581,29 @@
     border-radius: 6px;
   }
 
-  .mango-system-settings__item + .mango-system-settings__item {
+  .mango-system-settings__item + .mango-system-settings__item,
+  :deep(.mango-report-delivery .mango-system-settings__row + .mango-system-settings__row) {
     margin-top: var(--m-space-md);
   }
 
-  .mango-system-settings__row {
+  .mango-system-settings__row,
+  :deep(.mango-report-delivery .mango-system-settings__row) {
     display: grid;
     grid-template-columns: 200px 90px minmax(240px, 420px) minmax(0, 1fr);
     align-items: center;
     gap: var(--m-space-md);
   }
 
-  .mango-system-settings__label {
+  .mango-system-settings__label,
+  :deep(.mango-report-delivery .mango-system-settings__label) {
     min-width: 0;
     font-size: 14px;
     line-height: 20px;
     color: var(--m-text);
   }
 
-  .mango-system-settings__label-wrap {
+  .mango-system-settings__label-wrap,
+  :deep(.mango-report-delivery .mango-system-settings__label-wrap) {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -1600,12 +1611,14 @@
     gap: var(--m-space-xs);
   }
 
-  .mango-system-settings__control {
+  .mango-system-settings__control,
+  :deep(.mango-report-delivery .mango-system-settings__control) {
     grid-column: 3;
     min-width: 0;
   }
 
-  .mango-system-settings__type {
+  .mango-system-settings__type,
+  :deep(.mango-report-delivery .mango-system-settings__type) {
     min-width: 0;
     white-space: nowrap;
   }
@@ -1626,6 +1639,7 @@
 
   @container (max-width: 1000px) {
     .mango-system-settings__row,
+    :deep(.mango-report-delivery .mango-system-settings__row),
     .mango-system-settings__switch-row,
     .mango-system-settings__cache-item {
       grid-template-columns: 200px 90px minmax(0, 1fr);
@@ -1638,6 +1652,7 @@
 
   @container (max-width: 540px) {
     .mango-system-settings__row,
+    :deep(.mango-report-delivery .mango-system-settings__row),
     .mango-system-settings__cache-item {
       grid-template-columns: minmax(0, 1fr) auto;
     }
@@ -1651,6 +1666,7 @@
     }
 
     .mango-system-settings__control,
+    :deep(.mango-report-delivery .mango-system-settings__control),
     .mango-system-settings__cache-actions {
       grid-column: 1 / -1;
     }
@@ -1672,11 +1688,13 @@
     color: var(--m-warning);
   }
 
-  .mango-system-settings__input {
+  .mango-system-settings__input,
+  :deep(.mango-report-delivery .mango-system-settings__input) {
     width: 100%;
   }
 
-  .mango-system-settings__input--number {
+  .mango-system-settings__input--number,
+  :deep(.mango-report-delivery .mango-system-settings__input--number) {
     max-width: 200px;
   }
 

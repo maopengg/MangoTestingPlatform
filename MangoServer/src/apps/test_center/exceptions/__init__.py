@@ -79,6 +79,12 @@ EXECUTION_ARTIFACT_PATH_REQUIRED = ErrorDefinition(code=40018, message='执行�
 EXECUTION_ARTIFACT_PATH_INVALID = ErrorDefinition(code=40019, message='执行产物路径不合法')
 
 DATA_SOURCE_DISCOVERY_NOT_FOUND = ErrorDefinition(code=40027, message='数据源配置不存在或已删除')
+REPORT_ARTIFACT_INVALID = ErrorDefinition(code=40040, message='报告不存在或无权导出离线 HTML')
+REPORT_ARTIFACT_FAILED = ErrorDefinition(code=40042, message='离线报告生成或交付失败，请检查报告交付配置及服务日志')
+REPORT_ARTIFACT_RUNNING = ErrorDefinition(code=40043, message='报告中仍有执行中的用例，暂不能生成最终离线报告')
+REPORT_ARTIFACT_TOO_LARGE = ErrorDefinition(code=40044, message='离线报告超过文件大小上限，请减少请求响应或截图内容')
+REPORT_ARTIFACT_RETENTION_SKIPPED = ErrorDefinition(code=40046, message='该原始全成功报告按仅异常保留策略不生成离线文件')
+REPORT_LOCAL_LINK_UNAVAILABLE = ErrorDefinition(code=40047, message='当前为本地文件存储，无法提供离线报告链接；请在执行报告中手动下载 HTML，或配置 MinIO/TOS。')
 DATA_SOURCE_DISCOVERY_UNSUPPORTED = ErrorDefinition(code=40028, message='当前类型暂不支持此发现操作')
 DATA_SOURCE_DISCOVERY_FAILED = ErrorDefinition(code=40029, message='读取数据库元数据失败，请测试连接并查看服务日志')
 DATA_SOURCE_QUERY_READ_ONLY = ErrorDefinition(code=40034,

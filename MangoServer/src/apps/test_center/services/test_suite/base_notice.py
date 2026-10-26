@@ -1,5 +1,5 @@
-from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel
-from mangotools.notice import EmailSend, WeChatSend, FeiShuSend
+from src.apps.system.schemas.notice import TestReportModel, WeChatNoticeModel, EmailNoticeModel, FeiShuNoticeModel, DingDingNoticeModel
+from src.apps.system.services.notice import EmailSend, WeChatSend, FeiShuSend, DingDingSend
 
 from src.apps.system.enums import CacheDataKeyEnum
 from src.apps.task_center.enums.execution import ReportRetentionPolicyEnum
@@ -16,6 +16,7 @@ from src.apps.test_center.exceptions import (
 )
 from src.apps.test_center.models import NoticeGroup, TestSuite
 from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.test_suite.notice_details import ReportNoticeDetailsService
 from src.common.decorators.retry import async_task_db_connection
 
 
@@ -47,12 +48,27 @@ class NoticeMain:
             test_suite_id: 测试套件ID
         """
         test_report = self.__test_report(test_suite_id)
+        from src.apps.test_center.enums.report_delivery import ReportSourceEnum
+        from src.apps.test_center.services.report_delivery import ReportDeliveryService
+        session = ReportDeliveryService.prepare(ReportSourceEnum.SUITE, test_suite_id, self.notice_obj)
+        if session is not None:
+            session.send(self.notice_obj, SystemConfigService.get_platform_name(), self.__get_report_url(test_report),
+                         self.__mail_config_dict, suite_report=test_report)
+            return
         self.__send_notifications(test_report=test_report)
 
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def notice_task_group(self, report: TaskGroupNoticeReport):
         """使用任务组专用样式合并发送一个执行批次的全部子报告。"""
-        builder = TaskGroupNoticeBuilder(report, self.__get_domain_name(), SystemConfigService.get_platform_name())
+        details, note = ReportNoticeDetailsService.collect({child.test_suite_id: child.task_name for child in report.children if child.test_suite_id and child.fail > 0})
+        builder = TaskGroupNoticeBuilder(report, self.__get_domain_name(), SystemConfigService.get_platform_name(), details, note)
+        if report.execution_id is not None:
+            from src.apps.test_center.enums.report_delivery import ReportSourceEnum
+            from src.apps.test_center.services.report_delivery import ReportDeliveryService
+            session = ReportDeliveryService.prepare(ReportSourceEnum.GROUP, report.execution_id, self.notice_obj)
+            if session is not None:
+                session.send(self.notice_obj, builder.platform_name, self.__get_domain_name(), self.__mail_config_dict, group_builder=builder)
+                return
         if self.notice_obj.mail:
             send_user, email_host, stamp_key = self.__mail_config()
             EmailSend(EmailNoticeModel(
@@ -60,7 +76,7 @@ class NoticeMain:
                 email_host=email_host,
                 stamp_key=stamp_key,
                 send_list=self.notice_obj.mail,
-            ), platform_name=builder.platform_name).send_mail('任务组执行报告', builder.build_email_html(), subtype='html')
+            ), platform_name=builder.platform_name).send_mail(builder.build_title(), builder.build_email_html(), subtype='html')
         if self.notice_obj.work_weixin:
             WeChatSend(
                 WeChatNoticeModel(webhook=self.notice_obj.work_weixin)
@@ -70,9 +86,9 @@ class NoticeMain:
                 FeiShuNoticeModel(webhook=self.notice_obj.feishu)
             ).send_interactive_card(builder.build_feishu_card())
         if self.notice_obj.dingding:
-            FeiShuSend(
-                FeiShuNoticeModel(webhook=self.notice_obj.dingding)
-            ).send_interactive_card(builder.build_feishu_card())
+            DingDingSend(
+                DingDingNoticeModel(webhook=self.notice_obj.dingding)
+            ).send_markdown(builder.build_wechat_markdown())
 
     @async_task_db_connection(max_retries=3, retry_delay=2)
     def notice_monitoring(self, msg: str):
@@ -152,12 +168,12 @@ class NoticeMain:
 
     def __ding_ding_send(self, webhook, test_report: TestReportModel | None = None, original=False, msg=None):
         try:
-            dingding = FeiShuSend(FeiShuNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report),
+            dingding = DingDingSend(DingDingNoticeModel(webhook=webhook), test_report, self.__get_report_url(test_report),
                                  platform_name=SystemConfigService.get_platform_name())
             if original:
                 dingding.send_text(msg)
             else:
-                dingding.send_feishu_notification()
+                dingding.send_dingding_notification()
         except TestCenterError:
             raise
 
@@ -193,7 +209,10 @@ class NoticeMain:
         seconds = total_seconds % 60
         execution_duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
+        details, note = ReportNoticeDetailsService.collect({test_suite_id: ''}) if fail > 0 else ([], '')
         return TestReportModel(
+            failure_details=details,
+            failure_details_note=note,
             test_suite_id=test_suite_id,
             case_sum=case_sum,
             excluded_count=counter['excluded_count'],
@@ -231,6 +250,11 @@ class NoticeMain:
             if send_user is None or email_host is None or stamp_key is None:
                 raise TestCenterError(TEST_NOTICE_EMAIL_CACHE_KEY_EMPTY)
         return send_user, email_host, stamp_key
+
+    @classmethod
+    def __mail_config_dict(cls):
+        send_user, email_host, stamp_key = cls.__mail_config()
+        return {'send_user': send_user, 'email_host': email_host, 'stamp_key': stamp_key}
 
     @classmethod
     def __get_report_url(cls, test_report: TestReportModel | None = None):

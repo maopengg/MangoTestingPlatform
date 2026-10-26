@@ -300,7 +300,8 @@ test('automation types have separate top-level directory entries', () => {
     definitions.some((item) => item.title === '自动化配置'),
     false
   )
-  assert.deepEqual(definitions[0].groupKeys, ['email', 'report'])
+  assert.deepEqual(definitions.find((item) => item.key === 'system-services').groupKeys, ['system', 'email'])
+  assert.deepEqual(definitions.find((item) => item.key === 'report-delivery').groupKeys, ['report_delivery'])
 })
 
 test('runtime configuration is managed by settings instead of runtime center', () => {

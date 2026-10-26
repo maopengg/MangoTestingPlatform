@@ -57,6 +57,8 @@ urlpatterns = [
     #
     path('cache/data', CacheDataCRUD.as_view()),
     path('cache/data/grouped', CacheDataViews.as_view({'get': 'grouped'})),
+    path('cache/data/report-delivery/metadata', CacheDataViews.as_view({'get': 'report_delivery_metadata'})),
+    path('cache/data/report-delivery/sample', CacheDataViews.as_view({'post': 'report_sample'})),
     path('cache/data/key/value', CacheDataViews.as_view({'get': 'get_key_value'})),
     path('cache/runtime/clear', CacheDataViews.as_view({'post': 'clear_runtime_cache'})),
 ]

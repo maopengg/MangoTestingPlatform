@@ -160,6 +160,18 @@ class ScheduleFireConstraintTests(SimpleTestCase):
 
 
 class TaskGroupNoticeBuilderTests(SimpleTestCase):
+    def test_all_group_notice_titles_show_the_effective_result_icon(self):
+        from dataclasses import replace
+        for failed, icon, result in ((0, '✅', '通过'), (1, '❌', '失败')):
+            with self.subTest(failed=failed):
+                report = replace(self.report(), failed_task_count=failed, fail=failed, warning=0, warning_task_count=0)
+                builder = TaskGroupNoticeBuilder(report)
+                title = f'{icon}芒果测试平台任务组执行报告 - {result}'
+                self.assertEqual(builder.build_title(), title)
+                self.assertEqual(builder.build_feishu_card()['header']['title']['content'], title)
+                self.assertTrue(builder.build_wechat_markdown().startswith(f'## {icon}芒果测试平台任务组执行报告'))
+                self.assertIn(f'<h2>{icon}芒果测试平台任务组执行报告', builder.build_email_html())
+
     def report(self):
         return TaskGroupNoticeReport(
             execution_id=17,
@@ -224,6 +236,23 @@ class TaskGroupNoticeBuilderTests(SimpleTestCase):
         self.assertNotIn('执行批次', builder.build_email_html())
         self.assertIn('group_execution_id=17', builder.build_wechat_markdown())
         self.assertIn('group_execution_id=17', builder.build_email_html())
+
+    def test_group_notice_uses_compact_labeled_statistics_across_channels(self):
+        builder = TaskGroupNoticeBuilder(self.report(), 'https://example.com')
+        card = builder.build_feishu_card()
+        self.assertFalse(card['config']['wide_screen_mode'])
+        self.assertFalse(any(item['tag'] == 'column_set' for item in card['elements']))
+        metadata = card['elements'][0]['text']['content']
+        self.assertIn('**测试环境：** 生产环境\n', metadata)
+        self.assertIn('**计划时间：** 2026-09-18 22:00:00 · **耗时：** 01:28:03', metadata)
+        stats = next(item['text']['content'] for item in card['elements']
+                     if item.get('tag') == 'div' and '成功率' in item.get('text', {}).get('content', ''))
+        self.assertNotIn('\n', stats)
+        for label in ('成功率', '总用例', '成功', '失败', '告警用例', '已排除用例'):
+            self.assertIn(f'**{label}：**', stats)
+            self.assertIn(f'**{label}：**', builder.build_wechat_markdown())
+            self.assertIn(f'<strong>{label}：</strong>', builder.build_email_html())
+        self.assertIn('总用例：** 212 个', stats)
 
     def test_group_notice_uses_configured_platform_name(self):
         builder = TaskGroupNoticeBuilder(self.report(), 'https://example.com', '演示<&>平台')

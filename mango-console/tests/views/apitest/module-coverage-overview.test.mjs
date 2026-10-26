@@ -153,7 +153,9 @@ test('module progress uses a bounded native-scroll table and global actions', ()
   assert.match(source, /完成率 \{\{ rate\(record.automation_rate\) \}\}/)
   assert.match(source, /:pagination="false"/)
   assert.match(source, /class="mango-native-scroll-table"/)
-  assert.match(source, /:scroll="\{ x: overviewModuleScrollX, y: '100%' \}"/)
+  assert.match(source, /:scroll="\{ x: overviewModuleScrollX, y: overviewModuleScrollY \}"/)
+  assert.match(config, /overviewModuleScrollY = 400/)
+  assert.match(source, /\.mango-coverage-overview__table :deep\(\.arco-table-body\)\s*\{\s*overscroll-behavior: contain/)
   assert.match(source, /<StickyHorizontalTable/)
   assert.match(source, /__table\s*\{[^}]*height: 440px/)
   assert.match(source, /<MangoTableActions/)
@@ -185,7 +187,57 @@ test('overview owns a bounded keyboard-accessible vertical scroll region', () =>
   assert.match(source, /aria-label="覆盖概览内容"[\s\S]*?tabindex="0"/)
   assert.match(source, /overflow-y: scroll/)
   assert.match(source, /scrollbar-gutter: stable/)
-  assert.match(source, /\.mango-coverage-overview__spin :deep\(> \.mango-panel-spin__content\)/)
+  assert.doesNotMatch(source, /class="mango-coverage-overview__spin"/)
+})
+
+test('overview loads individual charts, module table and gap list without a parent mask', () => {
+  assert.equal((source.match(/<MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin"/g) || []).length, 4)
+  assert.match(source, /:columns="overviewModuleColumns"\s*:loading="loading"/)
+  assert.match(source, /<MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin"/)
+  assert.match(source, /v-else-if="data \|\| loading"/)
+  assert.match(source, /v-if="!loading && !data\?\.modules.length"/)
+  assert.match(source, /v-if="error && !data"/)
+  assert.match(source, /覆盖概览刷新失败，当前保留上次结果/)
+})
+
+test('same-scope refresh retains results, changed scopes clear them, and stale requests stay ignored', async () => {
+  const start = index.indexOf('  async function loadOverview()')
+  const end = index.indexOf('  function drillOverview(', start)
+  const code = ts.transpileModule(index.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  const state = { overview: { value: undefined }, overviewLoading: { value: false }, overviewError: { value: false }, projectProductId: { value: 1 }, filters: {} }
+  const pending = []
+  const load = new Function('state', 'getCoverageOverview', `
+    const { overview, overviewLoading, overviewError, projectProductId, filters } = state;
+    let overviewRequest = 0, overviewScope = '';
+    const applyModuleFilter = () => {};
+    ${code}
+    return loadOverview;
+  `)(state, () => new Promise((resolve, reject) => pending.push({ resolve, reject })))
+  const first = load()
+  assert.equal(state.overviewLoading.value, true)
+  const initial = { modules: [{ id: 1 }] }
+  pending[0].resolve({ data: initial })
+  await first
+  const refresh = load()
+  assert.equal(state.overview.value, initial)
+  pending[1].reject(new Error('temporary'))
+  await refresh
+  assert.equal(state.overview.value, initial)
+  assert.equal(state.overviewError.value, true)
+  assert.equal(state.overviewLoading.value, false)
+  const stale = load()
+  state.projectProductId.value = 2
+  const changed = load()
+  assert.equal(state.overview.value, undefined)
+  pending[2].resolve({ data: initial })
+  await stale
+  assert.equal(state.overview.value, undefined)
+  assert.equal(state.overviewLoading.value, true)
+  const next = { modules: [{ id: 2 }] }
+  pending[3].resolve({ data: next })
+  await changed
+  assert.equal(state.overview.value, next)
+  assert.equal(state.overviewLoading.value, false)
 })
 
 test('overview is read-only, detail links are permission guarded, and stale results are ignored', () => {

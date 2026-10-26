@@ -574,6 +574,7 @@
   const overviewLoading = ref(false)
   const overviewError = ref(false)
   let overviewRequest = 0
+  let overviewScope = ''
   let rowsRequest = 0
   const rows = ref<any[]>([])
   const loading = ref(false)
@@ -687,13 +688,15 @@
     const request = ++overviewRequest
     overviewLoading.value = true
     overviewError.value = false
-    overview.value = undefined
     const query: Record<string, unknown> = {
       project_product: projectProductId.value,
       repository_key: filters.repository_key || undefined,
       branch: filters.branch || undefined,
     }
     applyModuleFilter(query)
+    const scope = JSON.stringify(query)
+    if (scope !== overviewScope) overview.value = undefined
+    overviewScope = scope
     try {
       const response = await getCoverageOverview(query)
       if (request === overviewRequest) overview.value = response.data

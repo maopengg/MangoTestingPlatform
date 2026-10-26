@@ -1,10 +1,10 @@
 """Mango Mock UI 靶场的稳定离线测试夹具。
 
-页面结构对应 Mango Mock 靶场，地址使用保留域名。这里仅保存测试需要的
+页面来自 http://43.142.161.61:8003/#components。这里仅保存测试需要的
 稳定定位契约，单元测试不访问外部网络。
 """
 
-LAB_URL = "http://mock.example.com:8003/#components"
+LAB_URL = "http://43.142.161.61:8003/#components"
 LAB_PAGE_NAME = "Mango Mock UI 自动化"
 
 BUTTON_ELEMENTS = {

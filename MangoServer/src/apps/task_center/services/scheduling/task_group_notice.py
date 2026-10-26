@@ -1,5 +1,6 @@
 import html
 from dataclasses import dataclass, field
+from src.apps.system.services.notice import ReportFailureRenderer
 
 
 @dataclass(frozen=True)
@@ -45,10 +46,20 @@ class TaskGroupNoticeReport:
 class TaskGroupNoticeBuilder:
     """任务组批次使用独立通知样式，避免被误解为单个测试套报告。"""
 
-    def __init__(self, report: TaskGroupNoticeReport, domain_name: str = '', platform_name: str = '芒果测试平台'):
+    def __init__(self, report: TaskGroupNoticeReport, domain_name: str = '', platform_name: str = '芒果测试平台', failure_details=None, failure_details_note=''):
         self.report = report
         self.platform_name = platform_name
+        self.failure_details = failure_details or []
+        self.failure_details_note = failure_details_note
         self.domain_name = domain_name.rstrip('/') if domain_name.startswith(('http://', 'https://')) else ''
+
+    @property
+    def result_icon(self) -> str:
+        return '❌' if self.report.failed_task_count > 0 else '✅'
+
+    def build_title(self, status_text: str | None = None) -> str:
+        status_text = status_text or ('失败' if self.report.failed_task_count > 0 else '通过')
+        return f'{self.result_icon}{self.platform_name}任务组执行报告 - {status_text}'
 
     def group_report_url(self) -> str:
         if not self.domain_name:
@@ -91,57 +102,35 @@ class TaskGroupNoticeBuilder:
                         f'**项目产品：** {project_product}\n'
                         f'**测试环境：** {report.test_environment}\n'
                         f'**任务组：** {report.task_group_name}\n'
-                        f'**计划时间：** {report.planned_at}'
+                        f'**计划时间：** {report.planned_at} · **耗时：** {report.execution_duration}'
                     ),
                 },
             },
-            {'tag': 'hr'},
             {
-                'tag': 'column_set',
-                'flex_mode': 'none',
-                'background_style': 'default',
-                'columns': [
-                    self._metric_column('子任务', str(report.task_count), 'grey'),
-                    self._metric_column('已完成', str(report.completed_task_count), 'blue'),
-                    self._metric_column('成功', str(report.success_task_count), 'green'),
-                    self._metric_column('失败', str(report.failed_task_count), 'red'),
-                ],
+                'tag': 'div',
+                'text': {'tag': 'lark_md', 'content': (
+                    f'**子任务：** {report.task_count} 个　|　**已完成：** {report.completed_task_count} 个　|　'
+                    f'**成功：** {report.success_task_count} 个　|　**失败：** {report.failed_task_count} 个'
+                )},
             },
-            {'tag': 'hr'},
             {
-                'tag': 'column_set',
-                'flex_mode': 'none',
-                'background_style': 'default',
-                'columns': [
-                    self._metric_column('成功率', f'{self._format_rate(report.success_rate)}%',
-                                        'green' if not failed else 'red'),
-                    self._metric_column('总用例', str(report.case_sum), 'grey'),
-                    self._metric_column('成功', str(report.success), 'green'),
-                    self._metric_column('失败', str(report.fail), 'red'),
-                ],
+                'tag': 'div',
+                'text': {'tag': 'lark_md', 'content': (
+                    f'**成功率：** {self._format_rate(report.success_rate)}%　|　**总用例：** {report.case_sum} 个　|　'
+                    f"**成功：** <font color='green'>{report.success} 个</font>　|　"
+                    f"**失败：** <font color='red'>{report.fail} 个</font>　|　"
+                    f'**告警用例：** {report.warning} 个　|　**已排除用例：** {report.excluded_count} 个'
+                )},
             },
         ]
 
         category_lines = self._category_lines()
         if category_lines:
             elements.extend([
-                {'tag': 'hr'},
                 {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '\n'.join(category_lines)}},
             ])
 
         elements.extend([
-            {'tag': 'hr'},
-            {
-                'tag': 'div',
-                'text': {
-                    'tag': 'lark_md',
-                    'content': (
-                        f'**告警用例：** {report.warning}\n'
-                        f'**已排除用例：** {report.excluded_count}\n'
-                        f'**执行耗时：** {report.execution_duration}'
-                    ),
-                },
-            },
             {'tag': 'hr'},
             {
                 'tag': 'div',
@@ -164,40 +153,40 @@ class TaskGroupNoticeBuilder:
                 'tag': 'action',
                 'actions': [{
                     'tag': 'button',
-                    'text': {'tag': 'plain_text', 'content': '查看全部执行报告'},
+                    'text': {'tag': 'plain_text', 'content': '查看平台报告（需要内网访问）'},
                     'type': 'primary',
                     'url': group_url,
                 }],
             })
-        return {
-            'config': {'wide_screen_mode': True, 'enable_forward': True},
+        return ReportFailureRenderer.feishu({
+            'config': {'wide_screen_mode': False, 'enable_forward': True},
             'header': {
                 'template': header_template,
                 'title': {
                     'tag': 'plain_text',
-                    'content': f'{self.platform_name}任务组执行报告 - {status_text}',
+                    'content': self.build_title(status_text),
                 },
             },
             'elements': elements,
-        }
+        }, self.failure_details, self.failure_details_note)
 
-    def build_wechat_markdown(self) -> str:
+    def build_wechat_markdown(self, include_failure_details=True) -> str:
         report = self.report
         failed = report.failed_task_count > 0
         status_text = '失败' if failed else '通过'
         status_color = 'warning' if failed else 'info'
         lines = [
-            f'## {self.platform_name}任务组执行报告 - <font color="{status_color}">{status_text}</font>',
+            f'## {self.result_icon}{self.platform_name}任务组执行报告 - <font color="{status_color}">{status_text}</font>',
             f'**项目产品：** {report.project_name} / {report.product_name}',
             f'**测试环境：** {report.test_environment}',
             f'**任务组：** {report.task_group_name}',
             '>',
-            f'**子任务：** {report.completed_task_count}/{report.task_count} 完成，'
-            f'成功 {report.success_task_count}，失败 {report.failed_task_count}',
-            f'**用例：** 总数 {report.case_sum}，成功 {report.success}，'
-            f'失败 {report.fail}，告警 {report.warning}',
-            f'**执行耗时：** {report.execution_duration}',
-            f'**已排除用例：** {report.excluded_count}',
+            f'**计划时间：** {report.planned_at} · **耗时：** {report.execution_duration}',
+            f'**子任务：** {report.task_count} 个 | **已完成：** {report.completed_task_count} 个 | '
+            f'**成功：** {report.success_task_count} 个 | **失败：** {report.failed_task_count} 个',
+            f'**成功率：** {self._format_rate(report.success_rate)}% | **总用例：** {report.case_sum} 个 | '
+            f'**成功：** {report.success} 个 | **失败：** {report.fail} 个 | '
+            f'**告警用例：** {report.warning} 个 | **已排除用例：** {report.excluded_count} 个',
             '>',
             '**子任务报告**',
         ]
@@ -205,7 +194,8 @@ class TaskGroupNoticeBuilder:
         group_url = self.group_report_url()
         if group_url:
             lines.extend(['>', f'[查看全部执行报告]({group_url})'])
-        return '\n'.join(lines)
+        content = '\n'.join(lines)
+        return ReportFailureRenderer.markdown(content, self.failure_details, self.failure_details_note) if include_failure_details else content
 
     def build_email_html(self) -> str:
         report = self.report
@@ -220,16 +210,15 @@ class TaskGroupNoticeBuilder:
         )
         return f"""<!doctype html>
 <html><body style="font-family:Arial,sans-serif;color:#1D2129">
-<h2>{html.escape(self.platform_name)}任务组执行报告 - <span style="color:{status_color}">{status_text}</span></h2>
+<h2>{self.result_icon}{html.escape(self.platform_name)}任务组执行报告 - <span style="color:{status_color}">{status_text}</span></h2>
 <p><strong>项目产品：</strong>{html.escape(report.project_name)} / {html.escape(report.product_name)}<br>
 <strong>测试环境：</strong>{html.escape(report.test_environment)}<br>
 <strong>任务组：</strong>{html.escape(report.task_group_name)}</p>
-<p><strong>子任务：</strong>{report.completed_task_count}/{report.task_count} 完成，成功 {report.success_task_count}，失败 {report.failed_task_count}<br>
-<strong>用例：</strong>总数 {report.case_sum}，成功 {report.success}，失败 {report.fail}，告警 {report.warning}<br>
-<strong>已排除用例：</strong>{report.excluded_count}<br>
-<strong>执行耗时：</strong>{html.escape(report.execution_duration)}</p>
+<p><strong>计划时间：</strong>{html.escape(report.planned_at)} · <strong>耗时：</strong>{html.escape(report.execution_duration)}<br>
+<strong>子任务：</strong>{report.task_count} 个 | <strong>已完成：</strong>{report.completed_task_count} 个 | <strong>成功：</strong>{report.success_task_count} 个 | <strong>失败：</strong>{report.failed_task_count} 个<br>
+<strong>成功率：</strong>{self._format_rate(report.success_rate)}% | <strong>总用例：</strong>{report.case_sum} 个 | <strong>成功：</strong>{report.success} 个 | <strong>失败：</strong>{report.fail} 个 | <strong>告警用例：</strong>{report.warning} 个 | <strong>已排除用例：</strong>{report.excluded_count} 个</p>
 <table style="border-collapse:collapse;width:100%"><thead><tr><th align="left">子任务</th><th>结果</th><th>用例</th><th>成功</th><th>失败</th><th>告警</th></tr></thead><tbody>{rows}</tbody></table>
-{action}</body></html>"""
+{ReportFailureRenderer.email(self.failure_details, self.failure_details_note)}{action}</body></html>"""
 
     def _feishu_child_line(self, child: TaskGroupChildReport) -> str:
         tones = {'成功': 'green', '失败': 'red', '告警': 'orange'}
@@ -269,21 +258,6 @@ class TaskGroupNoticeBuilder:
             if case_sum:
                 result.append(f'**{name}用例：** {case_sum} 个，失败 {fail_sum} 个')
         return result
-
-    @staticmethod
-    def _metric_column(label: str, value: str, color: str) -> dict:
-        return {
-            'tag': 'column',
-            'width': 'weighted',
-            'weight': 1,
-            'elements': [{
-                'tag': 'div',
-                'text': {
-                    'tag': 'lark_md',
-                    'content': f"**{label}**\n<font color='{color}'>{value}</font>",
-                },
-            }],
-        }
 
     @staticmethod
     def _format_rate(value: float) -> str:

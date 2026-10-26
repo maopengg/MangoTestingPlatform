@@ -70,6 +70,7 @@ const ENUM_KEYS = [
   'report_retention_policy',
   'test_case_type',
   'report_failure_reason',
+  'report_source',
   'file_status',
   'pytest_source_status',
   'pytest_asset_status',

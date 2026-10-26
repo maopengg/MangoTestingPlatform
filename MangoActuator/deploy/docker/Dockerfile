@@ -7,7 +7,8 @@ ARG K6_VERSION
 ARG TARGETARCH
 COPY deploy/packages/k6/k6-v${K6_VERSION}-linux-${TARGETARCH}.tar.gz /tmp/k6.tar.gz
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip python-is-python3 \
+    && apt-get install -y --no-install-recommends python3 python3-pip python-is-python3 xvfb xauth x11-utils \
+    && xvfb-run -a -s '-screen 0 1440x900x24' sh -c 'xdpyinfo >/dev/null' \
     && mkdir -p /tmp/k6 \
     && tar -xzf /tmp/k6.tar.gz -C /tmp/k6 --strip-components=1 \
     && install -m 0755 /tmp/k6/k6 /usr/local/bin/k6 \

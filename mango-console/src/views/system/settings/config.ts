@@ -1,5 +1,14 @@
 export const DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY = 'DATA_FACTORY_VALIDATION_ENVIRONMENTS'
 
+export const REPORT_DELIVERY_FIELDS = [
+  { key: 'enabled', label: '开启离线报告', type: 'switch' },
+  { key: 'include_details', label: '包含 Case 明细', type: 'switch' },
+  { key: 'include_screenshots', label: '包含失败截图', type: 'switch' },
+  { key: 'link_ttl_seconds', label: '链接有效期（秒）', type: 'number' },
+  { key: 'storage', label: '文件存储', type: 'text', text: '复用平台文件存储' },
+  { key: 'payload', label: '请求响应内容', type: 'text', text: '仅失败 Case' },
+] as const
+
 export const CONFIG_LEVEL_OPTIONS = [
   { key: 'all', title: '全部' },
   { key: '3', title: '普通配置' },

@@ -749,6 +749,10 @@
     margin-top: 14px;
   }
 
+  .form-content > .item-wrapper + .login-btn {
+    margin-top: var(--m-space-lg);
+  }
+
   .custom-input {
     width: 100%;
 

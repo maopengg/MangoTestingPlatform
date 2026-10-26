@@ -9,6 +9,14 @@ const source = readFileSync(new URL('../src/views/login/index.vue', import.meta.
 const handler = source.slice(source.indexOf('  async function loadRegistrationConfig()'), source.indexOf('  function returnToLogin()'))
 const { outputText } = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2020 } })
 
+test('registration submit has a themed gap after the email field without changing login spacing', () => {
+  assert.match(source, /\.form-content > \.item-wrapper \+ \.login-btn\s*\{\s*margin-top: var\(--m-space-lg\);/)
+  const register = source.slice(source.indexOf('<div v-else class="form-content">'), source.indexOf('<div class="links-wrapper">'))
+  assert.match(register, /v-model="baseData.email"[\s\S]*?<\/div>\s*<a-button[\s\S]*?@click="onRegister"/)
+  const login = source.slice(source.indexOf('<div v-if="baseData.isLogin === true"'), source.indexOf('<div v-else class="form-content">'))
+  assert.match(login, /class="remember-forgot"[\s\S]*?<\/div>\s*<a-button/)
+})
+
 function harness(get) {
   const state = { loading: false, configLoading: true, showAuthor: false }, form = { isLogin: true }, info = [], errors = []
   const { click, load } = new Function('branding', 'registrationState', 'baseData', 'Message', `let registrationConfigRequest; ${outputText}; return { click: register1, load: loadRegistrationConfig }`)(

@@ -30,6 +30,23 @@ from src.common.logging import log
 
 
 class ScheduledTaskGroupExecutionService:
+    @staticmethod
+    def offline_report_product_id(execution_id):
+        product_id = ScheduledTaskGroupExecution.objects.filter(id=execution_id).values_list('project_product_id', flat=True).first()
+        if not product_id:
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_NOT_FOUND)
+        return product_id
+
+    @classmethod
+    def offline_report_source(cls, execution_id):
+        execution = ScheduledTaskGroupExecution.objects.select_related('project_product__project').filter(id=execution_id).first()
+        if not execution:
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_NOT_FOUND)
+        fires = list(ScheduleFire.objects.filter(group_execution_id=execution_id).select_related('test_suite', 'task').order_by('id'))
+        if not fires or any(not cls._fire_completed(fire) for fire in fires):
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_INVALID)
+        return execution.project_product_id, cls._build_report(execution, fires)
+
     TERMINAL_SUITE_STATUSES = {
         TaskEnum.FAIL.value,
         TaskEnum.SUCCESS.value,

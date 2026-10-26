@@ -434,6 +434,7 @@ export const overviewModuleColumns: TableColumnData[] = [
   { title: '操作', slotName: 'actions', width: 120, fixed: 'right', align: 'center' },
 ]
 export const overviewModuleScrollX = 1492
+export const overviewModuleScrollY = 400
 
 export function getInterfaceCoverageData(summary: {
   covered_interface_count: number

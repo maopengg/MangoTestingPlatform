@@ -6,13 +6,25 @@
   <body>
     <div id="app"></div>
     <script type="module">
-      import { createApp, h, ref } from 'vue'
+      import { createApp, defineComponent, h, ref } from 'vue'
       import { createPinia } from 'pinia'
-      import Arco from '@arco-design/web-vue'
+      import Arco, { Table as ArcoTable } from '@arco-design/web-vue'
       import '@arco-design/web-vue/dist/arco.css'
       import '../../src/styles/index.css'
       import CoverageOverview from '../../src/views/apitest/module-coverage/components/CoverageOverview.vue'
-      import { applyDisplayDensity } from '../../src/hooks/useDisplayDensity'
+      import { applyDisplayDensity, scaleDensityLength } from '../../src/hooks/useDisplayDensity'
+      ArcoTable.props.scrollbar.default = () => ({ type: 'embed' })
+      const DensityTable = defineComponent({
+        inheritAttrs: false,
+        setup(_, { attrs, slots }) {
+          return () => h(ArcoTable, {
+            ...attrs,
+            columns: attrs.columns?.map(column => ({ ...column, width: scaleDensityLength(column.width) })),
+            scroll: { ...attrs.scroll, x: scaleDensityLength(attrs.scroll?.x), y: scaleDensityLength(attrs.scroll?.y) },
+          }, slots)
+        },
+      })
+      applyDisplayDensity('auto')
       const modules = Array.from({ length: 38 }, (_, i) => ({
         id: i + 1,
         parent_id: null,
@@ -99,8 +111,8 @@
                 h('span', action.value),
               ]),
               h(CoverageOverview, {
-                data,
-                loading: state === 'loading',
+                data: state === 'initial-loading' ? undefined : data,
+                loading: state === 'loading' || state === 'initial-loading',
                 error: state === 'error',
                 onDrill: (row, tab) => {
                   action.value = `查看模块 ${row.id} 的 ${tab}`
@@ -113,6 +125,7 @@
         },
       })
         .use(Arco)
+        .component('a-table', DensityTable)
         .use(pinia)
         .directive('permission', {})
         .mount('#app')

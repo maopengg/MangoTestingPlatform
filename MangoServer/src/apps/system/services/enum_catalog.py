@@ -6,6 +6,7 @@ from django.conf import settings
 from mangotools.enums import NoticeEnum
 from mangotools.enums import StatusEnum
 from mangotools.enums import TaskEnum
+from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 
 from src.apps.ai.enums import (
     AiAgentTaskStatusEnum,
@@ -177,6 +178,7 @@ class EnumCatalogService:
             'report_retention_policy': ReportRetentionPolicyEnum.get_option(),
             'test_case_type': TestCaseTypeEnum.get_option(),
             'report_failure_reason': ReportFailureReasonEnum.get_option(),
+            'report_source': ReportSourceEnum.get_option(),
             'file_status': FileStatusEnum.get_option(),
             'pytest_source_status': PytestSourceStatusEnum.get_option(),
             'pytest_asset_status': PytestAssetStatusEnum.get_option(),

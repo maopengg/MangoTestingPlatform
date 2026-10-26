@@ -17,6 +17,7 @@ from src.apps.test_center.api.views.test_suite_details import (
 )
 
 urlpatterns = [
+    path('test/suite/offline', TestSuiteViews.as_view({'post': 'offline_export'})),
     path("notice", NoticeGroupCRUD.as_view()),
     path("notice/test", NoticeGroupViews.as_view({"get": "test"})),
     path("notice/name", NoticeGroupViews.as_view({"get": "get_name"})),

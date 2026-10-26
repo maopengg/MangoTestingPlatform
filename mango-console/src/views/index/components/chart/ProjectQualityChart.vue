@@ -72,7 +72,7 @@
         grid: {
           top: 32,
           right: 10,
-          bottom: 12,
+          bottom: 32,
           left: 7,
           containLabel: true,
         },
@@ -109,8 +109,8 @@
         xAxis: {
           type: 'value',
           name: '报告数（份）',
-          nameLocation: 'end',
-          nameGap: 6,
+          nameLocation: 'middle',
+          nameGap: 24,
           min: 0,
           minInterval: 1,
           nameTextStyle: { color: token('--m-muted'), fontSize: 11 },

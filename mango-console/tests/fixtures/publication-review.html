@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8"><title>发布审核布局验证 · 演示数据</title></head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import * as Vue from 'vue'
+      import { compile } from '@vue/compiler-dom'
+      import { createPinia } from 'pinia'
+      import Arco, { Table, Drawer } from '@arco-design/web-vue'
+      import '@arco-design/web-vue/dist/arco.css'
+      import '../../src/styles/index.css'
+      import source from '../../src/components/business/CasePublicationReviewModal.vue?raw'
+      import BaseSidePanel from '../../src/components/overlays/BaseSidePanel.vue'
+      import TableHeader from '../../src/components/table/TableHeader.vue'
+      import MangoTableActions from '../../src/components/table/MangoTableActions.vue'
+      import ExecutionSceneTagGrid from '../../src/components/display/ExecutionSceneTagGrid.vue'
+      import CaseExecutionConfigurationTags from '../../src/components/display/CaseExecutionConfigurationTags.vue'
+      import CaseExecutionConfigurationTitle from '../../src/components/display/CaseExecutionConfigurationTitle.vue'
+      import { reviewRequirements, reviewRequirementParts } from '../../src/utils/case-publication-review'
+      import { applyDisplayDensity, scaleDensityLength } from '../../src/hooks/useDisplayDensity'
+
+      applyDisplayDensity('auto')
+      const style = document.createElement('style')
+      style.textContent = source.match(/<style scoped>([\s\S]*?)<\/style>/)[1]
+      document.head.append(style)
+      const columnsText = source.match(/const reviewColumns = (\[[\s\S]*?\n  \])/)[1].replaceAll(' as const', '')
+      const reviewColumns = new Function(`return ${columnsText}`)()
+      const rows = [
+        { id: 101, name: '节点比对删除的范围保护与重复操作幂等', module: 'AI能力/文件与识别/OCR比对', scenario_tags: ['regression', 'data'] },
+        { id: 102, name: '审查决策校验独立文件状态与可触发场景', module: 'AI能力/智能审查/自动审查', scenario_tags: ['regression'] },
+      ].map((row, index) => ({ ...row, owner: '演示用户', product: 'WEB前端', status: 1,
+        sql_count: index ? 1 : 90, factory_count: index ? 7 : 0, reviewConfirmed: true, configuration_details: [], eligibility_reasons: [] }))
+      const noop = () => {}
+      const context = {
+        visible: true, domain: 'api', rows, displayRows: rows, reviewColumns, selectedIds: [],
+        loading: false, publishing: false, canPublish: true, canViewDetails: true, acknowledged: false,
+        allSelectedReviewed: false, detailVisible: false, detailCaseId: null, detailComponents: {}, permissionKey: 'api.case:publish',
+        reviewRequirements, reviewRequirementParts,
+        enumStore: { task_status: [{ key: 1, title: '通过' }], status_colors: { 1: 'green' },
+          api_case_scenario_tag: [{ key: 'regression', title: '回归测试' }, { key: 'data', title: '数据校验' }], colors: [] },
+        enumTitle: (options, key) => options.find(item => item.key === key)?.title || key,
+        selectRows: noop, close: noop, onReviewVisibilityChange: noop, publishSelected: noop,
+        openConfiguration: noop, openCaseDetail: noop, setRowReview: noop,
+      }
+      const template = source.slice(source.indexOf('<template>') + 10, source.indexOf('\n<script')).replace(/<\/template>\s*$/, '')
+      const app = Vue.createApp({ setup: () => context, render: new Function('Vue', compile(template).code)(Vue) })
+      const pinia = createPinia()
+      pinia.state.value['permission-route'] = { permissionKeys: ['api.case:detail'], isSuperAdmin: false }
+      app.use(pinia).use(Arco).directive('permission', {})
+      app.component('a-table', Vue.defineComponent({ inheritAttrs: false, setup: (_, { attrs, slots }) => () => Vue.h(Table, {
+        ...attrs, columns: attrs.columns.map(column => ({ ...column, width: scaleDensityLength(column.width) })),
+        scroll: { ...attrs.scroll, x: scaleDensityLength(attrs.scroll.x), y: scaleDensityLength(attrs.scroll.y) },
+      }, slots) }))
+      app.component('a-drawer', Vue.defineComponent({ inheritAttrs: false, setup: (_, { attrs, slots }) => () => Vue.h(Drawer, { ...attrs, width: scaleDensityLength(attrs.width) }, slots) }))
+      for (const [name, component] of Object.entries({ BaseSidePanel, TableHeader, MangoTableActions, ExecutionSceneTagGrid, CaseExecutionConfigurationTags, CaseExecutionConfigurationTitle })) app.component(name, component)
+      app.component('ApiCaseConfigurationDrawer', { render: () => null })
+      app.mount('#app')
+    </script>
+  </body>
+</html>

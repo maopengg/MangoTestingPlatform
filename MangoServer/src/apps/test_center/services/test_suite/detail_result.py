@@ -592,6 +592,8 @@ class TestSuiteExecutionResultService:
                 'id',
                 'uuid',
                 'name',
+                'fullName',
+                'nodeid',
                 'status',
                 'start',
                 'stop',

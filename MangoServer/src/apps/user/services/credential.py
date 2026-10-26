@@ -5,9 +5,9 @@ import string
 
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from mangotools.exceptions import MangoToolsError
-from mangotools.models import EmailNoticeModel
-from mangotools.notice import EmailSend
+from src.apps.system.exceptions import SystemError
+from src.apps.system.schemas.notice import EmailNoticeModel
+from src.apps.system.services.notice import EmailSend
 
 from src.apps.system.enums import CacheDataKeyEnum
 from src.apps.system.services.system_config import SystemConfigService
@@ -134,5 +134,5 @@ class UserCredentialService:
                     send_list=[normalized_email],
                 ), platform_name=SystemConfigService.get_platform_name(),
             ).send_mail(subject, content, subtype=subtype)
-        except (MangoToolsError, smtplib.SMTPException, OSError) as error:
+        except (SystemError, smtplib.SMTPException, OSError) as error:
             raise UserError(USER_CREDENTIAL_EMAIL_CONFIG_FAILED, error=str(error)) from error

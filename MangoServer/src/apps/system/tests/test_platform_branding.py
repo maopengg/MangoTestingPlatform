@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
-from mangotools.models import EmailNoticeModel, FeiShuNoticeModel, TestReportModel, WeChatNoticeModel
-from mangotools.notice import EmailSend, FeiShuSend, WeChatSend
+from src.apps.system.schemas.notice import EmailNoticeModel, FeiShuNoticeModel, TestReportModel, WeChatNoticeModel
+from src.apps.system.services.notice import EmailSend, FeiShuSend, WeChatSend
 
 from src.apps.system.models import CacheData
 from src.apps.system.services.system_config import SystemConfigService

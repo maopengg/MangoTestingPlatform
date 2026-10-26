@@ -6,7 +6,11 @@
     :sticky-horizontal-scroll="false"
   >
     <template #header>
-      <TableHeader title="执行报告" />
+      <TableHeader title="执行报告">
+        <template #header-extra>
+          <a-button v-if="route.query.group_execution_id" v-permission="'report:export'" size="small" @click="openOfflineExport('group', String(route.query.group_execution_id))">导出任务组 HTML</a-button>
+        </template>
+      </TableHeader>
     </template>
 
     <template #default>
@@ -240,6 +244,7 @@
                         onClick: () => onStop(record),
                       },
                       { permission: 'report:detail', label: '明细', priority: 1, onClick: () => onClick(record) },
+                      { permission: 'report:export', label: '导出离线 HTML', priority: 4, hidden: isReportRunning(record), onClick: () => openOfflineExport('suite', record.id) },
                       { permission: 'report:detail',
                         label: '排查结果',
                         priority: 2,
@@ -319,6 +324,7 @@
       </a-form-item>
     </a-form>
   </a-modal>
+  <OfflineReportExportDialog v-model:visible="offlineExport.visible" :source-kind="offlineExport.kind" :source-id="offlineExport.id" />
   <DiagnosticMarkdownDrawer
     v-model:visible="diagnosticDrawer.visible"
     target-type="test_report"
@@ -359,6 +365,8 @@
   import StickyHorizontalTable from '@/components/table/StickyHorizontalTable.vue'
   import TestExecutionModal from '@/components/overlays/TestExecutionModal.vue'
   import DiagnosticMarkdownDrawer from '@/components/reports/DiagnosticMarkdownDrawer.vue'
+  import OfflineReportExportDialog from '@/components/reports/OfflineReportExportDialog.vue'
+  import type { ReportSource } from '@/api/system/offline_report'
   import { formatProjectProductPath, formatModulePath, getEnumTagColor, getOptionId } from '@/utils/business-format'
   import { getUserName } from '@/api/user/user'
   import { getSystemNoticeName } from '@/api/system/notice_group'
@@ -370,6 +378,8 @@
   const rowKey = useRowKey('id')
   const router = useRouter()
   const route = useRoute()
+  const offlineExport = reactive<{ visible: boolean; kind: ReportSource; id: string | number }>({ visible: false, kind: 'suite', id: '' })
+  function openOfflineExport(kind: ReportSource, id: string | number) { Object.assign(offlineExport, { visible: true, kind, id }) }
   const retryModalRef = ref<InstanceType<typeof TestExecutionModal> | null>(null)
   const sidebarResetKey = ref(0)
   const sidebarModuleIds = ref<Array<string | number>>([])

@@ -230,9 +230,12 @@ services:
       args:
         ACTUATOR_PROFILE: ${ACTUATOR_PROFILE:-standard}
     restart: unless-stopped
+    init: true
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       MANGO_ACTUATOR_RUNTIME_DIR: /app/runtime
+      ACTUATOR_DISABLE_XVFB_BOOTSTRAP: ${ACTUATOR_DISABLE_XVFB_BOOTSTRAP:-0}
+      ACTUATOR_XVFB_SCREEN: ${ACTUATOR_XVFB_SCREEN:-1440x900x24}
     command:
       - python
       - headless_main.py

@@ -1,5 +1,5 @@
 <template>
-  <BaseSidePanel :visible="visible" title="发布审核" :width="1200" :mask-closable="!publishing"
+  <BaseSidePanel :visible="visible" title="发布审核" :width="1440" :mask-closable="!publishing"
     :closable="!publishing" :esc-to-close="!publishing" @update:visible="onReviewVisibilityChange" @cancel="close">
     <div class="mango-publication-review">
       <TableHeader class="mango-publication-review__toolbar" :title="`共 ${rows.length} 条 · 已勾选 ${selectedIds.length} 条`" :show-search-actions="false">
@@ -9,7 +9,7 @@
       </TableHeader>
       <div class="mango-publication-review__table">
       <a-table class="mango-native-scroll-table" row-key="id" :data="displayRows" :columns="reviewColumns" :loading="loading" size="small"
-        :pagination="false" :scroll="{ x: 1280, y: '100%' }" :bordered="false"
+        :pagination="false" :scroll="{ x: '100%', y: '100%' }" :bordered="false"
         :row-selection="{ selectedRowKeys: selectedIds, showCheckedAll: true, onlyCurrent: false }"
         @selection-change="selectRows">
         <template #execution_configuration_title>
@@ -26,12 +26,12 @@
           <ExecutionSceneTagGrid :values="record.scenario_tags" :options="enumStore.api_case_scenario_tag" :colors="enumStore.colors" />
         </template>
         <template #execution_configuration="{ record }">
-          <a-button v-if="record.sql_count > 0 || record.factory_count > 0" type="text" size="mini"
+          <a-button v-if="record.sql_count > 0 || record.factory_count > 0" type="text" size="mini" class="mango-publication-review__configuration"
             :disabled="!canViewDetails || !Array.isArray(record.configuration_details)"
             @click="openConfiguration(record)">
             <CaseExecutionConfigurationTags :sql-count="record.sql_count" :factory-count="record.factory_count" />
           </a-button>
-          <CaseExecutionConfigurationTags v-else :sql-count="record.sql_count" :factory-count="record.factory_count" />
+          <span v-else class="mango-publication-review__configuration"><CaseExecutionConfigurationTags :sql-count="record.sql_count" :factory-count="record.factory_count" /></span>
         </template>
         <template #requirements="{ record }">
           <ul class="mango-publication-review__requirements">
@@ -135,13 +135,13 @@
   const displayRows = computed(() => rows.value.map((row) => ({ ...row,
     disabled: loading.value || publishing.value || !canPublish.value || Boolean(row.error || row.published || row.eligibility_reasons?.length) })))
   const reviewColumns = [
-    { title: '用例', slotName: 'case', width: 240, ellipsis: true, tooltip: true },
-    { title: '负责人', dataIndex: 'owner', width: 80, ellipsis: true, tooltip: true },
-    { title: '执行结果', slotName: 'result', width: 80, align: 'center' as const },
-    { title: '执行场景', slotName: 'scenes', width: 160, ellipsis: true, tooltip: true },
-    { title: '执行配置', titleSlotName: 'execution_configuration_title', slotName: 'execution_configuration', width: 180, align: 'left' as const },
-    { title: '审核要求', slotName: 'requirements' },
-    { title: '审核确认', slotName: 'review', width: 100, align: 'center' as const },
+    { title: '用例', slotName: 'case' },
+    { title: '负责人', dataIndex: 'owner', width: 72, align: 'center' as const, ellipsis: true, tooltip: true },
+    { title: '执行结果', slotName: 'result', width: 88, align: 'center' as const },
+    { title: '执行场景', slotName: 'scenes', width: 156 },
+    { title: '执行配置', titleSlotName: 'execution_configuration_title', slotName: 'execution_configuration', width: 156, align: 'left' as const },
+    { title: '审核要求', slotName: 'requirements', width: 260 },
+    { title: '审核确认', slotName: 'review', width: 88, align: 'center' as const },
     { title: '操作', slotName: 'actions', width: 160, fixed: 'right' as const, align: 'center' as const },
   ]
   const enumTitle = (options: any[], value: unknown) => options?.find((item) => String(item.key) === String(value))?.title || String(value ?? '-')
@@ -264,7 +264,10 @@
   .mango-publication-review__toolbar { flex: none; }
   .mango-publication-review__table { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
   .mango-publication-review__footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-  .mango-publication-review__muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mango-publication-review__muted { white-space: normal; overflow-wrap: anywhere; }
+  .mango-publication-review :deep(.mango-execution-scene-grid) { display: flex; flex-wrap: wrap; }
+  .mango-publication-review__configuration { height: auto; max-width: 100%; white-space: normal; }
+  .mango-publication-review__configuration :deep(.arco-space) { flex-wrap: wrap; }
   .mango-publication-review :deep(.arco-table-cell) { overflow-wrap: anywhere; }
   .mango-publication-review__muted { color: var(--m-text-2); }
   .mango-publication-review__danger { color: var(--m-danger); }

@@ -1,3 +1,5 @@
+import io
+from django.http import FileResponse
 from django.db.models import Q
 from mangotools.enums import StatusEnum
 from rest_framework.decorators import action
@@ -6,7 +8,11 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.system.enums import TestSuiteNoticeEnum
 from src.apps.task_center.models import ScheduleFire
-from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers, TestSuiteSerializersC
+from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers, TestSuiteSerializersC, TestSuiteOfflineExportSerializer
+from src.apps.test_center.enums.report_delivery import ReportSourceEnum
+from src.apps.test_center.selectors.offline_report import OfflineReportSelector
+from src.apps.test_center.services.offline_report import OfflineReportService
+from src.apps.test_center.services.report_snapshot import ReportSnapshotService
 from src.apps.test_center.exceptions import (
     SYSTEM_REPORT_REPORT_NOT_FOUND,
     TestCenterError,
@@ -116,7 +122,23 @@ class TestSuiteViews(ViewSet):
         'effectiveness_ai_summary': 'report.effectiveness:debug',
         'effectiveness_clear_cache': 'report.effectiveness:debug',
         'diagnostic_markdown': 'report',
+        'offline_export': 'report:export',
     }
+
+    @error_response('system')
+    def offline_export(self, request: Request):
+        user = getattr(getattr(request, 'user', None), 'user_obj', None)
+        OfflineReportSelector.require_permission(user)
+        serializer = TestSuiteOfflineExportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        kind = ReportSourceEnum(serializer.validated_data['source_kind'])
+        source_id = serializer.validated_data['source_id']
+        OfflineReportSelector.require_product(user, ReportSnapshotService.source_product_id(kind, source_id))
+        filename, content = OfflineReportService.render(kind, source_id)
+        response = FileResponse(io.BytesIO(content), as_attachment=True, filename=filename, content_type='text/html; charset=utf-8')
+        response['Cache-Control'] = 'no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
     @action(methods=['post'], detail=False)
     @error_response('system')

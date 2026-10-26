@@ -17,10 +17,10 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 ENVIRONMENT_DISPLAY_NAMES_KEY = 'ENVIRONMENT_DISPLAY_NAMES'
 
 CONFIG_GROUP_TITLES = {
+    "report_delivery": "报告生成与交付",
     "system": "后端服务设置",
     "runtime": "系统运行配置",
     "email": "邮箱配置",
-    "report": "本系统域名",
     "execution": "执行任务配置",
     "api": "API自动化配置",
     "ui": "UI自动化配置",
@@ -147,6 +147,10 @@ class SystemConfigDefinition:
 
 SYSTEM_CONFIG_REGISTRY = [
     SystemConfigDefinition(
+        key="REPORT_DELIVERY_CONFIG", describe="离线报告交付配置", group="report_delivery",
+        value_type=CacheValueTypeEnum.DICT.value, default_value={}, sort=10,
+    ),
+    SystemConfigDefinition(
         key="PLATFORM_NAME", describe="测试平台中文名称", group="system",
         default_value="芒果测试平台", required=True, sort=11,
         placeholder="登录页、导航、浏览器标题及通知中使用的名称",
@@ -241,11 +245,11 @@ SYSTEM_CONFIG_REGISTRY = [
     SystemConfigDefinition(
         key="SYSTEM_DOMAIN_NAME",
         describe="本系统域名",
-        group="report",
+        group="report_delivery",
         value_type=CacheValueTypeEnum.STR.value,
         management_level=SystemConfigManagementLevelEnum.STANDARD.value,
-        sort=10,
-        placeholder="请输入发送邮件中使用的系统访问域名",
+        sort=1,
+        placeholder="请输入通知中使用的平台访问地址",
     ),
     SystemConfigDefinition(
         key="SYSTEM_SEND_USER",
@@ -1012,6 +1016,14 @@ class SystemConfigService:
         """统一校验配置管理页可编辑的单个配置项。"""
         if key not in cls.editable_config_keys():
             return '该配置已停用或不属于可编辑的系统配置'
+        if key == 'REPORT_DELIVERY_CONFIG':
+            from pydantic import ValidationError
+            from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
+            try:
+                ReportDeliveryConfig.model_validate(json.loads(value) if isinstance(value, str) else value)
+            except (ValidationError, json.JSONDecodeError, TypeError):
+                return '报告交付配置无效：请检查渠道能力、存储地址、有效期及文件保留时间'
+            return None
         if key in ('PLATFORM_NAME', 'PLATFORM_NAME_EN'):
             if not isinstance(value, str) or not value.strip() or len(value.strip()) > 64:
                 return '平台名称不能为空，且不能超过 64 个字符'

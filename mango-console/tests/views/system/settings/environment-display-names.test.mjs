@@ -8,7 +8,7 @@ test('environment name settings are editable and refresh enum titles after savin
   const settings = fs.readFileSync(new URL('../../../../src/views/system/settings/index.vue', import.meta.url), 'utf8')
   const store = fs.readFileSync(new URL('../../../../src/store/modules/get-enum.ts', import.meta.url), 'utf8')
   assert.match(settings, /<EnvironmentNameOverrides[\s\S]*?v-model="item.value"/)
-  assert.match(settings, /groupKeys: \['system', 'email', 'report'\]/)
+  assert.match(settings, /groupKeys: \['system', 'email'\]/)
   assert.match(settings, /if \(isEnvironmentDisplayNames\(item\)\) \{\s*try \{\s*await enumStore.getEnum\(true\)/)
   assert.match(settings, /await enumStore.getEnum\(true\)/)
   assert.match(store, /'environment_type_defaults'/)

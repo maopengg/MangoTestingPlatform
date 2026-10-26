@@ -4,7 +4,9 @@
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
 import json
+import io
 
+from django.http import FileResponse
 from django.core.cache import cache
 from django.core.exceptions import FieldError
 from django.db import ProgrammingError, transaction
@@ -17,6 +19,9 @@ from src.apps.system.api.serializers.cache_data_mutation import CacheDataSeriali
 from src.apps.system.enums import CacheDataKey2Enum, ClientTypeEnum
 from src.apps.system.enums.cache import SystemConfigManagementLevelEnum
 from src.apps.system.models import CacheData
+from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
+from src.apps.test_center.selectors.offline_report import OfflineReportSelector
+from src.apps.test_center.services.offline_report import OfflineReportService
 from src.apps.system.services.system_config import (
     CONFIG_GROUP_TITLES,
     DEPRECATED_SYSTEM_CONFIG_GROUPS,
@@ -142,7 +147,23 @@ class CacheDataViews(ViewSet):
         'grouped': 'system.settings',
         'get_key_value': 'system.settings',
         'clear_runtime_cache': 'system.settings:debug',
+        'report_delivery_metadata': 'system.settings:detail',
+        'report_sample': 'system.settings:debug',
     }
+
+    @error_response('system')
+    def report_delivery_metadata(self, request: Request):
+        OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:detail')
+        return ResponseData.success(RESPONSE_MSG_0001, {'defaults': ReportDeliveryConfig().model_dump(mode='json')})
+
+    @error_response('system')
+    def report_sample(self, request: Request):
+        OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:debug')
+        response = FileResponse(io.BytesIO(OfflineReportService.sample()), as_attachment=True,
+                                filename='sample-report.html', content_type='text/html; charset=utf-8')
+        response['Cache-Control'] = 'no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
     @error_response('system')
     @action(methods=['GET'], detail=False)

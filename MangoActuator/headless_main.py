@@ -9,85 +9,64 @@ import os
 import shutil
 import subprocess
 import sys
-import time
+
+
+def _report_live_display(supported: bool, reason: str):
+    os.environ['ACTUATOR_LIVE_STREAM_SUPPORTED'] = '1' if supported else '0'
+    status = '可用' if supported else '不可用'
+    print(f'直播显示环境{status}：{reason}', flush=True)
 
 
 def bootstrap_xvfb_if_needed():
     if not sys.platform.startswith('linux'):
         return
-    if os.getenv('DISPLAY'):
-        os.environ.setdefault('ACTUATOR_LIVE_STREAM_SUPPORTED', '1')
-        return
-    if os.getenv('ACTUATOR_XVFB_BOOTSTRAPPED') == '1':
+    display = os.getenv('DISPLAY')
+    if display:
+        probe = shutil.which('xdpyinfo')
+        if not probe:
+            _report_live_display(False, '缺少 xdpyinfo，无法检查 DISPLAY；请安装 x11-utils')
+            return
+        try:
+            result = subprocess.run(
+                [probe, '-display', display],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                timeout=5, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            _report_live_display(False, 'DISPLAY 连接检查失败或超时，请检查 Xvfb')
+            return
+        _report_live_display(
+            result.returncode == 0,
+            f'DISPLAY={display}' if result.returncode == 0 else 'DISPLAY 无法连接，请检查 Xvfb',
+        )
         return
     if os.getenv('ACTUATOR_DISABLE_XVFB_BOOTSTRAP') == '1':
-        os.environ.setdefault('ACTUATOR_LIVE_STREAM_SUPPORTED', '0')
+        _report_live_display(False, 'ACTUATOR_DISABLE_XVFB_BOOTSTRAP=1，已禁用自动启动 Xvfb')
+        return
+    if os.getenv('ACTUATOR_XVFB_BOOTSTRAPPED') == '1':
+        _report_live_display(False, 'Xvfb 包装启动后仍未提供 DISPLAY')
         return
 
-    xvfb_run = shutil.which('xvfb-run')
-    xvfb = shutil.which('Xvfb')
-    if not xvfb_run and not xvfb:
-        os.environ.setdefault('ACTUATOR_LIVE_STREAM_SUPPORTED', '0')
+    dependencies = {name: shutil.which(name) for name in ('xvfb-run', 'Xvfb', 'xauth', 'xdpyinfo')}
+    missing = [name for name, path in dependencies.items() if not path]
+    if missing:
+        _report_live_display(False, f'缺少依赖 {", ".join(missing)}；请安装 xvfb、xauth、x11-utils')
         return
 
-    fallback_seconds = int(os.getenv('ACTUATOR_XVFB_FALLBACK_SECONDS', '10'))
-    xvfb_screen = os.getenv('ACTUATOR_XVFB_SCREEN', '1440x900x24')
     env = os.environ.copy()
     env['ACTUATOR_XVFB_BOOTSTRAPPED'] = '1'
-    env['ACTUATOR_LIVE_STREAM_SUPPORTED'] = '1'
-    if xvfb_run:
-        command = [
-            xvfb_run,
-            '-a',
-            '-s',
-            f'-screen 0 {xvfb_screen}',
-            sys.executable,
-            os.path.abspath(__file__),
-            *sys.argv[1:],
-        ]
-        print('检测到 xvfb-run，使用 Xvfb 启动执行器。')
-    else:
-        display_value = os.getenv('ACTUATOR_DISPLAY', ':99')
-        xvfb_log = open('/tmp/mango-actuator-xvfb.log', 'a', encoding='utf-8')
-        xvfb_process = subprocess.Popen(
-            [xvfb, display_value, '-screen', '0', xvfb_screen],
-            stdout=xvfb_log,
-            stderr=xvfb_log,
-            env=env,
-        )
-        time.sleep(1)
-        if xvfb_process.poll() is not None:
-            print('Xvfb 进程启动失败，降级为普通 Python 启动。')
-            os.environ['ACTUATOR_XVFB_BOOTSTRAPPED'] = '1'
-            os.environ['ACTUATOR_LIVE_STREAM_SUPPORTED'] = '0'
-            xvfb_log.close()
-            return
-        env['DISPLAY'] = display_value
-        command = [
-            sys.executable,
-            os.path.abspath(__file__),
-            *sys.argv[1:],
-        ]
-        print(f'检测到 Xvfb，使用 DISPLAY={display_value} 启动执行器。')
-    process = subprocess.Popen(command, env=env)
-    time.sleep(fallback_seconds)
-    if process.poll() is None:
-        exit_code = process.wait()
-        if not xvfb_run:
-            xvfb_process.terminate()
-            xvfb_process.wait(timeout=5)
-            xvfb_log.close()
-        raise SystemExit(exit_code)
-    exit_code = process.returncode
-    if not xvfb_run:
-        xvfb_process.terminate()
-        xvfb_process.wait(timeout=5)
-        xvfb_log.close()
-    if exit_code == 0:
-        raise SystemExit(0)
-    print(f'Xvfb 启动执行器失败，退出码：{exit_code}，降级为普通 Python 启动。')
-    os.environ['ACTUATOR_XVFB_BOOTSTRAPPED'] = '1'
-    os.environ['ACTUATOR_LIVE_STREAM_SUPPORTED'] = '0'
+    env['ACTUATOR_LIVE_STREAM_SUPPORTED'] = '0'
+    screen = os.getenv('ACTUATOR_XVFB_SCREEN', '1440x900x24')
+    command = [
+        dependencies['xvfb-run'], '-a', '-s', f'-screen 0 {screen}',
+        sys.executable, os.path.abspath(__file__), *sys.argv[1:],
+    ]
+    print('自动使用 xvfb-run 启动执行器；子进程将检查 DISPLAY 后上报直播能力。', flush=True)
+    try:
+        # 替换当前进程，避免父执行器等待子执行器并将业务退出误判为显示启动失败。
+        os.execvpe(command[0], command, env)
+    except OSError:
+        _report_live_display(False, '无法启动 xvfb-run，执行器将继续运行，但不提供直播')
 
 
 bootstrap_xvfb_if_needed()

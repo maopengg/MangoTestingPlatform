@@ -17,6 +17,14 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
 class EnumCatalogTests(SimpleTestCase):
+    def test_offline_report_enums_are_explicitly_registered(self):
+        from src.apps.test_center.enums.report_delivery import ReportSourceEnum
+        catalog = EnumCatalogService.catalog()
+        for key, enum in (
+            ('report_source', ReportSourceEnum),
+        ):
+            self.assertEqual(catalog[key], enum.get_option())
+
     def test_reference_api_is_registered_as_an_item_source(self):
         from src.apps.evaluation.enums.data_source import EvaluationItemSourceEnum
         options = EnumCatalogService.catalog()['evaluation_item_source']

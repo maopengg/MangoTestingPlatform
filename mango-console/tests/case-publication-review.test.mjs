@@ -123,7 +123,7 @@ test('loading summaries never preselects rows, and failures fail closed', async 
 
 test('large review scrolls all cases without pagination and preserves selection', () => {
   assert.match(source, /<BaseSidePanel/)
-  assert.match(source, /:width="1200"/)
+  assert.match(source, /:width="1440"/)
   assert.match(source, /:data="displayRows"/)
   assert.match(source, /:pagination="false"/)
   assert.match(source, /y: '100%'/)
@@ -147,9 +147,27 @@ test('large review scrolls all cases without pagination and preserves selection'
   assert.deepEqual(state.selectedIds.value, [1, 20, 101, 120])
 })
 
+test('publication review fits all fields inside the drawer without a forced wide canvas', () => {
+  assert.match(source, /:scroll="\{ x: '100%', y: '100%' \}"/)
+  assert.doesNotMatch(source, /x: 1280/)
+  const columnsNode = file.statements.filter(ts.isVariableStatement)
+    .flatMap(node => [...node.declarationList.declarations])
+    .find(node => node.name.getText(file) === 'reviewColumns')
+  const code = ts.transpileModule(`const reviewColumns = ${columnsNode.initializer.getText(file)}`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  const columns = new Function(code + ';return reviewColumns')()
+  assert.deepEqual(columns.filter(column => !column.width).map(column => column.title), ['用例'])
+  assert.ok(columns.every(column => column.width == null || typeof column.width === 'number'))
+  assert.deepEqual(columns.slice(1).map(column => column.width), [72, 88, 156, 156, 260, 88, 160])
+  assert.equal(columns.find(column => column.title === '负责人').align, 'center')
+  assert.equal(columns.at(-1).width, 160)
+  assert.match(source, /\.mango-publication-review__muted\s*\{[^}]*white-space: normal/)
+})
+
 test('Arco table shows human review requirements without expanding configuration content', () => {
   assert.match(source, /:columns="reviewColumns"/)
-  assert.match(source, /\{ title: '审核要求', slotName: 'requirements' \}/)
+  assert.match(source, /\{ title: '审核要求', slotName: 'requirements', width: 260 \}/)
   assert.doesNotMatch(source, /<a-table-column/)
   assert.match(source, /reviewRequirements\(record.scenario_tags\)/)
   assert.doesNotMatch(source, /expand-row|record.configuration_items|record.step_details/)

@@ -1,6 +1,5 @@
 from django.test import SimpleTestCase
 
-from src.apps.system.services.menu import HELP_DOCUMENTATION_URL
 from src.apps.user.services.permission import PermissionMenuService
 
 
@@ -151,8 +150,13 @@ class MenuBetaConfigTests(SimpleTestCase):
                     )
 
     def test_usage_document_is_available_after_permission_filtering(self):
+        configured_tree = PermissionMenuService.permission_tree()
+        configured_url = next(
+            item['menuUrl'] for item in self._flatten(configured_tree)
+            if item.get('permissionKey') == 'help.documents'
+        )
         tree = PermissionMenuService.filter_routes_by_permissions(
-            PermissionMenuService.permission_tree(),
+            configured_tree,
             {'help.documents'},
         )
         items = list(self._flatten(tree))
@@ -160,5 +164,5 @@ class MenuBetaConfigTests(SimpleTestCase):
             item for item in items if item['menuName'] == '使用文档'
         )
 
-        self.assertEqual(usage_document['menuUrl'], HELP_DOCUMENTATION_URL)
+        self.assertEqual(usage_document['menuUrl'], configured_url)
         self.assertEqual(usage_document['permissionKey'], 'help.documents')
