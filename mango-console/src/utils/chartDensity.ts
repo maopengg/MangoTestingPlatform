@@ -9,6 +9,7 @@ type DensityChartRecord = {
   chart: ChartLike
   rawSetOption: ChartLike['setOption']
   scale: number
+  hasOption: boolean
 }
 
 const records = new Set<DensityChartRecord>()
@@ -86,9 +87,19 @@ function installDensityListener() {
       }
       const ratio = nextScale / record.scale
       if (Math.abs(ratio - 1) < 0.001) return
+      // 图表可能已挂载但数据尚未返回；首次 setOption 成功前没有可缩放的模型。
+      if (!record.hasOption) {
+        record.scale = nextScale
+        return
+      }
       const currentOption = record.chart.getOption()
-      record.scale = nextScale
+      if (!currentOption) {
+        record.hasOption = false
+        record.scale = nextScale
+        return
+      }
       record.rawSetOption(scaleOptionValue(currentOption, ratio), { notMerge: true })
+      record.scale = nextScale
       record.chart.resize()
     })
   })
@@ -103,9 +114,13 @@ export function makeChartDensityAware<T extends ChartLike>(chart: T): T {
     chart,
     rawSetOption,
     scale: getDisplayScale(),
+    hasOption: false,
   }
-  chart.setOption = ((option: any, ...args: any[]) =>
-    rawSetOption(scaleOptionValue(option, record.scale), ...args)) as T['setOption']
+  chart.setOption = ((option: any, ...args: any[]) => {
+    const result = rawSetOption(scaleOptionValue(option, record.scale), ...args)
+    record.hasOption = true
+    return result
+  }) as T['setOption']
   records.add(record)
   installDensityListener()
   return chart

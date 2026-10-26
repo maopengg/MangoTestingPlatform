@@ -110,7 +110,7 @@ class ApiCaseRevisionImpactMixin:
         self_contained = []
         legacy = []
         from src.apps.auto_api.services.api_info.version import ApiInfoRevisionService
-        for revision in ApiCaseRevision.objects.only('id', 'api_case_id', 'revision_no', 'payload'):
+        for revision in ApiQuerySelector.iter_api_case_revision_payloads():
             raw_payload = revision.payload if isinstance(revision.payload, dict) else {}
             try:
                 payload = ApiCaseRevisionPayloadModel.from_payload(raw_payload)
@@ -172,6 +172,8 @@ class ApiCaseRevisionImpactMixin:
                     self_contained.append(item)
                 else:
                     legacy.append(item)
+        self_contained.sort(key=lambda item: item['case_revision_no'], reverse=True)
+        legacy.sort(key=lambda item: item['case_revision_no'], reverse=True)
         return {'self_contained': self_contained, 'legacy': legacy}
 
     @classmethod

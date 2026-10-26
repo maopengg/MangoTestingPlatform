@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+from copy import deepcopy
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -14,6 +16,71 @@ from src.apps.data_factory.services.template import (
 
 
 class TemplateSaveValidationTests(SimpleTestCase):
+    @contextmanager
+    def mutation_validation_context(self):
+        template = SimpleNamespace(id=9, status=1, project_product_id=1, module_id=4, entity_id=2, name='场景')
+        queryset = Mock()
+        queryset.exists.return_value = False
+        queryset.exclude.return_value = queryset
+        with (
+            patch('src.apps.data_factory.services.template.ProductModule.objects.get',
+                  return_value=SimpleNamespace(project_product_id=1)),
+            patch('src.apps.data_factory.services.template.DataFactoryEntity.objects.get',
+                  return_value=SimpleNamespace(project_product_id=1, module_id=4)),
+            patch.object(DataFactoryTemplate.objects, 'filter', return_value=queryset),
+            patch.object(DataFactoryTemplate.objects, 'select_for_update') as locked,
+            patch.object(DataFactoryTemplateService, 'configuration_snapshot', return_value={}),
+            patch('src.apps.data_factory.services.template.save_model') as save,
+        ):
+            locked.return_value.get.return_value = template
+            yield template, save
+
+    @staticmethod
+    def mutation_payload(items):
+        return {'project_product': 1, 'module': 4, 'entity': 2, 'name': '场景', 'items': items}
+
+    def test_invalid_child_overrides_are_business_errors_before_create_or_update(self):
+        payload = self.mutation_payload([
+            {'child_template': 3, 'field_overrides': {}},
+            {'child_template': 5, 'field_overrides': {
+                'source_type': {'generator_type': 1, 'generator_config': {}, 'value': 1},
+            }},
+        ])
+        for operation in ('create', 'update'):
+            with self.subTest(operation=operation), self.mutation_validation_context() as (template, save):
+                with self.assertRaises(DataFactoryError) as raised:
+                    method = getattr(DataFactoryTemplateMutationService, operation).__wrapped__
+                    if operation == 'create':
+                        method(DataFactoryTemplateMutationService, payload)
+                    else:
+                        method(DataFactoryTemplateMutationService, template.id, payload)
+                self.assertEqual(raised.exception.code, 34005)
+                self.assertIn('关联模板第 2 项', str(raised.exception))
+                self.assertIn('source_type.value', str(raised.exception))
+                save.assert_not_called()
+
+    def test_valid_child_overrides_preserve_zero_and_do_not_mutate_request(self):
+        payload = self.mutation_payload([{'child_template': 3, 'field_overrides': {
+            'source_type': {'generator_type': 1, 'generator_config': {'value': 0}},
+        }}])
+        original = deepcopy(payload)
+        with self.mutation_validation_context():
+            _, items = DataFactoryTemplateMutationService._validated_payload(payload)
+        self.assertEqual(items[0]['field_overrides']['source_type']['generator_config']['value'], 0)
+        self.assertEqual(payload, original)
+        self.assertIsNot(items[0], payload['items'][0])
+
+    def test_child_with_no_overrides_and_omitted_items_keep_existing_semantics(self):
+        with self.mutation_validation_context():
+            _, items = DataFactoryTemplateMutationService._validated_payload(
+                self.mutation_payload([{'child_template': 3}]),
+            )
+            self.assertEqual(items, [{'child_template': 3, 'field_overrides': {}}])
+            _, items = DataFactoryTemplateMutationService._validated_payload(self.mutation_payload(None))
+            self.assertIsNone(items)
+            _, items = DataFactoryTemplateMutationService._validated_payload(self.mutation_payload([]))
+            self.assertEqual(items, [])
+
     def test_activation_ignores_page_environment_and_uses_global_configuration(self):
         bindings = Mock()
         bindings.all.return_value = [

@@ -40,6 +40,23 @@ class _RedisConnection:
 
 
 class DataSourceConnectionServiceTests(SimpleTestCase):
+    def test_redis_diagnostics_normalize_connection_before_describing_target(self):
+        database = Database(
+            id=1, update_time=timezone.now(),
+            source_category=DataSourceCategoryEnum.CACHE.value,
+            db_type=DataSourceTypeEnum.REDIS.value,
+            host='redis.example.com', port=6379, extra_config={},
+        )
+        bound = DatasourceTargetService.build(database, redis_db=2)
+        for source, expected in ((database, 0), (bound, 2)):
+            with self.subTest(expected=expected), \
+                    patch.object(DataSourceConnectionService, '_diagnose_network', return_value={'status': 'passed'}), \
+                    patch.object(DataSourceConnectionService, '_test_redis', return_value={'ping': 'PONG'}) as ping:
+                result = DataSourceConnectionService.diagnose_connection(source)
+                self.assertTrue(result['connected'])
+                self.assertEqual(ping.call_args.args[0].redis_db, expected)
+                self.assertEqual(result['checks'][-1]['message'], f'Redis DB {expected} 可正常访问')
+
     def setUp(self):
         super().setUp()
         # 连接诊断测试不访问配置库；重复校验由配置服务专项测试覆盖。
@@ -52,6 +69,7 @@ class DataSourceConnectionServiceTests(SimpleTestCase):
     def _mysql_data_source():
         return Database(
             id=1,
+            update_time=timezone.now(),
             source_category=DataSourceCategoryEnum.DATABASE.value,
             db_type=DataSourceTypeEnum.MYSQL.value,
             display_name='订单测试库',
@@ -121,6 +139,50 @@ class DataSourceConnectionServiceTests(SimpleTestCase):
 
         self.assertTrue(result['connected'])
         self.assertEqual([item['status'] for item in result['checks']], ['passed', 'passed', 'passed'])
+
+    @patch.object(DataSourceConnectionService, '_test_redis')
+    @patch.object(DataSourceConnectionService, '_diagnose_network')
+    def test_redis_diagnosis_uses_the_same_target_for_connection_and_success_message(
+            self,
+            diagnose_network,
+            test_redis,
+    ):
+        diagnose_network.return_value = {
+            'key': 'network', 'name': '域名解析与端口访问',
+            'status': 'passed', 'message': 'redis.example.com:6379 可访问',
+        }
+        database = Database(
+            id=2, update_time=timezone.now(),
+            source_category=DataSourceCategoryEnum.CACHE.value,
+            db_type=DataSourceTypeEnum.REDIS.value,
+            display_name='缓存连接', host='redis.example.com', port=6379,
+            extra_config={'ssl': False},
+        )
+        self.assertFalse(hasattr(database, 'redis_db'))
+
+        for source, database_index in (
+                (database, 0),
+                (DatasourceTargetService.build(database, redis_db=3), 3),
+        ):
+            with self.subTest(database_index=database_index):
+                test_redis.reset_mock()
+                test_redis.return_value = {
+                    'protocol': 'redis', 'database': database_index, 'ping': 'PONG',
+                }
+
+                result = DataSourceConnectionService.diagnose_connection(source)
+
+                target = test_redis.call_args.args[0]
+                self.assertEqual(target.redis_db, database_index)
+                if source is not database:
+                    self.assertIs(target, source)
+                self.assertTrue(result['connected'])
+                self.assertIsNone(result['error'])
+                self.assertEqual(result['details']['database'], database_index)
+                self.assertEqual([item['status'] for item in result['checks']], ['passed'] * 3)
+                self.assertEqual(
+                    result['checks'][-1]['message'], f'Redis DB {database_index} 可正常访问',
+                )
 
     def test_relational_database_keeps_optional_alias_separate_from_database_name(self):
         serializer = DataSourceSerializer(data={

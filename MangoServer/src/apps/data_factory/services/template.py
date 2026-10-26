@@ -335,6 +335,20 @@ class DataFactoryTemplateMutationService:
                 ).model_dump()
         except ValidationError as error:
             raise DataFactoryError(DATA_FACTORY_FIELD_INVALID, value=(error,)) from error
+        if items is not None:
+            validated_items = []
+            for index, item in enumerate(items):
+                try:
+                    overrides = DataFactoryFieldOverrideRules.model_validate(
+                        item.get("field_overrides") or {},
+                    ).model_dump()
+                except ValidationError as error:
+                    raise DataFactoryError(
+                        DATA_FACTORY_FIELD_INVALID,
+                        value=(f"关联模板第 {index + 1} 项 field_overrides：{error}",),
+                    ) from error
+                validated_items.append({**item, "field_overrides": overrides})
+            items = validated_items
         if operator_id is not None:
             data["update_user"] = operator_id
         return data, items
@@ -363,9 +377,6 @@ class DataFactoryTemplateMutationService:
             data["template"] = instance.id
             data.setdefault("sort", index)
             data.setdefault("name", child.name)
-            data["field_overrides"] = DataFactoryFieldOverrideRules.model_validate(
-                data.get("field_overrides") or {},
-            ).model_dump()
             if instance.update_user_id:
                 data.setdefault("update_user", instance.update_user_id)
             item = DataFactoryTemplateItem.objects.filter(id=item_id, template=instance).first() if item_id else None

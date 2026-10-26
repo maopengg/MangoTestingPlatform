@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import { setupRouter } from './router'
+import router, { setupRouter } from './router'
 import './styles'
 import { setupGlobalComponent } from '@/layouts'
 import { setupPinia } from '@/store/pinia'
@@ -9,6 +9,7 @@ import { setupDirectives } from '@/directives'
 import { applyDisplayDensity } from '@/hooks/useDisplayDensity'
 import { DisplayDensity } from '@/store/types'
 import { setupFrontendErrorReporting } from '@/utils/system-error-reporter'
+import { setupAssetLoadRecovery } from '@/utils/asset-load-recovery'
 // import 'default-passive-events'
 // 如果需要对接正式的接口，需要下面代码注释或者删除
 // import { setupMock } from '../mock'
@@ -19,6 +20,7 @@ function setup() {
   const app = createApp(App)
   setupPinia(app)
   setupFrontendErrorReporting(app)
+  setupAssetLoadRecovery(router)
   setupRouter(app)
   setupRouterGuard()
   setupGlobalComponent(app)

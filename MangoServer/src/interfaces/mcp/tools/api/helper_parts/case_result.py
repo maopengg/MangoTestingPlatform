@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json as jsonlib
 import os
+import time
 import uuid
 from datetime import timedelta
 from typing import Any
@@ -138,14 +139,13 @@ def _cleanup_api_case_result_exports():
     export_dir = os.path.join(settings.MEDIA_ROOT, API_CASE_RESULT_EXPORT_RELATIVE_DIR)
     if not os.path.isdir(export_dir):
         return
-    expired_before = timezone.now() - timedelta(days=API_CASE_RESULT_EXPORT_RETENTION_DAYS)
+    expired_before = time.time() - timedelta(days=API_CASE_RESULT_EXPORT_RETENTION_DAYS).total_seconds()
     for file_name in os.listdir(export_dir):
         file_path = os.path.join(export_dir, file_name)
         if not os.path.isfile(file_path):
             continue
         try:
-            modified_at = timezone.datetime.fromtimestamp(os.path.getmtime(file_path),
-                                                          tz=timezone.get_current_timezone())
+            modified_at = os.path.getmtime(file_path)
             if modified_at < expired_before:
                 os.remove(file_path)
         except OSError:

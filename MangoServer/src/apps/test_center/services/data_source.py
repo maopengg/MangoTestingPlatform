@@ -49,7 +49,7 @@ class DataSourceConnectionService:
     REDIS_MAX_BULK_BYTES = 1_048_576
 
     @classmethod
-    def diagnose_connection(cls, data_source: Database) -> dict:
+    def diagnose_connection(cls, data_source: Database | DatasourceTarget) -> dict:
         checks = []
         network_check = cls._diagnose_network(data_source)
         checks.append(network_check)
@@ -61,6 +61,8 @@ class DataSourceConnectionService:
             return cls._diagnostic_result(data_source, checks, network_check['message'])
 
         try:
+            if not isinstance(data_source, DatasourceTarget):
+                data_source = DatasourceTargetService.maintenance(data_source)
             result = cls.test_connection(data_source)
         except Exception as error:
             message = error.msg if isinstance(error, TestCenterError) else cls._safe_error(data_source, error)

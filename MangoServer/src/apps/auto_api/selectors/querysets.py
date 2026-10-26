@@ -94,6 +94,21 @@ class ApiQuerySelector:
         return ApiCaseRevision.objects.all()
 
     @staticmethod
+    def iter_api_case_revision_payloads(*, batch_size=200):
+        upper_id = ApiCaseRevision.objects.order_by('-id').values_list('id', flat=True).first()
+        if upper_id is None:
+            return
+        revisions = ApiCaseRevision.objects.only('id', 'api_case_id', 'revision_no', 'payload').order_by('id')
+        last_id = 0
+        # 主键范围分页避免大 JSON 参与默认修订号排序，也不让 MySQL 客户端一次缓存全部快照。
+        while last_id < upper_id:
+            batch = list(revisions.filter(id__gt=last_id, id__lte=upper_id)[:batch_size])
+            if not batch:
+                break
+            last_id = batch[-1].id
+            yield from batch
+
+    @staticmethod
     def api_headers():
         return ApiHeaders.objects.all()
 
