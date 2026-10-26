@@ -1,4 +1,5 @@
 import secrets
+import re
 
 from django.contrib.auth.hashers import check_password, identify_hasher, make_password
 from mangotools.data_processor import EncryptionTool
@@ -22,5 +23,11 @@ def verify_password_digest(password_digest: str | None, stored_password: str | N
         identify_hasher(stored_password)
     except ValueError:
         valid = secrets.compare_digest(str(password_digest), str(stored_password))
+        # Imported databases may contain either one or two MD5 layers. Only
+        # upgrade after the supplied credential proves which digest is valid.
+        if not valid and re.fullmatch(r'[0-9a-f]{32}', str(stored_password)):
+            valid = secrets.compare_digest(
+                str(password_digest), EncryptionTool.md5_32_small(stored_password),
+            )
         return valid, make_password(password_digest) if valid else None
     return check_password(password_digest, stored_password), None
