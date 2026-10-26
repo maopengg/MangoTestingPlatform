@@ -18,7 +18,7 @@ from src.processes.realtime.live_stream.protocol import (
 
 class MangoMockElementFixtureTest(SimpleTestCase):
     def test_components_url_and_button_locators_are_stable(self):
-        self.assertEqual(LAB_URL, "http://43.142.161.61:8003/#components")
+        self.assertEqual(LAB_URL, "http://mock.example.com:8003/#components")
         self.assertGreaterEqual(len(BUTTON_ELEMENTS), 6)
         for key, element in BUTTON_ELEMENTS.items():
             with self.subTest(element=key):

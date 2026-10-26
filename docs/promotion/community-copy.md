@@ -32,9 +32,9 @@
 
 Gitee：https://gitee.com/mao-peng/MangoTestingPlatform
 
-在线演示：http://43.142.161.61:8000/
+在线演示：http://160.202.231.91:35966/
 
-帮助文档：http://43.142.161.61:8002/
+帮助文档：http://160.202.231.91:36696/
 
 ## 开源交流群版本
 
@@ -84,9 +84,9 @@ https://gitee.com/mao-peng/MangoTestingPlatform
 
 项目：https://gitee.com/mao-peng/MangoTestingPlatform
 
-演示：http://43.142.161.61:8000/
+演示：http://160.202.231.91:35966/
 
-文档：http://43.142.161.61:8002/
+文档：http://160.202.231.91:36696/
 
 ## 版本更新通知模板
 
@@ -100,7 +100,7 @@ https://gitee.com/mao-peng/MangoTestingPlatform
 
 项目地址：https://gitee.com/mao-peng/MangoTestingPlatform
 
-帮助文档：http://43.142.161.61:8002/
+帮助文档：http://160.202.231.91:36696/
 
 ## 私聊邀请版本
 

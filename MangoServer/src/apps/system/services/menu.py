@@ -6,6 +6,8 @@
 import os
 from copy import deepcopy
 
+HELP_DOCUMENTATION_URL = "http://160.202.231.91:36696/"
+
 
 def _two_level_routes(routes):
     """在保留页面 URL 和权限标识的前提下，按业务能力整理为两级菜单。"""
@@ -227,7 +229,7 @@ def _two_level_routes(routes):
     ]
     help_document_children = [
         leaf(
-            "http://43.142.161.61:8002/",
+            HELP_DOCUMENTATION_URL,
             "/help/documents",
             "使用文档",
             permission_key="help.documents",
@@ -835,7 +837,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/help",
-                    "menuUrl": "http://43.142.161.61:8002/",
+                    "menuUrl": HELP_DOCUMENTATION_URL,
                     "menuName": "帮助文档",
                 },
             ],

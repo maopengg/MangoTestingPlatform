@@ -44,6 +44,6 @@
 
 前端 `mango-console` 的 Node 版本要求、依赖安装、环境配置、启动命令、构建与部署流程等内容，请统一参考官方部署教程：
 
-- [Windows 部署教程（包含前端部署）](http://43.142.161.61:8002/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html)
+- [Windows 部署教程（包含前端部署）](http://160.202.231.91:36696/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html)
 
 

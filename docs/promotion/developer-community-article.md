@@ -41,8 +41,8 @@
 
 - Gitee：https://gitee.com/mao-peng/MangoTestingPlatform
 - GitHub：https://github.com/maopengg/MangoTestingPlatform
-- 在线演示：http://43.142.161.61:8000/
-- 帮助文档：http://43.142.161.61:8002/
+- 在线演示：http://160.202.231.91:35966/
+- 帮助文档：http://160.202.231.91:36696/
 
 > 最新进展：在公开版主链路之上，最新版已继续建设研发协同、性能测试、API 模块覆盖与 Mock、UI 智能定位与自愈、质量效能、灰度管理和统一运维审计。这些能力会按版本逐步开放，本文主体仍以公开版本可验证的工程思路为准。
 

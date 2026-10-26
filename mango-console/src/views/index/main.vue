@@ -222,7 +222,7 @@
 
   function viewHelp() {
     // 跳转到帮助文档链接
-    window.open('http://43.142.161.61:8002/', '_blank')
+    window.open('http://160.202.231.91:36696/', '_blank')
   }
 
   function contactAuthor() {

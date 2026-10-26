@@ -286,7 +286,7 @@ class TkActuatorApplication:
     @staticmethod
     def _open_help() -> None:
         import webbrowser
-        webbrowser.open("http://43.142.161.61:8002/")
+        webbrowser.open("http://160.202.231.91:36696/")
 
     def _clear_root(self) -> None:
         for child in self.root.winfo_children():

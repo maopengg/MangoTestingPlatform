@@ -4,7 +4,7 @@
 
 芒果测试平台是一套开源、可私有部署的低代码测试平台。它将 API、UI 和 Pytest 自动化，以及环境配置、测试数据、任务调度、远程执行和测试报告放进同一条可追踪链路，适合希望把个人脚本沉淀为团队质量资产的测试团队。
 
-[Gitee](https://gitee.com/mao-peng/MangoTestingPlatform) · [GitHub](https://github.com/maopengg/MangoTestingPlatform) · [在线演示](http://43.142.161.61:8000/) · [帮助文档](http://43.142.161.61:8002/) · [执行器下载](https://www.alipan.com/s/8CmZdabwt4R)
+[Gitee](https://gitee.com/mao-peng/MangoTestingPlatform) · [GitHub](https://github.com/maopengg/MangoTestingPlatform) · [在线演示](http://160.202.231.91:35966/) · [帮助文档](http://160.202.231.91:36696/) · [执行器下载](https://www.alipan.com/s/8CmZdabwt4R)
 
 ## 一键部署到单台服务器
 
@@ -93,10 +93,10 @@ mango-console/     Vue 3 + TypeScript Web 控制台
 
 ## 开始使用
 
-1. 先查看[帮助文档](http://43.142.161.61:8002/)，了解部署依赖和初始化流程。
-2. 按[Docker 部署教程](http://43.142.161.61:8002/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/docker.html)部署平台服务。
+1. 先查看[帮助文档](http://160.202.231.91:36696/)，了解部署依赖和初始化流程。
+2. 按[Docker 部署教程](http://160.202.231.91:36696/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/docker.html)部署平台服务。
 3. 需要运行 UI 或 Pytest 任务时，下载并配置[执行器](https://www.alipan.com/s/8CmZdabwt4R)。
-4. 也可以先访问[在线演示](http://43.142.161.61:8000/)；请按演示站提示注册和使用，不要录入真实业务数据或凭据。
+4. 也可以先访问[在线演示](http://160.202.231.91:35966/)；请按演示站提示注册和使用，不要录入真实业务数据或凭据。
 
 遇到问题时，建议在 Gitee 或 GitHub 提交 Issue，并附上平台版本、部署方式、复现步骤和脱敏后的错误日志。请勿提交密码、Token、Authorization、真实业务域名或生产数据。
 

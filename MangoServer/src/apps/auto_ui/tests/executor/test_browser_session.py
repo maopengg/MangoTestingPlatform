@@ -33,6 +33,10 @@ class UiBrowserSessionExecutorTest(SimpleTestCase):
         self.assertEqual(command.data.func_name, ServerUiCommandEnum.NEW_PAGE_OBJ.value)
 
     @patch(
+        "src.apps.system.api.views.socket_api.UserCacheService.selected_environment",
+        return_value=1,
+    )
+    @patch(
         "src.apps.system.api.views.socket_api.SocketMessageService.send_socket_data"
     )
     @patch(
@@ -54,6 +58,7 @@ class UiBrowserSessionExecutorTest(SimpleTestCase):
             filter_test_objects,
             require_actuator,
             send_socket_data,
+            selected_environment,
     ):
         get_user.return_value = SimpleNamespace(selected_environment=1)
         product_queryset = SimpleNamespace(
@@ -62,7 +67,7 @@ class UiBrowserSessionExecutorTest(SimpleTestCase):
         all_products.return_value = product_queryset
         filter_test_objects.return_value = SimpleNamespace(
             values=lambda *args: [{
-                "value": "http://43.142.161.61:8003/#components",
+                "value": "http://mock.example.com:8003/#components",
                 "project_product_id": 7,
             }],
         )
@@ -79,5 +84,5 @@ class UiBrowserSessionExecutorTest(SimpleTestCase):
         self.assertEqual(command.data.func_name, ServerUiCommandEnum.RECORDING.value)
         self.assertEqual(
             command.data.func_args.url_list[0]["value"],
-            "http://43.142.161.61:8003/#components",
+            "http://mock.example.com:8003/#components",
         )

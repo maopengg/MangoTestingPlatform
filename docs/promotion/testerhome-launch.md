@@ -25,8 +25,8 @@
 
 - Gitee：https://gitee.com/mao-peng/MangoTestingPlatform
 - GitHub：https://github.com/maopengg/MangoTestingPlatform
-- 在线演示：http://43.142.161.61:8000/
-- 帮助文档：http://43.142.161.61:8002/
+- 在线演示：http://160.202.231.91:35966/
+- 帮助文档：http://160.202.231.91:36696/
 
 这篇文章不打算把所有菜单重新介绍一遍，主要想分享：我为什么持续做这个平台，以及最近为什么把重点放在测试数据和 AI 上。
 
@@ -170,7 +170,7 @@ Web 控制台
 
 - Gitee：https://gitee.com/mao-peng/MangoTestingPlatform
 - GitHub：https://github.com/maopengg/MangoTestingPlatform
-- 在线演示：http://43.142.161.61:8000/
-- 帮助文档：http://43.142.161.61:8002/
+- 在线演示：http://160.202.231.91:35966/
+- 帮助文档：http://160.202.231.91:36696/
 
 如果项目对你有帮助，也欢迎点一个 Star。比 Star 更有价值的是告诉我：你准备用它解决什么问题，以及哪里还不够好用。

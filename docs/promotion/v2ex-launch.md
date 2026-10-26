@@ -26,8 +26,8 @@
 
 - Gitee：https://gitee.com/mao-peng/MangoTestingPlatform
 - GitHub：https://github.com/maopengg/MangoTestingPlatform
-- 在线演示：http://43.142.161.61:8000/
-- 帮助文档：http://43.142.161.61:8002/
+- 在线演示：http://160.202.231.91:35966/
+- 帮助文档：http://160.202.231.91:36696/
 
 如果你只运行少量脚本，Pytest + CI 可能更简单。这个项目更想解决环境、测试数据、任务分发、报告追踪和团队协作逐渐变复杂之后的问题。
 

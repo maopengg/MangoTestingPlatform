@@ -34,7 +34,7 @@
 
 MangoActuator 的安装、依赖环境配置、启动方式及打包为可执行文件等全部内容，请统一参考官方部署教程：
 
-- [Windows 部署教程（包含执行器部署）](http://43.142.161.61:8002/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html)
+- [Windows 部署教程（包含执行器部署）](http://160.202.231.91:36696/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html)
 
 
 

@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 
+from src.apps.system.services.menu import HELP_DOCUMENTATION_URL
 from src.apps.user.services.permission import PermissionMenuService
 
 
@@ -159,5 +160,5 @@ class MenuBetaConfigTests(SimpleTestCase):
             item for item in items if item['menuName'] == '使用文档'
         )
 
-        self.assertEqual(usage_document['menuUrl'], 'http://43.142.161.61:8002/')
+        self.assertEqual(usage_document['menuUrl'], HELP_DOCUMENTATION_URL)
         self.assertEqual(usage_document['permissionKey'], 'help.documents')

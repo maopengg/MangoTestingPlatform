@@ -31,7 +31,7 @@
 本项目的所有部署、安装及启动流程，请统一参考官方文档：
 
 - **Windows 部署教程**（包含后端 `MangoServer`、前端 `mango-console`、执行器 `MangoActuator` 的完整部署步骤）：  
-  [http://43.142.161.61:8002/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html](http://43.142.161.61:8002/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html)
+  [http://160.202.231.91:36696/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html](http://160.202.231.91:36696/pages/%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B/windows.html)
 
 
 

@@ -278,7 +278,7 @@
   const promptIndex = ref(Math.floor(Math.random() * prompts.value.length))
 
   const docsUrl =
-    'http://43.142.161.61:8002/pages/MCP%E6%9C%8D%E5%8A%A1/%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.html'
+    'http://160.202.231.91:36696/pages/MCP%E6%9C%8D%E5%8A%A1/%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.html'
   const backendBaseUrl = computed(() => {
     if (!baseURL || baseURL.startsWith('/')) {
       return window.location.origin.replace(/\/+$/, '')

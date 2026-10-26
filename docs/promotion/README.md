@@ -34,8 +34,8 @@
 
 - Gitee：https://gitee.com/mao-peng/MangoTestingPlatform
 - GitHub：https://github.com/maopengg/MangoTestingPlatform
-- 在线演示：http://43.142.161.61:8000/
-- 帮助文档：http://43.142.161.61:8002/
+- 在线演示：http://160.202.231.91:35966/
+- 帮助文档：http://160.202.231.91:36696/
 
 ## 使用建议
 

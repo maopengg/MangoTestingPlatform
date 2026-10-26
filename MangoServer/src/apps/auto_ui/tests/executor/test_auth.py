@@ -17,8 +17,8 @@ class UiAuthExecutorDispatchTest(SimpleTestCase):
         self.config = SimpleNamespace(
             id=3,
             auto_auth_config={
-                "url": "http://43.142.161.61:8003/#components",
-                "cookie_domains": ["43.142.161.61"],
+                "url": "http://mock.example.com:8003/#components",
+                "cookie_domains": ["mock.example.com"],
                 "local_storage_keys": ["mango-token"],
                 "session_storage_keys": ["mango-run"],
                 "headers": {"X-Mango-Probe": "1"},
@@ -28,11 +28,11 @@ class UiAuthExecutorDispatchTest(SimpleTestCase):
 
     @patch(
         "src.apps.auto_ui.api.views.ui_auth_config.UiAuthManager.resolve_origin",
-        return_value="http://43.142.161.61:8003",
+        return_value="http://mock.example.com:8003",
     )
     @patch(
         "src.apps.auto_ui.api.views.ui_auth_config.UiAuthManager.resolve_test_object_url",
-        return_value="http://43.142.161.61:8003/#components",
+        return_value="http://mock.example.com:8003/#components",
     )
     @patch(
         "src.apps.auto_ui.api.views.ui_auth_config.SocketMessageService.send_socket_data"
@@ -61,14 +61,14 @@ class UiAuthExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(command.data.func_name, ServerUiCommandEnum.AUTH_AUTO.value)
         self.assertEqual(
             command.data.func_args["url"],
-            "http://43.142.161.61:8003/#components",
+            "http://mock.example.com:8003/#components",
         )
         self.assertEqual(command.data.func_args["timeout"], 120)
         self.assertEqual(command.data.func_args["send_user"], "maopeng")
 
     @patch(
         "src.apps.auto_ui.api.views.ui_auth_config.UiAuthManager.resolve_origin",
-        return_value="http://43.142.161.61:8003",
+        return_value="http://mock.example.com:8003",
     )
     @patch(
         "src.apps.auto_ui.api.views.ui_auth_config.SocketMessageService.send_socket_data"
@@ -94,6 +94,6 @@ class UiAuthExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(command.data.func_name, ServerUiCommandEnum.AUTH_AUTO_CAPTURE.value)
         self.assertEqual(
             command.data.func_args["origin"],
-            "http://43.142.161.61:8003",
+            "http://mock.example.com:8003",
         )
         self.assertEqual(command.data.func_args["send_user"], "maopeng")
