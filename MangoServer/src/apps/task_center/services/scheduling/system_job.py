@@ -89,7 +89,7 @@ class SystemJobService:
         SystemJobDefinition(
             key='clean_data_factory_executions',
             name='数据工厂执行记录清理',
-            description='每天 00:30 删除超过 3 个月且清理状态为已清理的数据工厂执行记录。',
+            description='每天 00:30 按配置删除已清理的数据工厂执行记录，默认保留 60 天；有清理时间时按清理时间计算，否则按创建时间计算。',
             cron='30 0 * * *',
             source_type=ScheduleFireSourceTypeEnum.DATA_CLEANUP.value,
             handler=SchedulerSystemJobService.clean_data_factory_executions,

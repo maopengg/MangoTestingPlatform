@@ -14,6 +14,7 @@ from src.apps.system.enums import ClientTypeEnum
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.test_center.schemas.execution import TestSuiteDetailResultSchema
+from src.apps.test_center.services.execution_result import ExecutionResultService
 from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
 from src.apps.test_center.services.test_suite.send_notice import SendNotice
 from src.apps.test_center.services.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
@@ -53,21 +54,31 @@ class UpdateTestSuite:
         else:
             result_data = data.result_data.result_data
 
-        with transaction.atomic():
+        original_detail = TestSuiteDetails.objects.get(id=data.id, test_suite_id=data.test_suite)
+        result_data = TestSuiteExecutionResultService.normalize_detail_result_data(original_detail, result_data)
+        prepared = ExecutionResultService.prepare_result_payload(
+            result_data,
+            TestSuiteExecutionResultService.target_type_by_detail(original_detail),
+            original_detail.case_id, data.test_suite, data.id,
+        )
+
+        def persist():
             test_suite = TestSuite.objects.select_for_update().get(id=data.test_suite)
             if test_suite.retained_summary:
-                return False
+                return None
             if test_suite.status == TaskEnum.STOPPED.value:
                 log.system.info(
                     f'忽略已停止测试报告的晚到结果：test_suite={data.test_suite}, detail={data.id}'
                 )
-                return False
-            test_suite_detail = TestSuiteDetails.objects.get(id=data.id)
+                return None
+            test_suite_detail = TestSuiteDetails.objects.select_for_update().get(
+                id=data.id, test_suite_id=data.test_suite,
+            )
             if TestSuiteTimeoutRecoveryService.is_timeout_terminated(test_suite_detail):
                 log.system.info(
                     f'忽略系统超时终止后的晚到结果：test_suite={data.test_suite}, detail={data.id}'
                 )
-                return False
+                return None
             test_suite_detail.status = data.status
             if data.type == TestCaseTypeEnum.UI:
                 test_suite_detail.error_message = data.error_message
@@ -76,21 +87,23 @@ class UpdateTestSuite:
             else:
                 test_suite_detail.case_name = data.result_data.name
             test_suite_detail.save()
+            TestSuiteExecutionResultService.save_result(
+                test_suite_detail,
+                result_data,
+                source_snapshot=(data.result_data.source_snapshot if data.type == TestCaseTypeEnum.PYTEST else None),
+                prepared_result_payload=prepared,
+            )
+            TestCounter.res_main(test_suite_detail.id)
+            return test_suite_detail
+
+        test_suite_detail = ExecutionResultService.run_write_transaction(persist)
+        if test_suite_detail is None:
+            return False
 
         if data.type == TestCaseTypeEnum.UI:
             TestReportWriting.update_test_case(data.result_data)
         elif data.type == TestCaseTypeEnum.PYTEST:
             PtestTestReportWriting.update_pytest_test_case(data.result_data)
-        TestSuiteExecutionResultService.save_result(
-            test_suite_detail,
-            result_data,
-            source_snapshot=(
-                data.result_data.source_snapshot
-                if data.type == TestCaseTypeEnum.PYTEST
-                else None
-            ),
-        )
-        TestCounter.res_main(test_suite_detail.id)
 
         active_details = TestSuiteDetails.objects.filter(
             test_suite=data.test_suite,

@@ -2,7 +2,6 @@ import json
 from typing import Any
 
 from django.core.files.storage import default_storage
-from django.db import transaction
 from django.utils import timezone
 from src.common.logging import log
 from mangotools.enums import StatusEnum
@@ -19,17 +18,24 @@ from src.apps.test_center.services.execution_result import ExecutionResultServic
 
 class TestSuiteExecutionResultService:
     @classmethod
-    @transaction.atomic
     def save_stopped_api_recovery(cls, detail_id, result):
-        suite_id = TestSuiteDetails.objects.values_list('test_suite_id', flat=True).get(id=detail_id)
-        suite = TestSuite.objects.select_for_update().get(id=suite_id)
-        if suite.status != TaskEnum.STOPPED.value or suite.retained_summary:
-            return
-        detail = TestSuiteDetails.objects.select_for_update().get(id=detail_id)
-        if detail.status != TaskEnum.STOPPED.value:
-            return
-        # 仅补存恢复证据，不将停止状态或整份报告改回成功/失败。
-        cls.save_result(detail, [step.model_dump() for step in result.steps])
+        original = TestSuiteDetails.objects.get(id=detail_id)
+        result_data = cls.normalize_detail_result_data(original, [step.model_dump() for step in result.steps])
+        prepared = ExecutionResultService.prepare_result_payload(
+            result_data, cls.target_type_by_detail(original), original.case_id, original.test_suite_id, original.id,
+        )
+
+        def persist():
+            suite = TestSuite.objects.select_for_update().get(id=original.test_suite_id)
+            if suite.status != TaskEnum.STOPPED.value or suite.retained_summary:
+                return
+            detail = TestSuiteDetails.objects.select_for_update().get(id=detail_id)
+            if detail.status != TaskEnum.STOPPED.value:
+                return
+            # 仅补存恢复证据，不将停止状态或整份报告改回成功/失败。
+            cls.save_result(detail, result_data, prepared_result_payload=prepared)
+
+        ExecutionResultService.run_write_transaction(persist)
 
     DEFAULT_CASE_HISTORY_LIMIT = 20
     SKIP_MESSAGE = '该用例前置步骤失败，未被执行'
@@ -63,17 +69,14 @@ class TestSuiteExecutionResultService:
             detail: TestSuiteDetails,
             result_data: Any,
             source_snapshot: dict | None = None,
+            prepared_result_payload: dict | None = None,
     ):
         result_data = cls.normalize_detail_result_data(detail, result_data)
-        result_size = cls.calc_result_size(result_data)
         summary_data = cls.build_summary_data(detail, result_data)
         summary_meta = cls.extract_api_snapshot_meta(result_data)
-        cls.save_detail_summary(detail, summary_data, summary_meta)
-        cls.create_latest_result(
-            detail,
-            result_data,
-            result_size,
-            source_snapshot=source_snapshot,
+        return cls._save_result_and_summary(
+            detail, result_data, summary_data, summary_meta,
+            source_snapshot=source_snapshot, prepared_result_payload=prepared_result_payload,
         )
 
     @classmethod
@@ -81,27 +84,37 @@ class TestSuiteExecutionResultService:
         normalized_steps = cls.normalize_detail_result_data(detail, snapshot_data)
         summary_data = cls.build_summary_data(detail, normalized_steps)
         summary_meta = cls.extract_api_snapshot_meta(snapshot_data)
-        result_size = cls.calc_result_size(snapshot_data)
-        cls.save_detail_summary(detail, summary_data, summary_meta)
-        cls.create_latest_result(detail, snapshot_data, result_size)
+        return cls._save_result_and_summary(detail, snapshot_data, summary_data, summary_meta)
 
     @classmethod
-    @transaction.atomic
+    def _save_result_and_summary(
+            cls, detail, result_data, summary_data, summary_meta, *,
+            source_snapshot=None, prepared_result_payload=None,
+    ):
+        prepared = prepared_result_payload
+        if prepared is None:
+            prepared = ExecutionResultService.prepare_result_payload(
+                result_data, cls.target_type_by_detail(detail), detail.case_id, detail.test_suite_id, detail.id,
+            )
+
+        def persist():
+            result = cls.create_latest_result(
+                detail, result_data, source_snapshot=source_snapshot,
+                prepared_result_payload=prepared,
+            )
+            cls.save_detail_summary(detail, summary_data, summary_meta)
+            return result
+
+        return ExecutionResultService.run_write_transaction(persist)
+
+    @classmethod
     def create_latest_result(
             cls,
             detail: TestSuiteDetails,
             result_data: Any,
-            result_size: int | None = None,
             source_snapshot: dict | None = None,
+            prepared_result_payload: dict | None = None,
     ) -> ExecutionResult:
-        ExecutionResult.objects.select_for_update().filter(
-            test_suite_detail=detail,
-            is_latest=True,
-        ).update(is_latest=False)
-        latest_attempt_no = ExecutionResult.objects.filter(
-            test_suite_detail=detail,
-        ).order_by('-attempt_no').values_list('attempt_no', flat=True).first()
-        attempt_no = (latest_attempt_no or 0) + 1
         return ExecutionResultService.save_result(
             source_type=ExecutionResultService.SOURCE_REPORT,
             target_type=cls.target_type_by_detail(detail),
@@ -115,6 +128,7 @@ class TestSuiteExecutionResultService:
             status=detail.status,
             error_message=detail.error_message,
             source_snapshot=source_snapshot,
+            prepared_result_payload=prepared_result_payload,
         )
 
     @classmethod

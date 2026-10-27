@@ -238,17 +238,20 @@ class ApiCaseRecoveryTests(SimpleTestCase):
 
     def test_stopped_report_only_saves_evidence_without_changing_status(self):
         suite = SimpleNamespace(status=TaskEnum.STOPPED.value, retained_summary=None)
-        detail = SimpleNamespace(status=TaskEnum.STOPPED.value)
+        detail = SimpleNamespace(status=TaskEnum.STOPPED.value, id=1, test_suite_id=1, case_id=1, type=1)
         result = SimpleNamespace(steps=[SimpleNamespace(model_dump=lambda: {'is_recovery': True})])
         with patch('src.apps.test_center.services.test_suite.detail_result.TestSuite.objects') as suites, \
                 patch('src.apps.test_center.services.test_suite.detail_result.TestSuiteDetails.objects') as details, \
-                patch.object(TestSuiteExecutionResultService, 'save_result') as save:
+                patch.object(TestSuiteExecutionResultService, 'save_result') as save, \
+                patch('src.apps.test_center.services.test_suite.detail_result.ExecutionResultService.'
+                      'prepare_result_payload', return_value={}) as prepare, \
+                patch('src.apps.test_center.services.test_suite.detail_result.ExecutionResultService.'
+                      'run_write_transaction', side_effect=lambda operation: operation()):
             suites.select_for_update.return_value.get.return_value = suite
-            details.values_list.return_value.get.return_value = 1
+            details.get.return_value = detail
             details.select_for_update.return_value.get.return_value = detail
-            TestSuiteExecutionResultService.save_stopped_api_recovery.__wrapped__(
-                TestSuiteExecutionResultService, 1, result,
-            )
-        save.assert_called_once_with(detail, [{'is_recovery': True}])
+            TestSuiteExecutionResultService.save_stopped_api_recovery(1, result)
+        save.assert_called_once_with(detail, [{'is_recovery': True}], prepared_result_payload={})
+        prepare.assert_called_once()
         self.assertEqual(detail.status, TaskEnum.STOPPED.value)
         self.assertEqual(suite.status, TaskEnum.STOPPED.value)

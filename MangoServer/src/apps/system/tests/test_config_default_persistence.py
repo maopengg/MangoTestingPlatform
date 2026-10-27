@@ -17,6 +17,19 @@ from src.apps.system.services.system_config import (
 
 
 class ConfigDefaultPersistenceTests(SimpleTestCase):
+    def test_data_factory_retention_default_is_sixty_days(self):
+        key = 'DATA_FACTORY_EXECUTION_RETENTION_DAYS'
+        definition = get_config_definition_map()[key]
+        self.assertEqual(definition.default_value, 60)
+        self.assertEqual(SystemConfigService._definition_defaults(definition)['value'], '60')
+        with patch.object(SystemConfigService, 'get_runtime_int', return_value=60) as read:
+            self.assertEqual(SystemConfigService.get_ranged_int(key), 60)
+        read.assert_called_once_with(key, default=60, min_value=1, max_value=3650)
+
+    def test_existing_data_factory_retention_is_preserved(self):
+        manager = self.sync('90', 60, key='DATA_FACTORY_EXECUTION_RETENTION_DAYS', update_user_id=7)
+        self.assertFalse(any('pk' in call.kwargs for call in manager.filter.call_args_list))
+
     def test_obsolete_configs_are_not_registered_or_editable(self):
         definitions = get_config_definition_map()
         editable = SystemConfigService.editable_config_keys()

@@ -2,6 +2,7 @@ import hashlib
 import json
 import posixpath
 import re
+import time
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
@@ -9,14 +10,14 @@ from typing import Any
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.db import transaction
+from django.db import OperationalError, transaction
 from django.db.models import BooleanField, Case, Q, Sum, Value, When
 from django.utils import timezone
 from mangotools.enums import StatusEnum
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums.environment import EnvironmentEnum
-from src.apps.test_center.models import ExecutionResult
+from src.apps.test_center.models import ExecutionResult, TestSuite, TestSuiteDetails
 from src.apps.test_center.selectors.execution_result import ExecutionResultAccessSelector
 from src.common.logging import log
 from src.common.storage import build_public_file_url, delete_current_storage_file, iter_current_storage_files
@@ -47,7 +48,6 @@ class ExecutionResultService:
     }
 
     @classmethod
-    @transaction.atomic
     def save_result(
             cls,
             *,
@@ -67,12 +67,16 @@ class ExecutionResultService:
             trace_id: str | None = None,
             task_id: str | None = None,
             source_snapshot: dict | None = None,
+            prepared_result_payload: dict | None = None,
     ) -> ExecutionResult:
         status = cls.resolve_status(result_data, status)
         error_message = error_message or cls.resolve_error_message(result_data)
         duration = duration if duration is not None else cls.resolve_duration(result_data)
-        result_payload = cls.prepare_result_payload(result_data, target_type, target_id, test_suite_id,
-                                                    test_suite_detail_id)
+        result_payload = prepared_result_payload
+        if result_payload is None:
+            result_payload = cls.prepare_result_payload(
+                result_data, target_type, target_id, test_suite_id, test_suite_detail_id,
+            )
         latest_filter = cls.latest_filter(
             source_type=source_type,
             target_type=target_type,
@@ -82,11 +86,7 @@ class ExecutionResultService:
             release_id=release_id,
             test_suite_detail_id=test_suite_detail_id,
         )
-        ExecutionResult.objects.select_for_update().filter(**latest_filter, is_latest=True).update(is_latest=False)
-        latest_attempt_no = ExecutionResult.objects.filter(**latest_filter).order_by(
-            '-attempt_no',
-        ).values_list('attempt_no', flat=True).first()
-        execution_result = ExecutionResult.objects.create(
+        fields = dict(
             source_type=source_type,
             target_type=target_type,
             target_id=target_id,
@@ -98,7 +98,6 @@ class ExecutionResultService:
             status=status,
             error_message=error_message,
             duration=duration,
-            attempt_no=(latest_attempt_no or 0) + 1,
             is_latest=True,
             result_data=result_payload['result_data'],
             result_object_key=result_payload['result_object_key'],
@@ -111,13 +110,48 @@ class ExecutionResultService:
             task_id=task_id,
             source_snapshot=source_snapshot,
         )
-        if target_type == cls.TARGET_API_CASE:
+        return cls.run_write_transaction(lambda: cls._save_result_record(fields, latest_filter))
+
+    @staticmethod
+    def run_write_transaction(operation):
+        # 外层已有事务时由调用者整体重试，不能在已失效的事务内局部重试。
+        nested = transaction.get_connection().in_atomic_block
+        if nested:
+            return operation()
+        delays = (0.1, 0.3)
+        for attempt in range(len(delays) + 1):
+            try:
+                with transaction.atomic():
+                    return operation()
+            except OperationalError as error:
+                if not error.args or error.args[0] not in (1205, 1213) or attempt == len(delays):
+                    raise
+                log.system.warning(f'执行结果落库遇到锁冲突，回滚后重试：attempt={attempt + 1}')
+                time.sleep(delays[attempt])
+
+    @classmethod
+    def _save_result_record(cls, fields: dict, latest_filter: dict) -> ExecutionResult:
+        suite_id = fields['test_suite_id']
+        detail_id = fields['test_suite_detail_id']
+        if detail_id and suite_id is None:
+            suite_id = TestSuiteDetails.objects.values_list('test_suite_id', flat=True).get(id=detail_id)
+        # 与停止、清理及结果回调保持相同锁顺序，也覆盖首条结果尚不存在的情况。
+        if suite_id is not None:
+            TestSuite.objects.select_for_update().get(id=suite_id)
+        if detail_id is not None:
+            TestSuiteDetails.objects.select_for_update().get(id=detail_id, test_suite_id=suite_id)
+        ExecutionResult.objects.filter(**latest_filter, is_latest=True).update(is_latest=False)
+        latest_attempt_no = ExecutionResult.objects.filter(**latest_filter).order_by(
+            '-attempt_no',
+        ).values_list('attempt_no', flat=True).first()
+        execution_result = ExecutionResult.objects.create(**fields, attempt_no=(latest_attempt_no or 0) + 1)
+        if fields['target_type'] == cls.TARGET_API_CASE:
             from src.apps.auto_api.services.module_coverage import ModuleCoverageService
 
             ModuleCoverageService.sync_api_case_execution_result(
-                target_id,
-                status,
-                revision_id,
+                fields['target_id'],
+                fields['status'],
+                fields['revision_id'],
             )
         return execution_result
 
