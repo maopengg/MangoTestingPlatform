@@ -29,6 +29,14 @@ class ReportDispositionTests(SimpleTestCase):
         atomic = patch('src.apps.test_center.services.test_suite.disposition.transaction.atomic', side_effect=nullcontext)
         atomic.start()
         self.addCleanup(atomic.stop)
+        # ORM 已由内存替身隔离；跳过导入时绑定的事务装饰器，避免连接真实数据库。
+        unwrapped_update = TestSuiteDispositionService.update.__wrapped__
+        update = patch.object(TestSuiteDispositionService, 'update', side_effect=lambda *args, **kwargs: unwrapped_update(TestSuiteDispositionService, *args, **kwargs))
+        update.start()
+        self.addCleanup(update.stop)
+        environments = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+        environments.start()
+        self.addCleanup(environments.stop)
         self.details.filter.return_value.values_list.return_value.first.return_value = 1
         self.details.filter.return_value.exists.return_value = False
         self.details.select_for_update.return_value.get.return_value = self.detail
@@ -69,6 +77,29 @@ class ReportDispositionTests(SimpleTestCase):
             with self.subTest(values=values), self.assertRaises(TestCenterError):
                 TestSuiteDispositionService.update(2, values)
 
+    def test_mcp_explicit_exclude_and_restore_preserve_original_failure(self):
+        user = SimpleNamespace(id=7)
+        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
+                patch('src.apps.test_center.services.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=True):
+            for flag in (True, False):
+                result = TestSuiteDispositionService.update_diagnosis(
+                    2, 'test_case', '用例已取消发布，保留原始失败记录', user=user, is_excluded=flag,
+                )
+                self.assertIs(result['is_excluded'], flag)
+                self.assertEqual((self.detail.status, self.detail.fail), (0, 2))
+                self.assertEqual(set(self.saved[-1]['update_fields']), {'failure_reason', 'failure_description', 'is_excluded'})
+                self.assertNotIn('update_time', self.saved[-1]['update_fields'])
+
+    def test_mcp_exclusion_cannot_bypass_product_scope(self):
+        user = SimpleNamespace(id=7)
+        from src.common.exceptions import MangoServerError
+        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
+                patch('src.apps.test_center.services.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=False):
+            with self.assertRaises(MangoServerError):
+                TestSuiteDispositionService.update_diagnosis(2, 'test_case', '说明', user=user, is_excluded=True)
+        self.assertFalse(self.detail.is_excluded)
+        self.assertEqual(self.saved, [])
+
     def test_running_or_successful_results_cannot_be_excluded(self):
         self.suite.status = TaskEnum.PROCEED.value
         with self.assertRaises(TestCenterError):
@@ -88,7 +119,7 @@ class ReportDispositionTests(SimpleTestCase):
                 patch.object(TestSuiteRetryService, 'refresh_current_api_release'), \
                 patch('src.apps.test_center.services.test_suite.retry.TestSuiteExecutionResultService.clear_result') as clear:
             manager.select_for_update.return_value.get.return_value = self.detail
-            TestSuiteRetryService.retry_detail(2)
+            TestSuiteRetryService.retry_detail.__wrapped__(TestSuiteRetryService, 2)
         self.assertFalse(self.detail.is_excluded)
         self.assertEqual(self.detail.failure_reason, '')
         self.assertEqual(self.detail.failure_description, '')

@@ -61,7 +61,7 @@
                     :options="environmentOptions"
                     :field-names="fieldNames"
                     multiple
-                    placeholder="请选择环境"
+                    placeholder="请选择被测环境"
                     @change="(value) => changeParamEnvironment(items, value)"
                   />
                 </a-tooltip>

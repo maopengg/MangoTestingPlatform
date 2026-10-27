@@ -5,7 +5,7 @@ const table = useTable()
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  { title: '环境', key: 'test_env', dataIndex: 'test_env', width: 100 },
+  { title: '被测环境', key: 'test_env', dataIndex: 'test_env', width: 100 },
   {
     title: '授权名称',
     key: 'name',

@@ -168,15 +168,15 @@
         <a-form-item
           class="mango-form-item__require"
           field="test_env"
-          label="环境"
-          :rules="[{ required: true, message: '请选择绑定环境' }]"
+          label="被测环境"
+          :rules="[{ required: true, message: '请选择被测环境' }]"
         >
           <a-select
             v-model="form.test_env"
             :field-names="fieldNames"
             :options="environmentOptions"
             allow-clear
-            placeholder="请选择绑定环境"
+            placeholder="请选择被测环境"
             value-key="key" data-testid="qa-views-uitest-auth-config-select-请选择绑定环境"
           />
         </a-form-item>

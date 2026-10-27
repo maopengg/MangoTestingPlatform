@@ -19,7 +19,7 @@ const yamlColumns = useTableColumn([
 
 const yamlBindingColumns = useTableColumn([
   table.indexColumn,
-  { title: '环境', dataIndex: 'test_env', key: 'test_env', width: 120, align: 'center' },
+  { title: '被测环境', dataIndex: 'test_env', key: 'test_env', width: 120, align: 'center' },
   { title: '所属仓库', dataIndex: 'repository', key: 'repository', width: 260, ellipsis: true, tooltip: true, align: 'left' },
   { title: '文件路径', dataIndex: 'file_path', key: 'file_path', ellipsis: true, tooltip: true, align: 'left' },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90, align: 'center' },

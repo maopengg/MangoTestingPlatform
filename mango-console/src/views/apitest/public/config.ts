@@ -40,11 +40,25 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'test_envs',
-    label: '环境',
+    label: '被测环境',
     value: ref([]),
     type: 'select',
-    placeholder: '请选择环境',
+    placeholder: '请选择被测环境',
     optionItems: [],
+    reset: function () {
+      this.value = []
+    },
+  },
+  {
+    key: 'status',
+    label: '默认开启',
+    value: ref([]),
+    type: 'select',
+    placeholder: '请选择开启状态',
+    optionItems: [
+      { key: 1, title: '开启' },
+      { key: 0, title: '关闭' },
+    ],
     reset: function () {
       this.value = []
     },
@@ -116,12 +130,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '环境',
+    label: '被测环境',
     key: 'test_envs',
     value: ref(''),
     type: 'select',
     required: false,
-    placeholder: '请选择绑定环境',
+    placeholder: '请选择被测环境',
     validator: function () {
       return true
     },
@@ -191,7 +205,7 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '环境',
+    title: '被测环境',
     key: 'test_env',
     dataIndex: 'test_env',
     width: 120,
@@ -217,13 +231,6 @@ export const tableColumns = useTableColumn([
     width: 300,
   },
   {
-    title: '逻辑数据库',
-    key: 'datasource_alias',
-    dataIndex: 'datasource_alias',
-    align: 'left',
-    width: 160,
-  },
-  {
     title: 'value',
     key: 'value',
     dataIndex: 'value',
@@ -237,6 +244,13 @@ export const tableColumns = useTableColumn([
     key: 'status',
     dataIndex: 'status',
     width: 90,
+  },
+  {
+    title: '逻辑数据库',
+    key: 'datasource_alias',
+    dataIndex: 'datasource_alias',
+    align: 'left',
+    width: 160,
   },
   updateUserColumn(),
   {

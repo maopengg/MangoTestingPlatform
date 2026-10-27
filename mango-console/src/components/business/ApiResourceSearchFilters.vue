@@ -10,10 +10,10 @@
         @clear="emit('search')"
       />
       <a-select
-        v-else-if="selectOptions(item.key)"
+        v-else-if="selectOptions(item)"
         v-model="item.value"
         :field-names="fieldNames"
-        :options="selectOptions(item.key)"
+        :options="selectOptions(item)"
         :placeholder="item.placeholder"
         :multiple="item.multiple || item.key === 'test_envs'"
         :max-tag-count="item.multiple || item.key === 'test_envs' ? 1 : undefined"
@@ -36,7 +36,7 @@
   }>()
   const emit = defineEmits(['search', 'reset'])
 
-  function selectOptions(key: string) {
+  function selectOptions(item: { key: string; optionItems?: any[] }) {
     const options: Record<string, any[]> = {
       type: props.enumStore.api_public_type,
       test_envs: props.environmentOptions || [],
@@ -47,6 +47,6 @@
       project_product__api_client_type: props.enumStore.api_client,
       update_user: props.userList,
     }
-    return options[key]
+    return options[item.key] ?? item.optionItems
   }
 </script>

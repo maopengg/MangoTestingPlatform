@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from django.db.models import Count, Sum
 from mangotools.enums import TaskEnum
-from pydantic import Field
+from pydantic import Field, StrictBool
 
 from src.apps.system.enums import TestSuiteNoticeEnum
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
@@ -176,14 +176,17 @@ def register_test_report_tools(mcp):
             test_suite_detail_id: Annotated[int, Field(gt=0, description='报告执行项 ID，不是 API Case ID')],
             failure_reason: Annotated[ReportFailureReasonEnum, Field(description='与报告页面共用的原因类型，使用枚举 value')],
             failure_description: Annotated[str, Field(min_length=1, max_length=1000, description='证据、根因与后续动作；不包含凭据或个人敏感信息')],
+            is_excluded: Annotated[StrictBool | None, Field(description='排除统计开关：true=排除整条执行项，false=恢复参与统计，不传或null=保持当前状态。仅在用户明确授权排除或恢复时传入；原始失败结果、失败数量和执行时间保留，不代表修复通过')] = None,
     ) -> dict:
-        """回写报告执行项的排查原因和说明；不改变排除状态、执行结果，不触发重试或通知。
+        """更新报告执行项的原因、说明，以及明确授权的排除统计开关；不改原始执行结果，不触发重试或通知。
 
         原因类型必须与报告页面下拉框一致，通过 get_test_report_schema 查询。
         在已授权项目范围内逐执行项回写，已有结论与本次不同需先确认覆盖。
+        true 只从有效总数/成功率/失败统计中排除整条执行项，原报告仍可查看；false 恢复参与统计。
+        不传 is_excluded 或传 null 只记录诊断，不自动改变开关；取消发布 Case 不等于授权排除历史报告。
         """
         values = TestSuiteDispositionService.update_diagnosis(
-            test_suite_detail_id, failure_reason.value, failure_description, user=current_user(),
+            test_suite_detail_id, failure_reason.value, failure_description, user=current_user(), is_excluded=is_excluded,
         )
         return ok({'test_suite_detail_id': test_suite_detail_id, **values})
 
@@ -254,7 +257,7 @@ def register_test_report_tools(mcp):
                     "diagnostic_download_url": "排查文档下载地址；未绑定排查文档时为空",
                 },
                 "case_detail_fields": {
-                    "is_excluded": "是否排除本次报告统计；原始执行结果保留",
+                    "is_excluded": "排除统计开关：true=排除整条执行项，false=恢复参与统计，不传或null=保持现状；不删除记录、不改原始结果、不代表修复通过",
                     "failure_reason": "人工排查原因分类，与排除状态独立",
                     "failure_description": "人工排查说明，与排除状态独立",
                     "test_suite_id": "所属测试报告 ID",
@@ -272,7 +275,7 @@ def register_test_report_tools(mcp):
                     "list_test_reports": ["id", "status", "page", "page_size"],
                     "list_test_report_cases": ["test_suite_id", "type", "status", "page", "page_size"],
                     "get_test_report_case_detail": ["test_suite_detail_id"],
-                    "update_test_report_case_diagnosis": ["test_suite_detail_id", "failure_reason", "failure_description"],
+                    "update_test_report_case_diagnosis": ["test_suite_detail_id", "failure_reason", "failure_description", "is_excluded"],
                     "analyze_test_report_failures": ["test_suite_id", "type", "limit"],
                     "list_execution_results": [
                         "source_type",

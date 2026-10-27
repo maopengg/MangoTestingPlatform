@@ -120,7 +120,7 @@
       <a-descriptions-item label="项目产品">
         {{ detail.record.project_product_name }}
       </a-descriptions-item>
-      <a-descriptions-item label="环境">{{ detail.record.test_env_name }}</a-descriptions-item>
+      <a-descriptions-item label="被测环境">{{ detail.record.test_env_name }}</a-descriptions-item>
       <a-descriptions-item label="逻辑数据源">
         {{ detail.record.datasource_alias_name }}
       </a-descriptions-item>

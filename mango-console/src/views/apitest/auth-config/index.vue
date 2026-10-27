@@ -108,6 +108,7 @@
               <MangoTableActions
                 :actions="[
                   { permission: 'api.auth_config:detail', label: '查看', onClick: () => onPreview(record) },
+                  { permission: 'api.auth_config:detail', label: '自定义代码', hidden: record.auth_type !== 1, overflow: true, onClick: () => onViewCustomCode(record) },
                   { permission: 'api.auth_config:debug', label: '刷新', onClick: () => onRefresh(record) },
                   { permission: 'api.auth_config:edit', label: '编辑', onClick: () => onUpdate(record) },
                   { permission: 'api.auth_config:debug', label: '清空', onClick: () => onClear(record) },
@@ -235,6 +236,23 @@
     </template>
   </ModalDialog>
 
+  <BaseSidePanel
+    v-model:visible="customCodePanel.visible"
+    :title="customCodePanel.title"
+    :width="1000"
+    :show-footer="false"
+  >
+    <div v-if="customCodePanel.visible" class="mango-auth-custom-code-panel">
+      <CodeEditor
+        :model-value="customCodePanel.code"
+        language="python"
+        readonly
+        placeholder="暂无自定义授权代码"
+        :code-style="{ height: '100%' }"
+      />
+    </div>
+  </BaseSidePanel>
+
   <a-drawer
     v-model:visible="cacheModal.visible"
     title="授权缓存"
@@ -280,6 +298,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
@@ -335,6 +354,14 @@
     visible: false,
     data: null as any,
   })
+  const customCodePanel = reactive({ visible: false, title: '自定义代码', code: '' })
+
+  function onViewCustomCode(record: any) {
+    if (record.auth_type !== 1) return
+    customCodePanel.title = `自定义代码 / ${record.name}`
+    customCodePanel.code = record.custom_code || ''
+    customCodePanel.visible = true
+  }
   const customAuthCodeExample = `def auth(context):
     """
     函数名字，参数都不可以改。
@@ -759,6 +786,12 @@
 </script>
 
 <style scoped>
+  .mango-auth-custom-code-panel {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .cache-drawer-body {
     height: 100%;
     overflow: auto;

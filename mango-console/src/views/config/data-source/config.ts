@@ -17,7 +17,7 @@ export const bindingColumns = [
     ellipsis: true,
     tooltip: true,
   },
-  { title: '环境', slotName: 'environment', width: 100, align: 'center' as const },
+  { title: '被测环境', slotName: 'environment', width: 100, align: 'center' as const },
   { title: '实际数据库 / Schema', slotName: 'target', width: 220, ellipsis: true, tooltip: true },
   { title: '读取', slotName: 'read', width: 80, align: 'center' as const },
   { title: '写入', slotName: 'write', width: 80, align: 'center' as const },

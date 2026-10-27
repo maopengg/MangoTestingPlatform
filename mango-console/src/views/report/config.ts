@@ -8,11 +8,6 @@ const table = useTable()
 
 export const conditionItems = reactive([
   {
-    key: 'case_type', label: '自动化类型', type: 'select', value: ref([]),
-    multiple: true, searchOperator: 'in', placeholder: '请选择自动化类型', optionItems: [],
-    reset: function () { this.value = [] },
-  },
-  {
     key: 'id',
     label: 'ID',
     type: 'input',
@@ -111,6 +106,11 @@ export const conditionItems = reactive([
     placeholder: '请选择执行范围',
     optionItems: [],
     reset: function () {},
+  },
+  {
+    key: 'case_type', label: '自动化类型', type: 'select', value: ref([]),
+    multiple: true, searchOperator: 'in', placeholder: '请选择自动化类型', optionItems: [],
+    reset: function () { this.value = [] },
   },
   {
     key: 'date_range',

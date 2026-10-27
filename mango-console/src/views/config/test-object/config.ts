@@ -100,7 +100,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择绑定环境',
+    placeholder: '请选择被测环境',
     validator: function () {
       if (this.value === null && this.value === '') {
         Message.error(this.placeholder || '')

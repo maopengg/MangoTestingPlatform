@@ -39,10 +39,10 @@ export const conditionItems: FormItem[] = reactive([
   },
   {
     key: 'test_envs',
-    label: '环境',
+    label: '被测环境',
     value: ref([]),
     type: 'select',
-    placeholder: '请选择环境',
+    placeholder: '请选择被测环境',
     optionItems: [],
     reset: function () {
       this.value = []
@@ -113,12 +113,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '环境',
+    label: '被测环境',
     key: 'test_envs',
     value: ref(''),
     type: 'select',
     required: false,
-    placeholder: '请选择绑定环境',
+    placeholder: '请选择被测环境',
     validator: function () {
       return true
     },
@@ -188,7 +188,7 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '环境',
+    title: '被测环境',
     key: 'test_env',
     dataIndex: 'test_env',
     width: 100,
@@ -218,20 +218,20 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '逻辑数据库',
-    key: 'datasource_alias',
-    dataIndex: 'datasource_alias',
-    align: 'left',
-    width: 180,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
     title: 'value',
     key: 'value',
     dataIndex: 'value',
     align: 'left',
     width: 320,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '逻辑数据库',
+    key: 'datasource_alias',
+    dataIndex: 'datasource_alias',
+    align: 'left',
+    width: 180,
     ellipsis: true,
     tooltip: true,
   },

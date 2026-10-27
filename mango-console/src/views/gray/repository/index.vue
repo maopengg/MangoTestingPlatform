@@ -20,7 +20,7 @@
                 :options="environmentOptions"
                 allow-clear
                 allow-search
-                placeholder="请选择环境"
+                placeholder="请选择被测环境"
                 @change="onSearchRefresh" data-testid="qa-views-gray-repository-select-请选择环境"
               />
             </a-form-item>

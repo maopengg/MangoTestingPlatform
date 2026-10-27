@@ -47,6 +47,28 @@ test('handwritten filter normalization preserves zero, false, pagination and sou
   assert.deepEqual(normalizeMultiSelectSearchParams({ status: [] }, ['status']), {})
 })
 
+test('API public default-enabled filter supports both states, zero and reset', () => {
+  const config = readFileSync('src/views/apitest/public/config.ts', 'utf8')
+  const code = config.slice(config.indexOf('export const conditionItems'), config.indexOf('export const formItems')).replace('export ', '')
+  const items = new Function('reactive', 'ref', 'createIdSearchValue', 'createUpdateUserCondition', 'enableMultiSelectSearch',
+    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + '; return conditionItems')(
+    reactive, ref, () => ref(''), () => ({ key: 'update_user', type: 'select', value: [] }), enableMultiSelectSearch
+  )
+  const item = items.find(item => item.key === 'status')
+  assert.equal(item.label, '默认开启')
+  assert.equal(item.multiple, true)
+  assert.deepEqual(item.optionItems, [{ key: 1, title: '开启' }, { key: 0, title: '关闭' }])
+  for (const values of [[1], [0], [0, 1]]) {
+    item.value = values
+    assert.equal(getFormItems(items).status__in, values.join(','))
+  }
+  item.reset()
+  assert.deepEqual(item.value, [])
+  assert.equal(getFormItems(items).status__in, null)
+  const component = readFileSync('src/components/business/ApiResourceSearchFilters.vue', 'utf8')
+  assert.match(component, /return options\[item.key\] \?\? item.optionItems/)
+})
+
 test('task switches and task group search use collection queries and array resets', () => {
   const config = readFileSync('src/views/timing/tasks/config.ts', 'utf8')
   const code = config.slice(config.indexOf('export const conditionItems'), config.indexOf('export const formItems')).replace('export ', '')
@@ -79,6 +101,7 @@ test('audit ignores disabled search markup and detects a broken live child compo
 
 test('changed search components and pages compile', () => {
   for (const filename of [
+    'src/components/business/ApiResourceSearchFilters.vue', 'src/views/apitest/public/index.vue',
     'src/views/apitest/case/ApiCaseSearchFilters.vue', 'src/views/apitest/case/index.vue',
     'src/views/uitest/public/index.vue', 'src/views/system/user/index.vue',
     'src/views/gray/repository/index.vue', 'src/views/gray/execution-log/index.vue', 'src/views/perf/run/index.vue',

@@ -29,10 +29,10 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'test_env',
-    label: '环境',
+    label: '被测环境',
     value: ref(''),
     type: 'select',
-    placeholder: '请选择环境',
+    placeholder: '请选择被测环境',
     reset: function () {
       this.value = ''
     },
@@ -88,12 +88,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '环境',
+    label: '被测环境',
     key: 'test_env',
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择绑定环境',
+    placeholder: '请选择被测环境',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
@@ -240,7 +240,7 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '环境',
+    title: '被测环境',
     key: 'test_env',
     dataIndex: 'test_env',
     width: 90,

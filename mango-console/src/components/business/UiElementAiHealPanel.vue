@@ -64,7 +64,7 @@
         <a-table :data="snapshotHistoryRows" :pagination="false" :bordered="false" size="small" :scroll="{ x: 920 }">
           <template #columns>
             <a-table-column title="采集时间" data-index="create_time" :width="180" />
-            <a-table-column title="环境" data-index="test_env" :width="80" />
+            <a-table-column title="被测环境" data-index="test_env" :width="100" />
             <a-table-column title="匹配数" data-index="match_count" :width="80" />
             <a-table-column title="角色" data-index="element_role" :width="110" />
             <a-table-column title="元素文本" data-index="element_text" :ellipsis="true" :tooltip="true" />

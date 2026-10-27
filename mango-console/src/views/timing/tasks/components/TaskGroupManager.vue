@@ -172,7 +172,7 @@
             value: item.id,
             label: `${optionTitle(enumStore.environment_type, item.test_env)} · ${String(item.planned_at).replace('T', ' ').slice(0, 19)}`,
           }))"
-          placeholder="请选择环境对应的最近一次执行"
+          placeholder="请选择被测环境对应的最近一次执行"
         />
       </a-form-item>
       <a-form-item label="原通知组">

@@ -85,7 +85,7 @@
                             <span>名称</span>
                             <span>Key</span>
                             <span>类型</span>
-                            <span>环境</span>
+                            <span>被测环境</span>
                             <span>状态</span>
                           </div>
                           <a-checkbox-group
@@ -152,7 +152,7 @@
                             <span></span>
                             <span>授权名称</span>
                             <span>授权方式</span>
-                            <span>环境</span>
+                            <span>被测环境</span>
                             <span>状态</span>
                           </div>
                           <a-checkbox-group
@@ -220,7 +220,7 @@
                             field: 'test_envs',
                             label: '适用环境',
                             type: 'select',
-                            placeholder: '请选择环境',
+                            placeholder: '请选择被测环境',
                             options: caseVariableEnvironmentOptions,
                             fieldNames: fieldNames,
                             multiple: true,

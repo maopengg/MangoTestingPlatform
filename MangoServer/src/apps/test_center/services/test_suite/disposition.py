@@ -13,13 +13,16 @@ from src.common.exceptions import MangoServerError, RESOURCE_ACCESS_DENIED
 
 class TestSuiteDispositionService:
     @classmethod
-    def update_diagnosis(cls, detail_id, failure_reason, failure_description, *, user):
+    def update_diagnosis(cls, detail_id, failure_reason, failure_description, *, user, is_excluded=None):
         if not isinstance(failure_description, str) or not failure_description.strip():
             raise TestCenterError(TEST_REPORT_DISPOSITION_INVALID)
-        return cls.update(detail_id, {
+        values = {
             'failure_reason': failure_reason,
             'failure_description': failure_description,
-        }, user=user)
+        }
+        if is_excluded is not None:
+            values['is_excluded'] = is_excluded
+        return cls.update(detail_id, values, user=user)
 
     @staticmethod
     def validate_id(detail_id):
