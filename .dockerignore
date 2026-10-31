@@ -19,3 +19,7 @@ MangoServer/**/*.pyc
 **/*.pyc
 **/.env.deploy
 **/src/settings/database.json
+
+**/.env
+**/.env.deploy
+**/deploy/generated/

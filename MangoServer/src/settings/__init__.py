@@ -599,3 +599,7 @@ CORS_ALLOW_METHODS = (
     'VIEW',
 )
 # ======================================================================================================================
+
+# Optional environment-only HTTP overrides; Python environment configuration is preserved.
+from .deployment import apply_http_environment
+apply_http_environment(globals())

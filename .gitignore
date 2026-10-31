@@ -36,3 +36,8 @@ MangoActuator/logs\\*.log
 # Reasonix 本地会话配置
 .reasonix/
 reasonix.toml
+
+# 部署凭据与生成配置
+/.env
+/.env.deploy
+/deploy/generated/

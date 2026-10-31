@@ -141,7 +141,7 @@ BROWSER_TYPE_MAPPING = {
     'webkit': 3,
 }
 
-DEFAULT_EXECUTOR_PASSWORD = '123456'
+DEFAULT_EXECUTOR_PASSWORD = os.getenv('ACTUATOR_PASSWORD', '123456')
 
 
 def parse_config_value(value: str):
@@ -247,16 +247,16 @@ def parse_args():
         default=os.getenv('MANGO_CAPABILITIES_ENABLED'),
         help='显式启用能力，逗号分隔：pytest,web_ui,android_ui,ios_ui,perf',
     )
-    parser.add_argument('--host', default='http://127.0.0.1:8000', help='平台后端服务地址，例如 https://mango-platform.example.com')
+    parser.add_argument('--host', default=os.getenv('ACTUATOR_HOST', 'http://127.0.0.1:8000'), help='平台后端服务地址，例如 https://mango-platform.example.com')
     parser.add_argument('--ws', default=os.getenv('ACTUATOR_WS'),
                         help='高级选项：覆盖平台实时服务WS地址；默认根据 --host 自动推导')
-    parser.add_argument('--username', default='open', help='执行器登录账号')
-    parser.add_argument('--password', default=DEFAULT_EXECUTOR_PASSWORD, help=f'执行器登录密码，未传时默认使用 {DEFAULT_EXECUTOR_PASSWORD}')
+    parser.add_argument('--username', default=os.getenv('ACTUATOR_USERNAME', 'open'), help='执行器登录账号')
+    parser.add_argument('--password', default=DEFAULT_EXECUTOR_PASSWORD, help='执行器登录密码；部署时建议通过 ACTUATOR_PASSWORD 设置')
     parser.add_argument('--proxy-url', help='HTTP 代理地址')
     parser.add_argument('--web-type', default='谷歌浏览器', help='浏览器类型：谷歌浏览器/chrome/chromium/edge/firefox/webkit')
     parser.add_argument('--web-path', help='浏览器可执行文件路径')
-    parser.add_argument('--web-parallel', type=int, default=5, help='UI 浏览器并行数')
-    parser.add_argument('--ui-queue-size', type=int, help='UI 本地待执行队列容量')
+    parser.add_argument('--web-parallel', type=int, default=int(os.getenv('ACTUATOR_WEB_PARALLEL', '5')), help='UI 浏览器并行数')
+    parser.add_argument('--ui-queue-size', type=int, default=os.getenv('ACTUATOR_QUEUE_SIZE'), help='UI 本地待执行队列容量')
     parser.add_argument('--web-h5', type=parse_bool, help='是否开启浏览器 H5 模式')
     parser.add_argument('--web-max', type=parse_bool, help='是否启动浏览器最大化')
     parser.add_argument('--web-recording', type=parse_bool, help='是否开启 UI 执行视频录制')
@@ -268,8 +268,8 @@ def parse_args():
     parser.add_argument('--web-step-screenshot', type=parse_bool, help='是否上传每个 WEB 元素操作截图')
     parser.add_argument('--web-static-cache', dest='web_static_cache_enabled', type=parse_bool,
                         help='是否开启浏览器静态资源缓存，默认关闭')
-    parser.add_argument('--pytest-parallel', type=int, help='pytest 用例并行数')
-    parser.add_argument('--pytest-queue-size', type=int, help='pytest 本地待执行队列容量')
+    parser.add_argument('--pytest-parallel', type=int, default=os.getenv('ACTUATOR_PYTEST_PARALLEL'), help='pytest 用例并行数')
+    parser.add_argument('--pytest-queue-size', type=int, default=os.getenv('ACTUATOR_QUEUE_SIZE'), help='pytest 本地待执行队列容量')
     return parser.parse_args()
 
 

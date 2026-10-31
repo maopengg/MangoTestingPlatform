@@ -5,6 +5,9 @@ import { normalizeIdSearchParams } from '@/utils/id-search'
 import CustomRequestInterceptor from './interceptors/CustomRequestInterceptor'
 import UserTokenExpiredInterceptor from './interceptors/UserTokenExpiredInterceptor'
 
+const deploymentConfig: { apiBase?: string; socketURL?: string; storageBase?: string } =
+  typeof window === 'undefined' ? {} : (window as any).__MANGO_CONFIG__ || {}
+
 function currentWebSocketURL(): string {
   if (typeof window === 'undefined') {
     return ''
@@ -27,6 +30,7 @@ function currentApiHost(): string {
 }
 
 function currentBaseURL(): string {
+  if (typeof deploymentConfig.apiBase === 'string') return deploymentConfig.apiBase
   const envBaseURL = import.meta.env.VITE_APP_BASE_URL || ''
   if (typeof window === 'undefined') {
     return envBaseURL
@@ -39,8 +43,8 @@ function currentBaseURL(): string {
 }
 
 export const baseURL = currentBaseURL()
-export const minioURL = import.meta.env.VITE_APP_MINIO_URL
-export const webSocketURL = import.meta.env.VITE_APP_SOCKET_URL || currentWebSocketURL()
+export const minioURL = deploymentConfig.storageBase ?? import.meta.env.VITE_APP_MINIO_URL
+export const webSocketURL = deploymentConfig.socketURL || import.meta.env.VITE_APP_SOCKET_URL || currentWebSocketURL()
 
 export const CONTENT_TYPE = 'Content-Type'
 
