@@ -19,6 +19,59 @@ sh deploy.sh --build
 已有数据库必须沿用原数据库密码；修改 MYSQL_PASSWORD 不会修改 MySQL 中的密码。
 不要删除配置后重新生成密码或删除数据库卷来解决连接错误。
 
+## MySQL 三种模式如何选择
+
+`MYSQL_MODE` 控制数据库的部署方式和连接配置来源，`DJANGO_ENV` 才负责选择 dev/test/master 运行环境。
+三种模式在 Compose 和 K8s 中含义一致：
+
+| MYSQL_MODE | 是否随平台启动 MySQL | 连接参数来源 | 适用场景 |
+| --- | --- | --- | --- |
+| `internal`（默认） | 是：Compose 容器或 K8s StatefulSet | `.env` 的库名、业务账号/密码和 root 密码；内部地址固定 `db:3306` | 新部署，没有现成数据库 |
+| `external` | 否 | `.env` 的 `MYSQL_HOST/PORT/DATABASE/USER/PASSWORD` | 已有 MySQL、云数据库或独立数据库服务 |
+| `settings` | 否 | `DJANGO_ENV` 所选 `MangoServer/src/settings/dev.py`、`test.py` 或 `master.py` | 沿用公司或用户已有 Python 数据库配置 |
+
+**internal 示例：**
+
+```dotenv
+MYSQL_MODE=internal
+MYSQL_DATABASE=mango_server
+MYSQL_USER=mango
+MYSQL_PASSWORD=
+MYSQL_ROOT_PASSWORD=
+```
+
+全新数据库的空密码由首次准备配置时生成并保存；已有数据库须填写原密码。
+此模式的 `MYSQL_HOST` 和 `MYSQL_PORT` 不参与连接地址选择，始终使用内部 `db:3306`。
+`MYSQL_EXPOSE_PORT` 是可选的宿主机对外端口，与内部连接端口分开。
+
+**external 示例：**
+
+```dotenv
+MYSQL_MODE=external
+MYSQL_HOST=mysql.example.com
+MYSQL_PORT=3306
+MYSQL_DATABASE=mango_server
+MYSQL_USER=mango
+MYSQL_PASSWORD='填写已有数据库密码'
+```
+
+需提前准备目标数据库及账号，并保证部署容器能访问该地址；此模式不使用 `MYSQL_ROOT_PASSWORD`。
+后端、Worker、连接检查、备份及既有迁移均使用同一组外部数据库参数。
+
+**settings 示例：**
+
+```dotenv
+MYSQL_MODE=settings
+DJANGO_ENV=dev
+```
+
+此例读取 `dev.py` 中的 `MYSQL_IP`、`MYSQL_PORT`、`MYSQL_DB_NAME`、`MYSQL_USER` 和 `MYSQL_PASSWORD`。
+改为 `DJANGO_ENV=master` 就读取 `master.py`，改为 `test` 则读取 `test.py`。
+`.env` 中即使还留着 MYSQL_HOST 等值，也不会覆盖所选 Python 文件中的连接参数；不会启动新数据库、
+不会改写 Python 文件，也不会把源文件密码复制到 `.env`。dev.py 已有的可选本地 JSON 覆盖逻辑仍生效。
+
+这些模式只选择数据库和配置来源；切换模式不会把旧数据库的数据自动复制到新数据库。
+
 ## 外部 MySQL
 
 在 `.env` 填写：
@@ -190,7 +243,7 @@ PUBLIC_URL=https://platform-dev.example.com
 不启动内置 MySQL，也不改写这些文件；dev.py 中已有的可选 database.json 覆盖规则仍然生效。
 `.env` 中 MYSQL_HOST/PORT/DATABASE/USER/PASSWORD 在此模式下不覆盖 Python 配置，也不会把数据库密码
 复制回 `.env`。生成的私有部署文件会统一给后端、Worker、备份和迁移任务传递读取到的实际参数。
-修改 Python 配置后再次运行 `sh deploy.sh` 即可刷新连接参数，不需要重新构建镜像。
+修改 Python 配置后再次运行 `sh deploy.sh` 刷新连接参数；脚本会检测源码变化并按需重建镜像，不会改写配置文件。
 
 明确选择 `MYSQL_MODE=external` 时才采用 `.env` 中的外部数据库值；选择 internal 时才启动内置数据库。
 部署脚本不生成、不覆盖 dev.py/test.py/master.py，也不修改用户的 database.json。
