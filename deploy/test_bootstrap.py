@@ -137,30 +137,17 @@ class DeploymentConfigurationTests(unittest.TestCase):
 
 if __name__=='__main__':unittest.main()
 
-class DeploymentScriptTests(unittest.TestCase):
+from test_deploy_sync import DeploymentFixture
+
+class DeploymentScriptTests(DeploymentFixture):
     def test_external_database_script_never_starts_db_and_config_only_skips_builds(self):
-        import shutil
-        import subprocess
-        with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory)
-            shutil.copytree(Path(__file__).parent,root/'deploy',ignore=shutil.ignore_patterns('__pycache__','generated'))
-            shutil.copy2(Path(__file__).parent.parent/'deploy.sh',root/'deploy.sh')
-            shutil.copy2(Path(__file__).parent.parent/'.env.example',root/'.env.example')
-            data=root/'data'
-            values=config(MYSQL_MODE='external',MYSQL_HOST='db.example.com',MANGO_DATA_DIR=str(data))
-            (root/'.env').write_text('\n'.join(k+'='+"'"+v+"'" for k,v in values.items())+'\n')
-            executable=root/'bin/docker';executable.parent.mkdir()
-            log=root/'commands.log'
-            executable.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$TEST_DOCKER_LOG"\nexit 0\n')
-            executable.chmod(0o755)
-            import os
-            with patch.dict(os.environ,{'PATH':str(executable.parent)+os.pathsep+os.environ['PATH'],'TEST_DOCKER_LOG':str(log)}):
-                subprocess.run(['sh','deploy.sh'],cwd=root,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            calls=log.read_text()
-            self.assertNotIn('build mango-console',calls)
-            self.assertNotIn('build mango_server',calls)
-            self.assertNotIn('up -d --wait --wait-timeout 180 db',calls)
-            self.assertNotIn('exec -T db',calls)
-            self.assertIn('run -T --rm --no-deps db_tools',calls)
-            self.assertIn('deploy_check.py',calls)
-            self.assertNotIn('test-secret-MYSQL_PASSWORD',calls)
+        result=self.run_deploy()
+        self.assertEqual(result.returncode,0,result.stderr)
+        calls='\n'.join(' '.join(x) for x in self.commands())
+        self.assertNotIn('build mango-console',calls)
+        self.assertNotIn('build mango_server',calls)
+        self.assertNotIn('up -d --wait --wait-timeout 180 db',calls)
+        self.assertNotIn('exec -T db',calls)
+        self.assertIn('run -T --rm --no-deps db_tools',calls)
+        self.assertIn('deploy_check.py',calls)
+        self.assertNotIn('sample-only-MYSQL_PASSWORD',calls)

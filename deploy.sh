@@ -6,16 +6,32 @@ ENV_FILE="$ROOT/.env"
 PREPARE_ONLY=0
 REBUILD=0
 TARGET=''
-while [ "$#" -gt 0 ]; do
-    case "$1" in
-        --prepare-only) PREPARE_ONLY=1 ;;
-        --build) REBUILD=1 ;;
-        --update) git pull --ff-only; REBUILD=1 ;;
-        --target) shift; TARGET=${1:?--target 需要 compose 或 k8s} ;;
-        *) echo '用法：sh deploy.sh [--prepare-only] [--build] [--update] [--target compose|k8s]' >&2; exit 1 ;;
-    esac
-    shift
-done
+parse_arguments() {
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --prepare-only) PREPARE_ONLY=1 ;;
+            --build) REBUILD=1 ;;
+            --update) REBUILD=1 ;;
+            --target) shift; TARGET=${1:?--target 需要 compose 或 k8s} ;;
+            *) echo '用法：sh deploy.sh [--prepare-only] [--build] [--update] [--target compose|k8s]' >&2; exit 1 ;;
+        esac
+        shift
+    done
+}
+parse_arguments "$@"
+if [ "$PREPARE_ONLY" = 0 ] && [ "${_MANGO_DEPLOY_SYNC_ROOT:-}" != "$ROOT" ]; then
+    command -v git >/dev/null || { echo '请先安装 Git。' >&2; exit 1; }
+    git rev-parse --is-inside-work-tree >/dev/null
+    git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1 || {
+        echo '当前分支没有远程跟踪分支，请先配置 upstream。' >&2; exit 1;
+    }
+    echo '拉取当前分支的最新代码...'
+    git pull --ff-only
+    # Reload the fetched script once, so this deployment uses the updated implementation.
+    export _MANGO_DEPLOY_SYNC_ROOT="$ROOT"
+    exec sh "$ROOT/deploy.sh" "$@"
+fi
+unset _MANGO_DEPLOY_SYNC_ROOT
 command -v python3 >/dev/null || { echo '请先安装 python3' >&2; exit 1; }
 python3 deploy/bootstrap.py init "$ENV_FILE"
 [ -n "$TARGET" ] || TARGET=$(python3 deploy/bootstrap.py get "$ENV_FILE" DEPLOY_TARGET)
@@ -40,8 +56,14 @@ DATA_DIR=$(python3 deploy/bootstrap.py get "$ENV_FILE" MANGO_DATA_DIR)
 SERVER_IMAGE=$(python3 deploy/bootstrap.py get "$ENV_FILE" SERVER_IMAGE)
 CONSOLE_IMAGE=$(python3 deploy/bootstrap.py get "$ENV_FILE" CONSOLE_IMAGE)
 mkdir -p "$DATA_DIR/server_runtime/media" "$DATA_DIR/backups"
-if [ "$REBUILD" = 1 ] || ! docker image inspect "$SERVER_IMAGE" >/dev/null 2>&1; then compose build mango_server; fi
-if [ "$REBUILD" = 1 ] || ! docker image inspect "$CONSOLE_IMAGE" >/dev/null 2>&1; then compose build mango-console; fi
+BUILD_BACKEND=$REBUILD
+BUILD_FRONTEND=$REBUILD
+if [ "$REBUILD" = 0 ]; then
+    BUILD_BACKEND=$(python3 deploy/source_state.py needs-build "$ROOT" backend "$SERVER_IMAGE")
+    BUILD_FRONTEND=$(python3 deploy/source_state.py needs-build "$ROOT" frontend "$CONSOLE_IMAGE")
+fi
+if [ "$BUILD_BACKEND" = 1 ]; then compose build mango_server; fi
+if [ "$BUILD_FRONTEND" = 1 ]; then compose build mango-console; fi
 if [ "$(python3 deploy/bootstrap.py get "$ENV_FILE" MYSQL_MODE)" = internal ]; then
     compose up -d --wait --wait-timeout 180 db
 fi
@@ -83,6 +105,7 @@ compose run -T --rm --no-deps mango_server python manage.py init_system_data
 compose up --no-start --no-deps --force-recreate mango-console mango_gateway
 compose up -d --wait --wait-timeout 180
 compose exec -T mango_gateway wget -q --spider http://127.0.0.1/healthz
+python3 deploy/source_state.py record "$ROOT" "$SERVER_IMAGE" "$CONSOLE_IMAGE"
 compose ps
 echo "平台入口：$(python3 deploy/bootstrap.py get "$ENV_FILE" PUBLIC_URL)"
 echo '初始管理员密码保存在 .env；已有用户密码不会被重置。'
