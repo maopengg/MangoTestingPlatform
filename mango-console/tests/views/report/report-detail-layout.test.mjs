@@ -41,7 +41,7 @@ test('public report keeps independent reading shell while platform uses page tok
 
 test('metadata uses centered title-value rows in a responsive grid without segmented borders', () => {
   assert.equal(properties('.meta-strip').display, 'grid')
-  assert.match(properties('.meta-strip.has-task-name')['grid-template-columns'], /repeat\(5, minmax\(0, 1fr\)\)/)
+  assert.match(properties('.meta-strip.has-task-name')['grid-template-columns'], /minmax\(230px, 1\.4fr\) repeat\(4, minmax\(0, 1fr\)\)/)
   assert.equal(properties('.report-meta-item').display, 'flex')
   assert.equal(properties('.report-meta-item')['justify-content'], 'center')
   assert.equal(properties('.report-meta-item')['align-items'], 'center')
@@ -55,6 +55,21 @@ test('metadata uses centered title-value rows in a responsive grid without segme
   assert.match(descriptor.template.content, /a-tooltip :content="reportExecutionName"/)
   assert.doesNotMatch(descriptor.styles[0].content, /meta-strip::-webkit-scrollbar/)
   assert.doesNotMatch(descriptor.styles[0].content, /report-meta-item \+ \.report-meta-item/)
+})
+
+test('report ID reserves enough space for long identifiers without shrinking its value', () => {
+  assert.match(descriptor.template.content, /class="report-meta-item mango-report-meta-id">\s*<dt>报告ID<\/dt>/)
+  assert.match(properties('.meta-strip')['grid-template-columns'], /^minmax\(230px, 1\.4fr\)/)
+  assert.equal(properties('.mango-report-meta-id dd')['flex-shrink'], '0')
+  const layouts = {}
+  css.walkAtRules('container', rule => {
+    rule.walkRules(node => {
+      if (!node.selectors.includes('.meta-strip')) return
+      node.walkDecls('grid-template-columns', decl => { layouts[rule.params] = decl.value })
+    })
+  })
+  assert.equal(layouts['mango-report-detail (max-width: 90rem)'], 'repeat(3, minmax(0, 1fr))')
+  assert.equal(layouts['mango-report-detail (max-width: 68rem)'], 'repeat(2, minmax(0, 1fr))')
 })
 
 test('report status spans the whole header while execution metadata stays in the left column', () => {
@@ -90,7 +105,7 @@ test('overview uses container-responsive columns without oversized minimum width
   assert.doesNotMatch(properties('.overview-grid')['grid-template-columns'], /px/)
   const conditions = []
   css.walkAtRules('container', rule => conditions.push(rule.params))
-  assert.deepEqual(conditions, ['mango-report-detail (max-width: 68rem)', 'mango-report-detail (max-width: 44rem)'])
+  assert.deepEqual(conditions, ['mango-report-detail (max-width: 90rem)', 'mango-report-detail (max-width: 68rem)', 'mango-report-detail (max-width: 44rem)'])
 })
 
 test('layout sizes pass through global density conversion, chart selector and initial loading are correct', async () => {
@@ -106,8 +121,8 @@ test('report layout compiles and keeps guest read-only routes and action boundar
   const script = compileScript(descriptor, { id: 'report-detail-layout' })
   assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename,
     id: 'report-detail-layout', compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
-  assert.match(source, /const canRetry = computed\(\(\) => !!userStore.token\)/)
-  assert.match(source, /v-permission="'report:export'"/)
+  assert.match(source, /const canRetry = computed\(\(\) => !!userStore.token(?:\s*&&[^\n]+)?\)/)
+  assert.match(source, /v-permission="'report:read'"/)
   const guard = readFileSync(new URL('../../../src/router/guard/permission.ts', import.meta.url), 'utf8')
   assert.match(guard, /if \(to.path === '\/report\/system\/details'\)/)
   assert.match(guard, /path: '\/report\/details',[\s\S]*?query: to.query/)

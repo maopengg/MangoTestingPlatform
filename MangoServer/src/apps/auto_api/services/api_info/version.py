@@ -27,7 +27,6 @@ from src.apps.auto_api.models import (
     ApiInfo,
     ApiInfoGrpcConfig,
     ApiInfoHttpConfig,
-    ApiInfoMcpBinding,
     ApiInfoMcpConfig,
     ApiInfoRelease,
     ApiInfoRevision,
@@ -74,7 +73,6 @@ class ApiInfoRevisionService:
             for model in (
                 ApiInfoHttpConfig,
                 ApiInfoWebSocketConfig,
-                ApiInfoMcpBinding,
                 ApiInfoMcpConfig,
                 ApiInfoGrpcConfig,
             )

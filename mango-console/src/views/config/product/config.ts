@@ -86,6 +86,13 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '产品说明',
+    key: 'description',
+    value: ref(''),
+    type: 'textarea',
+    placeholder: '请输入产品用途、Git 仓库地址等信息，请勿填写密码或 Token',
+  },
 ])
 export const conditionItems: Array<FormItem> = reactive([
   {
@@ -155,22 +162,31 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '产品负责人',
+    title: '产品说明',
+    key: 'description',
+    dataIndex: 'description',
+    align: 'left',
+    width: 220,
+    ellipsis: true,
+    tooltip: true,
+  },
+  {
+    title: '负责人',
     key: 'owners',
     dataIndex: 'owners',
-    width: 180,
+    width: 110,
   },
   {
-    title: 'UI产品类型',
+    title: 'UI客户端',
     key: 'ui_client_type',
     dataIndex: 'ui_client_type',
-    width: 120,
+    width: 90,
   },
   {
-    title: 'API产品类型',
+    title: 'API客户端',
     key: 'api_client_type',
     dataIndex: 'api_client_type',
-    width: 120,
+    width: 90,
   },
   updateUserColumn(),
   {

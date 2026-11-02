@@ -138,6 +138,8 @@ class ApiCase(models.Model):
     front_headers = models.JSONField(verbose_name="前置请求头", default=list, blank=True)
     front_public = models.JSONField(verbose_name="用例选择全局变量", default=list, blank=True)
     front_auth_config = models.JSONField(verbose_name="用例选择授权配置", default=list, blank=True)
+    callback_checks = models.JSONField(verbose_name="回调验证规则", default=list, blank=True,
+                                      help_text='CallbackRule 列表，包含触发步骤、唯一关联条件、观察窗口和检查项')
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list, blank=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2, db_index=True)
 

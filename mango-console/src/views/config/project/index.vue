@@ -38,7 +38,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button v-permission="'config.project:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-button-新增">新增</a-button>
+              <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-button-新增">新增</a-button>
             </div>
           </a-space>
         </template>
@@ -67,7 +67,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'config.project:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, record.name)"
                 :default-checked="record.status === 1"
               />
@@ -78,10 +78,10 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'config.project:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'config.project:detail', label: '通知组', onClick: () => clickNotice(record) },
-                  { permission: 'config.project:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '通知组', onClick: () => clickNotice(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

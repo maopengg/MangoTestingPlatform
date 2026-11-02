@@ -23,6 +23,7 @@ from src.common.responses.response_msg import (
 
 
 class MonitoringReportCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = MonitoringReport
     queryset = MonitoringReport.objects.all()
     serializer_class = MonitoringReportSerializersC

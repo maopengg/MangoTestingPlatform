@@ -75,12 +75,11 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'timing.system_jobs:execute',
-                    label: '立即触发',
-                    loading: data.triggeringKey === record.key,
-                    onClick: () => onTrigger(record),
-                  },
-                ]"
+    {
+        label: '立即触发',
+        loading: data.triggeringKey === record.key,
+        onClick: () => onTrigger(record), },
+]"
               />
             </template>
           </a-table-column>

@@ -33,8 +33,8 @@ class ExecutionResultPermissionTests(SimpleTestCase):
         self.assertFalse(ExecutionResultService.visible_results(None).exists())
 
     def test_asset_results_require_their_own_permission_and_product_scope(self):
-        for permission, target in [('api.case:detail', 'api_case'), ('ui.case:execute', 'ui_case'),
-                                   ('pytest.case:execute', 'pytest_case')]:
+        for permission, target in [('api.case:read', 'api_case'), ('ui.case:change', 'ui_case'),
+                                   ('pytest.case:change', 'pytest_case')]:
             with self.subTest(permission=permission), patch.object(
                     PermissionMenuService, 'permission_keys_for_user', return_value={permission}):
                 sql, params = self.compile_query(ExecutionResultService.visible_results(self.user))
@@ -44,7 +44,7 @@ class ExecutionResultPermissionTests(SimpleTestCase):
                 self.assertNotIn('api_info', params)
 
     def test_report_access_uses_report_detail_product_scope(self):
-        with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'report:detail'}):
+        with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'report:read'}):
             sql, params = self.compile_query(ExecutionResultService.visible_results(self.user))
         self.assertIn('test_suite_details', sql)
         self.assertIn('project_product_id', sql)

@@ -140,6 +140,9 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     @staticmethod
     def validate_case_config(config: dict, project_product_id=None) -> dict:
         validators = {
+            'callback_checks': lambda value: ApiCaseMutationService.validate_config(
+                {'callback_checks': value}, project_product_id,
+            )['callback_checks'],
             'front_custom': lambda value: validate_model_list(value, ApiEnvironmentKeyValueItem, '前置方法'),
             'front_sql': lambda value: validate_data_source_operation_list(
                 value, '前置数据库操作', project_product_id,
@@ -383,18 +386,6 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiCaseViews(ViewSet):
     model = ApiCase
     serializer_class = ApiCaseSerializers
-    action_permission_map = {
-        'api_test_case': 'api.case:execute',
-        'api_debug_case_step': 'api.case:execute',
-        'api_test_case_batch': 'api.case:execute',
-        'execution_options': 'api.case:execute',
-        'copy_case': 'api.case:copy',
-        'get_case_name': 'api.case',
-        'get_bound_tasks': 'api.case',
-        'get_related_tasks': 'api.case',
-        'configuration_summary': 'api.case',
-        'configuration_details': 'api.case:detail',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('api')

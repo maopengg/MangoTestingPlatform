@@ -24,7 +24,7 @@
         <template #toolbar>
           <a-space>
             <a-button size="small" :loading="loading" @click="loadRows">刷新</a-button>
-            <a-button v-permission="'functional.iteration:create'" size="small" type="primary" @click="openEditor()">新建 Sprint</a-button>
+            <a-button  size="small" type="primary" @click="openEditor()">新建 Sprint</a-button>
           </a-space>
         </template>
         <div class="mango-iteration-page__table">
@@ -51,10 +51,10 @@
             <template #pass_rate="{ record }">{{ record.test_metrics?.total ? formatRate(record.test_metrics.pass_rate) : '-' }}</template>
             <template #actions="{ record }">
               <MangoTableActions :actions="[
-                { permission: 'functional.iteration:detail', label: '排期', onClick: () => goDetail(record) },
-                { permission: 'functional.iteration:edit', label: '编辑', onClick: () => openEditor(record) },
-                { permission: 'functional.iteration:delete', label: '删除', danger: true, onClick: () => removeRow(record) },
-              ]" />
+    { label: '排期', onClick: () => goDetail(record) },
+    { label: '编辑', onClick: () => openEditor(record) },
+    { label: '删除', danger: true, onClick: () => removeRow(record) },
+]" />
             </template>
           </a-table>
         </div>

@@ -94,7 +94,7 @@
       <span>{{ versionStateDescription }}</span>
     </div>
     <div class="api-info-version-actions">
-      <a-button v-permission="'api.info:edit'"
+      <a-button
         v-if="selectedKey === 'current'"
         long
         :loading="creatingRevision"
@@ -103,7 +103,7 @@
       >
         生成修订
       </a-button>
-      <a-button v-permission="'api.info:publish'"
+      <a-button
         v-if="selectedRevision && !selectedRevision.release?.is_current"
         long
         type="primary"
@@ -121,7 +121,7 @@
       >
         迁出到编辑态
       </a-button>
-      <a-button v-permission="'api.info:delete'"
+      <a-button
         v-if="selectedRevision && !selectedRevision.release"
         long
         status="danger"

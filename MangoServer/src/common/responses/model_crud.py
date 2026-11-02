@@ -3,7 +3,6 @@
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
-import json
 import traceback
 from threading import Thread
 
@@ -18,6 +17,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
 from src.common.decorators.error_response import error_response
+from src.common.decorators.system_error import report_validation_failure
 from src.common.exceptions import CommonError, SAVE_VALIDATION_FAILED, UPDATE_VALIDATION_FAILED
 from src.common.logging import log
 from src.common.responses import (
@@ -49,7 +49,6 @@ class ModelCRUD(GenericAPIView):
     project_model = None
     serializer = None
     page_permission_key = None
-    permission_key_map = None
     not_matching_str = [
         'pageSize', 'page',
         'type', 'status',
@@ -229,17 +228,9 @@ class ModelCRUD(GenericAPIView):
                 return True
         return False
 
-    def get_permission_key_map(self) -> dict:
-        if self.permission_key_map:
-            return self.permission_key_map
-        if not self.page_permission_key:
-            return {}
-        return {
-            'get': self.page_permission_key,
-            'post': f'{self.page_permission_key}:create',
-            'put': f'{self.page_permission_key}:edit',
-            'delete': f'{self.page_permission_key}:delete',
-        }
+    def has_request_data_scope_permission(self, request: Request) -> bool:
+        policy = import_string(settings.MODEL_CRUD_DATA_SCOPE_POLICY)
+        return policy.has_request_permission(self.model, request, set(self.pytest_model))
 
     def filter_queryset_by_data_scope(self, request: Request, queryset: QuerySet) -> QuerySet:
         policy = import_string(settings.MODEL_CRUD_DATA_SCOPE_POLICY)
@@ -352,8 +343,7 @@ class ModelCRUD(GenericAPIView):
                 self.record_config_change(serializer.instance, action='create', request=request)
             self.asynchronous_callback(data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
-        log.system.error(
-            f'执行保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
+        report_validation_failure(serializer.errors, request=request)
         return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
     @error_response('system')
@@ -391,7 +381,7 @@ class ModelCRUD(GenericAPIView):
             parent_id = data.get('parent_id')
             self.asynchronous_callback(parent_id)
             return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
-        log.system.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+        report_validation_failure(serializer.errors, request=request)
         return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
 
     @error_response('system')
@@ -431,7 +421,7 @@ class ModelCRUD(GenericAPIView):
                 if record_config:
                     cls.record_config_change(serializer.instance, action='create', source='internal')
             return dict(serializer.data)
-        log.system.error(f'执行内部保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
+        log.system.warning('内部保存参数校验失败')
         raise CommonError(SAVE_VALIDATION_FAILED, value=(serializer.errors,))
 
     @classmethod
@@ -450,7 +440,7 @@ class ModelCRUD(GenericAPIView):
                         source='internal',
                     )
             return dict(serializer.data)
-        log.system.error(f'执行内部修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
+        log.system.warning('内部修改参数校验失败')
         raise CommonError(UPDATE_VALIDATION_FAILED, value=(serializer.errors,))
 
     @classmethod

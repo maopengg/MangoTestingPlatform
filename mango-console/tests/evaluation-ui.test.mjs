@@ -302,7 +302,7 @@ test('case configuration and results share a continuous anchored workbench', asy
   const page = read('case/details/index.vue')
   assert.doesNotMatch(read('components/CaseEditor.vue'), /mango-case-editor-toolbar|配置修改后自动保存/)
   assert.ok(page.indexOf('@click="saveConfiguration"') < page.indexOf('@click="historyVisible = true"'))
-  assert.match(page, /v-permission="'evaluation.case:edit'"/)
+  assert.match(page, /v-permission="'evaluation.case:change'"/)
   assert.doesNotMatch(page, /<TableTabs|<a-tabs|activeWorkspace/)
   assert.match(page, /<template #results>/)
   assert.doesNotMatch(page, /grid-template-columns:\s*minmax\(560px/)

@@ -14,7 +14,7 @@
     </a-form>
     <template #footer>
       <a-button :disabled="saving" @click="visible = false">取消</a-button>
-      <a-button v-permission="'api.case:edit'" type="primary" :loading="saving" @click="save">保存</a-button>
+      <a-button  type="primary" :loading="saving" @click="save">保存</a-button>
     </template>
   </a-modal>
 </template>

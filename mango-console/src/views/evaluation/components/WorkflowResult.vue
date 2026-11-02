@@ -5,7 +5,7 @@
       <template #stage="{ record }">{{ label(record.stage, 'evaluation_workflow_stage') }}</template>
       <template #scope="{ record }">{{ label(record.scope, 'evaluation_workflow_scope') }}</template>
       <template #status="{ record }"><a-tag size="small" :color="record.status === 'success' ? 'green' : record.status === 'failed' ? 'red' : 'blue'">{{ label(record.status, 'evaluation_item_execution_status') }}</a-tag></template>
-      <template #actions="{ record }"><MangoTableActions :actions="[{ label: '详情', permission: 'evaluation.case:detail', onClick: () => selected = record }]" /></template>
+      <template #actions="{ record }"><MangoTableActions :actions="[{ label: '详情', onClick: () => selected = record }]" /></template>
     </a-table>
     <div v-if="selected" class="mango-soft-panel"><strong>{{ selected.name }}</strong><p v-if="selected.error_message" role="alert">{{ selected.error_message }}</p><JsonDisplay :data="selected.output" :show-drawer-button="false" /></div>
   </section>

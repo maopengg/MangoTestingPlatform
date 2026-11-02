@@ -17,7 +17,7 @@ class RecentErrorsService:
         permissions = PermissionMenuService.permission_keys_for_user(user) if user else set()
         if 'system.error_record' not in permissions:
             return []
-        if 'system.error_record:detail' in permissions:
+        if 'system.error_record:read' in permissions:
             return rows
         list_fields = {
             'time', 'source', 'event_source', 'source_name', 'object_id', 'title', 'message',

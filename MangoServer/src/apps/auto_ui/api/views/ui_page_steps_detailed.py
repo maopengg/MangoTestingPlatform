@@ -89,13 +89,6 @@ class PageStepsDetailedCRUD(ModelCRUD):
 class PageStepsDetailedView(ViewSet):
     model = PageStepsDetailed
     serializer_class = PageStepsDetailedSerializers
-    action_permission_map = {
-        'get_ope_type': 'ui.page_steps',
-        'get_ass_type': 'ui.page_steps',
-        'get_ass_method': 'ui.page_steps',
-        'put_step_sort': 'ui.page_steps:edit',
-        'duplicate_node': 'ui.page_steps:edit',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('ui')

@@ -35,7 +35,7 @@
         row-key="grader_key"
       >
         <template #name="{ record }">
-          <a-link v-if="permissions.hasPermission('evaluation.grader:detail')" @click="show(record)">{{ record.name }}</a-link>
+          <a-link v-if="true" @click="show(record)">{{ record.name }}</a-link>
           <span v-else>{{ record.name }}</span>
         </template>
         <template #description="{ record }"
@@ -52,12 +52,11 @@
         <template #actions="{ record }"
           ><MangoTableActions
             :actions="[
-              {
-                label: '详情',
-                permission: 'evaluation.grader:detail',
-                onClick: () => show(record),
-              },
-            ]"
+    {
+        label: '详情',
+        onClick: () => show(record),
+    },
+]"
         /></template>
       </a-table>
     </template>
@@ -96,8 +95,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getEnumTagColor } from '@/utils/business-format'
   import { formatVersion } from '../components/presentation'
-  import usePermissionStore from '@/store/modules/permission'
-  const permissions = usePermissionStore()
+
   const enumStore = useEnum()
   const selectedGrader = ref<any>(),
     loadError = ref(false),
@@ -150,7 +148,7 @@
     load()
   }
   async function show(row: any) {
-    if (!permissions.hasPermission('evaluation.grader:detail')) return
+
     const request = ++detailRequest
     selectedGrader.value = row
     detail.value = undefined

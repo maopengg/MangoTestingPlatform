@@ -9,10 +9,6 @@ from src.common.responses.response_data import ResponseData
 
 
 class SystemJobViews(ViewSet):
-    action_permission_map = {
-        'list': 'timing.system_jobs',
-        'trigger': 'timing.system_jobs:execute',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

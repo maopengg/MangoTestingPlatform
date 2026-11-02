@@ -21,14 +21,13 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 class ScheduledTaskGroupTriggerViews(ViewSet):
     model = ScheduledTaskGroup
-    authentication_classes = []
-    permission_classes = []
     http_method_names = ['get', 'options']
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def trigger(self, request: Request):
         group_id = ScheduledTaskGroupViews._required_id(request.query_params.get('id'), '任务组ID')
+        ScheduledTaskGroupViews._group(request, group_id)
         response = ResponseData.success(
             RESPONSE_MSG_0100,
             ScheduledTaskGroupExecutionService.trigger_manual(group_id),
@@ -40,20 +39,7 @@ class ScheduledTaskGroupTriggerViews(ViewSet):
 class ScheduledTaskGroupViews(ViewSet):
     model = ScheduledTaskGroup
     page_permission_key = 'timing.tasks'
-    action_permission_map = {
-        'get_list': 'timing.tasks',
-        'get_options': 'timing.tasks',
-        'get_detail': 'timing.tasks',
-        'preview': 'timing.tasks:edit',
-        'create': 'timing.tasks:create',
-        'delete': 'timing.tasks:delete',
-        'set_member_status': 'timing.tasks:status',
-        'latest_executions': 'timing.tasks',
-        'resend_notice': 'timing.tasks',
-    }
 
-    def get_permission_key_map(self):
-        return {'put': 'timing.tasks:edit'} if self.action == 'update' else {}
 
     @staticmethod
     def _user(request: Request):

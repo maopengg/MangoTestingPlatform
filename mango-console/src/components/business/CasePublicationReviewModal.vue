@@ -27,7 +27,7 @@
         </template>
         <template #execution_configuration="{ record }">
           <a-button v-if="record.sql_count > 0 || record.factory_count > 0" type="text" size="mini" class="mango-publication-review__configuration"
-            :disabled="!canViewDetails || !Array.isArray(record.configuration_details)"
+            :disabled="!Array.isArray(record.configuration_details)"
             @click="openConfiguration(record)">
             <CaseExecutionConfigurationTags :sql-count="record.sql_count" :factory-count="record.factory_count" />
           </a-button>
@@ -47,7 +47,7 @@
           </template>
         </template>
         <template #actions="{ record }">
-          <MangoTableActions :actions="[{ label: '查看详情', permission: `${domain}.case:detail`, disabled: !record.name, onClick: () => openCaseDetail(record.id) }]" />
+          <MangoTableActions :actions="[{ label: '查看详情', disabled: !record.name, onClick: () => openCaseDetail(record.id) }]" />
         </template>
         <template #review="{ record }">
           <a-switch :model-value="record.reviewConfirmed === true" :disabled="record.disabled"
@@ -61,8 +61,8 @@
         <a-checkbox v-model="acknowledged" :disabled="loading || publishing || !allSelectedReviewed">我已核对勾选用例符合审核要求，确认发布</a-checkbox>
         <a-space wrap>
           <a-button size="small" :disabled="publishing" @click="close">取消</a-button>
-          <a-button v-permission="permissionKey" size="small" type="primary" :loading="publishing"
-            :disabled="loading || !canPublish || !acknowledged || !allSelectedReviewed" @click="publishSelected">确认发布 {{ selectedIds.length }} 条</a-button>
+          <a-button  size="small" type="primary" :loading="publishing"
+            :disabled="loading || !acknowledged || !allSelectedReviewed" @click="publishSelected">确认发布 {{ selectedIds.length }} 条</a-button>
         </a-space>
       </div>
     </template>
@@ -71,7 +71,7 @@
   <BaseSidePanel :visible="detailVisible" title="用例详情" width="calc(92vw - 150px)" mode="page"
     @update:visible="detailVisible = $event" @cancel="detailVisible = false">
     <div class="mango-publication-review__detail-page">
-      <component :is="detailComponents[domain]" v-if="detailVisible && detailCaseId && canViewDetails"
+      <component :is="detailComponents[domain]" v-if="detailVisible && detailCaseId"
         :key="`${domain}-${detailCaseId}`" embedded :case-id="detailCaseId" @close="detailVisible = false" />
     </div>
   </BaseSidePanel>
@@ -94,18 +94,17 @@
   import { putUiCasePublication } from '@/api/uitest/case'
   import { putPytestCasePublication } from '@/api/pytest/case'
   import { useEnum } from '@/store/modules/get-enum'
-  import usePermissionStore from '@/store/modules/permission'
 
   type Domain = 'api' | 'ui' | 'pytest'
   type Review = { id: number; name?: string; disabled?: boolean; error?: string; published?: boolean;
     eligibility_reasons?: string[]; [key: string]: any }
   const emit = defineEmits<{ (event: 'published', ids: number[]): void }>()
   const enumStore = useEnum()
-  const permissions = usePermissionStore()
+
   const configurationDrawerRef = ref<InstanceType<typeof ApiCaseConfigurationDrawer> | null>(null)
   const detailVisible = ref(false)
   const detailCaseId = ref<number | null>(null)
-  const canViewDetails = computed(() => permissions.hasPermission(`${domain.value}.case:detail`))
+
   const lazyDetail = (loader: () => Promise<any>) => defineAsyncComponent({
     loader,
     delay: 0,
@@ -127,13 +126,12 @@
   const rows = ref<Review[]>([])
   const selectedIds = ref<Array<string | number>>([])
   let requestVersion = 0
-  const permissionKey = computed(() => `${domain.value}.case:publish`)
-  const canPublish = computed(() => permissions.hasPermission(permissionKey.value))
+
   const allSelectedReviewed = computed(() => selectedIds.value.length > 0 && selectedIds.value.every(
     (id) => rows.value.find((row) => row.id === Number(id))?.reviewConfirmed === true,
   ))
   const displayRows = computed(() => rows.value.map((row) => ({ ...row,
-    disabled: loading.value || publishing.value || !canPublish.value || Boolean(row.error || row.published || row.eligibility_reasons?.length) })))
+    disabled: loading.value || publishing.value || Boolean(row.error || row.published || row.eligibility_reasons?.length) })))
   const reviewColumns = [
     { title: '用例', slotName: 'case' },
     { title: '负责人', dataIndex: 'owner', width: 72, align: 'center' as const, ellipsis: true, tooltip: true },
@@ -207,7 +205,7 @@
   }
 
   function setRowReview(id: number, confirmed: string | number | boolean) {
-    if (loading.value || publishing.value || !canPublish.value) return
+    if (loading.value || publishing.value) return
     const row = rows.value.find((item) => item.id === id)
     if (!row || row.error || row.published || row.eligibility_reasons?.length) return
     row.reviewConfirmed = confirmed === true
@@ -215,23 +213,24 @@
   }
 
   function openCaseDetail(id: number) {
-    if (!permissions.hasPermission(`${domain.value}.case:detail`)) return
+
     detailCaseId.value = id
     detailVisible.value = true
     acknowledged.value = false
   }
 
   function openConfiguration(row: Review) {
-    if (!permissions.hasPermission(`${domain.value}.case:detail`) || !Array.isArray(row.configuration_details)) return
+    if (!Array.isArray(row.configuration_details))
+    return;
     configurationDrawerRef.value?.openSnapshot({
       id: row.id, name: row.name || '', sql_count: row.sql_count, data_factory_count: row.factory_count,
       publication_status: row.publication_status, revision_id: row.revision_id,
       has_sql: row.sql_count > 0, has_data_factory: row.factory_count > 0, items: row.configuration_details,
-    }, `${domain.value}.case:detail`)
+    })
   }
 
   async function publishSelected() {
-    if (loading.value || publishing.value || !acknowledged.value || !canPublish.value) return
+    if (loading.value || publishing.value || !acknowledged.value) return
     const eligible = new Set(displayRows.value.filter((row) => !row.disabled).map((row) => row.id))
     const selected = selectedIds.value.map(Number).filter((id) => eligible.has(id))
     if (!selected.length || selected.some((id) => rows.value.find((row) => row.id === id)?.reviewConfirmed !== true)) return
@@ -240,7 +239,7 @@
     const succeeded: number[] = []
     try {
       for (const id of selected) {
-        if (!permissions.hasPermission(`${type}.case:publish`)) break
+
         const row = rows.value.find((item) => item.id === id)!
         try {
           if (type === 'api') await approveApiCasePrepublication(id)

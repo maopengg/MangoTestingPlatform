@@ -19,8 +19,7 @@ export function postApiHeaders(data: object) {
 }
 
 export function putApiHeaders(data: object) {
-  return put({ permissionKey: 'api.headers',
-    url: '/api/headers',
+  return put({ url: '/api/headers',
     data: () => {
       return data
     },

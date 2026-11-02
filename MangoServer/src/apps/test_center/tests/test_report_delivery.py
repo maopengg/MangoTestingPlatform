@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -14,9 +15,9 @@ from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
 from src.apps.test_center.services.offline_report import OfflineReportService
 from src.apps.test_center.services.report_delivery import ReportDeliveryService
-from src.apps.test_center.services.report_html import ReportHtmlService
-from src.apps.test_center.services.report_snapshot import ReportSnapshotService
-from src.apps.test_center.services.report_storage import ReportStorageService
+from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
+from src.apps.test_center.services.offline_report.snapshot import ReportSnapshotService
+from src.apps.test_center.services.offline_report.storage import ReportStorageService
 
 
 def sample_snapshot():
@@ -66,8 +67,9 @@ class ReportDeliveryTests(SimpleTestCase):
 
     def test_safe_defaults_and_validation(self):
         self.assertFalse(ReportDeliveryConfig().enabled)
+        self.assertTrue(ReportDeliveryConfig().failed_cases_only)
         self.assertEqual(set(ReportDeliveryConfig().model_dump()), {
-            'version', 'enabled', 'include_details', 'include_screenshots', 'link_ttl_seconds',
+            'version', 'enabled', 'include_details', 'failed_cases_only', 'include_screenshots', 'link_ttl_seconds',
         })
         for values in ({'feishu': 'attachment'}, {'storage': 'tos'}, {'retention_days': 1}, {'auto_generate': False},
                        {'failure_policy': 'strict'}, {'link_mode': 'download'}, {'max_size_mb': 25}, {'payload_scope': 'all'},
@@ -78,7 +80,8 @@ class ReportDeliveryTests(SimpleTestCase):
 
     def test_offline_html_is_escaped_and_secret_free(self):
         content = ReportHtmlService.render(sample_snapshot(), '示例平台').decode()
-        self.assertNotIn('<script>', content)
+        self.assertEqual(content.count('<script>'), 1)
+        self.assertNotIn('<script>alert(1)</script>', content)
         self.assertNotIn('secret-value', content)
         self.assertIn('&lt;script&gt;', content)
         self.assertIn('已排除', content)
@@ -95,7 +98,7 @@ class ReportDeliveryTests(SimpleTestCase):
         storage = MagicMock(local=None)
         storage.key.return_value = 'offline_reports/example.html'
         storage.url.side_effect = RuntimeError('private')
-        with patch('src.apps.test_center.services.offline_report.ReportStorageService', return_value=storage):
+        with patch('src.apps.test_center.services.offline_report.service.ReportStorageService', return_value=storage):
             with self.assertRaises(TestCenterError):
                 OfflineReportService.upload_links(ReportDeliveryConfig(), 'example.html', b'example')
         storage.save.assert_called_once()
@@ -179,8 +182,8 @@ class ReportDeliveryTests(SimpleTestCase):
                        MINIO_STORAGE_SECRET_KEY='example-secret', MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE=True,
                        MINIO_PUBLIC_BASE_URL='https://reports.example.com')
     def test_tos_s3_storage_uses_s3_for_upload_read_and_delete(self):
-        with patch('src.apps.test_center.services.report_storage.Minio') as s3, \
-             patch('src.apps.test_center.services.report_storage.TosClientV2') as native:
+        with patch('src.apps.test_center.services.offline_report.storage.Minio') as s3, \
+             patch('src.apps.test_center.services.offline_report.storage.TosClientV2') as native:
             storage = ReportStorageService()
             s3.return_value.get_object.return_value.read.return_value = b'html'
             storage.save('sample.html', b'html')
@@ -195,7 +198,7 @@ class ReportDeliveryTests(SimpleTestCase):
                        MINIO_STORAGE_MEDIA_BUCKET_NAME='reports', MINIO_STORAGE_ACCESS_KEY='example-access',
                        MINIO_STORAGE_SECRET_KEY='example-secret', MINIO_PUBLIC_BASE_URL='https://reports.example.com')
     def test_custom_domain_signing_converts_s3_endpoint_for_native_sdk(self):
-        with patch('src.apps.test_center.services.report_storage.TosClientV2') as native:
+        with patch('src.apps.test_center.services.offline_report.storage.TosClientV2') as native:
             ReportStorageService().url('sample.html', 'sample.html', 300)
         self.assertEqual(native.call_args.args[2], 'https://tos-cn-beijing.example.com')
         self.assertTrue(native.return_value.pre_signed_url.call_args.kwargs['is_custom_domain'])
@@ -213,7 +216,7 @@ class ReportDeliveryTests(SimpleTestCase):
         error = RuntimeError('Authorization: private-secret https://example.com?Signature=private')
         error.code = 'secret=private'
         error.status_code = 400
-        with patch('src.apps.test_center.services.offline_report.log.system.warning') as warning:
+        with patch('src.apps.test_center.services.offline_report.service.log.system.warning') as warning:
             OfflineReportService.log_storage_failure('upload', error)
         message = warning.call_args.args[0]
         self.assertIn('stage=upload', message)
@@ -232,7 +235,7 @@ class ReportDeliveryTests(SimpleTestCase):
             self.assertTrue(storage.key('sample').startswith('example/test/offline_reports/'))
 
     def test_screenshot_reader_never_follows_http_or_parent_path(self):
-        with patch('src.apps.test_center.services.report_snapshot.default_storage.open') as opened:
+        with patch('src.apps.test_center.services.offline_report.snapshot.default_storage.open') as opened:
             self.assertEqual(ReportSnapshotService.images({'screenshot': 'https://example.com/image.png',
                 'child': {'screenshot_path': '../image.png'}}), [])
             opened.assert_not_called()
@@ -261,7 +264,8 @@ class ReportDeliveryTests(SimpleTestCase):
         self.assertIn('scope="col"', content)
         self.assertIn('mango-report-conclusion', content)
         self.assertIn('background:var(--m-table-header-bg)', content)
-        self.assertNotRegex(content, r'<(?:script|link)\b')
+        self.assertNotRegex(content, r'<(?:script|link)\b[^>]*\bsrc=')
+        self.assertIn("script-src 'sha256-", content)
         self.assertNotRegex(content, r'(?:src|href)="https?://')
 
     def test_report_domain_config_is_relocated_without_replacing_existing_key(self):
@@ -275,20 +279,20 @@ class ReportDeliveryTests(SimpleTestCase):
         from django.urls import resolve
         from src.apps.user.middleware.permission import MenuActionPermission
         for path, method, permission in (
-            ('/api/system/test/suite/offline', 'post', 'report:export'),
-            ('/api/system/cache/data/report-delivery/metadata', 'get', 'system.settings:detail'),
-            ('/api/system/cache/data/report-delivery/sample', 'post', 'system.settings:debug'),
+            ('/api/system/test/suite/offline', 'post', 'report:read'),
+            ('/api/system/cache/data/report-delivery/metadata', 'get', 'system.settings:read'),
+            ('/api/system/cache/data/report-delivery/sample', 'post', 'system.settings:change'),
         ):
             match = resolve(path)
             action = match.func.actions[method]
-            self.assertEqual(match.func.cls.action_permission_map[action], permission)
+            self.assertEqual(permission_for_view(match.func.cls, action), permission)
             self.assertFalse(path.startswith(MenuActionPermission.PUBLIC_PATH_PREFIXES))
 
     def test_anonymous_and_out_of_scope_export_are_denied(self):
         with self.assertRaises(TestCenterError):
             OfflineReportSelector.require_permission(None)
         with patch('src.apps.test_center.selectors.offline_report.PermissionMenuService.is_effective_super_admin', return_value=False), \
-             patch('src.apps.test_center.selectors.offline_report.PermissionMenuService.permission_keys_for_user', return_value={'report:export'}), \
+             patch('src.apps.test_center.selectors.offline_report.PermissionMenuService.permission_keys_for_user', return_value={'report:read'}), \
              patch('src.apps.test_center.selectors.offline_report.ProjectProductScopeService.has_project_product', return_value=False):
             with self.assertRaises(TestCenterError):
                 OfflineReportSelector.require_product(SimpleNamespace(id=1), 3)

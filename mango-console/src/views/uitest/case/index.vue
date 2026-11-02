@@ -149,7 +149,7 @@
             <template #extra>
           <a-space>
             <div>
-              <a-button v-permission="'ui.case:execute'"
+              <a-button
                 size="small"
                 status="success"
                 :loading="caseRunning"
@@ -158,7 +158,7 @@
               </a-button>
             </div>
             <div>
-              <a-button v-permission="'timing.tasks:edit'" size="small" status="warning" @click="handleClick" data-testid="qa-views-uitest-case-button-设为定时任务">设为定时任务</a-button>
+              <a-button  size="small" status="warning" @click="handleClick" data-testid="qa-views-uitest-case-button-设为定时任务">设为定时任务</a-button>
               <a-modal v-model:visible="data.visible" @cancel="handleCancel" @ok="handleOk">
                 <template #title> 设为定时任务</template>
                 <a-form :model="data">
@@ -199,10 +199,10 @@
               </a-modal>
             </div>
             <div>
-              <a-button v-permission="'ui.case:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-case-button-新增">新增</a-button>
+              <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-case-button-新增">新增</a-button>
             </div>
             <div>
-              <a-button v-permission="'ui.case:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-uitest-case-button-批量删除">批量删除</a-button>
+              <a-button  size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-uitest-case-button-批量删除">批量删除</a-button>
             </div>
           </a-space>
             </template>
@@ -286,34 +286,31 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'ui.case:execute', label: '执行', loading: caseRunning, onClick: () => onCaseRun(record.id) },
-                  { permission: 'ui.case:detail', label: '步骤', onClick: () => onClick(record) },
-                  { permission: 'ui.case:edit', label: '套件', onClick: () => clickSuite(record) },
-                  { permission: 'ui.case:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'ui.case:copy', label: '复制', onClick: () => caseCody(record) },
-                  {
-                    permission: 'ui.case:publish',
-                    hidden: record.publication_status !== 'unpublished',
-                    label: '提交预发布',
-                    loading: publicationActionCaseId === record.id,
-                    onClick: () => onPublicationChange(record, 'prepublished'),
-                  },
-                  {
-                    permission: 'ui.case:publish',
-                    hidden: record.publication_status !== 'prepublished' || !record.is_product_owner,
-                    label: '通过发布',
-                    loading: publicationActionCaseId === record.id,
-                    onClick: () => onPublicationChange(record, 'published'),
-                  },
-                  {
-                    permission: 'ui.case:publish',
-                    hidden: record.publication_status === 'unpublished' || !record.is_product_owner,
-                    label: '退回未发布', danger: true,
-                    loading: publicationActionCaseId === record.id,
-                    onClick: () => onPublicationChange(record, 'unpublished'),
-                  },
-                  { permission: 'ui.case:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '执行', loading: caseRunning, onClick: () => onCaseRun(record.id) },
+    { label: '步骤', onClick: () => onClick(record) },
+    { label: '套件', onClick: () => clickSuite(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '复制', onClick: () => caseCody(record) },
+    {
+        hidden: record.publication_status !== 'unpublished',
+        label: '提交预发布',
+        loading: publicationActionCaseId === record.id,
+        onClick: () => onPublicationChange(record, 'prepublished'),
+    },
+    {
+        hidden: record.publication_status !== 'prepublished' || !record.is_product_owner,
+        label: '通过发布',
+        loading: publicationActionCaseId === record.id,
+        onClick: () => onPublicationChange(record, 'published'),
+    },
+    {
+        hidden: record.publication_status === 'unpublished' || !record.is_product_owner,
+        label: '退回未发布', danger: true,
+        loading: publicationActionCaseId === record.id,
+        onClick: () => onPublicationChange(record, 'unpublished'),
+    },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

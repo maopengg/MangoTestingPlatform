@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
@@ -39,4 +40,4 @@ class EmailConfigTestTests(SimpleTestCase):
         self.assertNotIn('secret-transport-details', str(response.data))
 
     def test_requires_settings_debug_permission(self):
-        self.assertEqual(EmailTestViews.action_permission_map['test'], 'system.settings:debug')
+        self.assertEqual(permission_for_view(EmailTestViews, 'test'), 'system.settings:change')

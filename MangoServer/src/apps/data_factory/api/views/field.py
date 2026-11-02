@@ -14,7 +14,7 @@ from src.apps.data_factory.services.field import DataFactoryFieldService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
-from src.common.responses.response_msg import RESPONSE_MSG_0001
+from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0210
 
 
 # -*- coding: utf-8 -*-
@@ -32,7 +32,8 @@ class DataFactoryFieldCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
-        queryset = DataFactoryFieldSerializerC.setup_eager_loading(DataFactoryField.objects.all())
+        queryset = self.filter_queryset_by_data_scope(request, DataFactoryField.objects.all())
+        queryset = DataFactoryFieldSerializerC.setup_eager_loading(queryset)
         entity_id = request.query_params.get('entity')
         if entity_id:
             queryset = queryset.filter(entity_id=entity_id)
@@ -59,10 +60,6 @@ class DataFactoryFieldCRUD(ModelCRUD):
 
 
 class DataFactoryFieldViews(ViewSet):
-    action_permission_map = {
-        'batch_save': 'data_factory.entity:edit',
-        'preview_values': 'data_factory.entity:debug',
-    }
 
     @staticmethod
     def save_schema_fields(entity: DataFactoryEntity, columns: list, replace: bool = True, update_user_id=None) -> list:
@@ -80,6 +77,8 @@ class DataFactoryFieldViews(ViewSet):
             raise DataFactoryError(DATA_FACTORY_FIELD_INVALID_CODE_INVALID)
 
         entity = DataFactoryEntity.objects.get(id=entity_id)
+        if not DataFactoryFieldCRUD().has_data_scope_permission(request, {'entity': entity.id}):
+            return ResponseData.fail(RESPONSE_MSG_0210)
         update_user_id = request.user.get("id") if isinstance(getattr(request, "user", None), dict) else None
         saved_fields = DataFactoryFieldService.save_schema_fields(entity, fields, replace, update_user_id)
 

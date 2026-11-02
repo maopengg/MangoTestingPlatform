@@ -24,6 +24,11 @@ class MockRuntimeLookupError(Exception):
 
 
 from .definitions import (
+    API_CALLBACK_CONFIG_INVALID,
+    API_CALLBACK_EXECUTION_FAILED,
+    API_AUTH_PUBLIC_VARIABLES_INVALID,
+    API_AUTH_CONTEXT_MISMATCH,
+    API_AUTH_TARGET_INVALID,
     API_CURL_IMPORT_INVALID,
     API_RECOVERY_CONFIG_INVALID,
     AUTO_API_API_CASE_DATA_FACTORY_STATUS_TEMPLATE_REQUIRED,
@@ -315,6 +320,7 @@ class AutoApiError(MangoServerError):
 
 
 __all__ = ['AutoApiError', 'API_RECOVERY_CONFIG_INVALID',
+           'API_AUTH_PUBLIC_VARIABLES_INVALID', 'API_AUTH_CONTEXT_MISMATCH', 'API_AUTH_TARGET_INVALID',
            'TestSuiteStopped',
            'MockRequestDecryptionError',
            'MockRuntimeLookupError',
@@ -470,3 +476,12 @@ __all__ = ['AutoApiError', 'API_RECOVERY_CONFIG_INVALID',
            'API_MCP_SESSION_CLOSED',
            'API_CURL_IMPORT_INVALID',
            ]
+
+
+from src.common.exceptions.definitions import ErrorDefinition
+
+API_MCP_TRANSPORT_INVALID = ErrorDefinition(code=42990, message="MCP协议调用失败：{}")
+
+
+def protocol_error(message: str) -> AutoApiError:
+    return AutoApiError(API_MCP_TRANSPORT_INVALID, value=(message,))

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.db.models import Count
 
-from src.apps.ai.services.core import mask_sensitive
+from src.common.utils.redaction import mask_sensitive
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
 from src.apps.functional_test.enums import (

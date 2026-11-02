@@ -157,6 +157,16 @@ class ApiTestCaseExecutionMixin:
             self.update_test_case(self.case_id, StatusEnum.FAIL.value)
             self.update_test_case_detailed_unfinished(self.case_id, case_sort, self.api_case_result.error_message)
         try:
+            callback_rules = getattr(self.api_case, 'callback_checks', [])
+            if isinstance(callback_rules, list) and callback_rules:
+                summaries = self.api_case_result.callback_results
+                completed = {item['rule_key'] for item in summaries}
+                from src.apps.auto_api.enums.callback import CallbackRunStatus
+                for rule in callback_rules:
+                    if rule.get('enabled', True) and rule['key'] not in completed:
+                        summaries.append({'id': None, 'name': rule['name'], 'rule_key': rule['key'],
+                                          'status': CallbackRunStatus.NOT_RUN.value, 'events': 0, 'deliveries': 0,
+                                          'error_message': '未到达触发步骤，回调验证未执行'})
             if not self._recovery_attempted:
                 self.api_case_result.main_status = self.api_case_result.status
                 self.run_recovery_steps(

@@ -29,7 +29,7 @@
     <template #default>
       <TableTabs>
         <template #extra><a-button
-            v-permission="'evaluation.dataset:create'"
+
             type="primary"
             size="small"
             @click="openCreate"
@@ -53,9 +53,7 @@
               <span v-else-if="column.key === 'current_version'">{{ formatVersion(record.current_version) }}</span>
               <span v-else-if="column.key === 'update_time'" :title="record.update_time">{{ formatEvaluationDate(record.update_time) }}</span>
               <a-link
-                v-else-if="
-                  column.key === 'name' && permissions.hasPermission('evaluation.dataset:detail')
-                "
+                v-else-if="column.key === 'name'"
                 @click="openVersions(record)"
                 >{{ record.name }}</a-link
               >
@@ -75,29 +73,25 @@
               <template v-else-if="column.key === 'actions'"
                 ><MangoTableActions
                   :actions="[
-                    {
-                      label: '条目',
-                      permission: 'evaluation.dataset:detail',
-                      onClick: () => openVersions(record),
-                    },
-                    {
-                      label: '编辑',
-                      permission: 'evaluation.dataset:edit',
-                      onClick: () => openEdit(record),
-                    },
-                    {
-                      label: record.status === 'archived' ? '恢复' : '归档',
-                      permission: 'evaluation.dataset:status',
-                      loading: statusSaving.has(record.id),
-                      onClick: () => changeDatasetStatus(record),
-                    },
-                    {
-                      label: '删除',
-                      permission: 'evaluation.dataset:delete',
-                      danger: true,
-                      onClick: () => remove(record),
-                    },
-                  ]"
+    {
+        label: '条目',
+        onClick: () => openVersions(record),
+    },
+    {
+        label: '编辑',
+        onClick: () => openEdit(record),
+    },
+    {
+        label: record.status === 'archived' ? '恢复' : '归档',
+        loading: statusSaving.has(record.id),
+        onClick: () => changeDatasetStatus(record),
+    },
+    {
+        label: '删除',
+        danger: true,
+        onClick: () => remove(record),
+    },
+]"
               /></template>
               <span v-else>{{ record[column.dataIndex as string] ?? '-' }}</span>
             </template>
@@ -131,7 +125,7 @@
               ><a-select
                 v-model="form.status"
                 :options="datasetStatusOptions"
-                :disabled="!permissions.hasPermission('evaluation.dataset:status')" /></a-form-item
+                :disabled="false" /></a-form-item
           ></a-grid-item>
           <a-grid-item
             ><a-form-item label="说明"><a-textarea v-model="form.description" /></a-form-item
@@ -235,7 +229,8 @@
     createDialogRef.value?.show()
   }
   function openEdit(record: any) {
-    if (savingDataset.value || !permissions.hasPermission('evaluation.dataset:edit')) return
+    if (savingDataset.value)
+    return;
     Object.assign(form, {
       id: record.id,
       name: record.name,
@@ -247,8 +242,8 @@
     createDialogRef.value?.show()
   }
   async function changeDatasetStatus(record: any) {
-    if (statusSaving.has(record.id) || !permissions.hasPermission('evaluation.dataset:status'))
-      return
+    if (statusSaving.has(record.id))
+    return;
     statusSaving.add(record.id)
     try {
       await updateEvaluationDataset({
@@ -282,13 +277,8 @@
   }
   async function saveDataset() {
     try {
-      if (
-        savingDataset.value ||
-        !permissions.hasPermission(
-          form.id ? 'evaluation.dataset:edit' : 'evaluation.dataset:create'
-        )
-      )
-        return
+      if (savingDataset.value)
+    return;
       if (!form.name) {
         Message.warning('请填写数据集名称')
         return
@@ -326,7 +316,7 @@
     })
   }
   function openVersions(record: any) {
-    if (!permissions.hasPermission('evaluation.dataset:detail')) return
+
     router.push({
       path: '/evaluation/dataset/details',
       query: { id: record.id, name: record.name },

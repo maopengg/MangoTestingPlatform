@@ -24,8 +24,8 @@
         </template>
         <template #toolbar>
           <a-space>
-            <a-button v-permission="'api.mock:create'" size="small" type="primary" @click="createConfig">新增 Mock 接口</a-button>
-            <a-button v-permission="'api.mock:delete'"
+            <a-button  size="small" type="primary" @click="createConfig">新增 Mock 接口</a-button>
+            <a-button
               size="small"
               status="danger"
               :loading="clearAllLoading"
@@ -69,22 +69,22 @@
                   </a-tag>
                 </template>
                 <template v-else-if="column.key === 'enabled'">
-                  <a-switch v-permission="'api.mock:status'" :model-value="record.enabled" :before-change="(value) => changeState(record, { enabled: value })" />
+                  <a-switch  :model-value="record.enabled" :before-change="(value) => changeState(record, { enabled: value })" />
                 </template>
                 <template v-else-if="column.key === 'record_call_log'">
                   <a-tooltip content="关闭后合法请求不记录；断言失败和平台异常仍会记录">
-                    <a-switch v-permission="'api.mock:status'" :model-value="record.record_call_log" :before-change="(value) => changeState(record, { record_call_log: value })" />
+                    <a-switch  :model-value="record.record_call_log" :before-change="(value) => changeState(record, { record_call_log: value })" />
                   </a-tooltip>
                 </template>
                 <template v-else-if="column.key === 'update_user'">{{ record.update_user?.name || '-' }}</template>
                 <template v-else-if="column.key === 'project_product'">{{ formatProjectProductPath(record.project_product) }}</template>
                 <template v-else-if="column.key === 'actions'">
                   <MangoTableActions :actions="[
-                    { permission: 'api.mock:detail', label: '配置', onClick: () => openConfig(record.id) },
-                    { permission: 'api.mock:detail', label: '调用记录', onClick: () => openLogs(record) },
-                    { label: '复制 cURL', onClick: () => copyCurl(record) },
-                    { permission: 'api.mock:delete', label: '删除', danger: true, onClick: () => removeConfig(record) },
-                  ]" />
+    { label: '配置', onClick: () => openConfig(record.id) },
+    { label: '调用记录', onClick: () => openLogs(record) },
+    { label: '复制 cURL', onClick: () => copyCurl(record) },
+    { label: '删除', danger: true, onClick: () => removeConfig(record) },
+]" />
                 </template>
                 <template v-else>{{ cellValue(record, column.dataIndex) }}</template>
               </template>

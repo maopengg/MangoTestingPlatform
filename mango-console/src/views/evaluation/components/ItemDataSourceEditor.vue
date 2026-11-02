@@ -24,7 +24,7 @@
         </div>
       </a-form-item>
     </template>
-    <DataFactoryCaseConfigPanel v-else-if="source.kind === 'factory'" local :configs="factoryConfigs" :readonly="disabled" readonly-permission="data_factory.template:detail" local-permission="evaluation.dataset:edit" :project-product-id="source.binding?.project_product_id" :show-add-button="!source.binding?.ref_id" @update:configs="saveFactory" />
+    <DataFactoryCaseConfigPanel v-else-if="source.kind === 'factory'" local :configs="factoryConfigs" :readonly="disabled" readonly-permission="data_factory.template:read" local-permission="evaluation.dataset:change" :project-product-id="source.binding?.project_product_id" :show-add-button="!source.binding?.ref_id" @update:configs="saveFactory" />
     </div>
   </section>
 </template>

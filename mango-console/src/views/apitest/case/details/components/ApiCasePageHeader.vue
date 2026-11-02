@@ -5,7 +5,7 @@
       <div class="mango-detail-subtitle">维护用例前后置、接口编排、断言和执行结果</div>
     </div>
     <a-space class="mango-detail-actions" wrap>
-      <a-button v-permission="'api.case:execute'"
+      <a-button
         size="small"
         status="success"
         :loading="running"
@@ -31,7 +31,7 @@
       >
         搜索数据
       </a-button>
-      <a-button v-permission="'api.case:detail'"
+      <a-button
         v-if="caseId"
         size="small"
         data-testid="qa-views-apitest-case-details-button-历史结果"

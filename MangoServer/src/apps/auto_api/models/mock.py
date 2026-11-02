@@ -61,6 +61,14 @@ class ApiMockRequestLog(models.Model):
         on_delete=models.CASCADE,
     )
     trace_id = models.CharField(verbose_name="Trace ID", max_length=64, db_index=True)
+    callback_run = models.ForeignKey(
+        'ApiCaseCallbackRun', verbose_name='回调验证运行', related_name='deliveries',
+        on_delete=models.CASCADE, null=True, blank=True, db_index=False,
+    )
+    callback_evidence = models.JSONField(
+        '回调验证证据', default=dict, blank=True,
+        help_text='CallbackDeliveryEvidence；仅回调验证同步写入，普通日志为空；正文只经回调权限接口读取',
+    )
     rule_key = models.CharField(verbose_name="命中规则Key", max_length=64, null=True, blank=True)
     method = models.SmallIntegerField(verbose_name="HTTP请求方法")
     request_path = models.CharField(verbose_name="实际请求路径", max_length=1024)
@@ -77,9 +85,13 @@ class ApiMockRequestLog(models.Model):
         db_table = "api_mock_request_log"
         ordering = ["-id"]
         indexes = [
+            models.Index(fields=['callback_run', 'create_time', 'id'], name='idx_mock_callback_time'),
             models.Index(fields=["mock_config", "-create_time"], name="api_mock_log_config_time_idx"),
             models.Index(
                 fields=["mock_config", "assertion_passed", "-create_time"],
                 name="api_mock_log_assert_time_idx",
             ),
         ]
+        constraints = [models.UniqueConstraint(
+            fields=['callback_run', 'trace_id'], name='uniq_mock_callback_trace',
+        )]

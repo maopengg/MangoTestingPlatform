@@ -174,12 +174,6 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiCaseDetailedParameterViews(ViewSet):
     model = ApiCaseDetailedParameter
     serializer_class = ApiCaseDetailedParameterSerializers
-    action_permission_map = {
-        'post_extract_response_after': 'api.case:debug',
-        'verify_assertions': 'api.case:debug',
-        'put_auto_schema': 'api.case:status',
-        'copy_parameter': 'api.case:copy',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('api')

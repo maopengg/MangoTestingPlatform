@@ -75,6 +75,7 @@ class ProjectProduct(models.Model):
     update_user = models.ForeignKey(to=User, to_field="id", related_name="project_product_update_user",
                                     on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(verbose_name="产品名称", max_length=64)
+    description = models.TextField(verbose_name="产品说明", max_length=5000, blank=True, default='')
     ui_client_type = models.SmallIntegerField(verbose_name="UI客户端类型", default=0)
     api_client_type = models.SmallIntegerField(verbose_name="API客户端类型", default=0)
 

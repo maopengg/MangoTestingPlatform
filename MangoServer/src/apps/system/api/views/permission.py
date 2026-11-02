@@ -9,9 +9,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0205
 
 
 class SystemPermissionViews(ViewSet):
-    action_permission_map = {
-        'menu_tree': 'system.role:detail',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

@@ -7,8 +7,8 @@ import uuid
 
 from django.core.cache import cache
 
-from src.apps.ai.model_gateway.client import AgentModelGateway
-from src.apps.ai.services.core import extract_ai_json
+from src.apps.system.services.ai.client import AiService as AgentModelGateway
+from src.apps.system.services.ai.json_output import extract_ai_json
 from src.apps.auto_ui.exceptions import (
     AutoUiError,
     UI_AI_LOCATOR_CONTEXT_INVALID,

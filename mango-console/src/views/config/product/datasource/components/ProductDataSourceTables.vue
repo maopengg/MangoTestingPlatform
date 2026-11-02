@@ -56,7 +56,7 @@
       @selection-change="selectedKeys = $event"
     >
       <template #actions="{ record }"
-        ><MangoTableActions :actions="[{ permission: 'config.product:detail', label: '表结构', onClick: () => viewSchema(record) }]"
+        ><MangoTableActions :actions="[{ label: '表结构', onClick: () => viewSchema(record) }]"
       /></template>
     </a-table>
     <TableFooter v-if="binding && supportsTables" :pagination="pagination" :show-refresh="false" />

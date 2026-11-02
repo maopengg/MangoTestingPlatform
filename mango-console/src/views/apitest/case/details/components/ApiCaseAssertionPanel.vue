@@ -26,7 +26,7 @@
           @click="emit('toggle-compare')"
           >{{ compareOpen ? '收起对照' : '对照结果' }}</a-button
         >
-        <a-button size="small" type="outline" :loading="verifying" @click="emit('verify')"
+        <a-button v-if="activeKey !== '36'" size="small" type="outline" :loading="verifying" @click="emit('verify')"
           >一键验证</a-button
         >
       </a-space>
@@ -191,7 +191,7 @@
               </a-table-column>
               <a-table-column title="操作" :width="160" align="center" fixed="right">
                 <template #cell="{ record }">
-                  <a-button v-permission="'api.case:delete'"
+                  <a-button
                     size="small"
                     type="text"
                     status="danger"
@@ -252,34 +252,16 @@
         ><TipMessage message="支持任意类型断言，实际值和预期值均可使用缓存变量" /><div
           class="mango-horizontal-scroll-region"
         >
-          <KeyValueList
-            layout="assertion"
-            :data-list="item.ass_general"
-            :field-config="generalFields"
-            :on-delete-item="(index) => remove('ass_general', index)"
-            :on-save="() => save('ass_general')"
-            @update:item="(index, value) => update('ass_general', index, value)"
-            empty-text='暂无通用断言，点击上方"增加"按钮添加'
-          >
-            <template #extra="{ item: assertion }"
-              ><div v-if="assertion?.value?.parameter" class="assertion-parameters-inline">
-                <div
-                  v-for="(parameter, index) in assertion.value.parameter"
-                  :key="parameter.f"
-                  class="parameter-item-inline"
-                  ><span class="parameter-label-inline">{{ parameter.n }}:</span
-                  ><a-textarea
-                    v-model="assertion.value.parameter[index].v"
-                    :disabled="editLocked"
-                    :placeholder="parameter.p"
-                    :required="parameter.d"
-                    :auto-size="{ minRows: 1, maxRows: 2 }"
-                    class="parameter-input-inline"
-                    @blur="save('ass_general')"
-                /></div> </div
-            ></template>
-          </KeyValueList> </div
+          <GeneralAssertionEditor
+            v-model="item.ass_general"
+            :methods="generalMethods"
+            :edit-locked="editLocked"
+            @save="save('ass_general')"
+          /> </div
       ></div>
+    </a-tab-pane>
+    <a-tab-pane key="36" title="回调">
+      <slot name="callback"></slot>
     </a-tab-pane>
   </a-tabs>
 </template>
@@ -288,6 +270,7 @@
   /* eslint-disable vue/no-mutating-props */
   import { computed } from 'vue'
   import KeyValueList from '@/components/forms/KeyValueList.vue'
+  import GeneralAssertionEditor from '@/components/forms/GeneralAssertionEditor.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue'
 
   type AssertionField =
@@ -604,20 +587,6 @@
     const readableMethod = methodLabel.replace(/expect|预期值/g, expectedText)
     return `${actual} ${readableMethod}${readableMethod === methodLabel ? ` ${expectedText}` : ''}`
   }
-  function updateGeneralMethod(value: any, list: any[], index: number) {
-    const method = findMethod(props.generalMethods, value)
-    list[index].value = method
-      ? {
-          value: method.value || '',
-          label: method.label || '',
-          parameter: (method.parameter || []).map((parameter: any) => ({
-            ...parameter,
-            v: typeof parameter.v === 'object' ? JSON.stringify(parameter.v) : parameter.v ?? '',
-          })),
-        }
-      : { value: '', label: '', parameter: [] }
-    save('ass_general')
-  }
   function addItem() {
     if (props.editLocked) return
     if (props.activeKey === '31') props.item.ass_jsonpath.push(newJsonpathAssertion())
@@ -659,26 +628,6 @@
     },
     { field: 'actual', label: 'SQL语句', placeholder: '请输入只读查询SQL，可使用缓存变量' },
     { field: 'expect', label: '预期值', placeholder: '请输入预期值' },
-  ])
-  const generalFields = computed(() => [
-    {
-      field: 'group_logic',
-      label: '关系',
-      type: 'select',
-      options: relationOptions,
-      placeholder: '默认且',
-      onChange: (value: any, list: any[], index: number) =>
-        updateGroup(value, list, index, 'ass_general'),
-    },
-    {
-      field: 'method',
-      label: '断言方法',
-      type: 'cascader',
-      options: props.generalMethods,
-      expandTrigger: 'hover',
-      valueKey: 'key',
-      onChange: updateGeneralMethod,
-    },
   ])
 </script>
 
@@ -759,27 +708,5 @@
   }
   .mango-assertion-config-table :deep(.mango-assertion-config-row--group-4 > .arco-table-td) {
     background: color-mix(in srgb, var(--m-chart-5) 7%, var(--m-surface));
-  }
-  .assertion-parameters-inline {
-    display: flex;
-    min-width: 320px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .parameter-item-inline {
-    display: flex;
-    min-width: 240px;
-    flex: 1;
-    align-items: center;
-    gap: 6px;
-  }
-  .parameter-label-inline {
-    flex: none;
-    color: var(--m-text-2);
-    font-size: 12px;
-  }
-  .parameter-input-inline {
-    min-width: 160px;
-    flex: 1;
   }
 </style>

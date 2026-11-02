@@ -217,18 +217,8 @@ class APIBaseTestSetup(PublicBase):
         return request_model
 
     def request_data_clean(self, request_data_model: ApiExecutionRequest) -> ApiExecutionRequest:
-        from src.apps.test_center.services.test_target import TestTargetService
-        target_address = TestTargetService.resolve(self.test_object, self.test_data)
-        self.test_data.set_cache('url', target_address)
-        scope = getattr(self, 'target_auth_scope', None)
-        if scope and not getattr(self, 'skip_auth_load', False):
-            from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
-            previous_api_info_id = self.current_api_info_id
-            try:
-                self.current_api_info_id = scope[3]
-                ApiAuthManager.load(scope[0], scope[1], self, scope[2])
-            finally:
-                self.current_api_info_id = previous_api_info_id
+        self.ensure_execution_context()
+        target_address = self.test_data.get_cache('url')
         log.api.debug(f'清洗请求数据-1->{request_data_model.model_dump_json()}')
         try:
             for key, value in request_data_model:

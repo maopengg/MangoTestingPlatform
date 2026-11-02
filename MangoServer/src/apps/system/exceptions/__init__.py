@@ -10,6 +10,12 @@ class SystemError(MangoServerError):
     pass
 
 
+SYSTEM_RUNTIME_KV_INVALID = ErrorDefinition(code=38045, message='运行态存储参数无效，请检查模块、键、类型、大小或有效期')
+SYSTEM_RUNTIME_KV_TYPE_MISMATCH = ErrorDefinition(code=38046, message='运行态存储值不是整数计数器')
+SYSTEM_RUNTIME_KV_OVERFLOW = ErrorDefinition(code=38047, message='运行态存储计数超出有符号64位整数范围')
+SYSTEM_RUNTIME_KV_CORRUPT = ErrorDefinition(code=38048, message='运行态存储数据结构异常，请联系管理员排查')
+
+
 SYSTEM_NOTICE_WEBHOOK_FAILED = ErrorDefinition(code=38042, message='机器人通知发送失败，请检查 Webhook 配置或网络')
 SYSTEM_NOTICE_EMAIL_FAILED = ErrorDefinition(code=38043, message='邮件发送失败，请检查邮箱配置或网络')
 SYSTEM_NOTICE_FILE_FAILED = ErrorDefinition(code=38044, message='通知文件上传或发送失败，请检查机器人配置')
@@ -115,3 +121,14 @@ SYSTEM_SCHEDULING_TASK_RELATION_DELETE_BINDING_INVALID = ErrorDefinition(code=38
 
 SYSTEM_SCHEDULING_TASK_RELATION_DELETE_BINDING_INVALID_CODE_TASK_RELATION_DELETE_BINDING_INVALID = ErrorDefinition(
     code=38036, message='任务明细-有关联数据，请先删除绑定的数据后再删除！')
+
+
+class AiError(SystemError):
+    pass
+
+
+SYSTEM_AI_FAILED = ErrorDefinition(code=38049, message="{}")
+
+
+def ai_service_error(message: str) -> AiError:
+    return AiError(SYSTEM_AI_FAILED, value=(message,))

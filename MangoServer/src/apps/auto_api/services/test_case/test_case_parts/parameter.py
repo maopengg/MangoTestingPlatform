@@ -25,6 +25,7 @@ from src.apps.auto_api.schemas.execution import (
 )
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
 from src.apps.auto_api.services.protocols.outcome import ProtocolCallOutcomeService
+from src.apps.auto_api.services.test_case.transient_retry import ApiTransientRetryService
 from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum
 from src.apps.gray_config.services.execution_runner import GrayCaseExecutionRunner
 from src.common.exceptions import MangoServerError
@@ -69,6 +70,8 @@ class ApiTestCaseParameterMixin:
             )
             error_retry = 0
             retry = parameter.error_retry if parameter.error_retry else 1
+            configured_retry = retry
+            automatic_retry_condition = None
             status = StatusEnum.FAIL.value
             error_message = None
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
@@ -82,6 +85,7 @@ class ApiTestCaseParameterMixin:
                         'retry_current': error_retry,
                         'retry_max': retry,
                         'retry_interval': parameter.retry_interval or 0,
+                        'automatic_retry_condition': automatic_retry_condition,
                     },
                     detail_ref_type='api_case_detailed_parameter',
                     detail_ref_id=parameter.id,
@@ -89,6 +93,8 @@ class ApiTestCaseParameterMixin:
                 )
                 retry_parent_id = retry_step.id if retry_step else None
                 retry_aborted = False
+                transient_condition = None
+                request_in_progress = False
                 case_parameter = CaseParameter(
                     self.test_setup,
                     parameter,
@@ -113,6 +119,8 @@ class ApiTestCaseParameterMixin:
                 posterior_step = None
                 assertion_step = None
                 cleanup_step = None
+                callback_ids = []
+                callback_step = None
                 gray_step = None
                 request_body_config, mcp_config, grpc_config = unpack_scenario_body_config(
                     api_info.protocol_type,
@@ -136,6 +144,7 @@ class ApiTestCaseParameterMixin:
                     is_recovery=is_recovery_step(case_detailed),
                     parameter_id=parameter.id,
                     retry_index=error_retry,
+                    automatic_retry_condition=automatic_retry_condition,
                     api_info_id=api_info.id,
                     api_info_name=api_info.name,
                     name=parameter.name,
@@ -193,6 +202,27 @@ class ApiTestCaseParameterMixin:
                         detail_ref_id=parameter.id,
                         parent_step_id=retry_parent_id,
                     )
+                    from src.apps.auto_api.services.callback import ApiCallbackService
+                    callback_rules = [rule for rule in self.api_case.callback_checks
+                                      if rule.get('enabled', True)
+                                      and rule.get('trigger_step_key') == f'step-{case_detailed.id}']
+                    if callback_rules:
+                        from src.apps.auto_api.exceptions import AutoApiError, API_CALLBACK_CONFIG_INVALID
+                        if retry > 1 or len(list(self.get_parameters_for_step(case_detailed))) != 1:
+                            raise AutoApiError(API_CALLBACK_CONFIG_INVALID,
+                                               value=('回调触发步骤必须单场景且关闭失败重试，避免重复发送事件',))
+                        # 生成于请求模板替换前；一轮参数化得到新的关联值。
+                        from uuid import uuid4
+                        self.test_setup.test_data.set_cache('callback_run_id', uuid4().hex)
+                        callback_step = self.trace_recorder.start_step(
+                            ApiCaseTraceStepType.CALLBACK, '注册与验证回调',
+                        )
+                        callback_ids = ApiCallbackService.register(
+                            case=self.api_case, step=case_detailed, test_env=self.test_env,
+                            execution_key=uuid4().hex, test_data=self.test_setup.test_data,
+                            trace=self.trace_recorder.trace,
+                            user_id=self.user_id,
+                        )
                     request_model = case_parameter.front_main(request_model)
                     self.trace_recorder.finish_step(front_step, {
                         'method': request_model.method,
@@ -216,6 +246,7 @@ class ApiTestCaseParameterMixin:
                     )
                     request_model.trace_parent_step_id = request_step.id if request_step else retry_parent_id
                     has_user_assertions = self.has_user_configured_assertions(parameter)
+                    request_in_progress = True
                     res_model.response = self.test_setup.api_request(
                         case_detailed.api_info_id,
                         self.test_env,
@@ -224,6 +255,7 @@ class ApiTestCaseParameterMixin:
                         apply_api_info_posterior=not has_user_assertions,
                         initialize_public_context=False,
                     )
+                    request_in_progress = False
                     expected_codes, accept_any_status = self.resolve_protocol_expectation(
                         parameter,
                         res_model.response,
@@ -246,6 +278,8 @@ class ApiTestCaseParameterMixin:
                         'protocol_status': call_outcome.protocol_status,
                     }
                     if not call_outcome.success:
+                        transient_condition = ApiTransientRetryService.response_condition(
+                            res_model.response, call_success=False)
                         skip_message = '接口调用未达到场景预期，已跳过响应后置处理和业务断言。'
                         error_message = f'{call_outcome.error_message} {skip_message}'
                         status = StatusEnum.FAIL.value
@@ -295,6 +329,23 @@ class ApiTestCaseParameterMixin:
                         parent_step_id=retry_parent_id,
                     )
                     res_model.ass, status, error_message = case_parameter.ass_main(res_model.response)
+                    if status == StatusEnum.FAIL.value:
+                        transient_condition = ApiTransientRetryService.response_condition(
+                            res_model.response, call_success=True)
+                    if callback_ids:
+                        callback_runs = ApiCallbackService.wait(callback_ids, self.raise_if_report_stopped)
+                        summaries = ApiCallbackService.attach_results(res_model, callback_runs)
+                        self.api_case_result.callback_results.extend(summaries)
+                        from src.apps.auto_api.enums.callback import CallbackRunStatus
+                        if any(run.status != CallbackRunStatus.PASSED for run in callback_runs):
+                            status = StatusEnum.FAIL.value
+                            error_message = '；'.join(filter(None, [error_message, *[
+                                f"{run.rule['name']}：{run.error_message}" for run in callback_runs
+                                if run.status != CallbackRunStatus.PASSED
+                            ]]))
+                            self.trace_recorder.fail_step(callback_step, error_message, summaries)
+                        else:
+                            self.trace_recorder.finish_step(callback_step, summaries)
                     if status == StatusEnum.SUCCESS.value:
                         self.trace_recorder.finish_step(assertion_step, {'assertion_count': len(res_model.ass or [])})
                     else:
@@ -309,6 +360,8 @@ class ApiTestCaseParameterMixin:
                     self.update_api_info(case_detailed.api_info.id, res_model.response, res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                 except (MangoServerError, MangoToolsError) as error:
+                    if request_in_progress:
+                        transient_condition = ApiTransientRetryService.error_condition(error)
                     retry_aborted = True
                     for step in [assertion_step, posterior_step, request_step, front_step, data_factory_step,
                                  gray_step]:
@@ -327,7 +380,6 @@ class ApiTestCaseParameterMixin:
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     status = StatusEnum.FAIL.value
                     error_message = error.msg
-                    break
                 except Exception as error:
                     retry_aborted = True
                     for step in [assertion_step, posterior_step, request_step, front_step, data_factory_step,
@@ -349,8 +401,24 @@ class ApiTestCaseParameterMixin:
                     log.api.error(f'API请求发生未知错误：{traceback.print_exc()}')
                     status = StatusEnum.FAIL.value
                     error_message = msg
-                    break
                 finally:
+                    if callback_ids:
+                        from django.db import DatabaseError
+                        try:
+                            ApiCallbackService.cancel(callback_ids)
+                            existing_ids = {item['id'] for item in self.api_case_result.callback_results}
+                            from src.apps.auto_api.models import ApiCaseCallbackRun
+                            for run in ApiCaseCallbackRun.objects.filter(pk__in=callback_ids):
+                                if run.id not in existing_ids:
+                                    self.api_case_result.callback_results.extend(
+                                        ApiCallbackService.attach_results(res_model, [run]))
+                        except DatabaseError:
+                            status = StatusEnum.FAIL.value
+                            error_message = '回调证据存储不可用，请排查平台数据库'
+                            res_model.status = status
+                            res_model.error_message = error_message
+                        if callback_step and callback_step.status == TaskEnum.PROCEED.value:
+                            self.trace_recorder.fail_step(callback_step, '触发步骤未完成，回调验证中止')
                     cleanup_error = None
                     cleanup_step = self.trace_recorder.start_step(
                         ApiCaseTraceStepType.DATA_FACTORY_CLEANUP,
@@ -383,18 +451,37 @@ class ApiTestCaseParameterMixin:
                         status = StatusEnum.FAIL.value
                         error_message = f'场景数据工厂清理失败：{cleanup_error}'
                         retry_aborted = True
+                    automatic_retry = (
+                        not cleanup_error and status == StatusEnum.FAIL.value
+                        and configured_retry == 1 and error_retry == 1
+                        and transient_condition is not None
+                        and ApiTransientRetryService.safe(
+                            request_model, parameter, api_info,
+                            recovery=is_recovery_step(case_detailed),
+                            callbacks=bool(callback_ids),
+                            factory_ran=bool(getattr(parameter_data_factory.runner, 'execution_ids', [])),
+                            gray=bool(applied_parameter_gray_configs),
+                        )
+                        and ApiTransientRetryService.selected(transient_condition)
+                    )
+                    if automatic_retry:
+                        retry = 2
+                        retry_aborted = False
+                        automatic_retry_condition = transient_condition.value
+                    retry_wait_seconds = 2 if automatic_retry else (parameter.retry_interval or 0)
                     should_wait = (
                             not retry_aborted
                             and status == StatusEnum.FAIL.value
                             and error_retry < retry
-                            and bool(parameter.retry_interval)
+                            and bool(retry_wait_seconds)
                     )
                     if should_wait:
                         wait_step = self.trace_recorder.start_step(
                             ApiCaseTraceStepType.RETRY_WAIT,
                             '等待下次重试',
                             {
-                                'seconds': parameter.retry_interval,
+                                'seconds': retry_wait_seconds,
+                                'automatic_retry_condition': automatic_retry_condition,
                                 'next_retry': error_retry + 1,
                                 'retry_max': retry,
                             },
@@ -402,9 +489,11 @@ class ApiTestCaseParameterMixin:
                             detail_ref_id=parameter.id,
                             parent_step_id=retry_parent_id,
                         )
-                        time.sleep(parameter.retry_interval)
+                        self.raise_if_report_stopped()
+                        time.sleep(retry_wait_seconds)
+                        self.raise_if_report_stopped()
                         self.trace_recorder.finish_step(wait_step, {
-                            'waited_seconds': parameter.retry_interval,
+                            'waited_seconds': retry_wait_seconds,
                         })
                     retry_summary = {
                         'retry_current': error_retry,
@@ -417,6 +506,8 @@ class ApiTestCaseParameterMixin:
                         self.trace_recorder.fail_step(retry_step, error_message, retry_summary)
                     if cleanup_error:
                         raise cleanup_error
+                if retry_aborted:
+                    break
             if status == StatusEnum.FAIL.value:
                 self.trace_recorder.fail_step(scenario_step, error_message)
                 result_item = {

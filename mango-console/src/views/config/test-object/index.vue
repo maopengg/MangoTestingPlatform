@@ -93,7 +93,7 @@
         <template #toolbar>
           <a-space>
             <div>
-              <a-button v-permission="'config.test_object:create'"
+              <a-button
                 type="primary"
                 size="small"
                 @click="onAdd"
@@ -151,9 +151,10 @@
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    { permission: 'config.test_object:edit', label: '编辑', onClick: () => onUpdate(record) },
-                    { permission: 'config.test_object:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                  ]"
+    { label: '测试', hidden: !record.network_test_addresses?.length, onClick: () => connectionDialog?.open(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                 />
               </template>
             </a-table-column>
@@ -238,6 +239,7 @@
       </a-form>
     </template>
   </ModalDialog>
+  <TestConnectionDialog ref="connectionDialog" />
 </template>
 
 <script lang="ts" setup>
@@ -263,11 +265,13 @@
   import { setUpdateUserOptions } from '@/utils/update-user'
   import TestTargetEditor from './components/TestTargetEditor.vue'
   import TestTargetDisplay from './components/TestTargetDisplay.vue'
+  import TestConnectionDialog from './components/TestConnectionDialog.vue'
   import { emptyTargetConfig, validateTargetConfig } from './target-config'
 
   const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const connectionDialog = ref<InstanceType<typeof TestConnectionDialog> | null>(null)
   const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()

@@ -34,7 +34,7 @@
           <template #cell="{ record }"><a-switch v-model="record.enabled" size="small" /></template>
         </a-table-column>
         <a-table-column title="操作" :width="90" align="center" fixed="right">
-          <template #cell="{ rowIndex }"><a-button v-permission="'api.mock:delete'" type="text" status="danger" @click="removeItem(rowIndex)">删除</a-button></template>
+          <template #cell="{ rowIndex }"><a-button  type="text" status="danger" @click="removeItem(rowIndex)">删除</a-button></template>
         </a-table-column>
       </template>
     </a-table>

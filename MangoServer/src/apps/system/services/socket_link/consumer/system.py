@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 
-from django.core.cache import cache
 from mangotools.contracts import SocketEnvelopeContract
 from mangotools.contracts import TaskPullRequest
 from mangotools.enums import CacheValueTypeEnum
@@ -18,20 +17,13 @@ from src.apps.system.enums import (
     SystemConfigManagementLevelEnum,
 )
 from src.apps.system.services.cache_data import CacheDataService
+from src.apps.system.services.actuator_config_runtime import ActuatorConfigRuntimeService
 from src.apps.system.services.system_config import SystemConfigService
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.common.decorators.retry import async_task_db_connection
 
 
 class SystemConsumer:
-    @staticmethod
-    def _actuator_config_snapshot_key(request_id: str):
-        return f'actuator_config_snapshot:{request_id}'
-
-    @staticmethod
-    def _actuator_config_save_key(request_id: str):
-        return f'actuator_config_save:{request_id}'
-
     @classmethod
     @async_task_db_connection()
     def t_set_operation_options(cls, data: dict):
@@ -78,12 +70,12 @@ class SystemConsumer:
         if not request_id:
             return
         cls._sync_socket_user_runtime_status(data)
-        cache.set(cls._actuator_config_snapshot_key(request_id), {
+        ActuatorConfigRuntimeService.set_snapshot(request_id, {
             'status': 'success' if data.get('status', True) else 'failed',
             'username': data.get('username'),
             'config': data.get('config') or {},
             'message': data.get('message') or '',
-        }, 60)
+        })
 
     @classmethod
     @async_task_db_connection()
@@ -96,12 +88,12 @@ class SystemConsumer:
         if not request_id:
             return
         cls._sync_socket_user_runtime_status(data)
-        cache.set(cls._actuator_config_save_key(request_id), {
+        ActuatorConfigRuntimeService.set_save_result(request_id, {
             'status': 'success' if data.get('status', True) else 'failed',
             'username': data.get('username'),
             'message': data.get('message') or '',
             'config': data.get('config') or {},
-        }, 60)
+        })
 
     @staticmethod
     def _sync_socket_user_runtime_status(data: dict):

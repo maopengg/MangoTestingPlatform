@@ -91,7 +91,7 @@
         <template #toolbar>
           <a-space>
             <span class="execution-selection-summary">已选 {{ selectedRowKeys.length }} 条</span>
-            <a-button v-permission="'data_factory.execution:delete'"
+            <a-button
               size="small"
               type="primary"
               status="danger"
@@ -493,7 +493,7 @@
 
   function executionActions(record: any) {
     const actions: ExecutionAction[] = [
-      { permission: 'data_factory.execution:detail',
+      {
         label: '详情',
         loading: actionLoading.value === `detail-${record.id}`,
         onClick: () => openDetail(record),
@@ -501,6 +501,7 @@
     ]
     if (canCleanup(record)) {
       actions.push({
+
         label: record.cleanup_status === 2 ? '重试清理' : '清理',
         danger: true,
         loading: actionLoading.value === `cleanup-${record.id}`,

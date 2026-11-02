@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
@@ -18,6 +19,7 @@ class CaptureHandler(logging.Handler):
 
 
 class LoggingConfigurationTests(SimpleTestCase):
+
     def test_service_logging_keeps_three_file_layout_and_module_logger(self):
         with TemporaryDirectory() as directory:
             config = build_logging_config(

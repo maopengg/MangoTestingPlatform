@@ -97,6 +97,11 @@ class ApiTestCaseLifecycleMixin:
                     self.api_case.project_product_id,
                 ),
             )
+        if self.api_case.callback_checks:
+            from src.apps.auto_api.services.callback import ApiCallbackService
+            ApiCallbackService.validate_execution(
+                self.api_case.callback_checks, list(self.get_case_detailed_queryset(self.api_case.id, None)),
+            )
         case_data_factory_configs = None
         if self.revision_aggregate is not None:
             case_data_factory_configs = self.revision_aggregate.data_factory_configs_for(

@@ -7,9 +7,12 @@ from django.http import QueryDict
 from django.test import SimpleTestCase
 from django.urls import URLResolver, get_resolver
 
-from src.apps.ai.api.views.agent_task import AiAgentTaskViews
 from src.apps.auto_api.api.views.api_headers import ApiHeadersCRUD
 from src.apps.auto_api.api.views.api_mock import ApiMockConfigCRUD, ApiMockConfigViews
+from src.apps.auto_api.api.views.module_coverage_case import ModuleCoverageCaseViews
+from src.apps.data_factory.api.views.execution import DataFactoryExecutionViews
+from src.apps.functional_test.api.views.requirement_case import FunctionalRequirementCaseViews
+from src.apps.functional_test.api.views.requirement_task import FunctionalRequirementTaskViews
 from src.apps.auto_pytest.api.views.pytest_product import PytestProductViews
 from src.apps.auto_pytest.api.views.pytest_repository import PytestRepositoryViews
 from src.apps.auto_ui.api.views.ui_live_stream import LiveStreamViews
@@ -20,12 +23,12 @@ from src.apps.system.api.views.cache_data import CacheDataViews
 from src.apps.system.api.views.runtime_center import RuntimeCenterViews
 from src.apps.system.services.runtime_center.overview import RuntimeOverviewService
 from src.apps.system.services.runtime_center.recent_errors import RecentErrorsService
-from src.apps.task_center.api.views.task_group import ScheduledTaskGroupViews
+from src.apps.task_center.api.views.task_group import ScheduledTaskGroupViews, ScheduledTaskGroupTriggerViews
 from src.apps.test_center.api.views.data_source import DataSourceCRUD, DataSourceViews
 from src.apps.test_center.api.views.execution_result import ExecutionResultViews
 from src.apps.user.middleware.permission import MenuActionPermission
 from src.apps.user.services.permission import PermissionMenuService
-from src.interfaces.mcp.authentication import permission_error
+from src.interfaces.mcp.authentication import component_policy, permission_error
 
 
 class RolePermissionTests(SimpleTestCase):
@@ -35,6 +38,9 @@ class RolePermissionTests(SimpleTestCase):
         self.super_admin = patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False)
         self.super_admin.start()
         self.addCleanup(self.super_admin.stop)
+        scope = patch('src.apps.user.services.model_crud_scope.ModelCrudDataScopePolicy.has_request_permission', return_value=True)
+        scope.start()
+        self.addCleanup(scope.stop)
 
     def request(self, method, path, data=None):
         return SimpleNamespace(method=method.upper(), path=path, data=data or {}, query_params=QueryDict(),
@@ -59,24 +65,19 @@ class RolePermissionTests(SimpleTestCase):
 
     def test_registered_permissions_grant_previously_blocked_operations(self):
         cases = [
-            (DataSourceCRUD(), None, 'get', '/api/system/data-source', 'config.datasource', {}),
-            (DataSourceViews(), 'schemas', 'get', '/api/system/data-source/schemas', 'config.product:edit', {}),
-            (DataSourceViews(), 'query', 'post', '/api/system/data-source/query', 'config.datasource:debug', {}),
-            (ApiMockConfigCRUD(), None, 'post', '/api/api/mock/config', 'api.mock:create', {}),
-            (ApiMockConfigViews(), 'change_state', 'put', '/api/api/mock/config/state', 'api.mock:status', {}),
-            (ApiMockConfigViews(), 'debug', 'post', '/api/api/mock/config/debug', 'api.mock:debug', {}),
-            (LiveStreamViews(), 'create_workspace', 'post', '/api/ui/live-stream/workspace', 'ui.case:debug', {}),
-            (PageStepsViews(), 'copy_page_steps', 'post', '/api/ui/page/steps/copy', 'ui.page_steps:copy', {}),
-            (PageStepsViews(), 'heal_apply', 'post', '/api/ui/page/steps/healing/apply', 'ui.page_steps:edit', {}),
-            (PageStepsViews(), 'heal_rollback', 'post', '/api/ui/page/steps/healing/rollback', 'ui.page_steps:edit',
+            (DataSourceCRUD(), None, 'get', '/api/system/data-source', 'config.datasource:read', {}),
+            (DataSourceViews(), 'schemas', 'get', '/api/system/data-source/schemas', 'config.product:change', {}),
+            (DataSourceViews(), 'query', 'post', '/api/system/data-source/query', 'config.datasource:change', {}),
+            (ApiMockConfigCRUD(), None, 'post', '/api/api/mock/config', 'api.mock:add', {}),
+            (ApiMockConfigViews(), 'change_state', 'put', '/api/api/mock/config/state', 'api.mock:change', {}),
+            (ApiMockConfigViews(), 'debug', 'post', '/api/api/mock/config/debug', 'api.mock:change', {}),
+            (PageStepsViews(), 'copy_page_steps', 'post', '/api/ui/page/steps/copy', 'ui.page_steps:add', {}),
+            (PageStepsViews(), 'heal_apply', 'post', '/api/ui/page/steps/healing/apply', 'ui.page_steps:change', {}),
+            (PageStepsViews(), 'heal_rollback', 'post', '/api/ui/page/steps/healing/rollback', 'ui.page_steps:change',
              {}),
-            (PytestProductViews(), 'pytest_import', 'post', '/api/pytest/product/import', 'pytest.product:create', {}),
-            (AiAgentTaskViews(), 'functional_case_start', 'post', '/api/ai/agent/functional-case/start',
-             'ai.task:execute', {}),
-            (AiAgentTaskViews(), 'api_automation_start', 'post', '/api/ai/agent/api-automation/start',
-             'ai.task:execute', {}),
-            (RuntimeCenterViews(), 'overview', 'get', '/api/system/runtime/overview', 'system.runtime_center', {}),
-            (ManualTestCaseExportViews(), None, 'get', '/api/functional-test/case/export', 'functional.case:export',
+            (PytestProductViews(), 'pytest_import', 'post', '/api/pytest/product/import', 'pytest.product:add', {}),
+            (RuntimeCenterViews(), 'overview', 'get', '/api/system/runtime/overview', 'system.runtime_center:read', {}),
+            (ManualTestCaseExportViews(), None, 'get', '/api/functional-test/case/export', 'functional.case:read',
              {}),
         ]
         for view, action, method, path, key, data in cases:
@@ -89,7 +90,97 @@ class RolePermissionTests(SimpleTestCase):
         view.action = 'clear_runtime_cache'
         with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'system.settings'}):
             self.assertFalse(self.policy.has_permission(request, view))
-        self.assert_grants(view, 'clear_runtime_cache', 'post', request.path, 'system.settings:debug')
+        self.assert_grants(view, 'clear_runtime_cache', 'post', request.path, 'system.settings:change')
+
+    def test_recent_buttons_require_their_operation_permission(self):
+        cases = [
+            (ScheduledTaskGroupTriggerViews(), 'trigger', 'get', '/api/system/tasks/groups/trigger',
+             'timing.tasks:read'),
+            (ScheduledTaskGroupViews(), 'resend_notice', 'post', '/api/system/tasks/groups/notice/resend',
+             'timing.tasks:change'),
+            (ModuleCoverageCaseViews(), 'binding', 'put', '/api/api/module-coverage/case/binding',
+             'api.module_coverage:change'),
+            (DataFactoryExecutionViews(), 'cleanup', 'post', '/api/data-factory/execution/cleanup',
+             'data_factory.execution:remove'),
+            (DataFactoryExecutionViews(), 'batch_cleanup', 'post', '/api/data-factory/execution/batch-cleanup',
+             'data_factory.execution:remove'),
+            (FunctionalRequirementTaskViews(), 'create', 'post', '/api/functional-test/requirement-task',
+             'functional.suite:change'),
+            (FunctionalRequirementTaskViews(), 'delete', 'delete', '/api/functional-test/requirement-task',
+             'functional.suite:change'),
+            (FunctionalRequirementCaseViews(), 'unbind', 'delete', '/api/functional-test/requirement-case/unbind',
+             'functional.suite:change'),
+        ]
+        for view, action, method, path, permission in cases:
+            with self.subTest(action=action, permission=permission):
+                self.assert_grants(view, action, method, path, permission)
+                request = self.request(method, path)
+                view.action = action
+                page_key = permission.split(':')[0]
+                with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={page_key}):
+                    self.assertFalse(self.policy.has_permission(request, view))
+
+    def test_task_group_notice_is_registered_but_not_automatically_granted(self):
+        self.assertIn('timing.tasks:change', PermissionMenuService.all_permission_keys())
+        self.assertNotIn('timing.tasks:change', PermissionMenuService.guest_permission_keys())
+        self.assertEqual(PermissionMenuService.filter_current_permission_keys(['timing.tasks']), {'timing.tasks'})
+
+    def test_existing_mcp_operations_match_the_http_button_permissions(self):
+        for tool, key in (
+            ('trigger_scheduled_task', 'timing.tasks:read'),
+            ('bind_cases_to_scheduled_task', 'timing.tasks:change'),
+            ('cleanup_data_factory_execution', 'data_factory.execution:remove'),
+        ):
+            with self.subTest(tool=tool):
+                policy = component_policy(tool)
+                self.assertEqual(policy.permission_key, key)
+                self.assertTrue(policy.project_scoped)
+
+    def test_guest_has_all_business_read_permissions_but_no_management_or_mutations(self):
+        keys = PermissionMenuService.guest_permission_keys()
+        valid = PermissionMenuService.all_permission_keys()
+        for key in valid:
+            if key in {'system', 'gray', 'organization_permission'} or key.startswith(('system.', 'gray.', 'timing.system_jobs')):
+                self.assertNotIn(key, keys)
+            elif ':' not in key or key.rsplit(':', 1)[1] == 'read':
+                self.assertIn(key, keys)
+            else:
+                self.assertNotIn(key, keys)
+        self.assertIn('report:read', keys)
+        self.assertIn('pytest.repository:read', keys)
+        self.assertIn('api.module_coverage:read', keys)
+        self.assertFalse(any(key.endswith((':execute', ':debug', ':retry', ':notice', ':query')) for key in keys))
+
+    def test_guest_defaults_include_new_business_pages_and_read_actions(self):
+        tree = [{'permissionKey': 'business.new_page', 'actions': [
+            {'permissionKey': 'business.new_page:read'},
+            {'permissionKey': 'business.new_page:change'},
+        ]}]
+        with patch.object(PermissionMenuService, 'permission_tree', return_value=tree):
+            self.assertEqual(PermissionMenuService.guest_permission_keys(), {
+                'index.home', 'index.home:read', 'business.new_page', 'business.new_page:read',
+            })
+
+    def test_guest_role_permission_panel_uses_current_defaults_not_stale_stored_keys(self):
+        with patch('src.apps.user.services.permission.Role.objects') as roles, \
+                patch('src.apps.user.services.permission.RoleMenuPermission.objects') as stored:
+            roles.filter.return_value.exists.return_value = True
+            stored.filter.return_value.values_list.return_value = ['gray.repository', 'timing.tasks:change']
+            self.assertEqual(PermissionMenuService.role_permission_keys(7), PermissionMenuService.guest_permission_keys())
+            stored.filter.assert_not_called()
+
+    def test_guest_can_execute_but_cannot_bind_or_cleanup(self):
+        granted = PermissionMenuService.guest_permission_keys()
+        with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=granted):
+            view = ModuleCoverageCaseViews()
+            view.action = 'retrieve'
+            self.assertTrue(self.policy.has_permission(self.request('get', '/api/api/module-coverage/case/detail'), view))
+            view.action = 'binding'
+            self.assertFalse(self.policy.has_permission(self.request('post', '/api/api/module-coverage/case/binding'), view))
+            with patch('src.interfaces.mcp.authentication.resolve_project_product_ids', return_value={7}), \
+                    patch('src.interfaces.mcp.authentication.ProjectProductScopeService.has_project_product', return_value=True):
+                self.assertIsNone(permission_error(self.user, 'trigger_scheduled_task', {'time_task_id': 1}))
+            self.assertIsNotNone(permission_error(self.user, 'cleanup_data_factory_execution', {}))
 
     def test_runtime_overview_cannot_bypass_error_page_or_detail_permissions(self):
         overview = {
@@ -100,7 +191,7 @@ class RolePermissionTests(SimpleTestCase):
             'recent_errors': [{'traceback': 'private trace'}],
         }
         for granted, has_details in [({'system.runtime_center'}, False),
-                                     ({'system.runtime_center', 'system.runtime_center:detail'}, True)]:
+                                     ({'system.runtime_center', 'system.runtime_center:read'}, True)]:
             with self.subTest(granted=granted), patch.object(
                     RuntimeOverviewService, 'get_overview', return_value=overview), patch.object(
                 PermissionMenuService, 'permission_keys_for_user', return_value=granted):
@@ -118,7 +209,7 @@ class RolePermissionTests(SimpleTestCase):
                  'log_query': 'query', 'link': '/timing/fire-record/index', 'context': {'private': 'value'}}]
         for granted, expected in [({'system.runtime_center'}, []),
                                   ({'system.error_record'}, [{'object_id': 1, 'message': 'summary'}]),
-                                  ({'system.error_record', 'system.error_record:detail'}, rows)]:
+                                  ({'system.error_record', 'system.error_record:read'}, rows)]:
             with self.subTest(granted=granted), patch.object(
                     PermissionMenuService, 'permission_keys_for_user', return_value=granted):
                 self.assertEqual(RecentErrorsService.visible_rows(rows, self.user), expected)
@@ -141,55 +232,61 @@ class RolePermissionTests(SimpleTestCase):
             response = view.recent_errors(self.request('get', '/api/system/runtime/recent-errors'))
         self.assertEqual(response.data['data'], [{'object_id': 1, 'message': 'summary'}])
 
-    def test_headers_status_is_independent_from_edit(self):
-        self.assert_grants(ApiHeadersCRUD(), None, 'put', '/api/api/headers', 'api.headers:status',
+    def test_headers_content_and_status_share_change_permission(self):
+        self.assert_grants(ApiHeadersCRUD(), None, 'put', '/api/api/headers', 'api.headers:change',
                            {'id': 1, 'status': 1})
         request = self.request('put', '/api/api/headers', {'id': 1, 'status': 1, 'value': 'updated'})
         view = ApiHeadersCRUD()
         view.request = request
-        for granted, expected in [({'api.headers:edit'}, False), ({'api.headers:status'}, False),
-                                  ({'api.headers:edit', 'api.headers:status'}, True)]:
+        for granted, expected in [({'api.headers:read'}, False), ({'api.headers:change'}, True)]:
             with self.subTest(granted=granted), patch.object(
                     PermissionMenuService, 'permission_keys_for_user', return_value=granted):
                 self.assertEqual(self.policy.has_permission(request, view), expected)
 
     def test_repository_create_and_edit_are_distinct(self):
         self.assert_grants(PytestRepositoryViews(), 'save_repository', 'post', '/api/pytest/repository',
-                           'pytest.repository:create')
+                           'pytest.repository:add')
         self.assert_grants(PytestRepositoryViews(), 'save_repository', 'put', '/api/pytest/repository',
-                           'pytest.repository:edit', {'id': 1})
+                           'pytest.repository:change', {'id': 1})
 
     def test_crud_and_task_group_status_toggles_use_status_permission(self):
         self.assert_grants(GrayRepositoryCRUD(), None, 'put', '/api/gray/repository',
-                           'gray.repository:status', {'id': 1, 'status': 0})
+                           'gray.repository:change', {'id': 1, 'status': 0})
         self.assert_grants(ScheduledTaskGroupViews(), 'update', 'put', '/api/system/tasks/groups',
-                           'timing.tasks:status', {'id': 1, 'status': 0})
+                           'timing.tasks:change', {'id': 1, 'status': 0})
 
-    def test_mcp_updates_cannot_bypass_status_permission(self):
-        with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'api.public:edit'}):
+    def test_mcp_updates_require_change_permission_for_status_too(self):
+        with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'api.public:read'}):
             error = permission_error(self.user, 'update_api_public_variable', {'public_variable_id': 1, 'status': 0})
         self.assertEqual(error['error_code'], 'MCP_PERMISSION_DENIED')
-        self.assertEqual(error['details']['permission'], 'api.public:status')
+        self.assertEqual(error['details']['permission'], 'api.public:change')
 
     def test_execution_result_endpoints_require_an_operation_permission(self):
         for action in ('get_list', 'get_detail', 'get_content', 'get_latest'):
             self.assert_grants(ExecutionResultViews(), action, 'get', '/api/system/execution/result/detail',
-                               'api.case:detail')
+                               'api.case:read')
 
     def test_capacity_has_no_unimplemented_edit_permission(self):
-        self.assertEqual(PermissionMenuService.default_actions_for_menu('perf.capacity'), [])
-        for unused in ('api.info:copy', 'pytest.product:execute', 'config.test_object:debug',
-                       'config.test_object:detail', 'gray.feature:detail', 'gray.repository:detail',
-                       'timing.fire_record:detail'):
+        self.assertEqual([item['permissionKey'] for item in PermissionMenuService.default_actions_for_menu('perf.capacity')], ['perf.capacity:read'])
+        for unused in ('perf.capacity:add', 'perf.capacity:change', 'perf.capacity:remove'):
             self.assertNotIn(unused, PermissionMenuService.all_permission_keys())
 
-    def test_new_ai_generation_permission_is_not_automatically_granted_to_guests(self):
-        self.assertNotIn('ai.task:execute', PermissionMenuService.guest_permission_keys())
+    @patch('src.apps.user.services.permission.Role.objects')
+    @patch('src.apps.user.services.permission.RoleMenuPermission.objects')
+    def test_retired_ai_permissions_cannot_be_restored_by_old_roles(self, permissions, roles):
+        roles.filter.return_value.exists.return_value = False
+        retired = {'ai.task:execute', 'ai.skill', 'ai.mcp',
+                   'functional.suite:generate', 'functional.suite:generate_api'}
+        self.assertFalse(retired & PermissionMenuService.all_permission_keys())
+        self.assertFalse(retired & set(PermissionMenuService.guest_permission_keys()))
+        permissions.filter.return_value.values_list.return_value = list(retired)
+        self.assertFalse(retired & PermissionMenuService.role_permission_keys(1))
 
-    def test_old_database_page_permission_is_normalized_without_expanding_other_pages(self):
-        self.assertEqual(PermissionMenuService.normalize_legacy_permission_keys(
-            ['config.data_source', 'pytest.product', 'system.settings']),
-            {'config.datasource', 'pytest.product', 'system.settings'})
+    def test_old_permissions_are_filtered_without_automatically_expanding_authority(self):
+        self.assertEqual(PermissionMenuService.filter_current_permission_keys(
+            ['config.data_source', 'api.case:edit', 'api.case:create', 'api.case:delete',
+             'pytest.product', 'system.settings', 'api.case:read']),
+            {'pytest.product', 'system.settings', 'api.case:read'})
 
     def test_explicit_http_permission_maps_use_registered_keys(self):
         valid = PermissionMenuService.all_permission_keys()

@@ -67,7 +67,7 @@
               }}
             </span>
             <a-space class="step-healing-summary__actions" :size="4">
-              <a-button v-permission="'ui.page_steps:edit'"
+              <a-button
                 v-if="healingPendingReviewCount"
                 size="small"
                 type="primary"
@@ -125,7 +125,7 @@
         </div>
         <div v-if="!compact || showStepDetailAction || showCacheDataAction" class="flow-head-side">
           <div class="flow-actions">
-            <a-button v-permission="'ui.page_steps:detail'"
+            <a-button
               v-if="showStepDetailAction"
               size="small"
               type="primary"
@@ -146,7 +146,7 @@
               <a-button size="small" type="outline" @click="emit('canvasBeautify')" data-testid="qa-views-uitest-page-steps-details-flowchart-button-美化画布">
                 美化画布
               </a-button>
-              <a-button v-permission="'ui.page_steps:edit'"
+              <a-button
                 size="small"
                 type="primary"
                 :loading="flowSaving"

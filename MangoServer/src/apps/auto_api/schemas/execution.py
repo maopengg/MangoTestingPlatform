@@ -242,6 +242,24 @@ class ApiExecutionResponse(StrictSchema):
         return data
 
 
+class ApiCallbackAssertionContext(StrictSchema):
+    run_id: int
+    rule_key: str
+    run_status: str | None = None
+    events: int | None = None
+    deliveries: int | None = None
+    delivery_id: int | None = None
+    event_id: str | None = None
+    received_at: str | None = None
+    check_key: str | None = None
+    check_type: str | None = None
+    source: str | None = None
+    field: str | None = None
+    diagnostic: bool = False
+    passed: bool | None = None
+    assertions: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class ApiAssertionResult(StrictSchema):
     method: str
     expect: Any | None = None
@@ -258,12 +276,17 @@ class ApiAssertionResult(StrictSchema):
     expect_source: Any | None = None
     raw_config: Any | None = None
     resolved_config: Any | None = None
+    callback: ApiCallbackAssertionContext | None = None
 
     @model_serializer(mode='wrap')
     def serialize_assertion_result(self, handler):
         data = handler(self)
         data['actual'] = _truncate_assertion_result_value(data.get('actual'))
         data['ass_msg'] = _truncate_assertion_result_value(data.get('ass_msg'))
+        if self.callback is None:
+            data.pop('callback', None)
+        else:
+            data['callback'] = self.callback.model_dump(mode='json', exclude_none=True, exclude_defaults=True)
         return data
 
 
@@ -289,6 +312,7 @@ class ApiCaseStepResult(StrictSchema):
     recovery_errors: list[str] = Field(default_factory=list)
     parameter_id: int | None = None
     retry_index: int | None = None
+    automatic_retry_condition: str | None = None
     name: str
     status: int
     error_message: str | None = None
@@ -313,6 +337,8 @@ class ApiCaseExecutionResult(StrictSchema):
     main_status: int | None = None
     recovery_status: int | None = None
     recovery_errors: list[str] = Field(default_factory=list)
+    # 仅保留运行／投递摘要；最终回调断言明细归属于触发步骤的 ass。
+    callback_results: list[dict[str, Any]] = Field(default_factory=list)
     name: str
     project_product_name: str
     status: int

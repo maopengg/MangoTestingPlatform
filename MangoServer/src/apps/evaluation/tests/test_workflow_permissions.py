@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from unittest.mock import patch, AsyncMock
 from django.test import SimpleTestCase
@@ -10,21 +11,21 @@ from src.apps.evaluation.services.workflow_resources import freeze_dataset_confi
 
 class WorkflowPermissionTests(SimpleTestCase):
     def test_draft_delete_uses_delete_permission_on_both_protocols(self):
-        from src.apps.evaluation.constants import MCP_EVALUATION_PERMISSIONS
+        from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
         match = resolve("/api/evaluation/dataset/version/1")
         self.assertEqual(match.func.actions["delete"], "delete")
-        self.assertEqual(match.func.cls.action_permission_map["delete"], "evaluation.dataset:delete")
-        self.assertEqual(MCP_EVALUATION_PERMISSIONS["delete_evaluation_dataset_version"], "evaluation.dataset:delete")
+        self.assertEqual(permission_for_view(match.func.cls, "delete"), "evaluation.dataset:remove")
+        self.assertEqual(MCP_PERMISSION_RULES["delete_evaluation_dataset_version"]['permission_key'], "evaluation.dataset:remove")
 
     def test_resource_query_and_preview_have_explicit_read_permission(self):
         for path, method in (("workflow-resources", "get"), ("input-preview", "post")):
             match = resolve("/api/evaluation/dataset/version/1/" + path)
-            self.assertEqual(match.func.cls.action_permission_map[match.func.actions[method]], "evaluation.dataset:detail")
+            self.assertEqual(permission_for_view(match.func.cls, match.func.actions[method]), "evaluation.dataset:read")
 
     def test_dataset_permission_does_not_grant_resource_execution(self):
         with patch("src.apps.evaluation.selectors.workflow.ensure_product_scope"), \
              patch("src.apps.evaluation.selectors.workflow.PermissionMenuService.is_effective_super_admin", return_value=False), \
-             patch("src.apps.evaluation.selectors.workflow.PermissionMenuService.permission_keys_for_user", return_value={"evaluation.dataset", "evaluation.dataset:edit"}):
+             patch("src.apps.evaluation.selectors.workflow.PermissionMenuService.permission_keys_for_user", return_value={"evaluation.dataset", "evaluation.dataset:change"}):
             for action in (EvaluationWorkflowActionEnum.API, EvaluationWorkflowActionEnum.SQL, EvaluationWorkflowActionEnum.FACTORY):
                 with self.subTest(action=action), self.assertRaises(EvaluationError):
                     require_resource_access(action, SimpleNamespace(), 1)
@@ -32,7 +33,7 @@ class WorkflowPermissionTests(SimpleTestCase):
     def test_factory_requires_cleanup_permission_too(self):
         with patch("src.apps.evaluation.selectors.workflow.ensure_product_scope"), \
              patch("src.apps.evaluation.selectors.workflow.PermissionMenuService.is_effective_super_admin", return_value=False), \
-             patch("src.apps.evaluation.selectors.workflow.PermissionMenuService.permission_keys_for_user", return_value={"data_factory.template:debug"}):
+             patch("src.apps.evaluation.selectors.workflow.PermissionMenuService.permission_keys_for_user", return_value={"data_factory.template:change"}):
             with self.assertRaises(EvaluationError):
                 require_resource_access(EvaluationWorkflowActionEnum.FACTORY, SimpleNamespace(), 1)
 

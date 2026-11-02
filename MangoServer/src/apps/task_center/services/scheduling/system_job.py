@@ -29,6 +29,14 @@ class SystemJobDefinition:
 class SystemJobService:
     JOBS = [
         SystemJobDefinition(
+            key='clean_runtime_kv',
+            name='运行态键值过期清理',
+            description='每 5 分钟分批清理独立 RuntimeKV 表中的过期数据，不处理现有配置或 Django 缓存。',
+            cron='*/5 * * * *',
+            source_type=ScheduleFireSourceTypeEnum.DATA_CLEANUP.value,
+            handler=SchedulerSystemJobService.clean_runtime_kv,
+        ),
+        SystemJobDefinition(
             key='repair_test_suite_status',
             name='测试套卡住状态修复',
             description='每 10 分钟修复测试套完成状态，并重置或失败超时执行明细。',
@@ -69,14 +77,6 @@ class SystemJobService:
             cron='*/10 * * * *',
             source_type=ScheduleFireSourceTypeEnum.SYSTEM_JOB.value,
             handler=SchedulerSystemJobService.reconcile_execution_statuses,
-        ),
-        SystemJobDefinition(
-            key='sync_ai_mcp_tools',
-            name='AI MCP 工具快照同步',
-            description='每 30 分钟同步一次已启用 MCP 服务的工具列表，避免 Agent 使用过期工具快照。',
-            cron='*/30 * * * *',
-            source_type=ScheduleFireSourceTypeEnum.SYSTEM_JOB.value,
-            handler=SchedulerSystemJobService.sync_ai_mcp_tools,
         ),
         SystemJobDefinition(
             key='clean_execution_result_data',

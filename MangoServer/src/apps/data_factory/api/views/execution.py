@@ -21,6 +21,7 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 
 
 class DataFactoryExecutionCRUD(ModelCRUD):
+    http_method_names = ['get', 'delete', 'head', 'options']
     model = DataFactoryExecution
     queryset = DataFactoryExecution.objects.all()
     serializer_class = DataFactoryExecutionSerializerC
@@ -30,12 +31,6 @@ class DataFactoryExecutionCRUD(ModelCRUD):
 
 
 class DataFactoryExecutionViews(ViewSet):
-    action_permission_map = {
-        'detail_view': 'data_factory.execution:detail',
-        'context': 'data_factory.execution:detail',
-        'cleanup': 'data_factory.execution:delete',
-        'batch_cleanup': 'data_factory.execution:delete',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

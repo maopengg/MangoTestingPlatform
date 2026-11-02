@@ -81,12 +81,6 @@ class UserCRUD(ModelCRUD):
     queryset = User.objects.all()
     serializer_class = UserSerializersC
     serializer = UserSerializers
-    permission_key_map = {
-        'get': 'system.user',
-        'post': 'system.user:create',
-        'put': 'system.user:edit',
-        'delete': 'system.user:delete',
-    }
 
     @staticmethod
     def save_user_departments(user: User, department_ids: list[int], update_user_id: int | None = None):
@@ -133,20 +127,6 @@ class UserCRUD(ModelCRUD):
 class UserViews(ViewSet):
     model = User
     serializer = UserSerializers
-    action_permission_map = {
-        'get_name': 'system.user',
-        'get_department_name': 'system.user',
-        'put_environment': 'index.home',
-        'put_password': 'index.home',
-        'register_user': 'system.user:create',
-        'reset_password': 'system.user:edit',
-        'reset_user_api_key': 'system.user:edit',
-        'get_current_api_key': 'index.home',
-        'reset_api_key': 'index.home',
-        'cli_authorize': 'index.home',
-        'get_cache_data': 'index.home',
-        'clear_cache_data': 'index.home',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('user')
@@ -411,7 +391,7 @@ class LoginViews(ViewSet):
         user = user_context.user_obj
         return (
                 PermissionMenuService.is_effective_super_admin(user)
-                and 'system.user:create' in PermissionMenuService.permission_keys_for_user(user)
+                and 'system.user:add' in PermissionMenuService.permission_keys_for_user(user)
         )
 
     @error_response('user')

@@ -139,14 +139,6 @@ class ManualTestSuiteCRUD(ModelCRUD):
 class ManualTestSuiteViews(ViewSet):
     model = ManualTestSuite
     serializer_class = ManualTestSuiteSerializerC
-    action_permission_map = {
-        "module_counts": "functional.suite",
-        "context_candidates": "functional.suite:detail",
-        "create_version": "functional.suite:create",
-        "confirm_submit": "functional.suite:edit",
-        "transition_status": "functional.suite:edit",
-        "unlink_cases": "functional.suite:edit",
-    }
 
     @staticmethod
     def _scoped_queryset(request: Request):

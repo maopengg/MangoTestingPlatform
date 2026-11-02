@@ -8,11 +8,11 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.system.enums import TestSuiteNoticeEnum
 from src.apps.task_center.models import ScheduleFire
-from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers, TestSuiteSerializersC, TestSuiteOfflineExportSerializer
+from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers, TestSuiteSerializersC, TestSuiteOfflineExportSerializer, TestSuiteOfflineOptionsSerializer
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
 from src.apps.test_center.services.offline_report import OfflineReportService
-from src.apps.test_center.services.report_snapshot import ReportSnapshotService
+from src.apps.test_center.services.offline_report.snapshot import ReportSnapshotService
 from src.apps.test_center.exceptions import (
     SYSTEM_REPORT_REPORT_NOT_FOUND,
     TestCenterError,
@@ -47,6 +47,7 @@ from src.common.responses.response_msg import (
 
 
 class TestSuiteCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = TestSuite
     queryset = TestSuite.objects.all()
     serializer_class = TestSuiteSerializersC
@@ -115,15 +116,31 @@ class TestSuiteCRUD(ModelCRUD):
 class TestSuiteViews(ViewSet):
     model = TestSuite
     serializer_class = TestSuiteSerializers
-    action_permission_map = {
-        'send_notice': 'report:notice',
-        'stop': 'report:retry',
-        'effectiveness_overview': 'report.effectiveness',
-        'effectiveness_ai_summary': 'report.effectiveness:debug',
-        'effectiveness_clear_cache': 'report.effectiveness:debug',
-        'diagnostic_markdown': 'report',
-        'offline_export': 'report:export',
-    }
+
+    @error_response('system')
+    def offline_options(self, request: Request):
+        user = getattr(getattr(request, 'user', None), 'user_obj', None)
+        OfflineReportSelector.require_permission(user)
+        serializer = TestSuiteOfflineOptionsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        data['source_kind'] = ReportSourceEnum(data['source_kind'])
+        response = ResponseData.success(RESPONSE_MSG_0001, OfflineReportSelector.options(user, **data))
+        response['Cache-Control'] = 'no-store'
+        return response
+
+    @error_response('system')
+    def offline_publish(self, request: Request):
+        user = getattr(getattr(request, 'user', None), 'user_obj', None)
+        OfflineReportSelector.require_permission(user)
+        serializer = TestSuiteOfflineExportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        kind = ReportSourceEnum(serializer.validated_data['source_kind'])
+        source_id = serializer.validated_data['source_id']
+        OfflineReportSelector.require_product(user, ReportSnapshotService.source_product_id(kind, source_id))
+        response = ResponseData.success(RESPONSE_MSG_0001, OfflineReportService.publish(kind, source_id))
+        response['Cache-Control'] = 'no-store'
+        return response
 
     @error_response('system')
     def offline_export(self, request: Request):

@@ -19,7 +19,6 @@ RELOCATED_TABLES = {
     "test_suite_details",
 }
 ALREADY_APPLIED_RELOCATION_MIGRATIONS = {
-    ("auto_ai", "0006_alter_aimcpserver_module_and_more"),
     ("auto_api", "0041_alter_apiauthconfig_notice_group_and_more"),
     ("auto_pytest", "0017_alter_pytestcase_module_and_more"),
     ("auto_ui", "0029_alter_page_module_alter_page_project_product_and_more"),

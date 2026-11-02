@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader title="Pytest 仓库管理">
         <template #header-extra>
-          <a-button v-permission="'pytest.repository:create'" type="primary" size="small" @click="openEditor()">新增仓库</a-button>
+          <a-button  type="primary" size="small" @click="openEditor()">新增仓库</a-button>
         </template>
       </TableHeader>
     </template>
@@ -606,19 +606,19 @@
 
   function repositoryActions(record: PytestRepository) {
     return [
-      { permission: 'pytest.repository:edit', label: '编辑', onClick: () => openEditor(record) },
-      { permission: 'pytest.repository:execute',
+      {  label: '编辑', onClick: () => openEditor(record) },
+      {
         label: '拉取',
         loading: actionLoading[record.id],
         onClick: () => void runAction(record, () => pullPytestRepository(record.id)),
       },
-      { permission: 'pytest.repository:debug',
+      {
         label: '测试连接',
         loading: actionLoading[record.id],
         onClick: () => void runAction(record, () => testPytestRepository(record.id)),
       },
-      { permission: 'pytest.repository:edit', label: '切换分支', onClick: () => void openBranch(record) },
-      { permission: 'pytest.repository:delete', label: '删除', danger: true, onClick: () => removeRepository(record) },
+      {  label: '切换分支', onClick: () => void openBranch(record) },
+      {  label: '删除', danger: true, onClick: () => removeRepository(record) },
     ]
   }
 
@@ -697,12 +697,15 @@
   }
 
   async function runAction(record: PytestRepository, action: () => Promise<any>) {
+    if (actionLoading[record.id]) return
     actionLoading[record.id] = true
     try {
       const response = await action()
       Message.success(response.msg)
       await loadRepositories()
       await loadRepositoryTree(record.id, true)
+    } catch {
+      // 请求层已展示具体错误，避免操作入口重复提示或产生未处理的 Promise 拒绝。
     } finally {
       actionLoading[record.id] = false
     }

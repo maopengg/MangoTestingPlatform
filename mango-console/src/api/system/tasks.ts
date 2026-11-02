@@ -36,8 +36,7 @@ export function postSystemTasks(data: object) {
 }
 
 export function putSystemTasks(data: object) {
-  return put({ permissionKey: 'timing.tasks',
-    url: 'system/tasks',
+  return put({ url: 'system/tasks',
     data: () => {
       return data
     },
@@ -164,8 +163,7 @@ export function createScheduledTaskGroup(data: Record<string, any>) {
 }
 
 export function updateScheduledTaskGroup(data: Record<string, any>) {
-  return put({ permissionKey: 'timing.tasks',
-    url: 'system/tasks/groups',
+  return put({ url: 'system/tasks/groups',
     data: () => data,
   })
 }

@@ -57,8 +57,8 @@ class AgentUiExecutionProtocolTests(SimpleTestCase):
         self.assertEqual(_tool_operation("agent_ui_get_case"), "read")
         self.assertEqual(_tool_operation("agent_ui_execute_runtime"), "execute")
         self.assertEqual(_tool_operation("agent_ui_report_step"), "execute")
-        self.assertEqual(component_policy("agent_ui_execute_runtime").permission_key, "ui.case:execute")
-        self.assertEqual(component_policy("agent_ui_report_step").permission_key, "ui.case:execute")
+        self.assertEqual(component_policy("agent_ui_execute_runtime").permission_key, "ui.case:change")
+        self.assertEqual(component_policy("agent_ui_report_step").permission_key, "ui.case:change")
 
     def test_runtime_operation_contract_rejects_unknown_fields(self):
         with self.assertRaises(ValidationError):

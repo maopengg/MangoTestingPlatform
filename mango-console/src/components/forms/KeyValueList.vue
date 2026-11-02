@@ -18,6 +18,7 @@
           <span class="mango-field-label">{{ getFieldLabel(field, item) }}:</span>
           <!-- 支持级联选择器 -->
           <a-cascader
+            :disabled="disabled"
             v-if="field.type === 'cascader'"
             v-model="item[field.field]"
             :options="field.options || []"
@@ -28,6 +29,7 @@
             :class="field.className || 'mango-key-cascader'"
           />
           <a-select
+            :disabled="disabled"
             v-else-if="field.type === 'select' && field.field"
             :model-value="getFieldModelValue(field, item)"
             :allow-clear="getSelectAllowClear(field)"
@@ -47,6 +49,7 @@
             class="mango-key-value-tooltip"
           >
             <a-input
+              :disabled="disabled"
               v-model="item[field.field]"
               :placeholder="getFieldPlaceholder(field, item, '请输入')"
               @blur="onBlur"
@@ -61,6 +64,7 @@
             class="mango-key-value-tooltip"
           >
             <a-textarea
+              :disabled="disabled"
               v-model="item[field.field]"
               :placeholder="getFieldPlaceholder(field, item, '请输入')"
               :auto-size="field.autoSize || { minRows: 1, maxRows: 3 }"
@@ -70,6 +74,7 @@
           </a-tooltip>
           <!-- 支持数组直接绑定的情况 -->
           <a-textarea
+            :disabled="disabled"
             v-else
             :model-value="item"
             :placeholder="getFieldPlaceholder(field, item, '请输入')"
@@ -84,6 +89,7 @@
           <!-- 插槽支持额外操作按钮 -->
           <slot name="extra" :index="index" :item="item"></slot>
           <a-button
+            :disabled="disabled"
             size="small"
             status="danger"
             type="text"
@@ -134,6 +140,7 @@
     onDeleteItem: (index: number) => void // 删除回调
     onSave?: () => void // 保存回调（可选）
     layout?: 'default' | 'environment-key-value' | 'assertion'
+    disabled?: boolean
   }
 
   // 定义事件
@@ -145,6 +152,7 @@
   const props = withDefaults(defineProps<Props>(), {
     emptyText: '暂无数据，点击上方"增加"按钮添加',
     layout: 'default',
+    disabled: false,
   })
   const openedSelectKeys = new Set<string>()
   const pendingSelectSaveKeys = new Set<string>()

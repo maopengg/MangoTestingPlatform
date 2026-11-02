@@ -125,7 +125,7 @@
             </a-table-column>
             <a-table-column title="启用" :width="72" align="center">
               <template #cell="{ record }"
-                ><a-switch v-permission="'timing.tasks:status'"
+                ><a-switch
                   v-model="record.status"
                   :checked-value="1"
                   :unchecked-value="0"
@@ -134,7 +134,7 @@
             </a-table-column>
             <a-table-column title="发送通知" :width="90" align="center">
               <template #cell="{ record }"
-                ><a-switch v-permission="'timing.tasks:status'"
+                ><a-switch
                   v-model="record.is_notice"
                   :checked-value="1"
                   :unchecked-value="0"
@@ -143,7 +143,7 @@
             </a-table-column>
             <a-table-column title="失败通知" :width="90" align="center">
               <template #cell="{ record }"
-                ><a-switch v-permission="'timing.tasks:status'"
+                ><a-switch
                   v-model="record.fail_notice"
                   :checked-value="1"
                   :unchecked-value="0"
@@ -171,18 +171,16 @@
               <template #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    { permission: 'timing.tasks:create',
-                      label: '复制',
-                      disabled: record.saving,
-                      onClick: () => copyRow(record),
-                    },
-                    { permission: 'timing.tasks:delete',
-                      label: '删除',
-                      danger: true,
-                      loading: record.saving,
-                      onClick: () => remove(record),
-                    },
-                  ]"
+    {
+        label: '复制',
+        disabled: record.saving,
+        onClick: () => copyRow(record), },
+    {
+        label: '删除',
+        danger: true,
+        loading: record.saving,
+        onClick: () => remove(record), },
+]"
                 />
               </template>
             </a-table-column>

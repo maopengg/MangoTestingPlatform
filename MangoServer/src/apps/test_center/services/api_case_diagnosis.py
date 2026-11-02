@@ -1,7 +1,7 @@
 import json
 from urllib.parse import urlsplit
 
-from src.apps.ai.exceptions import AiError
+from src.apps.system.exceptions import AiError
 from src.apps.auto_api.models import ApiCaseExecutionStep
 from src.apps.system.services.ai.client import AiService
 from src.apps.test_center.models import ExecutionResult

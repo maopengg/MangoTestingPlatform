@@ -47,10 +47,6 @@ class GrayFeatureCRUD(LastUpdateUserCRUD):
 
 
 class GrayFeatureViews(ViewSet):
-    action_permission_map = {
-        'preview': 'gray.feature:debug',
-        'execute': 'gray.feature:execute',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('system')

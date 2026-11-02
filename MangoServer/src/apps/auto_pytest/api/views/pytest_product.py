@@ -45,11 +45,6 @@ class PytestProductCRUD(ModelCRUD):
 class PytestProductViews(ViewSet):
     model = PytestProduct
     serializer_class = PytestProductSerializers
-    action_permission_map = {
-        'pytest_import': 'pytest.product:create',
-        'pytest_test_directories': 'pytest.product:detail',
-        'pytest_project_name': 'pytest.product',
-    }
 
     @staticmethod
     def _has_product_scope(request: Request, product_id) -> bool:

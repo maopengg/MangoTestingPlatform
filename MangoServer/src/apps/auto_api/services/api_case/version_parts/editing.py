@@ -135,6 +135,7 @@ class ApiCaseRevisionEditingMixin:
         for step in ApiCaseDetailed.objects.filter(case_id=api_case.id):
             step.delete()
 
+        restored_step_keys = {}
         for index, step_payload in enumerate(step_payloads, start=1):
             if not isinstance(step_payload, dict):
                 continue
@@ -148,6 +149,7 @@ class ApiCaseRevisionEditingMixin:
                 execution_config=step_payload.get('execution_config', {}),
                 update_user_id=operator_id,
             )
+            restored_step_keys[step_payload.get('logical_id') or f"step-{step_payload['id']}"] = f'step-{step.id}'
             for parameter_payload in step_payload.get('api_case_detailed_parameter') or []:
                 if not isinstance(parameter_payload, dict):
                     continue
@@ -177,6 +179,10 @@ class ApiCaseRevisionEditingMixin:
                     update_user_id=operator_id,
                     **values,
                 )
+        api_case.callback_checks = deepcopy(case_payload.get('callback_checks') or [])
+        for rule in api_case.callback_checks:
+            rule['trigger_step_key'] = restored_step_keys[rule['trigger_step_key']]
+        api_case.save(update_fields=['callback_checks'])
         from src.apps.auto_api.services.api_case.mutation import ApiCaseAggregateMutationService
         ApiCaseAggregateMutationService.rebuild_case_flow(api_case.id)
         api_case.refresh_from_db()

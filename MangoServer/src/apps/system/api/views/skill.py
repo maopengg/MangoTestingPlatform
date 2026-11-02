@@ -146,11 +146,6 @@ class SkillResourceService:
 
 
 class SkillResourceViews(ViewSet):
-    action_permission_map = {
-        'get_list': 'index.home',
-        'get_detail': 'index.home',
-        'get_download': 'index.home',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

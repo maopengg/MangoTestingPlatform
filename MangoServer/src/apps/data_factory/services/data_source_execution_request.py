@@ -2,6 +2,7 @@ from src.apps.data_factory.exceptions import (
     DATA_SOURCE_OPERATION_DATA_SOURCE_EXECUTION_UNSUPPORTED,
     DATA_SOURCE_OPERATION_DATABASE_EXECUTION_WRITE_INVALID,
     DATA_SOURCE_OPERATION_DATA_SOURCE_DELETE_NOT_FOUND,
+    DATA_SOURCE_DATA_SOURCE_TYPE_INVALID,
     DataFactoryError,
 )
 from src.apps.data_factory.models import Database
@@ -33,6 +34,7 @@ class DataSourceExecutionRequestService:
             project_product_id,
             test_env,
             operation_config,
+            expected_db_type: int | None = None,
     ) -> dict:
         datasource_alias_id = DataSourceExecutionService.normalize_id(
             datasource_alias_id,
@@ -48,6 +50,8 @@ class DataSourceExecutionRequestService:
             project_product_id,
             test_env,
         )
+        if expected_db_type is not None and binding.database.db_type != expected_db_type:
+            raise DataFactoryError(DATA_SOURCE_DATA_SOURCE_TYPE_INVALID)
         return {
             'datasource_alias_id': datasource_alias_id,
             'project_product_id': project_product_id,
@@ -69,12 +73,14 @@ class DataSourceExecutionRequestService:
             confirm_write=False,
             source_context: dict | None = None,
             request_id: str | None = None,
+            expected_db_type: int | None = None,
     ) -> dict:
         operation = cls.inspect_operation(
             datasource_alias_id=datasource_alias_id,
             project_product_id=project_product_id,
             test_env=test_env,
             operation_config=operation_config,
+            **({'expected_db_type': expected_db_type} if expected_db_type is not None else {}),
         )
         if operation['is_write'] and not cls.is_confirmed(confirm_write):
             raise DataFactoryError(DATA_SOURCE_OPERATION_DATABASE_EXECUTION_WRITE_INVALID)

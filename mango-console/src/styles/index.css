@@ -2566,7 +2566,3 @@ body {
   padding: 7px 12px;
   font-size: var(--m-font-body);
 }
-/* 权限指令独立于业务 v-show，避免刷新权限后被原有显示条件重新覆盖。 */
-[data-mango-permission-denied] {
-  display: none !important;
-}

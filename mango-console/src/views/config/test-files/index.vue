@@ -64,7 +64,7 @@
         <template #toolbar>
           <a-space>
             <div>
-              <a-button v-permission="'config.test_files:create'" size="small" type="primary" @click="onOpenUploadModal" data-testid="qa-views-config-test-files-button-上传">上传</a-button>
+              <a-button  size="small" type="primary" @click="onOpenUploadModal" data-testid="qa-views-config-test-files-button-上传">上传</a-button>
             </div>
           </a-space>
         </template>
@@ -111,14 +111,13 @@
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    { permission: 'config.test_files:download',
-                      label: '下载',
-                      disabled: isDownloadDisabled(record),
-                      onClick: () => onDownload(record),
-                    },
-                    { permission: 'config.test_files:edit', label: '编辑', onClick: () => onUpdate(record) },
-                    { permission: 'config.test_files:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                  ]"
+    {
+        label: '下载',
+        disabled: isDownloadDisabled(record),
+        onClick: () => onDownload(record), },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                 />
               </template>
             </a-table-column>
@@ -175,7 +174,7 @@
     </a-form>
     <template #footer>
       <a-button @click="onCloseUploadModal" data-testid="qa-views-config-test-files-button-取消">取消</a-button>
-      <a-button v-permission="'config.test_files:create'" type="primary" :loading="uploadLoading" @click="onUploadFile" data-testid="qa-views-config-test-files-button-上传-2">上传</a-button>
+      <a-button  type="primary" :loading="uploadLoading" @click="onUploadFile" data-testid="qa-views-config-test-files-button-上传-2">上传</a-button>
     </template>
   </a-modal>
 </template>

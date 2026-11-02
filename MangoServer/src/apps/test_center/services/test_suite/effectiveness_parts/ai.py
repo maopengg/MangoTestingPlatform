@@ -10,8 +10,8 @@ from django.core.cache import cache
 from django.utils import timezone
 from requests import RequestException
 
-from src.apps.ai.exceptions import AiError
-from src.apps.ai.services.core import extract_ai_json
+from src.apps.system.exceptions import AiError
+from src.apps.system.services.ai.json_output import extract_ai_json
 from src.apps.system.services.ai.client import AiService
 from src.apps.system.services.system_config import SystemConfigService
 from src.apps.task_center.models import Tasks

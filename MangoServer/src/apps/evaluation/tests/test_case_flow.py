@@ -84,9 +84,9 @@ class CaseFlowTests(SimpleTestCase):
             with self.subTest(path=path), self.assertRaises(Resolver404):
                 resolve(path)
         valid = PermissionMenuService.all_permission_keys()
-        for prefix in ("evaluation.target", "evaluation.review", "evaluation.plan", "evaluation.run", "evaluation.case:publish"):
+        for prefix in ("evaluation.target", "evaluation.review", "evaluation.plan", "evaluation.run", "evaluation.case:change"):
             self.assertFalse(any(key.startswith(prefix) for key in valid))
-        self.assertIn("evaluation.case:status", valid)
+        self.assertIn("evaluation.case:change", valid)
         self.assertIn("graders", resolve("/api/evaluation/case/graders").func.actions.values())
 
     def test_case_rejects_cross_product_draft_and_unregistered_graders(self):
@@ -113,7 +113,7 @@ class CaseFlowTests(SimpleTestCase):
 
     def test_execution_checks_target_business_permission(self):
         target = SimpleNamespace(target_type="api_case", project_product_id=5)
-        for granted, permitted in [({"evaluation.case:execute"}, False), ({"api.case:execute"}, True)]:
+        for granted, permitted in [({"evaluation.case:change"}, False), ({"api.case:change"}, True)]:
             with patch("src.apps.evaluation.services.case.ensure_product_scope"), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=granted):
                 if permitted:
                     EvaluationCaseService.ensure_target_access(target, SimpleNamespace(id=2))
@@ -123,10 +123,10 @@ class CaseFlowTests(SimpleTestCase):
 
     def test_status_and_content_permissions_are_independent(self):
         for data, grants, expected in [
-            ({"id": 1, "status": "enabled"}, {"evaluation.case:status"}, True),
-            ({"id": 1, "status": "enabled"}, {"evaluation.case:edit"}, False),
-            ({"id": 1, "status": "enabled", "name": "新名称"}, {"evaluation.case:status"}, False),
-            ({"id": 1, "status": "enabled", "name": "新名称"}, {"evaluation.case:status", "evaluation.case:edit"}, True),
+            ({"id": 1, "status": "enabled"}, {"evaluation.case:change"}, True),
+            ({"id": 1, "status": "enabled"}, {"evaluation.case:change"}, False),
+            ({"id": 1, "status": "enabled", "name": "新名称"}, {"evaluation.case:change"}, False),
+            ({"id": 1, "status": "enabled", "name": "新名称"}, {"evaluation.case:change", "evaluation.case:change"}, True),
         ]:
             request = SimpleNamespace(method="PUT", path="/api/evaluation/case", data=data, query_params={}, user=SimpleNamespace(user_obj=SimpleNamespace(id=2)))
             with self.subTest(data=data, grants=grants), patch.object(PermissionMenuService, "is_effective_super_admin", return_value=False), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=grants):

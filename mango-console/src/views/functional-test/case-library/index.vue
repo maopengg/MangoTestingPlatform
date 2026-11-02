@@ -11,12 +11,12 @@
               accept=".xlsx,.xls"
               @change="importCases"
             />
-            <a-button v-permission="'functional.case:create'" size="small" :loading="importing" @click="importInput?.click()">
+            <a-button  size="small" :loading="importing" @click="importInput?.click()">
               导入
             </a-button>
-            <a-button v-permission="'functional.case:export'" size="small" :loading="exporting" @click="exportCases">导出</a-button>
+            <a-button  size="small" :loading="exporting" @click="exportCases">导出</a-button>
             <a-button size="small" @click="refreshCases">刷新</a-button>
-            <a-button v-permission="'functional.case:create'" size="small" @click="startBatchCreate">批量新增</a-button>
+            <a-button  size="small" @click="startBatchCreate">批量新增</a-button>
             <a-button size="small" type="primary" @click="openEditor()">单个新增</a-button>
           </a-space>
         </template>
@@ -76,7 +76,7 @@
               <a-button size="small" :disabled="!selectedDraftRows.length" @click="removeSelectedDraftRows">
                 删除草稿行
               </a-button>
-              <a-button v-permission="'functional.case:create'" size="small" :loading="batchSaving" @click="saveDraftRows">
+              <a-button  size="small" :loading="batchSaving" @click="saveDraftRows">
                 保存全部
               </a-button>
               <a-button size="small" :disabled="batchSaving" @click="exitBatchCreate">
@@ -86,35 +86,35 @@
             <a-tooltip :content="editMode ? '可直接编辑表格单元格' : '开启后可直接编辑表格单元格'">
               <span class="mango-case-library__edit-toggle">
                 编辑模式
-                <a-switch v-permission="'functional.case:edit'" size="small" :model-value="editMode" @change="toggleEditMode" />
+                <a-switch  size="small" :model-value="editMode" @change="toggleEditMode" />
               </span>
             </a-tooltip>
-            <a-button v-permission="'functional.case:edit'"
+            <a-button
               size="small"
               :disabled="selectedPersistedRows.length !== 1"
               @click="openEditor(selectedPersistedRows[0])"
             >
               编辑详情
             </a-button>
-            <a-button v-permission="'functional.case:detail'"
+            <a-button
               size="small"
               :disabled="selectedPersistedRows.length !== 1"
               @click="openHistory(selectedPersistedRows[0])"
             >
               历史版本
             </a-button>
-            <a-button v-permission="'functional.case:detail'"
+            <a-button
               size="small"
               :disabled="selectedPersistedRows.length !== 1"
               @click="openAutomationBinding(selectedPersistedRows[0])"
             >
               自动化绑定
             </a-button>
-            <a-button v-permission="'functional.plan:create'" size="small" @click="openCreatePlan">新建测试计划</a-button>
-            <a-button v-permission="'functional.plan:edit'" size="small" :disabled="!selectedPersistedRows.length" @click="openAddPlan">
+            <a-button  size="small" @click="openCreatePlan">新建测试计划</a-button>
+            <a-button  size="small" :disabled="!selectedPersistedRows.length" @click="openAddPlan">
               加入测试计划
             </a-button>
-            <a-button v-permission="'functional.defect:create'" size="small" :disabled="!selectedPersistedRows.length" @click="createDefectFromCases">创建缺陷</a-button>
+            <a-button  size="small" :disabled="!selectedPersistedRows.length" @click="createDefectFromCases">创建缺陷</a-button>
           </template>
         </FunctionalCaseGrid>
       </ProjectProductNavigationWorkbench>

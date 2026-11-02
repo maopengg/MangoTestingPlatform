@@ -29,7 +29,6 @@ export function putApiCaseDetailed(data: ApiCaseDetailedPayload, parent_id: any)
   // @ts-ignore
   data['parent_id'] = parent_id
   return put({
-    permissionKey: 'api.case',
     url: '/api/case/detailed',
     losslessJson: true,
     data: () => {

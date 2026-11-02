@@ -14,6 +14,7 @@ class SystemConfig(AppConfig):
     label = 'auto_system'
 
     def ready(self):
+        from src.common.prompts import checks  # noqa: F401
         from src.common.database.model_metadata import apply_database_comments
 
         apply_database_comments()

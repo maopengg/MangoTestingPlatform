@@ -121,14 +121,6 @@ class DataFactoryTemplateCRUD(ModelCRUD):
 
 
 class DataFactoryTemplateViews(ViewSet):
-    action_permission_map = {
-        'copy': 'data_factory.template:copy',
-        'status': 'data_factory.template:status',
-        'sync_fields': 'data_factory.template:edit',
-        'preview': 'data_factory.template:detail',
-        'debug_run': 'data_factory.template:debug',
-        'debug_cleanup': 'data_factory.execution:delete',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('system')

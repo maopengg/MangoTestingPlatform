@@ -13,6 +13,7 @@ from src.apps.data_factory.services.datasource_target import DatasourceTargetSer
 from src.apps.data_factory.services.discover import DataFactoryDiscover
 from src.apps.test_center.exceptions import TEST_ENVIRONMENT_REQUIRED, TestCenterError
 from src.apps.test_center.services.data_source import DataSourceConnectionService
+from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import paginate_list, paginate_queryset
 from .helpers import _selected_test_env
@@ -267,40 +268,6 @@ def register_datasource_tools(mcp):
                                                  table_name))
 
     @mcp.tool()
-    def query_data_factory_datasource_sql(
-            sql: str,
-            datasource_alias_id: int,
-            project_product_id: int,
-            test_env: int,
-            limit: int = 10,
-    ) -> dict:
-        """通过逻辑数据库执行只读 SQL 查询，必须明确传入测试环境，默认返回 10 行。"""
-        if is_missing_value(test_env):
-            raise TestCenterError(TEST_ENVIRONMENT_REQUIRED)
-        try:
-            max_rows = max(1, min(int(limit or 10), 100))
-        except (TypeError, ValueError):
-            max_rows = 10
-        result = DataSourceExecutionRequestService.execute_operation(
-            datasource_alias_id=datasource_alias_id,
-            project_product_id=project_product_id,
-            test_env=test_env,
-            operation_config=sql,
-            confirm_write=False,
-            source_context={
-                'source_type': 'mcp',
-                'source_stage': 'query',
-                'source_id': datasource_alias_id,
-                'mcp_tool_name': 'query_data_factory_datasource_sql',
-            },
-        )
-        rows = list(result.get('rows') or [])[:max_rows]
-        result['rows'] = rows
-        result['result'] = rows
-        result['row_count'] = len(rows)
-        return ok(result, "SQL查询成功")
-
-    @mcp.tool()
     def query_data_factory_datasource_redis(
             command: str,
             datasource_alias_id: int,
@@ -316,6 +283,7 @@ def register_datasource_tools(mcp):
             test_env=test_env,
             operation_config=command,
             confirm_write=False,
+            expected_db_type=DataSourceTypeEnum.REDIS.value,
         )
         return ok(result, "Redis查询成功")
 
@@ -336,5 +304,6 @@ def register_datasource_tools(mcp):
             test_env=test_env,
             operation_config={"index": index, "query": query},
             confirm_write=False,
+            expected_db_type=DataSourceTypeEnum.ELASTICSEARCH.value,
         )
         return ok(result, "Elasticsearch查询成功")

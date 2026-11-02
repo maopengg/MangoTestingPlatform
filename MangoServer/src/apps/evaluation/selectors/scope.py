@@ -8,7 +8,7 @@ def ensure_dataset_access(user):
     from src.apps.evaluation.exceptions import EVALUATION_DATASET_ACCESS_DENIED
     if user is not None and (
         PermissionMenuService.is_effective_super_admin(user)
-        or "evaluation.dataset" in PermissionMenuService.permission_keys_for_user(user)
+        or "evaluation.dataset:read" in PermissionMenuService.permission_keys_for_user(user)
     ):
         return
     raise EvaluationError(EVALUATION_DATASET_ACCESS_DENIED)

@@ -19,8 +19,7 @@ export function postApiPublic(data: object) {
 }
 
 export function putApiPublic(data: object) {
-  return put({ permissionKey: 'api.public',
-    url: '/api/public',
+  return put({ url: '/api/public',
     data: () => {
       return data
     },

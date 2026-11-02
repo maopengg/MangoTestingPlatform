@@ -6,7 +6,7 @@
     <template #default>
       <TableTabs>
         <template #extra>
-          <a-button v-permission="'system.department:create'"
+          <a-button
             size="small"
             type="primary"
             @click="onAdd"
@@ -41,7 +41,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'system.department:edit'"
+              <a-switch
                 size="small"
                 :default-checked="record.status === 1"
                 :before-change="(checked) => onStatusChange(record, checked)"
@@ -53,10 +53,10 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'system.department:detail', label: '范围', onClick: () => onScope(record) },
-                  { permission: 'system.department:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'system.department:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '范围', onClick: () => onScope(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>
@@ -133,7 +133,7 @@
         data-testid="qa-views-system-department-button-取消"
         >取消</a-button
       >
-      <a-button v-permission="'system.department:edit'"
+      <a-button
         type="primary"
         :loading="scopeDrawer.saving"
         @click="onSaveScope"
@@ -250,8 +250,11 @@
       okText: '删除',
       onBeforeOk: () => {
         return deleteUserDepartment(record.id)
-          .then((res) => Message.success(res.msg))
-          .catch(console.log)
+          .then((res) => {
+            Message.success(res.msg)
+            return true
+          })
+          .catch(() => false)
           .finally(doRefresh)
       },
     })

@@ -48,7 +48,7 @@
             </a-tooltip>
           </dd>
         </div>
-        <div class="report-meta-item">
+        <div class="report-meta-item mango-report-meta-id">
           <dt>报告ID</dt>
           <dd>{{ reportInfo.id || reportId }}</dd>
         </div>
@@ -249,7 +249,7 @@
                   </a-select>
                 </div>
               </div>
-              <a-button v-permission="'report:export'"
+              <a-button
                 v-if="activeType === '1'"
                 type="primary"
                 size="small"
@@ -1648,7 +1648,7 @@
     grid-row: 2;
     min-width: 0;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.4fr);
+    grid-template-columns: minmax(230px, 1.4fr) repeat(4, minmax(0, 1fr)) minmax(240px, 1.4fr);
     align-items: center;
     gap: var(--m-space-md) var(--m-space-lg);
     margin: var(--m-space-md) 0 0;
@@ -1657,7 +1657,7 @@
   }
 
   .meta-strip.has-task-name {
-    grid-template-columns: minmax(0, 1.6fr) repeat(5, minmax(0, 1fr)) minmax(0, 1.4fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(230px, 1.4fr) repeat(4, minmax(0, 1fr)) minmax(240px, 1.4fr);
   }
 
   .report-meta-item {
@@ -1707,6 +1707,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .mango-report-meta-id dd {
+    flex-shrink: 0;
   }
 
   .mango-report-meta-value:focus-visible {
@@ -2140,10 +2144,17 @@
     }
   }
 
-  @container mango-report-detail (max-width: 68rem) {
+  @container mango-report-detail (max-width: 90rem) {
     .meta-strip,
     .meta-strip.has-task-name {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @container mango-report-detail (max-width: 68rem) {
+    .meta-strip,
+    .meta-strip.has-task-name {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .overview-grid {

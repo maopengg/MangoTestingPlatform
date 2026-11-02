@@ -111,7 +111,7 @@
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <MangoTableActions
-                      :actions="[{ permission: 'system.runtime_center:detail', label: '日志', onClick: () => openLog(record.log_query) }]"
+                      :actions="[{ label: '日志', onClick: () => openLog(record.log_query) }]"
                     />
                   </template>
                 </a-table-column>

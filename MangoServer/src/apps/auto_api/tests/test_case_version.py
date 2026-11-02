@@ -2051,4 +2051,4 @@ class ApiCaseRevisionServiceTests(TestCase):
     def test_publish_permission_is_available_to_role_configuration(self):
         self.assertIn('publish', PermissionMenuService.ACTION_LABELS)
         self.assertIn('publish', PermissionMenuService.MENU_ACTIONS['api.case'])
-        self.assertIn('api.case:publish', PermissionMenuService.all_permission_keys())
+        self.assertIn('api.case:change', PermissionMenuService.all_permission_keys())

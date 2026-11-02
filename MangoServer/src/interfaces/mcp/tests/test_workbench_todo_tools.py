@@ -183,7 +183,7 @@ class WorkbenchTodoMcpToolTests(SimpleTestCase):
         self.assertEqual(_tool_operation("unpublish_api_case_revision"), "update")
         self.assertEqual(
             component_policy("update_api_case_publication_status").permission_key,
-            "api.case:publish",
+            "api.case:change",
         )
         self.assertEqual(domain_registrars("todo")[-1][0], "todo")
 

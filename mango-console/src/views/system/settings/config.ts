@@ -1,8 +1,20 @@
 export const DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY = 'DATA_FACTORY_VALIDATION_ENVIRONMENTS'
+export const API_TRANSIENT_RETRY_CONDITIONS_KEY = 'API_TRANSIENT_RETRY_CONDITIONS'
+export const API_TRANSIENT_RETRY_HELP =
+  '仅用于标准 HTTP 的 GET、HEAD、OPTIONS 场景；排除回调、恢复步骤、场景前后置代码/SQL、后置缓存提取、场景数据工厂和灰度。最多补试一次，间隔 2 秒，保留每轮结果；已有场景重试时不叠加。POST 查询也不会自动重试。'
+
+export function normalizeRetryConditions(value: unknown): string[] {
+  let parsed = value
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed) } catch { return [] }
+  }
+  return Array.isArray(parsed) ? [...new Set(parsed.filter((item): item is string => typeof item === 'string'))] : []
+}
 
 export const REPORT_DELIVERY_FIELDS = [
   { key: 'enabled', label: '开启离线报告', type: 'switch' },
   { key: 'include_details', label: '包含 Case 明细', type: 'switch' },
+  { key: 'failed_cases_only', label: '仅包含失败用例', type: 'switch' },
   { key: 'include_screenshots', label: '包含失败截图', type: 'switch' },
   { key: 'link_ttl_seconds', label: '链接有效期（秒）', type: 'number' },
   { key: 'storage', label: '文件存储', type: 'text', text: '复用平台文件存储' },

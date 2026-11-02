@@ -78,20 +78,6 @@ class PytestCaseCRUD(ModelCRUD):
 class PytestCaseViews(ViewSet):
     model = PytestCase
     serializer_class = PytestCaseSerializers
-    action_permission_map = {
-        'pytest_update': 'pytest.case:edit',
-        'pytest_read': 'pytest.case:detail',
-        'pytest_write': 'pytest.case:edit',
-        'pytest_test_case': 'pytest.case:execute',
-        'pytest_test_case_batch': 'pytest.case:execute',
-        'pytest_method_nodes': 'pytest.case:detail',
-        'pytest_directory_tree': 'pytest.case:detail',
-        'set_module': 'pytest.case:edit',
-        'batch_update': 'pytest.case:edit',
-        'ai_infer': 'pytest.case:edit',
-        'set_publication': 'pytest.case:publish',
-        'publication_review': 'pytest.case:publish',
-    }
 
     @staticmethod
     def _has_case_scope(request: Request, case_id) -> bool:
@@ -242,7 +228,7 @@ class PytestCaseViews(ViewSet):
         from src.apps.auto_pytest.selectors.publication_review import PytestPublicationReviewSelector
         result = PytestPublicationReviewSelector.review(int(case_id), request.user['id'])
         user = getattr(request.user, 'user_obj', None)
-        if user is None or 'pytest.case:detail' not in PermissionMenuService.permission_keys_for_user(user):
+        if user is None or 'pytest.case:read' not in PermissionMenuService.permission_keys_for_user(user):
             result.pop('configuration_details', None)
         return ResponseData.success(RESPONSE_MSG_0084, result)
 

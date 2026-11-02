@@ -4,6 +4,7 @@
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
 import mimetypes
+import json
 from dataclasses import dataclass
 from functools import partial
 from typing import Any
@@ -21,6 +22,7 @@ from src.apps.auto_api.exceptions import (
     API_HEADER_KEY_JSON_INVALID,
     API_TEST_OBJECT_CONFIG_NOT_FOUND,
     API_CODE_VARIABLE_FUNCTION_INVALID,
+    API_AUTH_CONTEXT_MISMATCH,
 )
 from src.apps.auto_api.models import ApiHeaders
 from src.apps.auto_api.models import ApiPublic
@@ -68,6 +70,8 @@ class PublicBase(BaseRequest):
         self.mcp_session_manager = None
         self.grpc_channel_manager = None
         self.target_auth_scope = None
+        self._auth_context_signature = None
+        self._auth_injected_cache = {}
         self.automation_type = AutoTypeEnum.API.value
 
     def init_headers(self, project_product_id: int):
@@ -150,6 +154,7 @@ class PublicBase(BaseRequest):
         if self.is_public == scope_key:
             return
         self.is_public = scope_key
+        self.target_auth_scope = (project_product_id, test_env, front_auth_config_ids, self.current_api_info_id)
         api_public = ApiCaseGlobalVariableService.list_public(project_product_id, test_env, front_public_ids)
         log.api.debug(f'开始初始化全局变量！')
         for i in api_public:
@@ -159,15 +164,66 @@ class PublicBase(BaseRequest):
                 self.__custom(i)
             elif i.type == ApiPublicTypeEnum.CODE.value:
                 self.__code(i, project_product_id, test_env)
-        dynamic_target = self.test_object and not self.test_object.value and (
-                    getattr(self.test_object, 'target_config', {}) or {}).get('selector')
-        self.target_auth_scope = None
-        if dynamic_target:
-            # 条件变量可能由 Case 前置提供；认证也必须在前置结束后按目标加载。
-            self.target_auth_scope = (project_product_id, test_env, front_auth_config_ids, self.current_api_info_id)
-        if not self.skip_auth_load and not dynamic_target:
-            from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
-            ApiAuthManager.load(project_product_id, test_env, self, front_auth_config_ids)
+
+    def clear_auth_injections(self):
+        current = self.test_data.get_all()
+        for key, (existed, previous, injected) in self._auth_injected_cache.items():
+            # 前置明确改写的值属于调用方，不随旧授权一起撤销。
+            if key not in current or current[key] != injected:
+                continue
+            if existed:
+                self.test_data.set_cache(key, previous)
+            else:
+                self.test_data.delete_cache(key)
+        self._auth_injected_cache.clear()
+
+    def ensure_execution_context(self):
+        if not self.test_object:
+            raise AutoApiError(API_TEST_OBJECT_CONFIG_NOT_FOUND)
+        target = self.test_object
+        try:
+            address = TestTargetService.resolve(target, self.test_data)
+        except Exception:
+            self.clear_auth_injections()
+            self._auth_context_signature = None
+            self.test_data.delete_cache('url')
+            raise
+        self.test_data.set_cache('url', address)
+        if self.skip_auth_load or not self.target_auth_scope:
+            return
+        rules = getattr(target, 'target_config', {}) or {}
+        selector = rules.get('selector', '') if not target.value else ''
+
+        def signature():
+            return json.dumps([
+                target.project_product_id, target.environment, getattr(target, 'id', None),
+                TestTargetService.resolve(target, self.test_data), selector,
+                self.test_data.get_cache(selector) if selector else None, self.target_auth_scope,
+            ], ensure_ascii=False, sort_keys=True)
+
+        from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+        previous_api_info_id = self.current_api_info_id
+        try:
+            current_signature = signature()
+            if current_signature != self._auth_context_signature:
+                self.clear_auth_injections()
+                # 旧授权撤销可能恢复此前遮盖的路由变量，必须重新解析。
+                address = TestTargetService.resolve(target, self.test_data)
+                self.test_data.set_cache('url', address)
+                current_signature = signature()
+            self.current_api_info_id = self.target_auth_scope[3]
+            ApiAuthManager.load(self.target_auth_scope[0], self.target_auth_scope[1], self, self.target_auth_scope[2])
+            if signature() != current_signature:
+                raise AutoApiError(API_AUTH_CONTEXT_MISMATCH)
+            self._auth_context_signature = current_signature
+            self.test_data.set_cache('url', address)
+        except Exception:
+            self.clear_auth_injections()
+            self._auth_context_signature = None
+            self.test_data.delete_cache('url')
+            raise
+        finally:
+            self.current_api_info_id = previous_api_info_id
 
     def __custom(self, api_public_obj: ApiPublic):
         log.api.debug(f'全局变量-1->key：{api_public_obj.key}，value：{api_public_obj.value}')

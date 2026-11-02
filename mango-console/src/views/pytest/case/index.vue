@@ -11,7 +11,7 @@
               <span class="mango-pytest-title-scope__separator">/</span>
               <strong>{{ currentDirectoryLabel }}</strong>
             </div>
-            <a-button v-permission="'pytest.case:edit'"
+            <a-button
               type="primary"
               size="small"
               @click="openUpdateModal"
@@ -59,7 +59,7 @@
               @select="onDirectorySelect"
             >
               <template #actions>
-                <a-button v-permission="'pytest.case:edit'"
+                <a-button
                   v-if="canBatchEditCases"
                   type="text"
                   size="mini"
@@ -121,7 +121,7 @@
                 <span>{{ selectedExplorerRecord.file_path }}</span>
               </div>
               <a-space class="mango-pytest-source-panel__actions" size="small" wrap>
-                <a-button v-permission="'pytest.case:execute'"
+                <a-button
                   size="small"
                   status="success"
                   :loading="caseRunning"
@@ -130,33 +130,33 @@
                 >
                   执行文件
                 </a-button>
-                <a-button v-permission="'pytest.case:edit'" size="small" @click="onUpdate(selectedExplorerRecord)">编辑</a-button>
-                <a-button v-permission="'pytest.case:execute'" size="small" @click="onResult(selectedExplorerRecord)">执行结果</a-button>
+                <a-button  size="small" @click="onUpdate(selectedExplorerRecord)">编辑</a-button>
+                <a-button  size="small" @click="onResult(selectedExplorerRecord)">执行结果</a-button>
                 <a-dropdown trigger="click">
                   <a-button size="small" :loading="publicationActionCaseId === selectedExplorerRecord.id">更多</a-button>
                   <template #content>
-                    <a-doption v-permission="'pytest.case:edit'"
+                    <a-doption
                       :disabled="!selectedSourceAvailable"
                       @click="onClick(selectedExplorerRecord)"
                     >
                       编辑代码
                     </a-doption>
-                    <a-doption v-permission="'pytest.case:publish'"
+                    <a-doption
                       v-if="selectedExplorerRecord.publication_status === 'unpublished'"
                       :disabled="publicationActionCaseId !== null || !selectedSourceAvailable"
                       @click="onPublicationChange(selectedExplorerRecord, 'prepublished')"
                     >提交预发布</a-doption>
-                    <a-doption v-permission="'pytest.case:publish'"
+                    <a-doption
                       v-if="selectedExplorerRecord.publication_status === 'prepublished' && selectedExplorerRecord.is_product_owner"
                       :disabled="publicationActionCaseId !== null || !selectedSourceAvailable"
                       @click="onPublicationChange(selectedExplorerRecord, 'published')"
                     >通过发布</a-doption>
-                    <a-doption v-permission="'pytest.case:publish'"
+                    <a-doption
                       v-if="selectedExplorerRecord.publication_status !== 'unpublished' && selectedExplorerRecord.is_product_owner"
                       class="mango-pytest-danger-option" :disabled="publicationActionCaseId !== null"
                       @click="onPublicationChange(selectedExplorerRecord, 'unpublished')"
                     >退回未发布</a-doption>
-                    <a-doption v-permission="'pytest.case:delete'"
+                    <a-doption
                       class="mango-pytest-danger-option"
                       @click="onDelete(selectedExplorerRecord)"
                     >
@@ -331,7 +331,7 @@
             </div>
           </template>
           <template #extra-buttons>
-            <a-button v-permission="'pytest.case:edit'"
+            <a-button
               type="primary"
               :loading="codeSaving"
               @click="drawerOk"

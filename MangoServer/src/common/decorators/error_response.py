@@ -11,7 +11,7 @@ from mangotools.exceptions import MangoToolsError
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 
-from src.common.decorators.system_error import report_system_error
+from src.common.decorators.system_error import report_system_error, report_validation_failure
 from src.common.enums.system_error import SystemErrorEventSource
 from src.common.exceptions import (
     INTERNAL_SERVICE_ERROR,
@@ -50,6 +50,7 @@ def error_response(app: str):
                     data=normalized.details or None,
                 )
             except ValidationError as error:
+                report_validation_failure(error.detail, request=request)
                 return ResponseData.fail(RESPONSE_MSG_0324, data=error.detail)
             except FileNotFoundError as error:
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{traceback.format_exc()}')

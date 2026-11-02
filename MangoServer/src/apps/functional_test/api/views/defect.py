@@ -114,16 +114,6 @@ class FunctionalTestDefectCRUD(ModelCRUD):
 
 
 class FunctionalTestDefectViews(ViewSet):
-    action_permission_map = {
-        "retrieve": "functional.defect:detail",
-        "transition": "functional.defect:status",
-        "stats": "functional.defect:detail",
-        "related": "functional.defect:detail",
-        "options": "functional.defect:detail",
-        "bind_cases": "functional.defect:edit",
-        "unbind_cases": "functional.defect:edit",
-        "create_retest_plan": "functional.plan:create",
-    }
 
     @staticmethod
     def _scoped(request: Request):

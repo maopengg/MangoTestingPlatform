@@ -14,8 +14,8 @@
       <a-space>
         <span class="mango-requirement-detail__save" :class="`is-${saveState}`">{{ saveStateText }}</span>
         <a-button class="mango-back-button" size="small" @click="router.back()">返回</a-button>
-        <a-button size="small" @click="openCaseWorkspace">用例生成工作台</a-button>
-        <a-button size="small" type="primary" @click="createPlan">新建测试计划</a-button>
+        <a-button  size="small" @click="openCaseWorkspace">用例生成工作台</a-button>
+        <a-button  size="small" type="primary" @click="createPlan">新建测试计划</a-button>
       </a-space>
     </header>
 
@@ -40,7 +40,7 @@
           <a-tab-pane key="detail" title="详细信息">
             <section class="mango-section-card">
               <div class="mango-section-title">基本信息</div>
-              <a-form :model="form" layout="vertical" class="mango-requirement-detail__form">
+              <a-form :model="form" :disabled="false" layout="vertical" class="mango-requirement-detail__form">
                 <a-grid :cols="4" :col-gap="12" :row-gap="2">
                   <a-grid-item :span="2"><a-form-item label="需求概要"><a-input v-model="form.requirement_name" @blur="saveSuiteField('requirement_name')" /></a-form-item></a-grid-item>
                   <a-grid-item><a-form-item label="需求分类"><a-select v-model="requirementForm.requirement_category" :options="requirementCategoryOptions" :field-names="fieldNames" @change="saveRequirement" /></a-form-item></a-grid-item>
@@ -61,26 +61,26 @@
             <section class="mango-section-card">
               <div class="mango-section-title mango-requirement-detail__section-title">
                 <span>子任务 <small>{{ suite.task_metrics?.completed || 0 }}/{{ suite.task_metrics?.total || tasks.length }}</small></span>
-                <a-button size="small" type="primary" @click="addTask">新增子任务</a-button>
+                <a-button  size="small" type="primary" @click="addTask">新增子任务</a-button>
               </div>
               <a-table :data="tasks" :columns="taskColumns" :pagination="false" :loading="!initialLoading && taskLoading" :scroll="{ x: 1480 }" row-key="id">
-                <template #task_sort="{ record }"><a-input-number v-model="record.sort_order" size="mini" :min="0" @change="saveTask(record)" /></template>
-                <template #task_name="{ record }"><a-input v-model="record.name" size="small" @blur="saveTask(record)" /></template>
-                <template #task_type="{ record }"><a-select v-model="record.task_type" size="small" :options="taskTypeOptions" :field-names="fieldNames" @change="saveTask(record)" /></template>
-                <template #task_status="{ record }"><a-select v-model="record.status" size="small" :options="taskStatusOptions" :field-names="fieldNames" @change="saveTask(record)" /></template>
-                <template #task_owner="{ record }"><a-select v-model="record.owner_id" size="small" :options="userOptions" :field-names="fieldNames" allow-search allow-clear @change="saveTask(record)" /></template>
-                <template #task_start="{ record }"><a-date-picker v-model="record.planned_start_date" size="small" value-format="YYYY-MM-DD" @change="saveTask(record)" /></template>
-                <template #task_end="{ record }"><a-date-picker v-model="record.planned_end_date" size="small" value-format="YYYY-MM-DD" @change="saveTask(record)" /></template>
-                <template #task_estimated="{ record }"><a-input-number v-model="record.estimated_person_days" size="small" :min="0" :precision="2" @change="saveTask(record)" /></template>
-                <template #task_actual="{ record }"><a-input-number v-model="record.actual_person_days" size="small" :min="0" :precision="2" @change="saveTask(record)" /></template>
-                <template #task_self_test="{ record }"><a-select v-model="record.self_test_status" size="small" :options="selfTestOptions" :field-names="fieldNames" @change="saveTask(record)" /></template>
+                <template #task_sort="{ record }"><a-input-number v-model="record.sort_order" :disabled="false" size="mini" :min="0" @change="saveTask(record)" /></template>
+                <template #task_name="{ record }"><a-input v-model="record.name" :disabled="false" size="small" @blur="saveTask(record)" /></template>
+                <template #task_type="{ record }"><a-select v-model="record.task_type" :disabled="false" size="small" :options="taskTypeOptions" :field-names="fieldNames" @change="saveTask(record)" /></template>
+                <template #task_status="{ record }"><a-select v-model="record.status" :disabled="false" size="small" :options="taskStatusOptions" :field-names="fieldNames" @change="saveTask(record)" /></template>
+                <template #task_owner="{ record }"><a-select v-model="record.owner_id" :disabled="false" size="small" :options="userOptions" :field-names="fieldNames" allow-search allow-clear @change="saveTask(record)" /></template>
+                <template #task_start="{ record }"><a-date-picker v-model="record.planned_start_date" :disabled="false" size="small" value-format="YYYY-MM-DD" @change="saveTask(record)" /></template>
+                <template #task_end="{ record }"><a-date-picker v-model="record.planned_end_date" :disabled="false" size="small" value-format="YYYY-MM-DD" @change="saveTask(record)" /></template>
+                <template #task_estimated="{ record }"><a-input-number v-model="record.estimated_person_days" :disabled="false" size="small" :min="0" :precision="2" @change="saveTask(record)" /></template>
+                <template #task_actual="{ record }"><a-input-number v-model="record.actual_person_days" :disabled="false" size="small" :min="0" :precision="2" @change="saveTask(record)" /></template>
+                <template #task_self_test="{ record }"><a-select v-model="record.self_test_status" :disabled="false" size="small" :options="selfTestOptions" :field-names="fieldNames" @change="saveTask(record)" /></template>
                 <template #task_operations="{ record }"><MangoTableActions :actions="[{ label: '删除', danger: true, onClick: () => removeTask(record) }]" /></template>
               </a-table>
             </section>
 
             <section class="mango-section-card">
               <div class="mango-section-title">排期与发布</div>
-              <a-form :model="form" layout="vertical" class="mango-requirement-detail__form">
+              <a-form :model="form" :disabled="false" layout="vertical" class="mango-requirement-detail__form">
                 <a-grid :cols="4" :col-gap="12">
                   <a-grid-item v-for="field in dateFields" :key="field.key"><a-form-item :label="field.title"><a-date-picker v-model="form[field.key]" value-format="YYYY-MM-DD" @change="saveSuiteField(field.key)" /></a-form-item></a-grid-item>
                   <a-grid-item><a-form-item label="关联客户"><a-input v-model="form.customer_ref" @blur="saveSuiteField('customer_ref')" /></a-form-item></a-grid-item>
@@ -93,10 +93,10 @@
             <section class="mango-section-card">
               <div class="mango-section-title mango-requirement-detail__section-title">
                 <span>关联用例</span>
-                <a-space><a-button size="small" @click="openCaseWorkspace">生成用例</a-button><a-button size="small" type="primary" @click="openCasePicker">从用例库关联</a-button></a-space>
+                <a-space><a-button  size="small" @click="openCaseWorkspace">生成用例</a-button><a-button  size="small" type="primary" @click="openCasePicker">从用例库关联</a-button></a-space>
               </div>
               <a-table :data="cases" :columns="caseColumns" :pagination="false" :loading="!initialLoading && assetLoading" :scroll="{ x: 1040 }" row-key="id" :row-selection="{ type: 'checkbox', showCheckedAll: true }" @selection-change="selectedCaseIds = $event">
-                <template #case_no="{ record }"><a-link @click="openCase(record)">{{ record.case_no }}</a-link></template>
+                <template #case_no="{ record }"><a-link  @click="openCase(record)">{{ record.case_no }}</a-link></template>
                 <template #case_priority="{ record }">{{ enumTitle(priorityOptions, record.priority) }}</template>
                 <template #case_operations="{ record }"><MangoTableActions :actions="[{ label: '取消关联', danger: true, onClick: () => unbindCases([record.id]) }]" /></template>
               </a-table>
@@ -105,7 +105,7 @@
 
           <a-tab-pane key="plans" :title="`测试计划（${plans.length}）`">
             <section class="mango-section-card"><a-table :data="plans" :columns="planColumns" :pagination="false" :loading="!initialLoading && assetLoading" :scroll="{ x: 900 }" row-key="id">
-              <template #plan_name="{ record }"><a-link @click="openPlan(record)">{{ record.name }}</a-link></template>
+              <template #plan_name="{ record }"><a-link  @click="openPlan(record)">{{ record.name }}</a-link></template>
               <template #plan_status="{ record }"><a-tag>{{ enumTitle(planStatusOptions, record.status) }}</a-tag></template>
               <template #plan_progress="{ record }">{{ formatRate(record.execution_stats?.progress) }}</template>
               <template #plan_pass_rate="{ record }">{{ formatRate(record.execution_stats?.pass_rate) }}</template>
@@ -113,7 +113,7 @@
           </a-tab-pane>
 
           <a-tab-pane key="defects" :title="`缺陷（${defects.length}）`">
-            <section class="mango-section-card"><div class="mango-section-title mango-requirement-detail__section-title"><span>需求缺陷</span><a-button size="small" type="primary" @click="createDefect">新增缺陷</a-button></div>
+            <section class="mango-section-card"><div class="mango-section-title mango-requirement-detail__section-title"><span>需求缺陷</span><a-button  size="small" type="primary" @click="createDefect">新增缺陷</a-button></div>
               <a-table :data="defects" :columns="defectColumns" :pagination="false" :loading="!initialLoading && assetLoading" :scroll="{ x: 980 }" row-key="id">
                 <template #defect_status="{ record }"><a-tag>{{ enumTitle(defectStatusOptions, record.status) }}</a-tag></template>
                 <template #defect_severity="{ record }">{{ enumTitle(defectSeverityOptions, record.severity) }}</template>
@@ -130,7 +130,7 @@
       </section>
     </a-spin>
 
-    <a-modal v-model:visible="casePickerVisible" title="从用例库关联用例" width="760px" :ok-loading="bindingCases" @ok="bindCases">
+    <a-modal v-model:visible="casePickerVisible" title="从用例库关联用例" width="760px" :ok-loading="bindingCases" :ok-button-props="{ disabled: false }" @ok="bindCases">
       <a-table :data="caseCandidates" :columns="casePickerColumns" :loading="casePickerLoading" :pagination="false" :scroll="{ x: 680, y: 460 }" row-key="id" :row-selection="{ type: 'checkbox', showCheckedAll: true }" @selection-change="candidateCaseIds = $event" />
     </a-modal>
   </main>
@@ -140,6 +140,7 @@
   import { computed, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useRoute, useRouter } from 'vue-router'
+
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { getUserName } from '@/api/user/user'
@@ -159,6 +160,7 @@
 
   const route = useRoute()
   const router = useRouter()
+
   const enumStore = useEnum()
   const suiteId = computed(() => Number(route.query.id))
   const suite = reactive<any>({})
@@ -274,6 +276,7 @@
     try { const result = await action(); saveState.value = 'saved'; return result } catch (error) { saveState.value = 'failed'; throw error }
   }
   async function saveSuiteField(field: string) {
+
     saveState.value = 'pending'
     const res = await withSave(() => putManualSuite({ id: suiteId.value, [field]: form[field] }))
     if (field === 'iteration_ref') {
@@ -284,10 +287,12 @@
     if (returned.update_time) suite.update_time = returned.update_time
   }
   async function saveRequirement() {
+
     if (!requirementForm.id) return
     await withSave(() => putFunctionalRequirement({ id: requirementForm.id, owner: requirementForm.owner, issue_type: requirementForm.issue_type, requirement_category: requirementForm.requirement_category }))
   }
   async function saveTask(record: any) {
+
     saveState.value = 'pending'
     const payload = { ...record, owner: record.owner_id, requirement_version: suiteId.value }
     const res = await withSave(() => record.id ? putFunctionalRequirementTask(payload) : postFunctionalRequirementTask(payload))
@@ -295,12 +300,14 @@
     const completed = tasks.value.filter((item) => item.status === 2).length
     suite.task_metrics = { ...(suite.task_metrics || {}), total: tasks.value.length, completed }
   }
-  function addTask() { tasks.value.push({ name: '新建子任务', task_type: 8, status: 0, self_test_status: 0, sort_order: tasks.value.length + 1 }) }
+  function addTask() { if (true) tasks.value.push({ name: '新建子任务', task_type: 8, status: 0, self_test_status: 0, sort_order: tasks.value.length + 1 }) }
   function removeTask(record: any) {
+
     if (!record.id) { tasks.value = tasks.value.filter((item) => item !== record); return }
-    Modal.warning({ title: '确认删除子任务', content: `确定删除「${record.name}」吗？`, hideCancel: false, onBeforeOk: async () => { await deleteFunctionalRequirementTask(record.id); await Promise.all([loadTasks(), loadSuite()]); Message.success('已删除') } })
+    Modal.warning({ title: '确认删除子任务', content: `确定删除「${record.name}」吗？`, hideCancel: false, onBeforeOk: async () => { if (false) return false; await deleteFunctionalRequirementTask(record.id); await Promise.all([loadTasks(), loadSuite()]); Message.success('已删除') } })
   }
   async function changeStatus(status: number) {
+
     if (status === suite.status) return
     if (!suite.iteration_ref?.id && !suite.iteration_ref) {
       Message.warning('请先绑定迭代')
@@ -310,11 +317,12 @@
     try { const res = await transitionManualSuiteStatus({ id: suiteId.value, status, expected_update_time: suite.update_time }); normalizeSuite(res.data?.suite || res.data); Message.success('需求状态已更新') } finally { transitioning.value = false }
   }
   async function openCasePicker() {
+
     casePickerVisible.value = true; casePickerLoading.value = true; candidateCaseIds.value = []
     try { const res = await getManualCase({ project_product: suite.project_product?.id, page: 1, pageSize: 500 }); const bound = new Set(cases.value.map((item) => item.id)); caseCandidates.value = (res.data || []).filter((item: any) => !bound.has(item.id)) } finally { casePickerLoading.value = false }
   }
-  async function bindCases() { bindingCases.value = true; try { await bindFunctionalRequirementCases(suiteId.value, candidateCaseIds.value); casePickerVisible.value = false; await Promise.all([loadAssets(), loadSuite()]); Message.success('用例已关联') } finally { bindingCases.value = false } }
-  async function unbindCases(ids: number[]) { await unbindFunctionalRequirementCases(suiteId.value, ids); await Promise.all([loadAssets(), loadSuite()]); Message.success('已取消关联') }
+  async function bindCases() { if (false) return; bindingCases.value = true; try { await bindFunctionalRequirementCases(suiteId.value, candidateCaseIds.value); casePickerVisible.value = false; await Promise.all([loadAssets(), loadSuite()]); Message.success('用例已关联') } finally { bindingCases.value = false } }
+  async function unbindCases(ids: number[]) { if (false) return; await unbindFunctionalRequirementCases(suiteId.value, ids); await Promise.all([loadAssets(), loadSuite()]); Message.success('已取消关联') }
   function openCaseWorkspace() { router.push({ path: '/functional-test/suite/details', query: { id: suiteId.value } }) }
   function createPlan() { router.push({ path: '/functional-test/plan/index', query: { requirement_version: suiteId.value } }) }
   function createDefect() { router.push({ path: '/functional-test/defect/index', query: { requirement_version: suiteId.value, project_product: suite.project_product?.id, create: 1 } }) }

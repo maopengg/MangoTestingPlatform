@@ -91,7 +91,7 @@
                   >
                     <div class="mango-system-settings__switch-row">
                       <span class="mango-system-settings__label">调试日志</span>
-                      <a-switch v-permission="'system.settings:debug'"
+                      <a-switch
                         :model-value="settingsData.isDebug"
                         :loading="debugLogSaving"
                         aria-label="调试日志"
@@ -104,7 +104,7 @@
                       class="mango-system-settings__switch-row"
                     >
                       <span class="mango-system-settings__label">允许游客查看所有项目数据</span>
-                      <a-switch v-permission="'system.settings:edit'"
+                      <a-switch
                         :model-value="switchValue(guestProjectDataScopeConfig)"
                         :loading="backendServiceConfigLoading.GUEST_CAN_VIEW_ALL_PROJECT_DATA"
                         size="medium"
@@ -122,7 +122,7 @@
                           <span class="mango-system-settings__label">{{ item.label }}</span>
                         </div>
                         <div class="mango-system-settings__cache-actions">
-                          <a-button v-permission="'system.settings:debug'"
+                          <a-button
                             size="small"
                             :loading="methodCacheRefreshLoading[item.type]"
                             @click="handleMethodCacheRefresh(item)"
@@ -130,7 +130,7 @@
                           >
                             刷新缓存
                           </a-button>
-                          <a-button v-permission="'system.settings:detail'"
+                          <a-button
                             size="small"
                             :loading="methodCacheViewLoading[item.cacheKey]"
                             @click="handleMethodCacheView(item)"
@@ -159,7 +159,7 @@
                     <div>
                       <h3 class="mango-system-settings__card-title">{{ groupTitle(group) }}</h3>
                     </div>
-                    <a-button v-permission="'system.settings:debug'"
+                    <a-button
                       v-if="group.key === 'cache_performance'"
                       size="small"
                       :loading="runtimeCacheClearLoading"
@@ -202,7 +202,7 @@
                           </a-tag>
                         </div>
                         <div class="mango-system-settings__control">
-                          <a-switch v-permission="'system.settings:edit'"
+                          <a-switch
                             v-if="isSwitchType(item)"
                             :model-value="switchValue(item)"
                             :loading="itemSaving(item)"
@@ -218,6 +218,21 @@
                             @save="saveItem(group, item)"
                           />
                           <EvaluationAiProfilesEditor v-else-if="item.key === 'EVALUATION_AI_PROFILES'" v-model="item.value" :loading="itemSaving(item)" @save="saveItem(group, item)" />
+                          <a-select
+                            v-else-if="item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY"
+                            v-model="item.value"
+                            size="medium"
+                            multiple
+                            allow-clear
+                            :max-tag-count="2"
+                            :options="enumStore.api_transient_retry_condition"
+                            :field-names="{ value: 'key', label: 'title' }"
+                            :disabled="itemSaving(item)"
+                            :loading="itemSaving(item)"
+                            placeholder="选择触发条件；留空表示不自动重试"
+                            :aria-label="itemLabel(item)"
+                            @change="saveItem(group, item)"
+                          />
                           <a-select
                             v-else-if="isDataFactoryValidationEnvironments(item)"
                             v-model="item.value"
@@ -318,7 +333,7 @@
                                 size="medium"
                                 @press-enter="handleEmailTest(group)"
                               />
-                              <a-button v-permission="'system.settings:debug'"
+                              <a-button
                                 size="medium"
                                 :loading="emailTestLoading"
                                 @click="handleEmailTest(group)"
@@ -326,7 +341,7 @@
                                 发送测试邮件
                               </a-button>
                             </div>
-                            <a-button v-permission="'system.settings:debug'"
+                            <a-button
                               v-else-if="group.key === AI_VISION_GROUP_KEY"
                               size="medium"
                               :loading="visionTestLoading"
@@ -334,7 +349,7 @@
                               data-testid="qa-views-system-settings-button-测试视觉模型"
                               >测试视觉模型</a-button
                             >
-                            <a-button v-permission="'system.settings:debug'"
+                            <a-button
                               v-else
                               size="medium"
                               :loading="aiTestLoading"
@@ -417,6 +432,9 @@
   } from '@/api/system/cache_data'
   import { postSystemMethodCacheRefresh, postSystemSetDebugLog } from '@/api/system/system'
   import {
+    API_TRANSIENT_RETRY_CONDITIONS_KEY,
+    API_TRANSIENT_RETRY_HELP,
+    normalizeRetryConditions,
     DATA_FACTORY_VALIDATION_ENVIRONMENTS_HELP,
     CONFIG_FIELD_HELP,
     CONFIG_LEVEL_OPTIONS,
@@ -613,7 +631,7 @@
   const backendServiceConfigLoading = reactive<Record<string, boolean>>({})
   const hiddenConfigKeys = ['AI_PROVIDER_TYPE']
   const hiddenGroupKeys = ['gray']
-  const integerSwitchKeys: string[] = []
+  const integerSwitchKeys: string[] = ['MOCK_CALLBACK_ENABLED']
   const environmentOptions = computed(() => enumStore.environment_type || [])
   const methodCacheItems = [
     {
@@ -748,6 +766,11 @@
     )
   }
   const itemHelp = (item: ConfigItem): string => {
+    if (item.key === 'API_TRANSIENT_RETRY_ENABLED') return API_TRANSIENT_RETRY_HELP
+    if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY)
+      return '默认选择连接异常、请求超时、HTTP 502/503/504。业务断言失败须主动选择；不会把 JSON 业务码误判为 HTTP 状态码。'
+    if (item.key === 'MOCK_CALLBACK_ENABLED')
+      return '完成数据库迁移后开启；仅影响配置了回调断言的 Case，不改变普通 Mock 接口。'
     if (isDataFactoryValidationEnvironments(item)) return DATA_FACTORY_VALIDATION_ENVIRONMENTS_HELP
     if (isExecutionConfig(item)) return item.placeholder || ''
     if (item.key === UI_FIXED_LOCATOR_RETRY_SECONDS_KEY)
@@ -809,6 +832,7 @@
   const isLongTextType = (item: ConfigItem) =>
     [VALUE_TYPE_LIST, VALUE_TYPE_DICT, VALUE_TYPE_JSON].includes(item.value_type)
   const itemLabel = (item: ConfigItem) => {
+    if (item.key === 'MOCK_CALLBACK_ENABLED') return '启用 Case 回调验证'
     if (isSystemDomain(item)) return '访问地址'
     if (item.key === 'SYSTEM_STAMP_KET') return '邮箱授权码'
     if (item.key === 'SYSTEM_EMAIL_HOST') return 'SMTP 服务器'
@@ -863,6 +887,7 @@
   }
 
   const normalizeEditValue = (item: ConfigItem) => {
+    if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === 'REPORT_DELIVERY_CONFIG') {
       if (typeof item.value !== 'string') return { ...(item.value || {}) }
       try { return JSON.parse(item.value) } catch { return {} }
@@ -902,6 +927,7 @@
   }
 
   const normalizePayloadValue = (item: ConfigItem) => {
+    if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
     if (isEnvironmentDisplayNames(item)) {
       return Object.fromEntries(
         Object.entries(item.value).map(([key, value]) => [key, String(value).trim()])

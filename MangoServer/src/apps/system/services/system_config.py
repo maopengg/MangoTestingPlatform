@@ -13,6 +13,7 @@ from src.apps.system.exceptions import (
 )
 from src.apps.system.models import CacheData
 from src.apps.test_center.enums.environment import EnvironmentEnum
+from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
 
 ENVIRONMENT_DISPLAY_NAMES_KEY = 'ENVIRONMENT_DISPLAY_NAMES'
 
@@ -44,6 +45,8 @@ API_WORKER_THREAD_POOL_SIZE_MAX = 20
 API_WORKER_DESIRED_COUNT_KEY = "API_WORKER_DESIRED_COUNT"
 API_WORKER_DESIRED_COUNT_DEFAULT = 5
 API_TIMEOUT_DEFAULT = 120
+API_TRANSIENT_RETRY_ENABLED_KEY = 'API_TRANSIENT_RETRY_ENABLED'
+API_TRANSIENT_RETRY_CONDITIONS_KEY = 'API_TRANSIENT_RETRY_CONDITIONS'
 GUEST_CAN_VIEW_ALL_PROJECT_DATA_KEY = "GUEST_CAN_VIEW_ALL_PROJECT_DATA"
 GUEST_PROJECT_DATA_SCOPE_CACHE_SECONDS = 60
 DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY = "DATA_FACTORY_VALIDATION_ENVIRONMENTS"
@@ -113,12 +116,15 @@ RANGED_INT_CONFIGS = {
     "PERF_EXECUTOR_MAX_CONCURRENT_RUNS": (5, 1, 100),
     "EXECUTOR_MEMORY_THRESHOLD_PERCENT": (100, 50, 100),
     "UI_LIVE_WORKSPACE_MAX_USERS": (5, 1, 100),
-    "AI_AGENT_HISTORY_LIMIT": (16, 1, 100),
-    "AI_AGENT_TOOL_LIMIT": (64, 1, 256),
     "AI_VISION_TIMEOUT": (30, 1, 120),
     "MOCK_REQUEST_MAX_KB": (1024, 1, 10240),
     "MOCK_RESPONSE_MAX_KB": (1024, 1, 10240),
     "MOCK_LOG_BODY_MAX_KB": (32, 1, 1024),
+    "MOCK_CALLBACK_ENABLED": (0, 0, 1),
+    "MOCK_CALLBACK_MAX_ACTIVE": (100, 1, 1000),
+    "MOCK_CALLBACK_PRODUCT_MAX_ACTIVE": (20, 1, 200),
+    "MOCK_CALLBACK_EVIDENCE_KB": (256, 1, 1024),
+    "MOCK_CALLBACK_EVIDENCE_DAYS": (7, 1, 90),
 }
 
 
@@ -558,6 +564,16 @@ SYSTEM_CONFIG_REGISTRY.extend([
         placeholder="关闭后仅管理员可以创建账号",
     ),
     SystemConfigDefinition(
+        key=API_TRANSIENT_RETRY_ENABLED_KEY, describe='失败自动重试', group='api',
+        value_type=CacheValueTypeEnum.BOOL.value, default_value=True, sort=30,
+        placeholder='默认开启；安全的只读 HTTP 场景命中条件后最多补试一次，不与场景重试叠加。',
+    ),
+    SystemConfigDefinition(
+        key=API_TRANSIENT_RETRY_CONDITIONS_KEY, describe='自动重试触发条件', group='api',
+        value_type=CacheValueTypeEnum.LIST.value, default_value=ApiTransientRetryCondition.defaults(), sort=31,
+        placeholder='可多选；不选则不自动重试。HTTP 500 和业务断言失败默认不选。',
+    ),
+    SystemConfigDefinition(
         key="REGISTRATION_DISABLED_MESSAGE", describe="禁止注册提示文案", group="access",
         default_value="当前平台未开放自助注册，请联系管理员开通账号。", required=True, sort=20,
         management_level=SystemConfigManagementLevelEnum.STANDARD.value,
@@ -610,12 +626,15 @@ SYSTEM_CONFIG_REGISTRY.extend([
         "UI_LIVE_WORKSPACE_MAX_USERS", "UI实时工作区最大用户数", "runtime", 60,
         management_level=SystemConfigManagementLevelEnum.CAUTION.value,
     ),
-    _ranged_int_definition("AI_AGENT_HISTORY_LIMIT", "AI Agent历史轮数", "ai", 110),
-    _ranged_int_definition("AI_AGENT_TOOL_LIMIT", "AI Agent工具调用上限", "ai", 120),
     _ranged_int_definition(
         "MOCK_REQUEST_MAX_KB", "Mock请求体上限（KB）", "mock", 10,
         management_level=SystemConfigManagementLevelEnum.CAUTION.value,
     ),
+    _ranged_int_definition("MOCK_CALLBACK_ENABLED", "启用Case回调验证（0关闭1开启，需先完成迁移）", "mock", 40),
+    _ranged_int_definition("MOCK_CALLBACK_MAX_ACTIVE", "回调验证全平台活动上限", "mock", 50),
+    _ranged_int_definition("MOCK_CALLBACK_PRODUCT_MAX_ACTIVE", "回调验证单产品活动上限", "mock", 60),
+    _ranged_int_definition("MOCK_CALLBACK_EVIDENCE_KB", "回调验证单份正文证据上限（KB）", "mock", 70),
+    _ranged_int_definition("MOCK_CALLBACK_EVIDENCE_DAYS", "回调原始证据保留天数", "mock", 80),
     _ranged_int_definition(
         "MOCK_RESPONSE_MAX_KB", "Mock响应体上限（KB）", "mock", 20,
         management_level=SystemConfigManagementLevelEnum.CAUTION.value,
@@ -1016,6 +1035,15 @@ class SystemConfigService:
         """统一校验配置管理页可编辑的单个配置项。"""
         if key not in cls.editable_config_keys():
             return '该配置已停用或不属于可编辑的系统配置'
+        if key == API_TRANSIENT_RETRY_CONDITIONS_KEY:
+            try:
+                values = json.loads(value) if isinstance(value, str) else value
+                valid = {item.value for item in ApiTransientRetryCondition}
+                if not isinstance(values, list) or any(not isinstance(item, str) or item not in valid for item in values):
+                    return '自动重试触发条件无效，请从可选条件中选择'
+            except (json.JSONDecodeError, TypeError):
+                return '自动重试触发条件必须是列表'
+            return None
         if key == 'REPORT_DELIVERY_CONFIG':
             from pydantic import ValidationError
             from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig

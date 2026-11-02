@@ -48,7 +48,7 @@ def _is_repository_manager(request: Request) -> bool:
     user = getattr(getattr(request, "user", None), "user_obj", None)
     if user is None or PermissionMenuService.is_effective_super_admin(user):
         return True
-    return "pytest.repository:edit" in PermissionMenuService.permission_keys_for_user(user)
+    return "pytest.repository:change" in PermissionMenuService.permission_keys_for_user(user)
 
 
 def _can_browse_all_repositories(request: Request) -> bool:
@@ -56,7 +56,7 @@ def _can_browse_all_repositories(request: Request) -> bool:
     if user is None or PermissionMenuService.is_effective_super_admin(user):
         return True
     permissions = PermissionMenuService.permission_keys_for_user(user)
-    return bool({"pytest.repository:create", "pytest.repository:edit"} & permissions)
+    return bool({"pytest.repository:add", "pytest.repository:change"} & permissions)
 
 
 def _visible_repositories(request: Request):
@@ -146,25 +146,7 @@ def _default_api_base_url(repo_url: str, provider: str) -> str | None:
 class PytestRepositoryViews(ViewSet):
     model = PytestRepository
     serializer_class = PytestRepositorySerializer
-    action_permission_map = {
-        "list_repositories": ("pytest.repository", "pytest.product:create"),
-        "delete_repository": "pytest.repository:delete",
-        "test_connection": "pytest.repository:debug",
-        "branches": ("pytest.repository:detail", "pytest.product:create"),
-        "local_info": "pytest.repository:detail",
-        "directories": ("pytest.repository:detail", "pytest.product:create"),
-        "tree": "pytest.repository:detail",
-        "file_content": "pytest.repository:detail",
-        "pull": "pytest.repository:execute",
-        "push": "pytest.repository:execute",
-        "switch_branch": "pytest.repository:edit",
-    }
 
-    def get_permission_key_map(self):
-        if self.action != 'save_repository':
-            return {}
-        key = 'pytest.repository:edit' if self.request.data.get('id') else 'pytest.repository:create'
-        return {'post': key, 'put': key}
 
     @action(methods=["GET"], detail=False)
     @error_response("pytest")

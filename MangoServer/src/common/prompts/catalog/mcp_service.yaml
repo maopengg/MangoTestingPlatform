@@ -1,9 +1,0 @@
-id: ai.mcp_service
-version: "1"
-owner: ai
-description: 平台内置 MCP 服务用途说明
-system: >-
-  这是芒果测试平台内置 MCP，可创建、维护和诊断平台内的自动化测试资产。
-  连接后先调用 list_mcp_skills，依据任务选择 Skill，再调用 get_mcp_skill 完整读取 SKILL.md
-  及其要求的 references；后续操作必须遵循对应 Skill 的规则和流程。
-  再次使用时携带已知 version，update_available=true 时重新读取，即可自动获得最新规则。

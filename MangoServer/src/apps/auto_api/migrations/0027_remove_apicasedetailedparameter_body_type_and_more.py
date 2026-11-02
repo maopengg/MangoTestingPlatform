@@ -7,7 +7,6 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ('auto_system', '0034_testsuitedetailresult_attempt_no_and_more'),
-        ('auto_ai', '0004_aimcpserver_module_aimcpserver_project_product_and_more'),
         ('auto_api', '0026_apiinforevision_apiinforelease_apicaserevision_and_more'),
     ]
 
@@ -196,30 +195,9 @@ class Migration(migrations.Migration):
                 ('api_info',
                  models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='mcp_protocol_config',
                                       to='auto_api.apiinfo', verbose_name='调用定义')),
-                ('mcp_tool', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT,
-                                                  related_name='api_info_protocol_config', to='auto_ai.aimcptool',
-                                                  verbose_name='MCP Tool')),
             ],
             options={
                 'db_table': 'api_info_mcp_config',
-                'ordering': ['-id'],
-            },
-        ),
-        migrations.CreateModel(
-            name='ApiInfoMcpBinding',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('create_time', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
-                ('update_time', models.DateTimeField(auto_now=True, verbose_name='修改时间')),
-                ('api_info',
-                 models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='mcp_binding',
-                                      to='auto_api.apiinfo', verbose_name='接口定义')),
-                ('mcp_tool',
-                 models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='api_info_binding',
-                                      to='auto_ai.aimcptool', verbose_name='MCP Tool')),
-            ],
-            options={
-                'db_table': 'api_info_mcp_binding',
                 'ordering': ['-id'],
             },
         ),

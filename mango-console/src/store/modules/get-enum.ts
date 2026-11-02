@@ -5,6 +5,13 @@ type EnumOption = { key: number | string; title: string }
 type StateValueType = EnumOption[]
 
 const ENUM_KEYS = [
+  'api_transient_retry_condition',
+  'api_callback_status',
+  'api_callback_source',
+  'api_callback_check_type',
+  'api_callback_event_mode',
+  'api_callback_delivery_policy',
+  'api_callback_response_mode',
   'cline_type',
   'method',
   'api_public_type',
@@ -77,16 +84,6 @@ const ENUM_KEYS = [
   'monitoring_task_status',
   'monitoring_log_status',
   'test_suite_notice',
-  'ai_skill_status',
-  'ai_skill_type',
-  'ai_mcp_status',
-  'ai_mcp_transport_type',
-  'ai_mcp_auth_type',
-  'ai_mcp_use_type',
-  'ai_mcp_tool_risk_level',
-  'ai_agent_task_type',
-  'ai_agent_task_status',
-  'ai_agent_tool_call_status',
   'manual_test_type',
   'manual_test_source_type',
   'manual_test_sync_status',
@@ -170,13 +167,13 @@ export const useEnum = defineStore('get-enum', {
     hasEnumData() {
       return (
         Array.isArray(this.method) &&
+        Array.isArray(this.api_transient_retry_condition) &&
+        this.api_transient_retry_condition.length > 0 &&
         this.method.length > 0 &&
         Array.isArray(this.api_case_configuration_filter) &&
         this.api_case_configuration_filter.length > 0 &&
         Array.isArray(this.environment_type_defaults) &&
         this.environment_type_defaults.length > 0 &&
-        Array.isArray(this.ai_agent_task_type) &&
-        this.ai_agent_task_type.length > 0 &&
         Array.isArray(this.ui_auth_type) &&
         this.ui_auth_type.length > 0 &&
         Array.isArray(this.automation_execution_scene) &&

@@ -38,23 +38,20 @@
             <template #default="{ open, eligible }">
           <MangoTableActions
             :actions="[
-              { permission: 'report:exclude', label: '排查与排除', hidden: !eligible, overflow: true, priority: 100, onClick: open },
-              { permission: 'report:detail',
-                label: '详细报告',
-                hidden: !!record.children,
-                onClick: () => $emit('show-details', record.__detailRecord || record),
-              },
-              { permission: 'report:detail',
-                label: '用例详情',
-                hidden: !(canRetry && record.__isFirstCaseRow && record.__caseId && record.__caseId !== '-'),
-                onClick: () => $emit('open-case-detail', record),
-              },
-              { permission: 'report:retry',
-                label: '重试',
-                hidden: !(canRetry && record.__isFirstCaseRow),
-                onClick: () => $emit('retry', record.__caseSourceId),
-              },
-            ]"
+    { label: '排查与排除', hidden: !eligible, overflow: true, priority: 100, onClick: open },
+    {
+        label: '详细报告',
+        hidden: !!record.children,
+        onClick: () => $emit('show-details', record.__detailRecord || record), },
+    {
+        label: '用例详情',
+        hidden: !(canRetry && record.__isFirstCaseRow && record.__caseId && record.__caseId !== '-'),
+        onClick: () => $emit('open-case-detail', record), },
+    {
+        label: '重试',
+        hidden: !(canRetry && record.__isFirstCaseRow),
+        onClick: () => $emit('retry', record.__caseSourceId), },
+]"
           />
             </template>
           </ReportDisposition>

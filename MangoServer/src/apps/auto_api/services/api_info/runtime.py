@@ -17,7 +17,6 @@ from src.apps.auto_api.models import (
     ApiInfo,
     ApiInfoGrpcConfig,
     ApiInfoHttpConfig,
-    ApiInfoMcpBinding,
     ApiInfoMcpConfig,
     ApiInfoRelease,
     ApiInfoRevision,
@@ -332,10 +331,11 @@ class ApiInfoRuntimeService:
     def sync_protocol_config(cls, api_info: ApiInfo):
         protocol_type = api_info.protocol_type or ApiProtocolTypeEnum.HTTP.value
         if protocol_type != ApiProtocolTypeEnum.MCP.value:
-            ApiInfoMcpBinding.objects.filter(api_info=api_info).delete()
             ApiInfoMcpConfig.objects.filter(api_info=api_info).delete()
         if protocol_type != ApiProtocolTypeEnum.GRPC.value:
             ApiInfoGrpcConfig.objects.filter(api_info=api_info).delete()
+        if protocol_type == ApiProtocolTypeEnum.MCP.value:
+            cls.restore_mcp_binding(api_info)
         if protocol_type in (ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value):
             ApiInfoHttpConfig.objects.update_or_create(
                 api_info=api_info,
@@ -365,61 +365,16 @@ class ApiInfoRuntimeService:
             ApiInfoHttpConfig.objects.filter(api_info=api_info).delete()
 
     @classmethod
-    def capture_mcp_binding(cls, api_info: ApiInfo) -> dict[str, Any] | None:
+    def capture_mcp_binding(cls, api_info):
         if api_info.protocol_type != ApiProtocolTypeEnum.MCP.value:
             return None
-        config = (
-            ApiInfoMcpConfig.objects
-            .filter(api_info_id=api_info.id)
-            .select_related(
-                'mcp_tool',
-                'mcp_tool__server',
-            )
-            .first()
-        )
-        binding = None
-        if config is None:
-            binding = (
-                ApiInfoMcpBinding.objects
-                .filter(api_info_id=api_info.id)
-                .select_related(
-                    'mcp_tool',
-                    'mcp_tool__server',
-                )
-                .first()
-            )
-        if config is None and binding is None:
+        config = ApiInfoMcpConfig.objects.filter(api_info_id=api_info.id).first()
+        if not config or not config.binding_snapshot:
             return None
-        tool = config.mcp_tool if config else binding.mcp_tool
-        server = tool.server
-        snapshot = cls.latest_mcp_tool_snapshot(tool)
-        input_schema = deepcopy(config.input_schema) if config and config.input_schema is not None else deepcopy(
-            snapshot.input_schema if snapshot else tool.input_schema)
-        output_schema = deepcopy(config.output_schema) if config and config.output_schema is not None else deepcopy(
-            snapshot.output_schema if snapshot else tool.output_schema)
-        schema_hash = config.schema_hash if config and config.schema_hash else (
-            snapshot.schema_hash if snapshot else cls.mcp_schema_hash(tool.input_schema, tool.output_schema))
-        return {
-            'server_id': server.id,
-            'server_name': server.name,
-            'server_url': server.server_url,
-            'transport_type': server.transport_type,
-            'tool_id': tool.id,
-            'tool_name': tool.name,
-            'tool_title': tool.title,
-            'tool_type': tool.tool_type,
-            'tool_enabled': tool.enabled,
-            'risk_level': tool.risk_level,
-            'write_operation': tool.write_operation,
-            'require_confirm': tool.require_confirm,
-            'mcp_config': deepcopy(config.mcp_config) if config else None,
-            'input_schema': input_schema,
-            'output_schema': output_schema,
-            'schema_hash': schema_hash,
-            'snapshot_id': snapshot.id if snapshot else None,
-            'snapshot_test_env': snapshot.test_env if snapshot else None,
-            'snapshot_create_time': cls.format_snapshot_time(snapshot.create_time if snapshot else None),
-        }
+        snapshot = deepcopy(config.binding_snapshot)
+        snapshot.update({"mcp_config": deepcopy(config.mcp_config), "input_schema": deepcopy(config.input_schema),
+                         "output_schema": deepcopy(config.output_schema), "schema_hash": config.schema_hash})
+        return snapshot
 
     @staticmethod
     def format_snapshot_time(value):
@@ -429,16 +384,7 @@ class ApiInfoRuntimeService:
             value = timezone.make_aware(value, timezone.get_current_timezone())
         return timezone.localtime(value).strftime('%Y-%m-%d %H:%M:%S')
 
-    @staticmethod
-    def latest_mcp_tool_snapshot(tool):
-        from src.apps.ai.models import AiMcpToolSnapshot
 
-        return (
-            AiMcpToolSnapshot.objects
-            .filter(tool_id=tool.id, is_available=True)
-            .order_by('-id')
-            .first()
-        )
 
     @staticmethod
     def mcp_schema_hash(input_schema: dict | None, output_schema: dict | None) -> str:
@@ -454,38 +400,25 @@ class ApiInfoRuntimeService:
         return f"sha256:{hashlib.sha256(payload.encode('utf-8')).hexdigest()}"
 
     @classmethod
-    def restore_mcp_binding(cls, api_info: ApiInfo):
-        snapshot = getattr(api_info, '_mcp_binding_snapshot', None)
+    def restore_mcp_binding(cls, api_info):
+        from pydantic import ValidationError
+        from src.apps.auto_api.schemas.mcp import McpBindingDefinition
+        from src.apps.auto_api.exceptions import MCP_API_API_INFO_BINDING_INVALID
+        snapshot = getattr(api_info, "_mcp_binding_snapshot", None)
         if api_info.protocol_type != ApiProtocolTypeEnum.MCP.value:
-            ApiInfoMcpBinding.objects.filter(api_info=api_info).delete()
             ApiInfoMcpConfig.objects.filter(api_info=api_info).delete()
             return
-        if not isinstance(snapshot, dict) or not snapshot.get('tool_id'):
-            ApiInfoMcpBinding.objects.filter(api_info=api_info).delete()
-            ApiInfoMcpConfig.objects.filter(api_info=api_info).delete()
-            return
-        from src.apps.ai.models import AiMcpTool
-
-        tool = AiMcpTool.objects.filter(id=snapshot.get('tool_id')).first()
-        if tool is None:
-            ApiInfoMcpBinding.objects.filter(api_info=api_info).delete()
-            ApiInfoMcpConfig.objects.filter(api_info=api_info).delete()
-            return
-        ApiInfoMcpBinding.objects.update_or_create(
-            api_info=api_info,
-            defaults={'mcp_tool': tool},
-        )
-        ApiInfoMcpConfig.objects.update_or_create(
-            api_info=api_info,
-            defaults={
-                'mcp_tool': tool,
-                'mcp_config': deepcopy(snapshot.get('mcp_config')),
-                'input_schema': deepcopy(snapshot.get('input_schema') or tool.input_schema),
-                'output_schema': deepcopy(snapshot.get('output_schema') or tool.output_schema),
-                'schema_hash': snapshot.get('schema_hash') or cls.mcp_schema_hash(tool.input_schema,
-                                                                                  tool.output_schema),
-            },
-        )
+        try:
+            snapshot = McpBindingDefinition.model_validate(snapshot).model_dump()
+        except ValidationError as exc:
+            raise AutoApiError(MCP_API_API_INFO_BINDING_INVALID) from exc
+        ApiInfoMcpConfig.objects.update_or_create(api_info=api_info, defaults={
+            "binding_snapshot": {key: deepcopy(value) for key, value in snapshot.items()
+                                 if key not in {"mcp_config", "input_schema", "output_schema", "schema_hash"}},
+            "mcp_config": deepcopy(snapshot.get("mcp_config")),
+            "input_schema": deepcopy(snapshot.get("input_schema")),
+            "output_schema": deepcopy(snapshot.get("output_schema")),
+            "schema_hash": snapshot.get("schema_hash") or cls.mcp_schema_hash(snapshot.get("input_schema"), snapshot.get("output_schema"))})
 
     @classmethod
     def capture_grpc_binding(cls, api_info: ApiInfo) -> dict[str, Any] | None:

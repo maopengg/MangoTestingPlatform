@@ -51,15 +51,6 @@ class UiAuthConfigCRUD(ModelCRUD):
 class UiAuthConfigViews(ViewSet):
     model = UiAuthConfig
     serializer_class = UiAuthConfigSerializers
-    action_permission_map = {
-        'put_status': 'ui.auth_config:status',
-        'refresh': 'ui.auth_config:debug',
-        'clear': 'ui.auth_config:debug',
-        'cache': 'ui.auth_config:detail',
-        'manual_cache': 'ui.auth_config:debug',
-        'auto_start': 'ui.auth_config:debug',
-        'auto_capture': 'ui.auth_config:debug',
-    }
 
     @action(methods=['put'], detail=False)
     @error_response('ui')

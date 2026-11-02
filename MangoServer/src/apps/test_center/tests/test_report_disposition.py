@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -150,7 +151,7 @@ class ReportDispositionTests(SimpleTestCase):
         self.assertIn({'key': 'product_pending', 'title': '产品缺陷待修复'}, EnumCatalogService.catalog()['report_failure_reason'])
 
     def test_endpoint_rejects_product_scope_before_mutating(self):
-        self.assertEqual(TestSuiteDetailsViews.action_permission_map['update_disposition'], 'report:exclude')
+        self.assertEqual(permission_for_view(TestSuiteDetailsViews, 'update_disposition'), 'report:change')
         request = APIRequestFactory().post('/api/test/suite/details/disposition',
                                           {'id': 2, 'is_excluded': True}, format='json')
         with patch.object(TestSuiteDetailsViews, '_has_detail_scope', return_value=False), \

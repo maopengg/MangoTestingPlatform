@@ -34,10 +34,6 @@ class NoticeGroupViews(ViewSet):
     queryset = NoticeGroup.objects.all()
     serializer_class = NoticeGroupSerializersC
     serializer = NoticeGroupSerializers
-    action_permission_map = {
-        'test': 'config.project:debug',
-        'get_name': 'config.project',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

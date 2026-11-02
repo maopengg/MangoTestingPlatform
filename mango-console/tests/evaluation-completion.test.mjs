@@ -218,7 +218,7 @@ test('SQL variable keys are loaded, saved and cleared with the item source', asy
 test('shared factory panel saves local selections without writing API case bindings', async () => {
   const writes = [], selected = []
   const template = { id: 7, name: '订单模板', project_product: { id: 1 } }
-  const view = await mount('../../components/DataFactory/CaseConfigPanel.vue', { props: { local: true, localPermission: 'evaluation.dataset:edit', projectProductId: 1, configs: [], 'onUpdate:configs': value => selected.push(value) }, api: {
+  const view = await mount('../../components/DataFactory/CaseConfigPanel.vue', { props: { local: true, localPermission: 'evaluation.dataset:change', projectProductId: 1, configs: [], 'onUpdate:configs': value => selected.push(value) }, api: {
     getDataFactoryCaseConfig: async () => { writes.push('read-api-binding'); return { data: [] } },
     postDataFactoryCaseConfig: async () => { writes.push('create-api-binding'); return { data: {} } },
     putDataFactoryCaseConfig: async () => { writes.push('update-api-binding'); return { data: {} } },

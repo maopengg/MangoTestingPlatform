@@ -12,13 +12,6 @@ from src.common.responses import RESPONSE_MSG_0266, RESPONSE_MSG_0267, ResponseD
 
 
 class ExecutorTaskViews(ViewSet):
-    action_permission_map = {
-        # 任务可能来自 UI、API、Pytest 或配置管理，不能绑定某一个业务菜单权限。
-        # 接口仍要求登录，且 Service 会严格校验任务创建人。
-        "get_detail": "index.home",
-        "active": "index.home",
-        "cancel": "index.home",
-    }
 
     @staticmethod
     def _user_id(request: Request) -> int:

@@ -78,12 +78,11 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'report:detail',
-                    label: '报告',
-                    disabled: !record.test_suite,
-                    onClick: () => openReport(record),
-                  },
-                ]"
+    {
+        label: '报告',
+        disabled: !record.test_suite,
+        onClick: () => openReport(record), },
+]"
               />
             </template>
           </a-table-column>

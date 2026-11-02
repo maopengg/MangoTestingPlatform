@@ -11,6 +11,7 @@ from src.apps.auto_ui.enums.live_stream import (
     LiveStreamCommand,
     LiveStreamExecutionType,
 )
+from src.apps.auto_ui.constants import LIVE_WORKSPACE_RECORD_KEY_PREFIX
 from src.apps.auto_ui.exceptions import (
     AUTO_UI_LIVE_STREAM_WORKSPACE_SERVICE_TYPE_UNSUPPORTED,
     AUTO_UI_LIVE_STREAM_WORKSPACE_SERVICE_TYPE_UNSUPPORTED_CODE_TYPE_UNSUPPORTED,
@@ -485,7 +486,7 @@ class LiveWorkspaceService:
 
     @staticmethod
     def _record_cache_key(workspace_id: str) -> str:
-        return f"ui-live-workspace:record:{workspace_id}"
+        return f'{LIVE_WORKSPACE_RECORD_KEY_PREFIX}{workspace_id}'
 
     @staticmethod
     def _index_cache_key(workspace_key: str) -> str:

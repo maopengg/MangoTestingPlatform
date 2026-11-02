@@ -1,19 +1,19 @@
 <template>
   <div class="mango-evaluation-ai-profiles">
     <a-space>
-      <a-button v-if="editable" v-permission="'system.settings:edit'" size="small" :disabled="loading" @click="add">新增 AI</a-button>
-      <a-button v-if="editable" v-permission="'system.settings:edit'" size="small" type="primary" :loading="loading" @click="save">保存 AI 列表</a-button>
+      <a-button v-if="true"  size="small" :disabled="loading" @click="add">新增 AI</a-button>
+      <a-button v-if="true"  size="small" type="primary" :loading="loading" @click="save">保存 AI 列表</a-button>
     </a-space>
     <div v-if="!draft.length" class="mango-empty-state">尚未配置效果测评 AI</div>
     <section v-for="(profile, index) in draft" :key="profile.id" class="mango-soft-panel">
       <div class="mango-section-title">
         <strong>{{ profile.name || `AI ${index + 1}` }}</strong>
         <a-space>
-          <a-switch v-if="editable" v-permission="'system.settings:edit'" v-model="profile.enabled" size="small" :disabled="loading" />
-          <a-button v-if="editable" v-permission="'system.settings:edit'" size="small" type="text" status="danger" :disabled="loading" @click="draft.splice(index, 1)">移除</a-button>
+          <a-switch v-if="true"  v-model="profile.enabled" size="small" :disabled="loading" />
+          <a-button v-if="true"  size="small" type="text" status="danger" :disabled="loading" @click="draft.splice(index, 1)">移除</a-button>
         </a-space>
       </div>
-      <a-form :model="profile" layout="horizontal" :disabled="!editable || loading">
+      <a-form :model="profile" layout="horizontal" :disabled="loading">
         <div class="mango-evaluation-ai-fields">
           <a-form-item label="名称" required><a-input v-model="profile.name" :max-length="100" /></a-form-item>
           <a-form-item label="模型" required><a-input v-model="profile.model" placeholder="填写模型名称" /></a-form-item>
@@ -29,22 +29,21 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import usePermissionStore from '@/store/modules/permission'
+
   import { computed } from 'vue'
   const props = defineProps<{ modelValue: any[]; loading?: boolean }>()
   const emit = defineEmits(['update:modelValue', 'save'])
-  const permissions = usePermissionStore()
-  const editable = computed(() => permissions.hasPermission('system.settings:edit'))
+
   const draft = ref<any[]>([])
   const providers = [{ value: 'openai_compatible', label: 'OpenAI 兼容' }, { value: 'openai', label: 'OpenAI' }, { value: 'azure_openai', label: 'Azure OpenAI' }]
   watch(() => props.modelValue, value => { draft.value = JSON.parse(JSON.stringify(value || [])) }, { immediate: true, deep: true })
   function add() {
-    if (!editable.value || props.loading || draft.value.length >= 50) return
+    if (props.loading || draft.value.length >= 50) return
     draft.value.push({ id: crypto.randomUUID(), name: '', provider_type: 'openai_compatible',
       base_url: '', model: '', api_key: '', timeout: 120, enabled: true })
   }
   function save() {
-    if (!editable.value || props.loading) return
+    if (props.loading) return
     if (draft.value.some(row => !row.name.trim() || !row.model.trim() || !row.base_url.trim() || (row.enabled && !row.api_key.trim()))) {
       Message.warning('请填写 AI 名称、模型、服务地址和密钥')
       return

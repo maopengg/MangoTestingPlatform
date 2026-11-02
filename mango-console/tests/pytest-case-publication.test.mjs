@@ -59,7 +59,7 @@ test('search omits empty conditions but keeps zero and multiselect parameters', 
 })
 
 test('publication actions use dedicated permission, product owner and passed guards', () => {
-  assert.match(source, /v-permission="'pytest.case:publish'"/)
+  assert.match(source, /v-permission="'pytest.case:change'"/)
   assert.match(source, /selectedExplorerRecord.is_product_owner/)
   assert.match(functionSource('onPublicationChange'), /record.status !== 1/)
   const api = read('src/api/pytest/case.ts')

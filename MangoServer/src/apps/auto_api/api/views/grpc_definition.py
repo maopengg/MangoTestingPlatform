@@ -78,7 +78,9 @@ class GrpcMethodDefinitionViews(ViewSet):
     @error_response('api')
     def sync_methods(self, request: Request):
         service_id = request.data.get('service_id') or request.data.get('grpc_service_id')
-        service = GrpcServiceDefinition.objects.filter(id=service_id).first()
+        service = GrpcServiceDefinitionCRUD().filter_queryset_by_data_scope(
+            request, GrpcServiceDefinition.objects.filter(id=service_id),
+        ).first()
         if service is None:
             raise AutoApiError(AUTO_API_GRPC_DEFINITION_SERVICE_NOT_FOUND, value=(service_id,))
         result = GrpcDefinitionSyncService.sync_methods(service)
@@ -92,6 +94,12 @@ class GrpcMethodDefinitionViews(ViewSet):
         module_id = request.data.get('module_id')
         grpc_target = request.data.get('grpc_target')
         grpc_config = request.data.get('grpc_config') if isinstance(request.data.get('grpc_config'), dict) else {}
+        if not GrpcMethodDefinitionCRUD().filter_queryset_by_data_scope(
+                request, GrpcMethodDefinition.objects.filter(id=method_id),
+        ).exists() or not ApiInfoCRUD().has_data_scope_permission(
+            request, {'project_product': project_product_id},
+        ):
+            return ResponseData.fail(RESPONSE_MSG_0210)
         data = GrpcDefinitionMutationService.import_method_to_api_info(
             method_id,
             project_product_id=project_product_id,

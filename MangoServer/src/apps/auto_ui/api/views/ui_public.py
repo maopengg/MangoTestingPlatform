@@ -34,9 +34,6 @@ class UiPublicCRUD(ModelCRUD):
 class UiPublicViews(ViewSet):
     model = UiPublic
     serializer_class = UiPublicSerializers
-    action_permission_map = {
-        'put_status': 'ui.public:status',
-    }
 
     @action(methods=['put'], detail=False)
     @error_response('ui')

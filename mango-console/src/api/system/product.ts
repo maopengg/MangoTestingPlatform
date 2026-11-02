@@ -50,8 +50,7 @@ export function postUserProduct(data: object) {
 }
 
 export function putUserProduct(data: object) {
-  return put({ permissionKey: 'config.product',
-    url: '/system/product',
+  return put({ url: '/system/product',
     data: () => {
       return data
     },

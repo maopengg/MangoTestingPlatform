@@ -11,6 +11,7 @@ from src.common.responses.model_crud import ModelCRUD
 
 
 class UserLogsCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = UserLogs
     queryset = UserLogs.objects.all()
     serializer_class = UserLogsSerializersC

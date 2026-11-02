@@ -514,42 +514,24 @@ class ArchitectureBoundaryTests(SimpleTestCase):
         violations.extend(str(path.relative_to(SRC_ROOT)) for path in forbidden_modules if path.exists())
         self.assertEqual([], violations)
 
-    def test_ai_app_uses_the_fixed_app_structure(self):
-        ai_root = APPS_ROOT / "ai"
-        forbidden_namespaces = [
-            ai_root / "runtime",
-            ai_root / "harness",
-            ai_root / "schemas" / "mutation_serializers",
-            ai_root / "schemas" / "presentation_serializers",
-            ai_root / "agent" / "mcp",
-            ai_root / "agent" / "skill",
-        ]
-        violations = [
-            str(path.relative_to(SRC_ROOT))
-            for path in forbidden_namespaces
-            if _contains_python_sources(path)
-        ]
-
-        for path in _python_files(ai_root / "services"):
-            for module in _imports(path):
-                if ".api.views" in module or ".api.serializers" in module:
-                    violations.append(f"{path.relative_to(SRC_ROOT)} -> {module}")
-
-        for path in _python_files(SRC_ROOT / "interfaces" / "mcp" / "tools" / "ai"):
-            for module in _imports(path):
-                if ".api.views" in module or ".api.serializers" in module:
-                    violations.append(f"{path.relative_to(SRC_ROOT)} -> {module}")
-
-        process_root = SRC_ROOT / "processes" / "ai_worker"
-        for path in _python_files(process_root):
-            source = path.read_text(encoding="utf-8")
-            for module in _imports(path):
-                if module.endswith(".models") or ".api." in module:
-                    violations.append(f"{path.relative_to(SRC_ROOT)} -> {module}")
-            if ".objects" in source:
-                violations.append(f"{path.relative_to(SRC_ROOT)} uses ORM manager")
-
-        self.assertEqual([], violations)
+    def test_retired_ai_apps_and_workers_do_not_return(self):
+        for path in (
+            APPS_ROOT / "ai",
+            APPS_ROOT / "case_generation",
+            SRC_ROOT / "common" / "database" / "retired_ai",
+            SRC_ROOT / "processes" / "ai_worker",
+            SRC_ROOT / "processes" / "case_generation_worker",
+            SRC_ROOT / "interfaces" / "mcp" / "tools" / "ai",
+        ):
+            with self.subTest(path=str(path)):
+                self.assertFalse(path.exists())
+        loader = MigrationLoader(None)
+        self.assertFalse(any(label == "auto_ai" for label, _ in loader.graph.nodes))
+        state = loader.project_state()
+        for model in state.models.values():
+            for field in model.fields.values():
+                target = getattr(getattr(field, "remote_field", None), "model", None)
+                self.assertFalse(isinstance(target, str) and target.startswith("auto_ai."))
 
     def test_removed_actuator_protocol_modules_do_not_return(self):
         forbidden = [

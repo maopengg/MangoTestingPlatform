@@ -23,15 +23,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_03
 
 
 class RuntimeCenterViews(ViewSet):
-    action_permission_map = {
-        'overview': 'system.runtime_center',
-        'services': 'system.runtime_center:detail',
-        'queues': 'system.runtime_center:detail',
-        'diagnostics': 'system.runtime_center:detail',
-        'recent_errors': 'system.error_record',
-        # 所有已登录 Web 用户都可能产生前端运行异常，不能绑定系统运维菜单权限。
-        'report_frontend_error': 'index.home',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

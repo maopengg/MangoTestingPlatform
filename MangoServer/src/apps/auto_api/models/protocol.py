@@ -9,31 +9,6 @@ from src.apps.test_center.models import ProjectProduct, ProductModule
 """
 
 
-class ApiInfoMcpBinding(models.Model):
-    """MCP Tool 与 API 接口定义的当前编辑态映射。"""
-
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    api_info = models.OneToOneField(
-        to="ApiInfo",
-        to_field="id",
-        related_name="mcp_binding",
-        verbose_name="接口定义",
-        on_delete=models.CASCADE,
-    )
-    mcp_tool = models.OneToOneField(
-        to="auto_ai.AiMcpTool",
-        to_field="id",
-        related_name="api_info_binding",
-        verbose_name="MCP Tool",
-        on_delete=models.PROTECT,
-    )
-
-    class Meta:
-        db_table = "api_info_mcp_binding"
-        ordering = ["-id"]
-
-
 class ApiInfoMcpConfig(models.Model):
     """MCP Tool 协议配置当前编辑态。"""
 
@@ -46,13 +21,7 @@ class ApiInfoMcpConfig(models.Model):
         verbose_name="调用定义",
         on_delete=models.CASCADE,
     )
-    mcp_tool = models.OneToOneField(
-        to="auto_ai.AiMcpTool",
-        to_field="id",
-        related_name="api_info_protocol_config",
-        verbose_name="MCP Tool",
-        on_delete=models.PROTECT,
-    )
+    binding_snapshot = models.JSONField(verbose_name="MCP工具定义快照", default=dict, blank=True)
     mcp_config = models.JSONField(verbose_name="MCP执行配置", null=True, blank=True)
     input_schema = models.JSONField(verbose_name="输入Schema快照", null=True, blank=True)
     output_schema = models.JSONField(verbose_name="输出Schema快照", null=True, blank=True)
@@ -60,6 +29,7 @@ class ApiInfoMcpConfig(models.Model):
 
     class Meta:
         db_table = "api_info_mcp_config"
+        verbose_name = "MCP接口协议配置"
         ordering = ["-id"]
 
 

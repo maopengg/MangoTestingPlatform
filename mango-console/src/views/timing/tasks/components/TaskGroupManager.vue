@@ -85,7 +85,7 @@
         </a-table-column>
         <a-table-column title="是否开启" :width="90" align="center">
           <template #cell="{ record }">
-            <a-switch v-permission="'timing.tasks:status'"
+            <a-switch
               :model-value="record.status === 1"
               :before-change="(value) => changeGroupSwitch(record, 'status', value)"
             />
@@ -93,7 +93,7 @@
         </a-table-column>
         <a-table-column title="是否通知" :width="90" align="center">
           <template #cell="{ record }">
-            <a-switch v-permission="'timing.tasks:status'"
+            <a-switch
               :model-value="record.is_notice === 1"
               :before-change="(value) => changeGroupSwitch(record, 'is_notice', value)"
             />
@@ -101,7 +101,7 @@
         </a-table-column>
         <a-table-column title="失败通知" :width="90" align="center">
           <template #cell="{ record }">
-            <a-switch v-permission="'timing.tasks:status'"
+            <a-switch
               :model-value="record.is_notice === 1 && record.fail_notice === 1"
               :disabled="record.is_notice !== 1"
               :before-change="(value) => changeGroupSwitch(record, 'fail_notice', value)"
@@ -129,21 +129,21 @@
           <template #cell="{ record }">
             <MangoTableActions
               :actions="[
-                {
-                  label: '触发',
-                  loading: triggeringIds.has(record.id),
-                  onClick: () => triggerGroup(record),
-                },
-                {
-                  permission: 'timing.tasks',
-                  label: '重发报告',
-                  loading: noticeLoadingIds.has(record.id) || (noticeSending && noticeGroup?.id === record.id),
-                  onClick: () => openResendNotice(record),
-                },
-                { permission: 'timing.tasks', label: '查看', onClick: () => openDetail(record) },
-                { permission: 'timing.tasks:edit', label: '编辑', onClick: () => openEdit(record) },
-                { permission: 'timing.tasks:delete', label: '删除', danger: true, onClick: () => deleteGroup(record) },
-              ]"
+    {
+        label: '触发',
+        loading: triggeringIds.has(record.id),
+        onClick: () => triggerGroup(record),
+    },
+    {
+        label: '重发报告',
+        loading: noticeLoadingIds.has(record.id) || (noticeSending && noticeGroup?.id === record.id),
+        onClick: () => openResendNotice(record),
+    },
+    { label: '查看', onClick: () => openDetail(record) },
+    { label: '导出离线 HTML', onClick: () => { offlineExport.sourceId = record.id; offlineExport.visible = true; } },
+    { label: '编辑', onClick: () => openEdit(record) },
+    { label: '删除', danger: true, onClick: () => deleteGroup(record) },
+]"
             />
           </template>
         </a-table-column>
@@ -338,7 +338,7 @@
     <template #footer>
       <a-space :size="12" class="mango-modal-dialog-footer-actions">
         <a-button @click="editorVisible = false">取消</a-button>
-        <a-button v-permission="'timing.tasks:edit'" type="primary" :loading="previewLoading" @click="openPreview">
+        <a-button  type="primary" :loading="previewLoading" @click="openPreview">
           预览并保存
         </a-button>
       </a-space>
@@ -411,7 +411,7 @@
             <a-table-column title="任务名称" data-index="task_name" :width="320" ellipsis tooltip />
             <a-table-column title="单独启用" :width="100" align="center">
               <template #cell="{ record }">
-                <a-switch v-permission="'timing.tasks:status'"
+                <a-switch
                   :model-value="record.child_enabled"
                   :before-change="(value) => changeMemberStatus(record, value)"
                 />
@@ -429,12 +429,15 @@
       </div>
     </a-spin>
   </a-drawer>
+  <OfflineReportExportDialog v-model:visible="offlineExport.visible" source-kind="group" :source-id="offlineExport.sourceId" select-report />
 </template>
 
 <script lang="ts" setup>
   import { computed, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
+
   import TaskRecentResults from './TaskRecentResults.vue'
+  import OfflineReportExportDialog from '@/components/reports/OfflineReportExportDialog.vue'
   import type { TaskGroupRecentResult } from '@/api/system/tasks'
   import { Message, Modal } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
@@ -466,10 +469,12 @@
   const emit = defineEmits<{ (event: 'filter-tasks', record: any): void }>()
   const enumStore = useEnum()
   const router = useRouter()
+
   function openGroupReport(result: TaskGroupRecentResult) {
     router.push({ path: '/report/index', query: { group_execution_id: result.group_execution_id } })
   }
   const loading = ref(false)
+  const offlineExport = reactive({ visible: false, sourceId: 0 })
   const triggeringIds = reactive(new Set<number>())
   const triggerConfirmingIds = new Set<number>()
   const noticeLoadingIds = reactive(new Set<number>())
@@ -936,6 +941,7 @@
   }
 
   async function confirmResendNotice() {
+
     if (noticeSending.value || !noticeGroup.value || !noticeExecutionId.value) return false
     noticeSending.value = true
     try {

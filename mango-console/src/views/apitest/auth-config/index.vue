@@ -26,14 +26,14 @@
           <template #toolbar>
           <div>
             <a-space>
-              <a-button v-permission="'api.auth_config:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-apitest-auth-config-button-新增">新增</a-button>
-              <a-button v-permission="'api.auth_config:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-auth-config-button-批量删除">批量删除</a-button>
+              <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-apitest-auth-config-button-新增">新增</a-button>
+              <a-button  size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-auth-config-button-批量删除">批量删除</a-button>
             </a-space></div
           >
           </template>
       <a-table
         class="mango-native-scroll-table"
-        :scroll="{ x: 1720, y: '100%' }"
+        :scroll="{ x: tableScrollX, y: '100%' }"
         :bordered="false"
         :columns="tableColumns"
         :data="table.dataList"
@@ -75,6 +75,9 @@
                 </div>
               </a-tooltip>
             </template>
+            <template v-else-if="item.key === 'target_address'" #cell="{ record }">
+              {{ record.target_address || '默认地址' }}
+            </template>
             <template v-else-if="item.key === 'refresh_mode'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.refresh_mode]" size="small">
                 {{ enumStore.api_auth_refresh_mode[record.refresh_mode]?.title }}
@@ -93,7 +96,7 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'api.auth_config:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
@@ -107,13 +110,13 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'api.auth_config:detail', label: '查看', onClick: () => onPreview(record) },
-                  { permission: 'api.auth_config:detail', label: '自定义代码', hidden: record.auth_type !== 1, overflow: true, onClick: () => onViewCustomCode(record) },
-                  { permission: 'api.auth_config:debug', label: '刷新', onClick: () => onRefresh(record) },
-                  { permission: 'api.auth_config:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'api.auth_config:debug', label: '清空', onClick: () => onClear(record) },
-                  { permission: 'api.auth_config:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '查看', onClick: () => onPreview(record) },
+    { label: '自定义代码', hidden: record.auth_type !== 1, overflow: true, onClick: () => onViewCustomCode(record) },
+    { label: '刷新', onClick: () => onRefresh(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '清空', onClick: () => onClear(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>
@@ -126,13 +129,20 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" width="650px" @confirm="onDataForm">
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" :width="760" class="mango-auth-modal" @confirm="onDataForm">
     <template #content>
-      <a-form :model="formModel">
+      <a-form :model="formModel" layout="horizontal" class="mango-auth-form">
+        <section v-for="section of authFormGroups" :key="section.key" class="mango-auth-form-section">
+          <header class="mango-section-title mango-auth-form-section__header">
+            <h3 class="mango-section-heading">{{ section.title }}</h3>
+            <span class="mango-section-description">{{ section.description }}</span>
+          </header>
+          <div class="mango-auth-form-section__fields">
         <a-form-item
-          v-for="item of visibleFormItems"
+          v-for="item of section.items"
           :key="item.key"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
+          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require',
+            { 'mango-auth-form-item--wide': ['name', 'target_address', 'public_variable_ids', 'custom_code', 'notice_group'].includes(item.key) }]"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
@@ -163,7 +173,30 @@
               allow-clear
               allow-search
               value-key="key"
+              @change="onAuthVariableContextChange"
             />
+          </template>
+          <template v-else-if="item.key === 'target_address'">
+            <div class="mango-auth-variable-field">
+              <a-select v-model="item.value" :options="targetOptions" :loading="targetsLoading"
+                :disabled="!projectProductItem?.value || authEnvironment == null || authEnvironment === ''"
+                :placeholder="item.placeholder" allow-clear allow-search @clear="item.value = ''" />
+              <div class="mango-auth-variable-hint">留空使用被测对象的默认地址，仅在请求地址匹配时加载授权。</div>
+            </div>
+          </template>
+          <template v-else-if="item.key === 'public_variable_ids'">
+            <div class="mango-auth-variable-field">
+              <a-select
+                v-model="item.value"
+                :options="publicVariableOptions"
+                :loading="publicVariablesLoading"
+                :disabled="!projectProductItem?.value || authEnvironment == null || authEnvironment === ''"
+                :placeholder="item.placeholder"
+                multiple allow-clear allow-search :filter-option="false"
+                @search="loadPublicVariableOptions"
+              />
+              <div class="mango-auth-variable-hint">仅用于准备认证上下文，同 key 覆盖默认值；Case 仍须选择匹配的变量，不会自动切换租户。</div>
+            </div>
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'auth_type'">
             <a-select
@@ -232,6 +265,8 @@
             />
           </template>
         </a-form-item>
+          </div>
+        </section>
       </a-form>
     </template>
   </ModalDialog>
@@ -250,6 +285,23 @@
         placeholder="暂无自定义授权代码"
         :code-style="{ height: '100%' }"
       />
+      <section class="mango-auth-custom-code-result">
+        <div class="mango-auth-custom-code-result-header">
+          <span>执行结果</span>
+          <a-button
+
+            type="primary"
+            size="small"
+            :loading="customCodeRunningIds.has(customCodePanel.id)"
+            @click="onRunCustomCode"
+          >刷新/执行</a-button>
+        </div>
+        <MangoPanelSpin :loading="customCodeRunningIds.has(customCodePanel.id)" class="mango-auth-custom-code-result-body">
+          <a-alert v-if="customCodePanel.error" type="error">{{ customCodePanel.error }}</a-alert>
+          <JsonDisplay v-else-if="customCodePanel.result !== null" :data="customCodePanel.result" :show-toolbar="false" />
+          <div v-else class="mango-empty-state">点击“刷新/执行”刷新授权，结果将在此展示。</div>
+        </MangoPanelSpin>
+      </section>
     </div>
   </BaseSidePanel>
 
@@ -285,7 +337,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { formatProjectProductPath } from '@/utils/business-format'
+  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
   import { AUTH_REFRESH_STATUS_COLORS, getStatusTagColor } from '@/utils/status-color'
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
@@ -300,6 +352,7 @@
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import ApiResourceSearchFilters from '@/components/business/ApiResourceSearchFilters.vue'
@@ -307,10 +360,12 @@
   import { getSystemTimingList } from '@/api/system/time'
   import { getSystemNoticeName } from '@/api/system/notice_group'
   import { getUserName } from '@/api/user/user'
-  import { conditionItems, formItems, tableColumns } from './config'
+  import { conditionItems, formItems, authFormSections, tableColumns, tableScrollX } from './config'
   import {
     deleteApiAuthConfig,
     getApiAuthConfig,
+    getApiAuthPublicVariables,
+    getApiAuthTargets,
     getApiAuthConfigCache,
     postApiAuthConfig,
     postApiAuthConfigClear,
@@ -354,13 +409,102 @@
     visible: false,
     data: null as any,
   })
-  const customCodePanel = reactive({ visible: false, title: '自定义代码', code: '' })
+  const publicVariableOptions = ref<Array<{ label: string; value: number }>>([])
+  const publicVariablesLoading = ref(false)
+  const authEnvironment = computed(() => formItems.find(item => item.key === 'test_env')?.value)
+  let publicVariableRequest = 0
+  const targetOptions = ref<Array<{ label: string; value: string }>>([])
+  const targetsLoading = ref(false)
+  let targetRequest = 0
+
+  async function loadTargetOptions() {
+    const request = ++targetRequest
+    const product = getOptionId(projectProductItem.value?.value)
+    const env = authEnvironment.value
+    targetOptions.value = []
+    if (!product || env == null || env === '') {
+      targetsLoading.value = false
+      return
+    }
+    targetsLoading.value = true
+    try {
+      const res = await getApiAuthTargets({ project_product: product, test_env: env })
+      if (request === targetRequest) targetOptions.value = res.data || []
+    } catch {
+      if (request === targetRequest) targetOptions.value = []
+    } finally {
+      if (request === targetRequest) targetsLoading.value = false
+    }
+  }
+
+  async function loadPublicVariableOptions(keyword = '') {
+    const request = ++publicVariableRequest
+    const product = projectProductItem.value?.value
+    const env = authEnvironment.value
+    if (!product || env == null || env === '') {
+      publicVariableOptions.value = []
+      publicVariablesLoading.value = false
+      return
+    }
+    publicVariablesLoading.value = true
+    try {
+      const res = await getApiAuthPublicVariables({ project_product: getOptionId(product), test_env: env,
+        keyword, page: 1, pageSize: 200 })
+      if (request !== publicVariableRequest) return
+      const selected = formItems.find(item => item.key === 'public_variable_ids')?.value || []
+      const options = publicVariableOptions.value.filter(item => selected.includes(item.value))
+      const merged = new Map(options.map(item => [item.value, item]))
+      for (const item of res.data || []) merged.set(item.id, { value: item.id, label: `${item.name} / ${item.key} (#${item.id})` })
+      publicVariableOptions.value = [...merged.values()]
+    } catch {
+      if (request === publicVariableRequest) publicVariableOptions.value = []
+    } finally {
+      if (request === publicVariableRequest) publicVariablesLoading.value = false
+    }
+  }
+
+  function onAuthVariableContextChange() {
+    const target = formItems.find(item => item.key === 'target_address')
+    if (target) target.value = ''
+    void loadTargetOptions()
+    const item = formItems.find(item => item.key === 'public_variable_ids')
+    if (item) item.value = []
+    publicVariableOptions.value = []
+    void loadPublicVariableOptions()
+  }
+  const customCodePanel = reactive({
+    visible: false, title: '自定义代码', code: '', id: 0,
+    result: null as Record<string, any> | null, error: '', version: 0,
+  })
+  const customCodeRunningIds = reactive(new Set<number>())
 
   function onViewCustomCode(record: any) {
     if (record.auth_type !== 1) return
+    customCodePanel.version += 1
+    customCodePanel.id = record.id
+    customCodePanel.result = null
+    customCodePanel.error = ''
     customCodePanel.title = `自定义代码 / ${record.name}`
     customCodePanel.code = record.custom_code || ''
     customCodePanel.visible = true
+  }
+
+  async function onRunCustomCode() {
+    const { id, version } = customCodePanel
+    if (!customCodePanel.visible || !id || customCodeRunningIds.has(id)) return
+    customCodeRunningIds.add(id)
+    customCodePanel.result = null
+    customCodePanel.error = ''
+    const isCurrent = () => customCodePanel.visible && customCodePanel.id === id && customCodePanel.version === version
+    try {
+      const response = await postApiAuthConfigRefresh(id)
+      if (isCurrent()) customCodePanel.result = response.data
+    } catch (error) {
+      if (isCurrent()) customCodePanel.error = error instanceof Error ? error.message : '授权刷新失败，请稍后重试'
+    } finally {
+      customCodeRunningIds.delete(id)
+      void doRefresh()
+    }
   }
   const customAuthCodeExample = `def auth(context):
     """
@@ -369,10 +513,8 @@
     dict 的 key 会作为缓存 key，value 会作为缓存值。
     接口执行时可以通过 \${token}、\${tenant_id} 引用。
     """
-    return {
-        "token": "your_token",
-        "tenant_id": "your_tenant_id"
-    }`
+    # 租户、用户等认证条件从 context.test_data 读取，关联公共变量已提前加载。
+    return {"token": "your_token"}`
 
   const authTypeItem = computed(() => formItems.find((it) => it.key === 'auth_type'))
   const refreshModeItem = computed(() => formItems.find((it) => it.key === 'refresh_mode'))
@@ -401,8 +543,19 @@
       return true
     })
   })
+  const authFormGroups = computed(() => {
+    const items = new Map(visibleFormItems.value.map(item => [item.key, item]))
+    return authFormSections.map(section => ({
+      ...section,
+      items: section.itemKeys.flatMap(key => {
+        const item = items.get(key)
+        return item ? [item] : []
+      }),
+    })).filter(section => section.items.length)
+  })
 
   function onSearchRefresh() {
+    pagination.page = 1
     doRefresh(true)
   }
 
@@ -412,6 +565,7 @@
       table.tableLoading.value = true
     }
     const value = getFormItems(conditionItems)
+    clearEmptyFilter(value, 'name')
     clearEmptyFilter(value, 'test_env')
     clearEmptyFilter(value, 'auth_type')
     clearEmptyFilter(value, 'refresh_mode')
@@ -451,6 +605,7 @@
       it.value = it.multiple ? [] : ''
     })
     sidebarResetKey.value += 1
+    pagination.page = 1
     doRefresh(true)
   }
 
@@ -461,6 +616,12 @@
   }
 
   function resetFormItems() {
+    targetRequest++
+    targetOptions.value = []
+    targetsLoading.value = false
+    publicVariableRequest++
+    publicVariableOptions.value = []
+    publicVariablesLoading.value = false
     formItems.forEach((it) => {
       if (it.reset) {
         it.reset()
@@ -491,6 +652,7 @@
     data.isAdd = true
     resetFormItems()
     modalDialogRef.value?.toggle()
+    void loadTargetOptions()
   }
 
   function fillCustomCodeExample() {
@@ -508,6 +670,10 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
+        if (it.key === 'public_variable_ids' && !Array.isArray(propName)) {
+          it.value = []
+          return
+        }
         if (Array.isArray(propName)) {
           it.value = [...propName]
         } else if (typeof propName === 'object' && propName !== null) {
@@ -518,11 +684,15 @@
       })
       getApiInfoList(item.project_product?.id || item.project_product)
       getNoticeList(item.project_product?.id || item.project_product)
+      publicVariableOptions.value = []
+      void loadPublicVariableOptions()
+      void loadTargetOptions()
     })
   }
 
   function onFormProjectProductChange() {
     nextTick(() => {
+      onAuthVariableContextChange()
       const apiInfoItem = formItems.find((it) => it.key === 'api_info')
       if (apiInfoItem) {
         apiInfoItem.value = ''
@@ -559,6 +729,8 @@
   }
 
   function normalizeSubmitValue(value: any) {
+    value.target_address = value.target_address ?? ''
+    value.public_variable_ids = value.public_variable_ids ?? []
     if (value.auth_type === 0) {
       value.custom_code = null
     } else {
@@ -786,10 +958,102 @@
 </script>
 
 <style scoped>
+  :global(.mango-auth-modal .mango-scrollbar),
+  :global(.mango-auth-modal .mango-modal-dialog__wrap) {
+    height: auto;
+  }
+
+  .mango-auth-form {
+    container-type: inline-size;
+  }
+
+  .mango-auth-form-section {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--m-border);
+  }
+
+  .mango-auth-form-section:first-child { padding-top: 0; }
+  .mango-auth-form-section:last-child { padding-bottom: 0; border-bottom: 0; }
+
+  .mango-auth-form-section__header {
+    align-items: baseline;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: var(--m-page-gap);
+    margin-bottom: 12px;
+  }
+
+  .mango-auth-form-section__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+
+  .mango-auth-form-section__fields :deep(.arco-form-item) {
+    flex-wrap: nowrap;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .mango-auth-form-section__fields :deep(.arco-form-item-label-col) {
+    flex: 0 0 136px;
+    width: 136px;
+    max-width: 136px;
+    white-space: nowrap;
+  }
+
+  .mango-auth-form-section__fields :deep(.arco-form-item-label-col > label) { white-space: nowrap; }
+
+  .mango-auth-form-section__fields :deep(.arco-form-item-wrapper-col) {
+    flex: 1 1 0;
+    width: 0;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .mango-auth-form-item--wide { grid-column: 1 / -1; }
+
+  @container (max-width: 640px) {
+    .mango-auth-form-section__fields { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  .mango-auth-variable-field { width: 100%; min-width: 0; }
+  .mango-auth-variable-hint { margin-top: 4px; color: var(--m-muted); font-size: 12px; }
   .mango-auth-custom-code-panel {
+    display: grid;
+    grid-template-rows: minmax(0, 7fr) minmax(0, 3fr);
+    gap: var(--m-page-gap);
     height: 100%;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .mango-auth-custom-code-result {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mango-auth-custom-code-result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--m-page-gap);
+    padding-bottom: var(--m-page-gap);
+    color: var(--m-text);
+    font-weight: 500;
+  }
+
+  .mango-auth-custom-code-result-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mango-auth-custom-code-result-body :deep(> .mango-panel-spin__content) {
+    height: 100%;
+    overflow: auto;
   }
 
   .cache-drawer-body {

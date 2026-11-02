@@ -56,19 +56,15 @@ class DataFactoryDatasourceAliasCRUD(ModelCRUD):
 
 
 class DataFactoryDatasourceAliasViews(ViewSet):
-    action_permission_map = {
-        'execute': 'index.home',
-        'query': 'config.product:query',
-    }
 
     READ_PERMISSION_KEYS = {
-        'config.product:query',
-        'api.case:execute',
-        'ui.case:execute',
+        'config.product:change',
+        'api.case:change',
+        'ui.case:change',
     }
     WRITE_PERMISSION_KEYS = {
-        'api.case:execute',
-        'ui.case:execute',
+        'api.case:change',
+        'ui.case:change',
     }
 
     @staticmethod
@@ -123,9 +119,9 @@ class DataFactoryDatasourceAliasViews(ViewSet):
             data_source_id = self._get_param(request, 'data_source_id')
             project_product_id = self._get_param(request, 'project_product_id')
             required_permissions = (
-                {'config.datasource:debug'}
+                {'config.datasource:change'}
                 if data_source_id not in [None, '']
-                else {'data_factory.entity:debug', 'config.product:query'}
+                else {'data_factory.entity:change', 'config.product:change'}
             )
             if not self._has_any_permission(request, required_permissions):
                 return ResponseData.fail(RESPONSE_MSG_0210)

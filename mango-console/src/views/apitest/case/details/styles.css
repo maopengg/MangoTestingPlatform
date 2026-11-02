@@ -647,3 +647,9 @@
     align-self: center;
   }
 }
+.mango-scenario-assertion-results {
+  display: grid;
+  gap: var(--m-page-gap);
+  padding: var(--m-page-gap);
+  min-width: 0;
+}

@@ -79,7 +79,7 @@ class ExecutionParametersTests(SimpleTestCase):
         request = SimpleNamespace(method='GET', path='/api/api/info/execution/parameters', data={},
                                   query_params=QueryDict('id=1'), user=SimpleNamespace(user_obj=SimpleNamespace(id=9)))
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False):
-            for key, expected in (('api.info:debug', True), ('api.info:execute', True), ('api.info', False)):
+            for key, expected in (('api.info:change', True), ('api.info:change', True), ('api.info', False)):
                 with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={key}):
                     self.assertEqual(MenuActionPermission().has_permission(request, view), expected)
 

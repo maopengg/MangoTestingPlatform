@@ -21,12 +21,6 @@ class RoleCRUD(ModelCRUD):
     queryset = Role.objects.all()
     serializer_class = RoleSerializers
     serializer = RoleSerializers
-    permission_key_map = {
-        'get': 'system.role',
-        'post': 'system.role:create',
-        'put': 'system.role:edit',
-        'delete': 'system.role:delete',
-    }
 
     @staticmethod
     def is_guest_role_id(role_id):
@@ -53,11 +47,6 @@ class RoleCRUD(ModelCRUD):
 class RoleViews(ViewSet):
     model = Role
     serializer_class = RoleSerializers
-    action_permission_map = {
-        'get_all_role': 'system.role',
-        'get_permission': 'system.role:detail',
-        'put_permission': 'system.role:edit',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('user')

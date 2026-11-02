@@ -25,15 +25,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 class ModuleCoverageInterfaceViews(ViewSet):
     model = ModuleCoverageInterfaceSnapshot
     serializer_class = ModuleCoverageInterfaceSnapshotSerializer
-    action_permission_map = {
-        "list": "api.module_coverage",
-        "retrieve": "api.module_coverage:detail",
-        "snapshots": "api.module_coverage:detail",
-        "diff": "api.module_coverage:detail",
-        "binding_preview": "api.module_coverage:detail",
-        "binding": "api.module_coverage:edit",
-        "batch_upload": "api.module_coverage:create",
-    }
 
     @action(methods=["get"], detail=False)
     @error_response("system")

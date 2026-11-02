@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('auto_ai', '0005_alter_aiagentartifact_table_comment_and_more'),
         ('auto_api', '0039_modulecoveragemoduleinterface_and_more'),
         ('auto_data_factory', '0016_sqlexecutionrecord_and_more'),
         ('auto_system', '0045_alter_scheduledtaskgroup_task_name_template'),
@@ -62,10 +61,6 @@ class Migration(migrations.Migration):
         migrations.AlterModelTableComment(
             name='apiinfohttpconfig',
             table_comment='api info http config',
-        ),
-        migrations.AlterModelTableComment(
-            name='apiinfomcpbinding',
-            table_comment='api info mcp binding',
         ),
         migrations.AlterModelTableComment(
             name='apiinfomcpconfig',
@@ -1185,35 +1180,6 @@ class Migration(migrations.Migration):
             field=models.CharField(db_comment='请求路径', max_length=1024, verbose_name='请求路径'),
         ),
         migrations.AlterField(
-            model_name='apiinfomcpbinding',
-            name='api_info',
-            field=models.OneToOneField(db_comment='接口定义', on_delete=django.db.models.deletion.CASCADE,
-                                       related_name='mcp_binding', to='auto_api.apiinfo', verbose_name='接口定义'),
-        ),
-        migrations.AlterField(
-            model_name='apiinfomcpbinding',
-            name='create_time',
-            field=models.DateTimeField(auto_now_add=True, db_comment='创建时间', verbose_name='创建时间'),
-        ),
-        migrations.AlterField(
-            model_name='apiinfomcpbinding',
-            name='id',
-            field=models.BigAutoField(auto_created=True, db_comment='ID', primary_key=True, serialize=False,
-                                      verbose_name='ID'),
-        ),
-        migrations.AlterField(
-            model_name='apiinfomcpbinding',
-            name='mcp_tool',
-            field=models.OneToOneField(db_comment='MCP Tool', on_delete=django.db.models.deletion.PROTECT,
-                                       related_name='api_info_binding', to='auto_ai.aimcptool',
-                                       verbose_name='MCP Tool'),
-        ),
-        migrations.AlterField(
-            model_name='apiinfomcpbinding',
-            name='update_time',
-            field=models.DateTimeField(auto_now=True, db_comment='修改时间', verbose_name='修改时间'),
-        ),
-        migrations.AlterField(
             model_name='apiinfomcpconfig',
             name='api_info',
             field=models.OneToOneField(db_comment='调用定义', on_delete=django.db.models.deletion.CASCADE,
@@ -1240,13 +1206,6 @@ class Migration(migrations.Migration):
             model_name='apiinfomcpconfig',
             name='mcp_config',
             field=models.JSONField(blank=True, db_comment='MCP执行配置', null=True, verbose_name='MCP执行配置'),
-        ),
-        migrations.AlterField(
-            model_name='apiinfomcpconfig',
-            name='mcp_tool',
-            field=models.OneToOneField(db_comment='MCP Tool', on_delete=django.db.models.deletion.PROTECT,
-                                       related_name='api_info_protocol_config', to='auto_ai.aimcptool',
-                                       verbose_name='MCP Tool'),
         ),
         migrations.AlterField(
             model_name='apiinfomcpconfig',

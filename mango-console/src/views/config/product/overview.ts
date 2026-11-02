@@ -5,6 +5,15 @@ export interface ProductGroup {
   total: number
 }
 
+export function productEditorProjectOptions(options: any[], currentProject?: { id: number | string; name: string } | null) {
+  if (currentProject?.id == null) return options
+  const matched = options.some((option) => String(option.key) === String(currentProject.id))
+  if (!matched) return [...options, { key: currentProject.id, title: currentProject.name }]
+  return options.map((option) =>
+    String(option.key) === String(currentProject.id) ? { ...option, key: currentProject.id } : option
+  )
+}
+
 /** 逐页读取权限范围内的完整数据；不把当前页误当成产品总览。 */
 export async function loadAllProducts(
   request: (params: object) => Promise<any>,

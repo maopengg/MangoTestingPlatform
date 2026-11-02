@@ -8,7 +8,7 @@
     <template #header>
       <TableHeader title="执行报告">
         <template #header-extra>
-          <a-button v-if="route.query.group_execution_id" v-permission="'report:export'" size="small" @click="openOfflineExport('group', String(route.query.group_execution_id))">导出任务组 HTML</a-button>
+          <a-button v-if="route.query.group_execution_id"  size="small" @click="openOfflineExport('group', String(route.query.group_execution_id))">导出任务组 HTML</a-button>
         </template>
       </TableHeader>
     </template>
@@ -228,35 +228,31 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <MangoTableActions
                     :actions="[
-                      { permission: 'report:retry',
-                        label: '重试',
-                        hidden: record.automation_types?.includes(4),
-                        priority: 0,
-                        loading: data.retryLoading && data.retryRecord?.id === record.id,
-                        onClick: () => onRetry(record),
-                      },
-                      { permission: 'report:retry',
-                        label: '立即停止',
-                        priority: 3,
-                        danger: true,
-                        hidden: !isReportRunning(record) || record.automation_types?.includes(4),
-                        loading: data.stopLoadingId === record.id,
-                        onClick: () => onStop(record),
-                      },
-                      { permission: 'report:detail', label: '明细', priority: 1, onClick: () => onClick(record) },
-                      { permission: 'report:export', label: '导出离线 HTML', priority: 4, hidden: isReportRunning(record), onClick: () => openOfflineExport('suite', record.id) },
-                      { permission: 'report:detail',
-                        label: '排查结果',
-                        priority: 2,
-                        onClick: () => openReportDiagnostic(record),
-                      },
-                      { permission: 'report:notice',
-                        label: '重发通知',
-                        priority: 3,
-                        loading: data.noticeSendingId === record.id,
-                        onClick: () => onSendNotice(record),
-                      },
-                    ]"
+    {
+        label: '重试',
+        hidden: record.automation_types?.includes(4),
+        priority: 0,
+        loading: data.retryLoading && data.retryRecord?.id === record.id,
+        onClick: () => onRetry(record), },
+    {
+        label: '立即停止',
+        priority: 3,
+        danger: true,
+        hidden: !isReportRunning(record) || record.automation_types?.includes(4),
+        loading: data.stopLoadingId === record.id,
+        onClick: () => onStop(record), },
+    { label: '明细', priority: 1, onClick: () => onClick(record) },
+    { label: '导出离线 HTML', priority: 4, hidden: isReportRunning(record), onClick: () => openOfflineExport('suite', record.id) },
+    {
+        label: '排查结果',
+        priority: 2,
+        onClick: () => openReportDiagnostic(record), },
+    {
+        label: '重发通知',
+        priority: 3,
+        loading: data.noticeSendingId === record.id,
+        onClick: () => onSendNotice(record), },
+]"
                   />
                 </template>
               </a-table-column>
@@ -291,9 +287,9 @@
     </template>
     <template #footer="{ confirm }">
       <a-space class="mango-modal-dialog-footer-actions">
-        <a-button v-permission="'report:retry'" :loading="data.retryLoading"
+        <a-button  :loading="data.retryLoading"
           :disabled="data.failedRetryLoadingId !== null" @click="confirm">全量重试</a-button>
-        <a-button v-permission="'report:retry'" type="primary" :loading="data.failedRetryLoadingId !== null"
+        <a-button  type="primary" :loading="data.failedRetryLoadingId !== null"
           :disabled="data.retryLoading || !data.retryRecord || isReportRunning(data.retryRecord) || reportResultCount(data.retryRecord, 'fail') === 0"
           @click="onRetryFailed(data.retryRecord)">只重试失败</a-button>
       </a-space>

@@ -1,19 +1,74 @@
 """API 授权配置写入服务。"""
 
+import hashlib
+import json
 from django.db import transaction
 
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum, ApiAuthTypeEnum
-from src.apps.auto_api.exceptions import API_AUTH_CONFIG_AUTH_CONFIG_DELETE_NOT_FOUND, AutoApiError
-from src.apps.auto_api.models import ApiAuthConfig, ApiInfo
+from src.apps.auto_api.exceptions import API_AUTH_CONFIG_AUTH_CONFIG_DELETE_NOT_FOUND, API_AUTH_PUBLIC_VARIABLES_INVALID, API_AUTH_TARGET_INVALID, AutoApiError
+from src.apps.auto_api.models import ApiAuthConfig, ApiInfo, ApiPublic
 from src.apps.auto_api.services.config.version import ApiConfigDiffService
 from src.apps.test_center.models import NoticeGroup, ProjectProduct
 from src.common.database import ModelMutationValidationError, model_payload, save_model
 from src.common.exceptions import SAVE_VALIDATION_FAILED, UPDATE_VALIDATION_FAILED
+from src.common.utils.environment_scope import test_envs_query
 
 
 class ApiAuthConfigService:
     @staticmethod
+    def normalize_optional_values(payload):
+        data = dict(payload)
+        if 'target_address' in data and data['target_address'] is None:
+            data['target_address'] = ''
+        if 'public_variable_ids' in data and data['public_variable_ids'] is None:
+            data['public_variable_ids'] = []
+        return data
+
+    @staticmethod
+    def target_options(project_product_id, test_env):
+        from src.apps.test_center.services.factory import func_test_object_value
+        from src.apps.test_center.enums.environment import AutoTypeEnum
+        target = func_test_object_value(test_env, project_product_id, AutoTypeEnum.API.value)
+        return ApiAuthConfigService.options_for_target(target)
+
+    @staticmethod
+    def options_for_target(target):
+        rules = getattr(target, 'target_config', {}) or {}
+        default = target.value or rules.get('default', '')
+        options = {default: f'默认地址 / {default}'} if default else {}
+        if not target.value:
+            for condition, address in rules.get('mapping', {}).items():
+                options.setdefault(address, f'{rules.get("selector", "")}={condition} / {address}')
+        return [{'value': address, 'label': label} for address, label in options.items()]
+
+    @staticmethod
+    def validate_target_address(address, project_product_id, test_env):
+        if not isinstance(address, str) or len(address) > 1024:
+            raise AutoApiError(API_AUTH_TARGET_INVALID)
+        if address and address not in {item['value'] for item in ApiAuthConfigService.target_options(project_product_id, test_env)}:
+            raise AutoApiError(API_AUTH_TARGET_INVALID)
+
+    @staticmethod
+    def public_variables_checksum(rows):
+        payload = [[row.id, row.type, row.key, row.value, row.test_envs] for row in sorted(rows, key=lambda row: row.id)]
+        return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+
+    @staticmethod
+    def validate_public_variables(ids, project_product_id, test_env):
+        if not isinstance(ids, list) or len(ids) > 200 or any(type(value) is not int or value <= 0 for value in ids):
+            raise AutoApiError(API_AUTH_PUBLIC_VARIABLES_INVALID)
+        if not ids:
+            return []
+        rows = list(ApiPublic.objects.filter(id__in=ids, project_product_id=project_product_id).filter(
+            test_envs_query(test_env),
+        ))
+        if len(set(ids)) != len(ids) or len(rows) != len(ids) or len({row.key for row in rows}) != len(rows):
+            raise AutoApiError(API_AUTH_PUBLIC_VARIABLES_INVALID)
+        return rows
+
+    @staticmethod
     def validate_payload(instance: ApiAuthConfig | None, data: dict) -> dict:
+        data.update(ApiAuthConfigService.normalize_optional_values(data))
         errors = {}
         current = lambda key, default=None: data.get(key, getattr(instance, f"{key}_id", getattr(instance, key,
                                                                                                  default)) if instance else default)
@@ -23,6 +78,9 @@ class ApiAuthConfigService:
         time_task_id = current("time_task")
         notice_group_id = current("notice_group")
         project_product_id = current("project_product")
+        ApiAuthConfigService.validate_target_address(current('target_address', ''), project_product_id, current('test_env'))
+        ApiAuthConfigService.validate_public_variables(current('public_variable_ids', []), project_product_id,
+                                                      current('test_env'))
         custom_code = current("custom_code")
         token_ttl = current("token_ttl", 1440)
         refresh_margin = current("refresh_margin", 10)

@@ -16,7 +16,7 @@
           <div class="mango-detail-subtitle">维护页面元素定位、操作配置和批量导入数据</div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button v-permission="'ui.page:debug'"
+          <a-button
             v-if="isWebClient"
             size="small"
             :loading="browserOpening"
@@ -65,8 +65,8 @@
             <div class="mango-ui-element-toolbar">
               <a-space wrap>
                 <a-button size="small" @click="batchAddVisible = true" data-testid="qa-views-uitest-page-elements-button-批量增加">批量增加</a-button>
-                <a-button v-permission="'ui.page:create'" type="primary" size="small" @click="doAppend" data-testid="qa-views-uitest-page-elements-button-新增">新增</a-button>
-                <a-button v-permission="'ui.page:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-uitest-page-elements-button-批量删除">批量删除</a-button>
+                <a-button  type="primary" size="small" @click="doAppend" data-testid="qa-views-uitest-page-elements-button-新增">新增</a-button>
+                <a-button  size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-uitest-page-elements-button-批量删除">批量删除</a-button>
               </a-space>
             </div>
             <StickyHorizontalTable :scroll-x="2160">
@@ -179,19 +179,17 @@
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                       <MangoTableActions
                         :actions="[
-                          { permission: 'ui.page:debug',
-                            label: '深度检测',
-                            loading: elementCheckLoading,
-                            onClick: () => onCheck(record, 'deep'),
-                          },
-                          { permission: 'ui.page:debug',
-                            label: 'AI自愈',
-                            loading: aiInfoDrawer.loadingKey === String(record.id),
-                            onClick: () => onAiInfo(record),
-                          },
-                          { permission: 'ui.page:edit', label: '编辑', onClick: () => onUpdate(record) },
-                          { permission: 'ui.page:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                        ]"
+    {
+        label: '深度检测',
+        loading: elementCheckLoading,
+        onClick: () => onCheck(record, 'deep'), },
+    {
+        label: 'AI自愈',
+        loading: aiInfoDrawer.loadingKey === String(record.id),
+        onClick: () => onAiInfo(record), },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                       />
                     </template>
                   </a-table-column>
@@ -246,7 +244,7 @@
           <strong>下载模板</strong>
           <span>先下载标准模板，按模板格式填写页面元素。</span>
         </div>
-        <a-button v-permission="'ui.page:download'" size="small" @click="onDownload" data-testid="qa-views-uitest-page-elements-button-下载模板">下载模板</a-button>
+        <a-button  size="small" @click="onDownload" data-testid="qa-views-uitest-page-elements-button-下载模板">下载模板</a-button>
       </section>
       <section class="mango-ui-element-batch-add__item">
         <div>
@@ -261,7 +259,7 @@
           @before-upload="beforeUpload"
         >
           <template #upload-button>
-            <a-button v-permission="'ui.page:create'" type="primary" size="small" :loading="batchUploading" data-testid="qa-views-uitest-page-elements-button-上传模板"> 上传模板 </a-button>
+            <a-button  type="primary" size="small" :loading="batchUploading" data-testid="qa-views-uitest-page-elements-button-上传模板"> 上传模板 </a-button>
           </template>
         </a-upload>
       </section>
@@ -391,7 +389,7 @@
             <a-table-column title="页面地址" data-index="url" :ellipsis="true" :tooltip="true" />
             <a-table-column title="操作" :width="100" fixed="right" align="center">
               <template #cell="{ record }">
-                <a-button v-permission="'ui.page:detail'"
+                <a-button
                   size="mini"
                   type="text"
                   :loading="aiInfoDrawer.baselineLoadingKey === String(record.id)"
@@ -426,7 +424,7 @@
             <a-table-column title="失败原因" data-index="failed_reason" :ellipsis="true" :tooltip="true" />
             <a-table-column title="操作" :width="100" fixed="right" align="center">
               <template #cell="{ record }">
-                <a-button v-permission="'ui.page:detail'"
+                <a-button
                   size="mini"
                   type="text"
                   :loading="aiInfoDrawer.healLoadingKey === String(record.id)"

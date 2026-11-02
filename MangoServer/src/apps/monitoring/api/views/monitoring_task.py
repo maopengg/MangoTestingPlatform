@@ -51,12 +51,6 @@ class MonitoringTaskViews(ViewSet):
     """
     model = MonitoringTask
     serializer_class = MonitoringTaskSerializers
-    action_permission_map = {
-        'start': 'monitoring.task:execute',
-        'stop': 'monitoring.task:execute',
-        'logs': 'monitoring.task:detail',
-        'download_log': 'monitoring.task:download',
-    }
 
     @error_response('system')
     def start(self, request: Request):

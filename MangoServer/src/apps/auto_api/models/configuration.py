@@ -150,6 +150,9 @@ class ApiAuthConfig(models.Model):
         on_delete=models.SET_NULL,
     )
     custom_code = models.TextField(verbose_name="自定义授权代码", null=True, blank=True)
+    # ApiPublic 主键列表，仅在隔离的认证上下文中按默认项后覆盖加载。
+    public_variable_ids = models.JSONField(verbose_name="授权关联公共变量", default=list, blank=True)
+    target_address = models.CharField(verbose_name="适用目标地址", max_length=1024, default='', blank=True)
 
     cache_keys = models.JSONField(verbose_name="缓存变量名", default=list, blank=True)
     cache_data = models.JSONField(verbose_name="授权缓存数据", default=dict, blank=True)

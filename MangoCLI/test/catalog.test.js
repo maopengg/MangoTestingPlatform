@@ -2,15 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { catalog } from "../src/catalog.js";
 
-test("catalog covers all legacy MCP tools without duplicates", () => {
-  assert.equal(catalog.length, 324);
-  assert.equal(new Set(catalog.map((item) => item.legacy_name)).size, 324);
+test("catalog covers supported tools without retired AI management commands", () => {
+  assert.equal(catalog.length, 310);
+  assert.equal(new Set(catalog.map((item) => item.legacy_name)).size, 310);
+  assert.equal(catalog.some((item) => item.domain === "ai" || item.path?.startsWith("ai/")), false);
   assert.deepEqual(
     Object.fromEntries([...new Set(catalog.map((item) => item.status))].map((status) => [
       status,
       catalog.filter((item) => item.status === status).length,
     ])),
-    { complete: 258, pending_api: 59, protocol_mcp: 7 },
+    { complete: 251, pending_api: 59 },
   );
 });
 

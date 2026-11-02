@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from src.apps.ai.exceptions import ai_service_error
+from src.apps.system.exceptions import ai_service_error
 from src.apps.test_center.services.assertion_diagnosis import AssertionDiagnosisService
 
 

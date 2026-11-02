@@ -26,10 +26,8 @@ CUSTOM_AUTH_CODE_TEMPLATE = '''def auth(context):
     dict 的 key 会作为缓存 key，value 会作为缓存值。
     接口执行时可以通过 ${token}、${tenant_id} 引用。
     """
-    return {
-        "token": "your_token",
-        "tenant_id": "your_tenant_id"
-    }
+    # 租户、用户等认证条件从 context.test_data 读取，关联公共变量已提前加载。
+    return {"token": "your_token"}
 '''
 
 
@@ -75,6 +73,8 @@ def _auth_config_summary(item: ApiAuthConfig, include_custom_code: bool = True) 
         "status": item.status,
         "status_title": StatusEnum.get_value(item.status),
         "auth_type": item.auth_type,
+        "public_variable_ids": getattr(item, 'public_variable_ids', []),
+        "target_address": getattr(item, 'target_address', ''),
         "auth_type_title": ApiAuthTypeEnum.get_value(item.auth_type),
         "api_info_id": item.api_info_id,
         "api_info_name": api_info.name if api_info else None,
@@ -117,6 +117,8 @@ def _write_payload(
         refresh_mode: int | None = None,
         time_task_id: int | None = None,
         notice_group_id: int | None = None,
+        public_variable_ids: list[int] | None = None,
+        target_address: str | None = None,
         include_none: bool = False,
 ) -> dict:
     fields = {
@@ -133,6 +135,8 @@ def _write_payload(
         "refresh_mode": refresh_mode,
         "time_task": time_task_id,
         "notice_group": notice_group_id,
+        "public_variable_ids": public_variable_ids if public_variable_ids is not None else ([] if include_none else None),
+        "target_address": target_address if target_address is not None else ('' if include_none else None),
     }
     if include_none:
         return fields
@@ -147,6 +151,15 @@ def register_api_auth_config_tools(mcp):
             {
                 "model": "ApiAuthConfig",
                 "fields": {
+                    "target_address": {
+                        "type": "string", "required": False, "default": "",
+                        "description": "适用目标地址，须选自当前产品、被测环境的默认地址或条件映射地址；空字符串使用默认地址。更新不传保留原值，传空字符串恢复默认。仅在请求实际地址匹配时加载；认证使用独立变量上下文，不继承Case变量。",
+                    },
+                    "public_variable_ids": {
+                        "type": "list[int]",
+                        "default": [],
+                        "description": "认证关联的 ApiPublic ID，仅允许同产品、适用授权环境、键名不重复的变量。独立刷新、定时刷新和用例刷新均在隔离上下文先加载默认变量，再加载这些变量；不会改变 Case 上下文。Case 使用授权前须选择匹配的租户变量。更新传 [] 清空关联，省略则保留。",
+                    },
                     "project_product_id": {
                         "type": "int",
                         "required": True,
@@ -224,10 +237,11 @@ def register_api_auth_config_tools(mcp):
                 },
                 "runtime": {
                     "load_order": ["ApiPublic 自定义变量", "ApiPublic SQL 变量", "ApiAuthConfig Token 授权缓存"],
-                    "cache_injection": "刷新成功或缓存可用时，cache_data 会全量写入当前执行上下文，可通过 ${token}、${tenant_id} 引用。",
+                    "cache_injection": "刷新成功或缓存可用时，业务缓存键写入执行上下文，内部地址指纹和关联变量元数据不注入。关联公共变量不自动写入 Case；Case 必须已具备相同的租户条件，否则拒绝使用。关联变量内容变化会使旧缓存失效。",
+                    "target_matching": "执行只加载与实际解析地址匹配的授权。target_address 留空仅适用默认地址；可从被测对象 target_config 的 default/mapping 或固定 value 选择地址。认证先固定该地址，再加载默认及授权关联变量，不继承 Case 的全部变量。修改地址或首次升级地址指纹后，已有缓存须重新刷新。",
                     "manual_refresh": "refresh_mode=3 表示手动刷新（永久有效），API/case 执行只要求存在 cache_data，不判断 expires_at，也不会自动调用登录接口或自定义代码；需要调用 refresh_api_auth_config 才会更新缓存。",
                     "expire_notice": "refresh_mode=4 表示到期通知，API/case 执行只读取已有且未过期的 cache_data，不会自动刷新；系统定时任务会在 expires_at 前 expire_notice_minutes 分钟向 notice_group_id 发送通知。",
-                    "refresh_warning": "refresh_api_auth_config 会真实执行登录接口或自定义代码，并写入 cache_data。",
+                    "refresh_warning": "refresh_api_auth_config 在隔离上下文固定 target_address（留空取默认地址），加载 public_variable_ids，再真实执行认证并保存 cache_data。自定义代码应从 context.test_data 读取自己的认证变量，不应覆盖认证条件；context.test_object 为本授权固定目标。",
                     "clear_warning": "clear_api_auth_config_cache 会清空 cache_data 和 expires_at，必须先调用 preview_clear_api_auth_config_cache_impact。",
                     "delete_warning": "delete_api_auth_config 会删除授权配置，必须先调用 preview_delete_api_auth_config_impact。",
                 },
@@ -315,6 +329,8 @@ def register_api_auth_config_tools(mcp):
             time_task_id: int | None = None,
             notice_group_id: int | None = None,
             status: int = 1,
+            public_variable_ids: list[int] | None = None,
+            target_address: str | None = None,
     ) -> dict:
         """新增 API Token 授权配置。创建前应先确认项目产品、测试环境、登录接口或定时策略。"""
         try:
@@ -334,6 +350,8 @@ def register_api_auth_config_tools(mcp):
                     time_task_id=time_task_id,
                     notice_group_id=notice_group_id,
                     include_none=True,
+                    public_variable_ids=public_variable_ids,
+                    target_address=target_address,
                 ),
                 user_id=mcp_current_user_id(),
             )
@@ -357,6 +375,8 @@ def register_api_auth_config_tools(mcp):
             refresh_mode: int | None = None,
             time_task_id: int | None = None,
             notice_group_id: int | None = None,
+            public_variable_ids: list[int] | None = None,
+            target_address: str | None = None,
     ) -> dict:
         """编辑 API Token 授权配置。保留现有 serializer 校验。"""
         payload = {"id": auth_config_id}
@@ -375,6 +395,8 @@ def register_api_auth_config_tools(mcp):
                 refresh_mode=refresh_mode,
                 time_task_id=time_task_id,
                 notice_group_id=notice_group_id,
+                public_variable_ids=public_variable_ids,
+                target_address=target_address,
             )
         )
         if auth_type == ApiAuthTypeEnum.API.value:
@@ -411,7 +433,10 @@ def register_api_auth_config_tools(mcp):
 
     @mcp.tool()
     def refresh_api_auth_config(auth_config_id: int) -> dict:
-        """立即刷新 API Token 授权缓存。会真实执行登录接口或自定义代码，并写入 cache_data。"""
+        """立即刷新 API Token 授权缓存。先加载授权关联 public_variable_ids（覆盖默认变量），再校验地址并执行认证。
+
+        认证在隔离上下文中完成，不修改全局变量和 Case 的租户。租户缺失时应配置关联变量，不要在代码中绕过地址解析。
+        """
         try:
             data = ApiAuthManager.refresh(auth_config_id, force=True, raise_error=True)
         except Exception as exc:

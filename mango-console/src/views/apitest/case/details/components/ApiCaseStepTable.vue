@@ -75,29 +75,29 @@
 
   function rowActions(record: any) {
     return [
-      { permission: 'api.case:edit',
+      {
         label: '执行时机',
         overflow: true,
         disabled: props.editLocked || props.executionActive,
         onClick: () => emit('recovery', record),
       },
-      { permission: 'api.case:debug',
+      {
         label: '调试',
         loading: String(props.debugRunningStepId) === String(record.id),
         disabled: props.editLocked || props.executionActive,
         onClick: () => emit('debug', record),
       },
-      { permission: 'api.case:edit',
+      {
         label: '同步',
         disabled: props.editLocked,
         onClick: () => emit('refresh', record.id),
       },
-      { permission: 'api.info:detail',
+      {
         label: '接口详情',
         disabled: !props.getApiInfoId(record),
         onClick: () => emit('api-info', record),
       },
-      { permission: 'api.case:delete',
+      {
         label: '删除',
         danger: true,
         disabled: props.editLocked,

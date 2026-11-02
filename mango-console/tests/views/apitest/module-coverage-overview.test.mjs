@@ -159,7 +159,7 @@ test('module progress uses a bounded native-scroll table and global actions', ()
   assert.match(source, /<StickyHorizontalTable/)
   assert.match(source, /__table\s*\{[^}]*height: 440px/)
   assert.match(source, /<MangoTableActions/)
-  assert.match(source, /permission: 'api.module_coverage:detail'/)
+  assert.match(source, /permission: 'api.module_coverage:read'/)
   const code = config.slice(config.indexOf('export const overviewModuleColumns'),
     config.indexOf('export function getInterfaceCoverageData'))
   const { outputText } = ts.transpileModule(code, {
@@ -241,7 +241,7 @@ test('same-scope refresh retains results, changed scopes clear them, and stale r
 })
 
 test('overview is read-only, detail links are permission guarded, and stale results are ignored', () => {
-  assert.match(source, /v-permission="'api.module_coverage:detail'"/)
+  assert.match(source, /v-permission="'api.module_coverage:read'"/)
   assert.match(index, /request === overviewRequest/)
   assert.match(source, /emit\('drill'/)
   assert.doesNotMatch(source, /archiveCoverage|bindCoverage|createCoverage|updateCoverage/)

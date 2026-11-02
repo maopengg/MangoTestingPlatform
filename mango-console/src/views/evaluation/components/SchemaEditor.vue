@@ -5,7 +5,7 @@
       <template #type="{ record }"><span v-if="readonly">{{ types.find(item => item.value === (record.spec.type || 'string'))?.label || record.spec.type }}</span><a-select v-else size="small" :model-value="record.spec.type || 'string'" :options="types" :disabled="disabled" @change="update(record.key, { type: $event })" /></template>
       <template #required="{ record }"><span v-if="readonly">{{ (modelValue?.required || []).includes(record.key) ? '必填' : '可选' }}</span><a-switch v-else size="small" :disabled="disabled" :model-value="(modelValue?.required || []).includes(record.key)" @change="requireField(record.key, Boolean($event))" /></template>
       <template #description="{ record }"><span v-if="readonly" class="mango-schema-value" :title="record.spec.description">{{ record.spec.description || '—' }}</span><a-input v-else size="small" :model-value="record.spec.description" :disabled="disabled" placeholder="字段用途" @update:model-value="update(record.key, { description: $event })" /></template>
-      <template #actions="{ record }"><MangoTableActions :actions="[{ label: selected === record.key ? '收起' : readonly ? '查看约束' : '配置', permission: 'evaluation.dataset:detail', onClick: () => selected = selected === record.key ? '' : record.key }, { label: '移除', permission: 'evaluation.dataset:edit', hidden: disabled || readonly, danger: true, onClick: () => remove(record.key) }]" /></template>
+      <template #actions="{ record }"><MangoTableActions :actions="[{ label: selected === record.key ? '收起' : readonly ? '查看约束' : '配置', onClick: () => selected = selected === record.key ? '' : record.key }, { label: '移除', hidden: disabled || readonly, danger: true, onClick: () => remove(record.key) }]" /></template>
     </a-table>
     <div v-if="selected && modelValue?.properties?.[selected]" class="mango-schema-constraints">
       <div class="mango-section-title">{{ selected }} · 字段约束</div>
@@ -13,7 +13,7 @@
       <SchemaEditor v-if="modelValue.properties[selected].type === 'object'" :readonly="readonly" :disabled="disabled" :model-value="modelValue.properties[selected]" @update:model-value="replace(selected, $event)" />
       <SchemaEditor v-if="modelValue.properties[selected].type === 'array' && modelValue.properties[selected].items?.type === 'object'" :readonly="readonly" :disabled="disabled" :model-value="modelValue.properties[selected].items" @update:model-value="update(selected, { items: $event })" />
     </div>
-    <div v-if="!disabled && !readonly" class="mango-schema-add"><a-input v-model="newKey" size="small" placeholder="新字段名称" aria-label="新增字段名称" /><a-select v-model="newType" size="small" :options="types" aria-label="字段类型" /><a-button v-permission="'evaluation.dataset:edit'" size="small" @click="add">添加字段</a-button></div>
+    <div v-if="!disabled && !readonly" class="mango-schema-add"><a-input v-model="newKey" size="small" placeholder="新字段名称" aria-label="新增字段名称" /><a-select v-model="newType" size="small" :options="types" aria-label="字段类型" /><a-button  size="small" @click="add">添加字段</a-button></div>
   </div>
 </template>
 <script setup lang="ts">

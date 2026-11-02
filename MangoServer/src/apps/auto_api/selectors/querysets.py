@@ -9,7 +9,6 @@ from src.apps.auto_api.models import (
     ApiHeaders,
     ApiInfo,
     ApiInfoGrpcConfig,
-    ApiInfoMcpBinding,
     ApiInfoMcpConfig,
     ApiInfoRelease,
     ApiInfoRevision,
@@ -120,9 +119,6 @@ class ApiQuerySelector:
     def api_info_grpc_config():
         return ApiInfoGrpcConfig.objects.all()
 
-    @staticmethod
-    def api_info_mcp_binding():
-        return ApiInfoMcpBinding.objects.all()
 
     @staticmethod
     def api_info_mcp_config():
@@ -139,6 +135,13 @@ class ApiQuerySelector:
     @staticmethod
     def api_public():
         return ApiPublic.objects.all()
+
+    @staticmethod
+    def auth_public_variable_options(project_product_id, test_env):
+        from src.common.utils.environment_scope import test_envs_query
+        return ApiPublic.objects.filter(project_product_id=project_product_id).filter(
+            test_envs_query(test_env),
+        ).order_by('id')
 
     @staticmethod
     def grpc_method_definition():

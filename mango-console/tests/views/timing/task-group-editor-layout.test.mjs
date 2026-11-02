@@ -21,7 +21,7 @@ test('task group create/edit dialog is compact and has a separate footer', () =>
   assert.match(editor, /width="min\(760px, calc\(100vw - 32px\)\)"/)
   assert.match(editor, /class="mango-task-group-editor-modal"/)
   assert.match(editor, /<mango-panel-spin[\s\S]*?<\/a-form>[\s\S]*?<\/mango-panel-spin>[\s\S]*?<template #footer>/)
-  assert.match(editor, /v-permission="'timing.tasks:edit'"/)
+  assert.match(editor, /v-permission="'timing.tasks:change'"/)
   assert.doesNotMatch(editor, /:footer="false"/)
 })
 

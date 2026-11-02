@@ -16,19 +16,9 @@ class DepartmentCRUD(ModelCRUD):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializers
     serializer = DepartmentSerializers
-    permission_key_map = {
-        'get': 'system.department',
-        'post': 'system.department:create',
-        'put': 'system.department:edit',
-        'delete': 'system.department:delete',
-    }
 
 
 class DepartmentViews(ViewSet):
-    action_permission_map = {
-        'get_product_scope': 'system.department:detail',
-        'put_product_scope': 'system.department:edit',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('user')

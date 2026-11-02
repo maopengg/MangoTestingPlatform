@@ -7,7 +7,6 @@
 import uuid
 from urllib.parse import urlparse
 
-from django.core.cache import cache
 from mangotools.contracts import SocketCommandContract, SocketEnvelopeContract, UiRecordingCommand
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -15,6 +14,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.enums import ServerUiCommandEnum, ServerToolsCommandEnum
+from src.apps.system.services.actuator_config_runtime import ActuatorConfigRuntimeService
 from src.apps.system.services.socket_link.connection_service import SocketConnectionService
 from src.apps.system.services.socket_link.message_service import SocketMessageService
 from src.apps.test_center.enums.environment import AutoTypeEnum
@@ -35,29 +35,6 @@ from src.common.responses.response_msg import (
 
 
 class SocketApiViews(ViewSet):
-    action_permission_map = {
-        'get_user_list': 'equipment.actuator:detail',
-        'get_current_actuator_status': 'ui.case:execute',
-        'get_all_user_sum': 'equipment.actuator:detail',
-        'get_all_user_list': 'equipment.actuator:detail',
-        'set_user_open_status': 'equipment.actuator:status',
-        'set_user_debug': 'equipment.actuator:debug',
-        'request_actuator_config': 'equipment.actuator:detail',
-        'get_actuator_config_result': 'equipment.actuator:detail',
-        'update_actuator_config': 'equipment.actuator:edit',
-        'get_actuator_config_save_result': 'equipment.actuator:detail',
-        'get_new_browser_obj': 'ui.page:debug',
-    }
-
-    ACTUATOR_CONFIG_CACHE_TTL = 60
-
-    @staticmethod
-    def _actuator_config_snapshot_key(request_id: str):
-        return f'actuator_config_snapshot:{request_id}'
-
-    @staticmethod
-    def _actuator_config_save_key(request_id: str):
-        return f'actuator_config_save:{request_id}'
 
     @staticmethod
     def _actuator_payload(connection, is_owner: bool = False):
@@ -178,10 +155,10 @@ class SocketApiViews(ViewSet):
         username = (request.data.get('username') or '').strip()
         SocketConnectionService.require_actuator(username)
         request_id = str(uuid.uuid4())
-        cache.set(self._actuator_config_snapshot_key(request_id), {
+        ActuatorConfigRuntimeService.set_snapshot(request_id, {
             'status': 'pending',
             'username': username,
-        }, self.ACTUATOR_CONFIG_CACHE_TTL)
+        })
         SocketMessageService.send_socket_data(SocketEnvelopeContract(
             code=200,
             msg='读取执行器配置',
@@ -197,7 +174,7 @@ class SocketApiViews(ViewSet):
     @error_response('system')
     def get_actuator_config_result(self, request: Request):
         request_id = request.query_params.get('request_id')
-        data = cache.get(self._actuator_config_snapshot_key(request_id))
+        data = ActuatorConfigRuntimeService.get_snapshot(request_id)
         if not data:
             return ResponseData.success(RESPONSE_MSG_0101, {'status': 'expired'})
         return ResponseData.success(RESPONSE_MSG_0101, data)
@@ -209,10 +186,10 @@ class SocketApiViews(ViewSet):
         config = request.data.get('config') or {}
         SocketConnectionService.require_actuator(username)
         request_id = str(uuid.uuid4())
-        cache.set(self._actuator_config_save_key(request_id), {
+        ActuatorConfigRuntimeService.set_save_result(request_id, {
             'status': 'pending',
             'username': username,
-        }, self.ACTUATOR_CONFIG_CACHE_TTL)
+        })
         SocketMessageService.send_socket_data(SocketEnvelopeContract(
             code=200,
             msg='保存执行器配置',
@@ -228,7 +205,7 @@ class SocketApiViews(ViewSet):
     @error_response('system')
     def get_actuator_config_save_result(self, request: Request):
         request_id = request.query_params.get('request_id')
-        data = cache.get(self._actuator_config_save_key(request_id))
+        data = ActuatorConfigRuntimeService.get_save_result(request_id)
         if not data:
             return ResponseData.success(RESPONSE_MSG_0101, {'status': 'expired'})
         return ResponseData.success(RESPONSE_MSG_0101, data)

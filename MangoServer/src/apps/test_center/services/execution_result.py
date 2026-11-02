@@ -267,15 +267,15 @@ class ExecutionResultService:
         from src.apps.auto_pytest.selectors.querysets import PytestQuerySelector
 
         target_access = {
-            cls.TARGET_API_INFO: ({'api.info:detail', 'api.info:debug', 'api.info:execute'},
+            cls.TARGET_API_INFO: ({'api.info:read', 'api.info:change', 'api.info:change'},
                                   ApiQuerySelector.api_info(), 'project_product_id'),
-            cls.TARGET_API_CASE: ({'api.case:detail', 'api.case:debug', 'api.case:execute'},
+            cls.TARGET_API_CASE: ({'api.case:read', 'api.case:change', 'api.case:change'},
                                   ApiQuerySelector.api_case(), 'project_product_id'),
-            cls.TARGET_UI_PAGE_STEP: ({'ui.page_steps:detail', 'ui.page_steps:debug'},
+            cls.TARGET_UI_PAGE_STEP: ({'ui.page_steps:read', 'ui.page_steps:change'},
                                       UiQuerySelector.page_steps(), 'project_product_id'),
-            cls.TARGET_UI_CASE: ({'ui.case:detail', 'ui.case:debug', 'ui.case:execute'},
+            cls.TARGET_UI_CASE: ({'ui.case:read', 'ui.case:change', 'ui.case:change'},
                                  UiQuerySelector.ui_case(), 'project_product_id'),
-            cls.TARGET_PYTEST_CASE: ({'pytest.case:detail', 'pytest.case:execute'},
+            cls.TARGET_PYTEST_CASE: ({'pytest.case:read', 'pytest.case:change'},
                                      PytestQuerySelector.pytest_case(), 'project_product__project_product_id'),
         }
         return ExecutionResultAccessSelector.visible_queryset(cls.summary_queryset(), user, target_access)

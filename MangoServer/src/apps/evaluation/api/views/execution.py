@@ -12,8 +12,6 @@ from src.common.responses import RESPONSE_MSG_0001, RESPONSE_MSG_0005, RESPONSE_
 class CaseExecutionViews(ViewSet):
     model = EvaluationCaseExecution
     serializer_class = CaseExecutionSerializer
-    action_permission_map = {"list": "evaluation.case:detail", "latest": "evaluation.case:detail", "retrieve": "evaluation.case:detail",
-                             "create": "evaluation.case:execute", "stop": "evaluation.case:stop", "retry": "evaluation.case:execute"}
 
     @error_response("system")
     def list(self, request, case_id=None):

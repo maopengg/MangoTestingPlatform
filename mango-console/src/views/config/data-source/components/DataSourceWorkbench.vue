@@ -3,7 +3,7 @@
     <div class="mango-source-workbench">
       <aside class="mango-source-nav" aria-label="数据源导航">
         <div class="mango-source-toolbar"><strong>连接配置 <small class="mango-source-count">{{ sources.length }}</small></strong>
-          <a-button v-permission="'config.datasource:create'" size="small" type="primary" @click="$emit('add')">新增</a-button></div>
+          <a-button  size="small" type="primary" @click="$emit('add')">新增</a-button></div>
         <a-input v-model="keyword" placeholder="搜索名称、地址或账号" aria-label="搜索连接配置" allow-clear />
         <a-spin :loading="loading" class="mango-source-tree">
           <div v-if="!groups.length" class="mango-empty-state">没有匹配的数据源</div>
@@ -34,9 +34,9 @@
               </div>
             </div>
             <a-space>
-              <a-button v-permission="'config.datasource:debug'" size="small" :loading="testingIds.includes(selected.id)" @click="$emit('test', selected)">测试连接</a-button>
-              <a-button v-permission="'config.datasource:edit'" size="small" @click="$emit('edit', selected)">编辑</a-button>
-              <a-button v-permission="'config.datasource:delete'" size="small" status="danger" @click="$emit('remove', selected)">删除</a-button>
+              <a-button  size="small" :loading="testingIds.includes(selected.id)" @click="$emit('test', selected)">测试连接</a-button>
+              <a-button  size="small" @click="$emit('edit', selected)">编辑</a-button>
+              <a-button  size="small" status="danger" @click="$emit('remove', selected)">删除</a-button>
             </a-space>
           </div>
           <a-tabs v-model:active-key="activeTab" class="mango-tabs-nav-only mango-source-tabs" @change="loadTab">
@@ -50,7 +50,7 @@
                     <template #target="{ record }">{{ record.database_name || (record.redis_db != null ? 'DB ' + record.redis_db : '未选默认库') }}{{ record.schema_name ? ' / ' + record.schema_name : '' }}</template>
                     <template #read="{ record }">{{ record.db_c_status === 1 ? '允许' : '禁止' }}</template>
                     <template #write="{ record }">{{ record.db_rud_status === 1 ? '允许' : '禁止' }}</template>
-                    <template #actions="{ record }"><MangoTableActions :actions="[{permission: 'config.product', label: '管理绑定', onClick: () => openBindingPage(record)}]" /></template>
+                    <template #actions="{ record }"><MangoTableActions :actions="[{ label: '管理绑定', onClick: () => openBindingPage(record) }]" /></template>
                   </a-table>
                 </div>
                 <TableFooter :pagination="bindingPagination" :show-refresh="false" />
@@ -63,7 +63,7 @@
                 </div>
                 <div class="mango-source-table-area"><a-table class="mango-native-scroll-table" :columns="databaseColumns"
                   :data="pagedDatabases" :loading="databaseLoading" :pagination="false" :scroll="{ x: 600, y: '100%' }" row-key="name">
-                  <template #query="{ record }"><MangoTableActions :actions="[{permission: 'config.datasource:debug', label: '查询', onClick: () => openDatabaseQuery(record)}]" /></template>
+                  <template #query="{ record }"><MangoTableActions :actions="[{ label: '查询', onClick: () => openDatabaseQuery(record) }]" /></template>
                 </a-table></div>
                 <TableFooter :pagination="databasePagination" :show-refresh="false" />
               </div>

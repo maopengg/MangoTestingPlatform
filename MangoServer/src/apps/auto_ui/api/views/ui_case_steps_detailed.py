@@ -56,10 +56,6 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
 class UiCaseStepsDetailedViews(ViewSet):
     model = UiCaseStepsDetailed
     serializer_class = UiCaseStepsDetailedSerializers
-    action_permission_map = {
-        'post_case_cache_data': 'ui.case:detail',
-        'put_case_sort': 'ui.case:edit',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('ui')

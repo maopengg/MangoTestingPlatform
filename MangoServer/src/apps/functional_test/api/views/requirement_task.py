@@ -21,12 +21,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 class FunctionalRequirementTaskViews(ViewSet):
     model = FunctionalRequirementTask
     serializer_class = FunctionalRequirementTaskSerializer
-    action_permission_map = {
-        "list": "functional.suite:detail",
-        "create": "functional.suite:edit",
-        "update": "functional.suite:edit",
-        "delete": "functional.suite:edit",
-    }
 
     @staticmethod
     def _scoped_suites(request: Request):

@@ -43,7 +43,7 @@ FUNCTIONAL_TEST_VERSION_PLAN_REQUIREMENT_TYPE_REQUIRED = ErrorDefinition(code=35
 FUNCTIONAL_TEST_PLAN_ITERATION_TYPE_REQUIRED = ErrorDefinition(code=35025, message='Sprint 类型测试计划必须选择迭代')
 FUNCTIONAL_TEST_STEP_DEFECT_INVALID = ErrorDefinition(code=35026, message='缺陷复现步骤格式不正确')
 FUNCTIONAL_TEST_DEFECT_DUPLICATED = ErrorDefinition(code=35027, message='缺陷附件必须是不重复的正整数数组')
-FUNCTIONAL_TEST_DEFECT_INVALID = ErrorDefinition(code=35028, message='处理中缺陷必须指定负责人')
+FUNCTIONAL_TEST_DEFECT_INVALID = ErrorDefinition(code=35028, message='处理中缺陷必须指定经办人')
 FUNCTIONAL_TEST_DEFECT_DISABLED = ErrorDefinition(code=35029, message='已解决或已关闭缺陷必须填写解决方式')
 FUNCTIONAL_TEST_CASE_PLAN_DEFECT_RELATION_MINIMUM_REQUIRED = ErrorDefinition(code=35030,
                                                                              message='测试计划来源的缺陷必须关联至少一条计划用例')

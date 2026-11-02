@@ -196,7 +196,7 @@ class ApiCaseRecoveryTests(SimpleTestCase):
 
     def test_mcp_recovery_requires_edit_and_project_scope(self):
         policy = component_policy('update_api_case_step_recovery')
-        self.assertEqual(policy.permission_key, 'api.case:edit')
+        self.assertEqual(policy.permission_key, 'api.case:change')
         self.assertTrue(policy.project_scoped)
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
                 patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'api.case'}):

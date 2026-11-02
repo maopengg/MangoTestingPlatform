@@ -5,10 +5,6 @@
         <a-button class="mango-back-button" @click="router.back()" data-testid="qa-views-functional-test-case-details-button-返回">返回</a-button>
         <strong>{{ detail?.title || '功能用例详情' }}</strong>
       </a-space>
-      <a-space>
-        <a-button type="primary" :loading="planLoading" @click="openPlanDialog" data-testid="qa-views-functional-test-case-details-button-生成-api-自动化">生成 API 自动化</a-button>
-        <a-button disabled data-testid="qa-views-functional-test-case-details-button-生成-ui-自动化">生成 UI 自动化</a-button>
-      </a-space>
     </div>
     <a-spin :loading="loading">
       <a-grid :cols="2" :col-gap="12" :row-gap="12">
@@ -73,104 +69,30 @@
       </a-grid>
     </a-spin>
 
-    <a-modal
-      v-model:visible="planDialogVisible"
-      title="生成 API 自动化用例"
-      width="720px"
-      :ok-loading="planLoading"
-      @ok="makePlan"
-    >
-      <a-form :model="planForm" layout="vertical">
-        <a-form-item label="角色提示词">
-          <a-select
-            v-model="planForm.ai_role"
-            :options="aiRoleOptions"
-            :field-names="fieldNames"
-            placeholder="请选择角色提示词" data-testid="qa-views-functional-test-case-details-select-请选择角色提示词"
-          />
-        </a-form-item>
-        <a-form-item label="技能">
-          <a-select
-            v-model="planForm.skill_id"
-            :options="skillOptions"
-            :field-names="fieldNames"
-            :loading="aiOptionLoading"
-            allow-clear
-            placeholder="请选择 Skill" data-testid="qa-views-functional-test-case-details-select-请选择-skill"
-          />
-        </a-form-item>
-        <a-form-item label="MCP 服务">
-          <a-select
-            v-model="planForm.mcp_server_ids"
-            :options="mcpServerOptions"
-            :field-names="fieldNames"
-            :loading="aiOptionLoading"
-            allow-clear
-            multiple
-            placeholder="请选择 MCP 服务" data-testid="qa-views-functional-test-case-details-select-请选择-mcp-服务"
-          />
-        </a-form-item>
-        <a-form-item label="追问/补充要求">
-          <a-textarea v-model="planForm.user_instruction" placeholder="补充本次 API 自动化生成要求" :auto-size="{ minRows: 2, maxRows: 4 }" data-testid="qa-views-functional-test-case-details-textarea-补充本次-api-自动化生成要求" />
-        </a-form-item>
-        <a-form-item label="携带上下文">
-          <a-checkbox-group v-model="planForm.context_keys" direction="vertical">
-            <a-checkbox :value="0" data-testid="qa-views-functional-test-case-details-checkbox-产品角色-需求文档">产品角色 / 需求文档</a-checkbox>
-            <a-checkbox :value="1" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-开发设计">开发角色 / 开发设计</a-checkbox>
-            <a-checkbox :value="2" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-接口文档">开发角色 / 接口文档</a-checkbox>
-            <a-checkbox :value="3" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-开发代码">开发角色 / 开发代码</a-checkbox>
-            <a-checkbox :value="4" data-testid="qa-views-functional-test-case-details-checkbox-开发角色-sql语句">开发角色 / SQL语句</a-checkbox>
-            <a-checkbox :value="5" data-testid="qa-views-functional-test-case-details-checkbox-测试角色-原始用例文档">测试角色 / 原始用例文档</a-checkbox>
-          </a-checkbox-group>
-        </a-form-item>
-      </a-form>
-    </a-modal>
-
   </div>
 </template>
 
 <script setup lang="ts">
-  import { Message } from '@arco-design/web-vue'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { onMounted, ref } from 'vue'
+
   import { useRoute, useRouter } from 'vue-router'
+
   import { useEnum } from '@/store/modules/get-enum'
-  import {
-    getStatusTagColor,
-    MANUAL_TEST_CHANGE_STATUS_COLORS,
-    MANUAL_TEST_IMPACT_STATUS_COLORS,
-    MANUAL_TEST_OPTIMIZE_STATUS_COLORS,
-  } from '@/utils/status-color'
-  import { getAiMcpServer, getAiSkill, postAiApiAutomationAgentStart } from '@/api/ai'
+
+  import { getStatusTagColor, MANUAL_TEST_CHANGE_STATUS_COLORS, MANUAL_TEST_IMPACT_STATUS_COLORS, MANUAL_TEST_OPTIMIZE_STATUS_COLORS } from '@/utils/status-color'
+
   import { getManualCaseDetail } from '@/api/functional-test'
 
   const route = useRoute()
+
   const router = useRouter()
+
   const enumStore = useEnum()
+
   const loading = ref(false)
-  const planLoading = ref(false)
-  const aiOptionLoading = ref(false)
-  const planDialogVisible = ref(false)
+
   const detail = ref<any>(null)
-  const aiSkills = ref<any[]>([])
-  const mcpServers = ref<any[]>([])
-  const fieldNames = { value: 'key', label: 'title' }
-  const planForm = reactive<any>({
-    context_keys: [0, 1, 2, 3, 4],
-    ai_role: 'api_automation_expert',
-    skill_id: null,
-    mcp_server_ids: [],
-    user_instruction: '',
-  })
-  const aiRoleOptions = [
-    { key: 'business_test_expert', title: '业务测试专家' },
-    { key: 'api_automation_expert', title: 'API自动化测试专家' },
-  ]
-  const skillOptions = computed(() =>
-    aiSkills.value.filter((item) => item.status === 1 && item.skill_type === 1).map((item) => ({ key: item.id, title: item.name }))
-  )
-  const mcpServerOptions = computed(() =>
-    mcpServers.value.filter((item) => item.status === 1).map((item) => ({ key: item.id, title: item.is_connected ? item.name : `${item.name}（未连接）` }))
-  )
+
   const bindingColumns = [
     { title: '类型', key: 'automation_type', dataIndex: 'automation_type', width: 120 },
     { title: '用例 ID', key: 'case_id', dataIndex: 'automation_case_id', width: 110 },
@@ -181,15 +103,20 @@
   function enumTitle(options: any[] = [], value: any) {
     return options.find((item) => item.key === value)?.title || value || '-'
   }
+
   function enumColor(value: any) {
     return enumStore.colors?.[Number(value)]
   }
+
   const optimizeStatusColor = (value: number) =>
     getStatusTagColor(MANUAL_TEST_OPTIMIZE_STATUS_COLORS, value)
+
   const changeStatusColor = (value: number) =>
     getStatusTagColor(MANUAL_TEST_CHANGE_STATUS_COLORS, value)
+
   const impactStatusColor = (value: number) =>
     getStatusTagColor(MANUAL_TEST_IMPACT_STATUS_COLORS, value)
+
   async function loadDetail() {
     loading.value = true
     try {
@@ -199,59 +126,7 @@
       loading.value = false
     }
   }
-  async function loadAiOptions() {
-    aiOptionLoading.value = true
-    try {
-      const [skillRes, mcpRes] = await Promise.all([getAiSkill({ status: 1, page: 1, pageSize: 100 }), getAiMcpServer({})])
-      aiSkills.value = skillRes.data || []
-      mcpServers.value = mcpRes.data || []
-      if (!planForm.skill_id && skillOptions.value.length) {
-        planForm.skill_id = skillOptions.value[0].key
-      }
-      if (!planForm.mcp_server_ids?.length && mcpServerOptions.value.length) {
-        const connected = mcpServers.value.find((item) => item.status === 1 && item.is_connected)
-        planForm.mcp_server_ids = [connected?.id || mcpServerOptions.value[0].key]
-      }
-    } finally {
-      aiOptionLoading.value = false
-    }
-  }
-  async function openPlanDialog() {
-    planForm.context_keys = [0, 1, 2, 3, 4]
-    planForm.ai_role = 'api_automation_expert'
-    planDialogVisible.value = true
-    await loadAiOptions()
-  }
-  async function makePlan() {
-    if (!planForm.ai_role) {
-      Message.error('请选择角色提示词')
-      return false
-    }
-    if (!planForm.skill_id) {
-      Message.error('请选择技能')
-      return false
-    }
-    if (!planForm.mcp_server_ids?.length) {
-      Message.error('请选择 MCP 服务')
-      return false
-    }
-    planLoading.value = true
-    try {
-      await postAiApiAutomationAgentStart({
-        manual_case_id: detail.value.id,
-        context_keys: planForm.context_keys,
-        skill_id: planForm.skill_id,
-        mcp_server_ids: planForm.mcp_server_ids,
-        ai_role: planForm.ai_role,
-        user_instruction: planForm.user_instruction,
-      })
-      planDialogVisible.value = false
-      Message.success('已创建 API 自动化生成任务')
-      return true
-    } finally {
-      planLoading.value = false
-    }
-  }
+
   onMounted(async () => {
     await enumStore.getEnum()
     loadDetail()

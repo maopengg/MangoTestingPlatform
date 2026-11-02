@@ -29,13 +29,6 @@ class DataSourceCRUD(ModelCRUD):
 class DataSourceViews(ViewSet):
     model = Database
     serializer_class = DataSourceDiscoverySerializer
-    action_permission_map = {
-        'databases': 'config.datasource:debug',
-        'bindings': 'config.datasource:detail',
-        'schemas': ('config.product:create', 'config.product:edit'),
-        'suggest_alias': 'config.product:create',
-        'query': 'config.datasource:debug',
-    }
 
     @error_response('system')
     def query(self, request):

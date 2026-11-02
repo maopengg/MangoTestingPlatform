@@ -94,9 +94,6 @@ class PageCRUD(ModelCRUD):
 class PageViews(ViewSet):
     model = Page
     serializer_class = PageSerializers
-    action_permission_map = {
-        'page_name': 'ui.page',
-    }
 
     @action(methods=['GET'], detail=False)
     @error_response('ui')

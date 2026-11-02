@@ -4,12 +4,12 @@
       <TableHeader :title="`性能场景 / ${form.name || '配置'}`">
         <template #header-extra>
           <a-space>
-            <a-button v-permission="'perf.scenario:execute'" status="success" size="small" :loading="executing" @click="openExecuteDialog"
+            <a-button  status="success" size="small" :loading="executing" @click="openExecuteDialog"
               >执行场景</a-button
             >
-            <a-button v-permission="'perf.scenario:detail'" size="small" :loading="scriptPreviewLoading" @click="openScriptPreview">预览 k6 脚本</a-button>
+            <a-button  size="small" :loading="scriptPreviewLoading" @click="openScriptPreview">预览 k6 脚本</a-button>
             <a-button size="small" :loading="validating" @click="validateConfig">校验配置</a-button>
-            <a-button v-permission="['perf.scenario:create', 'perf.scenario:edit']" type="primary" size="small" :loading="saving" @click="save">保存</a-button>
+            <a-button  type="primary" size="small" :loading="saving" @click="save">保存</a-button>
             <a-button class="mango-back-button" size="small" @click="router.back()">返回</a-button>
           </a-space>
         </template>
@@ -115,7 +115,7 @@
               <section class="mango-section-card mango-perf-side-section">
                 <div class="mango-section-title mango-perf-section-heading">
                   <div><span>负载配置</span><small>一次运行只使用这一套负载配置</small></div>
-                  <a-button v-permission="'perf.scenario:edit'" size="mini" type="text" @click="openLoadConfig">编辑</a-button>
+                  <a-button  size="mini" type="text" @click="openLoadConfig">编辑</a-button>
                 </div>
                 <div v-if="hasLoadConfig" class="mango-soft-panel mango-perf-load-summary">
                   <div class="mango-perf-load-name">

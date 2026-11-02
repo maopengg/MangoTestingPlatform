@@ -1,11 +1,13 @@
 import hashlib
 import os
+import re
 import traceback as traceback_module
 from datetime import timedelta
 
 from django.db import IntegrityError
 from django.db.models import F, Q
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 from src.apps.monitoring.models import SystemErrorEvent
 from src.common.enums.system_error import SystemErrorEventSource
@@ -54,6 +56,9 @@ class SystemErrorEventService:
             service_name: str | None = None,
             trace: str | None = None,
     ):
+        if isinstance(error, ValidationError) and source in {SystemErrorEventSource.HTTP, SystemErrorEventSource.DRF}:
+            cls.record_validation(error, source, request, request_path, service_name)
+            return
         if normalize_expected_exception(error):
             return
         try:
@@ -69,6 +74,53 @@ class SystemErrorEventService:
             )
         except Exception as record_error:
             log.system.warning(f'系统异常事件记录失败：{record_error}')
+
+    @classmethod
+    def record_validation(cls, error, source, request=None, request_path=None, service_name=None):
+        # 只保留受限字段路径和标准错误码，错误文案可能回显密码、代码或用户输入。
+        labels = {'null': '不接受null', 'required': '缺少必填字段', 'blank': '不接受空字符串',
+                  'invalid': '格式或规则不匹配', 'max_length': '超过最大长度', 'min_length': '小于最小长度',
+                  'max_value': '超过最大值', 'min_value': '小于最小值', 'invalid_choice': '无效选项',
+                  'not_a_list': '应为列表', 'empty': '不接受空列表', 'does_not_exist': '关联对象不存在',
+                  'incorrect_type': '字段类型错误'}
+        items = set()
+        visited = 0
+
+        def collect(value, path='', depth=0):
+            nonlocal visited
+            visited += 1
+            if visited > 200 or depth > 6:
+                return
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    field = str(key)
+                    if not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]{0,63}', field):
+                        field = 'field'
+                    collect(child, f'{path}.{field}' if path else field, depth + 1)
+                    if visited >= 200:
+                        break
+            elif isinstance(value, (list, tuple)):
+                for child in value[:50]:
+                    collect(child, path, depth + 1)
+            else:
+                code = getattr(value, 'code', 'invalid')
+                if code in {'unique', 'unique_together'}:
+                    return
+                items.add((path or 'non_field_errors', code if code in labels else 'invalid'))
+
+        collect(error.detail)
+        if not items:
+            return
+        summary = '；'.join(f'{field}: {code}（{labels[code]}）' for field, code in sorted(items))
+        try:
+            cls.record(
+                service_name=service_name or cls.resolve_service_name(source), source=source,
+                request_path=cls.resolve_request_path(request, request_path),
+                exception_type='RequestValidationError', message=f'接口校验失败，待排查：{summary}',
+                trace='参数校验诊断（仅包含字段路径及错误码，不保存请求值）\n' + summary,
+            )
+        except Exception:
+            log.system.warning('参数校验诊断记录失败')
 
     @classmethod
     def record(
@@ -152,20 +204,21 @@ class SystemErrorEventService:
 
     @classmethod
     def serialize(cls, item: SystemErrorEvent) -> dict:
+        validation = item.exception_type == 'RequestValidationError'
         return {
             'time': cls.format_time(item.last_seen_at),
             'sort_time': cls.ensure_aware(item.last_seen_at),
             'source': 'system_error_event',
             'event_source': item.source,
-            'source_name': cls.SOURCE_NAME_MAP.get(item.source, item.source),
+            'source_name': '接口校验失败' if validation else cls.SOURCE_NAME_MAP.get(item.source, item.source),
             'object_id': item.id,
             'title': item.request_path or item.service_name,
             'message': item.message,
             'service_name': item.service_name,
             'exception_type': item.exception_type,
             'traceback': item.traceback,
-            'status': 'error',
-            'status_name': '异常',
+            'status': 'warning' if validation else 'error',
+            'status_name': '待排查' if validation else '异常',
             'count': item.count,
             'link': None,
             'log_query': f'service="{item.service_name}" AND fingerprint="{item.fingerprint}"',

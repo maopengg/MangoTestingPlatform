@@ -9,14 +9,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0101, RESPONSE_MSG_01
 
 
 class LiveStreamViews(ViewSet):
-    action_permission_map = {
-        'create_session': 'ui.case:debug',
-        'start_session': 'ui.case:debug',
-        'close_session': 'ui.case:debug',
-        'create_workspace': 'ui.case:debug',
-        'workspace_status': 'ui.case:debug',
-        'close_workspace': 'ui.case:debug',
-    }
 
     @error_response('ui')
     def create_session(self, request: Request):

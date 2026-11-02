@@ -3,7 +3,7 @@ from src.apps.system.schemas.notice import ReportFailureModel
 
 from src.apps.test_center.selectors.report_notice import ReportNoticeSelector
 from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.report_html import ReportHtmlService
+from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
 from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
 from src.common.logging import log
 

@@ -3,7 +3,7 @@
     <template #header>
       <div class="mango-detail-toolbar">
         <div class="mango-detail-heading"
-          ><div class="mango-evaluation-case-title"><div class="mango-detail-title" :title="record?.name">{{ record?.name || '测试用例详情' }}</div><a-tag v-if="record" size="small" :color="statusColor(record.status)">{{ enumTitle('evaluation_case_status', record.status) }}</a-tag><a-tag v-if="record && !permissions.hasPermission('evaluation.case:edit')" size="small">只读</a-tag></div
+          ><div class="mango-evaluation-case-title"><div class="mango-detail-title" :title="record?.name">{{ record?.name || '测试用例详情' }}</div><a-tag v-if="record" size="small" :color="statusColor(record.status)">{{ enumTitle('evaluation_case_status', record.status) }}</a-tag><a-tag v-if="false" size="small">只读</a-tag></div
           ><div class="mango-detail-subtitle mango-evaluation-case-meta"
             >Case #{{ caseId
             }}<template v-if="record?.dataset_name">
@@ -16,7 +16,7 @@
         >
         <a-space class="mango-detail-actions" wrap>
           <a-button
-            v-permission="'evaluation.case:edit'"
+
             size="small"
             type="primary"
             :loading="Boolean(editor?.saving || editor?.loading)"
@@ -28,14 +28,14 @@
             >{{ saveButtonLabel }}</a-button
           >
           <a-button
-            v-permission="'evaluation.case:detail'"
+
             size="small"
             :disabled="!record"
             @click="historyVisible = true"
             >历史结果</a-button
           >
           <a-button
-            v-permission="'evaluation.case:execute'"
+
             size="small"
             status="success"
             :disabled="record?.status !== 'enabled'"
@@ -98,7 +98,7 @@
     :footer="false"
     unmount-on-close
     ><ExecutionPanel
-      v-if="historyVisible && permissions.hasPermission('evaluation.case:detail')"
+      v-if="historyVisible"
       :case-id="caseId"
       :dataset-name="record?.dataset_name"
       :dataset-id="record?.dataset_id"
@@ -146,7 +146,8 @@
     return editor.value?.ready && !editor.value.dirty ? '已保存' : '保存'
   })
   async function saveConfiguration() {
-    if (!permissions.hasPermission('evaluation.case:edit') || loading.value || executing.value || !editor.value || editor.value.saving || editor.value.loading) return
+    if (loading.value || executing.value || !editor.value || editor.value.saving || editor.value.loading)
+    return;
     if (!editor.value.ready) {
       await editor.value.open(caseId.value)
       return
@@ -233,23 +234,20 @@
   function selected(id: number) {
     executionId.value = id
   }
-  watch(
-    [caseId, () => permissions.hasPermission('evaluation.case:detail')],
-    () => {
-      generation += 1
-      previewRequest += 1
-      record.value = undefined
-      gradingPreview.value = undefined
-      loading.value = false
-      previewLoading.value = false
-      executionId.value = Number(route.query.execution) || undefined
-      initialStep.value = executionId.value || route.query.tab === 'results' ? 'results' : 'data'
-      historyVisible.value =
-        route.query.tab === 'history' && permissions.hasPermission('evaluation.case:detail')
-      if (caseId.value > 0 && permissions.hasPermission('evaluation.case:detail')) load()
-    },
-    { immediate: true }
-  )
+  watch([caseId, () => true], () => {
+    generation += 1;
+    previewRequest += 1;
+    record.value = undefined;
+    gradingPreview.value = undefined;
+    loading.value = false;
+    previewLoading.value = false;
+    executionId.value = Number(route.query.execution) || undefined;
+    initialStep.value = executionId.value || route.query.tab === 'results' ? 'results' : 'data';
+    historyVisible.value =
+        route.query.tab === 'history';
+    if (caseId.value > 0)
+        load();
+}, { immediate: true })
   watch(
     () => user.selected_environment,
     (_environment, previous) => {

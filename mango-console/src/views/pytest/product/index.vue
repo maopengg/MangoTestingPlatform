@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader title="项目绑定">
         <template #header-extra>
-          <a-button v-permission="'pytest.product:create'" size="small" type="primary" :loading="repositoryLoading" @click="onAdd">
+          <a-button  size="small" type="primary" :loading="repositoryLoading" @click="onAdd">
             导入项目
           </a-button>
         </template>
@@ -127,9 +127,9 @@
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <MangoTableActions
                       :actions="[
-                        { permission: 'pytest.product:edit', label: '编辑', onClick: () => onUpdate(record) },
-                        { permission: 'pytest.product:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                      ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                     />
                   </template>
                 </a-table-column>

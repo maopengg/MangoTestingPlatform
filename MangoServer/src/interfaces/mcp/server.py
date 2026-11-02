@@ -8,13 +8,6 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from functools import wraps
 
-from src.apps.ai.presenters import (
-    format_agent_context,
-    format_agent_task,
-    format_agent_task_step,
-    format_agent_tool_call,
-)
-from src.apps.ai.selectors.querysets import AiQuerySelector
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.functional_test.presenters import format_case, format_case_list, format_context_resource, format_suite, \
@@ -35,7 +28,6 @@ MCP_DOMAIN_PATHS = {
     "report": "/mcp/report",
     "scheduler": "/mcp/scheduler",
     "functional-test": "/mcp/functional-test",
-    "ai": "/mcp/ai",
     "file": "/mcp/file",
     "todo": "/mcp/todo",
 }
@@ -57,7 +49,6 @@ DOMAIN_RESOURCE_COMPONENTS = {
         "get_functional_test_case_resource",
         "get_functional_test_context_resource",
     },
-    "ai": {"get_project_product_resource", "get_ai_task_resource", "get_ai_context_resource"},
 }
 
 GLOBAL_RESOURCE_COMPONENTS = {
@@ -837,7 +828,7 @@ def mcp_asgi_app(domain: str | None = None):
     @mcp.resource("mango://functional-test/suite/{suite_id}")
     def get_functional_test_suite_resource(suite_id: str) -> dict:
         """读取功能测试需求资源。"""
-        from src.apps.ai.services.core import mask_sensitive
+        from src.common.utils.redaction import mask_sensitive
 
         suite = prepare_suite_queryset(FunctionalTestQuerySelector.manual_test_suite().all()).get(id=int(suite_id))
         cases = prepare_case_list_queryset(FunctionalTestQuerySelector.manual_test_case().filter(suite_id=suite.id))
@@ -851,7 +842,7 @@ def mcp_asgi_app(domain: str | None = None):
     @mcp.resource("mango://functional-test/case/{case_id}")
     def get_functional_test_case_resource(case_id: str) -> dict:
         """读取功能测试用例资源。"""
-        from src.apps.ai.services.core import mask_sensitive
+        from src.common.utils.redaction import mask_sensitive
 
         case = prepare_case_queryset(FunctionalTestQuerySelector.manual_test_case().all()).get(id=int(case_id))
         return mask_sensitive(format_case(case))
@@ -859,46 +850,13 @@ def mcp_asgi_app(domain: str | None = None):
     @mcp.resource("mango://functional-test/context-resource/{resource_id}")
     def get_functional_test_context_resource(resource_id: str) -> dict:
         """读取功能测试上下文资料资源。"""
-        from src.apps.ai.services.core import mask_sensitive
+        from src.common.utils.redaction import mask_sensitive
 
         resource = prepare_context_resource_queryset(
             FunctionalTestQuerySelector.functional_test_context_resource().all()).get(id=int(resource_id))
         return mask_sensitive(format_context_resource(resource))
 
-    @mcp.resource("mango://ai/task/{task_id}")
-    def get_ai_task_resource(task_id: str) -> dict:
-        """读取 AI Agent 任务、阶段和工具调用资源。"""
-        from src.apps.ai.services.core import mask_sensitive
 
-        task = AiQuerySelector.agent_task_details().get(id=int(task_id))
-        steps = AiQuerySelector.agent_task_step_details().filter(task_id=task.id)
-        tool_calls = AiQuerySelector.agent_tool_call_details().filter(task_id=task.id)
-        data = format_agent_task(task)
-        data["input_data"] = mask_sensitive(data.get("input_data") or {})
-        data["output_data"] = mask_sensitive(data.get("output_data") or {})
-        data["steps"] = format_agent_task_step(steps, many=True)
-        data["tool_calls"] = [
-            {
-                **item,
-                "arguments": mask_sensitive(item.get("arguments") or {}),
-                "result": mask_sensitive(item.get("result") or {}),
-            }
-            for item in format_agent_tool_call(tool_calls, many=True)
-        ]
-        return data
-
-    @mcp.resource("mango://ai/context/{context_id}")
-    def get_ai_context_resource(context_id: str) -> dict:
-        """读取 AI Agent 上下文历史资源。"""
-        from src.apps.ai.services.core import mask_sensitive
-
-        context = AiQuerySelector.agent_context_details().get(id=int(context_id))
-        data = format_agent_context(context)
-        data["source_snapshot"] = mask_sensitive(data.get("source_snapshot") or {})
-        data["result_snapshot"] = mask_sensitive(data.get("result_snapshot") or {})
-        data["skill_snapshot"] = mask_sensitive(data.get("skill_snapshot") or {})
-        data["mcp_snapshot"] = mask_sensitive(data.get("mcp_snapshot") or {})
-        return data
 
     @mcp.resource("mango://pytest-product/{product_id}")
     def get_pytest_product_resource(product_id: str) -> dict:

@@ -7,6 +7,7 @@ import json
 import os
 import re
 import traceback
+from types import SimpleNamespace
 
 import jsonschema
 import requests
@@ -108,6 +109,7 @@ class CaseParameter:
         self.api_info = api_info
         self.test_env = test_env
         self.ass_result: list[ApiAssertionResult] = []
+        self.log_assertion_errors = True
 
         self.test_data = api_base_test_setup.test_data
         self.test_object = api_base_test_setup.test_object
@@ -125,6 +127,7 @@ class CaseParameter:
             return headers
 
     def front_main(self, request: ApiExecutionRequest) -> ApiExecutionRequest:
+        self.test_setup.ensure_execution_context()
         if self.parameter.front_sql:
             self.__front_sql(self.parameter.front_sql)
         if self.parameter.front_func:
@@ -133,6 +136,17 @@ class CaseParameter:
 
     def ass_main(self, response: ApiExecutionResponse, ) -> tuple[list[ApiAssertionResult], int, str | None]:
         return self.verify_all_assertions(response)
+
+    @classmethod
+    def evaluate_general_assertions(cls, assertions, test_data):
+        """供回调复用同一通用断言及分组引擎，不初始化登录、SQL 或测试对象。"""
+        evaluator = cls(SimpleNamespace(test_data=test_data, test_object=None), None, None, 0)
+        evaluator.log_assertion_errors = False
+        try:
+            evaluator.__ass_general(assertions, continue_on_failure=True)
+        except AutoApiError:
+            return False, evaluator.ass_result
+        return True, evaluator.ass_result
 
     def __ass_mcp_default(self, response: ApiExecutionResponse):
         if response.response_mode != 'mcp':
@@ -979,7 +993,8 @@ class CaseParameter:
             raw_config=assertion_source.get('raw_config'),
             resolved_config=assertion_source.get('resolved_config'),
         )
-        log.api.debug(f'用例详情断言-1->{execute_ass_dict}')
+        if getattr(self, 'log_assertion_errors', True):
+            log.api.debug(f'用例详情断言-1->{execute_ass_dict}')
         group_context = ''
         if group_name:
             relation_title = '且' if group_logic == 'AND' else '或'
@@ -1022,7 +1037,8 @@ class CaseParameter:
                 self.__assertion_failure_summary(summary_title, execute_ass_dict.get('actual'),
                                                  execute_ass_dict.get('expect'), assertion_index),))
         except (TypeError, ValueError, re.error, MangoToolsError) as error:
-            log.api.error(f'用例详情断言-2：{error}')
+            if getattr(self, 'log_assertion_errors', True):
+                log.api.error(f'用例详情断言-2：{error}')
             reason = error.msg if isinstance(error, MangoToolsError) else str(error)
             ass_result.status = StatusEnum.FAIL.value
             if source_type in extraction_type_titles:

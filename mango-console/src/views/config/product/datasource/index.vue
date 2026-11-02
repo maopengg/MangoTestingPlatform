@@ -27,7 +27,7 @@
                 <h2>逻辑数据库</h2>
                 <p>选择数据库后，在右侧维护对应的环境绑定关系</p>
               </div>
-              <a-button v-permission="'config.product:create'"
+              <a-button
                 size="small"
                 type="primary"
                 @click="onAdd"
@@ -67,7 +67,7 @@
                       @click.stop
                       @keydown.stop
                     >
-                      <a-switch v-permission="'config.product:status'"
+                      <a-switch
                         :before-change="(checked) => onStatusChange(record, checked)"
                         :model-value="record.status === 1"
                       />
@@ -92,9 +92,9 @@
                     <MangoTableActions
                       :max-inline="3"
                       :actions="[
-                        { permission: 'config.product:edit', label: '编辑', onClick: () => onUpdate(record) },
-                        { permission: 'config.product:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                      ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                     />
                   </div>
                 </article>
@@ -113,12 +113,12 @@
                 <p v-else>请先选择左侧逻辑数据库</p>
               </div>
               <a-space>
-                <a-button v-permission="'config.product:query'"
+                <a-button
                   size="small"
                   :disabled="!selectedDatasource"
                   @click="onOpenQueryDrawer(selectedDatasource)"
                 >查询</a-button>
-                <a-button v-permission="'config.product:create'"
+                <a-button
                   size="small"
                   type="primary"
                   :disabled="!bindingPanel.datasourceId"
@@ -173,7 +173,7 @@
                           {{ record.database_name || (record.redis_db != null ? `DB ${record.redis_db}` : '未选默认库') }}{{ record.schema_name ? ` / ${record.schema_name}` : '' }}
                         </template>
                         <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
-                          <a-switch v-permission="'config.product:status'"
+                          <a-switch
                             :before-change="
                               (checked) => onBindingPermissionChange(record, 'db_c_status', checked)
                             "
@@ -181,7 +181,7 @@
                           />
                         </template>
                         <template v-else-if="item.key === 'db_rud_status'" #cell="{ record }">
-                          <a-switch v-permission="'config.product:status'"
+                          <a-switch
                             :before-change="
                               (checked) =>
                                 onBindingPermissionChange(record, 'db_rud_status', checked)
@@ -194,16 +194,14 @@
                         <template v-else-if="item.key === 'actions'" #cell="{ record }">
                           <MangoTableActions
                             :actions="[
-                              { permission: 'config.product:edit',
-                                label: '编辑',
-                                onClick: () => onEditBinding(record),
-                              },
-                              { permission: 'config.product:delete',
-                                label: '解绑',
-                                danger: true,
-                                onClick: () => onUnbindDatasource(record),
-                              },
-                            ]"
+    {
+        label: '编辑',
+        onClick: () => onEditBinding(record), },
+    {
+        label: '解绑',
+        danger: true,
+        onClick: () => onUnbindDatasource(record), },
+]"
                           />
                         </template>
                       </a-table-column>
@@ -315,7 +313,7 @@
             data-testid="qa-views-config-product-datasource-button-清空"
             >清空</a-button
           >
-          <a-button v-permission="'config.product:query'"
+          <a-button
             size="small"
             type="primary"
             :loading="queryDrawer.loading"

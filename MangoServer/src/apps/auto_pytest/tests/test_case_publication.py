@@ -182,8 +182,8 @@ class PytestCasePublicationTests(SimpleTestCase):
                                   user=SimpleNamespace(user_obj=SimpleNamespace(id=9)))
         view.request = request
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False):
-            for permissions, expected in (({'pytest.case:publish'}, True), ({'pytest.case:edit'}, False),
-                                          ({'pytest.case:detail'}, False)):
+            for permissions, expected in (({'pytest.case:change'}, True), ({'pytest.case:change'}, False),
+                                          ({'pytest.case:read'}, False)):
                 with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=permissions):
                     self.assertEqual(MenuActionPermission().has_permission(request, view), expected)
 
@@ -193,9 +193,9 @@ class PytestCasePublicationTests(SimpleTestCase):
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), patch(
             'src.interfaces.mcp.authentication.resolve_project_product_ids', return_value={4},
         ), patch.object(ProjectProductScopeService, 'has_project_product', return_value=True):
-            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:edit'}):
+            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:change'}):
                 self.assertIsNotNone(permission_error(user, 'update_pytest_case_publication_status', arguments))
-            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:publish'}):
+            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:change'}):
                 self.assertIsNone(permission_error(user, 'update_pytest_case_publication_status', arguments))
                 with patch.object(ProjectProductScopeService, 'has_project_product', return_value=False):
                     self.assertIsNotNone(permission_error(user, 'update_pytest_case_publication_status', arguments))
@@ -218,7 +218,7 @@ class PytestCasePublicationTests(SimpleTestCase):
         transition.assert_called_once_with(1, 'prepublished', operator_id=9)
 
     async def test_authenticated_clients_discover_publication_tool_in_root_and_domain(self):
-        for scope, visible in (('pytest.case:publish', True), ('pytest.case:detail', False)):
+        for scope, visible in (('pytest.case:change', True), ('pytest.case:read', False)):
             access = AccessToken(token='test-pytest-key', client_id='pytest-publisher', subject='9', scopes=[scope],
                                  claims={'user_id': 9, 'is_super_admin': False})
             with patch.object(MangoAuthorizationMiddleware, '_access', new=AsyncMock(return_value=access)):

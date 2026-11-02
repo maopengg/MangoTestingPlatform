@@ -1,7 +1,7 @@
 import json
 from importlib import import_module
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
@@ -124,8 +124,45 @@ class ModelCRUDPaginationTests(SimpleTestCase):
 
 
 class ErrorResponseTests(SimpleTestCase):
+    @patch('src.common.responses.model_crud.report_validation_failure')
+    def test_crud_invalid_create_and_update_report_without_request_values(self, report):
+        errors = {'target_address': ['This field may not be null.']}
+        serializer = MagicMock()
+        serializer.is_valid.return_value = False
+        serializer.errors = errors
+        crud = ModelCRUD()
+        crud.model = MagicMock()
+        crud.serializer = MagicMock(return_value=serializer)
+        crud.with_update_user = lambda request, data: data
+        crud.has_data_scope_permission = lambda *args: True
+        crud.has_instance_data_scope_permission = lambda *args: True
+        crud.validate_business_module = lambda *args: None
+        request = SimpleNamespace(data={'id': 1, 'custom_code': 'secret-code'},
+                                  method='POST', path='/api/example/config', user={})
+        for method in (crud.post, crud.put):
+            with self.subTest(method=method.__name__):
+                response = method(request)
+                self.assertEqual(response.data['code'], 300)
+                self.assertEqual(response.data['data'], errors)
+        self.assertEqual(report.call_count, 2)
+        self.assertEqual(report.call_args.args, (errors,))
+        self.assertIs(report.call_args.kwargs['request'], request)
+        serializer.save.assert_not_called()
+
+    @patch('src.common.decorators.system_error.import_string', side_effect=RuntimeError('unavailable'))
+    def test_diagnostic_adapter_failure_does_not_replace_validation_response(self, reporter):
+        class TestView:
+            @error_response('system')
+            def post(self, request):
+                raise ValidationError({'name': ['bad']})
+
+        response = TestView().post(SimpleNamespace(user={}))
+        self.assertEqual(response.data['code'], 300)
+        reporter.assert_called_once()
+
+    @patch('src.common.decorators.error_response.report_validation_failure')
     @patch('src.common.decorators.error_response.report_system_error')
-    def test_validation_error_returns_business_response_without_system_record(self, report_system_error):
+    def test_validation_error_returns_business_response_with_diagnostic(self, report_system_error, report_validation):
         class TestView:
             @error_response('system')
             def post(self, _request):
@@ -137,6 +174,7 @@ class ErrorResponseTests(SimpleTestCase):
         self.assertEqual(response.data['msg'], '参数校验错误')
         self.assertIn('project_product', response.data['data'])
         report_system_error.assert_not_called()
+        report_validation.assert_called_once()
 
     @patch('src.common.decorators.error_response.report_system_error')
     def test_missing_object_returns_business_response_without_system_record(self, report_system_error):
@@ -168,6 +206,21 @@ class ErrorResponseTests(SimpleTestCase):
 
 
 class GlobalExceptionHandlerTests(SimpleTestCase):
+    @patch('src.apps.system.middleware.exception_handler.report_validation_failure')
+    def test_normal_auth_permission_and_throttle_rejections_are_not_collected(self, report):
+        from rest_framework.exceptions import NotAuthenticated, PermissionDenied, Throttled
+        for error in (NotAuthenticated(), PermissionDenied(), Throttled()):
+            mango_exception_handler(error, {'request': None})
+        report.assert_not_called()
+
+    @patch('src.apps.system.middleware.exception_handler.report_validation_failure')
+    def test_validation_error_records_diagnostic_without_changing_response(self, report):
+        request = SimpleNamespace(method='POST', path='/api/example/config')
+        response = mango_exception_handler(ValidationError({'name': ['bad']}), {'request': request})
+        self.assertEqual(response.data['code'], 300)
+        report.assert_called_once()
+        self.assertIs(report.call_args.kwargs['request'], request)
+
     @patch('src.apps.system.middleware.exception_handler.report_system_error')
     def test_missing_object_returns_protocol_neutral_business_response(self, report_system_error):
         response = mango_exception_handler(

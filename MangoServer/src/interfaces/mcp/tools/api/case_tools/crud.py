@@ -185,6 +185,7 @@ def register_case_crud_tools(mcp):
             posterior_sql: list | None = None,
             preview_token: str | None = None,
             confirm_text: str | None = None,
+            callback_checks: list[dict] | None = None,
     ) -> dict:
         """更新 API case 主体配置。module_id 可修改所属模块，case_people_id 可修改负责人；复杂字段格式见 get_api_case_schema.api_case_fields。
 
@@ -219,6 +220,7 @@ def register_case_crud_tools(mcp):
             "front_public": front_public,
             "front_auth_config": front_auth_config,
             "posterior_sql": posterior_sql,
+            "callback_checks": callback_checks,
         }.items():
             if value is not None:
                 payload[key] = value

@@ -145,7 +145,10 @@ class ApiCaseStepService:
             case_detailed_id=step_id
         ).count()
 
-        def operation(_):
+        def operation(locked_case):
+            if any(rule.get('trigger_step_key') == f'step-{step_id}' for rule in locked_case.callback_checks):
+                from src.apps.auto_api.exceptions import API_CALLBACK_CONFIG_INVALID
+                raise AutoApiError(API_CALLBACK_CONFIG_INVALID, value=('请先移除绑定该步骤的回调验证',))
             ApiCaseDetailed.objects.get(id=step_id).delete()
 
         ApiCaseAggregateMutationService.mutate(

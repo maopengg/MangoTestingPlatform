@@ -3,6 +3,8 @@ from urllib.parse import parse_qsl
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.core import signing
+from src.apps.auto_ui.services.realtime_permission import RealtimePermissionService
+from src.common.responses.response_msg import RESPONSE_MSG_0210
 
 from src.apps.auto_ui.enums.live_stream import LiveStreamEvent, LiveStreamRole
 from src.apps.auto_ui.services.live_stream.session_store import LiveStreamSessionStore
@@ -18,6 +20,7 @@ class BaseLiveStreamConsumer(AsyncJsonWebsocketConsumer):
         self.registry = registry
         self.stream_id = ""
         self.connection_id = ""
+        self.user_id = 0
         self._accepted = False
 
     def token(self) -> str:
@@ -35,6 +38,7 @@ class LiveStreamSubscriberConsumer(BaseLiveStreamConsumer):
         self.stream_id = self.scope["url_route"]["kwargs"]["stream_id"]
         try:
             user = await RealtimeJwtAuthentication.authenticate(self.token())
+            self.user_id = int(user['id'])
             claims = await database_sync_to_async(LiveStreamSessionStore.get_claims)(self.stream_id)
             if claims.get("stream_id") != self.stream_id:
                 raise signing.BadSignature("stream_id不匹配")
@@ -62,6 +66,14 @@ class LiveStreamSubscriberConsumer(BaseLiveStreamConsumer):
     async def receive_json(self, content, **kwargs):
         event_type = content.get("type")
         try:
+            if event_type in {LiveStreamEvent.CONTROL_REQUEST.value, LiveStreamEvent.CONTROL_RENEW.value}:
+                allowed = await database_sync_to_async(RealtimePermissionService.may_control_stream)(
+                    self.user_id, self.stream_id,
+                )
+                if not allowed:
+                    await self.registry.release_control(self.stream_id, self.connection_id)
+                    await self.send_json({'type': LiveStreamEvent.CONTROL_DENIED.value, 'message': RESPONSE_MSG_0210[1]})
+                    return
             if event_type == LiveStreamEvent.CONTROL_REQUEST.value:
                 result = await self.registry.acquire_control(
                     self.stream_id,

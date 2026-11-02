@@ -35,7 +35,7 @@ class EvaluationCaseContractTests(SimpleTestCase):
             reset.assert_called_once_with(version)
 
     def test_api_import_cannot_bypass_source_case_permission(self):
-        for keys, allowed in [({"evaluation.dataset:import"}, False), ({"api.case:detail"}, True)]:
+        for keys, allowed in [({"evaluation.dataset:add"}, False), ({"api.case:read"}, True)]:
             with self.subTest(keys=keys), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=keys):
                 if allowed:
                     EvaluationApiCaseImportService.ensure_source_access(SimpleNamespace(id=1))
@@ -114,7 +114,7 @@ class EvaluationCaseContractTests(SimpleTestCase):
 
     def test_result_routes_require_detail_not_execute_or_guest(self):
         route = resolve("/api/evaluation/case/1/executions/2/items/3")
-        for keys, allowed in [({"evaluation.case:execute"}, False), ({"evaluation.case"}, False), ({"evaluation.case:detail"}, True), (set(), False)]:
+        for keys, allowed in [({"evaluation.case:change"}, False), ({"evaluation.case"}, False), ({"evaluation.case:read"}, True), (set(), False)]:
             view = route.func.cls(); view.action = route.func.actions["get"]
             request = SimpleNamespace(method="GET", path="/api/evaluation/case/1/executions/2/items/3", data={}, query_params={}, user=SimpleNamespace(user_obj=SimpleNamespace(id=1)))
             with self.subTest(keys=keys), patch.object(PermissionMenuService, "is_effective_super_admin", return_value=False), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=keys):

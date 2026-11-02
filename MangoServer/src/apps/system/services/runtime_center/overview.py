@@ -30,7 +30,7 @@ class RuntimeOverviewService:
         # 汇总不能成为独立异常页面及运行详情权限的旁路。
         data.pop('recent_errors', None)
         permissions = PermissionMenuService.permission_keys_for_user(user) if user else set()
-        if 'system.runtime_center:detail' not in permissions:
+        if 'system.runtime_center:read' not in permissions:
             data['queues'] = {}
             data['diagnostics'] = []
             data['services'] = [

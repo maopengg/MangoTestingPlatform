@@ -19,8 +19,7 @@ export function postUserDepartmentList(data: object) {
 }
 
 export function putUserDepartmentList(data: object) {
-  return put({ permissionKey: 'config.project',
-    url: '/system/project',
+  return put({ url: '/system/project',
     data: () => {
       return data
     },

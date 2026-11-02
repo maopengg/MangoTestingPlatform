@@ -35,9 +35,6 @@ class ProductModuleCRUD(ModelCRUD):
 class ProductModuleViews(ViewSet):
     model = ProductModule
     serializer_class = ProductModuleSerializers
-    action_permission_map = {
-        'create_path': 'config.product:create',
-    }
 
     @staticmethod
     def _filter_by_user_scope(request: Request, queryset):

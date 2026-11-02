@@ -1,7 +1,5 @@
 from jsonschema import validate as validate_json
 from src.apps.evaluation.services.target_input import compile_target_input
-from src.apps.ai.models import AiMcpTool, AiMcpToolSnapshot
-from src.apps.ai.services.core import McpService
 from src.apps.auto_api.models import (
     ApiCase,
     ApiCaseRelease,
@@ -129,8 +127,10 @@ class ApiInfoTargetAdapter(BaseTargetAdapter):
         ).exists():
             raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("API Info发布版本不存在或不属于当前接口",))
         contract = fixed_interface_contract(target.target_ref_id, config.get("revision_id"), config.get("release_id"))
-        if contract is None or contract["config"].get("protocol_type") not in (ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value):
-            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("仅支持 HTTP 或 SSE 接口",))
+        allowed = (ApiProtocolTypeEnum.MCP.value,) if target.target_type == "mcp_tool" else (
+            ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value, ApiProtocolTypeEnum.MCP.value)
+        if contract is None or contract["config"].get("protocol_type") not in allowed:
+            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("所选接口修订协议与测评目标类型不一致",))
 
     @classmethod
     def execute(cls, *, target, dataset_item, mapping, execution, user_id):
@@ -160,40 +160,23 @@ class McpToolTargetAdapter(BaseTargetAdapter):
     key = "mcp_tool"
 
     @classmethod
-    def validate_target(cls, target):
-        tool = AiMcpTool.objects.select_related("server").filter(
-            id=target.target_ref_id, enabled=True, project_product_id=target.project_product_id,
-        ).first()
-        if not tool:
-            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("MCP Tool不存在或未启用",))
-        snapshot_id = (target.executor_config or {}).get("mcp_tool_snapshot_id")
-        if not snapshot_id or not AiMcpToolSnapshot.objects.filter(
-            id=snapshot_id, tool=tool, is_available=True,
-        ).exists():
-            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("MCP Tool评测必须固定可用的工具快照",))
+    def api_target(cls, target):
+        from copy import copy
+        api_info_id = (target.executor_config or {}).get("api_info_id")
+        if not api_info_id:
+            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID,
+                value=("MCP测评请重新绑定 API 自动化中的 MCP 接口及已发布修订",))
+        result = copy(target)
+        result.target_ref_id = api_info_id
+        return result
 
     @classmethod
-    def execute(cls, *, target, dataset_item, mapping, execution, user_id):
-        cls.validate_target(target)
-        tool = AiMcpTool.objects.select_related("server").get(id=target.target_ref_id)
-        snapshot = AiMcpToolSnapshot.objects.get(
-            id=target.executor_config["mcp_tool_snapshot_id"], tool=tool, is_available=True,
-        )
-        if snapshot.test_env is not None and snapshot.test_env != execution.test_env:
-            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("MCP工具快照不属于当前测试环境",))
-        if McpService.schema_hash(tool.input_schema, tool.output_schema) != snapshot.schema_hash:
-            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=("MCP工具结构已变化，请创建绑定新工具快照的 Case",))
-        arguments = compile_target_input(dataset_item, mapping.input_variable, getattr(mapping, "input_variables", None))
-        validate_json(arguments, snapshot.input_schema or {"type": "object"})
-        raw = McpService.call_tool(tool.server, tool.name, arguments, user_id)
-        if not McpService.is_tool_call_success(raw):
-            raise EvaluationError(EVALUATION_TARGET_CONFIG_INVALID, value=(McpService.extract_tool_call_error(raw),))
-        output = apply_mapping(raw, mapping.output_mapping)
-        return cls.result(
-            output=output,
-            raw_output_ref={"tool_snapshot_id": target.executor_config["mcp_tool_snapshot_id"]},
-            execution_ref={"type": "mcp_tool", "id": tool.id, "server_id": tool.server_id},
-        )
+    def validate_target(cls, target):
+        return ApiInfoTargetAdapter.validate_target(cls.api_target(target))
+
+    @classmethod
+    def execute(cls, *, target, **kwargs):
+        return ApiInfoTargetAdapter.execute(target=cls.api_target(target), **kwargs)
 
 
 class PythonTargetAdapter(BaseTargetAdapter):

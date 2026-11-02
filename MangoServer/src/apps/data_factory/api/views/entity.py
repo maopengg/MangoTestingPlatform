@@ -63,11 +63,6 @@ class DataFactoryEntityCRUD(ModelCRUD):
 
 
 class DataFactoryEntityViews(ViewSet):
-    action_permission_map = {
-        'batch_generate': 'data_factory.entity:create',
-        'copy': 'data_factory.entity:create',
-        'status': 'data_factory.entity:status',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('system')

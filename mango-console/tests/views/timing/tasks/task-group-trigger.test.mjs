@@ -11,7 +11,9 @@ const compiled = ts.transpileModule(functionSource, {
   compilerOptions: { module: ts.ModuleKind.ESNext },
 }).outputText
 
-test('任务组触发按钮无权限限制，使用独立行 loading，组件编译正常', () => {
+test('任务组触发按钮使用执行权限和独立行 loading，组件编译正常', () => {
+  assert.match(source, /permission: 'timing.tasks:change',\s*label: '触发'/)
+  assert.match(source, /permission: 'timing.tasks:change',\s*label: '重发报告'/)
   assert.match(source, /label: '触发',\s*loading: triggeringIds.has\(record.id\),\s*onClick: \(\) => triggerGroup\(record\)/)
   const { descriptor, errors } = parse(source, { filename })
   assert.deepEqual(errors, [])

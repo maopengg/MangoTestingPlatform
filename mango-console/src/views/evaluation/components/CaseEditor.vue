@@ -14,11 +14,11 @@
           v-if="ready"
           :is="embedded ? 'div' : 'a-form'"
           class="mango-case-editor-form"
-          v-bind="embedded ? {} : { model: form, disabled: !canEdit, layout: 'horizontal', autoLabelWidth: true }"
+          v-bind="embedded ? {} : { model: form, disabled: false, layout: 'horizontal', autoLabelWidth: true }"
         >
           <MangoStepCards ref="stepCards" v-if="embedded" :steps="visibleConfigSteps" label="用例配置步骤" layout="workspace" :initial-step="initialStep">
             <template #data>
-              <a-form class="mango-case-config-form" :model="form" :disabled="!canEdit" layout="horizontal">
+              <a-form class="mango-case-config-form" :model="form" :disabled="false" layout="horizontal">
               <div class="mango-case-field-grid">
                 <div
                   ><a-form-item label="数据集" required
@@ -42,7 +42,7 @@
                   ><a-form-item label="条目选择"
                     ><a-space wrap>
                       <span>{{ selectionSummary }}</span>
-                      <a-button v-permission="canEdit ? 'evaluation.case:edit' : 'evaluation.case:detail'" size="small" :disabled="!form.dataset_version" @click="itemSelection?.open()">{{ canEdit ? '配置条目' : '查看条目' }}</a-button>
+                      <a-button  size="small" :disabled="!form.dataset_version" @click="itemSelection?.open()">{{ true ? '配置条目' : '查看条目' }}</a-button>
                     </a-space></a-form-item
                 ></div>
               </div>
@@ -54,7 +54,7 @@
               </a-form>
             </template>
             <template #target>
-              <a-form class="mango-case-config-form" :model="form" :disabled="!canEdit" layout="horizontal">
+              <a-form class="mango-case-config-form" :model="form" :disabled="false" layout="horizontal">
               <div class="mango-case-field-grid">
                 <div
                   ><a-form-item label="目标类型" required
@@ -83,7 +83,7 @@
               </div>
               <a-form-item v-if="config.target.type === 'script'" class="mango-case-code-field" label="Python 脚本" required>
                 <div class="mango-case-python-editor">
-                  <CodeEditor v-model="config.target.parameters.code" language="python" :readonly="!canEdit"
+                  <CodeEditor v-model="config.target.parameters.code" language="python" :readonly="false"
                     placeholder="定义 main(input, context)，返回 JSON 对象" />
                 </div>
               </a-form-item>
@@ -91,16 +91,16 @@
                 使用 {{ inputVariableReference }} 获取条目完整输入，返回 JSON 对象；不提供标准答案。
               </p>
 
-              <ExtractionEditor v-model="config.mapping.output" :disabled="!canEdit" @validity-change="extractionErrors.output = $event" />
+              <ExtractionEditor v-model="config.mapping.output" :disabled="false" @validity-change="extractionErrors.output = $event" />
               </a-form>
             </template>
             <template #answering-actions>
               <a-button size="small" :disabled="!config.answering" @click="advancedSection = 'answering'">字段设置</a-button>
             </template>
             <template #answering>
-              <a-form class="mango-case-config-form" :model="form" :disabled="!canEdit" layout="horizontal">
+              <a-form class="mango-case-config-form" :model="form" :disabled="false" layout="horizontal">
               <a-form-item label="回答 AI">
-                <a-select v-model="answerProfile" :options="answerAiOptions" :loading="aiLoading" :disabled="!canEdit" allow-clear placeholder="留空则不生成回答" />
+                <a-select v-model="answerProfile" :options="answerAiOptions" :loading="aiLoading" :disabled="false" allow-clear placeholder="留空则不生成回答" />
               </a-form-item>
               <p class="mango-answering-hint">留空则跳过本步骤；选择回答 AI 后，根据问题和召回内容生成回答，不向回答模型提供标准答案。</p>
               </a-form>
@@ -111,26 +111,26 @@
               >
             </template>
             <template #grading>
-              <a-form class="mango-case-config-form" :model="form" :disabled="!canEdit" layout="horizontal">
+              <a-form class="mango-case-config-form" :model="form" :disabled="false" layout="horizontal">
               <div class="mango-case-ai-fields">
                 <a-form-item label="评分 AI">
-                  <a-select v-model="config.ai.judge_profile_id" :options="aiOptions" :loading="aiLoading" :disabled="!canEdit" allow-clear placeholder="AI 评分时选择" />
+                  <a-select v-model="config.ai.judge_profile_id" :options="aiOptions" :loading="aiLoading" :disabled="false" allow-clear placeholder="AI 评分时选择" />
                 </a-form-item>
                 <a-form-item label="总结 AI">
-                  <a-select v-model="config.ai.summary_profile_id" :options="aiOptions" :loading="aiLoading" :disabled="!canEdit" allow-clear placeholder="总结本次结果（可选）" />
+                  <a-select v-model="config.ai.summary_profile_id" :options="aiOptions" :loading="aiLoading" :disabled="false" allow-clear placeholder="总结本次结果（可选）" />
                 </a-form-item>
               </div>
               <a-alert v-if="aiError" type="warning">{{ aiError }}</a-alert>
               <GraderEditor
                 v-model="config.grading.default_graders"
                 :catalog="catalog"
-                :disabled="!canEdit"
+                :disabled="false"
                 title="默认评分项"
               />
               </a-form>
             </template>
             <template #policy>
-              <a-form class="mango-case-config-form" :model="form" :disabled="!canEdit" layout="horizontal">
+              <a-form class="mango-case-config-form" :model="form" :disabled="false" layout="horizontal">
               <div class="mango-case-field-grid">
                 <div
                   ><a-form-item label="最低有效率"
@@ -193,7 +193,7 @@
       </MangoPanelSpin>
     </template>
   </component>
-  <ItemSelectionDrawer ref="itemSelection" :version-id="form.dataset_version" :model-value="config.data_selection" :disabled="!canEdit" :save-selection="saveItemSelection" />
+  <ItemSelectionDrawer ref="itemSelection" :version-id="form.dataset_version" :model-value="config.data_selection" :disabled="false" :save-selection="saveItemSelection" />
   <EvaluationDrawer
     v-model:visible="advancedVisible"
     :title="advancedTitle"
@@ -201,11 +201,11 @@
     :footer="false"
     unmount-on-close
   >
-    <a-form v-if="advancedSection === 'answering' && config.answering" :model="config.answering" :disabled="!canEdit" layout="horizontal" auto-label-width>
+    <a-form v-if="advancedSection === 'answering' && config.answering" :model="config.answering" :disabled="false" layout="horizontal" auto-label-width>
       <a-form-item label="问题字段"><a-input v-model="config.answering.question_path" /></a-form-item>
       <a-form-item label="回答 Token 上限"><a-input-number v-model="config.answering.max_tokens" :min="100" :max="8000" /></a-form-item>
     </a-form>
-    <a-form v-else-if="advancedSection === 'execution'" :model="config.execution" :disabled="!canEdit" layout="horizontal" auto-label-width>
+    <a-form v-else-if="advancedSection === 'execution'" :model="config.execution" :disabled="false" layout="horizontal" auto-label-width>
       <a-form-item label="重复执行次数"><a-input-number v-model="config.execution.repeat_count" :min="1" :max="10" :precision="0" /></a-form-item>
       <a-form-item label="硬门禁失败停止"><a-switch v-model="config.execution.stop_on_critical_failure" size="small" /></a-form-item>
       <a-form-item label="完整配置"><a-button size="small" @click="jsonSection = 'all'">编辑完整 JSON</a-button></a-form-item>
@@ -215,11 +215,11 @@
       <GraderEditor
         v-model="config.grading.required_graders"
         :catalog="catalog"
-        :disabled="!canEdit"
+        :disabled="false"
         title="强制评分项"
         empty-text="未配置强制评分项，条目可继承或替换默认评分"
       />
-      <QualityGateEditor v-model="config.grading.quality_gates" :graders="[...config.grading.default_graders, ...config.grading.required_graders]" :catalog="catalog" :disabled="!canEdit" />
+      <QualityGateEditor v-model="config.grading.quality_gates" :graders="[...config.grading.default_graders, ...config.grading.required_graders]" :catalog="catalog" :disabled="false" />
     </div>
   </EvaluationDrawer>
   <MangoJsonEditDrawer
@@ -305,7 +305,7 @@
     return item_ids.length ? `${exclude ? '排除' : '选择'} ${item_ids.length} 条` : '全部启用条目'
   })
   async function saveItemSelection(value: { exclude: boolean; item_ids: number[] }) {
-    if (!canEdit.value || !ready.value || loading.value) return false
+    if (!ready.value || loading.value) return false
     const previous = config.value.data_selection, version = form.dataset_version, current = generation
     config.value.data_selection = { ...previous, ...value }
     if (await flush()) return true
@@ -343,15 +343,13 @@
   const jsonSection = ref(''),
     baseline = ref(''),
     saveError = ref('')
-  const canEdit = computed(() =>
-    permissions.hasPermission(form.id ? 'evaluation.case:edit' : 'evaluation.case:create')
-  )
+
   const defaultAnswerProfile = '__platform_default__'
   const answerAiOptions = computed(() => [{ value: defaultAnswerProfile, label: '平台默认回答 AI' }, ...aiOptions.value])
   const answerProfile = computed({
     get: () => config.value.answering ? config.value.ai.answer_profile_id || defaultAnswerProfile : undefined,
     set: (value: string | undefined) => {
-      if (!canEdit.value) return
+
       config.value.answering = value ? config.value.answering || { question_path: 'query', max_tokens: 800 } : null
       config.value.ai.answer_profile_id = value && value !== defaultAnswerProfile ? value : null
     },
@@ -444,7 +442,7 @@
       config.value.ai ||= { judge_profile_id: null, summary_profile_id: null, answer_profile_id: null }
       interfaces.value = []
       if (props.embedded && config.value.target.type === 'api_info' && config.value.target.ref_id) {
-        if (canEdit.value) {
+        if (true) {
           try {
             const selected: any = await getEvaluationInterfaces(id!, { selected_id: config.value.target.ref_id })
             if (current !== generation) return
@@ -470,7 +468,7 @@
           if (current === generation) aiError.value = 'AI 列表加载失败，请检查效果测评 AI 配置后重新打开用例'
         } finally { if (current === generation) aiLoading.value = false }
       }
-      if (props.embedded && canEdit.value) await Promise.all([loadDatasets(), loadVersions()])
+      if (props.embedded) await Promise.all([loadDatasets(), loadVersions()])
       else {
         datasets.value = record ? [{ id: record.dataset_id, name: record.dataset_name }] : []
         versions.value = record
@@ -594,7 +592,7 @@
     }
   }
   function saveJson(text: string) {
-    if (!canEdit.value) return
+
     try {
       const value = JSON.parse(text)
       if (
@@ -630,7 +628,7 @@
   const saveStatus = computed(() =>
     loading.value
       ? '加载中…'
-      : !canEdit.value
+      : false
       ? '只读'
       : saving.value
       ? '保存中…'
@@ -659,7 +657,7 @@
     }
     if (!ready.value || loading.value) return false
     if (!dirty.value) return true
-    if (!canEdit.value) return false
+
     const value = buildPayload(),
       current = generation,
       error = validationError(value)
@@ -702,7 +700,7 @@
       return
     }
     try {
-      if (!ready.value || loading.value || saving.value || !canEdit.value) return
+      if (!ready.value || loading.value || saving.value) return
       const value = buildPayload(),
         error = validationError(value)
       if (error) {
@@ -721,7 +719,7 @@
   watch(
     [form, config, extractionErrors],
     () => {
-      if (!props.embedded || !ready.value || loading.value || !canEdit.value) return
+      if (!props.embedded || !ready.value || loading.value) return
       clearTimer()
       saveError.value = ''
       if (dirty.value)
@@ -732,7 +730,7 @@
     { deep: true }
   )
   function beforeUnload(event: BeforeUnloadEvent) {
-    if (props.embedded && canEdit.value && dirty.value) {
+    if (props.embedded && dirty.value) {
       event.preventDefault()
       event.returnValue = ''
     }
@@ -745,8 +743,8 @@
       },
       { immediate: true }
     )
-    onBeforeRouteLeave(async () => !canEdit.value || !dirty.value || (await flush()))
-    onBeforeRouteUpdate(async () => !canEdit.value || !dirty.value || (await flush()))
+    onBeforeRouteLeave(async () => !dirty.value || (await flush()))
+    onBeforeRouteUpdate(async () => !dirty.value || (await flush()))
     if (typeof window !== 'undefined') window.addEventListener('beforeunload', beforeUnload)
   }
   onBeforeUnmount(() => {

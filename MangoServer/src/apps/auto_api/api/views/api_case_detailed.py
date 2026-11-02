@@ -62,6 +62,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
                 .filter(case=case_id) \
                 .order_by('case_sort')
 
+        api_case_detailed = self.filter_queryset_by_data_scope(request, api_case_detailed)
         try:
             api_case_detailed = self.serializer_class.setup_eager_loading(api_case_detailed)
         except FieldError:
@@ -140,10 +141,6 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiCaseDetailedViews(ViewSet):
     model = ApiCaseDetailed
     serializer_class = ApiCaseDetailedSerializers
-    action_permission_map = {
-        'put_case_sort': 'api.case:edit',
-        'put_refresh_api_info': 'api.case:edit',
-    }
 
     @action(methods=['put'], detail=False)
     @error_response('api')

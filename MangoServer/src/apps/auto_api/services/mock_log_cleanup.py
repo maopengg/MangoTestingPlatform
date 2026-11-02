@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.core.cache import cache
-from django.db import connection, transaction
+from django.db import transaction
 from django.db.models import QuerySet
 from django.utils import timezone
 
@@ -20,7 +20,7 @@ class MockRequestLogCleanupService:
 
     @classmethod
     def clear_all_logs(cls) -> int:
-        """暂停异步日志写入并清空整张日志表，立即释放 MySQL 物理空间。"""
+        """暂停异步日志写入并清空普通日志，保留 Case 回调判定证据。"""
         cleared_at = timezone.now()
         cache.set_many(
             {
@@ -31,15 +31,10 @@ class MockRequestLogCleanupService:
         )
         cleared = False
         try:
-            # 暂停后统计，保证返回值与本次 TRUNCATE 清理的数据量一致。
-            deleted_count = ApiMockRequestLog.objects.count()
-            table_name = connection.ops.quote_name(ApiMockRequestLog._meta.db_table)
-            with connection.cursor() as cursor:
-                if connection.vendor == "mysql":
-                    cursor.execute(f"TRUNCATE TABLE {table_name}")
-                else:
-                    # 本地和单元测试数据库可能不是 MySQL；生产 MySQL 始终走 TRUNCATE。
-                    cursor.execute(f"DELETE FROM {table_name}")
+            # 即使功能关闭，也可能仍有执行中的回调或历史证据，不能整表 TRUNCATE。
+            deleted_count = cls._delete_in_batches(ApiMockRequestLog.objects.filter(
+                callback_run__isnull=True, create_time__lte=cleared_at,
+            ), cls.DEFAULT_BATCH_SIZE)
             cleared = True
             return deleted_count
         finally:
@@ -71,6 +66,7 @@ class MockRequestLogCleanupService:
         queryset = ApiMockRequestLog.objects.filter(
             mock_config_id=config_id,
             create_time__lte=cleared_at,
+            callback_run__isnull=True,
         )
         return cls._delete_in_batches(queryset, batch_size=batch_size)
 
@@ -80,7 +76,10 @@ class MockRequestLogCleanupService:
             cutoff_time: datetime,
             batch_size: int = DEFAULT_BATCH_SIZE,
     ) -> int:
-        queryset = ApiMockRequestLog.objects.filter(create_time__lt=cutoff_time)
+        from src.apps.auto_api.services.callback import ApiCallbackService
+        # 普通清空日志不触碰 Case 证据；只有保留期任务回收已结束运行的正文。
+        ApiCallbackService.cleanup_evidence(cutoff_time, batch_size)
+        queryset = ApiMockRequestLog.objects.filter(create_time__lt=cutoff_time, callback_run__isnull=True)
         return cls._delete_in_batches(queryset, batch_size=batch_size)
 
     @classmethod

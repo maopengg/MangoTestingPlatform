@@ -64,7 +64,7 @@
           </a-form>
         </template>
         <template #toolbar>
-          <a-button v-permission="'ui.public:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-public-button-新增">新增</a-button>
+          <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-public-button-新增">新增</a-button>
         </template>
       <a-table
         class="mango-native-scroll-table"
@@ -118,7 +118,7 @@
               <span v-else>-</span>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'ui.public:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
                 size="small"
@@ -133,9 +133,9 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'ui.public:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'ui.public:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

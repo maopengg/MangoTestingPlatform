@@ -91,12 +91,11 @@
             <template v-else-if="item.key === 'operations'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'system.sql_execution',
-                    key: 'detail',
-                    label: '详情',
-                    onClick: () => openDetail(record),
-                  },
-                ]"
+    {
+        key: 'detail',
+        label: '详情',
+        onClick: () => openDetail(record), },
+]"
               />
             </template>
           </a-table-column>

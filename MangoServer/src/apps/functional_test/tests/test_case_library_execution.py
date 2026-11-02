@@ -1,6 +1,8 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 # -*- coding: utf-8 -*-
 from datetime import date
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.test import SimpleTestCase
 from django.urls import resolve
@@ -176,8 +178,8 @@ class FunctionalTestCaseLibrarySnapshotTests(SimpleTestCase):
             {"post": "batch_create"},
         )
         self.assertEqual(
-            ManualTestCaseViews.action_permission_map["batch_create"],
-            "functional.case:create",
+            permission_for_view(ManualTestCaseViews, "batch_create"),
+            "functional.case:add",
         )
 
     def test_bulk_update_groups_multiple_cell_changes_by_case(self):
@@ -273,7 +275,8 @@ class FunctionalTestPlanValidationTests(SimpleTestCase):
 
 
 class FunctionalTestSchedulingAndDefectTests(SimpleTestCase):
-    def test_enum_api_exposes_research_quality_status_options(self):
+    @patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+    def test_enum_api_exposes_research_quality_status_options(self, environment_names):
         response = SystemViews().enum_api(
             Request(APIRequestFactory().get("/api/system/enum")),
         )

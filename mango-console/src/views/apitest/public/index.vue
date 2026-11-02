@@ -27,10 +27,10 @@
           <template #toolbar>
           <a-space>
             <div>
-              <a-button v-permission="'api.public:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-apitest-public-button-新增">新增</a-button>
+              <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-apitest-public-button-新增">新增</a-button>
             </div>
             <div>
-              <a-button v-permission="'api.public:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-public-button-批量删除">批量删除</a-button>
+              <a-button  size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-public-button-批量删除">批量删除</a-button>
             </div>
           </a-space>
           </template>
@@ -87,7 +87,7 @@
             </template>
 
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'api.public:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
@@ -101,9 +101,9 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'api.public:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'api.public:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

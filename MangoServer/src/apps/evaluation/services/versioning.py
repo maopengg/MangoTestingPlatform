@@ -241,17 +241,9 @@ class EvaluationVersionService:
                 revision_id = ApiInfoRelease.objects.filter(id=config["release_id"]).values_list("revision_id", flat=True).first()
             return ApiInfoRevision.objects.filter(id=revision_id, api_info_id=target.target_ref_id).values_list("checksum", flat=True).first() or ""
         if target.target_type == "mcp_tool":
-            from src.apps.ai.models import AiMcpToolSnapshot
-            snapshot = AiMcpToolSnapshot.objects.select_related("tool__server").filter(
-                id=config.get("mcp_tool_snapshot_id"), tool_id=target.target_ref_id,
-            ).first()
-            if not snapshot:
-                return ""
-            server = snapshot.tool.server
-            return content_hash({"snapshot": snapshot.id, "schema_hash": snapshot.schema_hash,
-                                 "protocol_version": snapshot.protocol_version, "tool": snapshot.tool.name,
-                                 "server_id": server.id, "endpoint_hash": content_hash(server.server_url),
-                                 "transport": server.transport_type, "auth_type": server.auth_type})
+            from src.apps.auto_api.models import ApiInfoRevision
+            return ApiInfoRevision.objects.filter(id=config.get("revision_id"),
+                api_info_id=config.get("api_info_id")).values_list("checksum", flat=True).first() or ""
         return content_hash(config)
 
     @staticmethod

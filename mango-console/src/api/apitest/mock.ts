@@ -39,6 +39,7 @@ export interface MockRequestDecryptionConfig {
   type: 'none' | 'lark_event'
   encrypt_key: string
   verification_token: string
+  configuration_error?: string
 }
 
 export interface MockConfigPayload {

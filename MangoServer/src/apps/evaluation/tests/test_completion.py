@@ -15,12 +15,12 @@ class EvaluationCompletionTests(SimpleTestCase):
     def test_file_import_routes_and_tools_are_removed(self):
         from src.apps.evaluation.api.urls import urlpatterns
         from src.apps.evaluation.api.views.dataset_version import DatasetVersionViews
-        from src.apps.evaluation.constants import MCP_EVALUATION_PERMISSIONS
+        from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
         self.assertFalse(any("import-preview" in str(route.pattern) or "import-confirm" in str(route.pattern) for route in urlpatterns))
         self.assertFalse(hasattr(DatasetVersionViews, "import_preview"))
         self.assertFalse(hasattr(DatasetVersionViews, "import_confirm"))
-        self.assertNotIn("preview_import_evaluation_dataset_items", MCP_EVALUATION_PERMISSIONS)
-        self.assertNotIn("import_evaluation_dataset_items", MCP_EVALUATION_PERMISSIONS)
+        self.assertNotIn("preview_import_evaluation_dataset_items", MCP_PERMISSION_RULES)
+        self.assertNotIn("import_evaluation_dataset_items", MCP_PERMISSION_RULES)
 
     def test_missing_gold_path_cannot_match_another_missing_path(self):
         with self.assertRaises(EvaluationError):
@@ -64,12 +64,12 @@ class EvaluationCompletionTests(SimpleTestCase):
         self.assertTrue(result.metrics[0].passed)
 
 
-    def test_dataset_status_and_edit_remain_separate_permissions(self):
+    def test_dataset_status_and_content_share_change_permission(self):
         for data, grants, allowed in (
-            ({"id": 1, "status": "archived"}, {"evaluation.dataset:status"}, True),
-            ({"id": 1, "status": "archived"}, {"evaluation.dataset:edit"}, False),
-            ({"id": 1, "status": "archived", "name": "new"}, {"evaluation.dataset:status"}, False),
-            ({"id": 1, "status": "archived", "name": "new"}, {"evaluation.dataset:status", "evaluation.dataset:edit"}, True),
+            ({"id": 1, "status": "archived"}, {"evaluation.dataset:change"}, True),
+            ({"id": 1, "status": "archived"}, {"evaluation.dataset:read"}, False),
+            ({"id": 1, "status": "archived", "name": "new"}, {"evaluation.dataset:read"}, False),
+            ({"id": 1, "status": "archived", "name": "new"}, {"evaluation.dataset:change"}, True),
         ):
             request = SimpleNamespace(method="PUT", path="/api/evaluation/dataset", data=data, query_params={}, user=SimpleNamespace(user_obj=SimpleNamespace(id=1)))
             with self.subTest(data=data, grants=grants), patch.object(PermissionMenuService, "is_effective_super_admin", return_value=False), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=grants):

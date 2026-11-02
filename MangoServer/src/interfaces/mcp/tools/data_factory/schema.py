@@ -36,6 +36,7 @@ def register_schema_tools(mcp):
                 "case_source_type": {1: "API用例", 2: "UI用例", 3: "API接口场景"},
                 "execution_source": {1: "模板调试", 2: "手动执行", 3: "系统调用", 4: "API用例", 5: "API接口场景"},
                 "cache_variable_pattern": "${{配置名.字段名}}",
+                "sql_query_policy": "MCP 不提供任意 SQL 查询工具；表结构发现、用例执行和数据工厂执行能力保持不变。",
                 "entity_field_rule_workflow": {
                     "important": "数据实体必须同时有字段规则才能生成完整测试数据。create_data_factory_entity 默认只建实体壳；字段规则需要同步表结构或单独保存。",
                     "recommended_paths": [
@@ -48,7 +49,6 @@ def register_schema_tools(mcp):
                     "tools": {
                         "discover_tables": "list_data_factory_database_tables",
                         "discover_schema": "get_data_factory_table_schema",
-                        "query_sql": "query_data_factory_datasource_sql",
                         "create_entity_with_schema_fields": "create_data_factory_entity(sync_fields=True, test_env=...)",
                         "update_entity": "update_data_factory_entity",
                         "batch_create_entities_with_schema_fields": "batch_generate_data_factory_entities(sync_fields=True)",

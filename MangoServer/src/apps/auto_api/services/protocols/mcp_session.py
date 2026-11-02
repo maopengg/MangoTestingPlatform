@@ -10,7 +10,7 @@ from typing import Any
 
 from mcp.client.session import ClientSession
 
-from src.apps.ai.services.mcp_client import ExternalMcpClient
+from src.apps.auto_api.services.protocols.mcp_client import ExternalMcpClient
 from src.apps.auto_api.enums.execution_trace import ApiCaseTraceStepType
 from src.apps.auto_api.exceptions import API_MCP_SESSION_CLOSED, AutoApiError
 from src.common.logging import log

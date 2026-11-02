@@ -27,10 +27,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 
 
 class DataFactoryDiscoverViews(ViewSet):
-    action_permission_map = {
-        'tables': 'data_factory.entity:debug',
-        'table': 'data_factory.entity:debug',
-    }
 
     TABLES_CACHE_TIMEOUT = 30 * 60
 

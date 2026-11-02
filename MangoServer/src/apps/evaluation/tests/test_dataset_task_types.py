@@ -30,7 +30,7 @@ class DatasetTaskTypesTests(SimpleTestCase):
     def test_global_dataset_access_requires_dataset_permission_even_with_project_access(self):
         user, queryset = Mock(), Mock()
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
-                patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'evaluation.case:detail'}):
+                patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'evaluation.case:read'}):
             self.assertIs(scope_dataset_queryset(queryset, user), queryset.none.return_value)
             with self.assertRaises(EvaluationError):
                 ensure_dataset_access(user)

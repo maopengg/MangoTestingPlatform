@@ -214,23 +214,11 @@ class ManualTestCaseCRUD(ModelCRUD):
 
 class ManualTestCaseExportViews(ManualTestCaseCRUD):
     http_method_names = ['get', 'head', 'options']
-    permission_key_map = {'get': 'functional.case:export'}
 
 
 class ManualTestCaseViews(ViewSet):
     model = ManualTestCase
     serializer_class = ManualTestCaseSerializerC
-    action_permission_map = {
-        'case_modules': 'functional.case',
-        'module_counts': 'functional.case',
-        'case_detail': 'functional.case:detail',
-        'rewrite_preview': 'functional.case:edit',
-        'rewrite_confirm': 'functional.case:edit',
-        'category_options': 'functional.case',
-        'versions': 'functional.case:detail',
-        'batch_create': 'functional.case:create',
-        'batch_update': 'functional.case:edit',
-    }
 
     @action(methods=["post"], detail=False)
     @error_response("system")

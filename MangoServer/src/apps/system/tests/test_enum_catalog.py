@@ -17,6 +17,21 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
 class EnumCatalogTests(SimpleTestCase):
+    def test_defect_automation_sources_are_available_to_forms_and_catalog(self):
+        from src.apps.functional_test.api.serializers.defect import FunctionalTestDefectSerializer
+        from src.apps.functional_test.enums.defect import FunctionalTestDefectSourceEnum
+
+        options = EnumCatalogService.catalog()['functional_test_defect_source']
+        self.assertEqual(options, FunctionalTestDefectSourceEnum.get_option())
+        field = FunctionalTestDefectSerializer().fields['source_type']
+        for value, title in (
+            (6, '自动化发现（本迭代需求）'),
+            (7, '自动化发现（回归测试）'),
+        ):
+            self.assertIn({'key': value, 'title': title}, options)
+            self.assertEqual(field.run_validation(value), value)
+        self.assertEqual(FunctionalTestDefectSourceEnum.OTHER.value, 5)
+
     def test_offline_report_enums_are_explicitly_registered(self):
         from src.apps.test_center.enums.report_delivery import ReportSourceEnum
         catalog = EnumCatalogService.catalog()
@@ -285,7 +300,9 @@ class EnumCatalogTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['enum_version']), 16)
-        self.assertIn('ai_agent_tool_call_status', data)
+        self.assertNotIn('case_generation_tool_status', data)
+        self.assertNotIn('ai_skill_type', data)
+        self.assertNotIn('ai_agent_tool_call_status', data)
         self.assertEqual(data['api_client'], ApiClientEnum.get_option())
         self.assertEqual(
             data['assertion_result_display_max_length'],

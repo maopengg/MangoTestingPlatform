@@ -1,5 +1,5 @@
 <template>
-  <div class="mango-table-actions">
+  <div class="mango-table-actions" @click.stop>
     <a-button
       v-for="action in visibleInlineActions"
       :key="actionKey(action)"
@@ -21,7 +21,7 @@
           v-for="action in overflowActions"
           :key="actionKey(action)"
           :disabled="action.disabled"
-          @click="handleClick(action)"
+          @click.stop="handleClick(action)"
         >
           <span
             class="mango-table-action-menu-item"
@@ -37,8 +37,6 @@
 
 <script setup lang="ts">
   import { computed } from 'vue'
-  import usePermissionStore from '@/store/modules/permission'
-  import type { PermissionRequirement } from '@/utils/permission'
 
   type MangoTableAction = {
     label: string
@@ -49,7 +47,6 @@
     hidden?: boolean
     overflow?: boolean
     priority?: number
-    permission?: PermissionRequirement
   }
 
   const props = withDefaults(
@@ -62,10 +59,9 @@
     }
   )
 
-  const permissionStore = usePermissionStore()
   const normalizedActions = computed(() =>
     props.actions
-      .filter((action) => !action.hidden && permissionStore.hasPermission(action.permission))
+      .filter((action) => !action.hidden)
       .map((action, index) => ({ ...action, priority: action.priority ?? index }))
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
   )
@@ -92,7 +88,7 @@
   }
 
   function handleClick(action: MangoTableAction) {
-    if (action.disabled || action.loading || !permissionStore.hasPermission(action.permission)) return
+    if (action.disabled || action.loading) return
     action.onClick?.()
   }
 </script>

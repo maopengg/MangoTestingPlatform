@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID
 
-from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
 from src.apps.system.enums import ClientNameEnum
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.enums import SocketConnectionStatusEnum
+from src.apps.system.enums.runtime_kv import RuntimeKVNamespaceEnum
+from src.apps.system.services.runtime_kv import RuntimeKV
 from src.apps.system.exceptions import (
     SYSTEM_TASK_SEND_FAILED,
     SystemError,
@@ -176,7 +177,7 @@ class SocketConnectionService:
             protocol_versions: dict[str, int],
             capability_capacities: dict[str, int] | None = None,
     ) -> None:
-        cache.set(
+        RuntimeKV.namespace(RuntimeKVNamespaceEnum.EXECUTOR_STATE).set(
             cls._capability_key(connection_id),
             {
                 "supported_task_types": sorted({str(item) for item in supported_task_types if item}),
@@ -186,17 +187,21 @@ class SocketConnectionService:
                     for key, value in (capability_capacities or {}).items()
                 },
             },
-            timeout=cls.CAPABILITY_TTL_SECONDS,
+            ttl=cls.CAPABILITY_TTL_SECONDS,
         )
 
     @classmethod
     def supports_task_type(cls, connection_id: str | UUID, task_type: str) -> bool:
-        capabilities = cache.get(cls._capability_key(connection_id)) or {}
+        capabilities = RuntimeKV.namespace(RuntimeKVNamespaceEnum.EXECUTOR_STATE).get(
+            cls._capability_key(connection_id),
+        ) or {}
         return str(task_type) in set(capabilities.get("supported_task_types") or [])
 
     @classmethod
     def capability_capacity(cls, connection_id: str | UUID, capability: str, default: int = 0) -> int:
-        capabilities = cache.get(cls._capability_key(connection_id)) or {}
+        capabilities = RuntimeKV.namespace(RuntimeKVNamespaceEnum.EXECUTOR_STATE).get(
+            cls._capability_key(connection_id),
+        ) or {}
         values = capabilities.get("capability_capacities") or {}
         return max(0, int(values.get(str(capability), default) or 0))
 
@@ -204,13 +209,13 @@ class SocketConnectionService:
     def set_draining(cls, connection_id: str | UUID, draining: bool) -> None:
         key = cls._draining_key(connection_id)
         if draining:
-            cache.set(key, True, timeout=cls.DRAINING_TTL_SECONDS)
+            RuntimeKV.namespace(RuntimeKVNamespaceEnum.EXECUTOR_STATE).set(key, True, ttl=cls.DRAINING_TTL_SECONDS)
         else:
-            cache.delete(key)
+            RuntimeKV.namespace(RuntimeKVNamespaceEnum.EXECUTOR_STATE).delete(key)
 
     @classmethod
     def is_draining(cls, connection_id: str | UUID) -> bool:
-        return bool(cache.get(cls._draining_key(connection_id)))
+        return bool(RuntimeKV.namespace(RuntimeKVNamespaceEnum.EXECUTOR_STATE).get(cls._draining_key(connection_id)))
 
     @staticmethod
     def _draining_key(connection_id: str | UUID) -> str:

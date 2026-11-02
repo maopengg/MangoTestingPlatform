@@ -48,10 +48,6 @@ class ApiCaseDataFactoryCRUD(ModelCRUD):
 
 
 class ApiCaseDataFactoryViews(ViewSet):
-    action_permission_map = {
-        'put_case_sort': 'api.case:edit',
-        'preview': 'api.case:detail',
-    }
 
     @action(methods=['put'], detail=False)
     @error_response('api')

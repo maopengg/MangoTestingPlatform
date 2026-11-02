@@ -70,7 +70,7 @@ class MockRuntimeServiceTests(SimpleTestCase):
         delete.assert_called_once_with(MockRuntimeCache.key("items"))
         MockRuntimeCache._local_entries.clear()
 
-    def test_runtime_cache_only_reveals_decryption_secret_in_local_payload(self):
+    def test_runtime_cache_loads_plaintext_config_without_mutating_source(self):
         stored = MockRequestDecryptionService.normalize_for_storage({
             "type": "lark_event",
             "encrypt_key": "encrypt-key",
@@ -81,7 +81,7 @@ class MockRuntimeServiceTests(SimpleTestCase):
         with patch("src.apps.auto_api.services.mock_runtime.cache.get", return_value=payload):
             runtime = MockRuntimeCache.load("lark-event")
 
-        self.assertNotIn("encrypt_key", payload["config"]["request_decryption"])
+        self.assertEqual(payload["config"]["request_decryption"], stored)
         self.assertEqual(runtime["config"]["request_decryption"]["encrypt_key"], "encrypt-key")
         self.assertEqual(runtime["config"]["request_decryption"]["verification_token"], "verification-token")
         MockRuntimeCache._local_entries.clear()
@@ -246,13 +246,9 @@ class MockRuntimeServiceTests(SimpleTestCase):
         self.assertEqual(match.func.actions["delete"], "clear_all_logs")
         self.assertTrue(callable(ApiMockConfigViews.clear_all_logs))
 
-    def test_clear_all_mock_logs_pauses_writes_and_truncates_mysql_table(self):
+    def test_clear_all_mock_logs_pauses_writes_and_preserves_callback_evidence(self):
         cleared_at = timezone.now()
-        cursor = MagicMock()
-        mocked_connection = MagicMock()
-        mocked_connection.vendor = "mysql"
-        mocked_connection.ops.quote_name.return_value = "`api_mock_request_log`"
-        mocked_connection.cursor.return_value.__enter__.return_value = cursor
+        queryset = MagicMock()
 
         with patch(
                 "src.apps.auto_api.services.mock_log_cleanup.timezone.now",
@@ -261,13 +257,11 @@ class MockRuntimeServiceTests(SimpleTestCase):
             with patch("src.apps.auto_api.services.mock_log_cleanup.cache.set_many") as set_many:
                 with patch("src.apps.auto_api.services.mock_log_cleanup.cache.delete") as cache_delete:
                     with patch(
-                            "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.count",
-                            return_value=123,
-                    ):
-                        with patch(
-                                "src.apps.auto_api.services.mock_log_cleanup.connection",
-                                mocked_connection,
-                        ):
+                            "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.filter",
+                            return_value=queryset,
+                    ) as filter_logs:
+                        with patch.object(MockRequestLogCleanupService, '_delete_in_batches',
+                                          return_value=123) as delete_in_batches:
                             deleted = MockRequestLogCleanupService.clear_all_logs()
 
         self.assertEqual(deleted, 123)
@@ -278,25 +272,18 @@ class MockRuntimeServiceTests(SimpleTestCase):
             },
             MOCK_LOG_GLOBAL_CLEAR_TIMEOUT_SECONDS,
         )
-        cursor.execute.assert_called_once_with("TRUNCATE TABLE `api_mock_request_log`")
+        filter_logs.assert_called_once_with(callback_run__isnull=True, create_time__lte=cleared_at)
+        delete_in_batches.assert_called_once_with(queryset, MockRequestLogCleanupService.DEFAULT_BATCH_SIZE)
         cache_delete.assert_called_once_with(MOCK_LOG_GLOBAL_WRITE_PAUSE_KEY)
 
-    def test_clear_all_mock_logs_removes_marker_when_truncate_fails(self):
-        mocked_connection = MagicMock()
-        mocked_connection.vendor = "mysql"
-        mocked_connection.ops.quote_name.return_value = "`api_mock_request_log`"
-        mocked_connection.cursor.return_value.__enter__.return_value.execute.side_effect = RuntimeError("boom")
-
+    def test_clear_all_mock_logs_removes_marker_when_batch_delete_fails(self):
         with patch("src.apps.auto_api.services.mock_log_cleanup.cache.set_many"):
             with patch("src.apps.auto_api.services.mock_log_cleanup.cache.delete") as cache_delete:
                 with patch(
-                        "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.count",
-                        return_value=1,
+                        "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.filter",
                 ):
-                    with patch(
-                            "src.apps.auto_api.services.mock_log_cleanup.connection",
-                            mocked_connection,
-                    ):
+                    with patch.object(MockRequestLogCleanupService, '_delete_in_batches',
+                                      side_effect=RuntimeError('boom')):
                         with self.assertRaisesRegex(RuntimeError, "boom"):
                             MockRequestLogCleanupService.clear_all_logs()
 
@@ -342,7 +329,7 @@ class MockRuntimeServiceTests(SimpleTestCase):
         locked_queryset.only.assert_called_once_with("id")
         locked_queryset.only.return_value.get.assert_called_once_with(pk=7)
         cache_set.assert_called_once_with("mock:log:cleared:7", cleared_at, 3600)
-        filter_logs.assert_called_once_with(mock_config_id=7, create_time__lte=cleared_at)
+        filter_logs.assert_called_once_with(mock_config_id=7, create_time__lte=cleared_at, callback_run__isnull=True)
         delete_in_batches.assert_called_once_with(log_queryset, batch_size=100)
 
     def test_mock_log_batch_delete_uses_independent_transactions(self):
@@ -629,15 +616,16 @@ class MockRuntimeServiceTests(SimpleTestCase):
 
         self.assertEqual(raised.exception.code, "MOCK_VERIFICATION_TOKEN_MISMATCH")
 
-    def test_decryption_storage_is_encrypted_and_editable_config_reveals_plaintext(self):
+    def test_decryption_storage_and_editable_config_keep_user_values(self):
         stored = MockRequestDecryptionService.normalize_for_storage({
             "type": "lark_event",
             "encrypt_key": "encrypt-key",
             "verification_token": "verification-token",
         })
 
-        self.assertNotIn("encrypt-key", json.dumps(stored))
-        self.assertNotIn("verification-token", json.dumps(stored))
+        self.assertEqual(stored["encrypt_key"], "encrypt-key")
+        self.assertEqual(stored["verification_token"], "verification-token")
+        self.assertNotIn("storage_algorithm", stored)
         self.assertEqual(MockRequestDecryptionService.editable_config(stored), {
             "type": "lark_event",
             "encrypt_key": "encrypt-key",
@@ -647,9 +635,9 @@ class MockRuntimeServiceTests(SimpleTestCase):
         preserved = MockRequestDecryptionService.normalize_for_storage({
             "type": "lark_event",
             "encrypt_key": "",
-            "verification_token": "",
         }, {"request_decryption": stored})
-        self.assertEqual(preserved, stored)
+        self.assertEqual(MockRequestDecryptionService.editable_config(preserved),
+                         MockRequestDecryptionService.editable_config(stored))
 
     def test_path_parameters_are_extracted(self):
         self.assertEqual(

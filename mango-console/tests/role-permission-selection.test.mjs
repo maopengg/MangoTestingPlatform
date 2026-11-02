@@ -24,14 +24,14 @@ function createPermissionState(checkedKeys = ['index.home'], guest = false) {
           {
             key: 'system.role',
             actions: [
-              { permissionKey: 'system.role:create' },
-              { permissionKey: 'system.role:delete' },
+              { permissionKey: 'system.role:add' },
+              { permissionKey: 'system.role:remove' },
             ],
             children: [],
           },
           {
             key: 'system.user',
-            actions: [{ permissionKey: 'system.user:edit' }],
+            actions: [{ permissionKey: 'system.user:change' }],
             children: [],
           },
           { key: 'system.readonly', actions: [], children: [] },
@@ -39,7 +39,7 @@ function createPermissionState(checkedKeys = ['index.home'], guest = false) {
       },
       {
         key: 'report',
-        actions: [{ permissionKey: 'report:export' }],
+        actions: [{ permissionKey: 'report:read' }],
         children: [],
       },
     ],
@@ -58,20 +58,20 @@ function assertKeys(state, expected) {
 }
 
 const systemPages = ['system', 'system.role', 'system.user', 'system.readonly']
-const systemActions = ['system.role:create', 'system.role:delete', 'system.user:edit']
+const systemActions = ['system.role:add', 'system.role:remove', 'system.user:change']
 
 test('checking a first-level page selects every child page action and keeps existing permissions', () => {
-  const state = createPermissionState(['index.home', 'report', 'report:export', 'system.role'])
+  const state = createPermissionState(['index.home', 'report', 'report:read', 'system.role'])
   state.onPageCheck(['index.home', 'report', ...systemPages], {
     checked: true,
     node: { key: 'system' },
   })
-  assertKeys(state, ['index.home', 'report', 'report:export', ...systemPages, ...systemActions])
+  assertKeys(state, ['index.home', 'report', 'report:read', ...systemPages, ...systemActions])
 })
 
 test('checking a second-level page keeps a sibling action manually unchecked', () => {
   const state = createPermissionState(['index.home', ...systemPages, ...systemActions])
-  state.onActionCheck('system.role:delete', false)
+  state.onActionCheck('system.role:remove', false)
   state.onPageCheck(['index.home', 'system.role', 'system.readonly'], {
     checked: false,
     node: { key: 'system.user' },
@@ -80,12 +80,12 @@ test('checking a second-level page keeps a sibling action manually unchecked', (
     checked: true,
     node: { key: 'system.user' },
   })
-  assertKeys(state, ['index.home', ...systemPages, 'system.role:create', 'system.user:edit'])
+  assertKeys(state, ['index.home', ...systemPages, 'system.role:add', 'system.user:change'])
 })
 
 test('checking a page again restores all its actions without duplicate keys', () => {
   const state = createPermissionState(['index.home', ...systemPages, ...systemActions])
-  state.onActionCheck('system.role:delete', false)
+  state.onActionCheck('system.role:remove', false)
   state.onPageCheck(['index.home', ...systemPages], {
     checked: true,
     node: { key: 'system' },
@@ -99,10 +99,10 @@ test('unchecking a first-level page removes its child actions and keeps other pa
     ...systemPages,
     ...systemActions,
     'report',
-    'report:export',
+    'report:read',
   ])
   state.onPageCheck(['index.home', 'report'], { checked: false, node: { key: 'system' } })
-  assertKeys(state, ['index.home', 'report', 'report:export'])
+  assertKeys(state, ['index.home', 'report', 'report:read'])
 })
 
 test('a page without actions can be checked and home remains selected', () => {
@@ -112,18 +112,18 @@ test('a page without actions can be checked and home remains selected', () => {
 })
 
 test('updates without an event select new page actions and clear removed page actions', () => {
-  const state = createPermissionState(['index.home', 'report', 'report:export'])
+  const state = createPermissionState(['index.home', 'report', 'report:read'])
   state.onPageCheck(['index.home', ...systemPages])
   assertKeys(state, ['index.home', ...systemPages, ...systemActions])
-  state.onActionCheck('system.role:delete', false)
+  state.onActionCheck('system.role:remove', false)
   state.onPageCheck(['index.home', ...systemPages, 'report'])
   assertKeys(state, [
     'index.home',
     ...systemPages,
-    'system.role:create',
-    'system.user:edit',
+    'system.role:add',
+    'system.user:change',
     'report',
-    'report:export',
+    'report:read',
   ])
 })
 
@@ -133,6 +133,6 @@ test('guest permissions stay read-only for both page and action checks', () => {
     checked: true,
     node: { key: 'system' },
   })
-  state.onActionCheck('system.role:create', true)
+  state.onActionCheck('system.role:add', true)
   assertKeys(state, ['index.home'])
 })

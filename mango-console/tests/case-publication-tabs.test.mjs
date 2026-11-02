@@ -63,7 +63,7 @@ test('UI uses target status rather than the legacy direct publication boolean', 
   assert.match(api, /target_status: targetStatus/)
   assert.doesNotMatch(api, /is_published: isPublished/)
   const source = read('src/views/uitest/case/index.vue')
-  assert.match(source, /permission: 'ui.case:publish'/)
+  assert.match(source, /permission: 'ui.case:change'/)
   assert.match(source, /!record.is_product_owner/)
   assert.match(source, /isLatestRequest\(requestId\)/)
 })

@@ -14,48 +14,22 @@
         @reset-search="onReset"
       >
         <template #search>
-          <a-form :model="query" layout="inline" @keyup.enter="onSearchRefresh">
-            <a-form-item label="授权方式">
-              <a-select
-                v-model="query.auth_type"
-                :field-names="fieldNames"
-                :options="enumStore.ui_auth_type"
-                multiple
-                :max-tag-count="1"
-                allow-clear
-                allow-search
-                placeholder="请选择授权方式"
-                value-key="key"
-                @change="onSearchRefresh" data-testid="qa-views-uitest-auth-config-select-请选择授权方式"
-              />
-            </a-form-item>
-            <a-form-item label="名称">
-              <a-input
-                v-model="query.name"
-                allow-clear
-                placeholder="请输入授权名称"
-                @blur="onSearchRefresh"
-                @clear="onSearchRefresh" data-testid="qa-views-uitest-auth-config-input-请输入授权名称"
-              />
-            </a-form-item>
-            <a-form-item label="更新人">
-              <a-select
-                v-model="query.update_user"
-                multiple
-                :max-tag-count="1"
-                :field-names="fieldNames"
-                :options="userOptions"
-                allow-clear
-                allow-search
-                placeholder="请选择更新人"
-                value-key="key"
-                @change="onSearchRefresh" data-testid="qa-views-uitest-auth-config-select-请选择更新人"
-              />
-            </a-form-item>
-          </a-form>
+          <ApiResourceSearchFilters
+            :items="conditionItems"
+            :field-names="fieldNames"
+            :enum-store="enumStore"
+            :user-list="userOptions"
+            :option-overrides="{
+              auth_type: enumStore.ui_auth_type,
+              refresh_mode: enumStore.ui_auth_refresh_mode,
+              last_refresh_status: enumStore.ui_auth_refresh_status,
+            }"
+            @search="onSearchRefresh"
+            @reset="onReset"
+          />
         </template>
         <template #toolbar>
-        <a-button v-permission="'ui.auth_config:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-auth-config-button-新增">新增</a-button>
+        <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-auth-config-button-新增">新增</a-button>
         </template>
       <a-table
         class="mango-native-scroll-table"
@@ -64,7 +38,7 @@
         :data="table.dataList"
         :loading="table.tableLoading.value"
         :pagination="false"
-        :scroll="{ x: 2260, y: '100%' }"
+        :scroll="{ x: tableScrollX, y: '100%' }"
         row-key="id"
       >
         <template #columns>
@@ -132,7 +106,7 @@
               {{ record.auth_type === 3 ? '-' : record.last_refresh_time || '-' }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'ui.auth_config:status'"
+              <a-switch
                 :before-change="(checked) => onStatusChange(record.id, checked ? 1 : 0)"
                 :default-checked="record.status === 1"
                 size="small"
@@ -275,13 +249,15 @@
   import ModalDialog from '@/components/overlays/ModalDialog.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import ApiResourceSearchFilters from '@/components/business/ApiResourceSearchFilters.vue'
   import { usePagination, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
   import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
   import { AUTH_REFRESH_STATUS_COLORS, getStatusTagColor } from '@/utils/status-color'
-  import { tableColumns } from './config'
+  import { conditionItems, tableColumns, tableScrollX } from './config'
+  import { getFormItems } from '@/utils/datacleaning'
   import { getUiSteps } from '@/api/uitest/page-steps'
   import { getApiInfo } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
@@ -333,7 +309,7 @@
   const noticeOptions = ref<any[]>([])
   const userOptions = ref<any[]>([])
   const sidebarResetKey = ref(0)
-  const query = reactive({ project_product: '', auth_type: [] as number[], name: '', update_user: [] as number[] })
+  const query = reactive({ project_product: '' })
   const form = reactive<any>({
     project_product: '',
     test_env: '',
@@ -363,6 +339,7 @@
   )
 
   function onSearchRefresh() {
+    pagination.page = 1
     doRefresh(true)
   }
 
@@ -393,26 +370,18 @@
 
   function onReset() {
     query.project_product = ''
-    query.auth_type = []
-    query.name = ''
-    query.update_user = []
+    conditionItems.forEach(item => { item.value = item.multiple ? [] : '' })
+    pagination.page = 1
     sidebarResetKey.value += 1
     doRefresh()
   }
 
   function normalizeQuery() {
     const value: Record<string, any> = {
-      ...query,
+      ...getFormItems(conditionItems),
       project_product: getOptionId(query.project_product),
-      auth_type__in: query.auth_type.join(','),
-      update_user__in: query.update_user.join(','),
     }
-    delete value.auth_type
-    delete value.update_user
-    clearEmptyFilter(value, 'project_product')
-    clearEmptyFilter(value, 'auth_type__in')
-    clearEmptyFilter(value, 'name')
-    clearEmptyFilter(value, 'update_user__in')
+    Object.keys(value).forEach(key => clearEmptyFilter(value, key))
     return value
   }
 
@@ -636,27 +605,27 @@
 
   function getAuthActions(record: any): AuthTableAction[] {
     return [
-      { permission: 'ui.auth_config:detail', label: '缓存', onClick: () => onCache(record) },
-      { permission: 'ui.auth_config:debug',
+      {  label: '缓存', onClick: () => onCache(record) },
+      {
         label: '刷新',
         onClick: () => onRefresh(record),
         disabled: [1, 3].includes(record.auth_type),
       },
-      { permission: 'ui.auth_config:debug',
+      {
         label: '自动授权',
         onClick: () => onAutoStart(record),
         disabled: record.auth_type !== 1,
         loading: isAuthTaskLoading(record.id, 'start'),
       },
-      { permission: 'ui.auth_config:debug',
+      {
         label: '完成登录',
         onClick: () => onAutoCapture(record),
         disabled: record.auth_type !== 1,
         loading: isAuthTaskLoading(record.id, 'capture'),
       },
-      { permission: 'ui.auth_config:edit', label: '编辑', onClick: () => onEdit(record) },
-      { permission: 'ui.auth_config:debug', label: '清空', danger: true, onClick: () => onClear(record) },
-      { permission: 'ui.auth_config:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
+      {  label: '编辑', onClick: () => onEdit(record) },
+      {  label: '清空', danger: true, onClick: () => onClear(record) },
+      {  label: '删除', danger: true, onClick: () => onDelete(record) },
     ]
   }
 

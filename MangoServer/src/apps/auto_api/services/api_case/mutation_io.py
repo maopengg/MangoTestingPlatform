@@ -25,6 +25,7 @@ from src.apps.auto_api.services.api_case.parameter_validation import (
     ApiCaseParameterValidationService,
 )
 from src.apps.auto_api.services.api_case.snapshot import ApiExecutableSnapshotService
+from src.apps.auto_api.services.callback import ApiCallbackService
 from src.apps.auto_api.services.config.version import (
     ApiConfigDiffService,
     ApiConfigSnapshotService,
@@ -63,6 +64,7 @@ class ApiCaseMutationService:
     @staticmethod
     def validate_config(config: dict, project_product_id=None) -> dict:
         validators = {
+            "callback_checks": lambda value: ApiCallbackService.validate_config(value, project_product_id),
             "front_custom": lambda value: validate_model_list(value, ApiEnvironmentKeyValueItem, "前置方法"),
             "front_sql": lambda value: validate_data_source_operation_list(value, "前置数据库操作", project_product_id),
             "front_headers": lambda value: validate_int_list(value, "前置请求头"),
@@ -100,6 +102,9 @@ class ApiCaseMutationService:
     ) -> dict:
         identity, config = cls.split_payload(dict(payload))
         config = cls.validate_config(config, identity.get("project_product"))
+        if config.get('callback_checks'):
+            from src.apps.auto_api.exceptions import API_CALLBACK_CONFIG_INVALID
+            raise AutoApiError(API_CALLBACK_CONFIG_INVALID, value=('请先创建用例及步骤，再配置回调验证',))
         if "parametrize" in identity:
             identity["parametrize"] = validate_model_list(identity["parametrize"], ApiParametrizeSuite, "参数化")
         if "scenario_tags" in identity:
@@ -151,6 +156,11 @@ class ApiCaseMutationService:
         ):
             raise AutoApiError(API_CASE_PREPUBLICATION_PRODUCT_CHANGE_NOT_ALLOWED)
         config = cls.validate_config(config, identity.get("project_product") or instance.project_product_id)
+        if config.get('callback_checks') or instance.callback_checks:
+            ApiCallbackService.validate_config(
+                config.get('callback_checks', instance.callback_checks),
+                normalized_project_product_id or instance.project_product_id, instance.id,
+            )
         before_snapshot = ApiConfigSnapshotService.capture_for_instance(instance).snapshot
         if "scenario_tags" in identity:
             identity["scenario_tags"] = validate_scenario_tag_list(identity["scenario_tags"])

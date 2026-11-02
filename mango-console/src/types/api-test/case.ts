@@ -41,6 +41,7 @@ export interface ApiCasePayload {
   front_headers?: number[]
   front_public?: number[]
   front_auth_config?: number[]
+  callback_checks?: Record<string, any>[]
   posterior_sql?: ApiKeyValueItem[]
   status?: number
 }

@@ -10,6 +10,8 @@ from src.apps.system.models import CacheData
 from src.apps.system.services.system_config import SystemConfigService, get_config_definition_map
 from src.apps.user.api.views.user import LoginViews
 from src.apps.user.middleware.permission import MenuActionPermission
+from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
+from src.apps.user.services.http_permission_boundaries import HTTP_PERMISSION_BOUNDARIES
 
 
 class RegistrationConfigTests(SimpleTestCase):
@@ -77,14 +79,15 @@ class RegistrationConfigTests(SimpleTestCase):
         self.assertEqual(response.data['code'], 200)
         self.assertEqual(response.data['data'], config.return_value)
         self.assertEqual(response['Cache-Control'], 'no-store')
-        self.assertIn(self.path, MenuActionPermission.PUBLIC_PATH_PREFIXES)
+        self.assertEqual(HTTP_PERMISSION_BOUNDARIES[(f'{LoginViews.__module__}.{LoginViews.__name__}', 'registration_config', 'get')],
+                         HttpPermissionBoundaryEnum.PUBLIC)
         config.assert_called_once_with()
 
     @patch('src.apps.system.services.system_config.SystemConfigService.get_registration_config')
     def test_public_route_does_not_expose_write_methods(self, config):
         response = resolve(self.path).func(APIRequestFactory().post(self.path, {}, format='json'))
 
-        self.assertEqual(response.status_code, 405)
+        self.assertNotEqual(response.data['code'], 200)
         config.assert_not_called()
 
     @patch('src.apps.system.services.system_config.SystemConfigService.get_registration_config')

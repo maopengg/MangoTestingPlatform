@@ -18,7 +18,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 
 
 class DataFactoryEntityStatusLogViews(ViewSet):
-    action_permission_map = {'list': 'data_factory.entity'}
 
     @error_response('system')
     def list(self, request: Request):

@@ -20,6 +20,7 @@ from src.apps.auto_api.api.views.api_headers import ApiHeadersCRUD
 from src.apps.auto_api.api.views.api_info import ApiInfoCRUD, ApiInfoViews
 from src.apps.auto_api.api.views.api_info_version import ApiInfoReleaseViews, ApiInfoRevisionViews
 from src.apps.auto_api.api.views.api_mock import ApiMockConfigCRUD, ApiMockConfigViews
+from src.apps.auto_api.api.views.api_callback import ApiCallbackViews
 from src.apps.auto_api.api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
 from src.apps.auto_api.api.views.grpc_definition import (
     GrpcMethodDefinitionCRUD,
@@ -32,6 +33,9 @@ from src.apps.auto_api.api.views.module_coverage_scan import ModuleCoverageScanV
 
 urlpatterns = [
     path("mock/config", ApiMockConfigCRUD.as_view()),
+    path('case/callback/results', ApiCallbackViews.as_view({'get': 'results'})),
+    path('case/callback/deliveries', ApiCallbackViews.as_view({'get': 'deliveries'})),
+    path('case/callback/evidence/download', ApiCallbackViews.as_view({'get': 'download'})),
     path("mock/config/detail", ApiMockConfigViews.as_view({"get": "retrieve"})),
     path("mock/config/assertion/methods", ApiMockConfigViews.as_view({"get": "assertion_methods"})),
     path("mock/config/state", ApiMockConfigViews.as_view({"put": "change_state"})),
@@ -128,6 +132,8 @@ urlpatterns = [
     path("public/status", ApiPublicViews.as_view({'put': 'put_status'})),
     #
     path("auth/config", ApiAuthConfigCRUD.as_view()),
+    path("auth/config/public-variables", ApiAuthConfigViews.as_view({'get': 'public_variables'})),
+    path("auth/config/targets", ApiAuthConfigViews.as_view({'get': 'targets'})),
     path("auth/config/status", ApiAuthConfigViews.as_view({'put': 'put_status'})),
     path("auth/config/refresh", ApiAuthConfigViews.as_view({'post': 'refresh'})),
     path("auth/config/clear", ApiAuthConfigViews.as_view({'post': 'clear'})),

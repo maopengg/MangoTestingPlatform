@@ -82,7 +82,7 @@
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
-                  :actions="[{ permission: 'monitoring.report:detail', label: '查看详情', onClick: () => onViewDetail(record) }]"
+                  :actions="[{ label: '查看详情', onClick: () => onViewDetail(record) }]"
                 />
               </template>
             </a-table-column>

@@ -11,49 +11,47 @@ const permissions = { exports: {} }
 new Function('exports', transpile(fs.readFileSync(
   new URL('../src/utils/permission.ts', import.meta.url), 'utf8'
 )))(permissions.exports)
-const { hasPermissionKeys, omitUnauthorizedStateFields } = permissions.exports
+const { hasPermissionKeys } = permissions.exports
 
-test('content-only editors preserve server state without mutating their form values', () => {
-  const data = { id: 1, name: 'updated', status: 1, is_notice: 0 }
-  assert.deepEqual(omitUnauthorizedStateFields(data, ['status', 'is_notice'], false), { id: 1, name: 'updated' })
-  assert.deepEqual(omitUnauthorizedStateFields(data, ['status'], true), data)
-  assert.equal(data.status, 1)
+test('页面入口对应查看权限，旧页面键不能自动变成查看授权', () => {
+  assert.equal(hasPermissionKeys(['api.case:read'], false, 'api.case'), true)
+  assert.equal(hasPermissionKeys(['api.case'], false, 'api.case'), false)
 })
 
 test('operation permissions support individual keys, alternatives and super administrators', () => {
-  assert.equal(hasPermissionKeys(['api.case'], false, 'api.case:edit'), false)
-  assert.equal(hasPermissionKeys(['api.case:edit'], false, 'api.case:edit'), true)
-  assert.equal(hasPermissionKeys(['ui.case:debug'], false, ['ui.case:debug', 'ui.page:debug']), true)
+  assert.equal(hasPermissionKeys(['api.case'], false, 'api.case:change'), false)
+  assert.equal(hasPermissionKeys(['api.case:change'], false, 'api.case:change'), true)
+  assert.equal(hasPermissionKeys(['ui.case:change'], false, ['ui.case:change', 'ui.page:change']), true)
   assert.equal(hasPermissionKeys([], false, []), false)
-  assert.equal(hasPermissionKeys([], true, 'api.case:delete'), true)
+  assert.equal(hasPermissionKeys([], true, 'api.case:remove'), true)
 })
 
 test('public report access grants only shared read and export operations', () => {
-  assert.equal(hasPermissionKeys([], false, 'report:detail', true), true)
-  assert.equal(hasPermissionKeys([], false, 'report:export', true), true)
-  assert.equal(hasPermissionKeys([], false, 'report:retry', true), false)
-  assert.equal(hasPermissionKeys([], false, 'report:notice', true), false)
-  assert.equal(hasPermissionKeys([], false, 'api.case:edit', true), false)
-  assert.equal(hasPermissionKeys([], false, 'report:detail', false), false)
+  assert.equal(hasPermissionKeys([], false, 'report:read', true), true)
+  assert.equal(hasPermissionKeys([], false, 'report:read', true), true)
+  assert.equal(hasPermissionKeys([], false, 'report:change', true), false)
+  assert.equal(hasPermissionKeys([], false, 'report:change', true), false)
+  assert.equal(hasPermissionKeys([], false, 'api.case:change', true), false)
+  assert.equal(hasPermissionKeys([], false, 'report:read', false), false)
 })
 
-test('table actions apply permissions before selecting inline and overflow actions', () => {
+test('table actions show all operations and retain business visibility conditions', () => {
   const source = fs.readFileSync(new URL('../src/components/table/MangoTableActions.vue', import.meta.url), 'utf8')
   const start = source.indexOf('  const normalizedActions =')
   const end = source.indexOf('  function actionKey', start)
   const code = transpile(source.slice(start, end))
   const props = { maxInline: 2, actions: [
-    { label: '详情', permission: 'api.case:detail' },
-    { label: '删除', permission: 'api.case:delete' },
-    { label: '编辑', permission: 'api.case:edit' },
+    { label: '详情', permission: 'api.case:read' },
+    { label: '删除', permission: 'api.case:remove' },
+    { label: '编辑', permission: 'api.case:change' },
     { label: '隐藏操作', hidden: true },
   ] }
   const state = new Function('props', 'permissionStore', 'computed',
     `${code}; return { normalizedActions, visibleInlineActions, overflowActions };`
-  )(props, { hasPermission: (key) => hasPermissionKeys(['api.case:detail'], false, key) },
+  )(props, { hasPermission: (key) => hasPermissionKeys(['api.case:read'], false, key) },
     (getter) => ({ get value() { return getter() } }))
-  assert.deepEqual(state.normalizedActions.value.map((action) => action.label), ['详情'])
-  assert.equal(state.visibleInlineActions.value.length, 1)
+  assert.deepEqual(state.normalizedActions.value.map((action) => action.label), ['详情', '删除', '编辑'])
+  assert.equal(state.visibleInlineActions.value.length, 3)
   assert.equal(state.overflowActions.value.length, 0)
 })
 
@@ -63,7 +61,7 @@ test('explicit overflow actions stay in more even with only one or two inline ac
   const code = transpile(source.slice(start, source.indexOf('  function actionKey', start)))
   for (const labels of [['详细报告'], ['详细报告', '重试']]) {
     const props = { maxInline: 2, actions: [...labels.map((label) => ({ label })),
-      { label: '排查与排除', permission: 'report:exclude', overflow: true }] }
+      { label: '排查与排除', permission: 'report:change', overflow: true }] }
     let allowed = true
     const state = new Function('props', 'permissionStore', 'computed',
       `${code}; return { visibleInlineActions, overflowActions };`)(props,
@@ -71,8 +69,20 @@ test('explicit overflow actions stay in more even with only one or two inline ac
     assert.deepEqual(state.visibleInlineActions.value.map((action) => action.label), labels)
     assert.deepEqual(state.overflowActions.value.map((action) => action.label), ['排查与排除'])
     allowed = false
-    assert.equal(state.overflowActions.value.length, 0)
+    assert.equal(state.overflowActions.value.length, 1)
   }
+})
+
+test('table click handling checks loading and disabled, not role permissions', () => {
+  const source = fs.readFileSync(new URL('../src/components/table/MangoTableActions.vue', import.meta.url), 'utf8')
+  const code = transpile(source.slice(source.indexOf('  function handleClick('), source.indexOf('</script>')))
+  const handle = new Function(`${code}; return handleClick`)()
+  let calls = 0
+  handle({ onClick: () => calls++ })
+  handle({ disabled: true, onClick: () => calls++ })
+  handle({ loading: true, onClick: () => calls++ })
+  assert.equal(calls, 1)
+  assert.doesNotMatch(source, /hasPermission|permission\??:/)
 })
 
 const roleSource = fs.readFileSync(new URL('../src/views/system/role/index.vue', import.meta.url), 'utf8')
@@ -152,7 +162,7 @@ test('late responses cannot overwrite the selected role permission set', async (
 
 test('failed loads clear stale permissions and cannot leave a role ready to save', async () => {
   const state = roleLoader()
-  state.panel.checkedKeys = ['system.role:edit']
+  state.panel.checkedKeys = ['system.role:change']
   const pending = state.select({ id: 2 })
   assert.deepEqual(state.panel.checkedKeys, [])
   state.requests.get(2).reject(new Error('request failed'))

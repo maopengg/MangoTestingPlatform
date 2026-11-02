@@ -10,7 +10,7 @@
     </template>
     <template #footer>
       <a-space>
-        <a-button v-permission="'functional.iteration:edit'" @click="emit('edit-schedule', suite)">编辑排期</a-button>
+        <a-button  @click="emit('edit-schedule', suite)">编辑排期</a-button>
         <a-button @click="openWorkspace">用例生成工作台</a-button>
         <a-button type="primary" @click="openDetail">查看完整需求</a-button>
       </a-space>
@@ -51,7 +51,7 @@
         <a-tab-pane key="plans" :title="`测试计划（${plans.length}）`">
           <div class="mango-requirement-overview__toolbar">
             <span>每个计划仅执行一次，执行结果保存在计划用例快照中。</span>
-            <a-button v-permission="'functional.iteration:create'" size="small" type="primary" @click="createPlan">新建测试计划</a-button>
+            <a-button  size="small" type="primary" @click="createPlan">新建测试计划</a-button>
           </div>
           <a-table :data="plans" :columns="planColumns" :pagination="false" :scroll="{ x: 720, y: 440 }">
             <template #plan_name="{ record }"><a-link @click="openPlan(record)">{{ record.name }}</a-link></template>

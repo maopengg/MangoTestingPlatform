@@ -54,7 +54,7 @@
       <TableTabs>
         <template #extra>
           <a-button
-            v-if="canCleanup"
+            v-if="true"
             size="small"
             status="danger"
             :loading="data.cleanupLoading"
@@ -159,15 +159,15 @@
     getExecutionResultAdminList,
     postExecutionResultAdminCleanup,
   } from '@/api/system/execution_result'
-  import usePermissionStore from '@/store/modules/permission'
+
   import { useEnum } from '@/store/modules/get-enum'
   import { getEnumTagColor } from '@/utils/business-format'
   import { conditionItems, tableColumns, tableScrollX } from './config'
   import TableTabs from '@/components/table/TableTabs.vue'
 
-  const permissionStore = usePermissionStore()
+
   const enumStore = useEnum()
-  const canCleanup = computed(() => permissionStore.hasPermission('system.execution_result:delete'))
+
   const pagination = usePagination(doRefresh, () => table.tableLoading)
   const table = useTable()
   const rowKey = useRowKey('id')

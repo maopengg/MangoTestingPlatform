@@ -23,6 +23,7 @@ export const apiProtocolOptions = [
 ]
 
 export const apiProtocolCreateOptions = [
+  { label: 'MCP', value: 'mcp' },
   { label: '标准HTTP', value: 'http' },
   { label: 'SSE事件流', value: 'sse' },
   { label: 'WebSocket', value: 'websocket' },

@@ -42,7 +42,6 @@ SERVER_DIR = find_server_dir()
 MASTER_SETTINGS_PATH = SERVER_DIR / "src" / "settings" / "master.py"
 BACKUP_DIR = Path(__file__).resolve().parent / "backups"
 CONFIG_NAMES = {
-    "IS_SQLITE",
     "MYSQL_DB_NAME",
     "MYSQL_USER",
     "MYSQL_PASSWORD",
@@ -191,8 +190,6 @@ def load_master_database_config() -> DatabaseConfig:
     missing = CONFIG_NAMES.difference(values)
     if missing:
         raise RuntimeError(f"master 配置缺少：{', '.join(sorted(missing))}")
-    if values["IS_SQLITE"]:
-        raise RuntimeError("master.py 当前配置为 SQLite，本脚本只允许清理 master MySQL")
     return DatabaseConfig(
         host=str(values["MYSQL_IP"]),
         port=int(values["MYSQL_PORT"]),

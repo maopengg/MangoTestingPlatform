@@ -4,6 +4,7 @@ from src.common.responses.model_crud import ModelCRUD
 
 
 class ScheduleFireCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = ScheduleFire
     queryset = ScheduleFire.objects.all()
     serializer_class = ScheduleFireSerializersC

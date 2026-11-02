@@ -161,7 +161,7 @@ class ApiCaseConfigurationTests(SimpleTestCase):
             params.assert_not_called()
 
     def test_view_uses_page_permission_for_counts_and_detail_permission_for_contents(self):
-        for action, required in (('configuration_summary', 'api.case'), ('configuration_details', 'api.case:detail')):
+        for action, required in (('configuration_summary', 'api.case'), ('configuration_details', 'api.case:read')):
             view = ApiCaseViews()
             view.action = action
             request = SimpleNamespace(method='GET', path='/api/api/case/configuration/summary', data={},

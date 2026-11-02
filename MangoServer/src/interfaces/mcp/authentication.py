@@ -23,35 +23,12 @@ from src.apps.auto_pytest.selectors.querysets import PytestQuerySelector
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.user.models import User
+from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
 from src.apps.user.selectors.authorization import AuthorizationScopeSelector
 from src.apps.user.selectors.querysets import UserQuerySelector
 from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.logging import log
 from src.interfaces.mcp.common import fail, get_auth_token
-
-PUBLIC_COMPONENTS = {"get_mcp_server_info"}
-AUTHENTICATED_COMPONENTS = {
-    "list_mcp_skills",
-    "get_mcp_skill",
-    "get_mcp_skill_catalog_resource",
-    "get_mcp_skill_resource",
-    "use_mcp_skill",
-}
-VALID_PERMISSION_KEYS = frozenset(PermissionMenuService.all_permission_keys())
-GLOBAL_SCHEMA_COMPONENTS = {
-    "get_api_auth_config_schema",
-    "get_ui_auth_config_schema",
-    "get_api_assertion_methods",
-    "get_api_assertion_schema",
-    "get_api_case_schema",
-    "get_ui_automation_schema",
-    "get_ui_operation_methods",
-    "get_ui_assertion_methods",
-    "get_ui_public_assertion_methods",
-    "get_pytest_automation_schema",
-    "get_data_factory_schema",
-    "get_test_report_schema",
-}
 
 
 @dataclass(frozen=True)
@@ -59,233 +36,13 @@ class McpComponentPolicy:
     permission_key: str | None
     project_scoped: bool = True
     public: bool = False
-
-
-DOMAIN_PERMISSIONS = {
-    "project": {"base": "config.product", "create": "config.product:create", "edit": "config.product:edit",
-                "delete": "config.product:delete", "execute": "config.product:query"},
-    "api_info": {"base": "api.info", "create": "api.info:create", "edit": "api.info:edit", "delete": "api.info:delete",
-                 "execute": "api.info:execute"},
-    "api_case": {"base": "api.case", "create": "api.case:create", "edit": "api.case:edit", "delete": "api.case:delete",
-                 "execute": "api.case:execute"},
-    "api_headers": {"base": "api.headers", "create": "api.headers:create", "edit": "api.headers:edit",
-                    "delete": "api.headers:delete", "execute": "api.headers:edit"},
-    "api_public": {"base": "api.public", "create": "api.public:create", "edit": "api.public:edit",
-                   "delete": "api.public:delete", "execute": "api.public:edit"},
-    "api_auth": {"base": "api.auth_config", "create": "api.auth_config:create", "edit": "api.auth_config:edit",
-                 "delete": "api.auth_config:delete", "execute": "api.auth_config:debug"},
-    "ui_page": {"base": "ui.page", "create": "ui.page:create", "edit": "ui.page:edit", "delete": "ui.page:delete",
-                "execute": "ui.page:debug"},
-    "ui_step": {"base": "ui.page_steps", "create": "ui.page_steps:create", "edit": "ui.page_steps:edit",
-                "delete": "ui.page_steps:delete", "execute": "ui.page_steps:debug"},
-    "ui_case": {"base": "ui.case", "create": "ui.case:create", "edit": "ui.case:edit", "delete": "ui.case:delete",
-                "execute": "ui.case:execute"},
-    "ui_public": {"base": "ui.public", "create": "ui.public:create", "edit": "ui.public:edit",
-                  "delete": "ui.public:delete", "execute": "ui.public:edit"},
-    "ui_auth": {"base": "ui.auth_config", "create": "ui.auth_config:create", "edit": "ui.auth_config:edit",
-                "delete": "ui.auth_config:delete", "execute": "ui.auth_config:debug"},
-    "data_entity": {"base": "data_factory.entity", "create": "data_factory.entity:create",
-                    "edit": "data_factory.entity:edit", "delete": "data_factory.entity:delete",
-                    "execute": "data_factory.entity:debug"},
-    "data_template": {"base": "data_factory.template", "create": "data_factory.template:create",
-                      "edit": "data_factory.template:edit", "delete": "data_factory.template:delete",
-                      "execute": "data_factory.template:debug"},
-    "data_execution": {"base": "data_factory.execution", "create": "data_factory.template:debug",
-                       "edit": "data_factory.template:edit", "delete": "data_factory.execution:delete",
-                       "execute": "data_factory.execution:detail"},
-    "datasource": {"base": "config.product", "create": "config.product:create", "edit": "config.product:edit",
-                   "delete": "config.product:delete", "execute": "config.product:query"},
-    "pytest_repository": {"base": "pytest.repository", "create": "pytest.repository:create",
-                          "edit": "pytest.repository:edit", "delete": "pytest.repository:delete",
-                          "execute": "pytest.repository:execute"},
-    "pytest_product": {"base": "pytest.product", "create": "pytest.product:create", "edit": "pytest.product:edit",
-                       "delete": "pytest.product:delete", "execute": "pytest.product:edit"},
-    "pytest_case": {"base": "pytest.case", "create": "pytest.case:edit", "edit": "pytest.case:edit",
-                    "delete": "pytest.case:delete", "execute": "pytest.case:execute"},
-    "functional_suite": {"base": "functional.suite", "create": "functional.suite:create",
-                         "edit": "functional.suite:edit", "delete": "functional.suite:delete",
-                         "execute": "functional.suite:edit"},
-    "functional_case": {"base": "functional.case", "create": "functional.case:create", "edit": "functional.case:edit",
-                        "delete": "functional.case:delete", "execute": "functional.case:edit"},
-    "module_coverage": {"base": "api.module_coverage", "create": "api.module_coverage:create",
-                        "edit": "api.module_coverage:edit", "delete": "api.module_coverage:delete",
-                        "execute": "api.module_coverage:edit"},
-    "functional_plan": {"base": "functional.plan", "create": "functional.plan:create", "edit": "functional.plan:edit",
-                        "delete": "functional.plan:delete", "execute": "functional.plan:execute"},
-    "ai_skill": {"base": "ai.skill", "create": "ai.skill:create", "edit": "ai.skill:edit", "delete": "ai.skill:delete",
-                 "execute": "ai.skill:detail"},
-    "ai_mcp": {"base": "ai.mcp", "create": "ai.mcp:create", "edit": "ai.mcp:edit", "delete": "ai.mcp:delete",
-               "execute": "ai.mcp:debug"},
-    "ai_task": {"base": "ai.task", "create": "ai.task:create", "edit": "ai.task:debug", "delete": "ai.task:delete",
-                "execute": "ai.task:debug"},
-    "report": {"base": "report", "create": "report:retry", "edit": "report:retry", "delete": "report:retry",
-               "execute": "report:retry"},
-    "scheduled": {"base": "timing.tasks", "create": "timing.tasks:edit", "edit": "timing.tasks:edit",
-                  "delete": "timing.tasks:edit", "execute": "timing.tasks:execute"},
-    "file": {"base": "config.test_files", "create": "config.test_files:create", "edit": "config.test_files:edit",
-             "delete": "config.test_files:delete", "execute": "config.test_files:download"},
-    "variable": {"base": "help.variable", "create": "help.variable:debug", "edit": "help.variable:debug",
-                 "delete": "help.variable:debug", "execute": "help.variable:debug"},
-    "workbench_todo": {"base": "index.home", "create": "index.home", "edit": "index.home", "delete": "index.home",
-                       "execute": "index.home"},
-}
-
-
-def _operation(name: str) -> str:
-    if name.startswith("agent_ui_"):
-        return "base" if name == "agent_ui_get_case" else "execute"
-    value = name
-    if value.startswith("preview_"):
-        value = value[len("preview_"):]
-    if value.startswith(("delete_", "batch_delete_", "archive_", "batch_archive_", "cleanup_", "clear_", "unbind_")):
-        return "delete"
-    if value.startswith(("create_", "add_", "upload_", "import_", "batch_generate_", "batch_upload_", "batch_upsert_")):
-        return "create"
-    if value.startswith(
-            ("update_", "set_", "sort_", "copy_", "sync_", "push_", "save_", "replace_", "bind_", "publish_",
-             "unpublish_", "auto_generate_")):
-        return "edit"
-    if value.startswith(
-            ("run_", "start_", "finish_", "execute_", "trigger_", "test_", "evaluate_", "refresh_", "retry_",
-             "analyze_", "query_")):
-        return "execute"
-    return "base"
-
-
-def _domain(name: str) -> tuple[str | None, bool]:
-    if name.startswith("agent_ui_"):
-        return "ui_case", True
-    if name == "get_project_product_resource":
-        return "project", True
-    if name in {"api_case_from_curl", "api_failure_analysis"}:
-        return "api_case", True
-    if name in {"data_factory_template_from_table", "bind_data_factory_for_api_case"}:
-        return "data_template", True
-    if name in {"get_current_user_context", "switch_user_test_environment", "list_test_environments",
-                "list_case_owners"}:
-        return "project", False
-    if name in {"ensure_user_test_environment", "list_project_test_objects", "list_project_products",
-                "list_product_modules", "create_product_module", "update_product_module",
-                "preview_delete_product_module_impact", "delete_product_module"}:
-        return "project", True
-    if "api_auth_config" in name or name == "list_api_auth_time_tasks":
-        return "api_auth", True
-    if "ui_auth_config" in name or name == "list_ui_auth_time_tasks" or name == "save_ui_manual_auth_cache":
-        return "ui_auth", True
-    if "api_header" in name:
-        return "api_headers", True
-    if "api_public_variable" in name:
-        return "api_public", True
-    if "grpc_service" in name or "grpc_method" in name:
-        return "api_info", True
-    if "api_info" in name and "case_step" not in name:
-        return "api_info", True
-    if "api_case" in name:
-        return "api_case", True
-    if name.startswith(("get_api_", "search_api_case", "create_api_case", "create_complete_api_case", "copy_api_case",
-                        "update_api_case", "add_api_case", "list_api_case", "sort_api_case", "refresh_api_case",
-                        "run_api_case", "analyze_api_case", "delete_api_case", "preview_delete_api_case",
-                        "publish_api_case", "generate_api_case", "auto_generate_api_case")):
-        return "api_case", True
-    if "datasource" in name or "database_table" in name or "table_schema" in name:
-        return "datasource", True
-    if "data_factory_execution" in name or "cleanup_data_factory" in name:
-        return "data_execution", True
-    if "data_factory_template" in name or "data_factory_case_config" in name or "data_factory_to_case" in name:
-        return "data_template", True
-    if "data_factory" in name:
-        return "data_entity", True
-    if "pytest_repo" in name or name == "sync_pytest_products_from_repo":
-        return "pytest_repository", True
-    if "pytest_product" in name or "pytest_automation_schema" in name:
-        return "pytest_product", True
-    if "pytest_case" in name:
-        return "pytest_case", True
-    if "module_coverage" in name:
-        return "module_coverage", True
-    if "functional_test_plan" in name:
-        return "functional_plan", True
-    if "functional_test_suite" in name or "functional_test_context" in name or "functional_test_suite_stats" in name:
-        return "functional_suite", True
-    if "functional_test" in name:
-        return "functional_case", True
-    if "ai_skill" in name:
-        return "ai_skill", False
-    if "ai_mcp" in name:
-        return "ai_mcp", False
-    if "ai_agent" in name or "ai_task" in name or "ai_context" in name:
-        return "ai_task", True
-    if "test_report" in name or "execution_result" in name:
-        return "report", True
-    if "scheduled_task" in name:
-        return "scheduled", True
-    if "workbench_todo" in name:
-        return "workbench_todo", False
-    if "system_file" in name:
-        return "file", False
-    if "test_data" in name:
-        return "variable", False
-    if "ui_public" in name:
-        return "ui_public", True
-    if "ui_case" in name:
-        return "ui_case", True
-    if "ui_page_step" in name or "playwright" in name or "ui_operation" in name or "ui_assertion" in name or name == "get_ui_automation_schema":
-        return "ui_step", True
-    if "ui_page" in name or "ui_element" in name:
-        return "ui_page", True
-    return None, True
+    additional_permission_keys: tuple[str, ...] = ()
+    requires_resolved_scope: bool = False
 
 
 def component_policy(name: str) -> McpComponentPolicy | None:
-    from src.apps.evaluation.constants import MCP_EVALUATION_PERMISSIONS
-    if name in MCP_EVALUATION_PERMISSIONS:
-        # Evaluation services/selectors validate every nested object's product scope.
-        return McpComponentPolicy(MCP_EVALUATION_PERMISSIONS[name], project_scoped=False)
-    if name in PUBLIC_COMPONENTS:
-        return McpComponentPolicy(None, project_scoped=False, public=True)
-    if name in AUTHENTICATED_COMPONENTS:
-        return McpComponentPolicy(None, project_scoped=False)
-    domain, scoped = _domain(name)
-    if domain is None:
-        return None
-    if name in GLOBAL_SCHEMA_COMPONENTS or name in {"sync_pytest_products_from_repo", "preview_push_pytest_repo_impact",
-                                                    "push_pytest_repo"}:
-        scoped = False
-    if domain == "ai_task":
-        scoped = False
-    permissions = DOMAIN_PERMISSIONS[domain]
-    permission_key = permissions[_operation(name)]
-    base_key = permissions["base"]
-    valid_keys = VALID_PERMISSION_KEYS
-    suffix = None
-    if "status" in name:
-        suffix = "status"
-    elif name.startswith("copy_"):
-        suffix = "copy"
-    elif "download" in name:
-        suffix = "download"
-    elif _operation(name) == "base" and ("detail" in name or name == "get_api_auth_config_cache"):
-        suffix = "detail"
-    candidate = f"{base_key}:{suffix}" if suffix else None
-    if candidate in valid_keys:
-        permission_key = candidate
-    if name in {"sync_pytest_products_from_repo", "sync_pytest_cases", "push_pytest_repo"}:
-        execute_key = f"{base_key}:execute"
-        if execute_key in valid_keys:
-            permission_key = execute_key
-    if name in {"get_api_auth_config_cache", "refresh_api_auth_config", "preview_clear_api_auth_config_cache_impact",
-                "clear_api_auth_config_cache"}:
-        permission_key = "api.auth_config:detail" if name == "get_api_auth_config_cache" else "api.auth_config:debug"
-    if name in {"get_ui_auth_config_cache", "refresh_ui_auth_config", "preview_clear_ui_auth_config_cache_impact",
-                "clear_ui_auth_config_cache", "save_ui_manual_auth_cache"}:
-        permission_key = "ui.auth_config:detail" if name == "get_ui_auth_config_cache" else "ui.auth_config:debug"
-    if name in {"update_api_case_publication_status", "unpublish_api_case_revision"}:
-        permission_key = "api.case:publish"
-    if name == 'update_pytest_case_publication_status':
-        permission_key = 'pytest.case:publish'
-    if name == "update_test_report_case_diagnosis":
-        permission_key = "report:exclude"
-    return McpComponentPolicy(permission_key, project_scoped=scoped)
+    rule = MCP_PERMISSION_RULES.get(name)
+    return McpComponentPolicy(**rule) if rule is not None else None
 
 
 class MangoTokenVerifier(TokenVerifier):
@@ -361,22 +118,18 @@ def permission_error(user: User, component_name: str, arguments: dict[str, Any])
     permissions = PermissionMenuService.permission_keys_for_user(user)
     required_key = policy.permission_key
     if component_name == 'update_ui_case' and 'publication_status' in (arguments.get('fields') or {}):
-        required_key = 'ui.case:publish'
+        required_key = 'ui.case:change'
     if required_key not in permissions:
         return fail("没有调用该 MCP 功能的角色权限", "MCP_PERMISSION_DENIED",
                     {"component": component_name, "permission": required_key})
-    domain, _ = _domain(component_name)
-    if domain and _operation(component_name) == 'edit':
-        page_key = DOMAIN_PERMISSIONS[domain]['base']
-        if PermissionMenuService.payload_changes_status(page_key, arguments):
-            status_key = f'{page_key}:status'
-            if status_key not in permissions:
-                return fail("没有调用该 MCP 功能的角色权限", "MCP_PERMISSION_DENIED",
-                            {"component": component_name, "permission": status_key})
+    if not set(policy.additional_permission_keys) <= permissions:
+        return fail('没有关联资源的查看权限', 'MCP_PERMISSION_DENIED', {'component': component_name})
     if not policy.project_scoped:
         return None
     project_ids = resolve_project_product_ids(component_name, arguments)
-    if _operation(component_name) != "base" and _has_scope_identifier(arguments) and not project_ids:
+    if not project_ids and (policy.requires_resolved_scope or (
+            policy.permission_key and not policy.permission_key.endswith(":read") and _has_scope_identifier(arguments)
+    )):
         return fail("无法确认目标数据所属的项目产品", "MCP_PROJECT_SCOPE_UNRESOLVED", {"component": component_name})
     if len(project_ids) > 1:
         return fail(
@@ -701,8 +454,6 @@ RESOURCE_URI_POLICIES = {
     "mango://functional-test/suite/": "get_functional_test_suite_resource",
     "mango://functional-test/case/": "get_functional_test_case_resource",
     "mango://functional-test/context-resource/": "get_functional_test_context_resource",
-    "mango://ai/task/": "get_ai_task_resource",
-    "mango://ai/context/": "get_ai_context_resource",
     "mango://pytest-product/": "get_pytest_product_resource",
     "mango://pytest-case/": "get_pytest_case_resource",
 }
@@ -729,7 +480,10 @@ class MangoAuthorizationMiddleware(Middleware):
             return False
         if access.claims.get("is_super_admin"):
             return True
-        return policy.permission_key is None or policy.permission_key in set(access.scopes)
+        granted = set(access.scopes)
+        return (policy.permission_key is None or policy.permission_key in granted) and set(
+            policy.additional_permission_keys,
+        ) <= granted
 
     async def _authorize(self, component_name: str, arguments: dict[str, Any] | None = None, access=None):
         policy = component_policy(component_name)

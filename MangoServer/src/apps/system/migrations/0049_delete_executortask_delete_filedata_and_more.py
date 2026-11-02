@@ -5,7 +5,6 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('auto_ai', '0006_alter_aimcpserver_module_and_more'),
         ('auto_api', '0042_alter_apiauthconfig_time_task_alter_apicase_module_and_more'),
         ('auto_data_factory', '0018_alter_datafactorydatasourcealias_project_product_and_more'),
         ('auto_perf', '0005_alter_perfrunnode_actual_executor_connection_and_more'),

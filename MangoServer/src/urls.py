@@ -126,7 +126,6 @@ urlpatterns = [
     path('api/user/', include("src.apps.user.api.urls")),
     path('api/pytest/', include("src.apps.auto_pytest.api.urls")),
     path('api/monitoring/', include("src.apps.monitoring.api.urls")),
-    path('api/ai/', include("src.apps.ai.api.urls")),
     path('api/functional-test/', include("src.apps.functional_test.api.urls")),
     path('api/gray/', include("src.apps.gray_config.api.urls")),
     path('api/evaluation/', include("src.apps.evaluation.api.urls")),

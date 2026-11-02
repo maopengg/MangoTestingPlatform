@@ -5,7 +5,7 @@ import { getMenuListByRoleId } from '@/api/url'
 import { post } from '@/api/http'
 import { findRootPathRoute, generatorRoutes, mapTwoLevelRouter } from '../help'
 import { constantRoutes } from '@/router/routes/constants'
-import { hasPermissionKeys, PermissionRequirement } from '@/utils/permission'
+import { hasPermissionKeys, PermissionRequirement, HttpPermissionRule } from '@/utils/permission'
 
 let removePermissionRoutes: Array<() => void> = []
 
@@ -15,7 +15,7 @@ const usePermissionStore = defineStore('permission-route', {
       permissionRoutes: [] as RouteRecordRaw[],
       homePath: '/index/home',
       permissionKeys: [] as string[],
-      statePermissionFields: {} as Record<string, string[]>,
+      httpPermissions: [] as HttpPermissionRule[],
       isSuperAdmin: false,
     }
   },
@@ -55,14 +55,8 @@ const usePermissionStore = defineStore('permission-route', {
           data: {},
         })
         const routeData = Array.isArray(res.data) ? res.data : res.data?.menus || []
-        const fields: Record<string, string[]> = {}
-        const collectStateFields = (items: any[]) => items.forEach((item) => {
-          if (item.permissionKey && item.statusFields?.length) fields[item.permissionKey] = item.statusFields
-          collectStateFields(item.children || [])
-        })
-        collectStateFields(routeData)
-        this.statePermissionFields = fields
         this.permissionKeys = Array.isArray(res.data?.permissions) ? res.data.permissions : []
+        this.httpPermissions = Array.isArray(res.data?.httpPermissions) ? res.data.httpPermissions : []
         this.isSuperAdmin = !!res.data?.is_super_admin
         return generatorRoutes(routeData)
       } catch (error) {
@@ -78,7 +72,7 @@ const usePermissionStore = defineStore('permission-route', {
       this.permissionRoutes = []
       this.homePath = '/index/home'
       this.permissionKeys = []
-      this.statePermissionFields = {}
+      this.httpPermissions = []
       this.isSuperAdmin = false
     },
     async initPermissionRoute(force = false) {

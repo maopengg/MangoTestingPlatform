@@ -1,20 +1,35 @@
 import { useTable, useTableColumn } from '@/hooks/table'
-import { updateUserColumn } from '@/utils/update-user'
+import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
+import { reactive } from 'vue'
+import type { FormItem } from '@/types/components'
+import { createIdSearchValue } from '@/utils/id-search'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 
 const table = useTable()
 
+export const conditionItems: FormItem[] = reactive([
+  { key: 'id', label: 'ID', type: 'input', placeholder: '请输入ID', value: createIdSearchValue() },
+  { key: 'name', label: '授权名称', type: 'input', placeholder: '请输入授权名称', value: '' },
+  { key: 'test_env', label: '被测环境', type: 'select', placeholder: '请选择被测环境', value: [] },
+  { key: 'auth_type', label: '授权方式', type: 'select', placeholder: '请选择授权方式', value: [] },
+  { key: 'refresh_mode', label: '刷新方式', type: 'select', placeholder: '请选择刷新方式', value: [] },
+  { key: 'last_refresh_status', label: '刷新状态', type: 'select', placeholder: '请选择刷新状态', value: [] },
+  createUpdateUserCondition(),
+])
+enableMultiSelectSearch(conditionItems)
+
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  { title: '被测环境', key: 'test_env', dataIndex: 'test_env', width: 100 },
   {
     title: '授权名称',
     key: 'name',
     dataIndex: 'name',
-    width: 160,
+    width: 240,
     align: 'left',
     ellipsis: true,
     tooltip: true,
   },
+  { title: '被测环境', key: 'test_env', dataIndex: 'test_env', width: 100 },
   { title: '授权方式', key: 'auth_type', dataIndex: 'auth_type', width: 110 },
   {
     title: '授权配置',
@@ -59,3 +74,8 @@ export const tableColumns = useTableColumn([
   },
   { title: '操作', key: 'actions', dataIndex: 'actions', width: 160, fixed: 'right' },
 ])
+
+export const tableScrollX = tableColumns.reduce(
+  (total: number, column: { width?: number }) => total + (column.width || 0),
+  0,
+)

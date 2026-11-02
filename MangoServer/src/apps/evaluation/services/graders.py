@@ -5,7 +5,7 @@ import inspect
 from functools import lru_cache
 import re
 from collections import Counter
-from src.apps.ai.services.core import extract_ai_json
+from src.apps.system.services.ai.json_output import extract_ai_json
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.formatters.payload import canonical_json, content_hash, select_value
 from src.apps.evaluation.schemas import GraderMetric, GraderResult

@@ -70,7 +70,7 @@ def register_case_tools(mcp):
 
         unpublished → prepublished → published；提交及通过均要求执行通过且源码可用。
         只有对应业务项目产品负责人可通过发布或退回 unpublished，不能跳过预发布。
-        需要 pytest.case:publish 权限及项目产品数据范围；预发布不参与定时执行。
+        需要 pytest.case:change 权限及项目产品数据范围；预发布不参与定时执行。
         """
         case = PytestCasePublicationService.transition(case_id, target_status, operator_id=current_user().id)
         return ok({'case_id': case.id, 'publication_status': case.publication_status,

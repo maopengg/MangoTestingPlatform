@@ -17,11 +17,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 class FunctionalTestGridViewViews(ViewSet):
     allowed_grid_keys = frozenset()
-    action_permission_map = {
-        "list": "functional.case",
-        "save": "functional.case",
-        "delete": "functional.case",
-    }
 
     @staticmethod
     def _user_id(request: Request):

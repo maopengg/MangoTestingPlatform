@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from src.apps.ai.exceptions import AiError
+from src.apps.system.exceptions import AiError
 from src.apps.system.services.ai.client import AiConfig, AiService, OpenAiCompatibleClient
 
 

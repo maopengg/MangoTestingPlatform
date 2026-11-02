@@ -54,7 +54,7 @@
               <span>注意：新增的定时策略需要联系管理员重启服务才会生效！</span>
             </div>
             <div>
-              <a-button v-permission="'timing.strategy:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-timing-strategy-button-新增">新增</a-button>
+              <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-timing-strategy-button-新增">新增</a-button>
             </div>
           </a-space>
         </template>
@@ -88,9 +88,9 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'timing.strategy:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'timing.strategy:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

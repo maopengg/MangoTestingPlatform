@@ -14,7 +14,7 @@ class ExecutionResultAccessSelector:
         all_products = ProjectProductScopeService.can_view_all_project_data(user)
         product_ids = ProjectProductScopeService.project_product_ids_for_user(user)
         access = Q(pk__in=[])
-        if 'report:detail' in permissions:
+        if 'report:read' in permissions:
             report_access = Q(test_suite_detail__isnull=False)
             if not all_products:
                 report_access &= Q(test_suite_detail__project_product_id__in=product_ids)

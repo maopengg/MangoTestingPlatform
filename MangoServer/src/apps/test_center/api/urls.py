@@ -17,6 +17,8 @@ from src.apps.test_center.api.views.test_suite_details import (
 )
 
 urlpatterns = [
+    path('test/suite/offline/links', TestSuiteViews.as_view({'post': 'offline_publish'})),
+    path('test/suite/offline/options', TestSuiteViews.as_view({'get': 'offline_options'})),
     path('test/suite/offline', TestSuiteViews.as_view({'post': 'offline_export'})),
     path("notice", NoticeGroupCRUD.as_view()),
     path("notice/test", NoticeGroupViews.as_view({"get": "test"})),
@@ -127,6 +129,7 @@ urlpatterns = [
     ),
     path("test/object", TestObjectCRUD.as_view()),
     path("test/object/status", TestObjectViews.as_view({"put": "put_status"})),
+    path("test/object/test", TestObjectViews.as_view({"post": "test_connection"})),
     path("project", ProjectCRUD.as_view()),
     path("project/all", ProjectViews.as_view({"get": "get_all_items"})),
     path(

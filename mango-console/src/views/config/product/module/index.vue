@@ -129,9 +129,9 @@
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                       <MangoTableActions
                         :actions="[
-                          { permission: 'config.product:edit', label: '编辑', onClick: () => openModule(record) },
-                          { permission: 'config.product:delete', label: '删除', danger: true, onClick: () => removeModule(record) },
-                        ]"
+    { label: '编辑', onClick: () => openModule(record) },
+    { label: '删除', danger: true, onClick: () => removeModule(record) },
+]"
                       />
                     </template>
                   </a-table-column>

@@ -171,7 +171,7 @@
               >
             </div>
             <div>
-              <a-button v-permission="'api.case:execute'"
+              <a-button
                 size="small"
                 status="success"
                 :loading="caseRunning"
@@ -182,7 +182,7 @@
               </a-button>
             </div>
             <div>
-              <a-button v-permission="'timing.tasks:edit'"
+              <a-button
                 size="small"
                 status="warning"
                 :disabled="batchPublicationAction !== null"
@@ -230,7 +230,7 @@
               </a-modal>
             </div>
             <div>
-              <a-button v-permission="'api.case:publish'"
+              <a-button
                 size="small"
                 :loading="batchPublicationAction === 'publish'"
                 :disabled="publicationActionCaseId !== null || batchPublicationAction !== null"
@@ -240,7 +240,7 @@
               >
             </div>
             <div>
-              <a-button v-permission="'api.case:publish'"
+              <a-button
                 size="small"
                 :loading="batchPublicationAction === 'revert'"
                 :disabled="publicationActionCaseId !== null || batchPublicationAction !== null"
@@ -250,7 +250,7 @@
               >
             </div>
             <div>
-              <a-button v-permission="'api.case:delete'"
+              <a-button
                 size="small"
                 status="danger"
                 :disabled="batchPublicationAction !== null"
@@ -345,7 +345,7 @@
                   <a-button v-else-if="!configurationSummaries[record.id]" type="text" size="mini"
                     @click="reloadConfigurationSummaries">加载失败，重试</a-button>
                   <a-button v-else-if="configurationSummaries[record.id].has_sql || configurationSummaries[record.id].has_data_factory"
-                    type="text" size="mini" :disabled="!permissions.hasPermission('api.case:detail')"
+                    type="text" size="mini" :disabled="false"
                     @click="configurationDrawerRef?.open(Number(record.id), record.name)">
                     <CaseExecutionConfigurationTags :sql-count="configurationSummaries[record.id].sql_count"
                       :factory-count="configurationSummaries[record.id].data_factory_count" />
@@ -378,44 +378,39 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <MangoTableActions
                     :actions="[
-                      { permission: 'api.case:execute',
-                        label: '执行',
-                        loading: caseRunning,
-                        onClick: () => caseRun(record),
-                      },
-                      { permission: 'api.case:detail', label: '步骤', onClick: () => onStep(record) },
-                      { permission: 'api.case:edit', label: '套件', onClick: () => clickSuite(record) },
-                      { permission: 'api.case:detail', label: '历史结果', onClick: () => openResultHistory(record) },
-                      { permission: 'api.case:detail', label: '关联任务', onClick: () => onBoundTasks(record) },
-                      { permission: 'api.case:publish',
-                        label: '提交预发布',
-                        hidden: !canSubmitCasePrepublication(record),
-                        loading: publicationActionCaseId === record.id,
-                        onClick: () => submitCasePrepublication(record),
-                      },
-                      { permission: 'api.case:publish',
-                        label: '通过发布',
-                        hidden: !canApproveCasePrepublication(record),
-                        loading: publicationActionCaseId === record.id,
-                        onClick: () => approveCasePrepublication(record),
-                      },
-                      { permission: 'api.case:publish',
-                        label: '退回未发布',
-                        hidden: !canApproveCasePrepublication(record),
-                        loading: publicationActionCaseId === record.id,
-                        onClick: () => revertCasePrepublication(record),
-                      },
-                      { permission: 'api.case:publish',
-                        label: '取消发布',
-                        hidden: !hasPublishedCaseVersion(record) || !record.is_product_owner,
-                        danger: true,
-                        loading: publicationActionCaseId === record.id,
-                        onClick: () => unpublishCaseVersion(record),
-                      },
-                      { permission: 'api.case:edit', label: '编辑', onClick: () => onUpdate(record) },
-                      { permission: 'api.case:copy', label: '复制', onClick: () => pageStepsCody(record) },
-                      { permission: 'api.case:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                    ]"
+    {
+        label: '执行',
+        loading: caseRunning,
+        onClick: () => caseRun(record), },
+    { label: '步骤', onClick: () => onStep(record) },
+    { label: '套件', onClick: () => clickSuite(record) },
+    { label: '历史结果', onClick: () => openResultHistory(record) },
+    { label: '关联任务', onClick: () => onBoundTasks(record) },
+    {
+        label: '提交预发布',
+        hidden: !canSubmitCasePrepublication(record),
+        loading: publicationActionCaseId === record.id,
+        onClick: () => submitCasePrepublication(record), },
+    {
+        label: '通过发布',
+        hidden: !canApproveCasePrepublication(record),
+        loading: publicationActionCaseId === record.id,
+        onClick: () => approveCasePrepublication(record), },
+    {
+        label: '退回未发布',
+        hidden: !canApproveCasePrepublication(record),
+        loading: publicationActionCaseId === record.id,
+        onClick: () => revertCasePrepublication(record), },
+    {
+        label: '取消发布',
+        hidden: !hasPublishedCaseVersion(record) || !record.is_product_owner,
+        danger: true,
+        loading: publicationActionCaseId === record.id,
+        onClick: () => unpublishCaseVersion(record), },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '复制', onClick: () => pageStepsCody(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                   />
                 </template>
               </a-table-column>
@@ -525,17 +520,18 @@
           <template #cell="{ record }">
             <MangoTableActions
               :actions="[
-                {
-                  label: record.relation_type === 'manual' ? '添加用例' : '查看匹配',
-                  onClick: () => openBoundTask(record),
-                },
-                { permission: 'api.case:delete',
-                  label: '解绑',
-                  danger: true,
-                  hidden: record.relation_type !== 'manual',
-                  onClick: () => unbindBoundTask(record),
-                },
-              ]"
+    {
+        label: record.relation_type === 'manual'
+            ? '添加用例'
+            : '查看匹配',
+        onClick: () => openBoundTask(record),
+    },
+    {
+        label: '解绑',
+        danger: true,
+        hidden: record.relation_type !== 'manual',
+        onClick: () => unbindBoundTask(record), },
+]"
             />
           </template>
         </a-table-column>
@@ -687,7 +683,7 @@
   import CaseExecutionConfigurationTags from '@/components/display/CaseExecutionConfigurationTags.vue'
   import CaseExecutionConfigurationTitle from '@/components/display/CaseExecutionConfigurationTitle.vue'
   import { useCaseConfigurationSummary } from './useCaseConfigurationSummary'
-  import usePermissionStore from '@/store/modules/permission'
+
   import { usePagination, useRowKey, useTable } from '@/hooks/table'
   import { useLatestRequest } from '@/hooks/use-latest-request'
   import { useProjectLockedRowSelection } from '@/hooks/use-project-locked-row-selection'
@@ -745,7 +741,7 @@
   } from '@/api/apitest/case-version'
 
   const router = useRouter()
-  const permissions = usePermissionStore()
+
   const configurationDrawerRef = ref<InstanceType<typeof ApiCaseConfigurationDrawer> | null>(null)
   const { summaries: configurationSummaries, loading: configurationLoading,
     load: loadConfigurationSummaries, reset: resetConfigurationSummaries } = useCaseConfigurationSummary()

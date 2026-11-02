@@ -41,12 +41,6 @@ class FunctionalTestIterationCRUD(ModelCRUD):
 
 
 class FunctionalTestIterationViews(ViewSet):
-    action_permission_map = {
-        "retrieve": "functional.iteration:detail",
-        "gantt": "functional.iteration:detail",
-        "board": "functional.iteration:detail",
-        "cases": "functional.iteration:detail",
-    }
 
     @staticmethod
     def _scoped(request: Request):

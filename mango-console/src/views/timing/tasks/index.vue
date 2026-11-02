@@ -222,7 +222,7 @@
           <a-tabs v-model:active-key="activeTab" class="mango-timing-task-tabs mango-tabs-nav-only">
             <template #extra>
               <a-space>
-                <a-button v-permission="'timing.tasks:create'"
+                <a-button
                   v-if="activeTab === 'tasks'"
                   size="small"
                   type="primary"
@@ -232,7 +232,7 @@
                 >
                   新增
                 </a-button>
-                <a-button v-permission="'timing.tasks:create'" v-else size="small" type="primary" @click="openTaskGroupCreate">
+                <a-button  v-else size="small" type="primary" @click="openTaskGroupCreate">
                   新增任务组
                 </a-button>
               </a-space>
@@ -351,20 +351,20 @@
                   <span v-else>-</span>
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
-                  <a-switch v-permission="'timing.tasks:status'"
+                  <a-switch
                     :model-value="record.status === 1"
                     :beforeChange="(newValue) => onModifyStatus(newValue, record, 'status')"
                   />
                 </template>
                 <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
-                  <a-switch v-permission="'timing.tasks:status'"
+                  <a-switch
                     :model-value="record.is_notice === 1"
                     :disabled="Boolean(record.task_group)"
                     :beforeChange="(newValue) => onModifyStatus(newValue, record, 'is_notice')"
                   />
                 </template>
                 <template v-else-if="item.key === 'fail_notice'" #cell="{ record }">
-                  <a-switch v-permission="'timing.tasks:status'"
+                  <a-switch
                     :model-value="record.is_notice === 1 && record.fail_notice === 1"
                     :disabled="record.is_notice !== 1 || Boolean(record.task_group)"
                     :beforeChange="(newValue) => onModifyStatus(newValue, record, 'fail_notice')"
@@ -379,30 +379,30 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <MangoTableActions
                     :actions="[
-                      { permission: 'timing.tasks:execute',
-                        label: '触发',
-                        loading: data.triggerLoading || data.executionOptionsLoading,
-                        onClick: () => onTrigger(record),
-                      },
-                      {
-                        label: record.execution_scope === 'manual' ? '添加用例' : '匹配用例',
-                        onClick: () => onClick(record),
-                      },
-                      { permission: 'timing.tasks', label: '排查结果', onClick: () => openTaskDiagnostic(record) },
-                      { permission: 'timing.tasks:edit',
-                        label: '编辑',
-                        loading: data.executionOptionsLoading,
-                        onClick: () => onEdit(record),
-                      },
-                      { permission: 'timing.tasks:edit', label: '保留策略', hidden: !record.task_group,
-                        onClick: () => openRetentionEditor(record) },
-                      { permission: 'timing.tasks:delete',
-                        label: '删除',
-                        danger: true,
-                        disabled: Boolean(record.task_group),
-                        onClick: () => onDelete(record),
-                      },
-                    ]"
+    {
+        label: '触发',
+        loading: data.triggerLoading || data.executionOptionsLoading,
+        onClick: () => onTrigger(record), },
+    {
+        label: record.execution_scope === 'manual'
+            ? '添加用例'
+            : '匹配用例',
+        onClick: () => onClick(record),
+    },
+    { label: '排查结果', onClick: () => openTaskDiagnostic(record) },
+    { label: '导出离线 HTML', onClick: () => { offlineExport.sourceId = record.id; offlineExport.visible = true; } },
+    {
+        label: '编辑',
+        loading: data.executionOptionsLoading,
+        onClick: () => onEdit(record), },
+    { label: '保留策略', hidden: !record.task_group,
+        onClick: () => openRetentionEditor(record) },
+    {
+        label: '删除',
+        danger: true,
+        disabled: Boolean(record.task_group),
+        onClick: () => onDelete(record), },
+]"
                   />
                 </template>
               </a-table-column>
@@ -612,6 +612,7 @@
       </a-form-item>
     </a-form>
   </a-modal>
+  <OfflineReportExportDialog v-model:visible="offlineExport.visible" source-kind="suite" :source-id="offlineExport.sourceId" select-report />
   <DiagnosticMarkdownDrawer
     v-model:visible="diagnosticDrawer.visible"
     target-type="scheduled_task"
@@ -629,7 +630,7 @@
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import usePermissionStore from '@/store/modules/permission'
+
   import { useRouter } from 'vue-router'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
@@ -655,6 +656,7 @@
   import TestExecutionModal from '@/components/overlays/TestExecutionModal.vue'
   import DiagnosticMarkdownDrawer from '@/components/reports/DiagnosticMarkdownDrawer.vue'
   import TaskGroupManager from './components/TaskGroupManager.vue'
+  import OfflineReportExportDialog from '@/components/reports/OfflineReportExportDialog.vue'
   import TaskRecentResults from './components/TaskRecentResults.vue'
   import type { TaskRecentResult } from '@/api/system/tasks'
   import {
@@ -665,9 +667,10 @@
   } from '@/utils/business-format'
 
   const enumStore = useEnum()
-  const permissionStore = usePermissionStore()
+
   const activeTab = ref<'tasks' | 'groups'>('tasks')
   const taskGroupRef = ref<InstanceType<typeof TaskGroupManager> | null>(null)
+  const offlineExport = reactive({ visible: false, sourceId: 0 })
   const navigationProjectProductId = ref<number | null>(null)
   const taskGroupFilters = reactive({
     navigation_module_ids: [] as number[],
@@ -1182,8 +1185,7 @@
       data.triggerRecord = null
       doRefresh()
       return true
-    } catch (error: any) {
-      Message.error(error?.msg || '触发失败')
+    } catch {
       return false
     } finally {
       data.triggerLoading = false
@@ -1343,8 +1345,7 @@
       const res = await getSystemTaskExecutionOptions()
       data.apiPlatformLimit = Number(res.data?.api_platform_limit || 1)
       return true
-    } catch (error: any) {
-      Message.error(error?.msg || '获取平台并发配置失败')
+    } catch {
       return false
     } finally {
       data.executionOptionsLoading = false
@@ -1360,11 +1361,13 @@
   const retentionSavingIds = ref<number[]>([])
   const retentionEditor = reactive({ visible: false, record: null as any, value: 'all' })
   function openRetentionEditor(record: any) {
-    if (!permissionStore.hasPermission('timing.tasks:edit') || retentionSavingIds.value.length) return
+    if (retentionSavingIds.value.length)
+    return;
     Object.assign(retentionEditor, { visible: true, record, value: record.report_retention_policy || 'all' })
   }
   async function saveRetentionPolicy(record: any, value: string) {
-    if (!record || !permissionStore.hasPermission('timing.tasks:edit') || retentionSavingIds.value.includes(record.id)) return false
+    if (!record || retentionSavingIds.value.includes(record.id))
+    return false;
     retentionSavingIds.value.push(record.id)
     try {
       await putSystemTasks({ id: record.id, report_retention_policy: value })

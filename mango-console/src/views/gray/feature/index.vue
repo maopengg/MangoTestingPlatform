@@ -38,7 +38,7 @@
           </a-form>
         </template>
         <template #toolbar>
-        <a-button v-permission="'gray.feature:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-gray-feature-button-新增灰度">新增灰度</a-button>
+        <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-gray-feature-button-新增灰度">新增灰度</a-button>
         </template>
       <a-table
         class="mango-native-scroll-table"
@@ -57,7 +57,7 @@
               <a-tag :color="configTypeColor(record.config_type)" size="small">{{ configTypeText(record.config_type) }}</a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'gray.feature:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
@@ -71,10 +71,10 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'gray.feature:debug', label: '预览/执行', onClick: () => onPreview(record) },
-                  { permission: 'gray.feature:edit', label: '编辑', onClick: () => onEdit(record) },
-                  { permission: 'gray.feature:delete', label: '删除', danger: true, loading: actionLoading === `delete-${record.id}`, onClick: () => onDelete(record) },
-                ]"
+    { label: '预览/执行', onClick: () => onPreview(record) },
+    { label: '编辑', onClick: () => onEdit(record) },
+    { label: '删除', danger: true, loading: actionLoading === `delete-${record.id}`, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>
@@ -126,8 +126,8 @@
           <div class="mango-gray-preview-drawer__config-header">
             <div class="mango-gray-preview-drawer__title">灰度配置</div>
             <div class="mango-gray-preview-drawer__config-actions">
-              <a-button v-permission="'gray.feature:edit'" size="small" type="outline" @click="addPreviewPathConfig" data-testid="qa-views-gray-feature-button-新增路径">新增路径</a-button>
-              <a-button v-permission="'gray.feature:edit'" size="small" type="primary" :loading="previewDrawer.saveLoading" @click="onPreviewConfigSave" data-testid="qa-views-gray-feature-button-保存配置">保存配置</a-button>
+              <a-button  size="small" type="outline" @click="addPreviewPathConfig" data-testid="qa-views-gray-feature-button-新增路径">新增路径</a-button>
+              <a-button  size="small" type="primary" :loading="previewDrawer.saveLoading" @click="onPreviewConfigSave" data-testid="qa-views-gray-feature-button-保存配置">保存配置</a-button>
             </div>
           </div>
           <a-form class="mango-gray-preview-config-form" :model="previewDrawer.config" layout="horizontal">
@@ -148,7 +148,7 @@
                   <a-select v-model="item.value_type" :options="grayValueTypeOptions" placeholder="值类型" @change="invalidateConfigPreview" data-testid="qa-views-gray-feature-select-值类型" />
                   <a-input v-model="item.original_value" allow-clear placeholder="原值，可选" @input="invalidateConfigPreview" @clear="invalidateConfigPreview" data-testid="qa-views-gray-feature-input-原值-可选" />
                   <a-input v-model="item.value" allow-clear placeholder="替换值，如 ${{tenant_id}}" @input="invalidateConfigPreview" @clear="invalidateConfigPreview" data-testid="qa-views-gray-feature-input-替换值-如-tenant_id" />
-                  <a-button v-permission="'gray.feature:delete'" size="mini" status="danger" @click="removePreviewPathConfig(index)" data-testid="qa-views-gray-feature-button-删除">删除</a-button>
+                  <a-button  size="mini" status="danger" @click="removePreviewPathConfig(index)" data-testid="qa-views-gray-feature-button-删除">删除</a-button>
                 </div>
               </div>
             </a-form-item>
@@ -170,7 +170,7 @@
               />
             </a-form-item>
             <a-form-item>
-              <a-button v-permission="'gray.feature:debug'" size="small" type="primary" :loading="previewDrawer.loading" @click="onPreviewGenerate" data-testid="qa-views-gray-feature-button-重新预览">重新预览</a-button>
+              <a-button  size="small" type="primary" :loading="previewDrawer.loading" @click="onPreviewGenerate" data-testid="qa-views-gray-feature-button-重新预览">重新预览</a-button>
             </a-form-item>
           </a-form>
         </div>
@@ -186,7 +186,7 @@
     </template>
     <template #footer-buttons>
       <a-button @click="previewDrawer.visible = false" data-testid="qa-views-gray-feature-button-关闭">关闭</a-button>
-      <a-button v-permission="'gray.feature:execute'" type="primary" :disabled="!previewDrawer.hasPreview" :loading="previewDrawer.executeLoading" @click="onPreviewExecute" data-testid="qa-views-gray-feature-button-执行">执行</a-button>
+      <a-button  type="primary" :disabled="!previewDrawer.hasPreview" :loading="previewDrawer.executeLoading" @click="onPreviewExecute" data-testid="qa-views-gray-feature-button-执行">执行</a-button>
     </template>
   </BaseSidePanel>
 </template>

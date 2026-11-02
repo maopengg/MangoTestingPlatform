@@ -93,11 +93,6 @@ class FileDataCRUD(ModelCRUD):
 class FileDataViews(ViewSet):
     model = FileData
     serializer_class = FileDataSerializers
-    action_permission_map = {
-        'download_url': 'config.test_files:download',
-        'post_upload': 'config.test_files:create',
-        'artifact_download_url': None,
-    }
 
     @error_response('system')
     @action(methods=['GET'], detail=False)

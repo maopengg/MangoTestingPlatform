@@ -2,19 +2,19 @@
   <section class="mango-extraction-editor">
     <div class="mango-section-title">
       <strong>响应提取</strong>
-      <a-button v-if="!disabled" v-permission="permissionKey" size="small" :disabled="rows.length >= 100" @click="add">添加提取</a-button>
+      <a-button v-if="!disabled"  size="small" :disabled="rows.length >= 100" @click="add">添加提取</a-button>
     </div>
     <p v-if="showHint" class="mango-extraction-hint">可选；留空使用完整输出。一个表达式直接取值，多个表达式按顺序返回列表。接口正文从 $.json 提取，Python 返回值从 $ 提取。</p>
     <div v-for="(row, index) in rows" :key="row.id" class="mango-extraction-row">
       <a-input v-model="row.path" :max-length="512" :disabled="disabled" :aria-label="`JSONPath ${index + 1}`" placeholder="$.json.data.answer" @update:model-value="changed" />
-      <a-button v-if="!disabled" v-permission="permissionKey" size="small" type="text" status="danger" @click="remove(index)">移除</a-button>
+      <a-button v-if="!disabled"  size="small" type="text" status="danger" @click="remove(index)">移除</a-button>
     </div>
     <p v-if="error" role="alert" class="mango-extraction-error">{{ error }}</p>
   </section>
 </template>
 <script setup lang="ts">
   import { ref, watch } from 'vue'
-  const props = withDefaults(defineProps<{ modelValue: any; disabled?: boolean; permissionKey?: string; showHint?: boolean }>(), { disabled: false, permissionKey: 'evaluation.case:edit', showHint: true })
+  const props = withDefaults(defineProps<{ modelValue: any; disabled?: boolean; permissionKey?: string; showHint?: boolean }>(), { disabled: false, permissionKey: 'evaluation.case:change', showHint: true })
   const emit = defineEmits<{
     (event: 'update:modelValue', value: { paths: string[] }): void
     (event: 'validity-change', message: string): void

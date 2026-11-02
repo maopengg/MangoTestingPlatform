@@ -1,5 +1,19 @@
 import { deleted, get, post, put } from '@/api/http'
 
+export interface TestObjectProbeResult {
+  address: string
+  connected: boolean
+  host: string
+  port: number | null
+  resolved_ips: string[]
+  elapsed_ms: number
+  message: string
+}
+
+export function testObjectConnection(id: number, address: string) {
+  return post<TestObjectProbeResult>({ url: '/system/test/object/test', data: { id, address }, timeout: 10000 })
+}
+
 export function getUserTestObject(data: object) {
   return get({
     url: '/system/test/object',
@@ -19,8 +33,7 @@ export function postUserTestObject(data: object) {
 }
 
 export function putUserTestObject(data: object) {
-  return put({ permissionKey: 'config.test_object',
-    url: '/system/test/object',
+  return put({ url: '/system/test/object',
     data: () => {
       return data
     },

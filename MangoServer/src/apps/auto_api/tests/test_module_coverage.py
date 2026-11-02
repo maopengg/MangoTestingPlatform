@@ -437,15 +437,15 @@ class ModuleCoverageMcpTests(SimpleTestCase):
         )
         self.assertEqual(
             component_policy("batch_upsert_module_coverage_cases").permission_key,
-            "api.module_coverage:create",
+            "api.module_coverage:add",
         )
         self.assertEqual(
             component_policy("batch_upsert_module_coverage_interfaces").permission_key,
-            "api.module_coverage:create",
+            "api.module_coverage:add",
         )
         self.assertEqual(
             component_policy("update_module_coverage_scan").permission_key,
-            "api.module_coverage:edit",
+            "api.module_coverage:change",
         )
         self.assertEqual(
             component_policy("preview_module_coverage_interface_binding").permission_key,
@@ -453,7 +453,7 @@ class ModuleCoverageMcpTests(SimpleTestCase):
         )
         self.assertEqual(
             component_policy("update_module_coverage_interface_binding").permission_key,
-            "api.module_coverage:edit",
+            "api.module_coverage:change",
         )
         self.assertEqual(_tool_operation("batch_upsert_module_coverage_cases"), "create")
         self.assertEqual(_tool_operation("batch_upsert_module_coverage_interfaces"), "create")
@@ -480,10 +480,10 @@ class ModuleCoverageMcpTests(SimpleTestCase):
             subject="7",
             scopes=[
                 "api.module_coverage",
-                "api.module_coverage:create",
-                "api.module_coverage:edit",
-                "api.module_coverage:delete",
-                "api.module_coverage:detail",
+                "api.module_coverage:add",
+                "api.module_coverage:change",
+                "api.module_coverage:remove",
+                "api.module_coverage:read",
             ],
             claims={"user_id": 7, "is_super_admin": False},
         )

@@ -19,7 +19,7 @@
     <template #footer>
       <a-space>
         <a-button size="small" :disabled="saving" @click="visible = false">取消</a-button>
-        <a-button v-if="!disabled" v-permission="'evaluation.case:edit'" size="small" type="primary" :loading="saving" :disabled="loading || Boolean(error)" @click="save">保存</a-button>
+        <a-button v-if="!disabled"  size="small" type="primary" :loading="saving" :disabled="loading || Boolean(error)" @click="save">保存</a-button>
       </a-space>
     </template>
   </EvaluationDrawer>

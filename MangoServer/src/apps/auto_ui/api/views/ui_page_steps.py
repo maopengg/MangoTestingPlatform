@@ -30,6 +30,7 @@ from src.common.responses.response_msg import (
     RESPONSE_MSG_0077,
     RESPONSE_MSG_0087,
     RESPONSE_MSG_0088,
+    RESPONSE_MSG_0210,
     RESPONSE_MSG_0248,
     RESPONSE_MSG_0249,
     RESPONSE_MSG_0251,
@@ -68,24 +69,6 @@ class PageStepsCRUD(ModelCRUD):
 class PageStepsViews(ViewSet):
     model = PageSteps
     serializer_class = PageStepsSerializers
-    action_permission_map = {
-        'ui_steps_run': 'ui.page_steps:debug',
-        'open_browser': 'ui.page_steps:debug',
-        'get_page_steps_name': 'ui.page_steps',
-        'asset_product_options': 'ui.page_steps',
-        'asset_module_options': 'ui.page_steps',
-        'asset_step_options': 'ui.page_steps',
-        'referenced_cases': 'ui.page_steps',
-        'recording_commit': 'ui.page_steps:create',
-        'copy_page_steps': 'ui.page_steps:copy',
-        'heal_report': 'ui.page_steps:debug',
-        'heal_records': 'ui.page_steps',
-        'heal_record_detail': 'ui.page_steps',
-        'heal_apply': 'ui.page_steps:edit',
-        'heal_reject': 'ui.page_steps:edit',
-        'heal_versions': 'ui.page_steps',
-        'heal_rollback': 'ui.page_steps:edit',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('ui')
@@ -94,6 +77,10 @@ class PageStepsViews(ViewSet):
         if not serializer.is_valid():
             return ResponseData.fail(RESPONSE_MSG_0251, serializer.errors)
         data = serializer.validated_data
+        if not PageStepsCRUD().filter_queryset_by_data_scope(
+                request, PageSteps.objects.filter(id=data['page_step_id']),
+        ).exists():
+            return ResponseData.fail(RESPONSE_MSG_0210)
         page_model = TestCase(
             request.user['id'],
             request.user['username'],
@@ -111,6 +98,10 @@ class PageStepsViews(ViewSet):
         @return:
         """
         is_send = request.query_params.get("is_send", True)
+        if not PageStepsCRUD().filter_queryset_by_data_scope(
+                request, PageSteps.objects.filter(id=request.query_params.get('page_step_id')),
+        ).exists():
+            return ResponseData.fail(RESPONSE_MSG_0210)
         if is_send:
             is_send = bool(int(is_send))
         try:

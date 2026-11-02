@@ -26,10 +26,6 @@ class GrayRepositoryCRUD(LastUpdateUserCRUD):
 
 
 class GrayRepositoryViews(ViewSet):
-    action_permission_map = {
-        'test_connection': 'gray.repository:debug',
-        'sync': 'gray.repository:execute',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('system')

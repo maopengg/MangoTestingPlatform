@@ -23,6 +23,11 @@ class TestSuiteOfflineExportSerializer(serializers.Serializer):
     source_id = serializers.IntegerField(min_value=1, max_value=9223372036854775807)
 
 
+class TestSuiteOfflineOptionsSerializer(TestSuiteOfflineExportSerializer):
+    page = serializers.IntegerField(min_value=1, default=1)
+    page_size = serializers.IntegerField(min_value=1, max_value=100, default=20)
+
+
 class TestSuiteSerializers(serializers.ModelSerializer):
     id = serializers.IntegerField()
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)

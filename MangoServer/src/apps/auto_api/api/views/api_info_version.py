@@ -45,13 +45,6 @@ class ApiInfoVersionScopeMixin:
 
 
 class ApiInfoRevisionViews(ApiInfoVersionScopeMixin, ViewSet):
-    action_permission_map = {
-        'list': 'api.info:detail',
-        'version_detail': 'api.info:detail',
-        'create_revision': 'api.info:edit',
-        'checkout_revision': 'api.info:edit',
-        'delete_revision': 'api.info:edit',
-    }
 
     @error_response('api')
     def list(self, request: Request):
@@ -138,10 +131,6 @@ class ApiInfoRevisionViews(ApiInfoVersionScopeMixin, ViewSet):
 
 
 class ApiInfoReleaseViews(ApiInfoVersionScopeMixin, ViewSet):
-    action_permission_map = {
-        'list': 'api.info:detail',
-        'publish': 'api.info:publish',
-    }
 
     @error_response('api')
     def list(self, request: Request):

@@ -95,8 +95,8 @@
         <template #toolbar>
           <div>
             <a-space>
-              <a-button v-permission="'data_factory.entity:create'" size="small" type="primary" @click="openEntity()" data-testid="qa-views-data-factory-entity-button-新增实体">新增实体</a-button>
-              <a-button v-permission="'data_factory.entity:create'" size="small" @click="openBatchGenerate" data-testid="qa-views-data-factory-entity-button-批量生成">批量生成</a-button>
+              <a-button  size="small" type="primary" @click="openEntity()" data-testid="qa-views-data-factory-entity-button-新增实体">新增实体</a-button>
+              <a-button  size="small" @click="openBatchGenerate" data-testid="qa-views-data-factory-entity-button-批量生成">批量生成</a-button>
             </a-space></div
           >
         </template>
@@ -138,7 +138,7 @@
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tooltip :content="entityStatusTooltip(record)">
-                <a-switch v-permission="'data_factory.entity:status'"
+                <a-switch
                   :beforeChange="(newValue) => switchEntityStatus(newValue, record.id)"
                   :default-checked="record.status === 1"
                 />
@@ -163,24 +163,21 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'data_factory.entity:edit', label: '编辑', onClick: () => openEntity(record) },
-                  { permission: 'data_factory.entity:detail',
-                    label: '字段规则',
-                    loading: actionLoading === `fields-${record.id}`,
-                    onClick: () => openFields(record),
-                  },
-                  { permission: 'data_factory.entity:detail',
-                    label: '状态记录',
-                    loading: actionLoading === `status-log-${record.id}`,
-                    onClick: () => openStatusLogs(record),
-                  },
-                  { permission: 'data_factory.entity:delete',
-                    label: '删除',
-                    danger: true,
-                    loading: actionLoading === `delete-${record.id}`,
-                    onClick: () => removeEntity(record),
-                  },
-                ]"
+    { label: '编辑', onClick: () => openEntity(record) },
+    {
+        label: '字段规则',
+        loading: actionLoading === `fields-${record.id}`,
+        onClick: () => openFields(record), },
+    {
+        label: '状态记录',
+        loading: actionLoading === `status-log-${record.id}`,
+        onClick: () => openStatusLogs(record), },
+    {
+        label: '删除',
+        danger: true,
+        loading: actionLoading === `delete-${record.id}`,
+        onClick: () => removeEntity(record), },
+]"
               />
             </template>
               </a-table-column>
@@ -237,7 +234,7 @@
           checked-text="跳过已存在"
           unchecked-text="已存在报错"
         />
-        <a-button v-permission="'data_factory.entity:debug'" :loading="batchLoading" type="primary" @click="loadBatchTables" data-testid="qa-views-data-factory-entity-button-加载表">加载表</a-button>
+        <a-button  :loading="batchLoading" type="primary" @click="loadBatchTables" data-testid="qa-views-data-factory-entity-button-加载表">加载表</a-button>
         <a-button :loading="batchGenerating" status="success" @click="batchGenerateEntities" data-testid="qa-views-data-factory-entity-button-生成"
           >生成</a-button
         >
@@ -282,7 +279,7 @@
       <a-space>
         <a-button @click="batchVisible = false" data-testid="qa-views-data-factory-entity-button-关闭">关闭</a-button>
         <a-button :loading="batchLoading" @click="loadBatchTables" data-testid="qa-views-data-factory-entity-button-重新加载">重新加载</a-button>
-        <a-button v-permission="'data_factory.entity:create'"
+        <a-button
           :loading="batchGenerating"
           status="success"
           type="primary"
@@ -350,7 +347,7 @@
                 class="entity-table-select"
                 @change="onEntityTableChange" data-testid="qa-views-data-factory-entity-select-选择逻辑源和环境后自动读取表"
               />
-              <a-button v-permission="'data_factory.entity:delete'"
+              <a-button
                 :loading="entityTableRefreshLoading"
                 class="entity-table-refresh"
                 @click="refreshEntityTables" data-testid="qa-views-data-factory-entity-button-清理缓存重试"
@@ -421,10 +418,10 @@
     <div class="entity-toolbar entity-field-toolbar">
       <a-space wrap>
         <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
-        <a-button v-permission="'data_factory.entity:edit'" :loading="fieldSyncLoading" type="primary" @click="syncCurrentEntityFields" data-testid="qa-views-data-factory-entity-button-同步当前表字段"
+        <a-button  :loading="fieldSyncLoading" type="primary" @click="syncCurrentEntityFields" data-testid="qa-views-data-factory-entity-button-同步当前表字段"
           >同步当前表字段</a-button
         >
-        <a-button v-permission="'data_factory.entity:debug'" :loading="fieldPreviewLoading" @click="previewFieldValues" data-testid="qa-views-data-factory-entity-button-生成实际值">生成实际值</a-button>
+        <a-button  :loading="fieldPreviewLoading" @click="previewFieldValues" data-testid="qa-views-data-factory-entity-button-生成实际值">生成实际值</a-button>
         <a-switch v-model="replaceFields" checked-text="替换" unchecked-text="追加" />
       </a-space>
       <VariableReferencePanel />
@@ -494,7 +491,7 @@
                 placeholder="请选择默认枚举值"
                 @change="refreshEnumConfigValue(record)" data-testid="qa-views-data-factory-entity-select-请选择默认枚举值"
               />
-              <a-button v-permission="'data_factory.entity:edit'" size="mini" type="text" @click="openEnumEditor(record)" data-testid="qa-views-data-factory-entity-button-配置枚举-项">
+              <a-button  size="mini" type="text" @click="openEnumEditor(record)" data-testid="qa-views-data-factory-entity-button-配置枚举-项">
                 配置枚举（{{ getEnumOptionRows(record).length }}项）
               </a-button>
             </a-space>

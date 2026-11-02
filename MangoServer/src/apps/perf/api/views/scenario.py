@@ -59,16 +59,6 @@ class PerfScenarioCRUD(ModelCRUD):
 
 
 class PerfScenarioViews(ViewSet):
-    action_permission_map = {
-        "retrieve": "perf.scenario:detail",
-        "source_api_cases": "perf.scenario:edit",
-        "validate": "perf.scenario:detail",
-        "script_preview": "perf.scenario:detail",
-        "configuration": "perf.scenario:edit",
-        "execute": "perf.scenario:execute",
-        "preflight": "perf.scenario:execute",
-        "executors": "perf.scenario:execute",
-    }
 
     @error_response("system")
     def executors(self, request: Request):

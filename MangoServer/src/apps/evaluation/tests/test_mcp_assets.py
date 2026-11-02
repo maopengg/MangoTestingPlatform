@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 from django.test import SimpleTestCase
-from src.apps.evaluation.constants import MCP_EVALUATION_PERMISSIONS
+from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
 from src.apps.evaluation.exceptions import EVALUATION_DATASET_ACCESS_DENIED, EvaluationError
 from src.apps.evaluation.services.graders import RankingGrader, EvaluationGraderRegistry
 from src.apps.evaluation.services.assets import set_case_status
@@ -74,15 +74,17 @@ class EvaluationMcpTests(SimpleTestCase):
                 return register
         registry = Registry()
         register_evaluation_tools(registry)
-        self.assertEqual(registry.names, set(MCP_EVALUATION_PERMISSIONS))
-        for name, permission in MCP_EVALUATION_PERMISSIONS.items():
+        evaluation_rules = {name: rule['permission_key'] for name, rule in MCP_PERMISSION_RULES.items()
+                            if (rule['permission_key'] or '').startswith('evaluation.')}
+        self.assertEqual(registry.names, set(evaluation_rules))
+        for name, permission in evaluation_rules.items():
             self.assertEqual(component_policy(name).permission_key, permission)
             self.assertIn(permission, PermissionMenuService.all_permission_keys())
 
-    def test_read_only_user_cannot_execute_publish_or_change_status(self):
+    def test_read_permission_does_not_grant_publish_or_asset_changes(self):
         with patch('src.interfaces.mcp.authentication.PermissionMenuService.is_effective_super_admin', return_value=False), \
-             patch('src.interfaces.mcp.authentication.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:detail', 'evaluation.dataset'}):
-            for name in ('run_evaluation_case', 'publish_evaluation_dataset_version', 'update_evaluation_case_status', 'stop_evaluation_case_execution', 'update_evaluation_dataset_item', 'create_evaluation_dataset_item'):
+             patch('src.interfaces.mcp.authentication.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:read', 'evaluation.dataset'}):
+            for name in ('publish_evaluation_dataset_version', 'update_evaluation_case_status', 'update_evaluation_dataset_item', 'create_evaluation_dataset_item'):
                 self.assertIsNotNone(permission_error(SimpleNamespace(), name, {}))
 
     def test_stop_is_classified_as_a_write_for_demo_environments(self):
@@ -98,15 +100,16 @@ class EvaluationMcpTests(SimpleTestCase):
         await McpDomainPathApp(application)({'type': 'http', 'path': '/evaluation', 'root_path': '/mcp'}, None, None)
         self.assertEqual(scopes[0]['path'], '/mcp/evaluation/')
 
-    def test_authorized_read_does_not_grant_case_execution(self):
+    def test_read_permission_grants_case_execution_without_asset_edits(self):
         with patch('src.interfaces.mcp.authentication.PermissionMenuService.is_effective_super_admin', return_value=False), \
-             patch('src.interfaces.mcp.authentication.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:detail'}):
+             patch('src.interfaces.mcp.authentication.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:read'}):
             self.assertIsNone(permission_error(SimpleNamespace(), 'get_evaluation_case_execution', {}))
-            self.assertIsNotNone(permission_error(SimpleNamespace(), 'run_evaluation_case', {}))
+            self.assertIsNone(permission_error(SimpleNamespace(), 'run_evaluation_case', {}))
+            self.assertIsNotNone(permission_error(SimpleNamespace(), 'update_evaluation_case', {}))
 
-    def test_status_service_does_not_borrow_edit_permission(self):
+    def test_status_service_rejects_read_only_permission(self):
         with patch('src.apps.evaluation.services.assets.PermissionMenuService.is_effective_super_admin', return_value=False), \
-             patch('src.apps.evaluation.services.assets.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:edit'}):
+             patch('src.apps.evaluation.services.assets.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:read'}):
             with self.assertRaises(EvaluationError):
                 set_case_status(1, 'enabled', SimpleNamespace())
 

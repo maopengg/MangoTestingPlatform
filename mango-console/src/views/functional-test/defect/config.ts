@@ -28,7 +28,7 @@ export const defectColumns = [
   { title: '优先级', dataIndex: 'priority', slotName: 'priority', width: 90 },
   { title: '缺陷类型', dataIndex: 'defect_type', slotName: 'defect_type', width: 110 },
   { title: '来源', dataIndex: 'source_type', slotName: 'source_type', width: 110 },
-  { title: '负责人', dataIndex: 'assignee', slotName: 'assignee', width: 110 },
+  { title: '经办人', dataIndex: 'assignee', slotName: 'assignee', width: 110 },
   { title: '报告人', dataIndex: 'reporter', slotName: 'reporter', width: 110 },
   { title: '关联用例', dataIndex: 'relations', slotName: 'relations', width: 100 },
   { title: '更新时间', dataIndex: 'update_time', width: 165 },

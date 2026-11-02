@@ -7,14 +7,14 @@
           <div class="mango-system-settings__label-wrap"><span class="mango-system-settings__label">{{ field.label }}</span></div>
           <div class="mango-system-settings__type"><a-tag v-if="field.type !== 'text'" size="small">普通配置</a-tag></div>
           <div class="mango-system-settings__control">
-            <a-switch v-if="field.type === 'switch'" v-permission="'system.settings:edit'" v-model="draft[field.key]" :loading="loading" :disabled="loading" :aria-label="field.label" size="medium" @change="save" />
-            <a-input-number v-else-if="field.type === 'number'" v-permission="'system.settings:edit'" v-model="draft[field.key]" class="mango-system-settings__input mango-system-settings__input--number" :disabled="loading" :aria-label="field.label" :min="300" :max="604800" :precision="0" size="medium" @blur="save" @press-enter="save" />
+            <a-switch v-if="field.type === 'switch'"  v-model="draft[field.key]" :loading="loading" :disabled="loading" :aria-label="field.label" size="medium" @change="save" />
+            <a-input-number v-else-if="field.type === 'number'"  v-model="draft[field.key]" class="mango-system-settings__input mango-system-settings__input--number" :disabled="loading" :aria-label="field.label" :min="300" :max="604800" :precision="0" size="medium" @blur="save" @press-enter="save" />
             <span v-else>{{ field.text }}</span>
           </div>
         </div>
         <div class="mango-system-settings__row">
           <div class="mango-system-settings__control">
-            <a-button v-permission="'system.settings:debug'" size="small" :loading="sampling" @click="sample">下载 HTML</a-button>
+            <a-button  size="small" :loading="sampling" @click="sample">下载 HTML</a-button>
             <span v-if="loading" role="status">正在保存…</span>
           </div>
         </div>

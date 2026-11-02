@@ -96,6 +96,8 @@ TEST_TARGET_INVALID = ErrorDefinition(code=40036,
 TEST_TARGET_UNRESOLVED = ErrorDefinition(code=40037, message='{}')
 TEST_TARGET_AUTH_CHANGED = ErrorDefinition(code=40038,
                                            message='认证过程中地址条件变量发生变化，已停止保存认证缓存；请保持登录与用例使用相同的条件值')
+TEST_TARGET_PROBE_DENIED = ErrorDefinition(code=40048, message='测试对象不存在或无权测试')
+TEST_TARGET_PROBE_ADDRESS_INVALID = ErrorDefinition(code=40049, message='请选择该测试对象中已保存的地址')
 DATA_SOURCE_IMPORT_SELECTION_INVALID = ErrorDefinition(code=40030,
                                                        message='所选数据库不在当前账号可发现的列表中，请刷新后重试')
 DATA_SOURCE_IMPORT_ALIAS_INVALID = ErrorDefinition(code=40031,

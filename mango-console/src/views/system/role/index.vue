@@ -14,7 +14,7 @@
                 <div class="mango-role-list__count">共 {{ table.dataList.length }} 条</div>
               </div>
               <a-button
-                v-permission="'system.role:create'"
+
                 :disabled="permissionPanel.saving"
                 size="small"
                 type="primary"
@@ -44,7 +44,7 @@
                   </span>
                   <span class="mango-role-item__ops" @click.stop>
                     <a-button
-                      v-permission="'system.role:edit'"
+
                       :disabled="isGuestRole(role) || permissionPanel.saving"
                       size="mini"
                       type="text"
@@ -54,7 +54,7 @@
                       编辑
                     </a-button>
                     <a-button
-                      v-permission="'system.role:delete'"
+
                       :disabled="isGuestRole(role) || permissionPanel.saving"
                       size="mini"
                       status="danger"
@@ -84,7 +84,7 @@
                 </div>
               </div>
               <a-button
-                v-permission="'system.role:edit'"
+
                 v-if="selectedRole"
                 size="small"
                 type="primary"
@@ -98,7 +98,7 @@
             </div>
 
             <mango-panel-spin :loading="permissionPanel.loading">
-              <template v-if="selectedRole && canReadPermission">
+              <template v-if="selectedRole">
                 <div class="mango-permission-summary">
                   <div>
                     <span class="mango-permission-summary__label">已选页面</span>
@@ -285,13 +285,11 @@
     return permissionPanel.checkedKeys.filter((key) => pageKeys.includes(key))
   })
   const isSelectedGuestRole = computed(() => isGuestRole(selectedRole.value))
-  const canReadPermission = computed(() => permissionStore.hasPermission('system.role:detail'))
-  const isPermissionReadonly = computed(() =>
-    isSelectedGuestRole.value || !permissionStore.hasPermission('system.role:edit') ||
-    permissionPanel.loading || permissionPanel.saving
-  )
+
+  const isPermissionReadonly = computed(() => isSelectedGuestRole.value ||
+    permissionPanel.loading || permissionPanel.saving)
   const canSavePermission = computed(() =>
-    canReadPermission.value && !isPermissionReadonly.value &&
+    !isPermissionReadonly.value &&
     loadedRoleId.value !== null && loadedRoleId.value === selectedRole.value?.id
   )
   const readonlyTreeData = computed(() => {
@@ -351,7 +349,7 @@
     permissionPanel.checkedKeys = []
     permissionPanel.selectedKeys = []
     permissionPanel.loading = false
-    if (!canReadPermission.value) return
+
     permissionPanel.loading = true
     try {
       const res = await getUserRolePermission(role.id)

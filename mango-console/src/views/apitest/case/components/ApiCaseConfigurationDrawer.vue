@@ -21,7 +21,7 @@
         </template>
         <template #expand-row="{ record }">
           <DataFactoryCaseConfigPanel v-if="record.kind === 'data_factory'" readonly
-            :readonly-permission="detailPermission"
+
             :source-type="Number(record.configuration.source_type)"
             :configs="[factoryConfig(record.configuration)]" />
           <JsonDisplay v-else :data="record.configuration" :show-drawer-button="false" />
@@ -42,11 +42,11 @@
   import { usePagination } from '@/hooks/table'
   import { useLatestRequest } from '@/hooks/use-latest-request'
   import { getApiCaseConfigurationDetails } from '@/api/apitest/case'
-  import usePermissionStore from '@/store/modules/permission'
+
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import type { ApiCaseConfigurationDetails, ApiCaseConfigurationItem } from '@/types/api-test/case'
 
-  const permissions = usePermissionStore()
+
   const DataFactoryCaseConfigPanel = defineAsyncComponent({
     loader: () => import('@/components/DataFactory/CaseConfigPanel.vue'),
     delay: 0,
@@ -65,7 +65,6 @@
   const failed = ref(false)
   const caseId = ref(0)
   const snapshot = ref<ApiCaseConfigurationDetails | null>(null)
-  const detailPermission = ref('api.case:detail')
   const title = ref('执行配置')
   const summary = ref<ApiCaseConfigurationDetails | null>(null)
   const rows = computed(() => {
@@ -115,9 +114,8 @@
   }
 
   function open(id: number, name: string) {
-    if (!permissions.hasPermission('api.case:detail')) return
+
     snapshot.value = null
-    detailPermission.value = 'api.case:detail'
     caseId.value = id
     title.value = `执行配置 / #${id} / ${name}`
     pagination.page = 1
@@ -126,10 +124,9 @@
     void load()
   }
 
-  function openSnapshot(details: ApiCaseConfigurationDetails, permissionKey: string) {
-    if (!permissions.hasPermission(permissionKey)) return
+  function openSnapshot(details: ApiCaseConfigurationDetails) {
+
     invalidateRequests()
-    detailPermission.value = permissionKey
     loading.value = false
     failed.value = false
     snapshot.value = details
@@ -140,9 +137,6 @@
     visible.value = true
   }
 
-  watch(() => permissions.hasPermission(detailPermission.value), allowed => {
-    if (!allowed) onVisibilityChange(false)
-  })
 
   defineExpose({ open, openSnapshot })
 </script>

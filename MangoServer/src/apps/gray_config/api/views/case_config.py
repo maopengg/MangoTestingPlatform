@@ -47,10 +47,6 @@ class AutomationCaseGrayConfigCRUD(DeprecatedCaseGrayConfigApiMixin, LastUpdateU
 class AutomationCaseGrayConfigViews(DeprecatedCaseGrayConfigApiMixin, ViewSet):
     """已废弃：仅用于兼容历史批量保存与范围替换调用。"""
 
-    action_permission_map = {
-        'batch_save': 'gray.feature:edit',
-        'replace_scope': 'gray.feature:edit',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('system')

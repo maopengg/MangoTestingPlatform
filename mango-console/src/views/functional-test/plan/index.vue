@@ -52,7 +52,7 @@
         <template #toolbar>
           <a-space>
             <a-button size="small" @click="loadPlans">刷新</a-button>
-            <a-button v-permission="'functional.plan:create'" size="small" type="primary" @click="openEditor()">新建计划</a-button>
+            <a-button  size="small" type="primary" @click="openEditor()">新建计划</a-button>
           </a-space>
         </template>
         <div class="mango-plan-page__table">
@@ -111,10 +111,10 @@
             <template #actions="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'functional.plan:detail', label: '进入用例', onClick: () => goDetail(record) },
-                  { permission: 'functional.plan:edit', label: '编辑', onClick: () => openEditor(record) },
-                  { permission: 'functional.plan:delete', label: '删除', danger: true, onClick: () => removePlan(record) },
-                ]"
+    { label: '进入用例', onClick: () => goDetail(record) },
+    { label: '编辑', onClick: () => openEditor(record) },
+    { label: '删除', danger: true, onClick: () => removePlan(record) },
+]"
               />
             </template>
           </a-table>

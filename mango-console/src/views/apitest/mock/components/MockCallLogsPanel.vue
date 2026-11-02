@@ -15,13 +15,13 @@
             <a-button size="small" type="primary" :loading="logs.loading" @click="loadLogs(1)">查询</a-button>
             <a-button size="small" @click="resetLogFilters">重置</a-button>
             <a-button size="small" :loading="logs.loading" @click="refreshLogs">刷新</a-button>
-            <a-button v-permission="'api.mock:export'"
+            <a-button
               size="small"
               :disabled="logs.pagination.pageCount === 0"
               :loading="logs.exporting"
               @click="exportLogs"
             >导出 CSV</a-button>
-            <a-button v-permission="'api.mock:delete'"
+            <a-button
               size="small"
               status="danger"
               type="outline"
@@ -68,7 +68,7 @@
             <a-table-column title="客户端IP" data-index="client_ip" :width="150" />
             <a-table-column title="操作" :width="160" align="center" fixed="right">
               <template #cell="{ record }">
-                <MangoTableActions :actions="[{ permission: 'api.mock:detail', label: '查看详情', onClick: () => openLogDetail(record) }]" />
+                <MangoTableActions :actions="[{ label: '查看详情', onClick: () => openLogDetail(record) }]" />
               </template>
             </a-table-column>
             </template>

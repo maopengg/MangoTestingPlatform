@@ -5,7 +5,6 @@ import './styles'
 import { setupGlobalComponent } from '@/layouts'
 import { setupPinia } from '@/store/pinia'
 import setupRouterGuard from './router/guard'
-import { setupDirectives } from '@/directives'
 import { applyDisplayDensity } from '@/hooks/useDisplayDensity'
 import { DisplayDensity } from '@/store/types'
 import { setupFrontendErrorReporting } from '@/utils/system-error-reporter'
@@ -24,7 +23,6 @@ function setup() {
   setupRouter(app)
   setupRouterGuard()
   setupGlobalComponent(app)
-  setupDirectives(app)
   // 如果需要对接正式的接口，需要下面代码注释或者删除
   // setupMock()
   app.mount('#app')

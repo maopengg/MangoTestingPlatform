@@ -40,15 +40,6 @@ from src.common.testing import ObtainAssertion, ObtainTestData, assertion_func_i
 
 
 class SystemViews(ViewSet):
-    action_permission_map = {
-        'enum_api': 'index.home',
-        'common_variable': 'help.variable',
-        'random_data': 'help.variable:debug',
-        'assertion_list': 'help.assertion',
-        'method_cache_refresh': 'system.settings:debug',
-        'assertion_test': 'help.assertion:debug',
-        'set_debug_log': 'system.settings:debug',
-    }
 
     METHOD_CACHE_TYPES = {
         'test_data': CacheDataKey2Enum.TEST_DATA_SELECT_VALUE.value,

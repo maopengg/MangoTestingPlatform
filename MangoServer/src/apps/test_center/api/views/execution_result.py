@@ -25,30 +25,6 @@ from src.common.responses import (
 
 
 class ExecutionResultViews(ViewSet):
-    action_permission_map = {
-        'get_list': ('report:detail', 'api.info:detail', 'api.info:debug', 'api.info:execute',
-                     'api.case:detail', 'api.case:debug', 'api.case:execute', 'ui.page_steps:detail',
-                     'ui.page_steps:debug', 'ui.case:detail', 'ui.case:debug', 'ui.case:execute',
-                     'pytest.case:detail', 'pytest.case:execute'),
-        'get_detail': ('report:detail', 'api.info:detail', 'api.info:debug', 'api.info:execute',
-                       'api.case:detail', 'api.case:debug', 'api.case:execute', 'ui.page_steps:detail',
-                       'ui.page_steps:debug', 'ui.case:detail', 'ui.case:debug', 'ui.case:execute',
-                       'pytest.case:detail', 'pytest.case:execute'),
-        'get_content': ('report:detail', 'api.info:detail', 'api.info:debug', 'api.info:execute',
-                        'api.case:detail', 'api.case:debug', 'api.case:execute', 'ui.page_steps:detail',
-                        'ui.page_steps:debug', 'ui.case:detail', 'ui.case:debug', 'ui.case:execute',
-                        'pytest.case:detail', 'pytest.case:execute'),
-        'get_latest': ('report:detail', 'api.info:detail', 'api.info:debug', 'api.info:execute',
-                       'api.case:detail', 'api.case:debug', 'api.case:execute', 'ui.page_steps:detail',
-                       'ui.page_steps:debug', 'ui.case:detail', 'ui.case:debug', 'ui.case:execute',
-                       'pytest.case:detail', 'pytest.case:execute'),
-        'analyze_assertions': ('report:detail', 'api.case:detail'),
-        'preview_case_analysis': 'api.case:detail',
-        'analyze_case': 'api.case:detail',
-        'admin_list': 'system.execution_result',
-        'admin_config': 'system.execution_result',
-        'admin_cleanup': 'system.execution_result:delete',
-    }
 
     @staticmethod
     def _visible_results(request):

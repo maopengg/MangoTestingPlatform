@@ -21,16 +21,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 class DatasetVersionViews(ViewSet):
     model = EvaluationDatasetVersion
     serializer_class = DatasetVersionSerializer
-    action_permission_map = {
-        "list": "evaluation.dataset:detail", "retrieve": "evaluation.dataset:detail",
-        "create": "evaluation.dataset:edit", "update": "evaluation.dataset:edit",
-        "delete": "evaluation.dataset:delete",
-        "publish": "evaluation.dataset:publish", "quality": "evaluation.dataset:detail",
-        "acknowledge_quality": "evaluation.dataset:publish", "diff": "evaluation.dataset:detail",
-        "audit_api_cases": ("evaluation.dataset:detail", "evaluation.dataset:import"), "import_api_cases": "evaluation.dataset:import",
-        "workflow_resources": "evaluation.dataset:detail",
-        "input_preview": "evaluation.dataset:detail",
-    }
 
     @error_response("system")
     def list(self, request, dataset_id=None):

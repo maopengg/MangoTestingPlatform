@@ -70,15 +70,6 @@ class IndexViews(ViewSet):
         'statistics_v4',
         'project_quality_v1',
     })
-    action_permission_map = {
-        'case_result_week_sum': 'index.home',
-        'case_sum': 'index.home',
-        'case_run_sum': 'index.home',
-        'activity_level': 'index.home',
-        'statistics': 'index.home',
-        'project_quality': 'index.home',
-        'pending_tasks': 'index.home',
-    }
 
     @staticmethod
     def _allowed_product_ids(request: Request):

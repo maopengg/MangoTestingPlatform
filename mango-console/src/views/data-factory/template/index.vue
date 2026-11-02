@@ -117,7 +117,7 @@
           </a-form>
         </template>
         <template #toolbar>
-          <a-button v-permission="'data_factory.template:create'" size="small" type="primary" @click="openTemplate()" data-testid="qa-views-data-factory-template-button-新增场景模板">新增场景模板</a-button>
+          <a-button  size="small" type="primary" @click="openTemplate()" data-testid="qa-views-data-factory-template-button-新增场景模板">新增场景模板</a-button>
         </template>
       <a-table
         class="mango-native-scroll-table"
@@ -173,7 +173,7 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'data_factory.template:status'"
+              <a-switch
                 size="small"
                 :beforeChange="(newValue) => switchTemplateStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
@@ -191,30 +191,26 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'data_factory.template:detail',
-                    label: '场景配置',
-                    loading: actionLoading === `detail-${record.id}`,
-                    onClick: () => openTemplateDetail(record),
-                  },
-                  { permission: 'data_factory.template:edit', label: '编辑', onClick: () => openTemplate(record) },
-                  { permission: 'data_factory.template:debug',
-                    label: '校验',
-                    hidden: Number(record.config_status) !== 0,
-                    loading: actionLoading === `validate-${record.id}`,
-                    onClick: () => validateTemplate(record.id),
-                  },
-                  { permission: 'data_factory.template:copy',
-                    label: '复制',
-                    loading: actionLoading === `copy-${record.id}`,
-                    onClick: () => copyTemplate(record),
-                  },
-                  { permission: 'data_factory.template:delete',
-                    label: '删除',
-                    danger: true,
-                    loading: actionLoading === `delete-${record.id}`,
-                    onClick: () => removeTemplate(record),
-                  },
-                ]"
+    {
+        label: '场景配置',
+        loading: actionLoading === `detail-${record.id}`,
+        onClick: () => openTemplateDetail(record), },
+    { label: '编辑', onClick: () => openTemplate(record) },
+    {
+        label: '校验',
+        hidden: Number(record.config_status) !== 0,
+        loading: actionLoading === `validate-${record.id}`,
+        onClick: () => validateTemplate(record.id), },
+    {
+        label: '复制',
+        loading: actionLoading === `copy-${record.id}`,
+        onClick: () => copyTemplate(record), },
+    {
+        label: '删除',
+        danger: true,
+        loading: actionLoading === `delete-${record.id}`,
+        onClick: () => removeTemplate(record), },
+]"
               />
             </template>
           </a-table-column>

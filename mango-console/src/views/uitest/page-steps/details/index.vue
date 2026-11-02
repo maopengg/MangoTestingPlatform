@@ -21,11 +21,11 @@
           </div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button v-permission="'ui.page_steps:debug'" size="small" :loading="browserOpening" @click="onOpenStepBrowser" data-testid="qa-views-uitest-page-steps-details-button-打开浏览器">
+          <a-button  size="small" :loading="browserOpening" @click="onOpenStepBrowser" data-testid="qa-views-uitest-page-steps-details-button-打开浏览器">
             <template #icon><icon-desktop /></template>
             打开浏览器
           </a-button>
-          <a-button v-permission="'ui.page_steps:debug'" size="small" status="success" :loading="caseRunning" @click="onRunCase" data-testid="qa-views-uitest-page-steps-details-button-调试">
+          <a-button  size="small" status="success" :loading="caseRunning" @click="onRunCase" data-testid="qa-views-uitest-page-steps-details-button-调试">
             调试
           </a-button>
           <a-button
@@ -216,7 +216,7 @@
                   <div class="node-section-head">
                     <div class="mango-section-title">编辑配置</div>
                     <a-space :size="6">
-                      <a-button v-permission="'ui.page_steps:create'"
+                      <a-button
                         v-if="data.type === 2 && !configFormReadonly"
                         size="mini"
                         @click="addSqlOperation" data-testid="qa-views-uitest-page-steps-details-button-新增操作"

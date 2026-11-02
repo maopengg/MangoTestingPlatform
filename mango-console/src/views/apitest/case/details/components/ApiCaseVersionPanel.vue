@@ -75,7 +75,7 @@
     </mango-panel-spin>
 
     <div class="case-version-sidebar-actions">
-      <a-button v-permission="'api.case:edit'"
+      <a-button
         v-if="selectedKey === 'current' && !prepublishedRevision"
         long
         size="small"
@@ -84,7 +84,7 @@
       >
         生成修订
       </a-button>
-      <a-button v-permission="'api.case:publish'"
+      <a-button
         v-if="
           selectedRevision &&
           selectedRevision.is_active_candidate &&
@@ -101,7 +101,7 @@
       >
         提交预发布
       </a-button>
-      <a-button v-permission="'api.case:publish'"
+      <a-button
         v-if="selectedRevision?.is_prepublished && selectedRevision.is_product_owner"
         long
         size="small"
@@ -111,7 +111,7 @@
       >
         通过并发布 {{ nextReleaseLabel }}
       </a-button>
-      <a-button v-permission="'api.case:publish'"
+      <a-button
         v-if="selectedRevision?.is_prepublished && selectedRevision.is_product_owner"
         long
         size="small"
@@ -134,7 +134,7 @@
       >
         迁出到编辑态
       </a-button>
-      <a-button v-permission="'api.case:publish'"
+      <a-button
         v-if="selectedRevision?.release?.is_current && selectedRevision.is_product_owner"
         long
         size="small"
@@ -144,7 +144,7 @@
       >
         取消发布
       </a-button>
-      <a-button v-permission="'api.case:delete'"
+      <a-button
         v-if="selectedRevision && !selectedRevision.release && !selectedRevision.is_prepublished"
         long
         size="small"

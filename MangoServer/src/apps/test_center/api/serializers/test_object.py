@@ -8,8 +8,14 @@ from rest_framework import serializers
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.models import TestObject
 from src.apps.test_center.services.test_target import TestTargetService
+from src.apps.test_center.services.test_object_probe import TestObjectProbeService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
+
+
+class TestObjectProbeSerializer(serializers.Serializer):
+    id = serializers.IntegerField(min_value=1)
+    address = serializers.CharField(max_length=1024, required=False, allow_blank=True, default='')
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
@@ -29,6 +35,7 @@ class TestObjectSerializers(serializers.ModelSerializer):
 
 
 class TestObjectSerializersC(serializers.ModelSerializer):
+    network_test_addresses = serializers.SerializerMethodField()
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
@@ -37,6 +44,9 @@ class TestObjectSerializersC(serializers.ModelSerializer):
     class Meta:
         model = TestObject
         fields = '__all__'
+
+    def get_network_test_addresses(self, obj):
+        return TestObjectProbeService.network_options(obj)
 
     @staticmethod
     def setup_eager_loading(queryset):

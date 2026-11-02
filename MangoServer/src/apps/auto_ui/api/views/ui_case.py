@@ -124,14 +124,6 @@ class UiCaseCRUD(ModelCRUD):
 class UiCaseViews(ViewSet):
     model = UiCase
     serializer_class = UiCaseSerializers
-    action_permission_map = {
-        'ui_test_case': 'ui.case:execute',
-        'ui_test_case_batch': 'ui.case:execute',
-        'cody_case': 'ui.case:copy',
-        'get_case_name': 'ui.case',
-        'set_publication': 'ui.case:publish',
-        'publication_review': 'ui.case:publish',
-    }
 
     @staticmethod
     def _has_case_scope(request: Request, case_id) -> bool:
@@ -243,7 +235,7 @@ class UiCaseViews(ViewSet):
         from src.apps.auto_ui.selectors.publication_review import UiPublicationReviewSelector
         result = UiPublicationReviewSelector.review(int(case_id), request.user['id'])
         user = getattr(request.user, 'user_obj', None)
-        if user is None or 'ui.case:detail' not in PermissionMenuService.permission_keys_for_user(user):
+        if user is None or 'ui.case:read' not in PermissionMenuService.permission_keys_for_user(user):
             result.pop('configuration_details', None)
         return ResponseData.success(RESPONSE_MSG_0001, result)
 

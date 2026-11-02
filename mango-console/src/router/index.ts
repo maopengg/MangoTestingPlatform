@@ -391,7 +391,7 @@ export const extraRoutes = [
         meta: {
           title: '产品模块配置',
           permissionKey: 'config.product',
-          breadcrumb: [{ title: '项目产品', path: '/config/product/index' }],
+          breadcrumb: [{ title: '产品配置', path: '/config/product/index' }],
         },
       },
       {
@@ -400,7 +400,7 @@ export const extraRoutes = [
         meta: {
           title: '产品逻辑数据库',
           permissionKey: 'config.product',
-          breadcrumb: [{ title: '项目产品', path: '/config/product/index' }],
+          breadcrumb: [{ title: '产品配置', path: '/config/product/index' }],
         },
       },
       {
@@ -436,7 +436,7 @@ export const extraRoutes = [
         component: () => import('@/views/system/runtime-center/index.vue'),
         meta: {
           title: '运行中心',
-          permissionKey: 'system.settings',
+          permissionKey: 'system.runtime_center',
         },
       },
       {
@@ -481,7 +481,7 @@ export const extraRoutes = [
         component: () => import('@/views/system/error-record/index.vue'),
         meta: {
           title: '系统异常记录',
-          permissionKey: 'system.settings',
+          permissionKey: 'system.error_record',
           breadcrumb: [{ title: '系统运维', path: '/system/runtime-center/index' }],
         },
       },

@@ -69,14 +69,6 @@ class ApiCaseVersionScopeMixin:
 
 
 class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
-    action_permission_map = {
-        'list': 'api.case:detail',
-        'version_detail': 'api.case:detail',
-        'checkout_impact': 'api.case:detail',
-        'create_revision': 'api.case:edit',
-        'checkout_revision': 'api.case:edit',
-        'delete_revision': 'api.case:edit',
-    }
 
     @error_response('api')
     def list(self, request: Request):
@@ -200,10 +192,6 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
 
 class ApiCaseReleaseViews(ApiCaseVersionScopeMixin, ViewSet):
-    action_permission_map = {
-        'list': 'api.case:detail',
-        'unpublish': 'api.case:publish',
-    }
 
     @error_response('api')
     def list(self, request: Request):
@@ -242,12 +230,6 @@ class ApiCaseReleaseViews(ApiCaseVersionScopeMixin, ViewSet):
 
 
 class ApiCasePrepublicationViews(ApiCaseVersionScopeMixin, ViewSet):
-    action_permission_map = {
-        'submit': 'api.case:publish',
-        'approve': 'api.case:publish',
-        'revert': 'api.case:publish',
-        'review': 'api.case:publish',
-    }
 
     @error_response('api')
     def review(self, request: Request):
@@ -259,7 +241,7 @@ class ApiCasePrepublicationViews(ApiCaseVersionScopeMixin, ViewSet):
         from src.apps.auto_api.selectors.publication_review import ApiPublicationReviewSelector
         result = ApiPublicationReviewSelector.review(int(case_id), self.operator_id(request))
         user = getattr(request.user, 'user_obj', None)
-        if user is None or 'api.case:detail' not in PermissionMenuService.permission_keys_for_user(user):
+        if user is None or 'api.case:read' not in PermissionMenuService.permission_keys_for_user(user):
             result.pop('configuration_details', None)
         return ResponseData.success(RESPONSE_MSG_0001, result)
 

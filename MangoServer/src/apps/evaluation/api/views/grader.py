@@ -9,7 +9,6 @@ from src.common.responses import RESPONSE_MSG_0001, ResponseData
 
 class GraderViews(ViewSet):
     serializer_class = GraderCatalogSerializer
-    action_permission_map = {"list": "evaluation.grader", "retrieve": "evaluation.grader:detail", "dataset_catalog": "evaluation.dataset"}
 
     @error_response("system")
     def list(self, request):

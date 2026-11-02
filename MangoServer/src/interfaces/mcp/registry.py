@@ -2,7 +2,6 @@
 
 
 def domain_registrars(domain: str | None):
-    from src.interfaces.mcp.tools.ai import register_ai_tools
     from src.interfaces.mcp.tools.api import register_api_tools
     from src.interfaces.mcp.tools.data_factory import register_data_factory_tools
     from src.interfaces.mcp.tools.functional_test import register_functional_test_tools
@@ -25,7 +24,6 @@ def domain_registrars(domain: str | None):
         "report": register_report_tools,
         "scheduler": register_scheduled_task_tools,
         "functional-test": register_functional_test_tools,
-        "ai": register_ai_tools,
         "file": register_system_file_tools,
         "todo": register_workbench_todo_tools,
     }
@@ -42,6 +40,5 @@ def domain_registrars(domain: str | None):
         ("file", register_system_tools),
         ("report", register_report_tools),
         ("functional-test", register_functional_test_tools),
-        ("ai", register_ai_tools),
         ("todo", register_workbench_todo_tools),
     ]

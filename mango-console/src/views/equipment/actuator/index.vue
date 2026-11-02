@@ -57,7 +57,7 @@
                   <div class="status-item">
                     <icon-link class="status-icon" />
                     <span class="status-label">OPEN状态：</span>
-                    <a-switch v-permission="'equipment.actuator:status'"
+                    <a-switch
                       :model-value="record.is_open === true"
                       :beforeChange="(newValue) => onModifyStatus(newValue, record.username)"
                       size="small"
@@ -68,7 +68,7 @@
                   <div class="status-item">
                     <icon-bug class="status-icon" />
                     <span class="status-label">DEBUG状态：</span>
-                    <a-switch v-permission="'equipment.actuator:debug'"
+                    <a-switch
                       :model-value="record.debug === true"
                       :beforeChange="(newValue) => onModifyDebug(newValue, record.username)"
                       size="small"
@@ -77,7 +77,7 @@
                 </div>
 
                 <template #actions>
-                  <a-button v-permission="'equipment.actuator:edit'"
+                  <a-button
                     size="medium"
                     type="primary"
                     :loading="configRequestLoading[record.username]"
@@ -85,7 +85,7 @@
                   >
                     编辑配置
                   </a-button>
-                  <a-button v-permission="'equipment.actuator:status'"
+                  <a-button
                     disabled
                     size="medium"
                     status="danger"
@@ -305,7 +305,7 @@
 
     <template #footer-buttons>
       <a-button @click="handleConfigDrawerCancel" data-testid="qa-views-equipment-actuator-button-取消">取消</a-button>
-      <a-button v-permission="'equipment.actuator:edit'" type="primary" :loading="configSaveLoading" @click="handleSaveConfig" data-testid="qa-views-equipment-actuator-button-保存配置">保存配置</a-button>
+      <a-button  type="primary" :loading="configSaveLoading" @click="handleSaveConfig" data-testid="qa-views-equipment-actuator-button-保存配置">保存配置</a-button>
     </template>
   </BaseSidePanel>
 </template>

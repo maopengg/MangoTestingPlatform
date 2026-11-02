@@ -19,8 +19,7 @@ export function postUiPublic(data: object) {
 }
 
 export function putUiPublic(data: object) {
-  return put({ permissionKey: 'ui.public',
-    url: '/ui/public',
+  return put({ url: '/ui/public',
     data: () => {
       return data
     },

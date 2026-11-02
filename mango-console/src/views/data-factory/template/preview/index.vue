@@ -9,7 +9,7 @@
           </div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button v-permission="'data_factory.template:edit'" size="small" type="primary" :loading="saving" @click="saveTemplateConfig" data-testid="qa-views-data-factory-template-preview-button-保存字段配置">
+          <a-button  size="small" type="primary" :loading="saving" @click="saveTemplateConfig" data-testid="qa-views-data-factory-template-preview-button-保存字段配置">
             保存字段配置
           </a-button>
           <a-button size="small" @click="postUpdateVisible = true">
@@ -25,10 +25,10 @@
           >
             查看实体规则
           </a-button>
-          <a-button v-permission="'data_factory.template:edit'" size="small" :loading="syncLoading" @click="confirmSyncTemplateFields" data-testid="qa-views-data-factory-template-preview-button-同步实体规则">
+          <a-button  size="small" :loading="syncLoading" @click="confirmSyncTemplateFields" data-testid="qa-views-data-factory-template-preview-button-同步实体规则">
             同步实体规则
           </a-button>
-          <a-button v-permission="'data_factory.template:debug'"
+          <a-button
             size="small"
             status="success"
             :disabled="!templateForm.id || previewLoading"
@@ -130,7 +130,7 @@
                     />
                     <div class="scene-item-footer">
                       <span class="scene-item-hint">共享主场景上下文</span>
-                      <a-button v-permission="'data_factory.template:delete'"
+                      <a-button
                         size="mini"
                         status="danger"
                         type="text"
@@ -181,7 +181,7 @@
         >执行编号：{{ debugResult.execution_no }}</a-alert
       >
       <JsonDisplay :data="debugResult.context || debugResult" />
-      <a-button v-permission="'data_factory.template:delete'"
+      <a-button
         v-if="debugResult.execution_id"
         :loading="debugCleanupLoading"
         status="danger"
@@ -282,7 +282,7 @@
             <span class="post-update-rule-title">回写规则 {{ index + 1 }}</span>
             <span class="post-update-rule-summary">{{ getPostUpdateSummary(item) }}</span>
           </div>
-          <a-button v-permission="'data_factory.template:delete'" size="mini" type="text" status="danger" @click="removePostInsertUpdate(index)">
+          <a-button  size="mini" type="text" status="danger" @click="removePostInsertUpdate(index)">
             删除规则
           </a-button>
         </header>

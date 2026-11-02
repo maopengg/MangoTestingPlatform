@@ -24,7 +24,7 @@
               <a-button @click="assertionEditorRef?.clearValues()" data-testid="qa-views-help-assertion-button-清空参数">清空参数</a-button>
               <a-tooltip :content="testAvailability.reason" :disabled="testAvailability.allowed">
                 <span>
-                  <a-button v-permission="'help.assertion:debug'"
+                  <a-button
                     type="primary"
                     :loading="testing"
                     :disabled="!testAvailability.allowed"

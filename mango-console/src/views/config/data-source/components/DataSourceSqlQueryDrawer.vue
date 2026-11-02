@@ -13,7 +13,7 @@
         <span class="mango-muted-text">只读查询，SQL必须指定 LIMIT 1～200</span>
         <a-space>
           <a-button size="small" :disabled="loading" @click="clear">清空</a-button>
-          <a-button v-permission="'config.datasource:debug'" size="small" type="primary" :loading="loading" @click="query">查询</a-button>
+          <a-button  size="small" type="primary" :loading="loading" @click="query">查询</a-button>
         </a-space>
       </div>
       <div class="mango-connection-query-result">

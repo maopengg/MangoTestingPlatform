@@ -38,7 +38,7 @@
     <template #default>
       <TableTabs>
         <template #extra>
-          <a-button v-permission="'gray.repository:create'"
+          <a-button
             size="small"
             type="primary"
             @click="onAdd"
@@ -80,7 +80,7 @@
               <a-tag :color="environmentColor(record.test_env)" size="small">{{ formatEnvironmentText(record.test_env) }}</a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'gray.repository:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
@@ -88,11 +88,11 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'gray.repository:debug', label: '测试', loading: actionLoading === `test-${record.id}`, onClick: () => onTest(record) },
-                  { permission: 'gray.repository:edit', label: '同步', loading: actionLoading === `sync-${record.id}`, onClick: () => onSync(record) },
-                  { permission: 'gray.repository:edit', label: '编辑', onClick: () => onEdit(record) },
-                  { permission: 'gray.repository:delete', label: '删除', danger: true, loading: actionLoading === `delete-${record.id}`, onClick: () => onDelete(record) },
-                ]"
+    { label: '测试', loading: actionLoading === `test-${record.id}`, onClick: () => onTest(record) },
+    { label: '同步', loading: actionLoading === `sync-${record.id}`, onClick: () => onSync(record) },
+    { label: '编辑', onClick: () => onEdit(record) },
+    { label: '删除', danger: true, loading: actionLoading === `delete-${record.id}`, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

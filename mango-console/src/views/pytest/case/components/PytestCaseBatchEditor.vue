@@ -153,7 +153,7 @@
 
     <template #footer-buttons>
       <a-button @click="close">取消</a-button>
-      <a-button v-permission="'pytest.case:edit'" type="primary" :loading="saving" :disabled="loading || !rows.length" @click="save">
+      <a-button  type="primary" :loading="saving" :disabled="loading || !rows.length" @click="save">
         保存修改
       </a-button>
     </template>

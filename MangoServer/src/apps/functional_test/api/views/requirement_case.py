@@ -16,11 +16,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 
 class FunctionalRequirementCaseViews(ViewSet):
-    action_permission_map = {
-        "list": "functional.suite:detail",
-        "bind": "functional.suite:edit",
-        "unbind": "functional.suite:edit",
-    }
 
     @staticmethod
     def _suite(request: Request, source: dict):

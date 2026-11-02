@@ -11,7 +11,7 @@
               :disabled="plan.status >= 2"
               @click="openCasePicker"
             >从用例库选用例</a-button>
-            <a-button v-permission="'functional.plan:execute'"
+            <a-button
               v-if="plan.status === 0 || plan.status === 1"
               size="small"
               type="primary"
@@ -62,7 +62,7 @@
             <a-tag v-else-if="savedOnce" size="small" color="green">已保存</a-tag>
           </template>
           <template #toolbar>
-            <a-button v-permission="'functional.plan:edit'"
+            <a-button
               v-if="plan.status < 2"
               size="small"
               status="danger"
@@ -74,8 +74,8 @@
               <a-button size="small" status="danger" :disabled="!selectedPlanCases.length" @click="setBatchResult(2)">失败</a-button>
               <a-button size="small" status="warning" :disabled="!selectedPlanCases.length" @click="setBatchResult(3)">阻塞</a-button>
             </template>
-            <a-button v-permission="'functional.plan:create'" size="small" :disabled="!canCreateDefect" @click="createDefect">创建缺陷</a-button>
-            <a-button v-permission="'functional.plan:detail'" size="small" :disabled="!selectedPlanCases.length" @click="openBindDefect">关联已有缺陷</a-button>
+            <a-button  size="small" :disabled="!canCreateDefect" @click="createDefect">创建缺陷</a-button>
+            <a-button  size="small" :disabled="!selectedPlanCases.length" @click="openBindDefect">关联已有缺陷</a-button>
             <a-button size="small" :disabled="!selectedDefectOptions.length" @click="openUnbindDefect">取消缺陷关联</a-button>
           </template>
           <template #cell-test_steps="{ row }">{{ row.test_steps?.length || 0 }} 个步骤</template>
@@ -111,7 +111,7 @@
     </a-table>
     <div class="mango-plan-detail__picker-footer">
       <span>已选 {{ pickerSelectedKeys.length }} 条</span>
-      <a-button v-permission="'functional.plan:edit'" type="primary" :loading="pickerSaving" @click="confirmPick">加入计划</a-button>
+      <a-button  type="primary" :loading="pickerSaving" @click="confirmPick">加入计划</a-button>
     </div>
   </a-drawer>
 

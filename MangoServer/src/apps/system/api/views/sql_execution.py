@@ -18,10 +18,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 
 class SqlExecutionRecordViews(ViewSet):
-    action_permission_map = {
-        'list_items': 'system.sql_execution',
-        'options': 'system.sql_execution',
-    }
 
     @staticmethod
     def _user(request: Request):

@@ -20,7 +20,7 @@ class EvaluationApiCaseImportService:
     @staticmethod
     def ensure_source_access(user):
         from src.apps.user.services.permission import PermissionMenuService
-        if user is None or "api.case:detail" not in PermissionMenuService.permission_keys_for_user(user):
+        if user is None or "api.case:read" not in PermissionMenuService.permission_keys_for_user(user):
             raise EvaluationError(EVALUATION_TARGET_ACCESS_DENIED)
 
     @classmethod

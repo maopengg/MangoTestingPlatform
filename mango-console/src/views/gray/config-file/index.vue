@@ -40,7 +40,7 @@
         </template>
         <template #toolbar>
       <div class="mango-gray-toolbar">
-            <a-button v-permission="'gray.config_file:create'"
+            <a-button
               size="small"
               type="primary"
               @click="onAdd"
@@ -79,7 +79,7 @@
               <span v-else>-</span>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch v-permission="'gray.config_file:status'"
+              <a-switch
                 :beforeChange="(newValue) => onModifyYamlStatus(newValue, record.id)"
                 :default-checked="record.status === 1"
               />
@@ -90,15 +90,14 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'gray.config_file:edit', label: '绑定/查看', onClick: () => onBindingManage(record) },
-                  { permission: 'gray.config_file:edit', label: '编辑', onClick: () => onEdit(record) },
-                    { permission: 'gray.config_file:delete',
-                      label: '删除',
-                      danger: true,
-                      loading: actionLoading === `delete-${record.id}`,
-                      onClick: () => onDelete(record),
-                    },
-                ]"
+    { label: '绑定/查看', onClick: () => onBindingManage(record) },
+    { label: '编辑', onClick: () => onEdit(record) },
+    {
+        label: '删除',
+        danger: true,
+        loading: actionLoading === `delete-${record.id}`,
+        onClick: () => onDelete(record), },
+]"
               />
             </template>
           </a-table-column>
@@ -228,7 +227,7 @@
     <template #default>
       <div class="mango-gray-binding-drawer">
         <div class="mango-gray-toolbar">
-          <a-button v-permission="'gray.config_file:create'"
+          <a-button
             size="small"
             type="primary"
             @click="onBindingAdd"
@@ -257,7 +256,7 @@
                 {{ record.repository ? repositoryLabel(record.repository) : '-' }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
-                <a-switch v-permission="'gray.config_file:status'"
+                <a-switch
                   :beforeChange="(newValue) => onModifyBindingStatus(newValue, record.id)"
                   :default-checked="record.status === 1"
                 />
@@ -265,19 +264,17 @@
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    { permission: 'gray.config_file:detail',
-                      label: '查看',
-                      loading: actionLoading === `binding-content-${record.id}`,
-                      onClick: () => onBindingContent(record),
-                    },
-                    { permission: 'gray.config_file:edit', label: '编辑', onClick: () => onBindingEdit(record) },
-                    { permission: 'gray.config_file:delete',
-                      label: '删除',
-                      danger: true,
-                      loading: actionLoading === `binding-delete-${record.id}`,
-                      onClick: () => onDeleteBinding(record),
-                    },
-                  ]"
+    {
+        label: '查看',
+        loading: actionLoading === `binding-content-${record.id}`,
+        onClick: () => onBindingContent(record), },
+    { label: '编辑', onClick: () => onBindingEdit(record) },
+    {
+        label: '删除',
+        danger: true,
+        loading: actionLoading === `binding-delete-${record.id}`,
+        onClick: () => onDeleteBinding(record), },
+]"
                 />
               </template>
             </a-table-column>

@@ -6,6 +6,7 @@ from src.apps.auto_api.enums.case import (
     ApiCaseScenarioTypeEnum,
 )
 from src.apps.test_center.enums import CaseLevelEnum
+from src.apps.auto_api.schemas.callback import CallbackRule
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.interfaces.mcp.common import ok
 from .helpers import (
@@ -78,7 +79,7 @@ def register_schema_tools(mcp):
                         },
                         "mcp": {
                             "status": "enabled",
-                            "create_flow": "登记并同步 MCP Tool -> import_mcp_tool_to_api_info 导入编辑态 -> run_api_info 调试成功 -> 显式生成并发布接口版本 -> add_api_case_step/create_complete_api_case 绑定已发布 ApiInfo；不允许用 create_api_info 手工创建。",
+                            "create_flow": "提供服务地址、工具名称和 Schema -> import_mcp_tool_to_api_info 创建编辑态 -> run_api_info 调试成功 -> 显式生成并发布接口版本 -> add_api_case_step/create_complete_api_case 绑定已发布 ApiInfo；不允许用 create_api_info 手工创建。",
                             "method": "MCP_CALL",
                             "scenario_body_config": "body_config 是 Tool Arguments；执行配置放 body_config.mcp_config，例如 expected_result、validate_input_schema、timeout_seconds。",
                         },
@@ -332,6 +333,14 @@ def register_schema_tools(mcp):
                         "execution": "执行时与默认开启的 ApiAuthConfig 合并为加载范围；授权缓存加载在 ApiPublic 加载之后。",
                         "example": [20, 21],
                     },
+                    "callback_checks": {
+                        "type": "list[CallbackRule]", "default": [], "max_items": 5,
+                        "description": "异步回调验证。trigger_step_key=step-步骤ID；Mock须同产品；触发场景只能有一个且关闭失败重试。",
+                        "creation": "先创建 Case 和触发步骤，再通过 update_api_case(callback_checks=...) 保存；创建主体时不配置回调。",
+                        "schema": CallbackRule.model_json_schema(),
+                        "correlation": "correlation.expected.cache_key 在触发前从本次缓存解析。平台自动提供 callback_run_id，可在触发请求使用 ${{callback_run_id}} 并在回调透传。不可使用最新日志猜测关联。",
+                        "result_tools": ["get_api_case_callback_results", "get_api_case_callback_deliveries"],
+                    },
                     "posterior_sql": {
                         **sql_key_value_schema,
                         "default": [],
@@ -555,10 +564,10 @@ def register_schema_tools(mcp):
                     ],
                     "request_payload": [
                         "protocol_type/body_type 以 ApiInfo 为准，case 场景阶段不允许编辑；场景级 protocol_type/body_type 字段已删除，不要再传。",
-                        "ApiInfo 现在是统一调用定义主表；协议专属配置优先读取 api_info_http_config/api_info_websocket_config/api_info_mcp_config/api_info_grpc_config，旧 ApiInfo 字段和旧 binding 仅兼容迁移期保留。",
+                        "ApiInfo 现在是统一调用定义主表；协议专属配置优先读取 api_info_http_config/api_info_websocket_config/api_info_mcp_config/api_info_grpc_config，MCP 工具定义保存在接口自身的 binding_snapshot，不依赖 AI 管理表。",
                         "API Info Revision 会保存完整可执行 protocol_config，发布版本不会被后续协议配置编辑态直接污染。",
                         "MCP接口的 ApiInfo 通过 MCP Tool 导入生成：protocol_type=mcp，通过 ApiInfoMcpConfig 绑定具体 Tool；method/body_type 由 MCP 协议配置推导。",
-                        "MCP Tool 导入前可调用 create_ai_mcp_server/update_ai_mcp_server/sync_ai_mcp_server_tools 登记并同步服务，再用 list_ai_mcp_servers/list_ai_mcp_tools 查询已经同步的服务和工具。",
+                        "MCP 接口直接保存服务地址、工具名称及输入输出 Schema，无需登记 AI MCP 服务。",
                         "MCP场景的 body_config 是 Tool Arguments；如需 expected_result、validate_input_schema、timeout_seconds，请放到 body_config.mcp_config。",
                         "MCP执行结果会映射到 response.json/response.text；structuredContent 优先作为 response.json，TextContent 会聚合为 response.text。",
                         "gRPC接口的 ApiInfo 通过 gRPC Method 导入生成：protocol_type=grpc，并通过 ApiInfoGrpcConfig 绑定具体 Method；method/body_type 由 gRPC 协议配置推导。",
@@ -624,7 +633,7 @@ def register_schema_tools(mcp):
                     },
                     "mcp_case_with_existing_api_info": {
                         "create_flow": [
-                            "调用 import_mcp_tool_to_api_info(mcp_tool_id, project_product_id, module_id) 导入 Tool 为 ApiInfo。",
+                            "调用 import_mcp_tool_to_api_info(server_url, tool_name, project_product_id, module_id, input_schema) 创建 MCP 接口。",
                             "可调用 run_api_info 调试编辑态；配置确认后调用 create_api_info_revision_from_current，再按需 publish_api_info_revision。",
                             "调用 create_complete_api_case，并在 api 中传 api_info_id=上一步返回的 api_info_id。",
                             "scenarios[].body_config 传 Tool Arguments，body_config.mcp_config 可传 expected_result/timeout_seconds。",

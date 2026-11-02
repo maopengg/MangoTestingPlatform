@@ -68,19 +68,18 @@
               {{ record.count || 1 }}
             </template>
             <template v-else-if="item.key === 'status_name'" #cell="{ record }">
-              <a-tag color="red" size="small">{{ record.status_name || '异常' }}</a-tag>
+              <a-tag :color="record.status === 'warning' ? 'orange' : 'red'" size="small">{{ record.status_name || '异常' }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'system.error_record:detail', label: '详情', onClick: () => openDetail(record) },
-                  { permission: 'system.error_record:detail',
-                    label: '来源页面',
-                    hidden: !record.link,
-                    onClick: () => openSource(record.link),
-                  },
-                  { permission: 'system.error_record:detail', label: '日志', onClick: () => openLog(record.log_query) },
-                ]"
+    { label: '详情', onClick: () => openDetail(record) },
+    {
+        label: '来源页面',
+        hidden: !record.link,
+        onClick: () => openSource(record.link), },
+    { label: '日志', onClick: () => openLog(record.log_query) },
+]"
               />
             </template>
           </a-table-column>
@@ -113,7 +112,7 @@
             <h3>基础信息</h3>
             <p>异常来源、发生位置和聚合次数</p>
           </div>
-          <a-tag color="red" size="small">{{ detail.record.status_name || '异常' }}</a-tag>
+          <a-tag :color="detail.record.status === 'warning' ? 'orange' : 'red'" size="small">{{ detail.record.status_name || '异常' }}</a-tag>
         </div>
         <a-descriptions :column="2" bordered size="small">
           <a-descriptions-item label="记录类型">
@@ -158,7 +157,7 @@
       >
         <div class="mango-error-record-section__header">
           <div>
-            <h3>异常堆栈</h3>
+            <h3>{{ detail.record.status === 'warning' ? '校验诊断' : '异常堆栈' }}</h3>
             <p>{{ tracebackLineCount }} 行 · 支持横向和纵向滚动</p>
           </div>
           <a-button size="mini" type="text" @click="copyText(detail.record.traceback, '异常堆栈')">

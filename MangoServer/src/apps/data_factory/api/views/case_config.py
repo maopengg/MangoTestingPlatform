@@ -51,10 +51,6 @@ class DataFactoryCaseConfigCRUD(ModelCRUD):
 
 
 class DataFactoryCaseConfigViews(ViewSet):
-    action_permission_map = {
-        'put_case_sort': 'data_factory.template:edit',
-        'preview': 'data_factory.template:detail',
-    }
 
     @action(methods=['put'], detail=False)
     @error_response('system')

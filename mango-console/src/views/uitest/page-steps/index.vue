@@ -107,7 +107,7 @@
         </template>
         <template #toolbar>
           <a-space>
-            <a-button v-permission="'ui.page_steps:create'"
+            <a-button
               size="small"
               type="primary"
               @click="onAdd"
@@ -115,7 +115,7 @@
             >
               新增
             </a-button>
-            <a-button v-permission="'ui.page_steps:delete'"
+            <a-button
               size="small"
               status="danger"
               @click="onDelete(null)"
@@ -172,12 +172,12 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'ui.page_steps:debug', label: '调试', loading: caseRunning, onClick: () => onRunCase(record) },
-                  { permission: 'ui.page_steps:detail', label: '步骤', onClick: () => onClick(record) },
-                  { permission: 'ui.page_steps:detail', label: '用例', onClick: () => onShowReferencedCases(record) },
-                  { permission: 'ui.page_steps:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'ui.page_steps:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '调试', loading: caseRunning, onClick: () => onRunCase(record) },
+    { label: '步骤', onClick: () => onClick(record) },
+    { label: '用例', onClick: () => onShowReferencedCases(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>
@@ -290,7 +290,7 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
-                :actions="[{ permission: 'ui.page_steps:detail', label: '步骤', onClick: () => openReferencedCase(record) }]"
+                :actions="[{ label: '步骤', onClick: () => openReferencedCase(record) }]"
               />
             </template>
           </a-table-column>

@@ -16,7 +16,7 @@ test("every completed capability dispatches its declared REST method and path", 
   const claims = Buffer.from(JSON.stringify({ id: 7, username: "tester", exp: 4102444800 })).toString("base64url");
   const token = `header.${claims}.signature`;
   const completed = catalog.filter((item) => item.status === "complete");
-  assert.equal(completed.length, 258);
+  assert.equal(completed.length, 251);
 
   for (const spec of completed) {
     let observed;

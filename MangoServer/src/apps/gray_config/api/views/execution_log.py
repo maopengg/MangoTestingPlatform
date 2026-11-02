@@ -13,6 +13,7 @@ from src.common.responses.response_msg import RESPONSE_MSG_0236, RESPONSE_MSG_02
 
 
 class GrayExecutionLogCRUD(ModelCRUD):
+    http_method_names = ['get', 'delete', 'head', 'options']
     model = GrayExecutionLog
     queryset = GrayExecutionLog.objects.all()
     serializer_class = GrayExecutionLogSerializerC
@@ -33,10 +34,6 @@ class GrayExecutionLogCRUD(ModelCRUD):
 
 
 class GrayExecutionLogViews(ViewSet):
-    action_permission_map = {
-        'retry_restore': 'gray.execution_log:execute',
-        'cleanup_expired': 'gray.execution_log:delete',
-    }
 
     @action(methods=['post'], detail=False)
     @error_response('system')

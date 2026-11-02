@@ -35,8 +35,9 @@
     <template #search><slot name="search" /></template>
     <template #toolbar>
       <a-space wrap>
+        <span class="mango-product-overview__guide">请先在“项目配置”中创建项目，再配置产品。</span>
         <a-button
-          v-permission="'config.product:create'"
+
           type="primary"
           size="small"
           @click="emit('add')"
@@ -82,7 +83,7 @@
               :data="group.products"
               :pagination="false"
               :bordered="false"
-              :scroll="{ x: 1280 }"
+              :scroll="{ x: 1370 }"
               row-key="id"
             >
               <template #columns>
@@ -124,28 +125,24 @@
                     <MangoTableActions
                       v-else-if="item.key === 'actions'"
                       :actions="[
-                        {
-                          permission: 'config.product:detail',
-                          label: '模块',
-                          onClick: () => emit('module', record),
-                        },
-                        {
-                          permission: 'config.product:detail',
-                          label: '逻辑数据库',
-                          onClick: () => emit('datasource', record),
-                        },
-                        {
-                          permission: 'config.product:edit',
-                          label: '编辑',
-                          onClick: () => emit('edit', record),
-                        },
-                        {
-                          permission: 'config.product:delete',
-                          label: '删除',
-                          danger: true,
-                          onClick: () => emit('delete', record),
-                        },
-                      ]"
+    {
+        label: '模块',
+        onClick: () => emit('module', record),
+    },
+    {
+        label: '逻辑数据库',
+        onClick: () => emit('datasource', record),
+    },
+    {
+        label: '编辑',
+        onClick: () => emit('edit', record),
+    },
+    {
+        label: '删除',
+        danger: true,
+        onClick: () => emit('delete', record),
+    },
+]"
                     />
                     <template v-else>{{ record[item.key] ?? '-' }}</template>
                   </template>
@@ -219,6 +216,10 @@
 </script>
 
 <style scoped>
+  .mango-product-overview__guide {
+    color: var(--m-muted);
+    font-size: 12px;
+  }
   .mango-product-overview__navigation {
     display: flex;
     flex-direction: column;

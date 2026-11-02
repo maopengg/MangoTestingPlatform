@@ -46,6 +46,7 @@ from src.apps.system.api.serializers.cache_data import CacheDataSerializersC
 
 
 class CacheDataCRUD(ModelCRUD):
+    http_method_names = ['get', 'put', 'head', 'options']
     model = CacheData
     queryset = CacheData.objects.all()
     serializer_class = CacheDataSerializersC
@@ -143,22 +144,15 @@ class CacheDataCRUD(ModelCRUD):
 class CacheDataViews(ViewSet):
     model = CacheData
     serializer_class = CacheDataSerializers
-    action_permission_map = {
-        'grouped': 'system.settings',
-        'get_key_value': 'system.settings',
-        'clear_runtime_cache': 'system.settings:debug',
-        'report_delivery_metadata': 'system.settings:detail',
-        'report_sample': 'system.settings:debug',
-    }
 
     @error_response('system')
     def report_delivery_metadata(self, request: Request):
-        OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:detail')
+        OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:read')
         return ResponseData.success(RESPONSE_MSG_0001, {'defaults': ReportDeliveryConfig().model_dump(mode='json')})
 
     @error_response('system')
     def report_sample(self, request: Request):
-        OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:debug')
+        OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:change')
         response = FileResponse(io.BytesIO(OfflineReportService.sample()), as_attachment=True,
                                 filename='sample-report.html', content_type='text/html; charset=utf-8')
         response['Cache-Control'] = 'no-store'

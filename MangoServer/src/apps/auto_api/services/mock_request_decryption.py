@@ -20,26 +20,38 @@ class MockRequestDecryptionService:
     TYPE_NONE = "none"
     TYPE_LARK_EVENT = "lark_event"
     SUPPORTED_TYPES = {TYPE_NONE, TYPE_LARK_EVENT}
-    STORAGE_ALGORITHM = "fernet-sha256-v1"
 
     @staticmethod
-    def _cipher() -> Fernet:
-        digest = hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
+    def _cipher_for_key(key: str) -> Fernet:
+        digest = hashlib.sha256(key.encode("utf-8")).digest()
         return Fernet(base64.urlsafe_b64encode(digest))
 
     @classmethod
-    def _seal(cls, value: str) -> str:
-        return cls._cipher().encrypt(value.encode("utf-8")).decode("ascii")
+    def _reveal(cls, value: str) -> str:
+        # 只用于读取旧版密文，新配置不再加密，也不再依赖系统密钥。
+        keys = [settings.SECRET_KEY]
+        version = str(settings.VERSION)
+        if version and settings.SECRET_KEY.endswith(version):
+            prefix = settings.SECRET_KEY[:-len(version)]
+            keys.extend(f'{prefix}{old_version}' for old_version in ('7.1.1', '7.2.0', '7.2.1', '7.2.2'))
+        for key in dict.fromkeys(keys):
+            if not key:
+                continue
+            try:
+                return cls._cipher_for_key(key).decrypt(value.encode("ascii")).decode("utf-8")
+            except (InvalidToken, UnicodeError, ValueError):
+                continue
+        raise MockRequestDecryptionError(
+            "MOCK_DECRYPT_CONFIG_ERROR",
+            "Mock请求解密配置不可用，请重新填写 Encrypt Key 和 Verification Token 后保存",
+        )
 
     @classmethod
-    def _reveal(cls, value: str) -> str:
-        try:
-            return cls._cipher().decrypt(value.encode("ascii")).decode("utf-8")
-        except (InvalidToken, UnicodeDecodeError, ValueError) as error:
-            raise MockRequestDecryptionError(
-                "MOCK_DECRYPT_CONFIG_ERROR",
-                "Mock请求解密配置不可用，请重新保存解密密钥",
-            ) from error
+    def _stored_value(cls, config: dict, field: str) -> str:
+        if field in config:
+            return str(config[field] or "")
+        ciphertext = config.get(f"{field}_ciphertext")
+        return cls._reveal(str(ciphertext)) if ciphertext else ""
 
     @classmethod
     def normalize_for_storage(cls, value: Any, existing_config: dict | None = None) -> dict:
@@ -55,27 +67,22 @@ class MockRequestDecryptionService:
 
         existing = (existing_config or {}).get("request_decryption") or {}
         encrypt_key = str(value.get("encrypt_key") or "").strip()
-        verification_token = str(value.get("verification_token") or "").strip()
-        encrypt_key_ciphertext = (
-            cls._seal(encrypt_key)
-            if encrypt_key
-            else str(existing.get("encrypt_key_ciphertext") or "")
-        )
-        verification_token_ciphertext = (
-            cls._seal(verification_token)
-            if verification_token
-            else str(existing.get("verification_token_ciphertext") or "")
-        )
-        if not encrypt_key_ciphertext:
+        try:
+            if not encrypt_key:
+                encrypt_key = cls._stored_value(existing, "encrypt_key")
+            if "verification_token" in value:
+                verification_token = str(value.get("verification_token") or "").strip()
+            else:
+                verification_token = cls._stored_value(existing, "verification_token")
+        except MockRequestDecryptionError as error:
+            raise AutoApiError(MOCK_API_CONFIG_INVALID, value=(error.message,)) from error
+        if not encrypt_key:
             raise AutoApiError(MOCK_API_CONFIG_INVALID, value=("启用飞书事件解密时必须配置 Encrypt Key",))
-        result = {
+        return {
             "type": cls.TYPE_LARK_EVENT,
-            "storage_algorithm": cls.STORAGE_ALGORITHM,
-            "encrypt_key_ciphertext": encrypt_key_ciphertext,
+            "encrypt_key": encrypt_key,
+            "verification_token": verification_token,
         }
-        if verification_token_ciphertext:
-            result["verification_token_ciphertext"] = verification_token_ciphertext
-        return result
 
     @classmethod
     def editable_config(cls, value: Any) -> dict:
@@ -87,13 +94,12 @@ class MockRequestDecryptionService:
                 "encrypt_key": "",
                 "verification_token": "",
             }
-        return {
-            "type": cls.TYPE_LARK_EVENT,
-            "encrypt_key": cls._reveal(str(config.get("encrypt_key_ciphertext") or "")),
-            "verification_token": cls._reveal(str(config.get("verification_token_ciphertext") or ""))
-            if config.get("verification_token_ciphertext")
-            else "",
-        }
+        try:
+            return cls.runtime_config({"request_decryption": config})["request_decryption"]
+        except MockRequestDecryptionError as error:
+            # 详情允许重新录入密钥；运行时仍通过 runtime_config 严格拒绝无效密文。
+            return {"type": cls.TYPE_LARK_EVENT, "encrypt_key": "", "verification_token": "",
+                    "configuration_error": error.message}
 
     @classmethod
     def runtime_config(cls, config: dict | None) -> dict:
@@ -102,17 +108,18 @@ class MockRequestDecryptionService:
         if decryption.get("type") != cls.TYPE_LARK_EVENT:
             runtime["request_decryption"] = {"type": cls.TYPE_NONE}
             return runtime
+        encrypt_key = cls._stored_value(decryption, "encrypt_key")
+        if not encrypt_key.strip():
+            raise MockRequestDecryptionError("MOCK_DECRYPT_CONFIG_ERROR", "Mock请求解密配置缺少 Encrypt Key，请重新填写后保存")
         runtime["request_decryption"] = {
             "type": cls.TYPE_LARK_EVENT,
-            "encrypt_key": cls._reveal(str(decryption.get("encrypt_key_ciphertext") or "")),
-            "verification_token": cls._reveal(str(decryption.get("verification_token_ciphertext") or ""))
-            if decryption.get("verification_token_ciphertext")
-            else "",
+            "encrypt_key": encrypt_key,
+            "verification_token": cls._stored_value(decryption, "verification_token"),
         }
         return runtime
 
     @classmethod
-    def decrypt_body(cls, body_text: str, config: dict | None) -> tuple[str, Any]:
+    def decrypt_body(cls, body_text: str, config: dict | None, *, preserve_text: bool = False) -> tuple[str, Any]:
         decryption = config or {}
         if decryption.get("type") != cls.TYPE_LARK_EVENT:
             try:
@@ -161,4 +168,5 @@ class MockRequestDecryptionService:
                 "MOCK_VERIFICATION_TOKEN_MISMATCH",
                 "飞书事件 Verification Token 校验失败",
             )
-        return json.dumps(body_json, ensure_ascii=False, separators=(",", ":")), body_json
+        return (plaintext.decode('utf-8') if preserve_text else
+                json.dumps(body_json, ensure_ascii=False, separators=(",", ":"))), body_json

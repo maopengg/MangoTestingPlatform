@@ -62,10 +62,6 @@ class GrayYamlFileBindingCRUD(LastUpdateUserCRUD):
 
 
 class GrayYamlFileViews(ViewSet):
-    action_permission_map = {
-        'content': 'gray.config_file:detail',
-        'repository_files': 'gray.config_file:detail',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('system')

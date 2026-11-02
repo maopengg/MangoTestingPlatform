@@ -1,5 +1,6 @@
 import traceback
 from dataclasses import dataclass
+from copy import copy, deepcopy
 from datetime import timedelta
 from typing import Any
 
@@ -30,6 +31,8 @@ from src.apps.auto_api.exceptions import (
     AUTO_API_DYNAMIC_ERROR,
     AutoApiError,
     API_AUTH_CODE_INVALID,
+    API_AUTH_CONTEXT_MISMATCH,
+    API_AUTH_TARGET_INVALID,
 )
 from src.apps.auto_api.models import ApiAuthConfig
 from src.apps.auto_api.services.api_case.global_variable import ApiCaseGlobalVariableService
@@ -70,9 +73,31 @@ class ApiAuthManager:
         current_api_info_id = getattr(test_setup, 'current_api_info_id', None)
         if current_api_info_id:
             configs = configs.exclude(api_info_id=current_api_info_id)
+        configs = list(configs)
+        if not configs:
+            return
         manager = cls(test_setup)
+        from src.apps.test_center.services.test_target import TestTargetService
+        target = test_setup.test_object
+        current_address = TestTargetService.resolve(target, test_setup.test_data)
+        selected = set(ApiCaseGlobalVariableService.normalize_id_list(front_auth_config_ids))
+        applicable = []
         for config in configs:
+            address = manager._auth_address(config, target)
+            if address == current_address:
+                applicable.append(config)
+        if selected and not applicable:
+            raise AutoApiError(API_AUTH_TARGET_INVALID)
+        for config in applicable:
             manager.load_config(config)
+
+    @staticmethod
+    def _auth_address(config, target):
+        from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+        address = getattr(config, 'target_address', '') or target.value or (getattr(target, 'target_config', {}) or {}).get('default', '')
+        if not address or address not in {item['value'] for item in ApiAuthConfigService.options_for_target(target)}:
+            raise AutoApiError(API_AUTH_TARGET_INVALID)
+        return address
 
     def load_config(self, config: ApiAuthConfig):
         if self._is_cache_available(config):
@@ -110,13 +135,7 @@ class ApiAuthManager:
             if not force and manager._is_cache_available(config):
                 manager.inject_cache(config)
                 return manager.preview(config_id)
-            target_scope = manager._target_scope(config)
-            cache_data = manager._refresh_cache_data(config)
-            if target_scope is not None:
-                if manager._target_scope(config) != target_scope:
-                    from src.apps.test_center.exceptions import TEST_TARGET_AUTH_CHANGED, TestCenterError
-                    raise TestCenterError(TEST_TARGET_AUTH_CHANGED)
-                cache_data['__mango_target_scope__'] = target_scope
+            cache_data = manager._refresh_in_isolated_context(config)
             now = timezone.now()
             config.cache_data = cache_data
             config.expires_at = (
@@ -208,13 +227,70 @@ class ApiAuthManager:
     def inject_cache(self, config: ApiAuthConfig):
         if not self.test_setup:
             return
+        ownership = getattr(self.test_setup, '_auth_injected_cache', None)
+        if not isinstance(ownership, dict):
+            ownership = {}
+            self.test_setup._auth_injected_cache = ownership
+        current = self.test_setup.test_data.get_all()
         for key, value in (config.cache_data or {}).items():
-            if key == '__mango_target_scope__':
+            if key in {'__mango_target_scope__', '__mango_auth_context__'}:
                 continue
-            self.test_setup.test_data.set_cache(key, value)
+            baseline = ownership[key][:2] if key in ownership else (key in current, deepcopy(current.get(key)))
+            ownership[key] = (*baseline, deepcopy(value))
+            self.test_setup.test_data.set_cache(key, deepcopy(value))
+
+    def _refresh_in_isolated_context(self, config):
+        from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+        from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+        from src.apps.test_center.exceptions import TEST_TARGET_AUTH_CHANGED, TestCenterError
+
+        ids = getattr(config, 'public_variable_ids', [])
+        variables = ApiAuthConfigService.validate_public_variables(ids, config.project_product_id, config.test_env)
+        caller = self.test_setup
+        setup = APIBaseTestSetup()
+        setup.skip_auth_load = True
+        self.test_setup = setup
+        try:
+            setup.init_test_object(config.project_product_id, config.test_env)
+            address = self._auth_address(config, setup.test_object)
+            setup.test_object = copy(setup.test_object)
+            setup.test_object.value = address
+            setup.init_public(config.project_product_id, config.test_env, ids)
+            values = setup.test_data.get_all()
+            bound_values = {row.key: values[row.key] for row in variables if row.key in values}
+            if caller:
+                caller_values = caller.test_data.get_all()
+                if any(caller_values.get(key) != value for key, value in bound_values.items()):
+                    raise AutoApiError(API_AUTH_CONTEXT_MISMATCH)
+            setup.test_data.set_cache('url', address)
+            target_scope = self._target_scope(config)
+            if caller and ids and ApiAuthManager(caller)._target_scope(config) != target_scope:
+                raise AutoApiError(API_AUTH_CONTEXT_MISMATCH)
+            cache_data = self._refresh_cache_data(config)
+            if any(setup.test_data.get_all().get(key) != value for key, value in bound_values.items()):
+                raise TestCenterError(TEST_TARGET_AUTH_CHANGED)
+            if target_scope is not None:
+                selector = (getattr(setup.test_object, 'target_config', {}) or {}).get('selector', '').strip()
+                selected = setup.test_data.get_all().get(selector)
+                if self._target_scope(config) != target_scope or (
+                        selector in cache_data and cache_data[selector] != selected):
+                    raise TestCenterError(TEST_TARGET_AUTH_CHANGED)
+                cache_data['__mango_target_scope__'] = target_scope
+            if any(key in cache_data and cache_data[key] != value for key, value in bound_values.items()):
+                raise AutoApiError(API_AUTH_CONTEXT_MISMATCH)
+            if ids:
+                cache_data['__mango_auth_context__'] = {
+                    'public_variable_ids': ids, 'values': bound_values,
+                    'variables_checksum': ApiAuthConfigService.public_variables_checksum(variables),
+                }
+            return cache_data
+        finally:
+            self.test_setup = caller
+            setup.close_mcp_sessions()
+            setup.close_grpc_channels()
+            setup.close_db_connections()
 
     def _target_scope(self, config):
-        from src.apps.test_center.services.test_target import TestTargetService
         from src.apps.test_center.services.factory import func_test_object_value
         from src.apps.test_center.enums.environment import AutoTypeEnum
         target = getattr(self.test_setup, 'test_object', None) if self.test_setup else None
@@ -222,16 +298,10 @@ class ApiAuthManager:
                                                                                  config.test_env):
             target = func_test_object_value(config.test_env, config.project_product_id,
                 getattr(self.test_setup, 'automation_type', AutoTypeEnum.API.value))
-        rules = getattr(target, 'target_config', {}) or {}
-        if target.value or not rules.get('selector'):
-            return None
         import hashlib
         import json
-        test_data = self.test_setup.test_data if self.test_setup else None
-        address = TestTargetService.resolve(target, test_data)
-        key = rules['selector'].strip()
-        selected = test_data.get_cache(key) if test_data else None
-        return hashlib.sha256(json.dumps([address, key, selected], ensure_ascii=False).encode()).hexdigest()
+        address = self._auth_address(config, target)
+        return hashlib.sha256(json.dumps([address], ensure_ascii=False).encode()).hexdigest()
 
     def _refresh_cache_data(self, config: ApiAuthConfig) -> dict:
         self._validate_config(config)
@@ -247,9 +317,9 @@ class ApiAuthManager:
         old_skip_auth_load = getattr(test_setup, 'skip_auth_load', False)
         test_setup.skip_auth_load = True
         try:
-            test_setup.init_public(config.project_product_id, config.test_env)
+            test_setup.init_public(config.project_product_id, config.test_env, getattr(config, 'public_variable_ids', []))
             before_cache = dict(test_setup.test_data.get_all())
-            response = test_setup.api_request(config.api_info_id, config.test_env)
+            response = test_setup.api_request(config.api_info_id, config.test_env, initialize_public_context=False)
             after_cache = test_setup.test_data.get_all()
         finally:
             test_setup.skip_auth_load = old_skip_auth_load
@@ -264,7 +334,7 @@ class ApiAuthManager:
         old_skip_auth_load = getattr(test_setup, 'skip_auth_load', False)
         test_setup.skip_auth_load = True
         try:
-            test_setup.init_public(config.project_product_id, config.test_env)
+            test_setup.init_public(config.project_product_id, config.test_env, getattr(config, 'public_variable_ids', []))
         finally:
             test_setup.skip_auth_load = old_skip_auth_load
         context = ApiAuthContext(
@@ -361,6 +431,19 @@ class ApiAuthManager:
     def _is_cache_available(self, config: ApiAuthConfig, allow_refresh_window: bool = False) -> bool:
         if not config.cache_data:
             return False
+        ids = getattr(config, 'public_variable_ids', [])
+        context = config.cache_data.get('__mango_auth_context__') or {}
+        if context.get('public_variable_ids', []) != ids:
+            return False
+        if ids:
+            from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+            variables = ApiAuthConfigService.validate_public_variables(ids, config.project_product_id, config.test_env)
+            if context.get('variables_checksum') != ApiAuthConfigService.public_variables_checksum(variables):
+                return False
+        if self.test_setup and ids:
+            values = self.test_setup.test_data.get_all()
+            if any(values.get(key) != value for key, value in context.get('values', {}).items()):
+                raise AutoApiError(API_AUTH_CONTEXT_MISMATCH)
         scope = self._target_scope(config)
         if scope is not None and config.cache_data.get('__mango_target_scope__') != scope:
             return False

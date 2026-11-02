@@ -9,12 +9,15 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.test_center.api.serializers.test_object import TestObjectSerializers, TestObjectSerializersC
 from src.apps.test_center.models import TestObject
+from src.apps.test_center.api.serializers.test_object import TestObjectProbeSerializer
+from src.apps.test_center.services.test_object_probe import TestObjectProbeService
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import MangoServerError
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import (
     RESPONSE_MSG_0098,
+    RESPONSE_MSG_0001,
 )
 
 
@@ -30,9 +33,16 @@ class TestObjectCRUD(ModelCRUD):
 class TestObjectViews(ViewSet):
     model = TestObject
     serializer_class = TestObjectSerializers
-    action_permission_map = {
-        'put_status': 'config.test_object:status',
-    }
+
+    @error_response('system')
+    def test_connection(self, request):
+        serializer = TestObjectProbeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        values = serializer.validated_data
+        result = TestObjectProbeService.test(
+            values['id'], values['address'], getattr(request.user, 'user_obj', None),
+        )
+        return ResponseData.success(RESPONSE_MSG_0001, result)
 
     @action(methods=['put'], detail=False)
     @error_response('user')

@@ -12,7 +12,7 @@
           <div class="mango-detail-subtitle">维护用例前后置、步骤编排、断言和执行结果</div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button v-permission="'ui.case:execute'"
+          <a-button
             size="small"
             status="success"
             :loading="caseRunning"
@@ -54,7 +54,7 @@
               @tab-click="(key) => switchType(key)"
             >
               <template #extra>
-                <a-button v-permission="'ui.case:create'" v-if="showCaseAddButton" size="small" type="primary" @click="addData" data-testid="qa-views-uitest-case-details-button-新增">
+                <a-button  v-if="showCaseAddButton" size="small" type="primary" @click="addData" data-testid="qa-views-uitest-case-details-button-新增">
                   新增
                 </a-button>
               </template>
@@ -346,7 +346,7 @@
                           <div class="ui-case-step-card__settings">
                             <span class="ui-case-step-card__setting">
                               切换 URL
-                              <a-switch v-permission="'ui.case:edit'"
+                              <a-switch
                                 size="small"
                                 :beforeChange="
                                   (newValue) =>
@@ -387,7 +387,7 @@
                                     <a-button size="mini" @click="closeRetryEditor(record)" data-testid="qa-views-uitest-case-details-button-取消">
                                       取消
                                     </a-button>
-                                    <a-button v-permission="['ui.case:create', 'ui.case:edit']"
+                                    <a-button
                                       size="mini"
                                       type="primary"
                                       :loading="retryEditor.savingId === String(record.id)"
@@ -409,10 +409,10 @@
                             >
                               单步执行
                             </a-button>
-                            <a-button v-permission="'ui.case:edit'" size="mini" type="text" @click="oeFreshSteps(record)" data-testid="qa-views-uitest-case-details-button-同步">
+                            <a-button  size="mini" type="text" @click="oeFreshSteps(record)" data-testid="qa-views-uitest-case-details-button-同步">
                               同步
                             </a-button>
-                            <a-button v-permission="'ui.case:delete'"
+                            <a-button
                               size="mini"
                               type="text"
                               status="danger"
@@ -505,7 +505,7 @@
               </div>
               <div class="step-result-side">
                 <div class="step-result-actions">
-                  <a-button v-permission="'ui.case:detail'"
+                  <a-button
                     type="primary"
                     size="small"
                     :disabled="!getPageStepId(data.selectData)"
@@ -741,7 +741,7 @@
                                 placeholder="请输入python代码"
                                 class="code-editor"
                               />
-                              <a-button v-permission="['ui.case:create', 'ui.case:edit']"
+                              <a-button
                                 type="primary"
                                 class="save-btn"
                                 :loading="detailSaving"

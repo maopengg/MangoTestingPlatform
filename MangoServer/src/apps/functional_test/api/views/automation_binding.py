@@ -21,10 +21,6 @@ from src.common.responses.response_msg import (
 class ManualTestAutomationViews(ViewSet):
     model = ManualTestAutomationBinding
     serializer_class = ManualTestAutomationBindingSerializer
-    action_permission_map = {
-        'bind': 'functional.case:edit',
-        'binding': 'functional.case:detail',
-    }
 
     @action(methods=["post"], detail=False)
     @error_response("system")

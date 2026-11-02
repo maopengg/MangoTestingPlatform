@@ -15,10 +15,6 @@ from src.common.responses.response_msg import (
 
 
 class WorkbenchTodoViews(ViewSet):
-    action_permission_map = {
-        'list_items': 'index.home',
-        'mark_handled': 'index.home',
-    }
 
     @staticmethod
     def _user(request: Request):

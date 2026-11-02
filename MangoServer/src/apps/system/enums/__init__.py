@@ -27,6 +27,7 @@ from .executor import (
 )
 from .notice import TestSuiteNoticeEnum
 from .runtime import RuntimeServiceName
+from .runtime_kv import RuntimeKVNamespaceEnum, RuntimeKVValueTypeEnum
 
 __all__ = [
     "SystemEnvEnum",
@@ -49,4 +50,6 @@ __all__ = [
     "ServerPytestCommandEnum",
     "ServerPerfEventEnum",
     "RuntimeServiceName",
+    "RuntimeKVNamespaceEnum",
+    "RuntimeKVValueTypeEnum",
 ]

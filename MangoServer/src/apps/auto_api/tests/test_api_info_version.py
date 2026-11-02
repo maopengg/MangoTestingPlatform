@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 import json
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -316,8 +317,8 @@ class ApiInfoRevisionServiceTests(TestCase):
         request = SimpleNamespace(user=AuthUserContext(scoped_user))
 
         self.assertEqual(
-            ApiInfoRevisionViews.action_permission_map['restore'],
-            'api.info:publish',
+            permission_for_view(ApiInfoRevisionViews, 'restore'),
+            'api.info:change',
         )
         self.assertTrue(ApiInfoRevisionViews.has_info_scope(request, self.api_info.id))
         self.assertFalse(

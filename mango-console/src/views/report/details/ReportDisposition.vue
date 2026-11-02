@@ -23,13 +23,13 @@
   import { computed, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { useEnum } from '@/store/modules/get-enum'
-  import usePermissionStore from '@/store/modules/permission'
+
   import { updateReportDisposition } from '@/api/system/test_sute_details'
 
   const props = defineProps<{ record: any; editable?: boolean }>()
   const emit = defineEmits<{ (event: 'saved'): void }>()
   const enumStore = useEnum()
-  const permissionStore = usePermissionStore()
+
   const visible = ref(false)
   const saving = ref(false)
   const form = reactive({ is_excluded: false, failure_reason: '', failure_description: '' })
@@ -41,7 +41,8 @@
     visible.value = true
   }
   async function save() {
-    if (saving.value || !permissionStore.hasPermission('report:exclude')) return false
+    if (saving.value)
+    return false;
     // 分类与说明独立保存；手工提交排除时由界面要求补全结论。
     if (form.is_excluded && (!form.failure_reason || !form.failure_description.trim())) {
       Message.warning('排除统计时，请填写原因分类和排查说明')

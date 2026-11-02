@@ -57,14 +57,14 @@ class ReportCaseDiagnosisMcpTests(SimpleTestCase):
         self.assertNotIn('is_excluded', schema.get('required', []))
         self.assertIn('true=排除', json.dumps(schema['properties']['is_excluded'], ensure_ascii=False))
         self.assertEqual(_tool_operation(self.name), 'update')
-        self.assertEqual(component_policy(self.name).permission_key, 'report:exclude')
+        self.assertEqual(component_policy(self.name).permission_key, 'report:change')
         with patch('src.interfaces.mcp.authentication.PermissionMenuService.is_effective_super_admin', return_value=False), \
-                patch('src.interfaces.mcp.authentication.PermissionMenuService.permission_keys_for_user', return_value={'report:detail'}):
+                patch('src.interfaces.mcp.authentication.PermissionMenuService.permission_keys_for_user', return_value={'report:read'}):
             result = permission_error(SimpleNamespace(id=7), self.name, {'test_suite_detail_id': 123})
         self.assertEqual(result['error_code'], 'MCP_PERMISSION_DENIED')
 
     async def test_authorized_tools_list_discovers_tool_in_root_and_report_servers(self):
-        for scopes, expected in [(['report:exclude'], True), (['report:detail'], False)]:
+        for scopes, expected in [(['report:change'], True), (['report:read'], False)]:
             access = AccessToken(token='test-diagnosis-key', client_id='diagnosis-test', subject='7',
                                  scopes=scopes, claims={'user_id': 7, 'is_super_admin': False})
             with patch.object(MangoAuthorizationMiddleware, '_access', new=AsyncMock(return_value=access)):

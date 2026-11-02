@@ -5,7 +5,7 @@ import { Message } from '@arco-design/web-vue'
 import { handleAuthExpired, isAuthExpiredResponse } from './auth-expired'
 import { ApiBusinessError } from './errors'
 import usePermissionStore from '@/store/modules/permission'
-import { omitUnauthorizedStateFields } from '@/utils/permission'
+import { requestPermission } from '@/utils/permission'
 import {
   containsLosslessJsonNumber,
   parseApiConfigLosslessJson,
@@ -21,7 +21,6 @@ export interface HttpOption {
   losslessJson?: boolean
   silentError?: boolean
   timeout?: number
-  permissionKey?: string
   beforeRequest?: () => void
   afterRequest?: () => void
 }
@@ -43,7 +42,6 @@ export function http<T = any>({
   losslessJson,
   silentError,
   timeout,
-  permissionKey,
   beforeRequest,
   afterRequest,
 }: HttpOption) {
@@ -64,14 +62,16 @@ export function http<T = any>({
     afterRequest && afterRequest()
     throw new Error(error.msg || '请求失败，未知异常')
   }
-  beforeRequest && beforeRequest()
   method = method || 'GET'
-  let params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
-  if (method === 'PUT' && permissionKey) {
-    const permissions = usePermissionStore()
-    params = omitUnauthorizedStateFields(params, permissions.statePermissionFields[permissionKey] || [],
-                                         permissions.hasPermission(`${permissionKey}:status`))
+  const params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
+  const permissions = usePermissionStore()
+  const required = requestPermission(permissions.httpPermissions || [], method, url, params)
+  if (required && !permissions.hasPermission(required)) {
+    if (!silentError) Message.error('当前角色没有此操作权限，请联系管理员授权')
+    afterRequest && afterRequest()
+    return Promise.reject(new ApiBusinessError('当前角色没有此操作权限，请联系管理员授权', 403))
   }
+  beforeRequest && beforeRequest()
   const requestData = containsLosslessJsonNumber(params) ? stringifyLosslessJson(params) : params
   const requestConfig = {
     headers,
@@ -150,7 +150,6 @@ export function put<T = any>({
   afterRequest,
   losslessJson,
   silentError,
-  permissionKey,
 }: HttpOption): Promise<Response> {
   return http<T>({
     url,
@@ -160,7 +159,6 @@ export function put<T = any>({
     afterRequest,
     losslessJson,
     silentError,
-    permissionKey,
   })
 }
 

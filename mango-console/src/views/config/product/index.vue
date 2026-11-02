@@ -1,6 +1,6 @@
 <template>
   <TableBody plain class="mango-detail-workbench-page">
-    <template #header><TableHeader title="项目与产品" /></template>
+    <template #header><TableHeader title="产品配置" /></template>
     <template #default>
       <ProductOverview
         :products="table.dataList"
@@ -85,7 +85,7 @@
       </ProductOverview>
     </template>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" width="min(560px, calc(100vw - 32px))" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
         <a-form-item
@@ -97,13 +97,16 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
+          <template v-else-if="item.type === 'textarea'">
+            <a-textarea v-model="item.value" :placeholder="item.placeholder" :max-length="5000" show-word-limit :auto-size="{ minRows: 3, maxRows: 8 }" />
+          </template>
           <template v-else-if="item.type === 'select' && item.key === 'project'">
             <a-select
               v-model="item.value"
               :multiple="item.multiple"
               :max-tag-count="item.multiple ? 1 : undefined"
               :field-names="fieldNames"
-              :options="productProjectOptions"
+              :options="editorProjectOptions"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -159,14 +162,14 @@
   import { useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { conditionItems, formItems } from './config'
   import ProductOverview from './components/ProductOverview.vue'
-  import { loadAllProducts } from './overview'
+  import { loadAllProducts, productEditorProjectOptions } from './overview'
   import {
     deleteUserProduct,
     getProductProjectOptions,
@@ -188,6 +191,8 @@
   const router = useRouter()
   const project = useProject()
   const productProjectOptions = ref<any[]>([])
+  const editingProject = ref<{ id: number | string; name: string } | null>(null)
+  const editorProjectOptions = computed(() => productEditorProjectOptions(productProjectOptions.value, editingProject.value))
 
   const data = reactive({
     isAdd: false,
@@ -247,6 +252,7 @@
   }
 
   function onAdd(projectId?: string) {
+    editingProject.value = null
     data.actionTitle = '新增'
     data.isAdd = true
     refreshProductProjectOptions()
@@ -289,6 +295,7 @@
   }
 
   function onUpdate(item: any) {
+    editingProject.value = item.project && typeof item.project === 'object' ? item.project : null
     data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id

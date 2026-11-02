@@ -5,6 +5,18 @@ from functools import wraps
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils.module_loading import import_string
+from rest_framework.exceptions import ValidationError
+
+from src.common.enums.system_error import SystemErrorEventSource
+from src.common.logging import log
+
+
+def report_validation_failure(errors, *, request=None, source=SystemErrorEventSource.HTTP):
+    """校验诊断不得影响原响应，也不得携带请求正文和异常堆栈。"""
+    try:
+        report_system_error(ValidationError(errors), source=source, request=request, trace='参数校验失败')
+    except Exception:
+        log.system.warning('参数校验诊断记录失败')
 
 
 def report_system_error(

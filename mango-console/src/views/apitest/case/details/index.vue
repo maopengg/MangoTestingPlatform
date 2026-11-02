@@ -539,7 +539,24 @@
                                 @verify="verifyAssertions(item)"
                                 @toggle-compare="item.__assertion_compare_open = !item.__assertion_compare_open"
                                 @generate-schema="setSchema(item.id)"
-                              />
+                              >
+                                <template #callback>
+                                  <ApiCaseCallbackPanel
+                                    :general-methods="data.ass"
+                                    :case-id="apiCaseId || ''"
+                                    :product-id="apiProjectProductId || ''"
+                                    :rules="pageData.record.callback_checks || []"
+                                    :trigger-step="data.tabelJson"
+                                    :scenario-count="data.selectDataObj.length"
+                                    :scenario-retry="item.error_retry"
+                                    :active="isActiveCaseDetailTab('3', '36') && isActiveCollapseItem(index)"
+                                    :edit-locked="caseEditLocked"
+                                    :trace-id="lastTraceId"
+                                    :save-pending="callbackSavePending"
+                                    :persist-rules="saveCallbackRules"
+                                  />
+                                </template>
+                              </ApiCaseAssertionPanel>
                             </template>
                             <template #runtime>
                               <ApiCaseRuntimeCachePanel
@@ -554,11 +571,26 @@
                               />
                             </template>
                             <template #assertion-result>
-                              <div class="m-2">
+                              <div v-if="data.caseDetailsTypeKey === '6'" class="mango-scenario-assertion-results">
+                                <header v-if="getCallbackAssertionResults(item).length" class="mango-section-title"><h2>接口响应断言</h2></header>
                                 <AssertionResult
-                                  v-if="data.caseDetailsTypeKey === '6'"
                                   :data="getAssertionResultData(item)"
                                   :stale="isAssertionVerifyStale(item)"
+                                />
+                                <ApiCaseCallbackPanel
+                                  v-if="getCallbackAssertionResults(item).length"
+                                  view="results"
+                                  :archived-results="getCallbackAssertionResults(item)"
+                                  :case-id="apiCaseId || ''"
+                                  :product-id="apiProjectProductId || ''"
+                                  :rules="pageData.record.callback_checks || []"
+                                  :trigger-step="data.tabelJson"
+                                  :scenario-count="data.selectDataObj.length"
+                                  :active="true"
+                                  :edit-locked="true"
+                                  :trace-id="lastTraceId"
+                                  :save-pending="false"
+                                  :persist-rules="saveCallbackRules"
                                 />
                               </div>
                             </template>
@@ -715,6 +747,7 @@
   } from '@/api/apitest/case_detailed'
   import { getApiInfoName } from '@/api/apitest/info'
   import useUserStore from '@/store/modules/user'
+
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
   import { getApiPublic } from '@/api/apitest/public'
@@ -744,6 +777,10 @@
   import ApiCaseStepTable from './components/ApiCaseStepTable.vue'
   import ApiCaseRecoveryConfig from './components/ApiCaseRecoveryConfig.vue'
   import ApiCaseOrchestrationPanel from './components/ApiCaseOrchestrationPanel.vue'
+  import ApiCaseCallbackPanel from './components/ApiCaseCallbackPanel.vue'
+  import { callbackRulesForStep } from './components/callback-config'
+  import { callbackResultsForScenario, callbackAssertionCount, callbackResultsFromAssertions } from './components/callback-results'
+  import { latestScenarioAttempts } from './execution-results'
   import ApiCaseScenarioHeader from './components/ApiCaseScenarioHeader.vue'
   import ApiCaseScenarioWorkspace from './components/ApiCaseScenarioWorkspace.vue'
   import ApiCaseScenarioFrontPanel from './components/ApiCaseScenarioFrontPanel.vue'
@@ -775,6 +812,7 @@
   } from '@/api/system/execution_result'
 
   const userStore = useUserStore()
+
   const FRONT_FUNC_TEMPLATE = `def func(self, request):
     # self 是当前执行上下文，常用能力：
     # self.test_setup.test_data：变量/缓存工具，支持 get_cache、set_cache、replace 等
@@ -881,6 +919,7 @@
     front_headers: [],
     front_public: [],
     front_auth_config: [],
+    callback_checks: [],
     posterior_sql: [],
     project_product: apiProjectProductId.value ? { id: apiProjectProductId.value } : null,
   })
@@ -977,6 +1016,27 @@
   } = useApiCaseExecution(() => refreshCaseRunStatusByStep())
   const stepTableLoading = ref(false)
   const caseGlobalSaving = ref(false)
+  const callbackSavePending = ref(false)
+
+  async function saveCallbackRules(rules: any[]): Promise<boolean> {
+    if (callbackSavePending.value || !ensureCaseEditable()) return false
+    const caseId = apiCaseId.value
+    const version = selectedCaseVersionDetail.value
+    callbackSavePending.value = true
+    try {
+      const response = await putApiCase({ id: caseId, callback_checks: rules })
+      if (!Array.isArray(response.data?.callback_checks)) {
+        Message.error('服务端尚未支持回调配置，请确认后端版本及数据库迁移')
+        return false
+      }
+      if (caseId !== apiCaseId.value || version !== selectedCaseVersionDetail.value || caseEditLocked.value)
+        return false
+      pageData.record.callback_checks = response.data.callback_checks
+      return true
+    } finally {
+      callbackSavePending.value = false
+    }
+  }
   const caseDataFactoryCount = ref(0)
   const scenarioWorkbenchExpanded = ref(false)
   const scenarioHeaderSavingCount = ref(0)
@@ -1199,6 +1259,7 @@
       'front_headers',
       'front_public',
       'front_auth_config',
+      'callback_checks',
       'posterior_sql',
       'parametrize',
     ]
@@ -1315,7 +1376,8 @@
       return normalizeCaseDetailRow(row)
     })
     pageData.setRecord(
-      normalizeCaseRecord({ ...pageData.record, ...cloneVersionValue(casePayload) })
+      normalizeCaseRecord({ ...pageData.record, ...cloneVersionValue(casePayload),
+                            callback_checks: cloneVersionValue(casePayload.callback_checks || []) })
     )
     data.caseHeadersList = pageData.record.front_headers
     data.data = rows
@@ -1500,14 +1562,15 @@
         configuredItemCount(item?.ass_jsonpath) +
         configuredItemCount(item?.ass_sql) +
         configuredItemCount(item?.ass_schema) +
-        configuredItemCount(item?.ass_general)
+        configuredItemCount(item?.ass_general) +
+        callbackRulesForStep(pageData.record.callback_checks || [], data.tabelJson?.id).length
       )
     }
     if (tab === 'cache') return resultItemCount(item?.result_data?.cache_data)
     if (tab === 'factory') {
       return resultItemCount(item?.result_data?.data_factory_cache_data)
     }
-    return getAssertionResultData(item).length
+    return getAssertionResultData(item).length + callbackAssertionCount(getCallbackAssertionResults(item))
   }
 
   function getResultRequestParams(item: any) {
@@ -1619,6 +1682,9 @@
           data.assClickAdd = false
         } else if (item.ass_schema) {
           data.tabsKey = '34'
+          data.assClickAdd = false
+        } else if (callbackRulesForStep(pageData.record.callback_checks || [], data.tabelJson?.id).length) {
+          data.tabsKey = '36'
           data.assClickAdd = false
         } else {
           data.tabsKey = '30'
@@ -1779,7 +1845,15 @@
     if (Array.isArray(item?.__assertion_verify_result)) {
       return item.__assertion_verify_result
     }
-    return Array.isArray(item?.result_data?.ass) ? item.result_data.ass : []
+    return Array.isArray(item?.result_data?.ass)
+      ? item.result_data.ass.filter((assertion: any) => !assertion.callback) : []
+  }
+
+  function getCallbackAssertionResults(item: any) {
+    return callbackResultsFromAssertions(
+      Array.isArray(item?.result_data?.ass) ? item.result_data.ass : [],
+      Array.isArray(item?.result_data?.callback_results) ? item.result_data.callback_results : []
+    )
   }
 
   function getAssertionVerifySignature(item: any) {
@@ -2386,7 +2460,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function findScenarioResult(resultData: any, scenarioId: any) {
-    const steps = normalizeExecutionResultSteps(resultData)
+    const steps = latestScenarioAttempts(normalizeExecutionResultSteps(resultData))
     return (
       steps.find((step: any) => String(step?.parameter_id) === String(scenarioId)) ||
       steps
@@ -2399,6 +2473,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   function clearDisplayedRuntimeResults() {
     invalidateExecutionResultLoad()
     latestExecutionResultData = null
+    lastTraceId.value = ''
     parameterCacheByStep.clear()
     selectedExecutionResultSummary.value = null
     data.data.forEach((row: any) => {
@@ -2456,6 +2531,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       if (!latest?.resultData) return
       selectedExecutionResultSummary.value = latest.summary
       latestExecutionResultData = latest.resultData
+      lastTraceId.value = latest.resultData?.trace_id || ''
       applyLatestExecutionResultToSnapshot(latest.resultData)
     } catch (error) {
       console.log(error)
@@ -2469,7 +2545,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       Boolean(selectedExecutionResultSummary.value?.create_time) &&
       String(pageData.record.update_time) > String(selectedExecutionResultSummary.value.create_time)
     data.data.forEach((row: any) => {
-      const stepResults = resultSteps.filter((item: any) => String(item?.id) === String(row?.id))
+      const stepResults = latestScenarioAttempts(resultSteps.filter((item: any) => String(item?.id) === String(row?.id)))
       row.runtime_result_outdated = !stepResults.length && configChangedAfterExecution
       if (!stepResults.length) return
       const failed = stepResults.find((item: any) => Number(item?.status) === 0)
@@ -2487,7 +2563,11 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       parameter.runtime_result_outdated = !result && configChangedAfterExecution
       if (!result) return
       parameter.status = result.status
-      parameter.result_data = result
+      parameter.result_data = {
+        ...result,
+        callback_results: callbackResultsForScenario(resultData, data.tabelJson?.id, parameter.id,
+          pageData.record.callback_checks || []),
+      }
       parameter.error_message = result.error_message
     })
     if (!caseVersionPayloadActive.value && data.tabelJson?.id) {

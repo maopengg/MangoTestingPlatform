@@ -8,10 +8,15 @@ class FunctionalTestDefectSourceEnum(BaseEnum):
     PRODUCTION = 3
     USER_FEEDBACK = 4
     OTHER = 5
+    AUTOMATION_REQUIREMENT = 6
+    AUTOMATION_REGRESSION = 7
 
     @classmethod
     def obj(cls):
-        return {0: "测试计划", 1: "用例库", 2: "探索测试", 3: "生产反馈", 4: "用户反馈", 5: "其他"}
+        return {
+            0: "测试计划", 1: "用例库", 2: "探索测试", 3: "生产反馈", 4: "用户反馈", 5: "其他",
+            6: "自动化发现（本迭代需求）", 7: "自动化发现（回归测试）",
+        }
 
 
 class FunctionalTestDefectTypeEnum(BaseEnum):

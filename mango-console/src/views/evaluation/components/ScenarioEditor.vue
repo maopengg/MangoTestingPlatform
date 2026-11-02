@@ -1,11 +1,11 @@
 <template>
   <section v-if="sequence !== 'independent'" class="mango-scenario-editor">
-    <div class="mango-section-title"><h3 class="mango-scenario-heading">{{ sequence === 'timeline' ? '时序步骤' : '多轮对话' }}</h3><a-button v-if="!disabled" v-permission="'evaluation.dataset:edit'" size="small" @click="addTurn">添加轮次</a-button></div>
+    <div class="mango-section-title"><h3 class="mango-scenario-heading">{{ sequence === 'timeline' ? '时序步骤' : '多轮对话' }}</h3><a-button v-if="!disabled"  size="small" @click="addTurn">添加轮次</a-button></div>
     <div class="mango-scenario-body">
     <a-form-item label="用户／会话组"><a-input :model-value="modelValue?.group_key || ''" :disabled="disabled" placeholder="相同组共享准备数据和会话；留空表示本条独立" @update:model-value="update({ group_key: $event })" /></a-form-item>
     <a-form-item label="组内顺序"><a-input-number :model-value="modelValue?.order || 0" :min="0" :disabled="disabled" @change="update({ order: $event })" /></a-form-item>
     <article v-for="(turn, index) in modelValue?.turns || []" :key="index" class="mango-scenario-turn">
-      <div class="mango-section-title"><h4 class="mango-scenario-subheading">第 {{ index + 1 }} 轮</h4><MangoTableActions :actions="disabled ? [] : [{ label: '上移', permission: 'evaluation.dataset:edit', disabled: index === 0, onClick: () => move(index) }, { label: '移除', permission: 'evaluation.dataset:edit', danger: true, onClick: () => remove(index) }]" /></div>
+      <div class="mango-section-title"><h4 class="mango-scenario-subheading">第 {{ index + 1 }} 轮</h4><MangoTableActions :actions="disabled ? [] : [{ label: '上移', disabled: index === 0, onClick: () => move(index) }, { label: '移除', danger: true, onClick: () => remove(index) }]" /></div>
       <div class="mango-scenario-body">
       <a-form-item label="轮次名称"><a-input :model-value="turn.name" :disabled="disabled" @update:model-value="setTurn(index, { name: $event })" /></a-form-item>
       <a-form-item v-if="sequence === 'timeline'" label="步骤类型"><a-select :model-value="turn.kind || 'test'" :options="turnKinds" :disabled="disabled" @change="setTurn(index, { kind: $event, score: $event !== 'material' })" /></a-form-item>

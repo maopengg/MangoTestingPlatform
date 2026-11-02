@@ -209,16 +209,6 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiInfoViews(ViewSet):
     model = ApiInfo
     serializer_class = ApiInfoSerializers
-    action_permission_map = {
-        'get_api_info_run': ('api.info:debug', 'api.info:execute'),
-        'get_execution_parameters': ('api.info:debug', 'api.info:execute'),
-        'api_info_batch_run': 'api.info:execute',
-        'get_api_name': 'api.info',
-        'get_bound_cases': 'api.info',
-        'import_api': 'api.info:create',
-        'post_upload_api': 'api.info:create',
-        'put_auto_schema': 'api.info:status',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('api')

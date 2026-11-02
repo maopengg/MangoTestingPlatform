@@ -4,7 +4,7 @@
       <TableHeader title="python脚本运行器（预警监控&Mock服务）">
         <template #header-extra>
           <a-space>
-            <a-button v-permission="'monitoring.task:create'"
+            <a-button
               type="primary"
               size="small"
               @click="onAdd"
@@ -116,9 +116,9 @@
                     </div>
                   </div>
                   <a-space wrap>
-                    <a-button v-permission="'monitoring.task:edit'" size="small" @click="onUpdate(workspace.task)">编辑配置</a-button>
-                    <a-button v-permission="'monitoring.task:detail'" size="small" @click="openLogPanel">实时日志</a-button>
-                    <a-button v-permission="'monitoring.task:execute'"
+                    <a-button  size="small" @click="onUpdate(workspace.task)">编辑配置</a-button>
+                    <a-button  size="small" @click="openLogPanel">实时日志</a-button>
+                    <a-button
                       v-if="!workspaceProcessActive"
                       type="primary"
                       size="small"
@@ -128,7 +128,7 @@
                     >
                       运行
                     </a-button>
-                    <a-button v-permission="'monitoring.task:execute'"
+                    <a-button
                       v-else
                       size="small"
                       status="danger"
@@ -138,7 +138,7 @@
                     >
                       {{ workspaceCanStop ? '停止' : '停止中' }}
                     </a-button>
-                    <a-button v-permission="'monitoring.task:delete'" size="small" status="danger" @click="onDelete(workspace.task)">
+                    <a-button  size="small" status="danger" @click="onDelete(workspace.task)">
                       删除
                     </a-button>
                   </a-space>
@@ -334,7 +334,7 @@
         <a-button size="small" :loading="logRefreshLoading" @click="fetchWorkspaceLog(false)">
           刷新
         </a-button>
-        <a-button v-permission="'monitoring.task:download'"
+        <a-button
           size="small"
           status="success"
           :loading="logDownloadLoading"
@@ -342,7 +342,7 @@
         >
           下载日志
         </a-button>
-        <a-button v-permission="'monitoring.task:execute'"
+        <a-button
           v-if="workspaceProcessActive"
           size="small"
           status="danger"

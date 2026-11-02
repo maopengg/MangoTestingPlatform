@@ -23,6 +23,7 @@ class ApiCaseTraceStatus(IntEnum):
 
 
 class ApiCaseTraceStepType(str, Enum):
+    CALLBACK = 'callback'
     CASE_START = "case_start"
     GLOBAL_VARIABLES = "global_variables"
     CASE_FRONT = "case_front"

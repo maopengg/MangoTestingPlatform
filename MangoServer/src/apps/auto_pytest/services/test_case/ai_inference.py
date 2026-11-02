@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 
-from src.apps.ai.exceptions import AiError
-from src.apps.ai.services.core import extract_ai_json
+from src.apps.system.exceptions import AiError
+from src.apps.system.services.ai.json_output import extract_ai_json
 from src.apps.auto_api.enums.case import (
     ApiCaseScenarioLayerEnum,
     ApiCaseScenarioTagEnum,

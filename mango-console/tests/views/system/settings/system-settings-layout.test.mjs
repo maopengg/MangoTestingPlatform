@@ -14,6 +14,39 @@ const runtimeCenterFilename = new URL(
 )
 const runtimeCenterSource = fs.readFileSync(runtimeCenterFilename, 'utf8')
 
+test('callback enablement uses the existing integer switch and retains numeric payloads', () => {
+  const script = descriptor.scriptSetup.content
+  const keys = JSON.parse(script.match(/const integerSwitchKeys: string\[\] = (\[[^\]]*\])/)[1].replaceAll("'", '"'))
+  assert.ok(keys.includes('MOCK_CALLBACK_ENABLED'))
+  const ast = ts.createSourceFile('settings.ts', script, ts.ScriptTarget.Latest, true)
+  function evaluate(name, dependencies) {
+    const declaration = ast.statements.filter(ts.isVariableStatement)
+      .flatMap(node => [...node.declarationList.declarations])
+      .find(node => node.name.getText(ast) === name)
+    const body = ts.transpileModule(`const value = ${declaration.initializer.getText(ast)}`, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText
+    return new Function(...Object.keys(dependencies), `${body}; return value`)(...Object.values(dependencies))
+  }
+  const isEnabledValue = evaluate('isEnabledValue', {})
+  const switchValue = evaluate('switchValue', { isEnabledValue })
+  const isIntegerSwitchType = evaluate('isIntegerSwitchType', { integerSwitchKeys: keys })
+  const normalizePayloadValue = evaluate('normalizePayloadValue', {
+    API_TRANSIENT_RETRY_CONDITIONS_KEY: 'API_TRANSIENT_RETRY_CONDITIONS',
+    normalizeRetryConditions: value => value,
+    isIntegerSwitchType, switchValue, isEnvironmentDisplayNames: () => false,
+    isDataFactoryValidationEnvironments: () => false, isAiTimeout: () => false,
+  })
+  for (const value of [true, 1, '1', 'true'])
+    assert.equal(normalizePayloadValue({ key: 'MOCK_CALLBACK_ENABLED', value }), 1)
+  for (const value of [false, 0, '0', 'false', null])
+    assert.equal(normalizePayloadValue({ key: 'MOCK_CALLBACK_ENABLED', value }), 0)
+  assert.equal(isIntegerSwitchType({ key: 'MOCK_CALLBACK_MAX_ACTIVE' }), false)
+  assert.match(source, /if \(item.key === 'MOCK_CALLBACK_ENABLED'\) return '启用 Case 回调验证'/)
+  assert.match(source, /:loading="itemSaving\(item\)"/)
+  assert.match(source, /restoreSavedValue\(item, previousValue\)/)
+})
+
 test('management level buttons filter in the content panel without tab panes', () => {
   const config = fs.readFileSync(
     new URL('../../../../src/views/system/settings/config.ts', import.meta.url),

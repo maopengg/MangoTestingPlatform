@@ -1,3 +1,4 @@
+HELP_DOCUMENTATION_URL = "http://160.202.231.91:36696/"
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
 # @Description:
@@ -5,8 +6,6 @@
 # @Author : 毛鹏
 import os
 from copy import deepcopy
-
-HELP_DOCUMENTATION_URL = "http://160.202.231.91:36696/"
 
 
 def _two_level_routes(routes):
@@ -165,7 +164,7 @@ def _two_level_routes(routes):
         "/engineering-capability",
         [
             leaf("/config/project/index", "/config"),
-            leaf("/config/product/index", "/config", "项目与产品"),
+            leaf("/config/product/index", "/config", "产品配置"),
             leaf("/config/data-source/index", "/config"),
             leaf("/config/test-object/index", "/config"),
             leaf("/config/test-files/index", "/config"),
@@ -261,18 +260,6 @@ def _two_level_routes(routes):
     for item in top_level_groups:
         item["parentPath"] = ""
 
-    intelligent_capability = group(
-        "/ai",
-        "智能能力",
-        "",
-        [
-            leaf("/ai/skill/index", "/ai"),
-            leaf("/ai/mcp/index", "/ai"),
-            leaf("/ai/task/index", "/ai", "AI执行记录"),
-        ],
-        icon="IconRobot",
-        is_beta=True,
-    )
     organization_permission["parentPath"] = ""
     system_operations = group(
         "/system",
@@ -306,7 +293,6 @@ def _two_level_routes(routes):
     return [
         home,
         *top_level_groups,
-        intelligent_capability,
         organization_permission,
         system_operations,
         help,
@@ -673,7 +659,7 @@ def ad_routes():
                 }, {
                     "parentPath": "/config",
                     "menuUrl": "/config/product/index",
-                    "menuName": "项目产品",
+                    "menuName": "产品配置",
                 },
                 {
                     "parentPath": "/config",
@@ -715,30 +701,6 @@ def ad_routes():
                     "menuName": "系统定时任务",
                     "localFilePath": "/timing/system-jobs/index",
                     "permissionKey": "timing.system_jobs",
-                },
-            ],
-        },
-        {
-            "menuUrl": "/ai",
-            "menuName": "AI",
-            "isBeta": True,
-            "icon": "IconRobot",
-            "parentPath": "",
-            "children": [
-                {
-                    "parentPath": "/ai",
-                    "menuUrl": "/ai/skill/index",
-                    "menuName": "技能管理",
-                },
-                {
-                    "parentPath": "/ai",
-                    "menuUrl": "/ai/mcp/index",
-                    "menuName": "MCP服务",
-                },
-                {
-                    "parentPath": "/ai",
-                    "menuUrl": "/ai/task/index",
-                    "menuName": "执行记录",
                 },
             ],
         },

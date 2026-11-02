@@ -102,7 +102,7 @@
             position="bottom"
             mini
           >
-            <a-button v-permission="'report.effectiveness:debug'"
+            <a-button
               size="small"
               :loading="cacheClearing"
               :disabled="reportMode || printing"
@@ -117,7 +117,7 @@
           </a-button>
           <a-tooltip v-if="reportMode" :content="imageExportTooltip" position="bottom" mini>
             <span class="mango-effectiveness-export-button-wrap">
-              <a-button v-permission="'report.effectiveness:export'"
+              <a-button
                 size="small"
                 type="primary"
                 :loading="imageExporting"
@@ -355,7 +355,7 @@
                 content="重新生成全局汇报总结及所有图表、卡片解读；生成结果分别缓存 1 小时"
                 position="bottom"
               >
-                <a-button v-permission="'report.effectiveness:debug'"
+                <a-button
                   class="mango-effectiveness-ai-card__action"
                   size="small"
                   :loading="aiLoading"
@@ -1077,7 +1077,7 @@
 <script setup lang="ts">
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
-  import usePermissionStore from '@/store/modules/permission'
+
   import { Message } from '@arco-design/web-vue'
   import {
     IconBulb,
@@ -2555,7 +2555,7 @@
     }
   }
   async function loadAiSummary(force = false, sourceSequence = overviewRequestSequence) {
-    if (!usePermissionStore().hasPermission('report.effectiveness:debug')) return
+
     const requestSequence = ++aiRequestSequence
     aiLoading.value = true
     Object.assign(aiState, {

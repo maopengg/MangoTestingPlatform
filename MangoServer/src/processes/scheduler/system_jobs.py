@@ -5,7 +5,6 @@ from django.db.models import Q
 from django.utils import timezone
 from mangotools.enums import TaskEnum
 
-from src.apps.ai.selectors.querysets import AiQuerySelector
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.monitoring.selectors.querysets import MonitoringQuerySelector
@@ -32,6 +31,13 @@ def subtract_calendar_months(value: datetime, months: int) -> datetime:
 
 
 class SchedulerSystemJobService:
+    @staticmethod
+    @async_task_db_connection()
+    def clean_runtime_kv():
+        from src.apps.system.services.runtime_kv.cleanup import RuntimeKVCleanupService
+
+        return RuntimeKVCleanupService.cleanup_expired()
+
     @staticmethod
     def retention_days(key: str) -> int:
         return SystemConfigService.get_ranged_int(key)
@@ -244,55 +250,6 @@ class SchedulerSystemJobService:
             log.system.error(f'scheduler-service 修复执行状态一致性失败：{error}')
             raise
 
-    @classmethod
-    @async_task_db_connection()
-    def sync_ai_mcp_tools(cls):
-        try:
-            from src.apps.ai.services.core import McpService
-            from src.apps.user.services.api_key import UserApiKeyService
-            from src.apps.ai.enums import AiMcpStatusEnum
-
-            user = UserApiKeyService.ensure_sync_user()
-            user_id = user.id if user else None
-            servers = AiQuerySelector.ai_mcp_server().filter(
-                status=AiMcpStatusEnum.ENABLED.value,
-            ).order_by('id')
-            success_count = 0
-            fail_count = 0
-            synced_tool_count = 0
-            results = []
-            for server in servers:
-                try:
-                    result = McpService.sync_tools(server, user_id)
-                    success_count += 1
-                    synced_tool_count += result.get('synced_count', 0)
-                    results.append({
-                        'server_id': server.id,
-                        'server_name': server.name,
-                        'success': True,
-                        **result,
-                    })
-                except Exception as error:
-                    fail_count += 1
-                    server.last_error = str(error)[:1000]
-                    server.save(update_fields=['last_error', 'update_time'])
-                    results.append({
-                        'server_id': server.id,
-                        'server_name': server.name,
-                        'success': False,
-                        'error': str(error)[:300],
-                    })
-                    log.system.error(f'scheduler-service 同步 MCP 工具失败：server={server.id}, error={error}')
-            return {
-                'server_count': servers.count(),
-                'success_count': success_count,
-                'fail_count': fail_count,
-                'synced_tool_count': synced_tool_count,
-                'results': results,
-            }
-        except Exception as error:
-            log.system.error(f'scheduler-service 同步 AI MCP 工具快照失败：{error}')
-            raise
 
     @classmethod
     def check_task_status(cls):

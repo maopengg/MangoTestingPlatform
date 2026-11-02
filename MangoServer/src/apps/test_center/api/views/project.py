@@ -66,7 +66,7 @@ class ProjectViews(ViewSet):
         if (
                 PermissionMenuService.is_effective_super_admin(user) or
                 ProjectProductScopeService.can_view_all_project_data(user) or
-                'config.project' in permission_keys
+                'config.project:read' in permission_keys
         ):
             return Project.objects.filter(status=StatusEnum.SUCCESS.value)
         return cls._allowed_project_queryset(request)

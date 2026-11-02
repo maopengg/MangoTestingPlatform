@@ -24,7 +24,6 @@ from src.apps.task_center.services.selection.module_full_config import ModuleFul
 from src.apps.task_center.services.selection.recent_results import TaskRecentResultService
 from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
 from src.apps.test_center.services.product_module import ProductModuleService
-from src.apps.user.middleware.auth import JwtQueryParamsAuthentication
 from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
@@ -115,17 +114,6 @@ class TasksCRUD(ModelCRUD):
 class TasksViews(ViewSet):
     model = Tasks
     serializer_class = TasksSerializers
-    action_permission_map = {
-        'get_id_name': 'timing.tasks',
-        'execution_options': 'timing.tasks',
-        'recent_results': 'timing.tasks',
-        'diagnostic_markdown': 'timing.tasks',
-        'selection_cases': 'timing.tasks',
-        'trigger_manual': 'timing.tasks:execute',
-        'module_config': 'timing.tasks',
-        'save_module_config': 'timing.tasks:edit',
-        'task_group': 'timing.tasks:edit',
-    }
 
     @staticmethod
     def _has_task_scope(request: Request, task: Tasks) -> bool:
@@ -421,23 +409,13 @@ class TasksViews(ViewSet):
 class TasksNoPermissionViews(ViewSet):
     model = Tasks
     serializer_class = TasksSerializers
-    authentication_classes = []
-
-    @staticmethod
-    def _get_request_user_id(request: Request):
-        try:
-            auth_result = JwtQueryParamsAuthentication().authenticate(request)
-        except Exception:
-            return None
-        if not auth_result:
-            return None
-        payload, _ = auth_result
-        return payload.get('id')
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def trigger_timing(self, request: Request):
-        task = Tasks.objects.filter(id=request.query_params.get('id')).first()
+        task = TasksCRUD().filter_queryset_by_data_scope(
+            request, Tasks.objects.filter(id=request.query_params.get('id')),
+        ).first()
         if task is None:
             raise TaskCenterError(TASK_SCHEDULE_NOT_FOUND)
         ScheduleDispatchService.create_test_suites(task)

@@ -7,19 +7,12 @@ from mangotools.enums import NoticeEnum
 from mangotools.enums import StatusEnum
 from mangotools.enums import TaskEnum
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
-
-from src.apps.ai.enums import (
-    AiAgentTaskStatusEnum,
-    AiAgentTaskTypeEnum,
-    AiAgentToolCallStatusEnum,
-    AiMcpAuthTypeEnum,
-    AiMcpStatusEnum,
-    AiMcpToolRiskLevelEnum,
-    AiMcpTransportTypeEnum,
-    AiMcpUseTypeEnum,
-    AiSkillStatusEnum,
-    AiSkillTypeEnum,
+from src.apps.auto_api.enums.callback import (
+    CallbackRunStatus, CallbackSource, CallbackCheckType, CallbackEventMode,
+    CallbackDeliveryPolicy, CallbackResponseMode,
 )
+from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
+
 from src.apps.auto_api.enums import (
     ApiCaseConfigurationFilterEnum,
     ApiAuthRefreshModeEnum,
@@ -108,6 +101,13 @@ class EnumCatalogService:
     @classmethod
     def catalog(cls) -> dict[str, Any]:
         enum_data = {
+            'api_transient_retry_condition': ApiTransientRetryCondition.get_option(),
+            'api_callback_status': CallbackRunStatus.get_option(),
+            'api_callback_source': CallbackSource.get_option(),
+            'api_callback_check_type': CallbackCheckType.get_option(),
+            'api_callback_event_mode': CallbackEventMode.get_option(),
+            'api_callback_delivery_policy': CallbackDeliveryPolicy.get_option(),
+            'api_callback_response_mode': CallbackResponseMode.get_option(),
             'cline_type': ClientTypeEnum.get_option(),
             'method': MethodEnum.get_option(),
             'api_public_type': ApiPublicTypeEnum.get_option(),
@@ -186,16 +186,6 @@ class EnumCatalogService:
             'monitoring_task_status': MonitoringTaskStatusEnum.get_option(),
             'monitoring_log_status': MonitoringLogStatusEnum.get_option(),
             'test_suite_notice': TestSuiteNoticeEnum.get_option(),
-            'ai_skill_status': AiSkillStatusEnum.get_option(),
-            'ai_skill_type': AiSkillTypeEnum.get_option(),
-            'ai_mcp_status': AiMcpStatusEnum.get_option(),
-            'ai_mcp_transport_type': AiMcpTransportTypeEnum.get_option(),
-            'ai_mcp_auth_type': AiMcpAuthTypeEnum.get_option(),
-            'ai_mcp_use_type': AiMcpUseTypeEnum.get_option(),
-            'ai_mcp_tool_risk_level': AiMcpToolRiskLevelEnum.get_option(),
-            'ai_agent_task_type': AiAgentTaskTypeEnum.get_option(),
-            'ai_agent_task_status': AiAgentTaskStatusEnum.get_option(),
-            'ai_agent_tool_call_status': AiAgentToolCallStatusEnum.get_option(),
             'manual_test_type': ManualTestTypeEnum.get_option(),
             'manual_test_source_type': ManualTestSourceTypeEnum.get_option(),
             'manual_test_sync_status': ManualTestSyncStatusEnum.get_option(),

@@ -6,11 +6,11 @@
           <a-space>
             <a-button class="mango-back-button" size="small" @click="router.back()">返回</a-button>
             <a-button size="small" :loading="refreshing" @click="refreshAll">刷新</a-button>
-            <a-button v-permission="'perf.run:export'" size="small" :loading="exporting" @click="exportReport">导出报告</a-button>
-            <a-button v-permission="'perf.run:execute'" v-if="!activeRunStatuses.has(overview.status)" size="small" @click="rerun"
+            <a-button  size="small" :loading="exporting" @click="exportReport">导出报告</a-button>
+            <a-button  v-if="!activeRunStatuses.has(overview.status)" size="small" @click="rerun"
               >按当前配置重跑</a-button
             >
-            <a-button v-permission="'perf.run:stop'"
+            <a-button
               v-if="activeRunStatuses.has(overview.status)"
               status="danger"
               size="small"
@@ -205,7 +205,7 @@
                           nodeStatusTitle(record.status)
                         }}</a-tag></template>
                         <template v-else-if="column.key === 'capture'" #cell="{ record }">
-                          <a-button v-permission="'perf.run:download'"
+                          <a-button
                             v-if="record.capture?.status === 'uploaded'"
                             size="mini"
                             type="text"

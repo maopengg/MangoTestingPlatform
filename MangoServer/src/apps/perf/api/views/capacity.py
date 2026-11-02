@@ -9,7 +9,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 
 
 class PerfCapacityViews(ViewSet):
-    action_permission_map = {"overview": "perf.capacity"}
 
     @error_response("system")
     def overview(self, request: Request):

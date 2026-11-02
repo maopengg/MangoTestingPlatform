@@ -63,8 +63,8 @@ const affectedRoutes = [
   ['/uitest/page/steps/details', '/uitest/page-steps/index', '页面步骤'],
   ['/timing/case', '/timing/tasks/index', '定时任务'],
   ['/data-factory/template/preview', '/data-factory/template/index', '场景模板'],
-  ['/config/product/module', '/config/product/index', '项目产品'],
-  ['/config/product/datasource', '/config/product/index', '项目产品'],
+  ['/config/product/module', '/config/product/index', '产品配置'],
+  ['/config/product/datasource', '/config/product/index', '产品配置'],
   ['/config/project/notice', '/config/project/index', '项目配置'],
 ]
 

@@ -1,4 +1,4 @@
-"""Published HTTP/SSE targets within the Case's product boundary."""
+"""Published HTTP/SSE/MCP targets within the Case's product boundary."""
 
 from django.db.models import F, OuterRef, Subquery
 from src.apps.auto_api.enums.protocol import ApiProtocolTypeEnum
@@ -14,13 +14,13 @@ def published_interfaces(product_id):
     ).order_by("-id")
     return ApiQuerySelector.api_info().filter(
         project_product_id=product_id,
-        protocol_type__in=[ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value],
+        protocol_type__in=[ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value, ApiProtocolTypeEnum.MCP.value],
     ).annotate(published_release_id=Subquery(release.values("id")[:1]))
 
 
 def interface_choices(case_id, user, *, module_id=None, selected_id=None, search="", page=1, page_size=50):
     case = get_case(case_id, user)
-    if not PermissionMenuService.is_effective_super_admin(user) and "api.info:execute" not in PermissionMenuService.permission_keys_for_user(user):
+    if not PermissionMenuService.is_effective_super_admin(user) and "api.info:read" not in PermissionMenuService.permission_keys_for_user(user):
         raise EvaluationError(EVALUATION_TARGET_ACCESS_DENIED)
     queryset = published_interfaces(case.project_product_id)
     if selected_id:

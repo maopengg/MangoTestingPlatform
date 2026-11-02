@@ -7,7 +7,7 @@ import requests
 import time
 from requests.exceptions import ChunkedEncodingError, ConnectionError as RequestsConnectionError, ReadTimeout
 
-from src.apps.ai.exceptions import ai_service_error
+from src.apps.system.exceptions import ai_service_error
 from src.apps.system.services.system_config import (
     AI_VISION_USE_SEPARATE_CONFIG_KEY,
     SystemConfigService,

@@ -8,12 +8,12 @@
           <a-form-item label="状态"><a-select v-model="filters.status" :options="caseStatusOptions" multiple :max-tag-count="1" allow-clear /></a-form-item>
           <a-form-item label="目标类型"><a-select v-model="filters.target_type" :options="targetTypeOptions" multiple :max-tag-count="1" allow-clear /></a-form-item>
         </a-form></template>
-        <template #toolbar><a-button v-permission="'evaluation.case:create'" type="primary" size="small" @click="editor?.open(undefined, filters.project_product, filters.module)">新建用例</a-button></template>
+        <template #toolbar><a-button  type="primary" size="small" @click="editor?.open(undefined, filters.project_product, filters.module)">新建用例</a-button></template>
         <a-table class="mango-native-scroll-table" :columns="caseColumns" :data="rows" :loading="loading" :pagination="false" :scroll="{ x: CASE_SCROLL_X, y: '100%' }" row-key="id" size="small">
           <template #columns><a-table-column v-for="column in caseColumns" :key="column.key" v-bind="column"><template #cell="{ record }">
             <span v-if="column.key === 'index'">{{ record.id }}</span>
             <span v-else-if="column.key === 'dataset_version_no'">{{ formatVersion(record.dataset_version_no) }}</span>
-            <a-link v-else-if="column.key === 'name' && permissions.hasPermission('evaluation.case:detail')" @click="details(record)">{{ record.name }}</a-link>
+            <a-link v-else-if="column.key === 'name'" @click="details(record)">{{ record.name }}</a-link>
             <span v-else-if="column.key === 'description'">{{ record.description || '-' }}</span>
             <span v-else-if="column.key === 'project_product'">{{ formatProjectProductPath(record.project_product) }}</span>
             <span v-else-if="column.key === 'module'">{{ formatModulePath(record.module) }}</span>
@@ -23,17 +23,17 @@
             <span v-else-if="column.key === 'valid_rate'">{{ record.latest_result?.valid_rate == null ? '-' : `${(record.latest_result.valid_rate * 100).toFixed(1)}%` }}</span>
             <span v-else-if="column.key === 'finished_at'">{{ record.latest_result?.finished_at || '-' }}</span>
             <template v-else-if="column.key === 'status'">
-              <a-switch v-if="permissions.hasPermission('evaluation.case:status')" size="small" :model-value="record.status === 'enabled'" :before-change="() => toggleStatus(record)" />
+              <a-switch v-if="true" size="small" :model-value="record.status === 'enabled'" :before-change="() => toggleStatus(record)" />
               <a-tag v-else size="small" :color="statusColor(record.status)">{{ enumTitle('evaluation_case_status', record.status) }}</a-tag>
             </template>
             <MangoTableActions v-else-if="column.key === 'actions'" :actions="[
-              { label: '执行', permission: 'evaluation.case:execute', disabled: record.status !== 'enabled', loading: executing.has(record.id), onClick: () => execute(record) },
-              { label: '详情', permission: 'evaluation.case:detail', onClick: () => details(record) },
-              { label: '历史结果', permission: 'evaluation.case:detail', onClick: () => details(record, true) },
-              { label: '编辑信息', permission: 'evaluation.case:edit', onClick: () => editor?.open(record.id) },
-              { label: '复制', permission: 'evaluation.case:copy', loading: copying === record.id, onClick: () => copy(record) },
-              { label: '删除', permission: 'evaluation.case:delete', danger: true, onClick: () => remove(record) },
-            ]" />
+    { label: '执行', disabled: record.status !== 'enabled', loading: executing.has(record.id), onClick: () => execute(record) },
+    { label: '详情', onClick: () => details(record) },
+    { label: '历史结果', onClick: () => details(record, true) },
+    { label: '编辑信息', onClick: () => editor?.open(record.id) },
+    { label: '复制', loading: copying === record.id, onClick: () => copy(record) },
+    { label: '删除', danger: true, onClick: () => remove(record) },
+]" />
             <span v-else>{{ record[column.dataIndex as string] ?? '-' }}</span>
           </template></a-table-column></template>
         </a-table>
@@ -85,7 +85,7 @@
   function reset() { Object.assign(filters, { name: '', status: [], target_type: [], project_product: null, module: null }); moduleIds.value = []; resetKey.value += 1; search() }
   function details(record: any, history = false, execution?: number) { router.push({ path: '/evaluation/case/details', query: { id: record.id, ...(history ? { tab: 'history' } : {}), ...(execution ? { execution } : {}) } }) }
   async function toggleStatus(record: any) {
-    if (!permissions.hasPermission('evaluation.case:status')) return false
+
     await updateEvaluationCase({ id: record.id, status: record.status === 'enabled' ? 'draft' : 'enabled' }); await load(); return true
   }
   async function execute(record: any) {
@@ -97,8 +97,7 @@
     try {
       const response: any = await executeEvaluationCase(record.id, { test_env: Number(user.selected_environment) }, keys.get(scope)!)
       keys.delete(scope); Message.success('Case 已提交执行')
-      if (permissions.hasPermission('evaluation.case:detail')) details(record, false, response.data.id)
-      else await load()
+      details(record, false, response.data.id);
     } finally { executing.delete(record.id) }
   }
   async function copy(record: any) { copying.value = record.id; try { await copyEvaluationCase(record.id); Message.success('已复制为草稿'); await load() } finally { copying.value = undefined } }

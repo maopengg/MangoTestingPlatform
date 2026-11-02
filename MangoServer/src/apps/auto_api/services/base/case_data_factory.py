@@ -35,6 +35,7 @@ class CaseDataFactory:
         self.runner: DataFactoryCaseConfigRunner | None = None
 
     def run_front(self):
+        self.test_setup.ensure_execution_context()
         if not self.test_setup.test_object:
             raise AutoApiError(AUTO_API_BASE_CASE_DATA_FACTORY_TEST_ENVIRONMENT_EXECUTION_INVALID)
         self.runner = DataFactoryCaseConfigRunner(
@@ -71,6 +72,7 @@ class ParameterDataFactory:
         self.runner: DataFactoryCaseConfigRunner | None = None
 
     def run_front(self):
+        self.test_setup.ensure_execution_context()
         if not self.test_setup.test_object:
             raise AutoApiError(
                 AUTO_API_BASE_CASE_DATA_FACTORY_TEST_ENVIRONMENT_EXECUTION_INVALID_CODE_TEST_ENVIRONMENT_EXECUTION_INVALID)

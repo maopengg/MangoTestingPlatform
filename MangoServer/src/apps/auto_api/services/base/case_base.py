@@ -55,6 +55,7 @@ class CaseBase:
     def case_front_main(self):
         if self.api_case.front_custom:
             self.__front_custom(self.api_case.front_custom)
+        self.test_setup.ensure_execution_context()
         self.case_data_factory.run_front()
         if self.api_case.front_sql:
             self.__front_sql(self.api_case.front_sql)

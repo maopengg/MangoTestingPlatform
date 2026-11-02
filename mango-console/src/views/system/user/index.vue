@@ -92,7 +92,7 @@
               {{ record.role?.name || '游客' }}
             </template>
             <template v-else-if="item.key === 'is_super_admin'" #cell="{ record }">
-              <a-switch v-permission="'system.user:edit'"
+              <a-switch
                 :model-value="record.is_super_admin"
                 :checked-value="true"
                 :unchecked-value="false"
@@ -113,11 +113,11 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'system.user:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'system.user:edit', label: '重置密码', onClick: () => onResetPassword(record) },
-                  { permission: 'system.user:edit', label: '重置 MCP Key', danger: true, onClick: () => onResetApiKey(record) },
-                  { permission: 'system.user:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '重置密码', onClick: () => onResetPassword(record) },
+    { label: '重置 MCP Key', danger: true, onClick: () => onResetApiKey(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

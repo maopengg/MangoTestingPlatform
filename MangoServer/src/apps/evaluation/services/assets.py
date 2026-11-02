@@ -64,7 +64,7 @@ def create_dataset_item(version_id, values, user):
 def set_case_status(case_id, status, user):
     if status not in {entry.value for entry in EvaluationStatusEnum}:
         raise invalid_config("未知评测用例状态")
-    if not PermissionMenuService.is_effective_super_admin(user) and "evaluation.case:status" not in PermissionMenuService.permission_keys_for_user(user):
+    if not PermissionMenuService.is_effective_super_admin(user) and "evaluation.case:change" not in PermissionMenuService.permission_keys_for_user(user):
         raise EvaluationError(EVALUATION_TARGET_ACCESS_DENIED)
     case = get_case(case_id, user)
     return EvaluationCaseService.save(instance=case, values={"status": status, "update_user": user})

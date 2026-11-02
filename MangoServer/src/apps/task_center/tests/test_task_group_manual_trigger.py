@@ -7,11 +7,12 @@ from django.test import SimpleTestCase
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from src.apps.task_center.api.views.task_group import ScheduledTaskGroupTriggerViews
+from src.apps.task_center.api.views.task_group import ScheduledTaskGroupTriggerViews, ScheduledTaskGroupViews
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum
 from src.apps.task_center.exceptions import TaskCenterError
 from src.apps.task_center.services.scheduling.fire import ScheduleFireService
 from src.apps.task_center.services.scheduling.task_group_execution import ScheduledTaskGroupExecutionService
+from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class ScheduleFireDeduplicationTests(SimpleTestCase):
@@ -135,25 +136,57 @@ class TaskGroupManualTriggerTests(SimpleTestCase):
         self.assertEqual(fires.create.call_args.kwargs['extra_data'],
                          {'test_env': 0, 'trigger_mode': 'manual'})
 
-    def test_endpoint_does_not_require_login_or_execute_permission(self):
+    def test_endpoint_requires_login_and_execute_permission(self):
         view = ScheduledTaskGroupTriggerViews.as_view({'get': 'trigger'})
-        for user in (None, SimpleNamespace(user_obj=SimpleNamespace(id=42))):
+        for granted in (None, {'timing.tasks'}, {'timing.tasks:change'}):
             request = APIRequestFactory().get('/api/system/tasks/groups/trigger', {'id': 7})
-            if user is not None:
-                force_authenticate(request, user=user)
-            with patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual',
-                              return_value={'generated_count': 2}) as trigger:
+            if granted is not None:
+                force_authenticate(request, user=SimpleNamespace(user_obj=SimpleNamespace(id=42)))
+            with (
+                patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False),
+                patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=granted or set()),
+                patch.object(ScheduledTaskGroupViews, '_group') as scope,
+                patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual',
+                             return_value={'generated_count': 2}) as trigger,
+            ):
                 response = view(request)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.data['data']['generated_count'], 2)
-            self.assertEqual(response['Cache-Control'], 'no-store')
-            trigger.assert_called_once_with(7)
+            if granted == {'timing.tasks:change'}:
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.data['data']['generated_count'], 2)
+                self.assertEqual(response['Cache-Control'], 'no-store')
+                scope.assert_called_once()
+                self.assertEqual(scope.call_args.args[1], 7)
+                trigger.assert_called_once_with(7)
+            else:
+                self.assertTrue(response.status_code in (401, 403) or response.data.get('code') != 200)
+                scope.assert_not_called()
+                trigger.assert_not_called()
+
+    def test_endpoint_cannot_trigger_an_out_of_scope_group(self):
+        view = ScheduledTaskGroupTriggerViews.as_view({'get': 'trigger'})
+        request = APIRequestFactory().get('/api/system/tasks/groups/trigger', {'id': 7})
+        force_authenticate(request, user=SimpleNamespace(user_obj=SimpleNamespace(id=42)))
+        with (
+            patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False),
+            patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'timing.tasks:change'}),
+            patch('src.apps.task_center.api.views.task_group.ScheduledTaskGroup.objects') as groups,
+            patch.object(ProjectProductScopeService, 'has_project_product', return_value=False) as scope,
+            patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual') as trigger,
+        ):
+            groups.filter.return_value.first.return_value = SimpleNamespace(project_product_id=99)
+            response = view(request)
+        scope.assert_called_once()
+        self.assertEqual(scope.call_args.args[1], 99)
+        self.assertNotEqual(response.data['code'], 200)
+        trigger.assert_not_called()
 
     def test_head_and_post_do_not_trigger_execution(self):
         view = ScheduledTaskGroupTriggerViews.as_view({'get': 'trigger'})
         for method in ('head', 'post'):
             request = getattr(APIRequestFactory(), method)('/api/system/tasks/groups/trigger?id=7')
-            with patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual') as trigger:
+            force_authenticate(request, user=SimpleNamespace(user_obj=SimpleNamespace(id=42)))
+            with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
+                    patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual') as trigger:
                 response = view(request)
             self.assertEqual(response.status_code, 405)
             trigger.assert_not_called()
@@ -162,7 +195,9 @@ class TaskGroupManualTriggerTests(SimpleTestCase):
         view = ScheduledTaskGroupTriggerViews.as_view({'get': 'trigger'})
         for params in ({}, {'id': 'invalid'}):
             request = APIRequestFactory().get('/api/system/tasks/groups/trigger', params)
-            with patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual') as trigger:
+            force_authenticate(request, user=SimpleNamespace(user_obj=SimpleNamespace(id=42)))
+            with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
+                    patch.object(ScheduledTaskGroupExecutionService, 'trigger_manual') as trigger:
                 response = view(request)
             self.assertEqual(response.data['code'], 39018)
             trigger.assert_not_called()

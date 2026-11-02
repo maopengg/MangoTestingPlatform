@@ -1,5 +1,6 @@
 import re
 import uuid
+from copy import deepcopy
 from contextlib import contextmanager
 from typing import Any
 
@@ -102,6 +103,10 @@ class ObtainTestData(PerfTestDataMethods, DataProcessor):
     def get_data_factory_all(self) -> dict[str, Any]:
         """获取全部数据工厂缓存数据。"""
         return {key: self.to_frontend_safe_value(value) for key, value in self._data_factory_cache.items()}
+
+    def get_data_factory_snapshot(self) -> dict[str, Any]:
+        """内部执行快照保留原始类型，不能复用面向前端的大整数展示转换。"""
+        return deepcopy(self._data_factory_cache)
 
     @classmethod
     def to_frontend_safe_value(cls, value: Any) -> Any:

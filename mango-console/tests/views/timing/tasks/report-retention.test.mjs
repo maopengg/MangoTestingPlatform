@@ -15,7 +15,7 @@ test('任务表单标签预留六字及必填标记宽度，保持单行对齐',
 
 test('任务组只提供创建时的子任务初始策略，不保存也不覆盖', () => {
   assert.match(source, /:options="enumStore.report_retention_policy"/)
-  assert.match(source, /permission: 'timing.tasks:edit', label: '保留策略'/)
+  assert.match(source, /permission: 'timing.tasks:change', label: '保留策略'/)
   assert.match(group, /v-model="form.new_task_report_retention_policy"/)
   assert.match(group, /v-if="!editingId" label="报告保留策略"/)
   assert.match(group, /!editingId.value \? \{ new_task_report_retention_policy \} : \{\}/)

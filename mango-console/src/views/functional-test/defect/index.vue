@@ -15,7 +15,7 @@
             <a-form-item label="优先级"><a-select v-model="filters.priority" :options="priorityOptions" :field-names="fieldNames" allow-clear /></a-form-item>
             <a-form-item label="缺陷类型"><a-select v-model="filters.defect_type" :options="typeOptions" :field-names="fieldNames" allow-clear /></a-form-item>
             <a-form-item label="缺陷来源"><a-select v-model="filters.source_type" :options="sourceOptions" :field-names="fieldNames" allow-clear /></a-form-item>
-            <a-form-item label="负责人"><a-select v-model="filters.assignee" :options="userOptions" :field-names="fieldNames" allow-search allow-clear /></a-form-item>
+            <a-form-item label="经办人"><a-select v-model="filters.assignee" :options="userOptions" :field-names="fieldNames" allow-search allow-clear /></a-form-item>
             <a-form-item label="报告人"><a-select v-model="filters.reporter" :options="userOptions" :field-names="fieldNames" allow-search allow-clear /></a-form-item>
             <a-form-item label="来源计划"><a-select v-model="filters.source_plan" :options="searchPlanOptions" allow-search allow-clear /></a-form-item>
             <a-form-item label="创建日期"><a-range-picker v-model="filters.create_range" value-format="YYYY-MM-DD" allow-clear /></a-form-item>
@@ -37,7 +37,7 @@
               </template>
             </a-popover>
             <a-button size="small" :loading="loading" @click="loadRows">刷新</a-button>
-            <a-button v-permission="'functional.defect:create'" size="small" type="primary" @click="openEditor()">新建缺陷</a-button>
+            <a-button  size="small" type="primary" @click="openEditor()">新建缺陷</a-button>
           </a-space>
         </template>
         <div class="mango-defect-page__stats">
@@ -63,11 +63,11 @@
             <template #relations="{ record }">{{ record.relation_count ?? record.relations?.length ?? 0 }}</template>
             <template #actions="{ record }">
               <MangoTableActions :actions="[
-                { permission: 'functional.defect:edit', label: '编辑', onClick: () => openEditor(record) },
-                { permission: 'functional.defect:status', label: '流转', disabled: !nextStatuses(record).length, onClick: () => openTransition(record) },
-                { permission: 'functional.defect:create', label: '创建重测计划', disabled: !(record.relation_count ?? record.relations?.length), onClick: () => openRetest(record) },
-                { permission: 'functional.defect:delete', label: '删除', danger: true, onClick: () => removeRow(record) },
-              ]" />
+    { label: '编辑', onClick: () => openEditor(record) },
+    { label: '流转', disabled: !nextStatuses(record).length, onClick: () => openTransition(record) },
+    { label: '创建重测计划', disabled: !(record.relation_count ?? record.relations?.length), onClick: () => openRetest(record) },
+    { label: '删除', danger: true, onClick: () => removeRow(record) },
+]" />
             </template>
           </a-table>
         </div>
@@ -95,7 +95,7 @@
         <a-grid-item><a-form-item label="缺陷类型" required><a-select v-model="form.defect_type" :options="typeOptions" :field-names="fieldNames" /></a-form-item></a-grid-item>
         <a-grid-item><a-form-item label="严重程度" required><a-select v-model="form.severity" :options="severityOptions" :field-names="fieldNames" /></a-form-item></a-grid-item>
         <a-grid-item><a-form-item label="优先级" required><a-select v-model="form.priority" :options="priorityOptions" :field-names="fieldNames" /></a-form-item></a-grid-item>
-        <a-grid-item><a-form-item label="负责人"><a-select v-model="form.assignee" :options="userOptions" :field-names="fieldNames" allow-search allow-clear /></a-form-item></a-grid-item>
+        <a-grid-item><a-form-item label="经办人"><a-select v-model="form.assignee" :options="userOptions" :field-names="fieldNames" allow-search allow-clear /></a-form-item></a-grid-item>
         <a-grid-item v-if="form.id"><a-form-item label="解决方式"><span>{{ enumTitle(resolutionOptions, form.resolution) }}</span></a-form-item></a-grid-item>
         <a-grid-item v-if="form.id" :span="2"><a-form-item label="解决说明"><span>{{ form.resolution_note || '-' }}</span></a-form-item></a-grid-item>
         <a-grid-item v-if="form.id" :span="2"><div class="mango-defect-page__readonly-meta"><span>解决时间：{{ form.resolved_at || '-' }}</span><span>关闭时间：{{ form.closed_at || '-' }}</span></div></a-grid-item>
@@ -146,7 +146,7 @@
   <a-modal v-model:visible="transitionVisible" title="流转缺陷" width="560px" :ok-loading="transitionSaving" @ok="saveTransition">
     <a-form :model="transitionForm" layout="vertical">
       <a-form-item label="目标状态" required><a-select v-model="transitionForm.status" :options="transitionOptions" /></a-form-item>
-      <a-form-item v-if="transitionForm.status === 2" label="负责人" required><a-select v-model="transitionForm.assignee" :options="userOptions" :field-names="fieldNames" allow-search /></a-form-item>
+      <a-form-item v-if="transitionForm.status === 2" label="经办人" required><a-select v-model="transitionForm.assignee" :options="userOptions" :field-names="fieldNames" allow-search /></a-form-item>
       <template v-if="[3, 4].includes(transitionForm.status)">
         <a-form-item label="解决方式" required><a-select v-model="transitionForm.resolution" :options="resolutionOptions" :field-names="fieldNames" /></a-form-item>
         <a-form-item label="解决说明"><a-textarea v-model="transitionForm.resolution_note" /></a-form-item>

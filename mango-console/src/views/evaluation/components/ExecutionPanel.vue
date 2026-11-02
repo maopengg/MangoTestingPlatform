@@ -33,7 +33,7 @@
             <a-button v-if="record" size="small" @click="snapshotVisible = true">执行快照</a-button>
             <a-button
               v-if="record && !isTerminal(record.status)"
-              v-permission="'evaluation.case:stop'"
+
               size="small"
               status="danger"
               :loading="stopping"
@@ -46,7 +46,7 @@
                 isTerminal(record.status) &&
                 (record.summary?.failed || record.summary?.invalid || record.summary?.warning)
               "
-              v-permission="'evaluation.case:execute'"
+
               size="small"
               :loading="retrying"
               @click="retry"
@@ -119,7 +119,7 @@
           <div class="mango-section-title mango-execution-card-title mango-execution-item-toolbar"
             ><h3 class="mango-execution-item-heading">条目结果</h3
             ><div class="mango-execution-item-tools">
-              <a-button v-if="record?.details?.workflow?.length" v-permission="'evaluation.case:detail'" size="small" @click="workflowVisible = true">查看执行流程</a-button>
+              <a-button v-if="record?.details?.workflow?.length"  size="small" @click="workflowVisible = true">查看执行流程</a-button>
               <a-form v-if="record" layout="inline" :model="{ verdictFilter }">
                 <a-form-item label="效果结论"
                   ><a-select
@@ -134,8 +134,8 @@
                 /></a-form-item>
               </a-form>
               <a-button
-                v-if="record || permissions.hasPermission('evaluation.dataset:detail')"
-                v-permission="'evaluation.case:detail'"
+                v-if="true"
+
                 size="small"
                 :loading="gradingLoading || previewLoading"
                 :disabled="recordLoading"
@@ -228,12 +228,11 @@
             <template #actions="{ record: item }"
               ><MangoTableActions
                 :actions="[
-                  {
-                    label: '详情',
-                    permission: 'evaluation.case:detail',
-                    onClick: () => showItem(item.id),
-                  },
-                ]"
+    {
+        label: '详情',
+        onClick: () => showItem(item.id),
+    },
+]"
             /></template>
           </a-table>
           <TableFooter v-if="record" :pagination="itemPagination" />
@@ -275,7 +274,7 @@
   import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import useUserStore from '@/store/modules/user'
-  import usePermissionStore from '@/store/modules/permission'
+
   import ExecutionHistoryList from '@/components/business/ExecutionHistoryList.vue'
   import { useEvaluationEnums } from './useEvaluationEnums'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
@@ -310,7 +309,7 @@
     (event: 'preview'): void
   }>()
   const user = useUserStore()
-  const permissions = usePermissionStore()
+
   const workflowVisible = ref(false)
   const showGrading = ref(false),
     gradingLoading = ref(false),

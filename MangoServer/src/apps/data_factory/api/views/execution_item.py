@@ -9,6 +9,7 @@ from src.common.responses.model_crud import ModelCRUD
 
 
 class DataFactoryExecutionItemCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = DataFactoryExecutionItem
     queryset = DataFactoryExecutionItem.objects.all()
     serializer_class = DataFactoryExecutionItemSerializerC

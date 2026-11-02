@@ -53,6 +53,7 @@ from src.common.responses.response_msg import TEST_RESULT_FILTER_INVALID
 
 
 class TestSuiteDetailsCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = TestSuiteDetails
     queryset = TestSuiteDetails.objects.all()
     serializer_class = TestSuiteDetailsSerializersC
@@ -69,7 +70,7 @@ class TestSuiteDetailsCRUD(ModelCRUD):
                 query_dict[k] = v[0]
         del query_dict['pageSize']
         del query_dict['page']
-        books = self.model.objects.filter(**query_dict).order_by('-id')
+        books = self.filter_queryset_by_data_scope(request, self.model.objects.filter(**query_dict)).order_by('-id')
         books = self.filter_queryset_by_data_scope(request, books)
         data_list, count = self.paging_list(
             request.query_params.get("pageSize"),
@@ -89,23 +90,6 @@ class TestSuiteDetailsCRUD(ModelCRUD):
 class TestSuiteDetailsViews(ViewSet):
     model = TestSuiteDetails
     serializer_class = TestSuiteDetailsSerializers
-    action_permission_map = {
-        'get_all_retry': 'report:retry',
-        'execution_options': 'report:retry',
-        'get_retry': 'report:retry',
-        'retry_failed': 'report:retry',
-        'update_disposition': 'report:exclude',
-        'test_suite_details_report': 'report',
-        'get_summary': 'report:detail',
-        'get_test_suite': 'report:detail',
-        'get_details': 'report:detail',
-        'get_detail_result': 'report:detail',
-        'get_detail_result_options': 'report:detail',
-        'execution_trace': 'report:detail',
-        'post_api_export': 'report:export',
-        'get_api_export_status': 'report:export',
-        'download_api_export': 'report:download',
-    }
 
     @staticmethod
     def _has_project_product_scope(request: Request, project_product_id) -> bool:

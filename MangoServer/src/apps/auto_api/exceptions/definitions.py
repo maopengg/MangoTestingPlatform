@@ -454,3 +454,8 @@ AUTO_API_PROTOCOLS_GRPC_JSON_INVALID_CODE_JSON_INVALID = ErrorDefinition(code=31
 API_MCP_SESSION_CLOSED = ErrorDefinition(code=31204, message='MCP Session不存在或已关闭')
 API_RECOVERY_CONFIG_INVALID = ErrorDefinition(code=31215, message='步骤执行配置必须为对象，且仅支持布尔值 is_recovery')
 API_CURL_IMPORT_INVALID = ErrorDefinition(code=31216, message='cURL 命令格式不正确，请提供包含有效 HTTP/HTTPS 地址的 cURL（bash）命令')
+API_AUTH_PUBLIC_VARIABLES_INVALID = ErrorDefinition(code=31217, message='授权关联公共变量无效：请选择同产品、适用当前被测环境且键名不重复的有效变量')
+API_AUTH_CONTEXT_MISMATCH = ErrorDefinition(code=31218, message='用例与授权的租户或地址条件不匹配，请在用例中选择与该授权一致的公共变量')
+API_AUTH_TARGET_INVALID = ErrorDefinition(code=31219, message='授权适用目标地址无效或与当前请求不匹配，请选择当前产品、被测环境中已配置的地址；留空使用默认地址')
+API_CALLBACK_CONFIG_INVALID = ErrorDefinition(code=31220, message='回调验证配置无效：{}')
+API_CALLBACK_EXECUTION_FAILED = ErrorDefinition(code=31221, message='回调验证未通过：{}')

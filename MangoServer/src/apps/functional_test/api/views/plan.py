@@ -59,14 +59,6 @@ class FunctionalTestPlanCRUD(ModelCRUD):
 
 
 class FunctionalTestPlanViews(ViewSet):
-    action_permission_map = {
-        "retrieve": "functional.plan:detail", "cases": "functional.plan:detail",
-        "add_cases": "functional.plan:edit", "remove_cases": "functional.plan:edit",
-        "update_case": "functional.plan:edit", "copy_cases": "functional.plan:copy",
-        "requirement_options": "functional.plan:create", "start": "functional.plan:execute",
-        "finish": "functional.plan:execute", "batch_result": "functional.plan:execute",
-        "related": "functional.plan:detail",
-    }
 
     @staticmethod
     def _user_id(request: Request):

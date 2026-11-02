@@ -138,7 +138,7 @@
                     </template>
                     <template #project_product="{ record }">{{ record.project_name }} / {{ record.product_name }}</template>
                     <template #actions="{ record }">
-                      <MangoTableActions :actions="[{ label: '扫描记录', permission: 'api.module_coverage:detail', onClick: () => drill(record, 'scans') }]" />
+                      <MangoTableActions :actions="[{ label: '扫描记录', onClick: () => drill(record, 'scans') }]" />
                     </template>
                     <template #empty><div class="mango-empty-state">{{ loading ? '正在加载模块进度…' : '当前条件没有模块。' }}</div></template>
                   </a-table>
@@ -185,7 +185,7 @@
                   }}{{ item.target_count && item.deferred_count ? ` · 暂不处理 ${item.deferred_count}` : '' }}</span
                 >
                 <a-link
-                  v-permission="'api.module_coverage:detail'"
+
                   @click="emit('interface', item.id)"
                   >查看场景</a-link
                 >

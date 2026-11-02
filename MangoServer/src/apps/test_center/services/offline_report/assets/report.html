@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-$script_hash'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>$platform_name · $name</title><style>$styles</style></head><body>
+<header class="mango-platform-bar"><div><strong>$platform_name</strong><span>离线测试报告</span></div></header>
+<main id="report" class="mango-report-layout $layout_class">$navigation<div class="mango-report-content"><section class="mango-report-head"><div class="mango-report-title"><h1>$name</h1>
+<div class="mango-report-conclusion"><span class="mango-tag mango-tone-$result_tone">$result</span><span>通过率 <strong>$rate</strong></span></div></div>
+<dl class="mango-meta">$meta</dl><dl class="mango-stats" aria-label="结果统计">$stats</dl></section>
+$scope_notice$sections<footer>$platform_name · 生成时结果快照，请勿向无关人员转发。</footer></div></main>
+$case_details
+<dialog id="mango-case-dialog" class="mango-case-dialog" aria-labelledby="mango-case-title">
+<header class="mango-case-toolbar"><button type="button" data-case-close>返回报告</button><h2 id="mango-case-title" tabindex="-1">Case 详情</h2></header>
+<div class="mango-case-content"></div></dialog>
+<noscript><p class="mango-report-notice">当前浏览器未运行报告内置交互脚本，Case 详情不可展开，请使用支持脚本的浏览器打开本文件。</p></noscript>
+<script>$script</script></body></html>

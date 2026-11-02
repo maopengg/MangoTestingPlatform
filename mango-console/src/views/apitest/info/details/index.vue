@@ -7,7 +7,7 @@
           <div class="mango-detail-subtitle"> 维护请求配置、后置处理、断言和最近一次响应结果 </div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button v-permission="'api.info:execute'"
+          <a-button
             size="small"
             status="success"
             :loading="caseRunning"
@@ -101,7 +101,7 @@
                 @press-enter="saveRequestMeta"
                 data-testid="qa-views-apitest-info-details-input-请输入接口路径-例如-api-user-list"
               />
-              <a-button v-permission="['api.info:create', 'api.info:edit']"
+              <a-button
                 class="api-request-save"
                 type="primary"
                 :loading="requestMetaSaving"

@@ -148,6 +148,10 @@ src/apps/<app_name>/
 4. 当前异常需要堆栈时使用 `exception()`；禁止记录 Token、Authorization、Cookie、密码和完整敏感请求体。
 5. 完整文件布局、环境变量和验证要求见 `docs/架构设计/日志管理规范.md`。
 
+## 菜单页面 CRUD 权限
+
+遵循根目录 `AGENTS.md` 的“页面与操作权限”：HTTP、MCP 共用菜单 CRUD，子页面和半屏窗口不另设权限。不修改资产配置的 Case 执行归查看，执行记录与报告可正常写入；自助注册保留开关控制的公开入口。后端先查显式映射再判断管理员，漏配包括管理员一律拒绝；Selector/Service 仍校验产品及记录归属。新增接口同步映射完整性、游客及管理员漏配拒绝测试，不恢复旧细分键或分散映射。
+
 ## 命令边界
 
 11. 后端目录是 `MangoServer/`。
@@ -213,14 +217,14 @@ src/apps/<app_name>/
 
 ## AI 与功能测试约定
 
-40. `functional_test` 只负责需求、用例、资料、绑定、统计和落库；AI、Skill、MCP、Agent、上下文历史、任务阶段和对话展示统一放在 `ai` app。
-40.1 `ai/agent/` 只保存 Agent 工作流、规划器、生成器和领域算法；带 `Service` 职责的上下文、文档、预算、租约、任务阶段、Skill、MCP 调用和 Harness 实现必须放在 `ai/services/` 的对应业务子包。
-40.2 AI Worker 的进程入口固定放在 `src/processes/ai_worker/`，仅调用 `ai.services`；不得恢复 `ai/runtime/`。Harness 不建立 App 顶层并行目录，固定放在 `ai/services/harness/`。
-40.3 AI 的 MCP 查询输出使用 `ai/selectors` 与协议无关 presenter，不得复用 DRF Serializer；跨 App 读取调用目标 App Selector，跨 App 写入调用目标 App Service。
+40. `functional_test` 负责需求、用例、资料、绑定、统计和落库；旧 AI App、用例生成 App、Agent Worker、生成对话与迁移空壳均已退役。
+40.1 不保留旧 Skill、Harness、Agent 注册中心或搬迁后的旧编排实现；未来 Agent 需求按具体业务重新设计所属 App。
+40.2 其他业务已有模型调用继续复用 `system.services.ai`，不得依赖退役 App。
+40.3 MCP 查询输出使用所属业务 App 的 `selectors` 与协议无关 presenter，不得复用 DRF Serializer；跨 App 读取调用目标 App Selector，跨 App 写入调用目标 App Service。
 41. 功能测试用例由 AI 生成时，不要求 AI 输出 `project_product_id`、`module_id`，后端落库必须使用当前需求的项目产品和模块。
 42. 用户手动新增或编辑功能测试用例时，可以单独修改用例自己的项目产品和模块；读取、筛选、模块导航和 API 自动化生成以用例自身字段为准。
 43. 功能测试用例编号统一使用 `FT-{四位序号}`，AI 生成和后端兜底都遵守同一规则。
-44. 生成 API 自动化时，Skill 决定执行规范，MCP 提供真实工具能力；后端只做基础结果校验和业务落库校验。
+44. 功能用例手工维护与自动化绑定继续使用所属业务 Service；旧自动生成入口不保留占位操作权限。
 - 提示词集中管理：所有后端 AI 静态提示词统一放在 `src/common/prompts/catalog/`，按业务能力拆分 YAML，并在 `registry.py` 显式登记。YAML 保存正文、角色、输出格式、场景 focus、owner 和 version；Python 只做 Pydantic 校验、安全模板渲染和动态消息组装。Service、View、Model、process、任务执行器只传入业务数据，不允许内联 system/user 提示词。测试桩、用户原始输入以及数据库中的 Skill/MCP 自定义内容不属于平台静态提示词正文。
 
 ## 枚举规范
@@ -255,6 +259,7 @@ src/apps/<app_name>/
 ## MCP 规范
 
 62. MCP 工具描述要面向调用者，不要只写后端字段名。
+62.1 测试平台 MCP 不开放调用方直接提交 SQL 的数据库查询入口，禁止重新注册 SQL 直查工具或以 SELECT/EXPLAIN/limit 包装恢复此能力；Redis、ES 等工具必须约束真实数据源类型，不能转发 SQL。不得推荐通过脚本、通用执行入口或临时 Case 绕过禁令。结构元数据发现及正式 Case、数据工厂按已保存配置执行 SQL 不受此禁令影响；新增查询工具须验证主入口和领域入口的鉴权后工具清单与调用边界。
 63. 创建/更新场景模板时要支持 `items`。
 64. MCP 返回场景模板详情要包含主模板字段和关联模板列表。
 65. MCP 应明确工厂实体是单表规则，场景模板是完整业务对象。
@@ -262,7 +267,7 @@ src/apps/<app_name>/
 67. 前端能力变更时，MCP 文案和参数也要同步。
 68. MCP Tool 必须优先调用所属 App 的 Selector、Service、schema 和 presenter；不得导入 `api/views` 或 `api/serializers`，也不得通过兼容聚合文件间接依赖 HTTP 层。
 69. 功能测试 MCP 写操作必须复用现有 serializer/service 规则，不能绕过功能测试用例必填、枚举、绑定和统计刷新校验。
-70. AI 查询 MCP 只提供任务、阶段、工具调用、上下文、Skill、MCP 服务和工具快照等只读能力，不提供绕过页面的 AI 配置写入。
+70. 不恢复旧 AI 管理工具和 `/mcp/ai` 端点；业务 MCP 只调用所属 App 的 Selector/Service，并遵循业务权限与数据范围。
 71. MCP 查询类工具必须支持分页：所有 `list_*`、`search_*` 以及会返回明细列表的查询工具，都应提供 `page`、`page_size` 入参，默认 `page=1`、`page_size=10`；返回结构统一包含 `items`、`count`、`page`、`page_size`。调用方需要更多数据时自行翻页，不允许默认一次性返回大列表。
 72. MCP 详情类工具如果内嵌可能超过 10 条的子列表，应优先提供独立分页查询工具；确需在详情中返回子列表时，也必须提供子列表分页参数，例如 `case_page`、`case_page_size`，默认只返回 10 条。
 73. 新增 MCP 写操作工具时，必须走 `src/interfaces/mcp/server.py` 统一演示环境写操作校验；工具名优先使用既有写操作前缀：`create_`、`add_`、`copy_`、`upload_`、`bind_`、`batch_`、`batch_generate_`、`execute_`、`debug_run_`、`update_`、`set_`、`sort_`、`refresh_`、`auto_generate_`、`delete_`、`cleanup_`、`clear_`。

@@ -1,5 +1,5 @@
 import json
-from src.apps.ai.services.core import parse_ai_json_content
+from src.apps.system.services.ai.json_output import parse_ai_json_content
 from src.apps.evaluation.exceptions import EvaluationError, EVALUATION_ANSWER_MODEL_CHANGED
 from src.apps.evaluation.formatters.payload import select_value, mask_sensitive
 from src.apps.evaluation.schemas.answer import EvaluationAnswerOutput

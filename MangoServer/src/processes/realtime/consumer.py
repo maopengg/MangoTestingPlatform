@@ -17,6 +17,7 @@ from src.apps.system.services.socket_link.consumer import ServerInterfaceReflect
 from src.apps.user.selectors.querysets import UserQuerySelector
 from src.common.decorators.system_error import areport_system_error, system_error_guard
 from src.common.logging import log
+from src.common.responses.response_msg import RESPONSE_MSG_0210
 from src.processes.realtime.registry import LocalConnection, LocalConnectionRegistry
 
 
@@ -222,6 +223,9 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
         except Exception as error:
             log.system.warning(f"实时消息格式错误：user={self.username}, error={error}")
             await self.send_json({"code": 400, "msg": "消息格式错误", "data": None})
+            return
+        if self.client_type != ClientTypeEnum.ACTUATOR.value and (socket_data.data or socket_data.is_notice is not None):
+            await self.send_json({'code': 403, 'msg': RESPONSE_MSG_0210[1], 'data': None})
             return
         if socket_data.is_notice is not None:
             if (

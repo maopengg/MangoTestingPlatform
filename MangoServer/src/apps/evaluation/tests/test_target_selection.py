@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -23,18 +24,18 @@ class TargetSelectionTests(SimpleTestCase):
         match = resolve("/api/evaluation/case/1/interfaces")
         view = match.func.cls
         self.assertEqual(match.func.actions, {"get": "interfaces"})
-        self.assertEqual(view.action_permission_map["interfaces"], ("evaluation.case:detail", "evaluation.case:edit"))
+        self.assertEqual(permission_for_view(view, "interfaces"), ("evaluation.case:read", "evaluation.case:change"))
 
     def test_source_queryset_is_product_and_protocol_limited(self):
         with patch("src.apps.evaluation.selectors.target.ApiQuerySelector") as source:
             published_interfaces(8)
-            source.api_info.return_value.filter.assert_called_once_with(project_product_id=8, protocol_type__in=["http", "sse"])
+            source.api_info.return_value.filter.assert_called_once_with(project_product_id=8, protocol_type__in=["http", "sse", "mcp"])
             source.current_published_info_releases.assert_called_once()
 
     def test_selector_requires_interface_execute_permission(self):
         with patch("src.apps.evaluation.selectors.target.get_case", return_value=SimpleNamespace(project_product_id=8)), \
                 patch("src.apps.evaluation.selectors.target.PermissionMenuService.is_effective_super_admin", return_value=False), \
-                patch("src.apps.evaluation.selectors.target.PermissionMenuService.permission_keys_for_user", return_value={"evaluation.case:detail"}), \
+                patch("src.apps.evaluation.selectors.target.PermissionMenuService.permission_keys_for_user", return_value={"evaluation.case:read"}), \
                 patch("src.apps.evaluation.selectors.target.published_interfaces") as query:
             with self.assertRaises(EvaluationError):
                 interface_choices(1, SimpleNamespace(), module_id=2)

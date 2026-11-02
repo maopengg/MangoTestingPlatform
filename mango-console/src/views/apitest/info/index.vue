@@ -153,7 +153,7 @@
           >
             <template #extra>
               <a-space>
-                <a-button v-permission="'api.info:create'"
+                <a-button
                   v-if="isStandardCreateProtocol"
                   size="small"
                   type="primary"
@@ -161,7 +161,7 @@
                 >
                   新增
                 </a-button>
-                <a-button v-permission="'api.info:create'"
+                <a-button
                   v-if="data.activeProtocol === 'grpc'"
                   size="small"
                   type="primary"
@@ -169,35 +169,35 @@
                 >
                   导入gRPC Method
                 </a-button>
-                <a-button v-permission="'api.info:create'"
+                <a-button
                   v-if="data.activeProtocol === 'mcp'"
                   size="small"
                   type="primary"
-                  @click="openMcpTools" data-testid="qa-views-apitest-info-button-mcp工具"
+                  @click="onAdd(0)" data-testid="qa-views-apitest-info-button-mcp工具"
                 >
-                  MCP工具
+                  新增 MCP 接口
                 </a-button>
-                <a-button v-permission="'api.info:create'" v-if="isHttpProtocol" type="primary" size="small" @click="onAdd(1)" data-testid="qa-views-apitest-info-button-导入"
+                <a-button  v-if="isHttpProtocol" type="primary" size="small" @click="onAdd(1)" data-testid="qa-views-apitest-info-button-导入"
                   >导入</a-button
                 >
-                <a-button v-permission="'api.info:create'" v-if="isHttpProtocol" size="small" type="primary" @click="onBatchUpload" data-testid="qa-views-apitest-info-button-录制"
+                <a-button  v-if="isHttpProtocol" size="small" type="primary" @click="onBatchUpload" data-testid="qa-views-apitest-info-button-录制"
                   >录制</a-button
                 >
-                <a-button v-permission="'api.info:create'"
+                <a-button
                   v-if="isHttpProtocol"
                   size="small"
                   type="primary"
                   @click="showBatchImportModal" data-testid="qa-views-apitest-info-button-批量导入"
                   >批量导入</a-button
                 >
-                <a-button v-permission="'api.info:execute'"
+                <a-button
                   size="small"
                   status="success"
                   :loading="caseRunning"
                   @click="onConcurrency" data-testid="qa-views-apitest-info-button-批量执行"
                   >批量执行
                 </a-button>
-                <a-button v-permission="'api.info:delete'" size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-info-button-批量删除">批量删除</a-button>
+                <a-button  size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-apitest-info-button-批量删除">批量删除</a-button>
               </a-space>
             </template>
             <a-tab-pane key="all" title="全部" data-testid="qa-views-apitest-info-tab-pane-全部" />
@@ -314,23 +314,22 @@
                     </template>
                     <MangoTableActions
                       :actions="[
-                        { permission: 'api.info:execute',
-                          label: '执行',
-                          loading: caseRunning,
-                          onClick: () => onRunCase(record),
-                        },
-                        { permission: 'api.info:detail', label: '详情', onClick: () => onStep(record) },
-                        ...(canCopyApiInfoCurl(record)
-                          ? [{
-                              label: '复制 cURL',
-                              loading: copyingId === String(record.id),
-                              onClick: () => copyApiInfoCurl(record.id, userStore.selected_environment),
-                            }]
-                          : []),
-                        { permission: 'api.info:edit', label: '绑定Case', onClick: () => onBoundCases(record) },
-                        { permission: 'api.info:edit', label: '编辑', onClick: () => onUpdate(record) },
-                        { permission: 'api.info:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                      ]"
+    {
+        label: '执行',
+        loading: caseRunning,
+        onClick: () => onRunCase(record), },
+    { label: '详情', onClick: () => onStep(record) },
+    ...(canCopyApiInfoCurl(record)
+        ? [{
+                label: '复制 cURL',
+                loading: copyingId === String(record.id),
+                onClick: () => copyApiInfoCurl(record.id, userStore.selected_environment),
+            }]
+        : []),
+    { label: '绑定Case', onClick: () => onBoundCases(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                     />
                   </template>
                 </a-table-column>
@@ -395,7 +394,7 @@
         <a-table-column title="操作" data-index="actions" fixed="right" :width="60">
           <template #cell="{ record }">
             <MangoTableActions
-              :actions="[{ permission: 'api.info:detail', label: '步骤', onClick: () => openBoundCaseDetail(record) }]"
+              :actions="[{ label: '步骤', onClick: () => openBoundCaseDetail(record) }]"
             />
           </template>
         </a-table-column>
@@ -433,7 +432,7 @@
     @cancel="handleBatchImportCancel"
   >
     <a-space direction="vertical" class="batch-import-content">
-      <a-button v-permission="'api.info:download'" type="primary" :loading="downloadLoading" @click="onDownload" data-testid="qa-views-apitest-info-button-下载模板">下载模板</a-button>
+      <a-button  type="primary" :loading="downloadLoading" @click="onDownload" data-testid="qa-views-apitest-info-button-下载模板">下载模板</a-button>
       <div class="batch-import-file">
         <a-button type="primary" @click="fileInputRef?.click()" data-testid="qa-views-apitest-info-button-选择文件">选择文件</a-button>
         <span v-if="selectedFile" class="batch-import-filename"
@@ -499,7 +498,7 @@
         </a-form-item>
         <a-form-item label="gRPC Method" class="mango-form-item__require">
           <a-space direction="vertical" fill>
-            <a-button v-permission="'api.info:edit'"
+            <a-button
               size="small"
               type="primary"
               :loading="grpcMethodSyncLoading"
@@ -531,6 +530,9 @@
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
+        <a-form-item v-if="getFormItemValue('protocol_type') === 'mcp'" label="工具名称" required>
+          <a-input v-model="mcpToolName" placeholder="MCP 服务提供的工具名称" />
+        </a-form-item>
         <a-form-item
           v-for="item of data.formItem"
           :key="item.key"
@@ -696,6 +698,8 @@
   const pollingTimer = ref<NodeJS.Timeout | null>(null)
   const httpMethodValues = new Set([0, 1, 2, 3, 4, 5, 6])
   const mcpMethodValue = 7
+  const mcpToolName = ref('')
+  const mcpBindingSnapshot = ref<Record<string, any>>({})
   const grpcMethodValue = 8
   const websocketMethodValue = 9
   const isStandardCreateProtocol = computed(
@@ -953,9 +957,6 @@
     }
   }
 
-  function openMcpTools() {
-    router.push('/ai/mcp/index')
-  }
 
   function setFormProtocolOptions(options: Array<{ label: string; value: string }>) {
     const protocolItem = data.formItem.find((item: any) => item.key === 'protocol_type')
@@ -1087,6 +1088,8 @@
   }
 
   function onAdd(type: number) {
+    mcpToolName.value = ''
+    mcpBindingSnapshot.value = {}
     data.addType = type
     if (type === 0) {
       data.actionTitle = '新增'
@@ -1101,6 +1104,10 @@
           it.value = it.multiple ? [] : ''
         }
       })
+      if (data.activeProtocol === 'mcp') {
+        const protocol = formItems.find((item) => item.key === 'protocol_type')
+        if (protocol) protocol.value = 'mcp'
+      }
       syncMethodWithProtocol(getFormItemValue('protocol_type'))
       syncBodyTypeWithProtocol(getFormItemValue('protocol_type'))
     } else if (type === 1) {
@@ -1119,6 +1126,8 @@
   }
 
   function onUpdate(item: any) {
+    mcpBindingSnapshot.value = item.mcp_binding || {}
+    mcpToolName.value = item.mcp_binding?.tool_name || ''
     data.actionTitle = '编辑'
     data.addType = 0
     data.isAdd = false
@@ -1283,6 +1292,14 @@
     if (data.addType == 0) {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         let value = getFormItems(formItems)
+        if (value.protocol_type === 'mcp') {
+          if (!mcpToolName.value.trim()) {
+            Message.warning('请填写 MCP 工具名称')
+            modalDialogRef.value?.setConfirmLoading(false)
+            return
+          }
+          value.mcp_binding = { ...mcpBindingSnapshot.value, tool_name: mcpToolName.value.trim(), tool_type: 'tool', tool_enabled: true, transport_type: 0 }
+        }
         value['front_json_path'] = []
         value['front_re'] = []
         if (data.isAdd) {

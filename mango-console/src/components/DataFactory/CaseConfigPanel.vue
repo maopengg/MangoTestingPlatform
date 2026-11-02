@@ -2,7 +2,7 @@
   <a-space direction="vertical" fill>
     <div v-if="showAddButton && !readonly" class="mango-data-factory-case-config__toolbar">
       <a-button
-        v-permission="local ? localPermission : undefined"
+
         size="small"
         type="primary"
         @click="open()"
@@ -67,16 +67,15 @@
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
             <MangoTableActions
               :actions="[
-                { label: readonly ? '查看/预览' : '编辑/预览', permission: readonly ? readonlyPermission : local ? localPermission : undefined, onClick: () => open(record) },
-                {
-                  label: '删除',
-                  permission: local ? localPermission : undefined,
-                  hidden: readonly,
-                  danger: true,
-                  loading: deleteLoading === record.id,
-                  onClick: () => deleteConfig(record),
-                },
-              ]"
+    { label: readonly ? '查看/预览' : '编辑/预览', onClick: () => open(record) },
+    {
+        label: '删除',
+        hidden: readonly,
+        danger: true,
+        loading: deleteLoading === record.id,
+        onClick: () => deleteConfig(record),
+    },
+]"
             />
           </template>
         </a-table-column>
@@ -256,7 +255,7 @@
                   size="small"
                   type="primary"
                   :loading="previewLoading === 'form'"
-                  :disabled="!form.template || (readonly && !canPreviewConfiguration)"
+                  :disabled="!form.template"
                   @click="openRelationPreview"
                   data-testid="qa-components-datafactory-caseconfigpanel-button-预览整体流程"
                 >
@@ -358,7 +357,7 @@
         >
         <a-button
           v-if="!readonly"
-          v-permission="local ? localPermission : undefined"
+
           type="primary"
           :loading="saving"
           @click="save()"
@@ -396,7 +395,7 @@
   import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useEnum } from '@/store/modules/get-enum'
-  import usePermissionStore from '@/store/modules/permission'
+
   import DataFactoryRelationFlow from '@/components/DataFactory/DataFactoryRelationFlow.vue'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
@@ -424,20 +423,16 @@
       projectProductId?: string | number | null
       sourceType?: number
       local?: boolean
-      localPermission?: string
       showAddButton?: boolean
       readonly?: boolean
-      readonlyPermission?: string
       configs?: any[]
     }>(),
     {
       caseId: null,
       local: false,
-      localPermission: undefined,
       projectProductId: null,
       showAddButton: false,
       readonly: false,
-      readonlyPermission: 'api.case:detail',
       configs: () => [],
     }
   )
@@ -447,8 +442,7 @@
   }>()
 
   const enumStore = useEnum()
-  const permissions = usePermissionStore()
-  const canPreviewConfiguration = computed(() => permissions.hasPermission('data_factory.template:detail'))
+
   const readonlyError = ref(false)
   let readonlyRequestVersion = 0
   const TEMPLATE_USAGE_CASE = 1
@@ -740,7 +734,6 @@
       if (record) void openReadonly(record)
       return
     }
-    if (props.local && (!props.localPermission || !permissions.hasPermission(props.localPermission))) return
     readonlyError.value = false
     resetForm(record)
     visible.value = true
@@ -810,7 +803,7 @@
       fieldRows.value = fieldResponse.data || []
       await loadItemFields(version)
       if (version !== readonlyRequestVersion) return
-      if (canPreviewConfiguration.value) await loadCasePreview()
+      if (true) await loadCasePreview()
     } catch {
       if (version === readonlyRequestVersion) readonlyError.value = true
     } finally {
@@ -1012,7 +1005,6 @@
   }
 
   function openRelationPreview() {
-    if (props.readonly && !canPreviewConfiguration.value) return
     relationPreviewVisible.value = true
     if (!previewResult.value?.dependency_tree) {
       loadCasePreview()
@@ -1037,7 +1029,7 @@
   }
 
   async function save() {
-    if (props.readonly || props.local && (!props.localPermission || !permissions.hasPermission(props.localPermission))) return false
+    if (props.readonly) return false
     if (!form.template) {
       Message.error('请选择场景模板')
       return false
@@ -1117,7 +1109,6 @@
       okText: '删除',
       onBeforeOk: () => {
         if (props.local) {
-          if (!props.localPermission || !permissions.hasPermission(props.localPermission)) return false
           emit('update:configs', [])
           return true
         }
@@ -1144,7 +1135,6 @@
   }
 
   function loadCasePreview() {
-    if ((props.readonly || props.local) && !canPreviewConfiguration.value) return Promise.resolve()
     const version = readonlyRequestVersion
     const templateId = form.template
     if (!templateId) {

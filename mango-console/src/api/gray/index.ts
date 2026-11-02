@@ -9,7 +9,7 @@ export function postGrayRepository(data: object) {
 }
 
 export function putGrayRepository(data: object) {
-  return put({ permissionKey: 'gray.repository', url: '/gray/repository', data: () => data })
+  return put({ url: '/gray/repository', data: () => data })
 }
 
 export function deleteGrayRepository(id: number | string[] | number[]) {
@@ -33,7 +33,7 @@ export function postGrayYamlFile(data: object) {
 }
 
 export function putGrayYamlFile(data: object) {
-  return put({ permissionKey: 'gray.config_file', url: '/gray/yaml-file', data: () => data })
+  return put({ url: '/gray/yaml-file', data: () => data })
 }
 
 export function deleteGrayYamlFile(id: number | string[] | number[]) {
@@ -49,7 +49,7 @@ export function postGrayYamlFileBinding(data: object) {
 }
 
 export function putGrayYamlFileBinding(data: object) {
-  return put({ permissionKey: 'gray.config_file', url: '/gray/yaml-file-binding', data: () => data })
+  return put({ url: '/gray/yaml-file-binding', data: () => data })
 }
 
 export function deleteGrayYamlFileBinding(id: number | string[] | number[]) {
@@ -73,7 +73,7 @@ export function postGrayFeature(data: object) {
 }
 
 export function putGrayFeature(data: object) {
-  return put({ permissionKey: 'gray.feature', url: '/gray/feature', data: () => data })
+  return put({ url: '/gray/feature', data: () => data })
 }
 
 export function deleteGrayFeature(id: number | string[] | number[]) {

@@ -33,6 +33,7 @@
     enumStore: Record<string, any>
     userList: any[]
     environmentOptions?: any[]
+    optionOverrides?: Record<string, any[]>
   }>()
   const emit = defineEmits(['search', 'reset'])
 
@@ -47,6 +48,6 @@
       project_product__api_client_type: props.enumStore.api_client,
       update_user: props.userList,
     }
-    return options[item.key] ?? item.optionItems
+    return props.optionOverrides?.[item.key] ?? options[item.key] ?? item.optionItems
   }
 </script>

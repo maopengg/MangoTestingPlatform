@@ -5,7 +5,6 @@ from urllib.parse import parse_qs, urlparse
 from django.db.models import Q
 from django.forms import model_to_dict
 
-from src.apps.ai.selectors.querysets import AiQuerySelector
 from src.apps.auto_api.enums import ApiBodyTypeEnum, ApiProtocolTypeEnum
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.api_info.config import ApiInfoConfigService
@@ -395,39 +394,15 @@ def register_api_info_tools(mcp):
         return ok({"api_info_id": data_obj["id"], **data_obj}, "接口定义更新成功")
 
     @mcp.tool()
-    def import_mcp_tool_to_api_info(
-            mcp_tool_id: int,
-            project_product_id: int | None = None,
-            module_id: int | None = None,
-    ) -> dict:
-        """把已同步的 MCP Tool 导入为 API Info。
-
-        用法：
-        1. 先用 create_ai_mcp_server/update_ai_mcp_server 登记 MCP Server，再用 sync_ai_mcp_server_tools 同步 tools。
-        2. 确保 Tool 的使用范围为“API自动化”或“通用”。
-        3. Tool 或 Server 已配置项目/产品和模块时可不传 project_product_id/module_id；否则本工具必须传入。
-        4. 导入后只创建 protocol_type=mcp、method=MCP_CALL、body_type=json 的接口编辑态，不自动生成修订或发布。
-        5. 可先调用 run_api_info 调试；确认编辑态配置后调用 create_api_info_revision_from_current，
-           再按需调用 publish_api_info_revision，之后才能绑定到 API Case。
-        6. MCP Tool 参数写入 API Info/Case 的 body_config，执行时复用 API 自动化的环境、请求头、全局变量、授权管理、前置、后置和断言。
-        """
-        from src.apps.ai.services.mcp_api_import import McpApiImportService
-
-        try:
-            tool = AiQuerySelector.ai_mcp_tool().select_related("server").get(id=mcp_tool_id)
-            result = McpApiImportService.import_tool(
-                tool,
-                operator_id=current_user().id,
-                project_product_id=project_product_id,
-                module_id=module_id,
-            )
-        except MangoServerError as error:
-            return fail(error.msg, "MCP_TOOL_IMPORT_FAILED")
-        except McpError as error:
-            return fail(str(error), "MCP_TOOL_IMPORT_FAILED")
-        except Exception as exc:
-            return fail(str(exc), "MCP_TOOL_IMPORT_FAILED")
-        return ok(result, "MCP Tool已导入API接口定义")
+    def import_mcp_tool_to_api_info(server_url: str, tool_name: str, project_product_id: int,
+                                    module_id: int, input_schema: dict, output_schema: dict | None = None,
+                                    transport_type: int = 0, tool_title: str | None = None) -> dict:
+        """将明确的 MCP 工具定义创建为独立 API 接口，无需 AI MCP 注册表。创建后先调试、生成修订，再发布。鉴权使用 API 环境和授权配置。"""
+        from src.apps.auto_api.services.api_info.mcp_import import ApiInfoMcpImportService
+        return ok(ApiInfoMcpImportService.create(server_url=server_url, tool_name=tool_name,
+            project_product_id=project_product_id, module_id=module_id, input_schema=input_schema,
+            output_schema=output_schema, transport_type=transport_type, tool_title=tool_title,
+            operator_id=current_user().id), "MCP工具已创建为接口定义")
 
     @mcp.tool()
     def create_grpc_service(

@@ -20,6 +20,16 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
+    key: 'name',
+    label: '授权名称',
+    type: 'input',
+    placeholder: '请输入授权名称',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
     key: 'project_product',
     label: '项目/产品',
     value: ref(''),
@@ -71,6 +81,15 @@ export const conditionItems: Array<FormItem> = reactive([
 ])
 enableMultiSelectSearch(conditionItems)
 
+export const authFormSections = [
+  { key: 'basic', title: '基础信息', description: '设置授权名称、所属产品及被测环境',
+    itemKeys: ['name', 'project_product', 'test_env'] },
+  { key: 'authentication', title: '认证配置', description: '设置认证方式、适用目标及认证变量',
+    itemKeys: ['auth_type', 'api_info', 'target_address', 'public_variable_ids', 'custom_code'] },
+  { key: 'refresh', title: '刷新策略', description: '设置有效期、刷新方式与到期通知',
+    itemKeys: ['refresh_mode', 'token_ttl', 'refresh_margin', 'time_task', 'expire_notice_minutes', 'notice_group'] },
+]
+
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
@@ -118,6 +137,10 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '适用目标地址', key: 'target_address', value: ref(''), type: 'select', required: false,
+    placeholder: '不选择则使用默认地址',
+  },
+  {
     label: '授权方式',
     key: 'auth_type',
     value: ref(0),
@@ -139,6 +162,14 @@ export const formItems: FormItem[] = reactive([
     type: 'select',
     required: false,
     placeholder: '请选择登录接口',
+  },
+  {
+    label: '关联公共变量',
+    key: 'public_variable_ids',
+    value: ref([]),
+    type: 'select',
+    multiple: true,
+    placeholder: '选填，选择认证所需的租户、用户等变量',
   },
   {
     label: '自定义代码',
@@ -235,6 +266,7 @@ export const tableColumns = useTableColumn([
     title: '授权名称',
     key: 'name',
     dataIndex: 'name',
+    width: 240,
     align: 'left',
     ellipsis: true,
     tooltip: true,
@@ -250,6 +282,10 @@ export const tableColumns = useTableColumn([
     key: 'auth_type',
     dataIndex: 'auth_type',
     width: 110,
+  },
+  {
+    title: '适用目标地址', key: 'target_address', dataIndex: 'target_address',
+    width: 240, align: 'left', ellipsis: true, tooltip: true,
   },
   {
     title: '授权来源',
@@ -315,3 +351,8 @@ export const tableColumns = useTableColumn([
     width: 160,
   },
 ])
+
+export const tableScrollX = tableColumns.reduce(
+  (total: number, column: { width?: number }) => total + (column.width || 0),
+  40,
+)

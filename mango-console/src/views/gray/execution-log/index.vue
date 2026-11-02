@@ -45,7 +45,7 @@
     <template #default>
       <TableTabs>
         <template #extra>
-          <a-button v-permission="'gray.execution_log:delete'"
+          <a-button
             size="small"
             status="danger"
             :loading="actionLoading === 'cleanup-expired'"
@@ -214,9 +214,9 @@
   }
 
   function rowActions(record: any) {
-    const actions: any[] = [{ permission: 'gray.execution_log:detail', label: '详情', onClick: () => onDetail(record) }]
+    const actions: any[] = [{  label: '详情', onClick: () => onDetail(record) }]
     if ([1, 2, 4].includes(record.status)) {
-      actions.push({ permission: 'gray.execution_log:execute', label: '恢复', loading: actionLoading.value === `restore-${record.id}`, onClick: () => onRetryRestore(record) })
+      actions.push({  label: '恢复', loading: actionLoading.value === `restore-${record.id}`, onClick: () => onRetryRestore(record) })
     }
     return actions
   }

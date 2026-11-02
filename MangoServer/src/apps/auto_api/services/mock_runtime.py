@@ -290,6 +290,7 @@ class MockRuntimeResult:
     assertion_passed: bool
     assertion_results: list[dict]
     request_context: MockRequestContext
+    callback_log_id: int | None = None
 
 
 class MockConfigValidator:
@@ -534,13 +535,18 @@ class MockRuntimeService:
         return method_value in methods
 
     @classmethod
-    def execute(cls, payload: dict, request, remaining_path: str) -> MockRuntimeResult:
+    def execute(cls, payload: dict, request, remaining_path: str, *, observe_callback=True) -> MockRuntimeResult:
         trace_id = f"mock_{uuid.uuid4().hex}"
         path_values = cls._match_path(payload["path"], remaining_path)
         if path_values is None:
             raise MockRuntimeLookupError(404, "MOCK_PATH_NOT_MATCHED", "请求路径未匹配Mock配置", trace_id)
         if not cls.method_matches(payload, request.method):
             raise MockRuntimeLookupError(405, "MOCK_METHOD_NOT_ALLOWED", "请求方法不匹配Mock配置", trace_id)
+        if observe_callback:
+            from src.apps.auto_api.services.callback import ApiCallbackService
+            observed = ApiCallbackService.intercept(payload, request, remaining_path)
+            if observed is not None:
+                return observed
         config = payload.get("config") or {}
         context = cls._build_request_context(
             request,
@@ -590,6 +596,9 @@ class MockRuntimeService:
     @classmethod
     def record_response(cls, payload: dict, request, result: MockRuntimeResult, duration_ms: int):
         """响应构造完成后记录耗时，避免漏计配置读取和 HTTP 响应构造。"""
+        if result.callback_log_id is not None:
+            ApiMockRequestLog.objects.filter(pk=result.callback_log_id).update(duration_ms=duration_ms)
+            return
         if (
                 payload.get("record_call_log") or
                 not result.assertion_passed or

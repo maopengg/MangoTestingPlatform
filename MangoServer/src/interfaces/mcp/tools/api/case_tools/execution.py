@@ -188,6 +188,25 @@ def register_case_execution_tools(mcp):
         return ok(_case_tree(case_id, include_result_data=True))
 
     @mcp.tool()
+    def get_api_case_callback_results(case_id: int, trace_id: str | None = None,
+                                      run_id: int | None = None, page: int = 1, page_size: int = 10,
+                                      trigger_step_key: str | None = None) -> dict:
+        """分页查询 Case 回调验证结果。trace_id 限定某次执行，trigger_step_key（step-ID）限定触发步骤；返回事件数、投递数、验证状态，不返回密钥或原始报文。"""
+        from src.apps.auto_api.selectors.callback import ApiCallbackSelector
+        from src.interfaces.mcp.common import current_user
+        return ok(ApiCallbackSelector.results(user=current_user(), case_id=case_id, trace_id=trace_id,
+                                              run_id=run_id, trigger_step_key=trigger_step_key,
+                                              page=max(1, page), page_size=max(1, min(100, page_size))))
+
+    @mcp.tool()
+    def get_api_case_callback_deliveries(case_id: int, run_id: int, page: int = 1, page_size: int = 10) -> dict:
+        """分页查询一次回调验证的投递与检查结果，不返回原始正文和秘密。使用页面详情查看原始证据。"""
+        from src.apps.auto_api.selectors.callback import ApiCallbackSelector
+        from src.interfaces.mcp.common import current_user
+        return ok(ApiCallbackSelector.deliveries(user=current_user(), case_id=case_id, run_id=run_id,
+                                                 page=max(1, page), page_size=max(1, min(100, page_size))))
+
+    @mcp.tool()
     def get_api_case_step_result(
             case_id: int,
             step_id: int | None = None,

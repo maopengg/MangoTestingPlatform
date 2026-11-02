@@ -42,9 +42,9 @@ def resource_choices(action, user, product_id, *, search="", page=1, page_size=2
 def require_resource_access(action, user, product_id):
     ensure_product_scope(user, product_id)
     permissions = {
-        EvaluationWorkflowActionEnum.API: ["api.info:execute"],
-        EvaluationWorkflowActionEnum.SQL: ["config.product:query"],
-        EvaluationWorkflowActionEnum.FACTORY: ["data_factory.template:debug", "data_factory.execution:delete"],
+        EvaluationWorkflowActionEnum.API: ["api.info:read"],
+        EvaluationWorkflowActionEnum.SQL: ["config.product:change"],
+        EvaluationWorkflowActionEnum.FACTORY: ["data_factory.template:change", "data_factory.execution:remove"],
     }.get(action, [])
     if not PermissionMenuService.is_effective_super_admin(user) and any(key not in PermissionMenuService.permission_keys_for_user(user) for key in permissions):
         raise invalid_config("没有执行流程资源或清理所需的权限")
@@ -63,8 +63,8 @@ def resource_configuration(action, binding, user):
         if revision is None:
             revision = ApiQuerySelector.current_published_info_releases().filter(api_info_id=binding.ref_id).order_by("-id").values_list("revision_id", flat=True).first()
         contract = fixed_interface_contract(binding.ref_id, revision)
-        if contract is None or contract["config"].get("protocol_type") not in {"http", "sse"}:
-            raise invalid_config("流程只能引用已发布的 HTTP/SSE 接口")
+        if contract is None or contract["config"].get("protocol_type") not in {"http", "sse", "mcp"}:
+            raise invalid_config("流程只能引用已发布的 HTTP/SSE/MCP 接口")
         return revision, {"checksum": contract["checksum"]}
     if action == EvaluationWorkflowActionEnum.FACTORY:
         value = template_configuration(binding.ref_id, binding.project_product_id)

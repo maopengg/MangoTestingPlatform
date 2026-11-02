@@ -39,7 +39,7 @@
           </a-form>
         </template>
         <template #toolbar
-          ><a-button v-permission="'perf.scenario:create'" type="primary" size="small" @click="openCreate">新建场景</a-button></template
+          ><a-button  type="primary" size="small" @click="openCreate">新建场景</a-button></template
         >
         <a-table
           class="mango-native-scroll-table"
@@ -72,7 +72,7 @@
                 >{{ record.duration_seconds || 0 }} 秒</template
               >
               <template v-else-if="column.key === 'status'" #cell="{ record }"
-                ><a-switch v-permission="'perf.scenario:edit'"
+                ><a-switch
                   size="small"
                   :model-value="record.status"
                   :checked-value="1"
@@ -82,13 +82,12 @@
               <template v-else-if="column.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-                    { permission: 'perf.scenario:execute',
-                      label: '执行',
-                      onClick: () => execute(record),
-                    },
-                    { permission: 'perf.scenario:detail', label: '配置', onClick: () => goDetail(record) },
-                    { permission: 'perf.scenario:delete', label: '删除', danger: true, onClick: () => remove(record) },
-                  ]"
+    {
+        label: '执行',
+        onClick: () => execute(record), },
+    { label: '配置', onClick: () => goDetail(record) },
+    { label: '删除', danger: true, onClick: () => remove(record) },
+]"
                 />
               </template>
             </a-table-column>

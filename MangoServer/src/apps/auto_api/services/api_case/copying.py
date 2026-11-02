@@ -1,5 +1,6 @@
 """Transactional API case aggregate copying."""
 
+from copy import deepcopy
 from django.db import transaction
 from django.forms import model_to_dict
 from mangotools.enums import StatusEnum
@@ -37,8 +38,10 @@ class ApiCaseCopyService:
                 "update_user": operator_id,
             },
         )
+        step_keys = {}
         for source_step in ApiCaseDetailed.objects.filter(case_id=source.id).order_by("id"):
             copied_step = cls._clone(source_step, overrides={"case": copied.id, "update_user": operator_id})
+            step_keys[f'step-{source_step.id}'] = f'step-{copied_step.id}'
             for source_parameter in ApiCaseDetailedParameter.objects.filter(
                     case_detailed_id=source_step.id,
             ).order_by("id"):
@@ -52,6 +55,10 @@ class ApiCaseCopyService:
                     copied_parameter.id,
                     operator_id,
                 )
+        copied.callback_checks = deepcopy(source.callback_checks)
+        for rule in copied.callback_checks:
+            rule['trigger_step_key'] = step_keys[rule['trigger_step_key']]
+        copied.save(update_fields=['callback_checks'])
         cls._copy_data_factory_configs(
             DataFactoryCaseSourceTypeEnum.API_CASE.value,
             source.id,

@@ -16,7 +16,7 @@ class MenuBetaConfigTests(SimpleTestCase):
 
         self.assertTrue(items_by_url['/functional-test']['isBeta'])
         self.assertTrue(items_by_url['/perf']['isBeta'])
-        self.assertTrue(items_by_url['/ai']['isBeta'])
+        self.assertNotIn('/ai', items_by_url)
         self.assertFalse(items_by_url['/help']['isBeta'])
         self.assertTrue(all('badge' not in item for item in items))
         self.assertTrue(all(isinstance(item['isBeta'], bool) for item in items))
@@ -67,7 +67,7 @@ class MenuBetaConfigTests(SimpleTestCase):
                 '测试配置',
                 '设备中心',
                 '任务调度',
-                '智能能力',
+
                 '组织与权限',
                 '系统运维',
                 '帮助与规范',
@@ -157,7 +157,7 @@ class MenuBetaConfigTests(SimpleTestCase):
         )
         tree = PermissionMenuService.filter_routes_by_permissions(
             configured_tree,
-            {'help.documents'},
+            {'help.documents', 'help.documents:read'},
         )
         items = list(self._flatten(tree))
         usage_document = next(

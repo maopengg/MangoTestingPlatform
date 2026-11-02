@@ -84,8 +84,8 @@ test('single and batch publication only publish checked eligible rows', async ()
   }
 })
 
-test('no selection, no acknowledgment, loading and lost permissions never publish', async () => {
-  for (const [field, value] of [['acknowledged', false], ['canPublish', false], ['loading', true], ['publishing', true]]) {
+test('no acknowledgment, loading and duplicate submission never publish', async () => {
+  for (const [field, value] of [['acknowledged', false], ['loading', true], ['publishing', true]]) {
     const { state, calls, create } = setup()
     state.selectedIds.value = [1]
     state.acknowledged.value = true
@@ -191,7 +191,7 @@ test('actual Arco renderer shows case, owner and review requirements for 125 cas
   const context = { visible: true, domain: 'api', rows: reviewRows, displayRows: reviewRows,
     reviewColumns, reviewRequirements, reviewRequirementParts,
     detailVisible: false, detailCaseId: null, canViewDetails: true, detailComponents: {}, allSelectedReviewed: false,
-    loading: false, publishing: false, selectedIds: [], permissionKey: 'api.case:publish',
+    loading: false, publishing: false, selectedIds: [], permissionKey: 'api.case:change',
     canPublish: true, acknowledged: false, enumStore: { task_status: [], api_case_scenario_tag: [], environment_type: [] },
     enumTitle: (_, value) => String(value), close() {}, onReviewVisibilityChange() {}, selectRows() {}, reload() {}, openCaseDetail() {}, publishSelected() {} }
   const app = Vue.createSSRApp({ setup: () => context, render: Vue.compile(descriptor.template.content) })
@@ -212,20 +212,20 @@ test('actual Arco renderer shows case, owner and review requirements for 125 cas
   assert.ok(html.includes('Pagination Case 223'), 'The last of 125 cases should be available without pagination')
 })
 
-test('review configuration click opens the shared drawer with review data and detail permission', () => {
+test('review configuration opens the drawer without local role filtering', () => {
   const { state, calls, create } = setup()
   const row = { id: 29, name: 'Example', sql_count: 1, factory_count: 7,
     configuration_details: [{ kind: 'sql', location: '用例 / 前置 SQL', enabled: null, configuration: { sql: 'select 1' } }] }
   create().openConfiguration(row)
   assert.equal(calls.length, 1)
-  assert.equal(calls[0][1], 'api.case:detail')
+  assert.equal(calls[0][1], undefined)
   assert.deepEqual(calls[0][0].items, row.configuration_details)
   state.permissions.hasPermission = () => false
   create().openConfiguration(row)
-  assert.equal(calls.length, 1)
+  assert.equal(calls.length, 2)
   state.permissions.hasPermission = () => true
   create().openConfiguration({ ...row, configuration_details: undefined })
-  assert.equal(calls.length, 1)
+  assert.equal(calls.length, 2)
 })
 
 test('scene-based requirements are deduplicated and remain reminders, not automatic verdicts', () => {
@@ -250,7 +250,7 @@ test('requirement emphasis highlights only key phrases and preserves the complet
   assert.match(source, /__emphasis \{ color: var\(--m-danger\)/)
 })
 
-test('details reuse embedded case pages in side panels and refuse unauthorized access', () => {
+test('details reuse embedded case pages without local role filtering', () => {
   for (const domain of ['api', 'ui', 'pytest']) {
     const { state, calls, create } = setup()
     state.domain.value = domain
@@ -262,10 +262,10 @@ test('details reuse embedded case pages in side panels and refuse unauthorized a
     assert.equal(state.acknowledged.value, false)
     state.permissions.hasPermission = () => false
     create().openCaseDetail(30)
-    assert.equal(state.detailCaseId.value, 29)
+    assert.equal(state.detailCaseId.value, 30)
     assert.deepEqual(state.selectedIds.value, [29])
   }
-  assert.match(source, /permission: `\$\{domain\}\.case:detail`/)
+  assert.doesNotMatch(source, /hasPermission|v-permission|permission:/)
   assert.doesNotMatch(source, /window.open|router.resolve/)
   assert.match(source, /mode="page"/)
   assert.match(source, /:visible="detailVisible" title="用例详情" width="calc\(92vw - 150px\)"/)
@@ -282,9 +282,9 @@ test('every single approval entry and API batch approval opens the same review c
     assert.match(page, /publicationReviewRef.value\?\.open/)
   }
   assert.match(read('src/views/apitest/case/index.vue'), /open\('api', selectedRows.map/)
-  assert.match(read('src/views/apitest/case/index.vue'), /v-permission="'api.case:publish'"[\s\S]*?@click="batchUpdatePrepublication\('publish'\)"/)
+  assert.match(read('src/views/apitest/case/index.vue'), /@click="batchUpdatePrepublication\('publish'\)"/)
   assert.match(read('src/views/apitest/case/details/components/ApiCaseVersionPanel.vue'), /publicationReviewRef.value\?\.open/)
-  assert.match(source, /v-permission="permissionKey"/)
+  assert.doesNotMatch(source, /v-permission/)
   assert.match(source, /v-model="acknowledged"/)
   assert.match(source, /<a-switch :model-value="record.reviewConfirmed === true"/)
   assert.doesNotMatch(source, /<a-switch[^>]*size=/)

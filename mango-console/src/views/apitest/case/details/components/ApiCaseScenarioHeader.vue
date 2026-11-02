@@ -9,7 +9,10 @@
           <a-tag :color="statusColor(item)">{{ statusText(item) }}</a-tag>
         </a-tooltip>
         <a-tag v-else :color="statusColor(item)">{{ statusText(item) }}</a-tag>
-        <a-tag color="purple">
+        <a-tag v-if="item.result_data?.automatic_retry_condition" color="orange">
+          自动重试后{{ Number(item.result_data.status) === 1 ? '通过' : '失败' }}
+        </a-tag>
+        <a-tag v-else color="purple">
           {{
             item.error_retry
               ? `重试 ${item.error_retry} 次 / ${item.retry_interval ? item.retry_interval : 0}s`
@@ -46,10 +49,10 @@
   const { copyScenarioCurl } = useScenarioCurl()
 
   const actions = computed(() => [
-    { permission: 'api.case:edit', label: '编辑', disabled: props.editLocked, onClick: () => emit('edit') },
+    {  label: '编辑', disabled: props.editLocked, onClick: () => emit('edit') },
     { label: '复制 cURL', onClick: () => copyScenarioCurl(props.item) },
-    { permission: 'api.case:copy', label: '复制', disabled: props.editLocked, onClick: () => emit('copy') },
-    { permission: 'api.case:delete',
+    {  label: '复制', disabled: props.editLocked, onClick: () => emit('copy') },
+    {
       label: '删除',
       danger: true,
       disabled: props.editLocked,

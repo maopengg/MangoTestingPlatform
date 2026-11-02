@@ -7,7 +7,6 @@ from django.test import SimpleTestCase
 from fastmcp import Client
 from fastmcp.server.auth import AccessToken
 
-from src.apps.ai.services.mcp_server import AiMcpServerMutationService
 from src.apps.auto_api.enums.execution_trace import ApiCaseTraceSourceType
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.services.api_case.batch_execution import ApiCaseBatchExecutionService
@@ -68,6 +67,15 @@ class McpSharedBusinessLogicArchitectureTests(SimpleTestCase):
 
 
 class SharedMutationServiceUnitTests(SimpleTestCase):
+    def setUp(self):
+        super().setUp()
+        environment_names = patch(
+            "src.apps.system.services.system_config.SystemConfigService.get_environment_display_names",
+            return_value={},
+        )
+        environment_names.start()
+        self.addCleanup(environment_names.stop)
+
     @staticmethod
     def _function_source(relative_path: str, function_name: str) -> str:
         path = Path(__file__).resolve().parents[3] / relative_path
@@ -79,16 +87,7 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
         )
         return ast.unparse(function)
 
-    def test_ai_mcp_auth_mask_keeps_original_secret(self):
-        server = SimpleNamespace(auth_config={"token": "secret", "header": "old"})
-        payload = AiMcpServerMutationService._merge_auth_config(
-            server,
-            {"auth_config": {"token": "***", "header": "new"}},
-        )
-        self.assertEqual(
-            payload["auth_config"],
-            {"token": "secret", "header": "new"},
-        )
+
 
     def test_api_case_version_summary_preserves_prepublication_state(self):
         state = ApiCasePublicationState(
@@ -401,7 +400,7 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
             token="mango_api_case_publish_key",
             client_id="api-case-publisher",
             subject="7",
-            scopes=["api.case:publish"],
+            scopes=["api.case:change"],
             claims={"user_id": 7, "is_super_admin": False},
         )
 

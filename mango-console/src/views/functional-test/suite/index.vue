@@ -158,7 +158,7 @@
         </template>
         <template #toolbar>
           <a-space>
-            <a-button v-permission="'functional.suite:create'"
+            <a-button
               v-if="activeView === 'suite'"
               size="small"
               type="primary"
@@ -167,7 +167,7 @@
             >
               新增需求
             </a-button>
-            <a-button v-permission="'functional.case:export'"
+            <a-button
               v-else
               size="small"
               :loading="exportLoading"
@@ -265,11 +265,11 @@
                     <template v-else-if="item.key === 'actions'" #cell="{ record }">
                       <MangoTableActions
                         :actions="[
-                          { permission: 'functional.suite:detail', label: '用例工作台', onClick: () => goSuiteWorkspace(record) },
-                          { permission: 'functional.suite:create', label: '新版本', onClick: () => openSuiteVersion(record) },
-                          { permission: 'functional.suite:edit', label: '编辑', onClick: () => openSuite(record) },
-                          { permission: 'functional.suite:delete', label: '删除', danger: true, onClick: () => deleteSuite(record) },
-                        ]"
+    { label: '用例工作台', onClick: () => goSuiteWorkspace(record) },
+    { label: '新版本', onClick: () => openSuiteVersion(record) },
+    { label: '编辑', onClick: () => openSuite(record) },
+    { label: '删除', danger: true, onClick: () => deleteSuite(record) },
+]"
                       />
                     </template>
                   </a-table-column>
@@ -397,7 +397,7 @@
                       data-testid="qa-views-functional-test-suite-button-重置"
                       >重置</a-button
                     >
-                    <a-button v-permission="'functional.case:export'"
+                    <a-button
                       size="small"
                       :loading="exportLoading"
                       @click="exportCases"
@@ -515,9 +515,9 @@
                     <template v-else-if="item.key === 'actions'" #cell="{ record }">
                       <MangoTableActions
                         :actions="[
-                          { permission: 'functional.suite:edit', label: '编辑', onClick: () => openCase(record) },
-                          { permission: 'functional.suite:delete', label: '删除', danger: true, onClick: () => deleteCase(record) },
-                        ]"
+    { label: '编辑', onClick: () => openCase(record) },
+    { label: '删除', danger: true, onClick: () => deleteCase(record) },
+]"
                       />
                     </template>
                   </a-table-column>

@@ -7,7 +7,7 @@ import jsonschema
 import time
 from django.conf import settings
 
-from src.apps.ai.services.mcp_client import ExternalMcpClient
+from src.apps.auto_api.services.protocols.mcp_client import ExternalMcpClient
 from src.apps.auto_api.enums import ApiProtocolTypeEnum
 from src.apps.auto_api.exceptions import (
     AutoApiError,

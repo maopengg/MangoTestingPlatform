@@ -173,8 +173,8 @@ class UiCasePublicationTests(SimpleTestCase):
                                   user=SimpleNamespace(user_obj=SimpleNamespace(id=9)))
         view.request = request
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False):
-            for permissions, expected in (({'ui.case:publish'}, True), ({'ui.case:edit'}, False),
-                                          ({'ui.case:detail'}, False)):
+            for permissions, expected in (({'ui.case:change'}, True), ({'ui.case:change'}, False),
+                                          ({'ui.case:read'}, False)):
                 with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=permissions):
                     self.assertEqual(MenuActionPermission().has_permission(request, view), expected)
 
@@ -184,9 +184,9 @@ class UiCasePublicationTests(SimpleTestCase):
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), patch(
             'src.interfaces.mcp.authentication.resolve_project_product_ids', return_value={4},
         ), patch.object(ProjectProductScopeService, 'has_project_product', return_value=True):
-            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'ui.case:edit'}):
+            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'ui.case:change'}):
                 self.assertIsNotNone(permission_error(user, 'update_ui_case', arguments))
-            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'ui.case:publish'}):
+            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'ui.case:change'}):
                 self.assertIsNone(permission_error(user, 'update_ui_case', arguments))
                 with patch.object(ProjectProductScopeService, 'has_project_product', return_value=False):
                     self.assertIsNotNone(permission_error(user, 'update_ui_case', arguments))

@@ -11,9 +11,10 @@ from src.apps.auto_ui.api.serializers.ui_element import UiOpenElementPageBrowser
     UiElementPageScanSerializer, UiElementIdentityQuerySerializer
 from src.apps.auto_ui.api.serializers.ui_element_mutation import PageElementSerializers
 from src.apps.auto_ui.api.serializers.ui_element_presentation import PageElementSerializersC
+from src.apps.auto_ui.api.views.ui_page import PageCRUD
 from src.apps.auto_ui.enums import ElementExpEnum
 from src.apps.auto_ui.exceptions import AutoUiError, UI_ELEMENT_CATEGORY_REQUIRED
-from src.apps.auto_ui.models import PageElement
+from src.apps.auto_ui.models import Page, PageElement
 from src.apps.auto_ui.services.element_ai import (
     ElementAiLocatorRecommendationService,
     ElementAiService,
@@ -33,6 +34,7 @@ from src.common.responses.response_msg import (
     RESPONSE_MSG_0083,
     RESPONSE_MSG_0158,
     RESPONSE_MSG_0204,
+    RESPONSE_MSG_0210,
     RESPONSE_MSG_0244,
     RESPONSE_MSG_0248,
     RESPONSE_MSG_0259,
@@ -99,19 +101,6 @@ class PageElementCRUD(ModelCRUD):
 class PageElementViews(ViewSet):
     model = PageElement
     serializer_class = PageElementSerializers
-    action_permission_map = {
-        'check_element': 'ui.page:debug',
-        'check_result': 'ui.page:debug',
-        'scan_page': 'ui.page:debug',
-        'apply_check_result': 'ui.page:edit',
-        'open_browser': 'ui.page:debug',
-        'post_upload_element': 'ui.page:create',
-        'get_element_name': 'ui.page',
-        'identity': 'ui.page',
-        'put_is_iframe': 'ui.page:edit',
-        'ai_locator_recommend': 'ui.page:debug',
-        'runtime_result': 'ui.page:debug',
-    }
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
@@ -129,6 +118,8 @@ class PageElementViews(ViewSet):
         serializer = UiOpenElementPageBrowserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        if not PageCRUD().filter_queryset_by_data_scope(request, Page.objects.filter(id=data['page_id'])).exists():
+            return ResponseData.fail(RESPONSE_MSG_0210)
         page_model = TestCase(
             request.user.get('id'),
             request.user.get('username'),
@@ -142,6 +133,10 @@ class PageElementViews(ViewSet):
     def check_element(self, request: Request):
         from src.apps.auto_ui.services.element_service import PageElementService
 
+        if not PageElementCRUD().filter_queryset_by_data_scope(
+                request, PageElement.objects.filter(id=request.data.get('element_id')),
+        ).exists():
+            return ResponseData.fail(RESPONSE_MSG_0210)
         data = PageElementService.check_element(
             element_id=request.data.get('element_id'),
             user_id=request.user.get('id'),

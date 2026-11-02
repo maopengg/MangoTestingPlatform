@@ -10,10 +10,10 @@
         </div>
         <a-space class="mango-detail-actions" wrap>
           <a-button v-if="form.id" size="small" @click="copyCurl">复制 cURL</a-button>
-          <a-button v-permission="'api.mock:debug'" v-if="form.id" size="small" type="primary" status="success" @click="openDebug">调试调用</a-button>
-          <a-button v-permission="'api.mock:detail'" v-if="form.id" size="small" @click="openLogs">调用记录</a-button>
+          <a-button  v-if="form.id" size="small" type="primary" status="success" @click="openDebug">调试调用</a-button>
+          <a-button  v-if="form.id" size="small" @click="openLogs">调用记录</a-button>
           <VariableReferencePanel />
-          <a-button v-permission="['api.mock:create', 'api.mock:edit']" size="small" type="primary" :loading="saving" @click="save">保存</a-button>
+          <a-button  size="small" type="primary" :loading="saving" @click="save">保存</a-button>
           <a-button class="mango-back-button" size="small" @click="router.back()">返回</a-button>
         </a-space>
       </div>
@@ -98,13 +98,16 @@
                         class="mango-mock-decryption-mode__select"
                         :options="requestDecryptionOptions"
                       />
-                      <span>解密后的 JSON 用于断言和规则匹配，密钥仅加密保存。</span>
+                      <span>解密后的 JSON 用于断言和规则匹配，密钥按填写内容保存。</span>
                     </div>
                   </div>
                   <div
                     v-if="form.config.request_decryption.type === 'lark_event'"
                     class="mango-soft-panel mango-mock-decryption mango-mock-config-row--full"
                   >
+                    <a-alert v-if="form.config.request_decryption.configuration_error" type="warning">
+                      {{ form.config.request_decryption.configuration_error }}
+                    </a-alert>
                     <div class="mango-mock-decryption__fields">
                       <div class="mango-mock-decryption__field">
                         <label class="mango-mock-decryption__label mango-mock-required">Encrypt Key</label>
@@ -160,7 +163,7 @@
                           <a-switch v-model="rule.enabled" size="small" />
                           <a-button type="text" :disabled="index === 0" @click="moveRule(index, -1)">上移</a-button>
                           <a-button type="text" :disabled="index === form.config.rules.length - 1" @click="moveRule(index, 1)">下移</a-button>
-                          <a-button v-permission="'api.mock:delete'" type="text" status="danger" @click="removeRule(index)">删除</a-button>
+                          <a-button  type="text" status="danger" @click="removeRule(index)">删除</a-button>
                         </a-space>
                       </template>
                       <a-form :model="rule" class="mango-mock-rule-form">
@@ -306,6 +309,7 @@
     type: 'none' as const,
     encrypt_key: '',
     verification_token: '',
+    configuration_error: '',
   })
   const requestDecryptionOptions = [
     { label: '不解密', value: 'none' },

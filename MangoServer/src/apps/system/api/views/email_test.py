@@ -9,7 +9,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0163
 
 
 class EmailTestViews(ViewSet):
-    action_permission_map = {'test': 'system.settings:debug'}
 
     @error_response('system')
     def test(self, request):

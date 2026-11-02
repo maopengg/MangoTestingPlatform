@@ -44,9 +44,9 @@
                 <template #status="{ record }"><a-tag>{{ enumTitle(suiteStatusOptions, record.status) }}</a-tag></template>
                 <template #owner="{ record }">{{ record.owner?.name || '-' }}</template>
                 <template #actions="{ record }"><MangoTableActions :actions="[
-                  { permission: 'functional.iteration:edit', label: '编辑排期', onClick: () => openSchedule(record) },
-                  { permission: 'functional.suite:edit', label: '确认提测', disabled: record.status >= 4, onClick: () => confirmSubmit(record) },
-                ]" /></template>
+    { label: '编辑排期', onClick: () => openSchedule(record) },
+    { label: '确认提测', disabled: record.status >= 4, onClick: () => confirmSubmit(record) },
+]" /></template>
               </a-table>
             </div>
               </a-tab-pane>

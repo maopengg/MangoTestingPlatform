@@ -19,7 +19,7 @@ class CliCatalogRouteTests(SimpleTestCase):
     def test_all_completed_cli_method_paths_are_registered_by_django(self):
         failures = []
         capabilities = self.completed_capabilities()
-        self.assertEqual(len(capabilities), 259)
+        self.assertEqual(len(capabilities), 251)
         for item in capabilities:
             path = f"/api/{item['path']}"
             try:

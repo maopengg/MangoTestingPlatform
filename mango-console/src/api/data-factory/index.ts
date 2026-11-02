@@ -9,7 +9,7 @@ export function postDataFactoryDatasourceAlias(data: object) {
 }
 
 export function putDataFactoryDatasourceAlias(data: object) {
-  return put({ permissionKey: 'config.product', url: '/data-factory/datasource-alias', data: () => data })
+  return put({ url: '/data-factory/datasource-alias', data: () => data })
 }
 
 export function deleteDataFactoryDatasourceAlias(id: number | string[] | number[]) {
@@ -25,7 +25,7 @@ export function postDataFactoryDatasourceBinding(data: object) {
 }
 
 export function putDataFactoryDatasourceBinding(data: object) {
-  return put({ permissionKey: 'config.product', url: '/data-factory/datasource-binding', data: () => data })
+  return put({ url: '/data-factory/datasource-binding', data: () => data })
 }
 
 export function deleteDataFactoryDatasourceBinding(id: number | string[] | number[]) {
@@ -41,7 +41,7 @@ export function postDataFactoryEntity(data: object) {
 }
 
 export function putDataFactoryEntity(data: object) {
-  return put({ permissionKey: 'data_factory.entity', url: '/data-factory/entity', data: () => data })
+  return put({ url: '/data-factory/entity', data: () => data })
 }
 
 export function deleteDataFactoryEntity(id: number | string[] | number[]) {
@@ -93,7 +93,7 @@ export function postDataFactoryTemplate(data: object) {
 }
 
 export function putDataFactoryTemplate(data: object) {
-  return put({ permissionKey: 'data_factory.template', url: '/data-factory/template', data: () => data })
+  return put({ url: '/data-factory/template', data: () => data })
 }
 
 export function deleteDataFactoryTemplate(id: number | string[] | number[]) {

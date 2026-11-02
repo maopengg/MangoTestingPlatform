@@ -35,9 +35,6 @@ class ApiPublicCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiPublicViews(ViewSet):
     model = ApiPublic
     serializer_class = ApiPublicSerializers
-    action_permission_map = {
-        'put_status': 'api.public:status',
-    }
 
     @action(methods=['put'], detail=False)
     @error_response('api')

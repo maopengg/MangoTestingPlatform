@@ -9,13 +9,13 @@
         </section>
       </section>
       <section class="mango-dataset-config-section">
-        <div class="mango-dataset-config-toolbar"><h3 class="mango-dataset-config-heading">输入配置</h3><a-space><a-button size="small" :loading="previewing" :disabled="!sampleAvailable" @click="preview">预览输入变量</a-button><a-button v-if="!readonly" v-permission="'evaluation.dataset:edit'" size="small" @click="config.input_variables.push({ name: '', path: '$' })">添加变量</a-button></a-space></div>
+        <div class="mango-dataset-config-toolbar"><h3 class="mango-dataset-config-heading">输入配置</h3><a-space><a-button size="small" :loading="previewing" :disabled="!sampleAvailable" @click="preview">预览输入变量</a-button><a-button v-if="!readonly"  size="small" @click="config.input_variables.push({ name: '', path: '$' })">添加变量</a-button></a-space></div>
         <div class="mango-dataset-config-input-body">
         <a-table size="small" class="mango-native-scroll-table" :columns="variableColumns" :data="config.input_variables" :pagination="false" :scroll="{ x: variableTableWidth, y: 240 }">
           <template #name="{ record }"><span v-if="readonly">{{ record.name }}</span><a-input v-else v-model="record.name" size="small" placeholder="如 case_input" aria-label="输入变量名称" /></template>
           <template #path="{ record }"><span v-if="readonly">{{ inputFieldOptions.find(item => item.value === record.path)?.label || record.path }}</span><a-select v-else v-model="record.path" size="small" :options="inputFieldOptions" placeholder="选择输入字段" aria-label="输入字段" allow-search /></template>
           <template #reference="{ record }"><code>{{ reference(record.name) }}</code></template>
-          <template #actions="{ rowIndex }"><MangoTableActions :actions="readonly ? [] : [{ label: '移除', permission: 'evaluation.dataset:edit', danger: true, disabled: config.input_variables.length === 1, onClick: () => config.input_variables.splice(rowIndex, 1) }]" /></template>
+          <template #actions="{ rowIndex }"><MangoTableActions :actions="readonly ? [] : [{ label: '移除', danger: true, disabled: config.input_variables.length === 1, onClick: () => config.input_variables.splice(rowIndex, 1) }]" /></template>
         </a-table>
         <JsonDisplay v-if="previewResult" :data="previewResult" :show-drawer-button="false" />
         <a-form-item label="条目组织" class="mango-dataset-config-sequence"><span v-if="readonly">{{ options('evaluation_sequence').find(item => item.value === config.workflow.sequence)?.label || config.workflow.sequence }}</span><a-select v-else v-model="config.workflow.sequence" size="small" :options="options('evaluation_sequence')" /></a-form-item>
@@ -23,7 +23,7 @@
       </section>
       <a-alert v-if="error" type="error">{{ error }}</a-alert>
     </a-form>
-    <template #footer-buttons><a-space><a-button v-if="!readonly" v-permission="'evaluation.dataset:edit'" type="primary" size="small" :loading="saving" @click="save">保存</a-button><a-button size="small" :disabled="saving" @click="visible = false">{{ readonly ? '关闭' : '取消' }}</a-button></a-space></template>
+    <template #footer-buttons><a-space><a-button v-if="!readonly"  type="primary" size="small" :loading="saving" @click="save">保存</a-button><a-button size="small" :disabled="saving" @click="visible = false">{{ readonly ? '关闭' : '取消' }}</a-button></a-space></template>
   </BaseSidePanel>
 </template>
 <script setup lang="ts">
@@ -41,7 +41,7 @@
   const visible = ref(false), version = ref<any>(), config = ref<any>({}), sample = ref<any>(), previewResult = ref<any>(), saving = ref(false), previewing = ref(false), error = ref('')
   const fieldSections = [{ key: 'input_schema', title: '输入' }, { key: 'expected_schema', title: '期望输出' }, { key: 'context_schema', title: '评分依据' }]
   let generation = 0
-  const readonly = computed(() => version.value?.status !== 'draft' || !permissions.hasPermission('evaluation.dataset:edit'))
+  const readonly = computed(() => version.value?.status !== 'draft')
   const sampleAvailable = computed(() => sample.value !== undefined)
   const options = (key: string) => ((enums as any)[key] || []).map((item: any) => ({ label: item.title, value: item.key }))
   const reference = (name: string) => '${{' + name + '}}'
@@ -69,7 +69,8 @@
     return [...fields].map(([value, label]) => ({ value, label }))
   })
   function open(record: any, input?: any) {
-    if (saving.value || !permissions.hasPermission('evaluation.dataset:detail')) return
+    if (saving.value)
+    return;
     generation++
     version.value = record
     sample.value = input

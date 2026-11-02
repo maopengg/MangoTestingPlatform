@@ -8,13 +8,44 @@ const exports = {}
 new Function('exports', ts.transpileModule(readFileSync('src/views/config/product/overview.ts', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText)(exports)
-const { loadAllProducts, groupProducts } = exports
+const { loadAllProducts, groupProducts, productEditorProjectOptions } = exports
 const projects = [{ key: null, title: '选择项目' }, { key: 1, title: '项目甲' }, { key: 2, title: '项目乙' }, { key: 3, title: '空项目' }]
 const products = [
   { id: 3, name: '移动端', project: { id: 1, name: '项目甲' }, owners: [{ id: 7 }], ui_client_type: 0, api_client_type: 1 },
   { id: 2, name: '控制台', project: { id: 2, name: '项目乙' }, owners: [{ id: 8 }], ui_client_type: 1, api_client_type: 0 },
   { id: 1, name: '开放平台', project: { id: 1, name: '项目甲' }, owners: [{ id: 8 }], ui_client_type: 0, api_client_type: 0 },
 ]
+
+test('product editor displays the current project even when it is absent from selectable projects', () => {
+  const current = { id: 4, name: '项目丁' }
+  const options = productEditorProjectOptions(projects, current)
+  assert.deepEqual(options.at(-1), { key: 4, title: '项目丁' })
+  assert.equal(projects.length, 4)
+  assert.equal(productEditorProjectOptions(projects, null), projects)
+  const page = readFileSync('src/views/config/product/index.vue', 'utf8')
+  assert.match(page, /:options="editorProjectOptions"/)
+  assert.match(page, /function onAdd\(projectId\?: string\) \{\s*editingProject.value = null/)
+  assert.match(page, /function onUpdate\(item: any\) \{\s*editingProject.value = item.project/)
+})
+
+test('project selection preserves the form ID type and fresh option labels without duplicates', () => {
+  const options = [{ key: '4', title: '项目新名称' }, { key: 5, title: '项目戊' }]
+  const result = productEditorProjectOptions(options, { id: 4, name: '项目旧名称' })
+  assert.deepEqual(result, [{ key: 4, title: '项目新名称' }, { key: 5, title: '项目戊' }])
+  assert.equal(options[0].key, '4')
+  assert.deepEqual(productEditorProjectOptions([], { id: 4, name: '项目丁' }), [{ key: 4, title: '项目丁' }])
+})
+
+test('product configuration exposes optional multiline description and project prerequisite', () => {
+  const config = readFileSync('src/views/config/product/config.ts', 'utf8')
+  const page = readFileSync('src/views/config/product/index.vue', 'utf8')
+  const overview = readFileSync('src/views/config/product/components/ProductOverview.vue', 'utf8')
+  assert.match(page, /TableHeader title="产品配置"/)
+  assert.match(overview, /请先在“项目配置”中创建项目，再配置产品/)
+  assert.match(config, /label: '产品说明',[\s\S]*?key: 'description',[\s\S]*?type: 'textarea'/)
+  assert.match(config, /title: '产品说明',[\s\S]*?ellipsis: true,[\s\S]*?tooltip: true/)
+  assert.match(page, /<a-textarea[^>]*:max-length="5000"[^>]*show-word-limit/)
+})
 
 test('loads every page even if the server caps pages below the requested size', async () => {
   const calls = []

@@ -94,17 +94,6 @@ class ApiMockConfigCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiMockConfigViews(ViewSet):
     model = ApiMockConfig
     serializer_class = ApiMockConfigSerializer
-    action_permission_map = {
-        "retrieve": "api.mock:detail",
-        "change_state": "api.mock:status",
-        "debug": "api.mock:debug",
-        "logs": "api.mock:detail",
-        "export_logs": "api.mock:export",
-        "clear_logs": "api.mock:delete",
-        "clear_all_logs": "api.mock:delete",
-        "log_detail": "api.mock:detail",
-        "assertion_methods": "api.mock",
-    }
 
     def _get_config(self, request: Request) -> ApiMockConfig:
         config = self.model.objects.filter(id=request.query_params.get("id") or request.data.get("id")).first()
@@ -158,7 +147,7 @@ class ApiMockConfigViews(ViewSet):
 
     @staticmethod
     def _log_queryset(request: Request, config: ApiMockConfig):
-        queryset = ApiMockRequestLog.objects.filter(mock_config=config)
+        queryset = ApiMockRequestLog.objects.filter(mock_config=config).defer('callback_evidence')
         assertion_passed = request.query_params.get("assertion_passed")
         if assertion_passed not in (None, ""):
             queryset = queryset.filter(assertion_passed=str(assertion_passed).lower() in {"1", "true"})
@@ -291,7 +280,9 @@ class ApiMockConfigViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("api")
     def log_detail(self, request: Request):
-        item = ApiMockRequestLog.objects.select_related("mock_config").filter(id=request.query_params.get("id")).first()
+        item = ApiMockRequestLog.objects.select_related("mock_config").defer('callback_evidence').filter(
+            id=request.query_params.get("id"),
+        ).first()
         if item is None:
             return ResponseData.fail(RESPONSE_MSG_0158)
         helper = ApiMockConfigCRUD()

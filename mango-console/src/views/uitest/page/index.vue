@@ -84,7 +84,7 @@
         <template #toolbar>
           <a-space>
             <div>
-                  <a-button v-permission="'ui.page:create'"
+                  <a-button
                     type="primary"
                     size="small"
                     @click="onAdd"
@@ -93,7 +93,7 @@
                   >
             </div>
             <div>
-                  <a-button v-permission="'ui.page:delete'"
+                  <a-button
                     status="danger"
                     size="small"
                     @click="onDelete(null)"
@@ -147,10 +147,10 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
                 :actions="[
-                  { permission: 'ui.page:edit', label: '编辑', onClick: () => onUpdate(record) },
-                  { permission: 'ui.page:create', label: '添加元素', onClick: () => onClick(record) },
-                  { permission: 'ui.page:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                ]"
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '添加元素', onClick: () => onClick(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
               />
             </template>
           </a-table-column>

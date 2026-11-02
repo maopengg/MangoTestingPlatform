@@ -2,9 +2,12 @@ from rest_framework import serializers
 
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum, ApiAuthTypeEnum
 from src.apps.auto_api.models import ApiAuthConfig
+from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
 
 
 class ApiAuthConfigSerializers(serializers.ModelSerializer):
+    public_variable_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), required=False, max_length=200,
+                                               allow_empty=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     expires_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', required=False, allow_null=True)
@@ -13,6 +16,11 @@ class ApiAuthConfigSerializers(serializers.ModelSerializer):
     class Meta:
         model = ApiAuthConfig
         fields = '__all__'
+
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = ApiAuthConfigService.normalize_optional_values(data)
+        return super().to_internal_value(data)
 
     def validate(self, attrs):
         auth_type = attrs.get('auth_type', getattr(self.instance, 'auth_type', None))
@@ -25,6 +33,15 @@ class ApiAuthConfigSerializers(serializers.ModelSerializer):
         refresh_margin = attrs.get('refresh_margin', getattr(self.instance, 'refresh_margin', 10))
         expire_notice_minutes = attrs.get('expire_notice_minutes', getattr(self.instance, 'expire_notice_minutes', 30))
         project_product = attrs.get('project_product', getattr(self.instance, 'project_product', None))
+        ApiAuthConfigService.validate_target_address(
+            attrs.get('target_address', getattr(self.instance, 'target_address', '')),
+            getattr(project_product, 'id', None), attrs.get('test_env', getattr(self.instance, 'test_env', None)),
+        )
+        ApiAuthConfigService.validate_public_variables(
+            attrs.get('public_variable_ids', getattr(self.instance, 'public_variable_ids', [])),
+            getattr(project_product, 'id', None),
+            attrs.get('test_env', getattr(self.instance, 'test_env', None)),
+        )
 
         if auth_type == ApiAuthTypeEnum.API.value and not api_info:
             raise serializers.ValidationError({'api_info': '接口登录授权必须选择登录接口'})

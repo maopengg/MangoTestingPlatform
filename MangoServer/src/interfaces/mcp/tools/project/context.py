@@ -269,7 +269,7 @@ def register_project_context_tools(mcp):
 
     @mcp.tool()
     def list_project_products(keyword: str | None = None, page: int = 1, page_size: int = 10) -> dict:
-        """查询项目产品列表，用于创建接口、请求头和 API case。"""
+        """查询项目产品及用途、仓库等产品说明，用于创建接口、请求头和 API case。"""
         queryset = _project_product_queryset_for_current_user()
         if keyword:
             queryset = queryset.filter(Q(name__contains=keyword) | Q(project__name__contains=keyword))
@@ -279,6 +279,7 @@ def register_project_context_tools(mcp):
                 "id": item.id,
                 "name": item.name,
                 "project": {"id": item.project.id, "name": item.project.name},
+                "description": item.description,
                 "owners": [
                     {
                         "id": owner.id,

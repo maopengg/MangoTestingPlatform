@@ -16,14 +16,8 @@ from src.common.responses import RESPONSE_MSG_0001, RESPONSE_MSG_0002, RESPONSE_
 class CaseViews(ViewSet):
     model = EvaluationCase
     serializer_class = CaseSerializer
-    action_permission_map = {"list": "evaluation.case", "retrieve": ("evaluation.case:detail", "evaluation.case:edit"), "create": "evaluation.case:create",
-        "delete": "evaluation.case:delete", "validate": "evaluation.case:detail",
-        "grading_preview": "evaluation.case:detail", "graders": "evaluation.case", "copy": "evaluation.case:copy"}
     page_permission_key = "evaluation.case"
-    permission_key_map = {"put": "evaluation.case:edit"}
 
-    action_permission_map["interfaces"] = ("evaluation.case:detail", "evaluation.case:edit")
-    action_permission_map["ai_profiles"] = ("evaluation.case:detail", "evaluation.case:edit")
 
     @error_response("system")
     def ai_profiles(self, request, pk=None):
@@ -94,7 +88,7 @@ class CaseViews(ViewSet):
     @error_response("system")
     def grading_preview(self, request, pk=None):
         user = request_user(request)
-        if not PermissionMenuService.is_effective_super_admin(user) and "evaluation.dataset:detail" not in PermissionMenuService.permission_keys_for_user(user):
+        if not PermissionMenuService.is_effective_super_admin(user) and "evaluation.dataset:read" not in PermissionMenuService.permission_keys_for_user(user):
             raise EvaluationError(EVALUATION_TARGET_ACCESS_DENIED)
         return ResponseData.success(RESPONSE_MSG_0001, EvaluationCaseService.grading_preview(get_case(pk, user), user))
 

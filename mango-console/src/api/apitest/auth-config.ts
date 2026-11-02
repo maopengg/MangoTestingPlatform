@@ -1,5 +1,13 @@
 import { deleted, get, post, put } from '@/api/http'
 
+export function getApiAuthTargets(data: object) {
+  return get({ url: '/api/auth/config/targets', data: () => data })
+}
+
+export function getApiAuthPublicVariables(data: object) {
+  return get({ url: '/api/auth/config/public-variables', data: () => data })
+}
+
 export function getApiAuthConfig(data: object) {
   return get({
     url: '/api/auth/config',
@@ -15,8 +23,7 @@ export function postApiAuthConfig(data: object) {
 }
 
 export function putApiAuthConfig(data: object) {
-  return put({ permissionKey: 'api.auth_config',
-    url: '/api/auth/config',
+  return put({ url: '/api/auth/config',
     data: () => data,
   })
 }

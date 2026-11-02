@@ -10,7 +10,7 @@
           <template v-else-if="column.key === 'status'" #cell="{ record }"><a-tag :color="runStatusColor(record.status)" size="small">{{ runStatusTitle[record.status] || record.status }}</a-tag></template>
           <template v-else-if="column.key === 'verdict'" #cell="{ record }"><a-tag :color="runVerdictColor(record.verdict)" size="small">{{ verdictTitle[record.verdict] || record.verdict }}</a-tag></template>
           <template v-else-if="column.key === 'nodes'" #cell="{ record }">{{ record.actual_node_count }}/{{ record.requested_node_count }}</template>
-          <template v-else-if="column.key === 'actions'" #cell="{ record }"><MangoTableActions :actions="[{ permission: 'perf.run:detail', label: '查看', onClick: () => open(record) }, { permission: 'perf.run:stop', label: '停止', danger: true, hidden: !activeRunStatuses.has(record.status), loading: stoppingId === record.id, onClick: () => stop(record) }]" /></template>
+          <template v-else-if="column.key === 'actions'" #cell="{ record }"><MangoTableActions :actions="[{ label: '查看', onClick: () => open(record) }, { label: '停止', danger: true, hidden: !activeRunStatuses.has(record.status), loading: stoppingId === record.id, onClick: () => stop(record) }]" /></template>
         </a-table-column></template>
       </a-table>
     </template>

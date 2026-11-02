@@ -31,18 +31,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 class ModuleCoverageCaseViews(ViewSet):
     model = ModuleCoverageCase
     serializer_class = ModuleCoverageCaseSerializer
-    action_permission_map = {
-        "list": "api.module_coverage",
-        "retrieve": "api.module_coverage:detail",
-        "snapshots": "api.module_coverage:detail",
-        "flow": "api.module_coverage:detail",
-        "diff": "api.module_coverage:detail",
-        "metrics": "api.module_coverage",
-        "overview": "api.module_coverage",
-        "binding": "api.module_coverage:edit",
-        "archive_batch": "api.module_coverage:delete",
-        "batch_upload": "api.module_coverage:create",
-    }
 
     @staticmethod
     def queryset(request, include_removed=False):

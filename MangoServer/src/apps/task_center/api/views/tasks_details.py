@@ -102,7 +102,7 @@ class TasksDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
-        queryset = TasksDetails.objects.all()
+        queryset = self.filter_queryset_by_data_scope(request, TasksDetails.objects.all())
         task_id = request.query_params.get('task_id')
         _type = request.query_params.get('type')
         project_product_id = request.query_params.get('project_product_id')
@@ -221,10 +221,6 @@ class TasksDetailsCRUD(ModelCRUD):
 class TasksDetailsViews(ViewSet):
     model = TasksDetails
     serializer_class = TasksDetailsSerializers
-    action_permission_map = {
-        'get_type_case_name': 'timing.tasks',
-        'batch_set_cases': 'timing.tasks:edit',
-    }
 
     @staticmethod
     def _split_query_values(request: Request, key: str):

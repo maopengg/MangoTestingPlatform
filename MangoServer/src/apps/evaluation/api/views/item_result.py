@@ -11,7 +11,6 @@ from src.common.responses import RESPONSE_MSG_0001, ResponseData
 class ItemResultViews(ViewSet):
     model = EvaluationItemResult
     serializer_class = ItemResultSerializer
-    action_permission_map = {"list": "evaluation.case:detail", "retrieve": "evaluation.case:detail"}
 
     @error_response("system")
     def list(self, request, case_id=None, execution_id=None):

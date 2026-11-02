@@ -212,7 +212,7 @@
               </a-table-column>
               <a-table-column title="启用" :width="80" align="center">
                 <template #cell="{ record }"
-                  ><a-switch v-permission="'timing.tasks:status'"
+                  ><a-switch
                     v-model="record.status"
                     :disabled="isReadOnlyRow(record)"
                     :checked-value="1"
@@ -222,7 +222,7 @@
               </a-table-column>
               <a-table-column title="发送通知" :width="100" align="center">
                 <template #cell="{ record }"
-                  ><a-switch v-permission="'timing.tasks:status'"
+                  ><a-switch
                     v-model="record.is_notice"
                     :disabled="isReadOnlyRow(record)"
                     :checked-value="1"
@@ -232,7 +232,7 @@
               </a-table-column>
               <a-table-column title="仅失败通知" :width="110" align="center">
                 <template #cell="{ record }"
-                  ><a-switch v-permission="'timing.tasks:status'"
+                  ><a-switch
                     v-model="record.fail_notice"
                     :disabled="isReadOnlyRow(record) || record.is_notice !== 1"
                     :checked-value="1"
@@ -266,19 +266,17 @@
                 <template #cell="{ record }">
                   <MangoTableActions
                     :actions="[
-                      { permission: 'timing.tasks:create',
-                        label: '新增规则',
-                        disabled: isReadOnlyRow(record),
-                        onClick: () => addRule(record),
-                      },
-                      { permission: 'timing.tasks:delete',
-                        label: '删除',
-                        danger: true,
-                        hidden: !record.task_id || isAutomaticallyDeleted(record),
-                        loading: record.realtime_saving,
-                        onClick: () => deleteSavedRow(record),
-                      },
-                    ]"
+    {
+        label: '新增规则',
+        disabled: isReadOnlyRow(record),
+        onClick: () => addRule(record), },
+    {
+        label: '删除',
+        danger: true,
+        hidden: !record.task_id || isAutomaticallyDeleted(record),
+        loading: record.realtime_saving,
+        onClick: () => deleteSavedRow(record), },
+]"
                   />
                 </template>
               </a-table-column>

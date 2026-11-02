@@ -22,7 +22,7 @@
           <div class="mango-section-title mango-dataset-master-header">
             <h2>数据集版本</h2>
             <a-button
-              v-permission="'evaluation.dataset:edit'"
+
               size="small"
               type="primary"
               :loading="versionCreating"
@@ -72,18 +72,18 @@
               ></div
             >
             <a-space v-if="activeVersion" class="mango-dataset-item-actions" wrap>
-              <a-button v-permission="'evaluation.dataset:detail'" size="small" @click="configDrawer?.open(activeVersion, items[0]?.input_data)">数据集配置</a-button>
+              <a-button  size="small" @click="configDrawer?.open(activeVersion, items[0]?.input_data)">数据集配置</a-button>
               <a-button
                 v-if="activeVersion.status === 'draft'"
-                v-permission="'evaluation.dataset:edit'"
+
                 size="small"
                 type="primary"
                 @click="openItem()"
                 >新增数据条目</a-button
               >
-              <a-button v-if="activeVersion.status === 'draft'" v-permission="'evaluation.dataset:publish'" size="small" :loading="publishingVersionId === activeVersion.id" :disabled="publishingVersionId !== undefined || publishConfirmationOpen" @click="publishVersion(activeVersion)">发布</a-button>
-              <a-button v-permission="'evaluation.dataset:edit'" size="small" :loading="versionCreating" @click="cloneVersion(activeVersion)">复制新版本</a-button>
-              <a-button v-if="activeVersion.status === 'draft'" v-permission="'evaluation.dataset:delete'" size="small" status="danger" :loading="deletingVersionId === activeVersion.id" :disabled="deletingVersionId !== undefined" @click="removeVersion(activeVersion)">删除版本</a-button>
+              <a-button v-if="activeVersion.status === 'draft'"  size="small" :loading="publishingVersionId === activeVersion.id" :disabled="publishingVersionId !== undefined || publishConfirmationOpen" @click="publishVersion(activeVersion)">发布</a-button>
+              <a-button  size="small" :loading="versionCreating" @click="cloneVersion(activeVersion)">复制新版本</a-button>
+              <a-button v-if="activeVersion.status === 'draft'"  size="small" status="danger" :loading="deletingVersionId === activeVersion.id" :disabled="deletingVersionId !== undefined" @click="removeVersion(activeVersion)">删除版本</a-button>
             </a-space>
           </div>
           <template v-if="activeVersion">
@@ -117,34 +117,28 @@
                     />
                     <template v-else-if="column.key === 'actions'"
                       ><MangoTableActions
-                        :actions="
-                          activeVersion.status === 'draft'
-                            ? [
-                                {
-                                  label: '详情',
-                                  permission: 'evaluation.dataset:detail',
-                                  onClick: () => viewItem(record),
-                                },
-                                {
-                                  label: '编辑',
-                                  permission: 'evaluation.dataset:edit',
-                                  onClick: () => openItem(record),
-                                },
-                                {
-                                  label: '删除',
-                                  permission: 'evaluation.dataset:edit',
-                                  danger: true,
-                                  onClick: () => removeItem(record),
-                                },
-                              ]
-                            : [
-                                {
-                                  label: '详情',
-                                  permission: 'evaluation.dataset:detail',
-                                  onClick: () => viewItem(record),
-                                },
-                              ]
-                        "
+                        :actions="activeVersion.status === 'draft'
+    ? [
+        {
+            label: '详情',
+            onClick: () => viewItem(record),
+        },
+        {
+            label: '编辑',
+            onClick: () => openItem(record),
+        },
+        {
+            label: '删除',
+            danger: true,
+            onClick: () => removeItem(record),
+        },
+    ]
+    : [
+        {
+            label: '详情',
+            onClick: () => viewItem(record),
+        },
+    ]"
                     /></template>
                     <span v-else>{{ record[column.dataIndex as string] ?? '-' }}</span>
                   </template>
@@ -221,7 +215,7 @@
         </div>
         </section>
       </a-form>
-    <template #footer-buttons><a-space><a-button v-permission="'evaluation.dataset:edit'" size="small" type="primary" :loading="itemSaving" @click="saveItem">保存</a-button><a-button size="small" :disabled="itemSaving" @click="itemEditorVisible = false">取消</a-button></a-space></template>
+    <template #footer-buttons><a-space><a-button  size="small" type="primary" :loading="itemSaving" @click="saveItem">保存</a-button><a-button size="small" :disabled="itemSaving" @click="itemEditorVisible = false">取消</a-button></a-space></template>
   </BaseSidePanel>
   <ModalDialog ref="qualityDialogRef" title="发布检查未通过" width="760px" :show-footer="false"
     ><template #content>
@@ -328,7 +322,8 @@
   const cloneConfirmationOpen = ref(false)
   const deletingVersionId = ref<number>()
   function removeVersion(record: any) {
-    if (record.status !== 'draft' || deletingVersionId.value !== undefined || !permissions.hasPermission('evaluation.dataset:delete')) return
+    if (record.status !== 'draft' || deletingVersionId.value !== undefined)
+    return;
     const id = record.id, dataset = datasetId.value
     Modal.warning({
       title: '删除草稿版本',
@@ -367,7 +362,7 @@
     return { '评分器': `${grader?.name || binding.grader_key} V${binding.grader_version || 1}`, '通过阈值': binding.threshold ?? '未设置', '权重': binding.weight ?? 1, '硬门禁': Boolean(binding.hard_gate), '启用': binding.enabled !== false, ...(Object.keys(binding.parameters || {}).length ? { '参数': binding.parameters } : {}) }
   }))
   function viewItem(record: any) {
-    if (!permissions.hasPermission('evaluation.dataset:detail')) return
+
     documentTitle.value = `V${activeVersion.value?.version_no} · ${record.id}`
     documentData.value = JSON.parse(
       JSON.stringify({ version: activeVersion.value?.version_no, ...record })
@@ -490,7 +485,8 @@
     }
   }
   function cloneVersion(record: any) {
-    if (!activeDataset.value || !record || versionCreating.value || cloneConfirmationOpen.value || !permissions.hasPermission('evaluation.dataset:edit')) return
+    if (!activeDataset.value || !record || versionCreating.value || cloneConfirmationOpen.value)
+    return;
     const dataset = activeDataset.value.id, source = record.id, version = record.version_no
     cloneConfirmationOpen.value = true
     Modal.confirm({
@@ -499,7 +495,8 @@
       okText: '确认复制',
       cancelText: '取消',
       onBeforeOk: async () => {
-        if (versionCreating.value || datasetId.value !== dataset || !permissions.hasPermission('evaluation.dataset:edit')) return false
+        if (versionCreating.value || datasetId.value !== dataset)
+    return false;
         versionCreating.value = true
         try {
           await createDatasetVersion(dataset, { source_version_id: source })
@@ -535,10 +532,11 @@
     }
   }
   async function publishVersion(record: any) {
-    if (publishingVersionId.value !== undefined || publishConfirmationOpen.value || record.status !== 'draft' || !permissions.hasPermission('evaluation.dataset:publish')) return
+    if (publishingVersionId.value !== undefined || publishConfirmationOpen.value || record.status !== 'draft')
+    return;
     publishingVersionId.value = record.id
     try {
-      if (!permissions.hasPermission('evaluation.dataset:detail')) return await doPublish(record)
+
       const res: any = await getDatasetQuality(record.id)
       const report = res.data || {}
       if ((report.errors || []).length) {
@@ -553,7 +551,8 @@
           content: report.warnings.map((item: any) => `${item.message}${item.groups?.length ? `（条目 ID：${item.groups.map((group: number[]) => group.join('、')).join('；')}）` : item.count ? `（${item.count} 条）` : ''}`).join('；') + '。是否继续发布？',
           hideCancel: false,
           onBeforeOk: async () => {
-            if (publishingVersionId.value !== undefined || !permissions.hasPermission('evaluation.dataset:publish')) return false
+            if (publishingVersionId.value !== undefined)
+    return false;
             publishingVersionId.value = record.id
             try {
               await acknowledgeDatasetQuality(record.id)
@@ -575,7 +574,8 @@
       activeVersion.value = { ...activeVersion.value, status: 'published' }
   }
   function openItem(record?: any) {
-    if (itemSaving.value || activeVersion.value?.status !== 'draft' || !permissions.hasPermission('evaluation.dataset:edit')) return
+    if (itemSaving.value || activeVersion.value?.status !== 'draft')
+    return;
     itemVersion.value = JSON.parse(JSON.stringify(activeVersion.value))
     itemForm.version_id = activeVersion.value?.id
     Object.assign(
@@ -620,7 +620,8 @@
     if (itemForm.grading_config.mode === 'replace') void loadCatalog().catch(() => {})
   }
   async function saveItem() {
-    if (itemSaving.value || !itemEditorVisible.value || !permissions.hasPermission('evaluation.dataset:edit')) return
+    if (itemSaving.value || !itemEditorVisible.value)
+    return;
     itemSaving.value = true
     try {
       const sourceError = itemDataSourceError(itemForm.data_source)
@@ -694,8 +695,8 @@
     versionPagination.pageCount = 0
     itemLoading.value = false
     versionPagination.page = 1
-    if (!Number.isInteger(id) || id <= 0 || !permissions.hasPermission('evaluation.dataset:detail'))
-      return
+    if (!Number.isInteger(id) || id <= 0)
+    return;
     activeDataset.value = { id, name: typeof route.query.name === 'string' ? route.query.name : '' }
     await loadVersions()
     if (activeDataset.value?.id === id && versions.value.length)

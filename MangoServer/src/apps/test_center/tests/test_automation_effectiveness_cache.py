@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.http import QueryDict
 from django.test import SimpleTestCase, override_settings
 
-from src.apps.ai.exceptions import ai_service_error
+from src.apps.system.exceptions import ai_service_error
 from src.apps.test_center.api.views.index import IndexViews
 from src.apps.test_center.services.test_suite.effectiveness import AutomationEffectivenessService
 from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService

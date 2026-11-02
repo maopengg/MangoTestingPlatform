@@ -1,3 +1,4 @@
+from src.apps.user.services.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -36,6 +37,6 @@ class FrontendSystemErrorTests(SimpleTestCase):
 
     def test_frontend_error_uses_home_permission(self):
         self.assertEqual(
-            RuntimeCenterViews.action_permission_map['report_frontend_error'],
+            permission_for_view(RuntimeCenterViews, 'report_frontend_error'),
             'index.home',
         )

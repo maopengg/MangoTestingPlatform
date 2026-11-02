@@ -16,8 +16,7 @@ export function postUiAuthConfig(data: UiAuthConfigPayload) {
 }
 
 export function putUiAuthConfig(data: UiAuthConfigPayload) {
-  return put({ permissionKey: 'ui.auth_config',
-    url: '/ui/auth/config',
+  return put({ url: '/ui/auth/config',
     data: () => data,
   })
 }

@@ -126,7 +126,7 @@ test('review drawer uses supplied configuration without fetching the editing cas
   let requests = 0, invalidations = 0
   const state = {
     snapshot: ref(null), summary: ref(null), visible: ref(false), loading: ref(true), failed: ref(true),
-    detailPermission: ref('api.case:detail'), title: ref(''),
+    detailPermission: ref('api.case:read'), title: ref(''),
     permissions: { hasPermission: () => true },
     pagination: { page: 3, setTotalSize(value) { this.total = value } },
     invalidateRequests: () => { invalidations++ },
@@ -135,7 +135,7 @@ test('review drawer uses supplied configuration without fetching the editing cas
   const methodsUnderTest = new Function(...Object.keys(state), `${methods};return {openSnapshot,load,onVisibilityChange}`)(...Object.values(state))
   const details = { id: 29, name: 'Review snapshot', sql_count: 1, data_factory_count: 0,
     items: [{ kind: 'sql', configuration: { sql: 'select 1' } }] }
-  methodsUnderTest.openSnapshot(details, 'api.case:detail')
+  methodsUnderTest.openSnapshot(details, 'api.case:read')
   assert.deepEqual(state.summary.value, details)
   assert.equal(state.pagination.page, 1)
   assert.equal(state.pagination.total, 1)
@@ -148,7 +148,7 @@ test('review drawer uses supplied configuration without fetching the editing cas
   assert.equal(state.summary.value, null)
   assert.equal(invalidations, 2)
   state.permissions.hasPermission = () => false
-  methodsUnderTest.openSnapshot(details, 'api.case:detail')
+  methodsUnderTest.openSnapshot(details, 'api.case:read')
   assert.equal(state.visible.value, false)
 })
 

@@ -3,7 +3,7 @@ import re
 
 from requests import RequestException
 
-from src.apps.ai.exceptions import AiError
+from src.apps.system.exceptions import AiError
 from src.apps.system.services.ai.client import AiService
 from src.common.prompts.api_assertion_diagnosis import build_assertion_diagnosis_messages
 

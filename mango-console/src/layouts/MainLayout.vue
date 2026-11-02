@@ -45,7 +45,6 @@
       <a-back-top target-container=".mango-main-base-style" />
     </component>
     <a-back-top target-container=".mango-main-layout-container" />
-    <AiAssistantWidget />
   </div>
 </template>
 
@@ -53,11 +52,10 @@
   import { computed, defineComponent, onBeforeUnmount, onMounted } from 'vue'
   import { useRoute } from 'vue-router'
   import useAppConfigStore from '@/store/modules/app-config'
-  import AiAssistantWidget from '@/components/ai/AiAssistantWidget.vue'
 
   export default defineComponent({
     name: 'MainLayout',
-    components: { AiAssistantWidget },
+    components: {},
     props: {
       showNavBar: {
         type: Boolean,

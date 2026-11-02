@@ -26,14 +26,6 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001
 class ModuleCoverageScanViews(ViewSet):
     model = ModuleCoverageScan
     serializer_class = ModuleCoverageScanSerializer
-    action_permission_map = {
-        "list": "api.module_coverage",
-        "retrieve": "api.module_coverage:detail",
-        "create": "api.module_coverage:create",
-        "validation": "api.module_coverage:detail",
-        "upload_status": "api.module_coverage:detail",
-        "update_status": "api.module_coverage:edit",
-    }
 
     @staticmethod
     def queryset(request):

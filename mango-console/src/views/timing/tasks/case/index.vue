@@ -35,7 +35,7 @@
               <h3>添加用例</h3>
               <p>按类型、项目、模块名称筛选后批量添加到当前定时任务</p>
             </div>
-            <a-button v-permission="'timing.tasks:edit'"
+            <a-button
               size="small"
               type="primary"
               :disabled="addSelectionKeys.length === 0"
@@ -300,7 +300,7 @@
                 <span>API {{ boundStats.api }}</span>
                 <span>Pytest {{ boundStats.pytest }}</span>
               </div>
-              <a-button v-permission="'timing.tasks:delete'"
+              <a-button
                 size="small"
                 status="danger"
                 :loading="deleteLoading"
@@ -491,7 +491,7 @@
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <MangoTableActions
-                      :actions="[{ permission: 'timing.tasks:delete', label: '删除', danger: true, onClick: () => onDelete(record) }]"
+                      :actions="[{ label: '删除', danger: true, onClick: () => onDelete(record) }]"
                     />
                   </template>
                 </a-table-column>

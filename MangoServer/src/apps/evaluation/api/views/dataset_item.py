@@ -21,7 +21,6 @@ from src.common.responses.response_msg import (
 class DatasetItemViews(ViewSet):
     model = EvaluationDatasetItem
     serializer_class = DatasetItemSerializer
-    action_permission_map = {"list": "evaluation.dataset:detail", "create": "evaluation.dataset:edit", "update": "evaluation.dataset:edit", "delete": "evaluation.dataset:edit"}
 
     @error_response("system")
     def list(self, request, version_id=None):

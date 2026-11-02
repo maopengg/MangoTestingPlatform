@@ -29,26 +29,15 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 
 class PerfRunCRUD(ModelCRUD):
+    http_method_names = ['get', 'head', 'options']
     model = PerfRun
     queryset = PerfRun.objects.all()
     serializer_class = PerfRunListSerializer
     serializer = PerfRunListSerializer
     page_permission_key = "perf.run"
-    permission_key_map = {"get": "perf.run"}
 
 
 class PerfRunViews(ViewSet):
-    action_permission_map = {
-        "retrieve": "perf.run:detail",
-        "overview": "perf.run:detail", "metrics": "perf.run:detail",
-        "requests": "perf.run:detail", "stages": "perf.run:detail", "nodes": "perf.run:detail",
-        "errors": "perf.run:detail", "thresholds": "perf.run:detail", "validity": "perf.run:detail",
-        "events": "perf.run:detail", "snapshot": "perf.run:detail", "stop": "perf.run:stop",
-        "cancel": "perf.run:stop", "finalize": "perf.run:execute", "set_baseline": "perf.run:baseline",
-        "subscription": "perf.run:detail", "comparison": "perf.run:detail",
-        "export": "perf.run:export", "rerun": "perf.run:execute",
-        "capture_download": "perf.run:download",
-    }
 
     @staticmethod
     def _get(request, pk):

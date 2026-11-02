@@ -7,7 +7,7 @@
           <div class="mango-detail-subtitle">维护项目通知接收人、邮箱和消息测试配置</div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button v-permission="'config.project:create'" size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-notice-button-新增">新增</a-button>
+          <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-notice-button-新增">新增</a-button>
           <a-button class="mango-back-button" size="small" @click="doResetSearch" data-testid="qa-views-config-project-notice-button-返回">返回</a-button>
         </a-space>
       </div>
@@ -57,10 +57,10 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <MangoTableActions
                     :actions="[
-                      { permission: 'config.project:debug', label: '测试', onClick: () => onTest(record) },
-                      { permission: 'config.project:edit', label: '编辑', onClick: () => onUpdate(record) },
-                      { permission: 'config.project:delete', label: '删除', danger: true, onClick: () => onDelete(record) },
-                    ]"
+    { label: '测试', onClick: () => onTest(record) },
+    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '删除', danger: true, onClick: () => onDelete(record) },
+]"
                   />
                 </template>
               </a-table-column>

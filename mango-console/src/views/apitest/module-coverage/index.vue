@@ -244,7 +244,7 @@
               >
               <template #api_case="{ record }">
                 <a-link
-                  v-if="record.api_case && permissionStore.hasPermission('api.case:detail')"
+                  v-if="record.api_case"
                   @click="openApiCase(record.api_case)"
                   >#{{ record.api_case }} {{ record.api_case_name }}</a-link
                 >
@@ -309,7 +309,7 @@
                   "
                 >
                   <a-link
-                    v-if="record.api_info_id && permissionStore.hasPermission('api.info:detail')"
+                    v-if="record.api_info_id"
                     @click="openApiInfo(record.api_info_id)"
                   >
                     <a-tag size="small" :color="tagColor(record.api_info_binding_status)">
@@ -423,7 +423,7 @@
       }}</pre>
       <div class="mango-module-coverage__drawer-actions">
         <a-button
-          v-permission="'api.module_coverage:detail'"
+
           size="small"
           @click="historyDrawer?.open(detail.id)"
           >扫描历史</a-button
@@ -431,7 +431,7 @@
         <a-button size="small" @click="locateDetailFlow">定位到接口图</a-button>
         <a-button
           v-if="detail.api_case"
-          v-permission="'api.case:detail'"
+
           size="small"
           type="primary"
           @click="openApiCase(detail.api_case)"
@@ -501,7 +501,7 @@
 <script lang="ts" setup>
   import { computed, defineAsyncComponent, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import usePermissionStore from '@/store/modules/permission'
+
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import { useEnum } from '@/store/modules/get-enum'
@@ -552,7 +552,7 @@
     validityOptions,
   } from './config'
 
-  const permissionStore = usePermissionStore()
+
   const ApiInfoDetails = defineAsyncComponent(
     () => import('@/views/apitest/info/details/index.vue')
   )
@@ -787,12 +787,14 @@
     search()
   }
   function openApiCase(id: number) {
-    if (!id || !permissionStore.hasPermission('api.case:detail')) return
+    if (!id)
+    return;
     Object.assign(assetPanel, { visible: true, kind: 'case', id })
   }
 
   function openApiInfo(id: number) {
-    if (!id || !permissionStore.hasPermission('api.info:detail')) return
+    if (!id)
+    return;
     Object.assign(assetPanel, { visible: true, kind: 'info', id })
   }
 
@@ -820,6 +822,7 @@
   }
 
   async function openBinding(row: any) {
+
     Object.assign(bindingForm, {
       coverageCaseId: row.id,
       moduleId: row.module?.id,
@@ -830,6 +833,7 @@
   }
 
   async function saveBinding() {
+
     if (!bindingForm.apiCaseId) {
       Message.warning('请选择 ApiCase')
       return false
@@ -859,20 +863,20 @@
   }
 
   const caseActions = (row: any) => [
-    { permission: 'api.module_coverage:detail', label: '详情', onClick: () => openDetail(row) },
+    {  label: '详情', onClick: () => openDetail(row) },
     {
-      permission: 'api.module_coverage:detail',
+
       label: '定位流程',
       onClick: () => openInterfaceFlow(row, row.id),
     },
     {
-      permission: 'api.module_coverage:detail',
+
       label: '差异',
       onClick: () => diffDrawer.value?.open(row.id),
     },
-    { label: row.api_case ? '重新绑定' : '绑定Case', onClick: () => openBinding(row) },
+    {  label: row.api_case ? '重新绑定' : '绑定Case', onClick: () => openBinding(row) },
     {
-      permission: 'api.module_coverage:delete',
+
       label: '归档',
       danger: true,
       onClick: () => archiveRow(row),
@@ -880,19 +884,19 @@
   ]
   const scanActions = (row: any) => [
     {
-      permission: 'api.module_coverage:detail',
+
       label: '详情',
       onClick: () => scanDrawer.value?.open(row.id),
     },
   ]
   const interfaceActions = (row: any) => [
     {
-      permission: 'api.module_coverage:detail',
+
       label: '查看全景',
       onClick: () => openInterfaceFlow(row),
     },
     {
-      permission: 'api.module_coverage:detail',
+
       label: '扫描历史',
       onClick: () => interfaceHistoryDrawer.value?.open(row.id),
     },
