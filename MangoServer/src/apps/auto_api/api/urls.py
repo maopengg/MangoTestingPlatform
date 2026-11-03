@@ -58,6 +58,7 @@ urlpatterns = [
     ),
     path("module-coverage/cases", ModuleCoverageCaseViews.as_view({"get": "list"})),
     path("module-coverage/interfaces", ModuleCoverageInterfaceViews.as_view({"get": "list"})),
+    path("module-coverage/interfaces/policy", ModuleCoverageInterfaceViews.as_view({"post": "policy"})),
     path("module-coverage/interfaces/detail", ModuleCoverageInterfaceViews.as_view({"get": "retrieve"})),
     path("module-coverage/interfaces/snapshots", ModuleCoverageInterfaceViews.as_view({"get": "snapshots"})),
     path("module-coverage/interfaces/diff", ModuleCoverageInterfaceViews.as_view({"get": "diff"})),

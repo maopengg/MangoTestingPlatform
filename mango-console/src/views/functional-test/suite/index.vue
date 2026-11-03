@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :sticky-horizontal-scroll="false"
         show-modules
@@ -756,6 +757,9 @@
     putManualSuite,
     getFunctionalIterations,
   } from '@/api/functional-test'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
   const route = useRoute()
@@ -1339,7 +1343,10 @@
           }
         : {}
     )
-    if (!record) Object.assign(suiteForm, { priority: 1, status: 1 })
+    if (!record) {
+      Object.assign(suiteForm, { project_product: null, module: null, priority: 1, status: 1 })
+      await prefillNavigationModel(navigationCreateRef.value, suiteForm)
+    }
     await loadSuiteIterations()
     suiteVisible.value = true
   }

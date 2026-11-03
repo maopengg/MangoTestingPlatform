@@ -56,6 +56,7 @@ allowDirectExactQuery(
   'src/views/apitest/module-coverage/index.vue',
   [
     'filters.interface_status',
+    'filters.coverage_policy',
     'filters.api_info_binding_status',
     'filters.status',
     'filters.change_status',

@@ -19,6 +19,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="projectProductCondition?.value"
         @filter-change="onSidebarFilterChange"
@@ -457,6 +458,9 @@
   import { getSystemNoticeName } from '@/api/system/notice_group'
   import { getStatusTagColor, MONITORING_TASK_STATUS_COLORS } from '@/utils/status-color'
   import { fieldNames } from '@/setting'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
 
@@ -644,6 +648,7 @@ if __name__ == "__main__":
         it.value = it.multiple ? [] : ''
       }
     })
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
   }
 
   function onDelete(record: any) {

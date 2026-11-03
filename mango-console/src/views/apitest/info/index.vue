@@ -126,6 +126,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
           contained-body
           show-modules
           :show-toolbar="false"
@@ -664,6 +665,9 @@
   import ApiCaseDetails from '@/views/apitest/case/details/index.vue'
   import StickyHorizontalTable from '@/components/table/StickyHorizontalTable.vue'
   import { canCopyApiInfoCurl, useApiInfoCurl } from './useApiInfoCurl'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -1123,6 +1127,7 @@
         }
       })
     }
+    void prefillNavigationFormItems(navigationCreateRef.value, data.formItem, () => data.isAdd)
   }
 
   function onUpdate(item: any) {

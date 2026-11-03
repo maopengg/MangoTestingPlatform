@@ -89,6 +89,12 @@ API Case 验证后最多提交 `预发布`，即使有负责人权限也不得�
 
 盘点仍用 `get_module_coverage_scan_upload_status` 逐页核对接收集合与模块、`get_module_coverage_scan_validation` 检查数量，再用 `update_module_coverage_scan(status="completed")` 生效并回读 `summary.applied=true`、`summary.inventory_only=true`。模块纯盘点允许零链路生效，但不表示代码链路审计/自动化已完成，也不计为模块完整链路扫描完成；完整分析使用 `inventory_only=false`，保留原门禁。盘点不提交移除动作、不清空已有分析、不归档未上传的历史 Case；旧链路保持原分析修订，不因发现接口的新 Commit 就冒称已重新分析。后续按模块补全原接口身份，不另造重复接口；所有约定模块和关联仓库完成对账后，按稳定接口身份去重汇总项目总量，不简单相加跨模块复用接口，也不把部分模块当全项目。增量盘点与完整链路分析分别核对各自基线。老部署不识别该参数时执行第 4 条。
 
+### 排除范围
+
+- 确认接口不属于当前服务/模块调用覆盖范围（含间接调用核查）时，只上传基础清单（`inventory_only=true`），再用 `update_module_coverage_interface_policy(policy="excluded", reason=证据与原因)` 排除；不生成全景图、Case或真实资产，也不计入接口覆盖率分母。
+- 深扫前分页读取 `list_module_coverage_interfaces` 的 `coverage_policy`：`included` 正常处理，`deferred` 暂缓但仍参与覆盖统计，`excluded` 排除。后两者必须有 `coverage_reason`，跳过分析及生成；完整扫描预期数扣除跳过项，基础盘点仍保留，不把范围调整当新增通过。
+- 调用关系未确认、仅无直接页面引用或尚未分析，不能据此排除。已有资产和历史保留；后续扫描不能自动恢复，重新纳入须经用户确认。此规则优先于下文一般扫描步骤；部署不支持时报告缺口，不以删除或归档替代。
+
 ### 上传前必须校验是否已有完整接口清单
 
 首次启动及每次恢复上传前，通过 MCP 查询平台基线和接收记录，不能根据聊天记忆、本地文件存在、模块扫描完成、ApiInfo 数量或平台已有部分接口判断“已经传全”。

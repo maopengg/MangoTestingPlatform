@@ -61,6 +61,13 @@ class ModuleCoverageInterfaceViews(ViewSet):
             request.query_params.get("pageSize") or 20,
             include_removed,
             resolution_status,
+            request.query_params.get("coverage_policy"),
+            resolution_statuses=request.query_params.get("resolution_status__in", "").split(",") if request.query_params.get("resolution_status__in") else None,
+            coverage_statuses=request.query_params.get("coverage_status__in", "").split(",") if request.query_params.get("coverage_status__in") else None,
+            methods=request.query_params.get("method__in", "").split(",") if request.query_params.get("method__in") else None,
+            sync_actions=request.query_params.get("sync_action__in", "").split(",") if request.query_params.get("sync_action__in") else None,
+            coverage_reason=request.query_params.get("coverage_reason"),
+            api_info_id=request.query_params.get("api_info_id") or None,
         )
         data["items"] = ModuleCoverageInterfaceSerializer(data["items"], many=True).data
         return ResponseData.success(RESPONSE_MSG_0001, data)
@@ -164,6 +171,15 @@ class ModuleCoverageInterfaceViews(ViewSet):
             request.data.get("api_info_id"),
             request.data.get("api_info_revision_id"),
             request_user_id(request),
+        )
+        return ResponseData.success(RESPONSE_MSG_0001, data)
+
+    @action(methods=["post"], detail=False)
+    @error_response("system")
+    def policy(self, request: Request):
+        data = ModuleCoverageService.update_interface_policy(
+            request.data.get("interface_ids"), request.data.get("policy"),
+            request.data.get("reason", ""), request_user_id(request),
         )
         return ResponseData.success(RESPONSE_MSG_0001, data)
 

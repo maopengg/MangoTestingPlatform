@@ -12,6 +12,7 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageScanStatus,
     ModuleCoverageSyncAction,
     ModuleCoverageValidity,
+    ModuleCoveragePolicy,
 )
 from src.apps.auto_api.exceptions import (
     AutoApiError,
@@ -20,6 +21,7 @@ from src.apps.auto_api.exceptions import (
     QUALITY_COVERAGE_MODULE_INVALID,
 )
 from src.apps.auto_api.models import ApiCaseRevision
+from src.apps.test_center.models import ProjectProduct
 from src.apps.auto_api.models import (
     ModuleCoverageCase,
     ModuleCoverageInterfaceSnapshot,
@@ -33,6 +35,7 @@ class ModuleCoverageCompletionMixin:
     @transaction.atomic
     def complete_scan(cls, scan_id: int, confirm_scope_reduction: bool = False) -> ModuleCoverageScan:
         scan = cls.get_locked_uploading_scan(scan_id)
+        ProjectProduct.objects.select_for_update().get(id=scan.project_product_id)
         inventory = cls.is_inventory_scan(scan)
         validation = cls.validation(scan)
         if not validation["valid"]:
@@ -40,12 +43,20 @@ class ModuleCoverageCompletionMixin:
                                value=("；".join(validation["errors"]),),
                                )
         snapshots = list(scan.case_snapshots.select_related(
-            "coverage_case", "interface_snapshot", "api_case", "api_case_revision",
+            "coverage_case__module_interface", "interface_snapshot__module_interface", "api_case", "api_case_revision",
         ))
         interface_snapshots = list(scan.interface_snapshots.select_related(
             "api_info", "api_info_revision", "module_interface",
         ))
+        skipped_interface_count = 0 if inventory else sum(cls.interface_analysis_blocked(item) for item in interface_snapshots)
+        if not inventory:
+            interface_snapshots = [item for item in interface_snapshots if not cls.interface_analysis_blocked(item)]
+        snapshots = [item for item in snapshots if not (
+            (item.interface_snapshot_id and cls.interface_analysis_blocked(item.interface_snapshot))
+            or cls.interface_analysis_blocked(item.coverage_case)
+        )]
         if scan.scope_type == ModuleCoverageScanScope.INTERFACE:
+            cls.require_interface_included(scan.target_interface)
             newer_scan_exists = ModuleCoverageModuleInterface.objects.filter(
                 id=scan.target_interface.module_interface_id,
                 last_seen_scan_id__gt=scan.id,
@@ -91,7 +102,7 @@ class ModuleCoverageCompletionMixin:
             lifecycle_status=ModuleCoverageInterfaceStatus.ACTIVE,
             removed_at__isnull=True,
             current_snapshot__isnull=False,
-        ).select_related("current_snapshot")
+        ).filter(coverage_policy=ModuleCoveragePolicy.INCLUDED).select_related("current_snapshot")
         if scan.scope_type == ModuleCoverageScanScope.INTERFACE:
             current_relations = current_relations.filter(id=scan.target_interface.module_interface_id)
         elif scan.module_id is not None:
@@ -104,7 +115,7 @@ class ModuleCoverageCompletionMixin:
             branch=scan.branch,
             removed_at__isnull=True,
             current_snapshot__isnull=False,
-        )
+        ).exclude(module_interface__coverage_policy__in=[ModuleCoveragePolicy.DEFERRED, ModuleCoveragePolicy.EXCLUDED])
         if scan.scope_type == ModuleCoverageScanScope.INTERFACE:
             current_scope = current_scope.filter(
                 module_interface_id=scan.target_interface.module_interface_id,
@@ -139,6 +150,10 @@ class ModuleCoverageCompletionMixin:
         changed_interfaces: list[ModuleCoverageInterfaceSnapshot] = []
         for interface_snapshot in interface_snapshots:
             module_interface = interface_snapshot.module_interface
+            if not inventory and cls.interface_analysis_blocked(interface_snapshot):
+                module_interface.last_seen_scan = scan
+                module_interface.save(update_fields=["last_seen_scan", "update_time"])
+                continue
             if (inventory and module_interface.current_snapshot_id and module_interface.removed_at is None
                     and module_interface.module_id == interface_snapshot.module_id):
                 # 盘点只更新发现记录，不能将旧链路的源码证据冒充本次修订的分析结果。
@@ -172,6 +187,9 @@ class ModuleCoverageCompletionMixin:
                 changed_interfaces.append(interface_snapshot)
 
         for snapshot in snapshots:
+            if ((snapshot.interface_snapshot_id and cls.interface_analysis_blocked(snapshot.interface_snapshot))
+                    or cls.interface_analysis_blocked(snapshot.coverage_case)):
+                continue
             payload = snapshot.payload
             item = snapshot.coverage_case
             item.interface_source_key = payload["interface_source_key"]
@@ -323,6 +341,7 @@ class ModuleCoverageCompletionMixin:
             "unchanged": actions[ModuleCoverageSyncAction.UNCHANGED],
             "removed": len(removed_ids),
             "interface_count": len(interface_snapshots),
+            "skipped_interface_count": skipped_interface_count,
             "interface_created": interface_actions[ModuleCoverageSyncAction.CREATED],
             "interface_updated": interface_actions[ModuleCoverageSyncAction.UPDATED],
             "interface_unchanged": interface_actions[ModuleCoverageSyncAction.UNCHANGED],

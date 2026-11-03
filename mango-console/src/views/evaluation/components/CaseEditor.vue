@@ -236,7 +236,7 @@
 </template>
 <script setup lang="ts">
   import EvaluationDrawer from './EvaluationDrawer.vue'
-  import { computed, onBeforeUnmount, reactive, ref, useSlots, watch } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, reactive, ref, useSlots, watch } from 'vue'
   import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import {
@@ -433,6 +433,11 @@
         dataset_version: record?.dataset_version,
         status: record?.status || 'draft',
       })
+      if (!id) {
+        await nextTick()
+        if (current !== generation) return
+        if (leafId(form.project_product) === leafId(product) && !form.module) form.module = module
+      }
       config.value = JSON.parse(
         JSON.stringify(
           record?.config && Object.keys(record.config).length ? normalizeCaseInput(record.config) : defaultCaseConfig()

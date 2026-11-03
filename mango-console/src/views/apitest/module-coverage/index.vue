@@ -34,11 +34,11 @@
             <a-form-item v-if="activeTab === 'interfaces'" label="接口">
               <a-input v-model="filters.name" allow-clear placeholder="接口名称或 URL" />
             </a-form-item>
-            <a-form-item v-if="activeTab === 'interfaces'" label="接口状态">
+            <a-form-item v-if="activeTab === 'interfaces'" label="接口存续">
               <a-select
                 v-model="filters.interface_status"
                 allow-clear
-                placeholder="接口状态"
+                placeholder="接口存续"
                 :options="interfaceStatusOptions"
               />
             </a-form-item>
@@ -50,6 +50,21 @@
                 :options="apiInfoBindingOptions"
               />
             </a-form-item>
+            <a-form-item v-if="activeTab === 'interfaces'" label="覆盖策略">
+              <a-select v-model="filters.coverage_policy" allow-clear placeholder="全部策略" :options="enumStore.module_coverage_policy" :field-names="{value: 'key', label: 'title'}" />
+            </a-form-item>
+            <template v-if="activeTab === 'interfaces'">
+              <a-form-item v-for="item in interfaceSearchSelects" :key="item.key" :label="item.label">
+                <a-select v-model="filters[item.key]" multiple allow-clear :max-tag-count="1"
+                  :placeholder="item.label" :options="item.options" />
+              </a-form-item>
+              <a-form-item label="处理原因">
+                <a-input v-model="filters.coverage_reason" allow-clear placeholder="处理原因关键词" />
+              </a-form-item>
+              <a-form-item label="ApiInfo编号">
+                <a-input-number v-model="filters.api_info_id" :min="1" :precision="0" placeholder="ApiInfo 编号" />
+              </a-form-item>
+            </template>
             <a-form-item v-if="activeTab === 'cases'" label="当前状态">
               <a-select
                 v-model="filters.status"
@@ -137,15 +152,6 @@
                 formatProjectProductPath(record.project_product)
               }}</template>
               <template #module="{ record }">{{ formatModulePath(record.module) }}</template>
-              <template #owner_module="{ record }">
-                <span v-if="record.owner_module">
-                  {{ formatModulePath(record.owner_module) }}
-                  <a-tag v-if="record.is_cross_module_reuse" size="small" color="arcoblue">
-                    跨模块复用
-                  </a-tag>
-                </span>
-                <span v-else>-</span>
-              </template>
               <template #name="{ record }"
                 ><a-link @click="openDetail(record)">{{ record.name }}</a-link></template
               >
@@ -284,7 +290,12 @@
               </template>
               <template #coverage_status="{ record }">
                 <a-tag size="small" :color="tagColor(record.coverage_status)">{{
-                  label(record.coverage_status)
+                  coverageProgressLabels[record.coverage_status] || label(record.coverage_status)
+                }}</a-tag>
+              </template>
+              <template #coverage_policy="{ record }">
+                <a-tag size="small" :color="tagColor(record.coverage_policy)">{{
+                  enumStore.module_coverage_policy.find(option => option.key === record.coverage_policy)?.title || record.coverage_policy
                 }}</a-tag>
               </template>
               <template #resolution_status="{ record }">
@@ -312,16 +323,10 @@
                     v-if="record.api_info_id"
                     @click="openApiInfo(record.api_info_id)"
                   >
-                    <a-tag size="small" :color="tagColor(record.api_info_binding_status)">
-                      ApiInfo #{{ record.api_info_id }}
-                    </a-tag>
+                    ApiInfo #{{ record.api_info_id }}
                   </a-link>
                   <a-tag v-else size="small" :color="tagColor(record.api_info_binding_status)">
-                    {{
-                      record.api_info_id
-                        ? `ApiInfo #${record.api_info_id}`
-                        : label(record.api_info_binding_status)
-                    }}
+                    {{ label(record.api_info_binding_status) }}
                   </a-tag>
                 </a-tooltip>
               </template>
@@ -461,6 +466,20 @@
   </a-modal>
 
   <CaseFlowDrawer ref="flowDrawer" />
+  <a-modal v-model:visible="policyVisible" title="编辑覆盖策略"
+    :width="560" :ok-loading="policyLoading" :on-before-ok="saveCoveragePolicy" :mask-closable="!policyLoading"
+    :closable="!policyLoading" :esc-to-close="!policyLoading" :cancel-button-props="{ disabled: policyLoading }">
+    <a-form :model="policyForm" layout="horizontal">
+      <a-form-item label="当前接口">#{{ policyForm.id }} · {{ policyForm.name }}</a-form-item>
+      <a-form-item label="覆盖策略" required>
+        <a-select v-model="policyForm.policy" :options="enumStore.module_coverage_policy" :field-names="{value: 'key', label: 'title'}" :disabled="policyLoading" />
+      </a-form-item>
+      <a-form-item label="处理原因" :required="policyForm.policy !== 'included'">
+        <a-textarea v-model="policyForm.reason" :max-length="2000" show-word-limit placeholder="暂不处理或排除覆盖时必填，说明依据及后续处理条件" :disabled="policyLoading" />
+      </a-form-item>
+      <a-form-item label="处理说明">{{ coveragePolicyHelp[policyForm.policy] }}</a-form-item>
+    </a-form>
+  </a-modal>
   <CaseDiffDrawer ref="diffDrawer" />
   <CaseHistoryDrawer ref="historyDrawer" />
   <ScanDetailDrawer ref="scanDrawer" />
@@ -523,6 +542,7 @@
     getCoverageInterfaces,
     getCoverageScans,
     getCoverageOverview,
+    updateCoverageInterfacePolicy,
   } from '@/api/apitest/module-coverage'
   import type {
     CoverageOverview as CoverageOverviewData,
@@ -542,6 +562,9 @@
     interfaceColumns,
     tableScrollXByTab,
     interfaceStatusOptions,
+    interfaceSearchSelects,
+    coveragePolicyHelp,
+    coverageProgressLabels,
     labels,
     executionResultTagColor,
     methodTagColor,
@@ -578,6 +601,9 @@
   let rowsRequest = 0
   const rows = ref<any[]>([])
   const loading = ref(false)
+  const policyVisible = ref(false)
+  const policyLoading = ref(false)
+  const policyForm = reactive({ id: 0, name: '', policy: 'included', reason: '' })
   const filters = reactive<any>({
     repository_key: '',
     branch: '',
@@ -588,6 +614,13 @@
     coverage_validity: undefined,
     interface_status: undefined,
     api_info_binding_status: undefined,
+    coverage_policy: undefined,
+    resolution_statuses: [],
+    coverage_statuses: [],
+    sync_actions: [],
+    methods: [],
+    coverage_reason: '',
+    api_info_id: undefined,
     scenario_layer: undefined,
     scenario_type: undefined,
     scenario_tag: undefined,
@@ -636,9 +669,14 @@
     return enumStore.colors[index >= 0 ? index : 0]
   }
 
+  function resetRowScope() {
+    rowsRequest += 1
+    rows.value = []
+  }
   async function loadRows() {
+    resetRowScope()
     if (activeTab.value === 'overview') return loadOverview()
-    const request = ++rowsRequest
+    const request = rowsRequest
     loading.value = true
     try {
       const query: Record<string, unknown> = {
@@ -654,6 +692,12 @@
         query.name = filters.name || undefined
         query.status = filters.interface_status
         query.api_info_binding_status = filters.api_info_binding_status
+        query.coverage_policy = filters.coverage_policy
+        for (const [field, key] of Object.entries({ resolution_status__in: 'resolution_statuses', coverage_status__in: 'coverage_statuses', sync_action__in: 'sync_actions', method__in: 'methods' })) {
+          if (filters[key].length) query[field] = filters[key].join(',')
+        }
+        query.coverage_reason = filters.coverage_reason || undefined
+        query.api_info_id = filters.api_info_id || undefined
         query.include_removed = filters.interface_status === 'removed' ? true : undefined
         response = await getCoverageInterfaces(query)
       } else if (activeTab.value === 'cases') {
@@ -739,6 +783,7 @@
     module: any
     moduleIds?: Array<string | number>
   }) {
+    resetRowScope()
     projectProductId.value = filter.projectProduct || undefined
     moduleId.value = filter.module || undefined
     moduleIds.value = filter.moduleIds || []
@@ -751,8 +796,10 @@
     reloadAll()
   }
   function resetTabFilters() {
+    resetRowScope()
     pagination.page = 1
     Object.assign(filters, {
+      resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
       name: '',
       interface_name: '',
       status: undefined,
@@ -760,6 +807,7 @@
       coverage_validity: undefined,
       interface_status: undefined,
       api_info_binding_status: undefined,
+      coverage_policy: undefined,
       scenario_layer: undefined,
       scenario_type: undefined,
       scenario_tag: undefined,
@@ -771,6 +819,7 @@
   }
   function resetFilters() {
     Object.assign(filters, {
+      resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
       repository_key: '',
       branch: '',
       name: '',
@@ -780,6 +829,7 @@
       coverage_validity: undefined,
       interface_status: undefined,
       api_info_binding_status: undefined,
+      coverage_policy: undefined,
       scenario_layer: undefined,
       scenario_type: undefined,
       scenario_tag: undefined,
@@ -889,7 +939,31 @@
       onClick: () => scanDrawer.value?.open(row.id),
     },
   ]
+  function openCoveragePolicy(row: any) {
+    if (policyLoading.value) return
+    Object.assign(policyForm, { id: Number(row.id), name: row.interface_name || row.url || '', policy: row.coverage_policy || 'included', reason: row.coverage_reason || '' })
+    policyVisible.value = true
+  }
+  async function saveCoveragePolicy() {
+    if (policyLoading.value) return false
+    if (policyForm.policy !== 'included' && !policyForm.reason.trim()) {
+      Message.warning('暂不处理或排除覆盖时请填写处理原因')
+      return false
+    }
+    policyLoading.value = true
+    try {
+      await updateCoverageInterfacePolicy([policyForm.id], policyForm.policy, policyForm.reason.trim())
+      Message.success('覆盖策略已更新')
+      await reloadAll()
+      return true
+    } catch {
+      return false
+    } finally {
+      policyLoading.value = false
+    }
+  }
   const interfaceActions = (row: any) => [
+    { label: '编辑', onClick: () => openCoveragePolicy(row) },
     {
 
       label: '查看全景',

@@ -728,8 +728,9 @@
     form.notice_group = null
     await loadProductEditorOptions(form.project_product_id)
   }
-  async function openCreate() {
+  async function openCreate(moduleId?: string | number | null) {
     resetForm()
+    const initialProductId = form.project_product_id
     editorVisible.value = true
     editorLoading.value = true
     try {
@@ -737,6 +738,10 @@
         loadCommonEditorOptions(),
         loadProductEditorOptions(form.project_product_id),
       ])
+      if (editingId.value === null && form.project_product_id === initialProductId && moduleId != null
+        && flattenKeys(moduleTree.value).some((id) => String(id) === String(moduleId))) {
+        form.module_ids = [Number(moduleId)]
+      }
     } finally {
       editorLoading.value = false
     }

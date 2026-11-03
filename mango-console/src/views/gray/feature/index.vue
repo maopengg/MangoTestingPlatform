@@ -6,6 +6,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="query.project_product"
         :module-value="query.module"
@@ -229,6 +230,9 @@
     grayValueTypeOptions,
     variableSourceOptions,
   } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const COMMON_ENV_VALUE = '__common__'
   const table = useTable()
@@ -396,8 +400,10 @@
     dialogRef.value?.show()
   }
 
-  function onAdd() {
-    openDialog({ config_type: 1, status: 1, default_restore: true })
+  async function onAdd() {
+    openDialog({ project_product: null, module: null, config_type: 1, status: 1, default_restore: true })
+    await prefillNavigationModel(navigationCreateRef.value, form)
+    loadDatasourceAliases(form.project_product)
   }
 
   function onEdit(record: any) {

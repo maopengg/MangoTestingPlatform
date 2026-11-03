@@ -73,6 +73,7 @@
 <script lang="ts" setup>
   import { nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
   import ProjectProductNavigationSidebar from './ProjectProductNavigationSidebar.vue'
+  import type { NavigationCreateSelection } from '@/utils/navigation-create-defaults'
 
   type NavigationFilter = {
     projectProduct: string | number | null
@@ -130,6 +131,14 @@
   const bottomScrollWidth = ref(0)
   const horizontalScrollable = ref(false)
   const navigationCollapsed = ref(readNavigationCollapsed())
+  const createSelection = ref<NavigationCreateSelection | null>(null)
+
+  defineExpose({
+    getCreateDefaults: (): NavigationCreateSelection => ({
+      projectProduct: createSelection.value ? createSelection.value.projectProduct : props.modelValue,
+      module: props.showModules ? (createSelection.value ? createSelection.value.module : props.moduleValue) : null,
+    }),
+  })
 
   let tableScrollTarget: HTMLElement | null = null
   let scrollSyncing = false
@@ -227,6 +236,7 @@
   })
 
   function onFilterChange(filter: NavigationFilter) {
+    createSelection.value = { projectProduct: filter.projectProduct, module: filter.module }
     emit('filter-change', filter)
   }
 </script>

@@ -52,10 +52,14 @@ class ModuleCoverageOverviewMixin:
                                       "completed_count": 0, "deferred_count": 0,
                                       "incomplete_interface_count": 0,
                                       "covered_interface_count": 0, "partial_interface_count": 0,
-                                      "uncovered_interface_count": 0, "deferred_interface_count": 0})
+                                      "uncovered_interface_count": 0, "deferred_interface_count": 0,
+                                      "excluded_interface_count": 0})
         gaps = []
         for interface in interfaces:
             if interface.module_id not in module_map:
+                continue
+            if cls.interface_is_excluded(interface):
+                direct[interface.module_id]["excluded_interface_count"] += 1
                 continue
             group = case_groups[(interface.project_product_id, interface.module_id,
                                  interface.repository_key, interface.branch, interface.source_key_hash)]
@@ -150,7 +154,8 @@ class ModuleCoverageOverviewMixin:
         totals = {key: sum(direct[item][key] for item in selected if item in module_map)
                   for key in ("interface_count", "bound_count", "target_count", "completed_count",
                               "deferred_count", "incomplete_interface_count", "covered_interface_count",
-                              "partial_interface_count", "uncovered_interface_count", "deferred_interface_count")}
+                              "partial_interface_count", "uncovered_interface_count", "deferred_interface_count",
+                              "excluded_interface_count")}
         leaves = [row for row in rows if row["is_leaf"]]
         filtered_gaps = [row for row in gaps if row["module_id"] in selected]
         return {"modules": rows, "summary": {**totals, "module_count": len(rows),

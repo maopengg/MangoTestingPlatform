@@ -6,6 +6,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="getSearchItemValue('project_product')"
         :module-value="getSearchItemValue('module')"
@@ -319,6 +320,9 @@
   import { formatProjectProductPath, formatModulePath, getItemValue } from '@/utils/business-format'
   import { setUpdateUserOptions } from '@/utils/update-user'
   import { templateConditionItems, templateTableColumns } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const table = useTable()
   const pagination = usePagination(doRefresh, () => table.tableLoading)
@@ -518,8 +522,9 @@
     loadTemplateEntities()
   }
 
-  function openTemplate(record?: any) {
+  async function openTemplate(record?: any) {
     resetTemplateForm(record)
+    if (!record) await prefillNavigationModel(navigationCreateRef.value, templateForm)
     loadTemplateEntities()
     templateVisible.value = true
   }

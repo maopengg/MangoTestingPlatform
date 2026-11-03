@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         show-modules
         :model-value="getConditionValue('project_product')"
@@ -221,6 +222,9 @@
   import { fieldNames } from '@/setting'
   import { getUserName } from '@/api/user/user'
   import { setUpdateUserOptions } from '@/utils/update-user'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh, () => table.tableLoading)
@@ -261,6 +265,7 @@
         it.value = it.multiple ? [] : ''
       }
     })
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
   }
 
   function onDelete(record: any) {

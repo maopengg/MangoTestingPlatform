@@ -30,8 +30,10 @@ export function setupAssetLoadRecovery(router: Pick<Router, 'onError'>) {
       title: '页面资源加载失败',
       content: '平台可能已更新，或网络暂时中断。请先保留当前未保存的内容，再刷新页面重试。',
       okText: '刷新页面',
-      cancelText: '暂不刷新',
-      hideCancel: false,
+      hideCancel: true,
+      closable: false,
+      maskClosable: false,
+      escToClose: false,
       onOk: () => window.location.reload(),
       onClose: () => { promptOpen = false },
     })

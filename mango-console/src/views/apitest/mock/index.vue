@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="filters.project_product"
         :reset-key="sidebarResetKey"
@@ -120,6 +121,9 @@
     updateMockConfigState,
   } from '@/api/apitest/mock'
   import { booleanOptions, logOptions, methodOptions, tableColumns, tableScrollX } from './config'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -176,7 +180,10 @@
     refresh(true)
   }
 
-  function createConfig() { router.push('/apitest/mock/details') }
+  function createConfig() {
+    const projectProduct = navigationCreateRef.value?.getCreateDefaults().projectProduct
+    router.push({ path: '/apitest/mock/details', query: projectProduct ? { project_product: projectProduct } : {} })
+  }
   function openConfig(id: number) { router.push({ path: '/apitest/mock/details', query: { id } }) }
   function openLogs(record: { id: number; mock_key: string }) {
     logsTarget.value = { id: record.id, mock_key: record.mock_key }

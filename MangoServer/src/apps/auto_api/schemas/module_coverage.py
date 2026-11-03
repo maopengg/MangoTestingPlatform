@@ -1,11 +1,17 @@
 import re
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, StrictInt, field_validator, model_validator
 
 from src.apps.auto_api.enums.case import ApiCaseScenarioTagEnum
-from src.apps.auto_api.enums.module_coverage import ModuleCoverageTestOwnership
+from src.apps.auto_api.enums.module_coverage import ModuleCoverageTestOwnership, ModuleCoveragePolicy
 from src.common.schemas import StrictSchema
+
+
+class ModuleCoveragePolicyUpdate(StrictSchema):
+    interface_ids: list[Annotated[StrictInt, Field(gt=0)]] = Field(min_length=1, max_length=100)
+    policy: ModuleCoveragePolicy
+    reason: str = Field(default="", max_length=2000)
 
 
 class ModuleCoverageCodeEvidence(StrictSchema):

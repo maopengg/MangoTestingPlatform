@@ -7,6 +7,7 @@
     <template #header><TableHeader title="性能测试 / 性能场景" /></template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         show-modules
         :model-value="filters.project_product"
@@ -195,6 +196,9 @@
     updatePerfScenario,
   } from '@/api/perf'
   import { engineOptions, loadTypeOptions, scenarioColumns, scenarioScrollX } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
   const rows = ref<any[]>([])
@@ -284,6 +288,7 @@
       status: 1,
       tags: [],
     })
+    await prefillNavigationModel(navigationCreateRef.value, form)
     createFormRef.value?.clearValidate?.()
     await createDialogRef.value?.show()
   }

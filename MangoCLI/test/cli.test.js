@@ -56,7 +56,7 @@ test("an invalid server token is cleared, reauthorized, and the command is retri
   const fetchImpl = async (url, init = {}) => {
     const value = String(url);
     if (value.includes("/api/cli/auth/version")) {
-      return new Response('{"code":200,"msg":"ok","data":{"version":"7.2.2"}}', { status: 200 });
+      return new Response('{"code":200,"msg":"ok","data":{"version":"7.2.3"}}', { status: 200 });
     }
     if (value.endsWith("/api/cli/auth/token")) {
       return new Response(JSON.stringify({

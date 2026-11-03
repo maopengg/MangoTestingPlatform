@@ -28,7 +28,7 @@
               </a-tag>
             </template>
           </a-table-column>
-          <a-table-column title="链路状态" :width="120">
+          <a-table-column title="调用链解析" :width="120">
             <template #cell="{ record }">
               <a-tag size="small" :color="tagColor(record.resolution_status)">
                 {{ label(record.resolution_status) }}

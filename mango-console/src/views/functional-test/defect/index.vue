@@ -3,6 +3,7 @@
     <template #header><TableHeader title="研发协同 / 缺陷管理" /></template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body show-modules :sticky-horizontal-scroll="false"
         :model-value="navigationProjectProduct" :module-value="navigationModule"
         @filter-change="onNavigationFilterChange" @search="search" @reset-search="reset"
@@ -189,6 +190,9 @@
     getManualCase, postFunctionalDefect, putFunctionalDefect, transitionFunctionalDefect,
   } from '@/api/functional-test'
   import { defectColumns, defectStatusTransitions, emptyDefect } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
   const route = useRoute()
@@ -349,6 +353,7 @@
   async function openEditor(row?: any) {
     const relations = row?.relations || []
     Object.assign(form, emptyDefect(), row ? { ...row, project_product: row.project_product?.id, module: row.module?.id, assignee: row.assignee?.id, case_ids: relations.filter((item: any) => item.case).map((item: any) => item.case), plan_case_ids: relations.filter((item: any) => item.plan_case).map((item: any) => item.plan_case), source_plan_id: relations.find((item: any) => item.plan_id)?.plan_id } : {})
+    if (!row) await prefillNavigationModel(navigationCreateRef.value, form)
     await loadRelations()
     attachmentFileList.value = []
     if (form.source_plan_id) { const selected = [...form.plan_case_ids]; await loadPlanCases(); form.plan_case_ids = selected }

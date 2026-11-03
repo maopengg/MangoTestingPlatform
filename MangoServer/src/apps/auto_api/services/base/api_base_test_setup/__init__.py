@@ -3,12 +3,12 @@
 # @Description:
 # @Time   : 2025-07-04 17:18
 # @Author : 毛鹏
-import re
 import traceback
 from contextlib import nullcontext
 from urllib.parse import urlparse, urljoin
 
 from mangotools.exceptions import MangoToolsError
+from mangotools.data_processor import RegexTool
 
 from src.apps.auto_api.enums import ApiBodyTypeEnum, ApiProtocolTypeEnum, MethodEnum
 from src.apps.auto_api.exceptions import (
@@ -296,15 +296,15 @@ class APIBaseTestSetup(PublicBase):
                 raise AutoApiError(AUTO_API_BASE_API_BASE_TEST_SETUP_CACHE_REGEX_RESPONSE_EXECUTION_FAILED,
                                    value=(operation, index, key))
             try:
-                res = re.findall(value, response.text)
-            except re.error as error:
+                match = RegexTool.search(response.text, value)
+            except MangoToolsError as error:
                 raise AutoApiError(AUTO_API_BASE_API_BASE_TEST_SETUP_CACHE_REGEX_EXPRESSION_FAILED,
-                                   value=(operation, index, key, value, error)) from error
-            if len(res) <= 0:
+                                   value=(operation, index, key, value, error.msg)) from error
+            if match is None:
                 raise AutoApiError(AUTO_API_BASE_API_BASE_TEST_SETUP_CACHE_RESPONSE_EXPRESSION_NO_MATCH,
                                    value=(operation, index, key, value, len(response.text)))
             try:
-                self.test_data.set_cache(key, res[0])
+                self.test_data.set_cache(key, RegexTool.extracted_value(match))
             except (MangoServerError, MangoToolsError) as error:
                 raise AutoApiError(AUTO_API_BASE_API_BASE_TEST_SETUP_CACHE_WRITE_FAILED,
                                    value=(operation, index, key, error.msg)) from error

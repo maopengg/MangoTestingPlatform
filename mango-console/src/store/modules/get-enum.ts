@@ -5,6 +5,7 @@ type EnumOption = { key: number | string; title: string }
 type StateValueType = EnumOption[]
 
 const ENUM_KEYS = [
+  'module_coverage_policy',
   'api_default_assertion_check',
   'api_transient_retry_condition',
   'api_callback_status',
@@ -168,6 +169,8 @@ export const useEnum = defineStore('get-enum', {
     hasEnumData() {
       return (
         Array.isArray(this.method) &&
+        Array.isArray(this.module_coverage_policy) &&
+        this.module_coverage_policy.length > 0 &&
         Array.isArray(this.api_default_assertion_check) &&
         this.api_default_assertion_check.length > 0 &&
         Array.isArray(this.api_transient_retry_condition) &&

@@ -18,9 +18,11 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageScanScope,
     ModuleCoverageScanStatus,
     ModuleCoverageSyncAction,
+    ModuleCoveragePolicy,
 )
 from src.apps.auto_api.exceptions import (
     AutoApiError,
+    MODULE_COVERAGE_ANALYSIS_BLOCKED,
     QUALITY_COVERAGE_MODULE_NOT_FOUND,
     QUALITY_COVERAGE_MODULE_UPLOAD_NOT_ALLOWED,
     QUALITY_COVERAGE_UPLOAD_INVALID,
@@ -194,6 +196,7 @@ class ModuleCoverageScanMixin:
             ).first()
             if target_interface is None:
                 raise AutoApiError(QUALITY_COVERAGE_API_INFO_INVALID)
+            cls.require_interface_included(target_interface)
             if target_interface.module_id not in cls.module_ids(module_id,
                                                                 bool(data.get("include_descendants", False))):
                 raise AutoApiError(QUALITY_COVERAGE_API_INFO_INVALID)
@@ -643,6 +646,8 @@ class ModuleCoverageScanMixin:
             )
             module_interface = cls.adopt_legacy_module_interface_state(module_interface)
             previous = module_interface.current_snapshot
+            if module_interface.coverage_policy != ModuleCoveragePolicy.INCLUDED and (not inventory or payload.get("mermaid")):
+                raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
             if scan.scope_type == ModuleCoverageScanScope.PROJECT:
                 module_id = module_interface.module_id
             if scan.scope_type == ModuleCoverageScanScope.INTERFACE:
@@ -710,6 +715,7 @@ class ModuleCoverageScanMixin:
     @transaction.atomic
     def upload_cases(cls, scan_id: int, items: list[dict]) -> dict:
         scan = cls.get_locked_uploading_scan(scan_id)
+        ProjectProduct.objects.select_for_update().get(id=scan.project_product_id)
         if cls.is_inventory_scan(scan):
             raise AutoApiError(QUALITY_COVERAGE_FIELD_INVALID, value=("scope_type", scan.scope_type))
         cls.validate_batch(items)
@@ -733,7 +739,16 @@ class ModuleCoverageScanMixin:
                 scan=scan,
                 module_id=module_id,
                 source_key_hash=interface_source_key_hash,
-            ).first()
+            ).select_related("module_interface").first()
+            if interface_snapshot is not None:
+                cls.require_interface_included(interface_snapshot)
+            elif ModuleCoverageModuleInterface.objects.filter(
+                project_product_id=scan.project_product_id, module_id=module_id,
+                repository_key=scan.repository_key, branch=scan.branch,
+                source_key_hash=interface_source_key_hash,
+                coverage_policy__in=[ModuleCoveragePolicy.DEFERRED, ModuleCoveragePolicy.EXCLUDED],
+            ).exists():
+                raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
             if interface_snapshot is not None and (
                     payload["method"] != interface_snapshot.method
                     or payload["url"] != interface_snapshot.url
@@ -880,7 +895,9 @@ class ModuleCoverageScanMixin:
         )
         received_interfaces = uploaded_interfaces.count()
         resolution = cls.interface_resolution_summary(
-            uploaded_interfaces.only(
+            uploaded_interfaces.exclude(module_interface__coverage_policy__in=[
+                ModuleCoveragePolicy.DEFERRED, ModuleCoveragePolicy.EXCLUDED,
+            ]).only(
                 "source_key", "mermaid", "node_ids", "gap_reason",
                 "next_action", "resumption_point",
             ),
@@ -913,9 +930,12 @@ class ModuleCoverageScanMixin:
         interface_snapshot_ids = set(uploaded_interfaces.values_list("id", flat=True))
         invalid_case_snapshot_count = 0
         for snapshot in scan.case_snapshots.select_related(
-                "coverage_case", "interface_snapshot",
+                "coverage_case__module_interface", "interface_snapshot__module_interface",
         ):
             interface_snapshot = snapshot.interface_snapshot
+            if ((interface_snapshot is not None and cls.interface_analysis_blocked(interface_snapshot))
+                    or cls.interface_analysis_blocked(snapshot.coverage_case)):
+                continue
             payload = snapshot.payload or {}
             if interface_snapshot is not None and (
                     interface_snapshot.id not in interface_snapshot_ids

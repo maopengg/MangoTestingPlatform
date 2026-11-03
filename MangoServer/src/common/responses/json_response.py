@@ -67,8 +67,9 @@ def extract_jsonpath_value(
         cache_key: str | None = None,
 ):
     """Read JSONPath data and add the business operation that failed."""
-    ensure_jsonpath_source(source)
     try:
+        JsonTool.validate_json_path_expression(expression)
+        ensure_jsonpath_source(source)
         return JsonTool.get_json_path_value(source, expression)
     except MangoToolsError as error:
         key_context = f'，目标缓存Key：【{cache_key}】' if cache_key else ''

@@ -10,6 +10,7 @@ export interface PageResult<T = any> {
 const base = '/api/module-coverage'
 
 export interface CoverageOverviewCounts {
+  excluded_interface_count?: number
   interface_count: number
   bound_count: number
   target_count: number
@@ -86,6 +87,10 @@ export function getCoverageCases(data: Record<string, unknown>) {
 
 export function getCoverageInterfaces(data: Record<string, unknown>) {
   return get<PageResult>({ url: `${base}/interfaces`, data: () => data })
+}
+
+export function updateCoverageInterfacePolicy(interfaceIds: number[], policy: string, reason = '') {
+  return post({ url: `${base}/interfaces/policy`, data: () => ({ interface_ids: interfaceIds, policy, reason }) })
 }
 
 export function getCoverageInterfaceDetail(data: Record<string, unknown>) {

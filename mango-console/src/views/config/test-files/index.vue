@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="projectProductCondition?.value"
         :reset-key="sidebarResetKey"
@@ -200,6 +201,9 @@
   import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
   import { getUserName } from '@/api/user/user'
   import { setUpdateUserOptions } from '@/utils/update-user'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const pagination = usePagination(doRefresh, () => table.tableLoading)
   const { onSelectionChange } = useRowSelection()
@@ -321,6 +325,7 @@
     uploadFileList.value = []
     uploadForm.project_product = ''
     uploadForm.allow_download = true
+    void prefillNavigationModel(navigationCreateRef.value, uploadForm)
     uploadModalVisible.value = true
   }
 

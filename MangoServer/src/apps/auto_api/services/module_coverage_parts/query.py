@@ -8,6 +8,9 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageResolutionStatus,
     ModuleCoverageScanStatus,
     ModuleCoverageValidity,
+    ModuleCoveragePolicy,
+    ModuleCoverageInterfaceCoverageStatus,
+    ModuleCoverageSyncAction,
 )
 from src.apps.auto_api.models import (
     ModuleCoverageCase,
@@ -24,11 +27,14 @@ class ModuleCoverageQueryMixin:
             repository_key: str | None = None,
             branch: str | None = None,
             queryset=None,
+            include_excluded=False,
     ):
         queryset = (queryset if queryset is not None else ModuleCoverageCase.objects.all()).filter(
             removed_at__isnull=True,
             current_snapshot__isnull=False,
         )
+        if not include_excluded:
+            queryset = queryset.filter(~Q(module_interface__coverage_policy=ModuleCoveragePolicy.EXCLUDED))
         if project_product_id:
             queryset = queryset.filter(project_product_id=project_product_id)
         if module_id:
@@ -47,13 +53,42 @@ class ModuleCoverageQueryMixin:
             page_size: int = 20,
             include_removed: bool = False,
             resolution_status: str | None = None,
+            coverage_policy: str | None = None,
+            resolution_statuses: list[str] | None = None,
+            coverage_statuses: list[str] | None = None,
+            methods: list[str] | None = None,
+            sync_actions: list[str] | None = None,
+            coverage_reason: str | None = None,
+            api_info_id: int | None = None,
     ) -> dict:
         page = max(1, int(page))
         page_size = min(100, max(1, int(page_size)))
+        resolution_statuses = resolution_statuses or ([resolution_status] if resolution_status else [])
+        for values, choices, field in (
+            (resolution_statuses, ModuleCoverageResolutionStatus, "resolution_status"),
+            (coverage_statuses or [], ModuleCoverageInterfaceCoverageStatus, "coverage_status"),
+            (sync_actions or [], ModuleCoverageSyncAction, "sync_action"),
+        ):
+            for value in values:
+                cls.validate_choice(field, value, choices)
+        if methods:
+            queryset = queryset.filter(method__in=methods)
+        if sync_actions:
+            queryset = queryset.filter(sync_action__in=sync_actions)
+        if coverage_reason:
+            queryset = queryset.filter(module_interface__coverage_reason__icontains=coverage_reason)
+        if api_info_id is not None:
+            queryset = queryset.filter(api_info_id=api_info_id)
         queryset = queryset.filter(
             Q(module_interface__current_snapshot_id=F("id"))
             | Q(module_interface__isnull=True, is_current=True)
         )
+        if coverage_policy:
+            cls.validate_choice("coverage_policy", coverage_policy, ModuleCoveragePolicy)
+            policy_scope = Q(module_interface__coverage_policy=coverage_policy)
+            if coverage_policy == ModuleCoveragePolicy.INCLUDED:
+                policy_scope |= Q(module_interface__isnull=True)
+            queryset = queryset.filter(policy_scope)
         if not include_removed:
             queryset = queryset.filter(
                 lifecycle_status=ModuleCoverageInterfaceStatus.ACTIVE,
@@ -62,14 +97,14 @@ class ModuleCoverageQueryMixin:
         queryset = queryset.order_by(
             "project_product_id", "module_id", "method", "url", "id",
         )
-        if resolution_status:
+        if resolution_statuses or coverage_statuses:
             matched_interfaces = [
                 item for item in queryset
-                if cls.interface_resolution(item.mermaid, item.node_ids)["status"]
-                   == resolution_status
+                if not resolution_statuses or cls.interface_resolution(item.mermaid, item.node_ids)["status"]
+                   in resolution_statuses
             ]
             count = len(matched_interfaces)
-            interfaces = matched_interfaces[(page - 1) * page_size:page * page_size]
+            interfaces = matched_interfaces if coverage_statuses else matched_interfaces[(page - 1) * page_size:page * page_size]
         else:
             count = queryset.count()
             interfaces = list(queryset[(page - 1) * page_size:page * page_size])
@@ -96,7 +131,7 @@ class ModuleCoverageQueryMixin:
             )
         case_stats = {
             tuple(row[field] for field in case_group_fields): row
-            for row in cls.active_cases().filter(case_scope).values(*case_group_fields).annotate(
+            for row in cls.active_cases(include_excluded=True).filter(case_scope).values(*case_group_fields).annotate(
                 case_count=Count("id"),
                 target_case_count=Count(
                     "id",
@@ -219,6 +254,7 @@ class ModuleCoverageQueryMixin:
                 "next_action": item.next_action,
                 "resumption_point": item.resumption_point,
                 "lifecycle_status": item.lifecycle_status,
+                **cls.interface_policy_fields(item),
                 "removed_at": item.removed_at,
                 "api_info_id": item.api_info_id,
                 "api_info_revision_id": item.api_info_revision_id,
@@ -233,15 +269,12 @@ class ModuleCoverageQueryMixin:
                     round(effective_completed * 100 / target, 2) if target else 0
                 ),
             }
-            if target and effective_completed == target:
-                row["coverage_status"] = "covered"
-            elif not target and row["deferred_case_count"]:
-                row["coverage_status"] = ModuleCoverageCaseStatus.DEFERRED
-            elif effective_completed:
-                row["coverage_status"] = "partial"
-            else:
-                row["coverage_status"] = "uncovered"
+            row["coverage_status"] = cls.interface_coverage_status(item, target, effective_completed, row["deferred_case_count"])
             rows.append(row)
+        if coverage_statuses:
+            rows = [row for row in rows if row["coverage_status"] in coverage_statuses]
+            count = len(rows)
+            rows = rows[(page - 1) * page_size:page * page_size]
         return {
             "items": rows,
             "count": count,
@@ -322,6 +355,11 @@ class ModuleCoverageQueryMixin:
                 "full_path": interface_snapshot.module.get_full_path(),
             } if interface_snapshot.module_id else None,
             "lifecycle_status": interface_snapshot.lifecycle_status,
+            **cls.interface_policy_fields(interface_snapshot),
+            "coverage_status": cls.interface_coverage_status(
+                interface_snapshot, target, completed,
+                sum(item.status == ModuleCoverageCaseStatus.DEFERRED for item in cases),
+            ),
             "first_scan_id": first_scan_id,
             "latest_scan_id": interface_snapshot.scan_id,
             "latest_commit_sha": interface_snapshot.scan.commit_sha,
@@ -470,6 +508,8 @@ class ModuleCoverageQueryMixin:
             interfaces = interfaces.filter(repository_key=repository_key)
         if branch:
             interfaces = interfaces.filter(branch=branch)
+        excluded_interface_count = interfaces.filter(module_interface__coverage_policy=ModuleCoveragePolicy.EXCLUDED).count()
+        interfaces = interfaces.exclude(module_interface__coverage_policy=ModuleCoveragePolicy.EXCLUDED)
         current_interfaces = list(interfaces)
         interface_usage_total = len(current_interfaces)
         if module_id:
@@ -577,6 +617,7 @@ class ModuleCoverageQueryMixin:
         latest_scan = latest_scan.order_by("-id").first()
         return {
             "case_total": total,
+            "excluded_interface_count": excluded_interface_count,
             "target_case_count": target,
             "pending_case_count": queryset.filter(
                 status=ModuleCoverageCaseStatus.PENDING_CREATE,

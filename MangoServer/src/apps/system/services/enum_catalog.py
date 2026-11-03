@@ -13,6 +13,7 @@ from src.apps.auto_api.enums.callback import (
 )
 from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
 from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
+from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus, ModuleCoveragePolicy
 
 from src.apps.auto_api.enums import (
     ApiCaseConfigurationFilterEnum,
@@ -102,6 +103,12 @@ class EnumCatalogService:
     @classmethod
     def catalog(cls) -> dict[str, Any]:
         enum_data = {
+            'module_coverage_policy': [
+                {'key': value, 'title': title} for value, title in ModuleCoveragePolicy.choices
+            ],
+            'module_coverage_interface_coverage_status': [
+                {'key': value, 'title': title} for value, title in ModuleCoverageInterfaceCoverageStatus.choices
+            ],
             'api_default_assertion_check': ApiDefaultAssertionCheck.get_option(),
             'api_transient_retry_condition': ApiTransientRetryCondition.get_option(),
             'api_callback_status': CallbackRunStatus.get_option(),

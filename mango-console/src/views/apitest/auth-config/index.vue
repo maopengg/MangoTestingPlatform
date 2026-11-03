@@ -6,6 +6,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
           contained-body
           :model-value="projectProductCondition?.value"
           :reset-key="sidebarResetKey"
@@ -373,6 +374,9 @@
     putApiAuthConfig,
     putApiAuthConfigStatus,
   } from '@/api/apitest/auth-config'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
   const route = useRoute()
@@ -652,7 +656,12 @@
     data.isAdd = true
     resetFormItems()
     modalDialogRef.value?.toggle()
-    void loadTargetOptions()
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
+      .then(() => {
+        if (!data.isAdd) return
+        onFormProjectProductChange()
+        return loadTargetOptions()
+      })
   }
 
   function fillCustomCodeExample() {

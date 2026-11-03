@@ -4,9 +4,10 @@ from .module_coverage_parts.foundation import ModuleCoverageFoundationMixin
 from .module_coverage_parts.query import ModuleCoverageQueryMixin
 from .module_coverage_parts.scan import ModuleCoverageScanMixin
 from .module_coverage_parts.overview import ModuleCoverageOverviewMixin
+from .module_coverage_parts.policy import ModuleCoveragePolicyMixin
 
 
-class ModuleCoverageService(ModuleCoverageFoundationMixin, ModuleCoverageScanMixin, ModuleCoverageCompletionMixin,
+class ModuleCoverageService(ModuleCoveragePolicyMixin, ModuleCoverageFoundationMixin, ModuleCoverageScanMixin, ModuleCoverageCompletionMixin,
                             ModuleCoverageQueryMixin, ModuleCoverageExecutionMixin, ModuleCoverageOverviewMixin):
     MAX_BATCH_SIZE = 100
     PLACEHOLDER_FLOW_MARKERS = (

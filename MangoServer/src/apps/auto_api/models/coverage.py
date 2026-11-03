@@ -17,6 +17,7 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageSyncAction,
     ModuleCoverageTestOwnership,
     ModuleCoverageValidity,
+    ModuleCoveragePolicy,
 )
 from src.apps.test_center.models import ProjectProduct, ProductModule
 from src.apps.user.models import User
@@ -243,6 +244,9 @@ class ModuleCoverageModuleInterface(models.Model):
     branch = models.CharField(verbose_name="分支", max_length=256)
     source_key = models.CharField(verbose_name="接口稳定来源Key", max_length=512)
     source_key_hash = models.CharField(verbose_name="接口稳定来源Key哈希", max_length=64, editable=False)
+    coverage_policy = models.CharField(verbose_name="覆盖策略", max_length=16,
+                                       choices=ModuleCoveragePolicy.choices, default=ModuleCoveragePolicy.INCLUDED)
+    coverage_reason = models.TextField(verbose_name="覆盖策略处理原因", blank=True, default="")
     api_info = models.ForeignKey(
         to="ApiInfo", to_field="id", related_name="module_coverage_consumers",
         null=True, blank=True, on_delete=models.SET_NULL,

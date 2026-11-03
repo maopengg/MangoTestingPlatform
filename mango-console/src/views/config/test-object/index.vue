@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="projectProductCondition?.value"
         :reset-key="sidebarResetKey"
@@ -267,6 +268,9 @@
   import TestTargetDisplay from './components/TestTargetDisplay.vue'
   import TestConnectionDialog from './components/TestConnectionDialog.vue'
   import { emptyTargetConfig, validateTargetConfig } from './target-config'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
 
@@ -321,6 +325,7 @@
         it.value = it.multiple ? [] : ''
       }
     })
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
   }
 
   function onDelete(record: any) {

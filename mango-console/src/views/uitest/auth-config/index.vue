@@ -6,6 +6,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="query.project_product"
         :reset-key="sidebarResetKey"
@@ -282,6 +283,9 @@
     putUiAuthConfigStatus,
   } from '@/api/uitest/auth-config'
   import type { UiAuthCacheConfig, UiAuthConfigPayload } from '@/types/ui-test/case'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   type AuthTableAction = {
     label: string
@@ -476,6 +480,8 @@
       expire_notice_minutes: 30,
     })
     resetJsonEditors()
+    void prefillNavigationModel(navigationCreateRef.value, form, () => editingId.value === null)
+      .then(() => { if (editingId.value === null) onFormProjectProductChange() })
     modalDialogRef.value?.toggle()
   }
 

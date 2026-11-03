@@ -14,6 +14,7 @@ from src.apps.auto_api.models import ApiInfo
 from src.apps.auto_api.schemas.case_schema import normalize_body_config_by_type, validate_body_config
 from src.apps.auto_api.schemas.config_fields import API_INFO_CONFIG_FIELDS
 from src.apps.auto_api.services.api_info.config import ApiInfoConfigService
+from src.apps.auto_api.services.api_case.parameter_validation import ApiCaseParameterValidationService
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.auto_api.services.config.version import ApiConfigDiffService
 from src.apps.auto_api.services.config.version import ApiConfigSnapshotService
@@ -33,6 +34,9 @@ class ApiInfoMutationService:
             config["posterior_json_path"] = payload.get("posterior_response")
         if "posterior_response_text" in payload:
             config["posterior_re"] = payload.get("posterior_response_text")
+        for field, label in (('posterior_json_path', '响应JSON提取'), ('posterior_re', '响应文本提取')):
+            if field in config:
+                config[field] = ApiCaseParameterValidationService.validate_extract(config[field], label)
         if config.get("body_config") is not None:
             body_type = config.get("body_type") or payload.get("body_type") or ApiBodyTypeEnum.NONE.value
             config["body_config"] = normalize_body_config_by_type(body_type, config["body_config"])

@@ -49,6 +49,19 @@ class ModuleCoverageValidity(models.TextChoices):
     INVALID = "invalid", "已失效"
 
 
+class ModuleCoverageInterfaceCoverageStatus(models.TextChoices):
+    COVERED = "covered", "已覆盖"
+    PARTIAL = "partial", "部分覆盖"
+    UNCOVERED = "uncovered", "未覆盖"
+    DEFERRED = "deferred", "暂不处理"
+
+
+class ModuleCoveragePolicy(models.TextChoices):
+    INCLUDED = "included", "纳入覆盖"
+    DEFERRED = "deferred", "暂不处理"
+    EXCLUDED = "excluded", "排除覆盖"
+
+
 class ModuleCoverageResolutionStatus(models.TextChoices):
     RESOLVED = "resolved", "链路完整"
     PLACEHOLDER = "placeholder", "占位图"

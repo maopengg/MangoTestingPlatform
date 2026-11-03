@@ -209,6 +209,9 @@ QUALITY_COVERAGE_API_INFO_INVALID = ErrorDefinition(code=31028,
 QUALITY_COVERAGE_API_INFO_UPLOAD_INVALID = ErrorDefinition(code=31029, message='上传接口与单接口扫描目标不一致')
 QUALITY_COVERAGE_API_INFO_MODULE_NOT_FOUND = ErrorDefinition(code=31030,
                                                              message='模块覆盖接口不存在或已失效，请使用 list_module_coverage_interfaces 返回的当前接口快照ID查询')
+MODULE_COVERAGE_ANALYSIS_BLOCKED = ErrorDefinition(code=31500, message='接口覆盖策略为暂不处理或排除覆盖，请先人工重新纳入后再分析链路或生成场景')
+MODULE_COVERAGE_POLICY_REASON_REQUIRED = ErrorDefinition(code=31501, message='暂不处理或排除覆盖时必须填写处理原因')
+MODULE_COVERAGE_POLICY_INPUT_INVALID = ErrorDefinition(code=31502, message='接口覆盖策略参数无效：{}')
 WEBSOCKET_API_TEST_ENVIRONMENT_PATH_FAILED = ErrorDefinition(code=1301,
                                                              message='WebSocket连接失败，请检查测试环境地址、路径、网络和鉴权信息：{}')
 WEBSOCKET_API_CONFIG_INVALID = ErrorDefinition(code=1302, message='WebSocket消息脚本配置错误：{}')
@@ -459,3 +462,4 @@ API_AUTH_CONTEXT_MISMATCH = ErrorDefinition(code=31218, message='用例与授权
 API_AUTH_TARGET_INVALID = ErrorDefinition(code=31219, message='授权适用目标地址无效或与当前请求不匹配，请选择当前产品、被测环境中已配置的地址；留空使用默认地址')
 API_CALLBACK_CONFIG_INVALID = ErrorDefinition(code=31220, message='回调验证配置无效：{}')
 API_CALLBACK_EXECUTION_FAILED = ErrorDefinition(code=31221, message='回调验证未通过：{}')
+API_EXTRACTION_CONFIG_INVALID = ErrorDefinition(code=31222, message='{}配置错误（第{}项）：{}')

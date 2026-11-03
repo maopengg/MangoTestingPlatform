@@ -205,6 +205,63 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
                     result = ModuleCoverageService.interface_page(source)
                 self.assertEqual(result["items"][0]["coverage_status"], expected)
 
+    def test_interface_progress_multi_filter_applies_before_pagination(self):
+        targets = []
+        for identity in range(1, 5):
+            target = MagicMock()
+            for key, value in vars(interface(identity, 1)).items():
+                setattr(target, key, value)
+            target.module_interface_id = None
+            targets.append(target)
+        targets[2].mermaid = ""
+        targets[2].node_ids = []
+        source = queryset(targets)
+        stats = [{"project_product_id": 1, "module_id": 1, "repository_key": "backend",
+                  "branch": "main", "interface_source_key_hash": f"source-{identity}",
+                  "target_case_count": 1, "effective_completed_case_count": 1}
+                 for identity in (2, 4)]
+        cases = MagicMock()
+        cases.filter.return_value.values.return_value.annotate.return_value = stats
+        with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
+                patch("src.apps.auto_api.services.module_coverage_parts.query."
+                      "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
+            snapshots.filter.return_value.values.return_value.annotate.return_value = []
+            result = ModuleCoverageService.interface_page(source, page=2, page_size=1,
+                                                          coverage_statuses=["covered"])
+            self.assertEqual(result["count"], 2)
+            self.assertEqual([row["id"] for row in result["items"]], [4])
+            result = ModuleCoverageService.interface_page(source, coverage_statuses=["covered", "uncovered"])
+            self.assertEqual(result["count"], 4)
+            result = ModuleCoverageService.interface_page(source, coverage_statuses=["partial"])
+            self.assertEqual(result["count"], 0)
+            self.assertEqual(result["items"], [])
+            result = ModuleCoverageService.interface_page(source, coverage_statuses=["uncovered"],
+                                                          resolution_statuses=["resolved"])
+            self.assertEqual(result["count"], 1)
+            self.assertEqual([row["id"] for row in result["items"]], [1])
+
+    def test_interface_search_filters_database_fields_and_validates_states(self):
+        from src.apps.auto_api.exceptions import AutoApiError
+        source = queryset()
+        source.count.return_value = 0
+        source.__getitem__.return_value = []
+        cases = MagicMock()
+        cases.filter.return_value.values.return_value.annotate.return_value = []
+        with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
+                patch("src.apps.auto_api.services.module_coverage_parts.query."
+                      "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
+            snapshots.filter.return_value.values.return_value.annotate.return_value = []
+            ModuleCoverageService.interface_page(source, methods=["GET", "POST"],
+                                                 sync_actions=["created", "updated"],
+                                                 coverage_reason="外部服务", api_info_id=123)
+            for condition in ({"method__in": ["GET", "POST"]}, {"sync_action__in": ["created", "updated"]},
+                              {"module_interface__coverage_reason__icontains": "外部服务"}, {"api_info_id": 123}):
+                source.filter.assert_any_call(**condition)
+            for condition in ({"coverage_statuses": ["bad"]}, {"resolution_statuses": ["bad"]},
+                              {"sync_actions": ["bad"]}):
+                with self.assertRaises(AutoApiError):
+                    ModuleCoverageService.interface_page(source, **condition)
+
     def test_actual_case_assessment_rejects_legacy_or_incompatible_snapshot(self):
         from src.apps.auto_api.tests.test_module_coverage import valid_payload
 
@@ -251,10 +308,10 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         view = ModuleCoverageCaseViews()
         view.action = "overview"
         user = SimpleNamespace(id=1)
-        request = SimpleNamespace(method="GET", path="/api/module-coverage/overview", data={},
+        request = SimpleNamespace(method="GET", path="/api/api/module-coverage/overview", data={},
                                   query_params=QueryDict(), user=SimpleNamespace(user_obj=user))
         with patch.object(PermissionMenuService, "is_effective_super_admin", return_value=False):
-            for keys, expected in (({"api.module_coverage"}, True), ({"index.home"}, False), (set(), False)):
+            for keys, expected in (({"api.module_coverage:read"}, True), ({"index.home:read"}, False), (set(), False)):
                 with patch.object(PermissionMenuService, "permission_keys_for_user", return_value=keys):
                     self.assertEqual(MenuActionPermission().has_permission(request, view), expected)
 

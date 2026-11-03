@@ -462,6 +462,9 @@
   }
   function openLogs() { logsVisible.value = true }
   onMounted(async () => {
+    if (!route.query.id && typeof route.query.project_product === 'string') {
+      form.project_product = route.query.project_product
+    }
     await Promise.all([loadDetail(), loadAssertionMethods()])
     if (route.query.logs === '1' && form.id) await openLogs()
   })

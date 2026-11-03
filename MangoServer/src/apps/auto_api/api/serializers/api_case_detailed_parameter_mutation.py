@@ -1,5 +1,4 @@
 import inspect
-import re
 
 from rest_framework import serializers
 
@@ -13,20 +12,11 @@ from src.apps.auto_api.exceptions import (
     AUTO_API_API_CASE_DETAILED_PARAMETER_SQL_ASSERTION_NOT_FOUND,
     AUTO_API_API_CASE_DETAILED_PARAMETER_SQL_ASSERTION_REQUIRED,
     AUTO_API_API_CASE_DETAILED_PARAMETER_SQL_ASSERTION_REQUIRED_CODE_SQL_ASSERTION_REQUIRED,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_TYPE_NOT_FOUND,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_REQUIRED,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_CACHE_RESPONSE_ASSERTION_EXPRESSION_INVALID,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_REQUIRED_CODE_RESPONSE_ASSERTION_REQUIRED,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_NOT_FOUND,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_CACHE_REQUIRED,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_REQUIRED,
-    AUTO_API_API_CASE_DETAILED_PARAMETER_REGEX_RESPONSE_ASSERTION_EXPRESSION_INVALID,
     AutoApiError,
 )
 from src.apps.auto_api.models import ApiCaseDetailed, ApiCaseDetailedParameter
 from src.apps.auto_api.schemas.case_schema import (
     ApiGeneralAssertionItem,
-    ApiJsonPathAssertionItem,
     ApiKeyValueItem,
     ApiSqlAssertionItem,
     normalize_body_config_by_type,
@@ -38,6 +28,7 @@ from src.apps.auto_api.schemas.case_schema import (
     validate_data_source_operation_list,
 )
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
+from src.apps.auto_api.services.api_case.parameter_validation import ApiCaseParameterValidationService
 from src.common.testing import ObtainAssertion
 
 
@@ -149,39 +140,7 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
         return validate_json_object(value, '响应JSON全匹配断言', allow_list=True)
 
     def validate_ass_jsonpath(self, value):
-        items = validate_model_list(value, ApiJsonPathAssertionItem, '响应jsonpath断言')
-        assertion = ObtainAssertion(mysql_conn=None, test_data=None)
-        for index, item in enumerate(items, start=1):
-            assertion_type = str(item.get('assertion_type') or 'jsonpath').lower()
-            item['assertion_type'] = assertion_type
-            if assertion_type not in {'jsonpath', 'regex', 'cache'}:
-                raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_TYPE_NOT_FOUND,
-                                   value=(index, assertion_type))
-            if not item.get('actual'):
-                expression_names = {'jsonpath': 'JSONPath', 'regex': '正则表达式', 'cache': '缓存表达式'}
-                expression_name = expression_names.get(assertion_type, '提取表达式')
-                raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_REQUIRED,
-                                   value=(index, expression_name))
-            if assertion_type == 'regex':
-                try:
-                    re.compile(item['actual'])
-                except re.error as error:
-                    raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_REGEX_RESPONSE_ASSERTION_EXPRESSION_INVALID,
-                                       value=(index, error)) from error
-            if assertion_type == 'cache' and not re.fullmatch(
-                    r'\$\{\{[^{}]+\}\}', str(item['actual']).strip()
-            ):
-                raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_CACHE_RESPONSE_ASSERTION_EXPRESSION_INVALID,
-                                   value=(index,))
-            method = item.get('method')
-            if not method:
-                raise AutoApiError(
-                    AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_REQUIRED_CODE_RESPONSE_ASSERTION_REQUIRED,
-                    value=(index,))
-            if not callable(getattr(assertion, method, None)):
-                raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_RESPONSE_ASSERTION_NOT_FOUND,
-                                   value=(index, method))
-        return items
+        return ApiCaseParameterValidationService.validate_jsonpath(value)
 
     def validate_ass_schema(self, value):
         return validate_json_object(value, 'schema配置')
@@ -208,15 +167,7 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
 
     @staticmethod
     def _validate_posterior_extract(value, field_name):
-        items = validate_model_list(value, ApiKeyValueItem, field_name)
-        for index, item in enumerate(items, start=1):
-            if not item.get('key'):
-                raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_CACHE_REQUIRED, value=(field_name, index))
-            if not item.get('value'):
-                expression_name = 'JSONPath' if field_name == '响应JSON提取' else '正则表达式'
-                raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_REQUIRED,
-                                   value=(field_name, index, expression_name))
-        return items
+        return ApiCaseParameterValidationService.validate_extract(value, field_name)
 
     def validate_posterior_sleep(self, value):
         if value is None:

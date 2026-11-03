@@ -10,6 +10,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :sticky-horizontal-scroll="false"
         :model-value="getSearchItemValue('project_product')"
@@ -655,6 +656,9 @@
     entityTableColumns,
     fieldRuleColumns,
   } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const table = useTable()
   const sidebarResetKey = ref(0)
@@ -943,8 +947,9 @@
     })
   }
 
-  function openEntity(record?: any) {
+  async function openEntity(record?: any) {
     resetEntityForm(record)
+    if (!record) await prefillNavigationModel(navigationCreateRef.value, entityForm)
     loadDatasourceAliases(entityForm.project_product)
     syncFieldsAfterSave.value = !record?.id
     entityDiscoveredColumns.value = []

@@ -40,7 +40,7 @@
 
           type="primary"
           size="small"
-          @click="emit('add')"
+          @click="emit('add', activeProject || undefined)"
           >新增产品</a-button
         >
       </a-space>

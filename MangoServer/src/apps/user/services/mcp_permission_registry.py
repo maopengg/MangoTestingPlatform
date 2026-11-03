@@ -352,6 +352,7 @@ MCP_PERMISSION_RULES = {
     'update_grpc_service': {'permission_key': 'api.info:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'update_module_coverage_case_binding': {'permission_key': 'api.module_coverage:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'update_module_coverage_interface_binding': {'permission_key': 'api.module_coverage:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
+    'update_module_coverage_interface_policy': {'permission_key': 'api.module_coverage:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'update_module_coverage_scan': {'permission_key': 'api.module_coverage:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'update_product_module': {'permission_key': 'config.product:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'update_pytest_case_file': {'permission_key': 'pytest.case:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},

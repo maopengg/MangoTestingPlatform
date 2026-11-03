@@ -9,6 +9,7 @@ from src.apps.auto_api.enums.module_coverage import (
 from src.apps.auto_api.exceptions import (
     AutoApiError,
     QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND,
+    MODULE_COVERAGE_ANALYSIS_BLOCKED,
 )
 from src.apps.auto_api.models import ApiCase, ApiCaseRevision
 from src.apps.auto_api.models import (
@@ -63,6 +64,8 @@ class ModuleCoverageExecutionMixin:
     @transaction.atomic
     def bind_api_case(cls, coverage_case_id: int, api_case_id: int) -> ModuleCoverageCase:
         item = ModuleCoverageCase.objects.get(id=coverage_case_id, removed_at__isnull=True)
+        if cls.interface_analysis_blocked(item):
+            raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
         api_case = ApiCase.objects.filter(
             id=api_case_id,
             project_product_id=item.project_product_id,

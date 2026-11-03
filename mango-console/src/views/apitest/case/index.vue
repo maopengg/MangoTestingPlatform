@@ -138,6 +138,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         show-modules
         :model-value="getConditionValue('project_product')"
@@ -739,6 +740,9 @@
     submitApiCasePrepublication,
     unpublishApiCaseRelease,
   } from '@/api/apitest/case-version'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
 
@@ -963,6 +967,7 @@
         it.value = it.multiple ? [] : ''
       }
     })
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
   }
 
   function onDelete(record: any) {

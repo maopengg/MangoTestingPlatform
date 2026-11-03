@@ -60,6 +60,8 @@ class ModuleCoverageInterfaceSerializer(serializers.Serializer):
     effective_invalid_case_count = serializers.IntegerField()
     coverage_rate = serializers.FloatField()
     coverage_status = serializers.CharField()
+    coverage_policy = serializers.CharField()
+    coverage_reason = serializers.CharField(allow_blank=True)
     resolution_status = serializers.CharField()
     resolution_reason = serializers.CharField(allow_blank=True)
     gap_reason = serializers.CharField(allow_blank=True)

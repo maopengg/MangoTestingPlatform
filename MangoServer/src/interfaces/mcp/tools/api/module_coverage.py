@@ -238,10 +238,17 @@ def register_module_coverage_tools(mcp):
             resolution_status: str | None = None,
             api_info_binding_status: str | None = None,
             include_removed: bool = False,
+            coverage_policy: str | None = None,
+            resolution_statuses: list[str] | None = None,
+            coverage_statuses: list[str] | None = None,
+            methods: list[str] | None = None,
+            sync_actions: list[str] | None = None,
+            coverage_reason: str | None = None,
+            api_info_id: int | None = None,
             page: int = 1,
             page_size: int = 20,
     ) -> dict:
-        """按稳定接口身份聚合最新覆盖快照，返回ApiInfo绑定和Case覆盖统计。"""
+        """按稳定接口身份分页查询。支持多选链路解析、覆盖进度、变更和请求方法，以及处理原因、ApiInfo编号筛选；先筛选再分页。coverage_policy可选included/deferred/excluded。深扫前读取覆盖策略；暂不处理和排除项仅基础盘点，不生成图或Case。仅excluded不计入覆盖分母，自动化覆盖进度仍单独计算。"""
         queryset = ApiQuerySelector.module_coverage_interface_snapshot().filter(
             project_product_id=project_product_id,
         ).select_related(
@@ -266,9 +273,25 @@ def register_module_coverage_tools(mcp):
             page_size,
             include_removed,
             resolution_status,
+            coverage_policy,
+            resolution_statuses=resolution_statuses,
+            coverage_statuses=coverage_statuses,
+            methods=methods,
+            sync_actions=sync_actions,
+            coverage_reason=coverage_reason,
+            api_info_id=api_info_id,
         )
         data["items"] = format_module_coverage_interface(data["items"], many=True)
         return ok(data)
+
+    @mcp.tool()
+    def update_module_coverage_interface_policy(
+            coverage_interface_id: int, policy: str, reason: str = "",
+    ) -> dict:
+        """设置覆盖策略included(纳入)/deferred(暂不处理)/excluded(排除)。后两者必填原因。按产品、模块、仓库、分支持久生效，不删除真实资产或历史，也不改自动计算的覆盖进度；扫描不会自动恢复。"""
+        return ok(ModuleCoverageService.update_interface_policy(
+            [coverage_interface_id], policy, reason, current_user().id,
+        ), "接口覆盖策略已更新")
 
     @mcp.tool()
     def get_module_coverage_interface(

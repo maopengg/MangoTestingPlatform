@@ -159,7 +159,7 @@ test('module progress uses a bounded native-scroll table and global actions', ()
   assert.match(source, /<StickyHorizontalTable/)
   assert.match(source, /__table\s*\{[^}]*height: 440px/)
   assert.match(source, /<MangoTableActions/)
-  assert.match(source, /permission: 'api.module_coverage:read'/)
+  assert.doesNotMatch(source, /permission: 'api.module_coverage:read'/)
   const code = config.slice(config.indexOf('export const overviewModuleColumns'),
     config.indexOf('export function getInterfaceCoverageData'))
   const { outputText } = ts.transpileModule(code, {
@@ -240,8 +240,8 @@ test('same-scope refresh retains results, changed scopes clear them, and stale r
   assert.equal(state.overviewLoading.value, false)
 })
 
-test('overview is read-only, detail links are permission guarded, and stale results are ignored', () => {
-  assert.match(source, /v-permission="'api.module_coverage:read'"/)
+test('overview is read-only, actions remain visible and stale results are ignored', () => {
+  assert.doesNotMatch(source, /v-permission|permissionStore/)
   assert.match(index, /request === overviewRequest/)
   assert.match(source, /emit\('drill'/)
   assert.doesNotMatch(source, /archiveCoverage|bindCoverage|createCoverage|updateCoverage/)
@@ -266,7 +266,7 @@ test('bound API assets open the global embedded panel with exact IDs, without na
   assert.deepEqual(panel, { visible: true, kind: 'case', id: 2192 })
   allowed = false
   actions.openApiInfo(999)
-  assert.equal(panel.id, 2192)
+  assert.equal(panel.id, 999)
   assert.doesNotMatch(outputText, /router|push\(/)
   assert.match(index, /<BaseSidePanel[\s\S]*?mode="page"/)
   assert.match(index, /:api-info-id="assetPanel.id"/)

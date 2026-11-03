@@ -25,11 +25,31 @@ export const interfaceStatusOptions = [
   { label: '已移除', value: 'removed' },
 ]
 
+export const coveragePolicyHelp: Record<string, string> = {
+  included: '正常参与调用链分析、流程图和扫描 Case 生成，按已有有效用例计算覆盖进度。',
+  deferred: '仅保留基础盘点，暂缓后续分析和生成；仍计入覆盖率分母，已有有效覆盖继续按原规则计算。',
+  excluded: '仅保留基础盘点，不再分析或生成；不计入覆盖率分母。已有资产与历史保留，扫描不会自动恢复纳入。',
+}
+
+export const coverageProgressLabels: Record<string, string> = {
+  covered: '已覆盖', partial: '部分覆盖', uncovered: '未覆盖', deferred: '仅暂缓场景',
+}
+
 export const apiInfoBindingOptions = [
   { label: '已绑定', value: 'bound' },
   { label: '未绑定', value: 'unbound' },
   { label: '候选冲突', value: 'ambiguous' },
   { label: '待确认', value: 'mismatch' },
+]
+
+export const interfaceSearchSelects = [
+  { key: 'resolution_statuses', label: '调用链解析', options: [
+    { label: '链路完整', value: 'resolved' }, { label: '占位图', value: 'placeholder' },
+    { label: '未解析Gap', value: 'gap' },
+  ] },
+  { key: 'coverage_statuses', label: '覆盖进度', options: Object.entries(coverageProgressLabels).map(([value, label]) => ({ value, label })) },
+  { key: 'sync_actions', label: '变更', options: changeStatusOptions },
+  { key: 'methods', label: '请求方法', options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'].map(value => ({ value, label: value })) },
 ]
 
 export const interfaceColumns: TableColumnData[] = [
@@ -45,19 +65,21 @@ export const interfaceColumns: TableColumnData[] = [
   { title: 'Method', dataIndex: 'method', slotName: 'method', width: 90, align: 'center' },
   { title: 'URL', dataIndex: 'url', width: 300, ellipsis: true, tooltip: true },
   {
-    title: '链路状态',
+    title: '调用链解析',
     dataIndex: 'resolution_status',
     slotName: 'resolution_status',
     width: 120,
     align: 'center',
   },
   {
-    title: '生命周期',
+    title: '接口存续',
     dataIndex: 'lifecycle_status',
     slotName: 'lifecycle_status',
     width: 110,
     align: 'center',
   },
+  { title: '覆盖策略', dataIndex: 'coverage_policy', slotName: 'coverage_policy', width: 130, align: 'center' },
+  { title: '处理原因', dataIndex: 'coverage_reason', width: 240, ellipsis: true, tooltip: true },
   {
     title: 'ApiInfo绑定',
     dataIndex: 'api_info_binding_status',
@@ -66,15 +88,7 @@ export const interfaceColumns: TableColumnData[] = [
     align: 'center',
   },
   {
-    title: '接口归属模块',
-    dataIndex: 'owner_module',
-    slotName: 'owner_module',
-    width: 210,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '自动化进度',
+    title: '有效场景覆盖率',
     dataIndex: 'coverage_rate',
     slotName: 'coverage_rate',
     width: 180,
@@ -94,7 +108,7 @@ export const interfaceColumns: TableColumnData[] = [
     align: 'center',
   },
   {
-    title: '暂不处理',
+    title: '暂缓场景数',
     dataIndex: 'deferred_case_count',
     width: 110,
     align: 'center',
@@ -107,10 +121,10 @@ export const interfaceColumns: TableColumnData[] = [
     align: 'center',
   },
   {
-    title: '覆盖状态',
+    title: '自动化覆盖进度',
     dataIndex: 'coverage_status',
     slotName: 'coverage_status',
-    width: 110,
+    width: 150,
     align: 'center',
   },
   { title: '仓库', dataIndex: 'repository_key', width: 170, ellipsis: true, tooltip: true },
@@ -140,7 +154,7 @@ export const interfaceColumns: TableColumnData[] = [
 ]
 
 export const tableScrollXByTab: Record<string, number> = {
-  interfaces: 3190,
+  interfaces: interfaceColumns.reduce((total, column) => total + Number(column.width || 0), 0),
   cases: 3890,
   scans: 2050,
 }
@@ -363,6 +377,8 @@ export const labels: Record<string, string> = {
 }
 
 export function tagColor(value: string) {
+  if (value === 'excluded') return 'gray'
+  if (value === 'included') return 'green'
   if (['completed', 'passed', 'covered', 'resolved', 'valid', 'bound'].includes(value))
     return 'green'
   if (['failed', 'removed', 'placeholder', 'invalid', 'ambiguous'].includes(value)) return 'red'

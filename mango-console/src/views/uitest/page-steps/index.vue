@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         show-modules
         emit-initial-filter
@@ -353,6 +354,9 @@
   import useUserStore from '@/store/modules/user'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import UiCaseDetails from '@/views/uitest/case/details/index.vue'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -527,6 +531,8 @@
         it.value = it.multiple ? [] : ''
       }
     })
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
+      .then(() => { if (data.isAdd) onModulePage(getItemValue(formItems, 'module'), false) })
   }
 
   function onDelete(record: any) {

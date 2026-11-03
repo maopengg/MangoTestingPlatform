@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :sticky-horizontal-scroll="false"
         :model-value="navigationProjectProduct"
@@ -231,6 +232,9 @@
     putFunctionalPlan,
   } from '@/api/functional-test'
   import { emptyPlan, planColumns } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
   const route = useRoute()
@@ -344,6 +348,7 @@
           }
         : {}
     )
+    if (!row) await prefillNavigationModel(navigationCreateRef.value, form)
     await Promise.all([loadRequirements(), loadIterations()])
     visible.value = true
   }

@@ -6,6 +6,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
           contained-body
           :model-value="projectProductCondition?.value"
           :reset-key="sidebarResetKey"
@@ -222,6 +223,9 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
   import { getUserName } from '@/api/user/user'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
   const headerConditionItems = computed(() => conditionItems.filter((item) => item.key !== 'project_product'))
@@ -454,6 +458,8 @@
     if (Number(getFormValue('type')) === 2) {
       fillCodeVariableExample()
     }
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
+      .then(() => { if (data.isAdd) loadDatasourceAliasOptions() })
   }
 
   function onDelete(record: any) {

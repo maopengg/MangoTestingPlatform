@@ -140,6 +140,7 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.auto_api.api.views.module_coverage_case.ModuleCoverageCaseViews', 'snapshots', 'get'): 'api.module_coverage:read',
     ('src.apps.auto_api.api.views.module_coverage_interface.ModuleCoverageInterfaceViews', 'batch_upload', 'post'): 'api.module_coverage:add',
     ('src.apps.auto_api.api.views.module_coverage_interface.ModuleCoverageInterfaceViews', 'binding', 'put'): 'api.module_coverage:change',
+    ('src.apps.auto_api.api.views.module_coverage_interface.ModuleCoverageInterfaceViews', 'policy', 'post'): 'api.module_coverage:change',
     ('src.apps.auto_api.api.views.module_coverage_interface.ModuleCoverageInterfaceViews', 'binding_preview', 'get'): 'api.module_coverage:read',
     ('src.apps.auto_api.api.views.module_coverage_interface.ModuleCoverageInterfaceViews', 'diff', 'get'): 'api.module_coverage:read',
     ('src.apps.auto_api.api.views.module_coverage_interface.ModuleCoverageInterfaceViews', 'list', 'get'): 'api.module_coverage:read',

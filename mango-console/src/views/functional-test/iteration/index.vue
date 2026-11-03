@@ -3,6 +3,7 @@
     <template #header><TableHeader title="研发协同 / 迭代管理" /></template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :sticky-horizontal-scroll="false"
         :model-value="navigationProjectProduct"
@@ -100,6 +101,9 @@
     putFunctionalIteration,
   } from '@/api/functional-test'
   import { emptyIteration, iterationColumns } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -142,12 +146,13 @@
     filters.project_product = navigationProjectProduct.value
     search()
   }
-  function openEditor(row?: any) {
+  async function openEditor(row?: any) {
     Object.assign(form, emptyIteration(), row ? {
       ...row,
       project_product: row.project_product?.id,
       owner: row.owner?.id,
     } : {})
+    if (!row) await prefillNavigationModel(navigationCreateRef.value, form)
     visible.value = true
   }
   async function saveRow() {

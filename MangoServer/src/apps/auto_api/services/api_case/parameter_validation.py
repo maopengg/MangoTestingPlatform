@@ -1,7 +1,11 @@
 import inspect
 import re
 
+from mangotools.data_processor import JsonTool, RegexTool
+from mangotools.exceptions import MangoToolsError
+
 from src.apps.auto_api.exceptions import (
+    API_EXTRACTION_CONFIG_INVALID,
     API_SQL_ASSERTION_SQL_DATA_SOURCE_ASSERTION_REQUIRED,
     AUTO_API_API_CASE_DETAILED_PARAMETER_ASSERTION_CONFIG_INVALID,
     AUTO_API_API_CASE_DETAILED_PARAMETER_ASSERTION_NOT_FOUND,
@@ -155,10 +159,17 @@ class ApiCaseParameterValidationService:
                     "jsonpath": "JSONPath", "regex": "正则表达式", "cache": "缓存表达式"}[assertion_type]))
             if assertion_type == "regex":
                 try:
-                    re.compile(item["actual"])
-                except re.error as error:
+                    if '${{' not in item['actual']:
+                        RegexTool.compile(item["actual"])
+                except MangoToolsError as error:
                     raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_REGEX_RESPONSE_ASSERTION_EXPRESSION_INVALID,
-                                       value=(index, error)) from error
+                                       value=(index, error.msg)) from error
+            if assertion_type == 'jsonpath' and '${{' not in item['actual']:
+                try:
+                    JsonTool.validate_json_path_expression(item['actual'])
+                except MangoToolsError as error:
+                    raise AutoApiError(API_EXTRACTION_CONFIG_INVALID,
+                                       value=('响应JSONPath断言', index, error.msg)) from error
             if assertion_type == "cache" and not re.fullmatch(r"\$\{\{[^{}]+\}\}", str(item["actual"]).strip()):
                 raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_CACHE_RESPONSE_ASSERTION_EXPRESSION_INVALID,
                                    value=(index,))
@@ -181,4 +192,13 @@ class ApiCaseParameterValidationService:
             if not item.get("value"):
                 label = "JSONPath" if field_name == "响应JSON提取" else "正则表达式"
                 raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_REQUIRED, value=(field_name, index, label))
+            if '${{' not in item['value']:
+                try:
+                    if field_name == '响应JSON提取':
+                        JsonTool.validate_json_path_expression(item['value'])
+                    else:
+                        RegexTool.compile(item['value'])
+                except MangoToolsError as error:
+                    raise AutoApiError(API_EXTRACTION_CONFIG_INVALID,
+                                       value=(field_name, index, error.msg)) from error
         return items

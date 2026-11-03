@@ -16,6 +16,7 @@ from django.conf import settings
 from jsonschema import validate
 from mangotools.enums import StatusEnum
 from mangotools.exceptions import MangoToolsError
+from mangotools.data_processor import RegexTool
 
 from src.apps.auto_api.exceptions import (
     AUTO_API_BASE_CASE_PARAMETER_TIME_CONFIG_INVALID,
@@ -405,21 +406,21 @@ class CaseParameter:
     @staticmethod
     def __extract_regex_assertion_value(response_text: str | None, expression: str, index: int):
         try:
-            pattern = re.compile(expression)
-        except (re.error, TypeError) as error:
+            pattern = RegexTool.compile(expression)
+        except MangoToolsError as error:
             raise AutoApiError(AUTO_API_BASE_CASE_PARAMETER_REGEX_RESPONSE_ASSERTION_CONFIG_EXPRESSION_INVALID,
-                               value=(index, expression, error)) from error
+                               value=(index, expression, error.msg)) from error
         if response_text is None:
             return None, '当前响应没有文本内容'
         match = pattern.search(response_text)
         if match is None:
             return None, f'正则未匹配响应文本（响应长度：{len(response_text)}）'
-        groups = match.groups()
-        if not groups:
-            return match.group(0), '已提取完整匹配内容'
-        if len(groups) == 1:
-            return groups[0], '已提取第1个捕获组'
-        return list(groups), f'已提取{len(groups)}个捕获组'
+        value = RegexTool.extracted_value(match)
+        if not match.groups():
+            return value, '已提取完整匹配内容'
+        if len(match.groups()) == 1:
+            return value, '已提取第1个捕获组'
+        return value, f'已提取{len(match.groups())}个捕获组'
 
     def __build_response_extract_ass_dict(
             self,

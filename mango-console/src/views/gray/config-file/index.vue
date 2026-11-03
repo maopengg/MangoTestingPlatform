@@ -5,6 +5,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="query.project_product"
         :reset-key="sidebarResetKey"
@@ -316,6 +317,9 @@
     putGrayYamlFileBinding,
   } from '@/api/gray'
   import { enableStatusOptions, grayPageConfig } from './config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const table = useTable()
   const enumStore = useEnum()
@@ -519,7 +523,8 @@
   }
 
   function onAdd() {
-    openDialog(yamlDialogRef, form, { effect_wait_seconds: 10, status: 1 })
+    openDialog(yamlDialogRef, form, { project_product: null, effect_wait_seconds: 10, status: 1 })
+    void prefillNavigationModel(navigationCreateRef.value, form)
   }
 
   function onEdit(record: any) {

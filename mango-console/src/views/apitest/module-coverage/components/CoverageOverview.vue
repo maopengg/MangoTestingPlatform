@@ -20,7 +20,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>模块扫描进度</h2><p>项目/产品级统计，不随左侧模块选择变化</p></div
+                    ><h2>模块扫描进度</h2><p>查看项目/产品下全部叶子模块的完整扫描进度，不随左侧模块选择变化</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -30,7 +30,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>接口录入状态</h2><p>已发现接口的 ApiInfo 绑定情况；点击待录入筛选模块</p></div
+                    ><h2>接口录入状态</h2><p>查看扫描发现的接口中，已正确录入并绑定接口管理的比例</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -49,7 +49,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>接口覆盖率</h2><p>已覆盖 / 已发现接口；全部目标场景有效完成才算覆盖</p></div
+                    ><h2>接口覆盖率</h2><p>查看接口的 Case 覆盖情况，全部目标场景有效完成才算覆盖；排除覆盖的接口不参与统计</p><p v-if="data?.summary.excluded_interface_count">已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入覆盖率分母</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -68,7 +68,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>用例自动化进度</h2><p>按 Case 场景统计，待复核、失效计入未完成</p></div
+                    ><h2>用例自动化进度</h2><p>查看扫描产出 Case 的自动化覆盖状态：已完成、未完成、暂不处理；执行失败不影响覆盖完成状态</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -232,7 +232,7 @@
   const statusChart = ref<HTMLElement>()
   const coverageData = computed(() => props.data ? getInterfaceCoverageData(props.data.summary) : [])
   const coverageDescription = computed(() =>
-    `以已发现接口总数为分母，暂不处理不算已覆盖。${coverageData.value
+    `以纳入覆盖接口总数为分母，已排除接口不计入，暂不处理不算已覆盖。${coverageData.value
       .map((item) => `${item.name} ${item.value} 个接口`).join('，')}`
   )
   const entryData = computed(() => {

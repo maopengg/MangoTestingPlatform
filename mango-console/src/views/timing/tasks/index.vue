@@ -11,6 +11,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         class="mango-timing-task-workbench"
         contained-body
         show-modules
@@ -665,6 +666,9 @@
     getEnumTagColor,
     getOptionId,
   } from '@/utils/business-format'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
 
@@ -698,7 +702,7 @@
   ]
 
   function openTaskGroupCreate() {
-    taskGroupRef.value?.openCreate()
+    taskGroupRef.value?.openCreate(navigationCreateRef.value?.getCreateDefaults().module)
   }
 
   function filterTasksByGroup(record: any) {
@@ -1114,7 +1118,7 @@
     else taskGroupRef.value?.load()
   })
 
-  async function onAdd() {
+async function onAdd() {
     if (!(await loadExecutionOptions())) return
     data.actionTitle = '新增'
     data.isAdd = true
@@ -1127,6 +1131,8 @@
       }
     })
     setFormValue('execution_scope', 'manual')
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
+      .then(() => { if (data.isAdd) onProjectChange(getFormValue('project_product')) })
   }
 
   function onDelete(record: any) {

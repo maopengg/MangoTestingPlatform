@@ -6,6 +6,7 @@
 
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :model-value="getConditionValue('project_product')"
         :module-value="getConditionValue('module')"
@@ -473,6 +474,9 @@
   import { getUserName } from '@/api/user/user'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
 
@@ -650,6 +654,7 @@
         it.value = it.multiple ? [] : ''
       }
     })
+    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
   }
 
   function onDelete(record: any) {

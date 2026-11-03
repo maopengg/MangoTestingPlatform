@@ -24,6 +24,7 @@
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
+        ref="navigationCreateRef"
         contained-body
         :sticky-horizontal-scroll="false"
         :show-search="false"
@@ -601,6 +602,9 @@
     formatAutomationBindings,
   } from './config'
   import { emptyPlan } from '../plan/config'
+  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
   const enumStore = useEnum()
   const userStore = useUserStore()
@@ -1191,6 +1195,7 @@
           }
         : {}
     )
+    if (!row) await prefillNavigationModel(navigationCreateRef.value, form)
     editorVisible.value = true
     await loadCategoryOptions()
   }
@@ -1447,6 +1452,7 @@
       project_product: productIds[0],
       owner: selectedPersistedRows.value[0]?.owner?.id || undefined,
     })
+    await prefillNavigationModel(navigationCreateRef.value, planCreateForm)
     await Promise.all([loadPlanRequirements(), loadPlanIterations()])
     planCreateVisible.value = true
   }
