@@ -3,6 +3,8 @@ from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
 
 # 这些入口不属于业务 CRUD；各入口仍执行其已有身份、分享凭据或归属校验。
 HTTP_PERMISSION_BOUNDARIES = {
+    # coreapi is optional; its legacy schema views already fail closed without a business permission.
+    ('rest_framework.schemas.views.SchemaView', 'get', 'get'): HttpPermissionBoundaryEnum.DISABLED,
     ('src.apps.test_center.api.views.test_suite_details.TestSuiteDetailsShareViews', 'get_detail_result_options', 'get'): HttpPermissionBoundaryEnum.PUBLIC,
     ('src.apps.test_center.api.views.test_suite_details.TestSuiteDetailsShareViews', 'get_failure_reasons', 'get'): HttpPermissionBoundaryEnum.PUBLIC,
     ('src.apps.system.api.views.system_api.SystemShareViews', 'enum_api', 'get'): HttpPermissionBoundaryEnum.PUBLIC,

@@ -125,6 +125,16 @@ class CrudPermissionCatalogTests(SimpleTestCase):
                 self.assertNotEqual(response.data['code'], 200)
                 reasons.assert_not_called()
 
+    def test_legacy_schema_views_remain_disabled_with_optional_coreapi(self):
+        from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
+
+        key = ('rest_framework.schemas.views.SchemaView', 'get', 'get')
+        self.assertEqual(HTTP_PERMISSION_BOUNDARIES[key], HttpPermissionBoundaryEnum.DISABLED)
+        view = type('SchemaView', (), {'__module__': key[0].rsplit('.', 1)[0]})()
+        for user in (None, SimpleNamespace(id=1)):
+            request = SimpleNamespace(method='GET', user=SimpleNamespace(user_obj=user))
+            self.assertFalse(MenuActionPermission().has_permission(request, view))
+
     def test_every_http_method_has_one_explicit_permission_or_protocol_boundary(self):
         active = set()
 
