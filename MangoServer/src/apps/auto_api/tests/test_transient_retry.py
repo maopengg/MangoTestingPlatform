@@ -6,6 +6,7 @@ from django.db import DatabaseError
 
 from src.apps.auto_api.enums import ApiBodyTypeEnum, ApiProtocolTypeEnum, MethodEnum
 from src.apps.auto_api.enums.retry import ApiTransientRetryCondition as Condition
+from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
 from src.apps.auto_api.exceptions import (
     API_REQUEST_TIMEOUT, API_TARGET_NO_RESPONSE, API_TLS_FAILED, AutoApiError, TestSuiteStopped,
 )
@@ -72,7 +73,7 @@ class TransientRetryTests(SimpleTestCase):
 
 class TransientRetryExecutionTests(SimpleTestCase):
     def execute(self, responses, *, selected=None, assertions=None, retry=1, method=MethodEnum.GET.value,
-                cleanup_error=None, stopped=False):
+                cleanup_error=None, stopped=False, default_checks=frozenset(ApiDefaultAssertionCheck)):
         path = 'src.apps.auto_api.services.test_case.test_case_parts.parameter'
         api = SimpleNamespace(id=7, project_product_id=9, name='查询', method=method,
                               protocol_type=ApiProtocolTypeEnum.HTTP.value, body_type=ApiBodyTypeEnum.NONE.value,
@@ -114,6 +115,7 @@ class TransientRetryExecutionTests(SimpleTestCase):
                 patch(path + '.GrayCaseExecutionRunner.apply_api_parameter', return_value=[]), \
                 patch(path + '.GrayCaseExecutionRunner.api_case_snapshot', return_value={}), \
                 patch.object(Retry, 'selected', side_effect=lambda c: c in (selected if selected is not None else Condition.defaults())), \
+                patch(path + '.ProtocolCallOutcomeService.default_checks', return_value=default_checks), \
                 patch(path + '.time.sleep') as sleep:
             factory.return_value.runner = SimpleNamespace(execution_ids=[])
             factory.return_value.cleanup.side_effect = cleanup_error
@@ -134,6 +136,13 @@ class TransientRetryExecutionTests(SimpleTestCase):
         self.assertEqual(runtime.api_case_result.steps[-1].automatic_retry_condition, 'http_503')
         self.assertEqual(runtime.test_setup.api_request.call_count, 2)
         sleep.assert_called_once_with(2)
+
+    def test_disabled_defaults_allow_response_to_reach_posterior_and_assertions(self):
+        runtime, result, sleep = self.execute([self.response(400)], default_checks=frozenset())
+        self.assertIsNone(result)
+        self.assertEqual(runtime.api_case_result.steps[0].status, 1)
+        self.assertEqual(runtime.test_setup.api_request.call_count, 1)
+        sleep.assert_not_called()
 
     def test_transport_failure_retries_but_never_more_than_once(self):
         error = AutoApiError(API_TARGET_NO_RESPONSE, value=('closed',))

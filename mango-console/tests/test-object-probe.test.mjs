@@ -24,7 +24,7 @@ function handlers(api) {
     `let requestVersion = 0; ${code}; return {open, close, runTest}`)(...Object.values(state)) }
 }
 
-test('page and compact dialog compile, action is permission-gated and excludes non-network targets', () => {
+test('page and compact dialog compile, action follows business visibility without page-level permission guards', () => {
   for (const file of [filename, 'src/views/config/test-object/index.vue']) {
     const content = readFileSync(file, 'utf8')
     const { descriptor } = parse(content)
@@ -32,11 +32,21 @@ test('page and compact dialog compile, action is permission-gated and excludes n
     assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename: file,
       id: 'probe', compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
   }
-  assert.match(source, /v-permission="'config.test_object:change'"/)
+  assert.doesNotMatch(source, /v-permission/)
   assert.match(source, /:loading="loading"/)
-  assert.match(source, /@change="result = null; error = ''"/)
+  assert.match(source, /@change="clearResult"/)
   const page = readFileSync('src/views/config/test-object/index.vue', 'utf8')
-  assert.match(page, /permission: 'config.test_object:change', label: '测试', hidden: !record.network_test_addresses\?\.length/)
+  assert.match(page, /label: '测试', hidden: !record.network_test_addresses\?\.length/)
+})
+
+test('probe separates status explanation, full address and aligned results with spaced footer actions', () => {
+  assert.match(source, /:label="option.label"/)
+  assert.match(source, /class="mango-target-probe__address">\{\{ address \}\}/)
+  assert.match(source, /:type="result.connected \? 'success' : 'error'"/)
+  assert.match(source, /:title="result.connected \? '连接成功' : '连接失败'"/)
+  assert.match(source, /grid-template-columns: 72px minmax\(0, 1fr\)/)
+  assert.match(source, /<a-space class="mango-modal-dialog-footer-actions">/)
+  assert.doesNotMatch(source, /<a-tag/)
 })
 
 test('tests only selected saved address and prevents duplicate requests', async () => {

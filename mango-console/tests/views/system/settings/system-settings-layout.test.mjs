@@ -32,6 +32,7 @@ test('callback enablement uses the existing integer switch and retains numeric p
   const switchValue = evaluate('switchValue', { isEnabledValue })
   const isIntegerSwitchType = evaluate('isIntegerSwitchType', { integerSwitchKeys: keys })
   const normalizePayloadValue = evaluate('normalizePayloadValue', {
+    API_DEFAULT_ASSERTION_CHECKS_KEY: 'API_DEFAULT_ASSERTION_CHECKS',
     API_TRANSIENT_RETRY_CONDITIONS_KEY: 'API_TRANSIENT_RETRY_CONDITIONS',
     normalizeRetryConditions: value => value,
     isIntegerSwitchType, switchValue, isEnvironmentDisplayNames: () => false,

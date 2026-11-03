@@ -5,6 +5,7 @@ import httpx
 from django.test import SimpleTestCase
 
 from src.apps.auto_api.schemas.execution import ApiExecutionRequest
+from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
 from src.apps.auto_api.services.base.api_base_test_setup.request_body import prepare_json_body
 from src.apps.auto_api.services.protocols.http_sse import HttpSseProtocolClient
 from src.apps.auto_api.services.protocols.outcome import ProtocolCallOutcomeService
@@ -26,6 +27,7 @@ class SseErrorResponseTests(SimpleTestCase):
         self.assertEqual(result.code, 400)
         self.assertEqual(result.json, {'message': 'Missing renderer capability'})
         self.assertEqual(result.request_protocol_type, 'sse')
-        outcome = ProtocolCallOutcomeService.evaluate(result)
+        outcome = ProtocolCallOutcomeService.evaluate(result, default_checks=frozenset({ApiDefaultAssertionCheck.HTTP_STATUS}))
         self.assertFalse(outcome.success)
         self.assertIn('Missing renderer capability', outcome.error_message)
+        self.assertTrue(ProtocolCallOutcomeService.evaluate(result, default_checks=frozenset()).success)

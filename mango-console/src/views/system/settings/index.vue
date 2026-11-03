@@ -218,6 +218,24 @@
                             @save="saveItem(group, item)"
                           />
                           <EvaluationAiProfilesEditor v-else-if="item.key === 'EVALUATION_AI_PROFILES'" v-model="item.value" :loading="itemSaving(item)" @save="saveItem(group, item)" />
+                          <a-cascader
+                            v-else-if="item.key === API_DEFAULT_ASSERTION_CHECKS_KEY"
+                            v-model="item.value"
+                            size="medium"
+                            multiple
+                            allow-clear
+                            allow-search
+                            expand-trigger="click"
+                            :path-mode="false"
+                            :check-strictly="false"
+                            :max-tag-count="2"
+                            :options="defaultAssertionOptions"
+                            :disabled="itemSaving(item)"
+                            :loading="itemSaving(item)"
+                            placeholder="先选择协议类型，再选择默认断言场景"
+                            :aria-label="itemLabel(item)"
+                            @change="saveItem(group, item)"
+                          />
                           <a-select
                             v-else-if="item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY"
                             v-model="item.value"
@@ -432,6 +450,9 @@
   } from '@/api/system/cache_data'
   import { postSystemMethodCacheRefresh, postSystemSetDebugLog } from '@/api/system/system'
   import {
+    API_DEFAULT_ASSERTION_CHECKS_KEY,
+    API_DEFAULT_ASSERTION_HELP,
+    buildDefaultAssertionOptions,
     API_TRANSIENT_RETRY_CONDITIONS_KEY,
     API_TRANSIENT_RETRY_HELP,
     normalizeRetryConditions,
@@ -616,6 +637,9 @@
   const sectionElements = new Map<string, HTMLElement>()
   const configSectionElements = new Map<string, HTMLElement>()
   const enumStore = useEnum()
+  const defaultAssertionOptions = computed(() =>
+    buildDefaultAssertionOptions(enumStore.api_default_assertion_check || [])
+  )
   const settingsLoading = ref(true)
   const aiTestLoading = ref(false)
   const visionTestLoading = ref(false)
@@ -766,6 +790,9 @@
     )
   }
   const itemHelp = (item: ConfigItem): string => {
+    if (item.key === 'API_DEFAULT_ASSERTION_ENABLED') return API_DEFAULT_ASSERTION_HELP
+    if (item.key === API_DEFAULT_ASSERTION_CHECKS_KEY)
+      return '先选择协议类型，再勾选默认断言场景，支持跨协议多选；清空则不检查。仅在“启用协议默认断言”开启后生效，用例显式预期优先。'
     if (item.key === 'API_TRANSIENT_RETRY_ENABLED') return API_TRANSIENT_RETRY_HELP
     if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY)
       return '默认选择连接异常、请求超时、HTTP 502/503/504。业务断言失败须主动选择；不会把 JSON 业务码误判为 HTTP 状态码。'
@@ -887,6 +914,7 @@
   }
 
   const normalizeEditValue = (item: ConfigItem) => {
+    if (item.key === API_DEFAULT_ASSERTION_CHECKS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === 'REPORT_DELIVERY_CONFIG') {
       if (typeof item.value !== 'string') return { ...(item.value || {}) }
@@ -927,6 +955,7 @@
   }
 
   const normalizePayloadValue = (item: ConfigItem) => {
+    if (item.key === API_DEFAULT_ASSERTION_CHECKS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
     if (isEnvironmentDisplayNames(item)) {
       return Object.fromEntries(

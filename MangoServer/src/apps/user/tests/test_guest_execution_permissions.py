@@ -44,7 +44,8 @@ class GuestExecutionPermissionTests(SimpleTestCase):
     def test_mcp_execution_still_requires_resolved_authorized_product(self):
         tools = ('run_api_case', 'run_api_case_batch', 'run_api_info', 'debug_api_case_step',
                  'run_ui_case', 'run_ui_case_batch', 'run_ui_page_step',
-                 'run_pytest_case', 'run_pytest_case_batch', 'trigger_scheduled_task')
+                 'run_pytest_case', 'run_pytest_case_batch', 'trigger_scheduled_task',
+                 'preview_trigger_scheduled_task_impact')
         with patch('src.interfaces.mcp.authentication.resolve_project_product_ids') as product_ids, \
                 patch('src.interfaces.mcp.authentication.ProjectProductScopeService.has_project_product') as allowed:
             for tool in tools:

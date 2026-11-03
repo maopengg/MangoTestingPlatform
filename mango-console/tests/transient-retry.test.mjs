@@ -31,6 +31,40 @@ test('settings use registered multi-select options, direct save and the existing
   assert.match(source, /API_TRANSIENT_RETRY_HELP/)
 })
 
+test('default assertions use registered protocol checks and preserve empty selection', () => {
+  const source = readFileSync(new URL('../src/views/system/settings/index.vue', import.meta.url), 'utf8')
+  const template = parse(source).descriptor.template.content
+  assert.match(template, /<a-cascader\s+v-else-if="item.key === API_DEFAULT_ASSERTION_CHECKS_KEY"[\s\S]*?multiple[\s\S]*?:options="defaultAssertionOptions"[\s\S]*?@change="saveItem\(group, item\)"/)
+  assert.match(template, /:path-mode="false"/)
+  assert.match(template, /:check-strictly="false"/)
+  assert.equal((source.match(/if \(item.key === API_DEFAULT_ASSERTION_CHECKS_KEY\) return normalizeRetryConditions\(item.value\)/g) || []).length, 2)
+  const { API_DEFAULT_ASSERTION_HELP } = load('views/system/settings/config.ts')
+  assert.match(API_DEFAULT_ASSERTION_HELP, /默认关闭/)
+  assert.match(API_DEFAULT_ASSERTION_HELP, /无断言的有效响应可能直接通过/)
+  const store = readFileSync(new URL('../src/store/modules/get-enum.ts', import.meta.url), 'utf8')
+  assert.match(store, /'api_default_assertion_check'/)
+  assert.match(store, /this.api_default_assertion_check.length > 0/)
+})
+
+test('protocol cascader groups options without changing saved leaf keys', () => {
+  const { buildDefaultAssertionOptions } = load('views/system/settings/config.ts')
+  const input = [
+    { key: 'http_status', title: 'HTTP / SSE 等 · 状态码为 2xx' },
+    { key: 'websocket_close', title: 'WebSocket · 正常关闭（1000 / 1001）' },
+    { key: 'websocket_handshake', title: 'WebSocket · 握手及协议状态正常' },
+  ]
+  const options = buildDefaultAssertionOptions(input)
+  assert.deepEqual(options.map(option => option.label), ['HTTP / SSE 等', 'WebSocket'])
+  assert.deepEqual(options[1].children, [
+    { value: 'websocket_close', label: '正常关闭（1000 / 1001）' },
+    { value: 'websocket_handshake', label: '握手及协议状态正常' },
+  ])
+  assert.deepEqual(options.flatMap(option => option.children.map(child => child.value)), input.map(option => option.key))
+  assert.deepEqual(buildDefaultAssertionOptions([]), [])
+  assert.deepEqual(buildDefaultAssertionOptions([{ key: 'future_check', title: '新增检查' }])[0].children,
+    [{ value: 'future_check', label: '新增检查' }])
+})
+
 test('last retry decides each scenario without hiding failures in different scenarios', () => {
   const { latestScenarioAttempts } = load('views/apitest/case/details/execution-results.ts')
   const first = { id: 1, parameter_id: 2, retry_index: 1, status: 0 }

@@ -6,8 +6,12 @@ from xml.etree import ElementTree
 from mangotools.enums import StatusEnum
 
 from src.apps.auto_api.enums import ApiProtocolTypeEnum
-from src.apps.auto_api.exceptions import MCP_API_SCENARIO_INVALID
+from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck as Check
+from src.apps.auto_api.exceptions import AutoApiError, MCP_API_CONFIG_INVALID, MCP_API_SCENARIO_INVALID
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
+from src.apps.system.services.system_config import (
+    API_DEFAULT_ASSERTION_ENABLED_KEY, API_DEFAULT_ASSERTION_CHECKS_KEY, SystemConfigService,
+)
 
 
 @dataclass(frozen=True)
@@ -46,7 +50,15 @@ class ProtocolCallOutcomeService:
         protocol_type = response.request_protocol_type or response.response_mode or ApiProtocolTypeEnum.HTTP.value
         if protocol_type in cls.HTTP_PROTOCOLS or response.code is not None:
             return response.code is not None and 200 <= response.code < 300
-        return cls.evaluate(response).success
+        # 公共提取只适用于正常响应，不随默认断言开关放行负向响应。
+        return cls.evaluate(response, default_checks=frozenset(Check)).success
+
+    @staticmethod
+    def default_checks() -> frozenset[Check]:
+        if not SystemConfigService.get(API_DEFAULT_ASSERTION_ENABLED_KEY, default=False):
+            return frozenset()
+        values = SystemConfigService.get(API_DEFAULT_ASSERTION_CHECKS_KEY, default=Check.defaults())
+        return frozenset(item for item in Check if item.value in values)
 
     @classmethod
     def evaluate(
@@ -55,15 +67,21 @@ class ProtocolCallOutcomeService:
             expected_http_status_codes: list[int] | None = None,
             accept_any_http_status: bool = False,
             display_name: str | None = None,
-            expected_mcp_error: bool = False,
+            expected_mcp_result: str | None = None,
+            expected_grpc_status: str | None = None,
+            require_http_success: bool = False,
+            default_checks: frozenset[Check] | None = None,
     ) -> ProtocolCallOutcome:
+        checks = cls.default_checks() if default_checks is None else default_checks
         protocol_type = response.request_protocol_type or response.response_mode or ApiProtocolTypeEnum.HTTP.value
         if protocol_type == ApiProtocolTypeEnum.MCP.value:
-            outcome = cls.evaluate_mcp(response, expected_error=expected_mcp_error)
+            expectation = expected_mcp_result or ('success' if Check.MCP_RESULT in checks else 'any')
+            outcome = cls.evaluate_mcp(response, expected_result=expectation)
         elif protocol_type == ApiProtocolTypeEnum.GRPC.value:
-            outcome = cls.evaluate_grpc(response)
+            expectation = expected_grpc_status or ('OK' if Check.GRPC_STATUS in checks else 'ANY')
+            outcome = cls.evaluate_grpc(response, expected_status=expectation)
         elif protocol_type == ApiProtocolTypeEnum.WEBSOCKET.value:
-            outcome = cls.evaluate_websocket(response)
+            outcome = cls.evaluate_websocket(response, checks=checks)
         elif protocol_type in cls.HTTP_PROTOCOLS or response.code is not None:
             outcome = cls.evaluate_http_family(
                 response,
@@ -71,6 +89,8 @@ class ProtocolCallOutcomeService:
                 expected_http_status_codes=expected_http_status_codes,
                 accept_any_http_status=accept_any_http_status,
                 display_name=display_name,
+                checks=checks,
+                require_http_success=require_http_success,
             )
         else:
             outcome = ProtocolCallOutcome(False, protocol_type, f'接口调用失败：无法识别协议状态（{protocol_type}）')
@@ -88,16 +108,20 @@ class ProtocolCallOutcomeService:
             expected_http_status_codes: list[int] | None = None,
             accept_any_http_status: bool = False,
             display_name: str | None = None,
+            checks: frozenset[Check] = frozenset(),
+            require_http_success: bool = False,
     ) -> ProtocolCallOutcome:
         code = response.code
         protocol_status = cls.http_status(code)
         expected_codes = set(expected_http_status_codes or [])
         status_matched = (
-                code is not None
+                code is not None and 100 <= code <= 599
                 and (
                         accept_any_http_status
                         or code in expected_codes
-                        or (not expected_codes and 200 <= code < 300)
+                        or (not expected_codes and (
+                            not (require_http_success or Check.HTTP_STATUS in checks) or 200 <= code < 300
+                        ))
                 )
         )
         if not status_matched:
@@ -107,17 +131,17 @@ class ProtocolCallOutcomeService:
                 cls.http_failure_message(response, display_name),
             )
 
-        if protocol_type == ApiProtocolTypeEnum.GRAPHQL.value:
+        if protocol_type == ApiProtocolTypeEnum.GRAPHQL.value and Check.GRAPHQL_ERRORS in checks:
             errors = response.json.get('errors') if isinstance(response.json, dict) else None
             if errors:
                 return ProtocolCallOutcome(False, protocol_status,
                                            'GraphQL 接口返回了业务错误，请查看响应中的 errors 了解具体原因。')
-        elif protocol_type == ApiProtocolTypeEnum.JSON_RPC.value:
+        elif protocol_type == ApiProtocolTypeEnum.JSON_RPC.value and Check.JSON_RPC_ERROR in checks:
             error = response.json.get('error') if isinstance(response.json, dict) else None
             if error is not None:
                 return ProtocolCallOutcome(False, protocol_status,
                                            'JSON-RPC 接口返回了错误，请查看响应中的 error 了解具体原因。')
-        elif protocol_type in (ApiProtocolTypeEnum.SOAP.value, ApiProtocolTypeEnum.XML_RPC.value):
+        elif protocol_type in (ApiProtocolTypeEnum.SOAP.value, ApiProtocolTypeEnum.XML_RPC.value) and Check.XML_FAULT in checks:
             if cls.has_xml_fault(response.text):
                 protocol_name = 'SOAP' if protocol_type == ApiProtocolTypeEnum.SOAP.value else 'XML-RPC'
                 return ProtocolCallOutcome(False, protocol_status, f'{protocol_name}调用失败：响应包含 Fault')
@@ -174,10 +198,14 @@ class ProtocolCallOutcomeService:
         return f'{text[:300]}…' if len(text) > 300 else text
 
     @staticmethod
-    def evaluate_mcp(response: ApiExecutionResponse, *, expected_error: bool = False) -> ProtocolCallOutcome:
+    def evaluate_mcp(response: ApiExecutionResponse, *, expected_result: str) -> ProtocolCallOutcome:
         if response.mcp_protocol_error:
             return ProtocolCallOutcome(False, 'MCP protocol error', 'MCP 服务返回协议错误，工具调用没有正常完成。')
-        if expected_error:
+        if expected_result not in {'success', 'error', 'any'}:
+            raise AutoApiError(MCP_API_CONFIG_INVALID, value=(expected_result,))
+        if expected_result == 'any':
+            return ProtocolCallOutcome(True, 'MCP response received')
+        if expected_result == 'error':
             if response.mcp_is_error is True:
                 return ProtocolCallOutcome(True, 'MCP expected isError=true')
             return ProtocolCallOutcome(False, 'MCP expected error missing', MCP_API_SCENARIO_INVALID.message)
@@ -186,9 +214,12 @@ class ProtocolCallOutcomeService:
         return ProtocolCallOutcome(True, 'MCP success')
 
     @staticmethod
-    def evaluate_grpc(response: ApiExecutionResponse) -> ProtocolCallOutcome:
+    def evaluate_grpc(response: ApiExecutionResponse, *, expected_status: str) -> ProtocolCallOutcome:
         status_code = str(response.grpc_status_code or 'UNKNOWN').upper()
-        if status_code != 'OK':
+        expected_status = str(expected_status).upper()
+        # 连接不可用、超时、未知结果不能因关闭业务默认断言而误报成功。
+        transport_failure = status_code in {'UNAVAILABLE', 'DEADLINE_EXCEEDED', 'UNKNOWN'}
+        if transport_failure or (expected_status != 'ANY' and status_code != expected_status):
             reasons = {
                 'UNAUTHENTICATED': '身份凭证可能无效、已过期或缺失。',
                 'PERMISSION_DENIED': '当前身份可能没有调用权限。',
@@ -201,19 +232,19 @@ class ProtocolCallOutcomeService:
             reason = reasons.get(status_code, '调用没有正常完成。')
             details = f' 服务返回：{response.grpc_status_details}' if response.grpc_status_details else ''
             return ProtocolCallOutcome(False, f'gRPC {status_code}', f'gRPC 返回 {status_code}，{reason}{details}')
-        return ProtocolCallOutcome(True, 'gRPC OK')
+        return ProtocolCallOutcome(True, f'gRPC {status_code}')
 
     @classmethod
-    def evaluate_websocket(cls, response: ApiExecutionResponse) -> ProtocolCallOutcome:
+    def evaluate_websocket(cls, response: ApiExecutionResponse, *, checks: frozenset[Check]) -> ProtocolCallOutcome:
         close_code = response.ws_close_code
-        if close_code not in cls.NORMAL_WEBSOCKET_CLOSE_CODES:
+        if close_code == 1006 or (Check.WEBSOCKET_CLOSE in checks and close_code not in cls.NORMAL_WEBSOCKET_CLOSE_CODES):
             reason = f'：{response.ws_close_reason}' if response.ws_close_reason else ''
             return ProtocolCallOutcome(
                 False,
                 f'WebSocket {close_code}',
                 f'WebSocket调用失败：连接异常关闭（{close_code}）{reason}',
             )
-        if response.code not in (101, 1000, 1001, None):
+        if Check.WEBSOCKET_HANDSHAKE in checks and response.code not in (101, 1000, 1001, None):
             return ProtocolCallOutcome(
                 False,
                 f'WebSocket {response.code}',

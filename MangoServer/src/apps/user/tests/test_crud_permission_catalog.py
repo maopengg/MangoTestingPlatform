@@ -1,9 +1,11 @@
+import re
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.http import QueryDict
 from django.test import SimpleTestCase
-from django.urls import URLResolver, get_resolver
+from django.urls import URLResolver, get_resolver, resolve
+from rest_framework.test import APIRequestFactory
 
 from src.apps.user.enums.permission import PageOperationEnum
 from src.apps.user.middleware.permission import MenuActionPermission
@@ -16,6 +18,113 @@ from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware, perm
 
 
 class CrudPermissionCatalogTests(SimpleTestCase):
+    def test_readonly_helpers_require_their_menu_read_permission(self):
+        helpers = (
+            ('/api/system/socket/current/actuator/status', 'ui.case:read'),
+            ('/api/system/variable/value', 'help.variable:read'),
+            ('/api/perf/scenario/executors', 'perf.scenario:read'),
+            ('/api/functional-test/plan/requirement-options', 'functional.plan:read'),
+        )
+        guest_keys = PermissionMenuService.guest_permission_keys()
+        for path, required in helpers:
+            match = resolve(path)
+            action = match.func.actions['get']
+            view = match.func.cls()
+            view.action = action
+            self.assertEqual(permission_for_view(view, action, 'get'), required)
+            metadata = next(row for row in http_permission_catalog()
+                            if row['method'] == 'GET' and re.fullmatch(row['pattern'], path.removeprefix('/api')))
+            self.assertEqual(metadata['permissions'], [required])
+            for grants, allowed in (({required}, True), (guest_keys, True),
+                                    ({'index.home:read'}, False),
+                                    ({required.replace(':read', ':change')}, False)):
+                with self.subTest(path=path, grants=grants), \
+                        patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
+                        patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=grants):
+                    request = SimpleNamespace(method='GET', path=path, data={}, query_params=QueryDict(),
+                                              user=SimpleNamespace(user_obj=SimpleNamespace(id=7)))
+                    self.assertEqual(MenuActionPermission().has_permission(request, view), allowed)
+            anonymous = SimpleNamespace(method='GET', path=path, data={}, query_params=QueryDict(), user=None)
+            self.assertFalse(MenuActionPermission().has_permission(anonymous, view))
+
+    def test_result_options_share_is_public_without_token_or_role(self):
+        from src.apps.test_center.api.views.test_suite_details import TestSuiteDetails, TestSuiteExecutionResultService
+        from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
+
+        path = '/api/system/test/suite/details/result/options/share'
+        match = resolve(path)
+        key = (f'{match.func.cls.__module__}.{match.func.cls.__name__}', 'get_detail_result_options', 'get')
+        self.assertEqual(HTTP_PERMISSION_BOUNDARIES[key], HttpPermissionBoundaryEnum.PUBLIC)
+        self.assertNotIn(key, HTTP_PERMISSION_RULES)
+        payload = [{'id': 456}]
+        for headers in ({}, {'HTTP_AUTHORIZATION': 'invalid-token'}):
+            with self.subTest(headers=bool(headers)), \
+                    patch.object(TestSuiteDetails.objects, 'filter') as details, \
+                    patch.object(TestSuiteExecutionResultService, 'get_payload_options', return_value=payload) as options, \
+                    patch.object(PermissionMenuService, 'permission_keys_for_user', side_effect=AssertionError('Public endpoint must not query role permissions')):
+                details.return_value.exists.return_value = True
+                request = APIRequestFactory().get(path, {'test_suite_detail_id': 123, 'limit': 20}, **headers)
+                response = match.func(request)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.data['code'], 200)
+                self.assertEqual(response.data['data'], payload)
+                options.assert_called_once_with(123, '20')
+
+    def test_public_result_options_still_checks_detail_id(self):
+        from src.apps.test_center.api.views.test_suite_details import TestSuiteDetails, TestSuiteExecutionResultService
+
+        path = '/api/system/test/suite/details/result/options/share'
+        view = resolve(path).func
+        for params in ({}, {'test_suite_detail_id': 'invalid'}, {'test_suite_detail_id': 123}):
+            with self.subTest(params=params), \
+                    patch.object(TestSuiteDetails.objects, 'filter') as details, \
+                    patch.object(TestSuiteExecutionResultService, 'get_payload_options') as options:
+                details.return_value.exists.return_value = False
+                response = view(APIRequestFactory().get(path, params))
+                if params:
+                    self.assertEqual(response.data['code'], 200)
+                    self.assertEqual(response.data['data'], [])
+                else:
+                    self.assertNotEqual(response.data['code'], 200)
+                options.assert_not_called()
+
+    def test_failure_reasons_share_is_public_without_token_or_role(self):
+        from src.apps.test_center.api.views.test_suite_details import TestSuiteFailureReasonService, TestSuite
+        from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
+
+        path = '/api/system/test/suite/details/failure-reasons/share'
+        match = resolve(path)
+        key = (f'{match.func.cls.__module__}.{match.func.cls.__name__}', 'get_failure_reasons', 'get')
+        self.assertEqual(HTTP_PERMISSION_BOUNDARIES[key], HttpPermissionBoundaryEnum.PUBLIC)
+        self.assertNotIn(key, HTTP_PERMISSION_RULES)
+        payload = {'items': [], 'total': 0}
+        for headers in ({}, {'HTTP_AUTHORIZATION': 'invalid-token'}):
+            with self.subTest(headers=bool(headers)), \
+                    patch.object(TestSuite.objects, 'filter') as suites, \
+                    patch.object(TestSuiteFailureReasonService, 'top_failure_reasons', return_value=payload) as reasons, \
+                    patch.object(PermissionMenuService, 'permission_keys_for_user', side_effect=AssertionError('Public endpoint must not query role permissions')):
+                suites.return_value.exists.return_value = True
+                request = APIRequestFactory().get(path, {'test_suite_id': 123}, **headers)
+                response = match.func(request)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.data['code'], 200)
+                self.assertEqual(response.data['data'], payload)
+                reasons.assert_called_once_with(123)
+
+    def test_public_failure_reasons_still_validates_report_id(self):
+        from src.apps.test_center.api.views.test_suite_details import TestSuiteFailureReasonService, TestSuite
+
+        path = '/api/system/test/suite/details/failure-reasons/share'
+        view = resolve(path).func
+        for params in ({}, {'test_suite_id': 'invalid'}, {'test_suite_id': 123}):
+            with self.subTest(params=params), \
+                    patch.object(TestSuite.objects, 'filter') as suites, \
+                    patch.object(TestSuiteFailureReasonService, 'top_failure_reasons') as reasons:
+                suites.return_value.exists.return_value = False
+                response = view(APIRequestFactory().get(path, params))
+                self.assertNotEqual(response.data['code'], 200)
+                reasons.assert_not_called()
+
     def test_every_http_method_has_one_explicit_permission_or_protocol_boundary(self):
         active = set()
 

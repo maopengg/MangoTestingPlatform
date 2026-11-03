@@ -1,13 +1,14 @@
 import asyncio
 import os
 from unittest import TestCase
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import django
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import AsyncClient, SimpleTestCase
+from django.urls import resolve, Resolver404
 from rest_framework.exceptions import ValidationError
 
 from src.apps.data_factory.enums import DataFactoryErrorCodeEnum
@@ -49,23 +50,40 @@ class ManagementHealthTests(SimpleTestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json(), {'status': 'error', 'database': 'unavailable'})
 
-    async def test_management_runtime_overview_uses_async_service(self):
-        overview = {
-            'summary': {'healthy_service_count': 1},
-            'services': [],
-            'queues': {},
-            'recent_errors': [],
-            'diagnostics': [],
-        }
-        with patch(
-                'src.apps.system.services.runtime_center.overview.RuntimeOverviewService.aget_overview',
-                new=AsyncMock(return_value=overview),
-        ) as mocked:
-            response = await AsyncClient().get('/management/runtime/overview')
+    async def test_legacy_anonymous_runtime_endpoints_are_removed(self):
+        for action in ('overview', 'services', 'queues', 'diagnostics', 'recent-errors'):
+            path = f'/management/runtime/{action}'
+            with self.subTest(path=path):
+                with self.assertRaises(Resolver404):
+                    resolve(path)
+                response = await AsyncClient().get(path)
+                self.assertEqual(response.status_code, 404)
 
-        mocked.assert_awaited_once()
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['data'], overview)
+    def test_runtime_endpoints_keep_role_permissions_and_reject_anonymous_requests(self):
+        from types import SimpleNamespace
+        from django.http import QueryDict
+        from rest_framework.test import APIRequestFactory
+        from src.apps.user.middleware.permission import MenuActionPermission
+        from src.apps.user.services.permission import PermissionMenuService
+        from src.apps.user.services.http_permission_registry import permission_for_view
+
+        guest_keys = PermissionMenuService.guest_permission_keys()
+        for action in ('overview', 'services', 'queues', 'diagnostics', 'recent-errors'):
+            path = f'/api/system/runtime/{action}'
+            match = resolve(path)
+            view = match.func.cls()
+            view.action = match.func.actions['get']
+            required = 'system.error_record:read' if action == 'recent-errors' else 'system.runtime_center:read'
+            self.assertEqual(permission_for_view(view, view.action, 'get'), required)
+            response = match.func(APIRequestFactory().get(path))
+            self.assertNotEqual(response.data['code'], 200)
+            for keys, allowed in (({required}, True), (guest_keys, False), ({'index.home:read'}, False)):
+                with self.subTest(path=path, allowed=allowed), \
+                        patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
+                        patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=keys):
+                    request = SimpleNamespace(method='GET', path=path, data={}, query_params=QueryDict(),
+                                              user=SimpleNamespace(user_obj=SimpleNamespace(id=7)))
+                    self.assertEqual(MenuActionPermission().has_permission(request, view), allowed)
 
 
 class McpRuntimeTests(TestCase):

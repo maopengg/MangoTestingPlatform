@@ -14,6 +14,7 @@ from src.apps.system.exceptions import (
 from src.apps.system.models import CacheData
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
+from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
 
 ENVIRONMENT_DISPLAY_NAMES_KEY = 'ENVIRONMENT_DISPLAY_NAMES'
 
@@ -47,6 +48,8 @@ API_WORKER_DESIRED_COUNT_DEFAULT = 5
 API_TIMEOUT_DEFAULT = 120
 API_TRANSIENT_RETRY_ENABLED_KEY = 'API_TRANSIENT_RETRY_ENABLED'
 API_TRANSIENT_RETRY_CONDITIONS_KEY = 'API_TRANSIENT_RETRY_CONDITIONS'
+API_DEFAULT_ASSERTION_ENABLED_KEY = 'API_DEFAULT_ASSERTION_ENABLED'
+API_DEFAULT_ASSERTION_CHECKS_KEY = 'API_DEFAULT_ASSERTION_CHECKS'
 GUEST_CAN_VIEW_ALL_PROJECT_DATA_KEY = "GUEST_CAN_VIEW_ALL_PROJECT_DATA"
 GUEST_PROJECT_DATA_SCOPE_CACHE_SECONDS = 60
 DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY = "DATA_FACTORY_VALIDATION_ENVIRONMENTS"
@@ -574,6 +577,16 @@ SYSTEM_CONFIG_REGISTRY.extend([
         placeholder='可多选；不选则不自动重试。HTTP 500 和业务断言失败默认不选。',
     ),
     SystemConfigDefinition(
+        key=API_DEFAULT_ASSERTION_ENABLED_KEY, describe='启用协议默认断言', group='api',
+        value_type=CacheValueTypeEnum.BOOL.value, default_value=False, sort=32,
+        placeholder='默认关闭；不影响用例显式预期、用户断言和真实调用异常。无断言的有效响应可能直接通过。',
+    ),
+    SystemConfigDefinition(
+        key=API_DEFAULT_ASSERTION_CHECKS_KEY, describe='协议默认断言检查项', group='api',
+        value_type=CacheValueTypeEnum.LIST.value, default_value=ApiDefaultAssertionCheck.defaults(), sort=33,
+        placeholder='总开关开启后生效；按协议多选，未选择的检查不执行。用例显式预期优先。',
+    ),
+    SystemConfigDefinition(
         key="REGISTRATION_DISABLED_MESSAGE", describe="禁止注册提示文案", group="access",
         default_value="当前平台未开放自助注册，请联系管理员开通账号。", required=True, sort=20,
         management_level=SystemConfigManagementLevelEnum.STANDARD.value,
@@ -1035,6 +1048,15 @@ class SystemConfigService:
         """统一校验配置管理页可编辑的单个配置项。"""
         if key not in cls.editable_config_keys():
             return '该配置已停用或不属于可编辑的系统配置'
+        if key == API_DEFAULT_ASSERTION_CHECKS_KEY:
+            try:
+                values = json.loads(value) if isinstance(value, str) else value
+                valid = {item.value for item in ApiDefaultAssertionCheck}
+                if not isinstance(values, list) or any(not isinstance(item, str) or item not in valid for item in values):
+                    return '协议默认断言检查项无效，请从可选检查项中选择'
+            except (json.JSONDecodeError, TypeError):
+                return '协议默认断言检查项必须是列表'
+            return None
         if key == API_TRANSIENT_RETRY_CONDITIONS_KEY:
             try:
                 values = json.loads(value) if isinstance(value, str) else value

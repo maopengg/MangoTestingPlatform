@@ -8,33 +8,63 @@
   >
     <template #content>
       <div class="mango-target-probe">
-        <p class="mango-target-probe__hint">从平台服务器检测 DNS 与 TCP 端口，不发送业务请求或验证登录态。</p>
-        <a-form :model="{ address }" layout="horizontal">
+        <p class="mango-target-probe__hint"
+          >从平台服务器检测 DNS 与 TCP 端口，不发送业务请求或验证登录态。</p
+        >
+        <a-form
+          :model="{ address }"
+          layout="horizontal"
+          size="small"
+          class="mango-target-probe__form"
+        >
           <a-form-item label="被测地址">
-            <a-select v-model="address" :disabled="loading" @change="result = null; error = ''">
-              <a-option v-for="option in options" :key="option.value" :value="option.value">
+            <a-select
+              v-model="address"
+              :disabled="loading"
+              placeholder="请选择被测地址"
+              @change="clearResult"
+            >
+              <a-option
+                v-for="option in options"
+                :key="option.value"
+                :value="option.value"
+                :label="option.label"
+              >
                 {{ option.label }} · {{ option.value }}
               </a-option>
             </a-select>
           </a-form-item>
         </a-form>
+        <p v-if="address" class="mango-target-probe__address">{{ address }}</p>
         <div v-if="result" class="mango-target-probe__result" role="status">
-          <a-tag class="mango-target-probe__status" :class="{ 'mango-target-probe__status--success': result.connected }" size="small">{{ result.connected ? '连接成功' : '连接失败' }}</a-tag>
-          <span>{{ result.message }}</span>
-          <dl>
-            <dt>目标端口</dt><dd>{{ result.host }}:{{ result.port }}</dd>
-            <dt>解析地址</dt><dd>{{ result.resolved_ips.join('、') || '—' }}</dd>
-            <dt>检测耗时</dt><dd>{{ result.elapsed_ms }} ms</dd>
+          <a-alert
+            :type="result.connected ? 'success' : 'error'"
+            :title="result.connected ? '连接成功' : '连接失败'"
+            class="mango-target-probe__summary"
+          >
+            {{ result.message }}
+          </a-alert>
+          <dl class="mango-target-probe__details">
+            <dt>检测目标</dt><dd>{{ result.host }}:{{ result.port }}</dd> <dt>解析地址</dt
+            ><dd>{{ result.resolved_ips.join('、') || '—' }}</dd> <dt>检测耗时</dt
+            ><dd>{{ result.elapsed_ms }} ms</dd>
           </dl>
         </div>
-        <p v-if="error" class="mango-target-probe__error" role="alert">{{ error }}</p>
+        <a-alert v-if="error" type="error" role="alert">{{ error }}</a-alert>
       </div>
     </template>
     <template #footer>
-        <div class="mango-modal-dialog-footer-actions">
-          <a-button size="small" @click="close">关闭</a-button>
-          <a-button  type="primary" size="small" :loading="loading" :disabled="!address" @click="runTest">测试</a-button>
-        </div>
+      <a-space class="mango-modal-dialog-footer-actions">
+        <a-button size="small" @click="close">关闭</a-button>
+        <a-button
+          type="primary"
+          size="small"
+          :loading="loading"
+          :disabled="!address"
+          @click="runTest"
+          >测试</a-button
+        >
+      </a-space>
     </template>
   </ModalDialog>
 </template>
@@ -54,6 +84,11 @@
   const error = ref('')
   let requestVersion = 0
 
+  function clearResult() {
+    result.value = null
+    error.value = ''
+  }
+
   function reset() {
     requestVersion += 1
     loading.value = false
@@ -61,7 +96,10 @@
     error.value = ''
   }
 
-  function open(record: { id: number; network_test_addresses: Array<{ label: string; value: string }> }) {
+  function open(record: {
+    id: number
+    network_test_addresses: Array<{ label: string; value: string }>
+  }) {
     reset()
     objectId.value = record.id
     options.value = record.network_test_addresses || []
@@ -98,13 +136,58 @@
 </script>
 
 <style scoped>
-  .mango-target-probe { display: grid; gap: var(--m-page-gap); min-width: 0; }
-  .mango-target-probe__hint { margin: 0; color: var(--m-muted); }
-  .mango-target-probe__result { color: var(--m-text); overflow-wrap: anywhere; }
-  .mango-target-probe__result dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 12px; }
-  .mango-target-probe__result dt { color: var(--m-muted); }
-  .mango-target-probe__result dd { margin: 0; }
-  .mango-target-probe__error { margin: 0; color: var(--m-danger); }
-  .mango-target-probe__status { color: var(--m-danger); background: var(--m-surface); }
-  .mango-target-probe__status--success { color: var(--m-success); }
+  .mango-target-probe {
+    display: grid;
+    gap: var(--m-space-lg);
+    min-width: 0;
+    font-size: var(--m-font-body);
+    line-height: 1.6;
+  }
+  .mango-target-probe__hint {
+    margin: 0;
+    color: var(--m-text-2);
+    font-size: var(--m-font-caption);
+  }
+  .mango-target-probe__form :deep(.arco-form-item) {
+    margin-bottom: 0;
+  }
+  .mango-target-probe__address {
+    margin: calc(-1 * var(--m-space-sm)) 0 0;
+    padding: var(--m-space-sm) var(--m-card-padding);
+    background: var(--m-surface-soft);
+    border-radius: var(--m-radius-sm);
+    color: var(--m-text-2);
+    font-size: var(--m-font-caption);
+    overflow-wrap: anywhere;
+  }
+  .mango-target-probe__result {
+    display: grid;
+    gap: var(--m-space-lg);
+    min-width: 0;
+    color: var(--m-text);
+    overflow-wrap: anywhere;
+  }
+  .mango-target-probe__summary {
+    align-items: flex-start;
+  }
+  .mango-target-probe__summary :deep(.arco-alert-title) {
+    font-size: var(--m-font-body);
+    font-weight: 600;
+  }
+  .mango-target-probe__details {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: var(--m-space-md) var(--m-space-lg);
+    margin: 0;
+    padding-top: var(--m-space-md);
+    border-top: 1px solid var(--m-border);
+  }
+  .mango-target-probe__details dt {
+    color: var(--m-text-2);
+  }
+  .mango-target-probe__details dd {
+    margin: 0;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
 </style>

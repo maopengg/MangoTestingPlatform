@@ -59,12 +59,7 @@ from src.apps.auto_api.exceptions import (
     API_CASE_PRE_SQL_EMPTY,
     API_CASE_PRE_FUNCTION_FAILED,
     API_CASE_POST_FUNCTION_FAILED,
-    GRPC_API_STATUS_INVALID,
-    MCP_API_INVALID,
-    MCP_API_CONFIG_INVALID,
-    MCP_API_SCENARIO_INVALID,
 )
-from src.apps.auto_api.schemas.case_schema import scenario_grpc_config, scenario_mcp_config
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse, ApiExecutionRequest, ApiAssertionResult
 from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
 from src.apps.auto_api.services.base.assertion_diagnostics import (
@@ -148,45 +143,9 @@ class CaseParameter:
             return False, evaluator.ass_result
         return True, evaluator.ass_result
 
-    def __ass_mcp_default(self, response: ApiExecutionResponse):
-        if response.response_mode != 'mcp':
-            return
-        mcp_config = scenario_mcp_config(self.parameter.body_config)
-        expected_result = mcp_config.get('expected_result') or 'success'
-        if expected_result not in {'success', 'error', 'any'}:
-            raise AutoApiError(MCP_API_CONFIG_INVALID, value=(expected_result,))
-        if expected_result == 'any':
-            return
-        is_error = bool(response.mcp_is_error)
-        if expected_result == 'success' and is_error:
-            message = response.text or response.mcp_content or response.mcp_structured_content or response.mcp_meta or 'MCP Tool返回业务错误'
-            raise AutoApiError(MCP_API_INVALID, value=(response.mcp_tool_name or '-', value_preview(message),))
-        if expected_result == 'error' and not is_error:
-            raise AutoApiError(MCP_API_SCENARIO_INVALID)
-
-    def __ass_grpc_default(self, response: ApiExecutionResponse):
-        if response.response_mode != 'grpc':
-            return
-        grpc_config = scenario_grpc_config(self.parameter.body_config)
-        expected_status = str(grpc_config.get('expected_status') or 'OK').upper()
-        if expected_status == 'ANY':
-            return
-        actual_status = str(response.grpc_status_code or 'UNKNOWN').upper()
-        if actual_status != expected_status:
-            raise AutoApiError(GRPC_API_STATUS_INVALID,
-                               value=(
-                                   response.grpc_full_method or '-',
-                                   actual_status,
-                                   expected_status,
-                                   response.grpc_status_details or '-',
-                               ),
-                               )
-
     def verify_all_assertions(self, response: ApiExecutionResponse) -> tuple[list[ApiAssertionResult], int, str | None]:
         self.ass_result = []
         assertion_tasks = [
-            ('MCP默认断言', 'mcp_default', lambda: self.__ass_mcp_default(response)),
-            ('gRPC默认断言', 'grpc_default', lambda: self.__ass_grpc_default(response)),
             (
                 '响应字段断言',
                 'jsonpath',

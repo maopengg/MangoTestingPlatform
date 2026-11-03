@@ -272,7 +272,7 @@ MCP_PERMISSION_RULES = {
     'preview_module_coverage_interface_binding': {'permission_key': 'api.module_coverage:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'preview_push_pytest_repo_impact': {'permission_key': 'pytest.repository:change', 'project_scoped': False, 'public': False, 'additional_permission_keys': ()},
     'preview_run_data_factory_template_impact': {'permission_key': 'data_factory.template:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
-    'preview_trigger_scheduled_task_impact': {'permission_key': 'timing.tasks:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
+    'preview_trigger_scheduled_task_impact': {'permission_key': 'timing.tasks:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},
     'preview_unbind_cases_from_scheduled_task_impact': {'permission_key': 'timing.tasks:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'preview_update_pytest_case_file_impact': {'permission_key': 'pytest.case:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'preview_update_pytest_product_init_file_impact': {'permission_key': 'pytest.product:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},

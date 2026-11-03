@@ -17,6 +17,7 @@ from src.apps.auto_api.enums.execution_trace import ApiCaseTraceStepType
 from src.apps.auto_api.models import ApiCaseDetailed, ApiCase, ApiCaseDetailedParameter
 from src.apps.auto_api.schemas.case_schema import (
     unpack_scenario_body_config,
+    scenario_protocol_expectation,
 )
 from src.apps.auto_api.schemas.execution import (
     ApiExecutionRequest,
@@ -265,7 +266,11 @@ class ApiTestCaseParameterMixin:
                         expected_http_status_codes=expected_codes,
                         accept_any_http_status=accept_any_status,
                         display_name=api_info.name,
-                        expected_mcp_error=(mcp_config or {}).get('expected_result') == 'error',
+                        expected_mcp_result=(mcp_config or {}).get('expected_result'),
+                        expected_grpc_status=(grpc_config or {}).get('expected_status'),
+                        require_http_success=(
+                            scenario_protocol_expectation(parameter.body_config).get('mode') == 'success'
+                        ),
                     )
                     request_summary = {
                         'code': res_model.response.code,

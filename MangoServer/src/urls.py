@@ -21,14 +21,8 @@ from django.http import JsonResponse
 from django.urls import path, include, re_path
 
 from src.apps.auto_api.api.views.api_mock import ApiMockRuntimeView
-from src.apps.system.services.runtime_center.diagnostics import DiagnosticsService
-from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
-from src.apps.system.services.runtime_center.overview import RuntimeOverviewService
-from src.apps.system.services.runtime_center.queue_stats import QueueStatsService
-from src.apps.system.services.runtime_center.recent_errors import RecentErrorsService
 from src.apps.task_center.api.views.actuator_tasks import ActuatorTaskViews
 from src.apps.user.api.views.user import LoginViews, MenuViews, UserViews
-from src.common.responses.response_msg import RESPONSE_MSG_0001
 from src.settings import OBJECT_STORAGE_ENABLED
 
 
@@ -47,57 +41,12 @@ async def management_health(request):
     return JsonResponse({"status": "ok"})
 
 
-def _management_success(data, total_size=None):
-    payload = {
-        "code": RESPONSE_MSG_0001[0],
-        "msg": RESPONSE_MSG_0001[1],
-        "data": data,
-    }
-    if total_size is not None:
-        payload['totalSize'] = total_size
-    return JsonResponse(payload)
-
-
-async def management_runtime_overview(request):
-    return _management_success(await RuntimeOverviewService.aget_overview())
-
-
-async def management_runtime_services(request):
-    await RuntimeOverviewService.areport_core_api()
-    return _management_success(await ServiceHeartbeatService.alist_service_groups(RuntimeOverviewService.SERVICE_NAMES))
-
-
-async def management_runtime_queues(request):
-    return _management_success(await QueueStatsService.aget_stats())
-
-
-async def management_runtime_diagnostics(request):
-    return _management_success(await DiagnosticsService.alist_diagnostics())
-
-
-async def management_runtime_recent_errors(request):
-    try:
-        page = max(int(request.GET.get('page') or 1), 1)
-        page_size = int(request.GET.get('pageSize') or request.GET.get('limit') or RecentErrorsService.DEFAULT_LIMIT)
-    except (TypeError, ValueError):
-        page = 1
-        page_size = RecentErrorsService.DEFAULT_LIMIT
-    page_size = min(max(page_size, 1), 100)
-    rows, total = await RecentErrorsService.apaginate_errors(page, page_size)
-    return _management_success(rows, total)
-
-
 urlpatterns = [
     re_path(
         r"^api/mock/(?P<mock_key>[a-z0-9]+(?:-[a-z0-9]+)*)(?P<remaining_path>/.*)?$",
         ApiMockRuntimeView.as_view(),
     ),
     path("management/health", management_health),
-    path("management/runtime/overview", management_runtime_overview),
-    path("management/runtime/services", management_runtime_services),
-    path("management/runtime/queues", management_runtime_queues),
-    path("management/runtime/diagnostics", management_runtime_diagnostics),
-    path("management/runtime/recent-errors", management_runtime_recent_errors),
     path("api/login", LoginViews.as_view({'post': 'login'})),
     path("api/cli/auth/authorize", UserViews.as_view({'post': 'cli_authorize'})),
     path("api/cli/auth/token", LoginViews.as_view({'post': 'cli_token'})),
