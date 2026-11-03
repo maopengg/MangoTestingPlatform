@@ -60,7 +60,7 @@ class ModelCrudDataScopePolicy:
             if not project_product_id:
                 return True
             try:
-                return ProjectProductScopeService.has_project_product(user, int(project_product_id))
+                return int(project_product_id) in cls._allowed_ids(request, user)
             except (TypeError, ValueError):
                 return False
         paths = RELATED_PRODUCT_SCOPE_PATHS.get(model._meta.label_lower)
@@ -100,7 +100,7 @@ class ModelCrudDataScopePolicy:
             project_product_id = int(project_product_id)
         except (TypeError, ValueError):
             return False
-        return ProjectProductScopeService.has_project_product(user, project_product_id)
+        return project_product_id in cls._allowed_ids(request, user)
 
     @classmethod
     def has_instance_permission(cls, model, request, instance, pytest_models: set[str]) -> bool:
@@ -136,7 +136,11 @@ class ModelCrudDataScopePolicy:
         if not hasattr(model, 'project_product') and model._meta.label_lower not in RELATED_PRODUCT_SCOPE_PATHS and model._meta.label_lower != 'test_center.projectproduct':
             return True
         try:
-            visible = cls.filter_queryset(model, request, model.objects.filter(pk__in=ids), pytest_models)
+            requested = model.objects.filter(pk__in=ids)
+            visible = cls.filter_queryset(model, request, requested, pytest_models)
+            if request.method.lower() == 'get':
+                # 列表筛选允许不存在的 ID；只拒绝实际存在但不在调用者范围内的记录。
+                return not requested.exclude(pk__in=visible.values('pk')).exists()
             return visible.count() == len(set(ids))
         except (TypeError, ValueError):
             return False

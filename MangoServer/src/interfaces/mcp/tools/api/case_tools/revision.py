@@ -90,8 +90,8 @@ def register_case_revision_tools(mcp):
 
         target_status=published：由项目产品负责人通过当前预发布并生成正式版本，不传 revision_id。
         Case 当前执行状态必须为通过，失败、未执行或执行中的 Case 不允许正式发布。
-        target_status=unpublished：由项目产品负责人退回当前预发布，不删除修订，不传 revision_id，不恢复旧正式版本。
-        服务端会校验当前状态、唯一候选修订和项目产品负责人权限，不允许跳过预发布直接正式发布。
+        target_status=unpublished：具备用例修改权限且在产品数据范围内的用户均可退回当前预发布，不要求产品负责人身份；不删除修订，不传 revision_id，不恢复旧正式版本。
+        服务端会校验当前状态、唯一候选修订；审批正式发布额外校验项目产品负责人身份，不允许跳过预发布直接正式发布。
         """
         if target_status == ApiCaseRevisionService.PUBLICATION_PREPUBLISHED:
             if revision_id is None:

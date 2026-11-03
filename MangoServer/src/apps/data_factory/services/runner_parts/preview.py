@@ -149,41 +149,42 @@ class DataFactoryRunnerPreviewMixin:
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
-        runtime_context = context or {}
-        main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
-        result = cls.preview_by_template(
-            template,
-            main_overrides,
-            runtime_context,
-            test_object_id,
-            set(),
-            output_config=output_config,
-            test_data=test_data,
-            activation_validation=activation_validation,
-        )
-        result = cls.preview_template_items(
-            template=template,
-            result=result,
-            item_overrides=item_overrides,
-            context=runtime_context,
-            test_object_id=test_object_id,
-            test_data=test_data,
-            activation_validation=activation_validation,
-        )
-        update_preview = cls.preview_post_insert_updates(
-            template,
-            post_insert_updates if post_insert_updates is not None else template.post_insert_updates,
-            main_overrides,
-            item_overrides,
-        )
-        result["post_insert_updates"] = update_preview
-        result["can_debug_run"] = result.get("can_debug_run", False) and all(
-            item.get("valid", False) for item in update_preview
-        )
-        result["configuration_valid"] = result.get("configuration_valid", False) and all(
-            item.get("valid", False) for item in update_preview
-        )
-        return result
+        with DataFactoryRuntimeCache.bind_context(test_data, context):
+            runtime_context = context or {}
+            main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
+            result = cls.preview_by_template(
+                template,
+                main_overrides,
+                runtime_context,
+                test_object_id,
+                set(),
+                output_config=output_config,
+                test_data=test_data,
+                activation_validation=activation_validation,
+            )
+            result = cls.preview_template_items(
+                template=template,
+                result=result,
+                item_overrides=item_overrides,
+                context=runtime_context,
+                test_object_id=test_object_id,
+                test_data=test_data,
+                activation_validation=activation_validation,
+            )
+            update_preview = cls.preview_post_insert_updates(
+                template,
+                post_insert_updates if post_insert_updates is not None else template.post_insert_updates,
+                main_overrides,
+                item_overrides,
+            )
+            result["post_insert_updates"] = update_preview
+            result["can_debug_run"] = result.get("can_debug_run", False) and all(
+                item.get("valid", False) for item in update_preview
+            )
+            result["configuration_valid"] = result.get("configuration_valid", False) and all(
+                item.get("valid", False) for item in update_preview
+            )
+            return result
 
     @staticmethod
     def split_scene_overrides(overrides: dict | None) -> tuple[dict, dict]:

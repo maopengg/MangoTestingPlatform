@@ -2,6 +2,9 @@
 # @Project: 芒果测试平台
 # @Description: 数据工厂运行时缓存初始化
 
+from contextlib import contextmanager
+from copy import deepcopy
+
 from mangotools.enums import StatusEnum
 
 from src.apps.auto_api.enums import ApiPublicTypeEnum
@@ -16,6 +19,38 @@ from src.common.utils.environment_scope import test_envs_query
 
 class DataFactoryRuntimeCache:
     """为数据工厂预览、调试和执行初始化可用于 ${{}} 替换的缓存。"""
+
+    @staticmethod
+    @contextmanager
+    def bind_context(test_data: ObtainTestData, context: dict | None):
+        """本次请求值覆盖普通公共变量，结束后恢复，不写入持久配置或跨执行缓存。"""
+        values = {}
+
+        def collect(data, prefix=''):
+            for key, value in data.items():
+                if not isinstance(key, str) or key.startswith('__'):
+                    continue
+                name = f'{prefix}.{key}' if prefix else key
+                values[name] = deepcopy(value)
+                if isinstance(value, dict):
+                    collect(value, name)
+
+        collect(context or {})
+        if not values:
+            yield test_data
+            return
+        original = test_data.get_all()
+        try:
+            for key, value in values.items():
+                test_data.set_cache(key, value)
+            yield test_data
+        finally:
+            for key in values:
+                test_data.delete_cache(key)
+            # LRU 缓存可能在注入时淘汰旧键；恢复被覆盖和被淘汰的原值。
+            for key, value in original.items():
+                if key in values or not test_data.has_cache(key):
+                    test_data.set_cache(key, value)
 
     @classmethod
     def build_test_data(cls, project_product_id: int, test_env, api_public_ids=None,

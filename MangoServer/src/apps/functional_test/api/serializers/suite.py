@@ -10,12 +10,13 @@ from src.apps.test_center.formatters.related import format_project_product
 from src.apps.test_center.services.product_module import ProductModuleService
 from src.apps.user.api.formatters import format_department
 from src.apps.user.formatters import format_user, format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
 class ManualTestSuiteSerializerC(ManualTestSuiteSerializer):
     requirement = FunctionalTestRequirementSerializer(read_only=True)
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     module = RelatedObjectField(formatter=format_product_module_compact, read_only=True)
     owner = RelatedObjectField(formatter=format_user, read_only=True)
     update_user = RelatedObjectField(formatter=format_user_simple, read_only=True)
@@ -81,7 +82,7 @@ class ManualTestSuiteSerializerC(ManualTestSuiteSerializer):
             estimated_person_days=Sum("requirement_tasks__estimated_person_days"),
             actual_person_days=Sum("requirement_tasks__actual_person_days"),
         )
-        return ProductModuleService.with_full_paths(queryset, 'module').select_related(
+        return TestCenterQuerySelector.with_project_product_display(ProductModuleService.with_full_paths(queryset, 'module').select_related(
             "requirement",
             "previous_version",
             "iteration_ref",
@@ -91,4 +92,4 @@ class ManualTestSuiteSerializerC(ManualTestSuiteSerializer):
             "owner",
             "development_owner",
             "update_user",
-        )
+        ))

@@ -8,6 +8,7 @@ from rest_framework import serializers
 
 from src.apps.test_center.api.serializers.project import ProjectSerializers
 from src.apps.test_center.models import ProjectProduct
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.apps.user.formatters import format_user_simple
 from src.apps.user.models import User
 from src.common.validators.serializer_fields import RelatedObjectField
@@ -41,8 +42,4 @@ class ProjectProductSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.select_related(
-            'project',
-            'update_user',
-        ).prefetch_related('owners')
-        return queryset
+        return TestCenterQuerySelector.with_project_product_display(queryset, relation='')

@@ -30,6 +30,22 @@ export function getApiInfo(data: object) {
   })
 }
 
+export async function getApiInfoOptions(projectProductId: number | string, isCurrent: () => boolean = () => true) {
+  const items: any[] = []
+  const seen = new Set<string>()
+  const pageSize = 200
+  for (let page = 1; isCurrent(); page += 1) {
+    const response = await getApiInfo({ project_product: projectProductId, summary: true, page, pageSize })
+    if (!isCurrent()) return []
+    const batch = response.data || []
+    const fresh = batch.filter((item: any) => !seen.has(String(item.id)))
+    fresh.forEach((item: any) => seen.add(String(item.id)))
+    items.push(...fresh)
+    if (!fresh.length || batch.length < pageSize || items.length >= Number(response.totalSize)) break
+  }
+  return items
+}
+
 export function getApiInfoBoundCases(id: number | string) {
   return get({
     url: '/api/info/bound/cases',

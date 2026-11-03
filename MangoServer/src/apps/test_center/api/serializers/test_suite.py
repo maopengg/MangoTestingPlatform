@@ -7,6 +7,8 @@
 from django.db.models import Prefetch
 from rest_framework import serializers
 
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
+
 from src.apps.task_center.formatters import format_scheduled_task
 from src.apps.test_center.api.serializers.product_module_mutation import ProductModuleSerializers
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
@@ -106,4 +108,4 @@ class TestSuiteSerializersC(serializers.ModelSerializer):
                 to_attr='_execution_summary_rows',
             ),
         )
-        return queryset
+        return TestCenterQuerySelector.with_project_product_display(queryset)

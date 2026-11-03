@@ -12,8 +12,13 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_api.api.serializers.api_info import ApiInfoSerializersC, ApiInfoListSerializersC, \
-    ApiInfoBoundCaseSerializers
+from src.apps.auto_api.api.serializers.api_info import (
+    ApiInfoSerializersC,
+    ApiInfoListSerializersC,
+    ApiInfoSummarySerializers,
+    ApiInfoListQuery,
+    ApiInfoBoundCaseSerializers,
+)
 from src.apps.auto_api.api.serializers.api_info_mutation import ApiInfoSerializers
 from src.apps.auto_api.enums import ApiProtocolTypeEnum, MethodEnum
 from src.apps.auto_api.exceptions import (
@@ -75,6 +80,9 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     serializer_class = ApiInfoSerializersC
     serializer = ApiInfoSerializers
     page_permission_key = 'api.info'
+    default_page_size = 20
+    max_page_size = 200
+    eager_loading_after_paging = True
     not_matching_str = ModelCRUD.not_matching_str + [
         'project_product__api_client_type',
         'method',
@@ -84,8 +92,21 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     def get_serializer_class(self):
         if getattr(self.request, 'method', '').upper() == 'GET':
+            if self.request.query_params.get('summary') == 'true':
+                return ApiInfoSummarySerializers
             return ApiInfoListSerializersC
         return super().get_serializer_class()
+
+    def is_valid_query_param(self, key: str) -> bool:
+        if key == 'summary':
+            return False
+        return super().is_valid_query_param(key)
+
+    @error_response('system')
+    def get(self, request: Request):
+        query = ApiInfoListQuery(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        return super().get(request)
 
     @staticmethod
     def split_identity_and_config(data: dict) -> tuple[dict, dict]:

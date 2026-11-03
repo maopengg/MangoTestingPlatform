@@ -9,6 +9,7 @@ from src.apps.monitoring.models import MonitoringTask
 from src.apps.test_center.formatters.related import format_notice_group
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -82,7 +83,7 @@ class MonitoringTaskSerializersC(serializers.ModelSerializer):
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     status_display = serializers.SerializerMethodField()
     test_env_display = serializers.SerializerMethodField()
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     notice_group = RelatedObjectField(formatter=format_notice_group, read_only=True)
     update_user = RelatedObjectField(formatter=format_user_simple, read_only=True)
 
@@ -107,4 +108,4 @@ class MonitoringTaskSerializersC(serializers.ModelSerializer):
             'notice_group',
             'update_user',
         )
-        return queryset
+        return TestCenterQuerySelector.with_project_product_display(queryset)

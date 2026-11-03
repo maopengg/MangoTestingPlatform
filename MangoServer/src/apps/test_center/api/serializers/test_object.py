@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
+
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.models import TestObject
 from src.apps.test_center.services.test_target import TestTargetService
@@ -55,4 +57,4 @@ class TestObjectSerializersC(serializers.ModelSerializer):
             'project_product__project',
             'update_user',
         ).prefetch_related('project_product__owners')
-        return queryset
+        return TestCenterQuerySelector.with_project_product_display(queryset)

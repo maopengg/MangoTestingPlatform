@@ -279,6 +279,8 @@ def register_template_tools(mcp):
         确认 can_debug_run=True、missing_fields 为空、依赖树无错误且输出字段有值。
         该预览不要求实体先启用，应在实体仍停用时完成校验。
         可传 post_insert_updates 预览尚未保存的回写配置；返回同名字段包含安全 SQL 模板和校验结果。
+        environment 模式下，context 普通键可供本次 ${{变量}} 表达式读取，嵌套对象支持点号路径；
+        同名值覆盖普通公共变量，仅本次调用有效。影响预览和真实执行遵循相同规则。
         """
         if preview_mode == 'configuration':
             return ok(DataFactoryConfigurationPreviewService.preview(

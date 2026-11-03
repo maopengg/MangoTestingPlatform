@@ -4,9 +4,11 @@
 # @Time   : 2023-11-13 10:42
 # @Author : 毛鹏
 
-from django.db.models import BooleanField, Case, CharField, F, OuterRef, Prefetch, Subquery, Value, When
+from django.db.models import BooleanField, Case, CharField, F, IntegerField, OuterRef, Subquery, Value, When
+from django.db.models.functions import Coalesce
 from rest_framework import serializers
 
+from src.apps.auto_api.enums import ApiProtocolTypeEnum, MethodEnum
 from src.apps.auto_api.models import (
     ApiCase,
     ApiInfo,
@@ -17,19 +19,27 @@ from src.apps.auto_api.schemas.config_fields import API_INFO_CONFIG_FIELDS
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.test_center.formatters.related import format_product_module
 from src.apps.test_center.formatters.related import format_project_product
+from src.apps.test_center.formatters.related import format_project_product_summary, format_product_module_summary
 from src.apps.test_center.services.product_module import ProductModuleService
 from src.apps.user.formatters import format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
+
+
+class ApiInfoListQuery(serializers.Serializer):
+    page = serializers.IntegerField(min_value=1, required=False)
+    pageSize = serializers.IntegerField(min_value=1, required=False)
+    summary = serializers.ChoiceField(choices=('true', 'false'), required=False)
 
 
 class ApiInfoSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     module = RelatedObjectField(formatter=format_product_module, read_only=True)
     update_user = RelatedObjectField(formatter=format_user_simple, read_only=True)
-    mcp_binding = serializers.SerializerMethodField()
-    grpc_binding = serializers.SerializerMethodField()
+    mcp_binding = serializers.JSONField(read_only=True, default=None)
+    grpc_binding = serializers.JSONField(read_only=True, default=None)
 
     class Meta:
         model = ApiInfo
@@ -49,25 +59,11 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
             'http_config',
             'websocket_config',
         )
-        return queryset
-
-    @staticmethod
-    def get_mcp_binding(instance):
-        snapshot = getattr(instance, '_mcp_binding_snapshot', None)
-        if isinstance(snapshot, dict):
-            return snapshot
-        return ApiInfoRuntimeService.capture_mcp_binding(instance)
-
-    @staticmethod
-    def get_grpc_binding(instance):
-        snapshot = getattr(instance, '_grpc_binding_snapshot', None)
-        if isinstance(snapshot, dict):
-            return snapshot
-        return ApiInfoRuntimeService.capture_grpc_binding(instance)
+        return TestCenterQuerySelector.with_project_product_display(queryset)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        runtime_payload = ApiInfoRuntimeService.current_payload(instance)
+        runtime_payload = ApiInfoRuntimeService.current_payload(instance, materialize_descriptors=False)
         for field in API_INFO_CONFIG_FIELDS:
             data[field] = runtime_payload.get(field)
         data['protocol_config'] = runtime_payload.get('protocol_config')
@@ -87,19 +83,8 @@ class ApiInfoListSerializersC(ApiInfoSerializersC):
         model = ApiInfo
         fields = '__all__'
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        runtime_payload = self._runtime_payload(instance)
-        for field in API_INFO_CONFIG_FIELDS:
-            data[field] = runtime_payload.get(field)
-        return data
-
     @staticmethod
-    def _runtime_payload(instance):
-        return ApiInfoRuntimeService.current_payload(instance)
-
-    @staticmethod
-    def setup_eager_loading(queryset):
+    def setup_publication_loading(queryset):
         latest_revision = ApiInfoRevision.objects.filter(api_info_id=OuterRef('pk')).order_by('-revision_no')
         current_release = ApiInfoRelease.objects.filter(
             api_info_id=OuterRef('pk'),
@@ -126,33 +111,62 @@ class ApiInfoListSerializersC(ApiInfoSerializersC):
                 default=Value('published'),
                 output_field=CharField(),
             ),
-        ).prefetch_related(
-            Prefetch(
-                'releases',
-                queryset=ApiInfoRelease.objects.filter(
-                    is_current=True,
-                    status=ApiInfoRelease.STATUS_PUBLISHED,
-                ).select_related('revision').order_by('-version_no'),
-                to_attr='current_published_releases',
-            ),
-            Prefetch(
-                'revisions',
-                queryset=ApiInfoRevision.objects.order_by('-revision_no'),
-                to_attr='latest_revisions',
+        )
+        return queryset
+
+    @staticmethod
+    def setup_eager_loading(queryset):
+        return ApiInfoSerializersC.setup_eager_loading(
+            ApiInfoListSerializersC.setup_publication_loading(queryset),
+        )
+
+
+class ApiInfoSummarySerializers(ApiInfoListSerializersC):
+    """列表显式请求摘要时不组装执行配置；按 ID 获取仍返回完整编辑数据。"""
+
+    method = serializers.IntegerField(read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product_summary, read_only=True)
+    module = RelatedObjectField(formatter=format_product_module_summary, read_only=True)
+
+    class Meta:
+        model = ApiInfo
+        fields = (
+            'id', 'name', 'url', 'protocol_type', 'method', 'status',
+            'project_product', 'module', 'update_user', 'create_time', 'update_time',
+            'current_revision_id', 'current_revision_no', 'published_release_id',
+            'published_revision_id', 'published_version_label', 'publication_status',
+            'has_unpublished_changes',
+        )
+
+    def to_representation(self, instance):
+        return serializers.ModelSerializer.to_representation(self, instance)
+
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = ApiInfoListSerializersC.setup_publication_loading(queryset)
+        return ProductModuleService.with_full_paths(queryset, 'module').select_related(
+            'project_product', 'project_product__project', 'update_user',
+        ).only(
+            'id', 'name', 'url', 'protocol_type', 'status', 'create_time', 'update_time',
+            'project_product__id', 'project_product__name', 'project_product__api_client_type',
+            'project_product__ui_client_type', 'project_product__project__id', 'project_product__project__name',
+            'module__id', 'module__name', 'module__parent__id', 'module__parent__name',
+            'module__parent__parent__id', 'module__parent__parent__name', 'module__parent__parent__parent_id',
+            'update_user__id', 'update_user__name', 'update_user__username',
+        ).annotate(
+            method=Case(
+                When(
+                    protocol_type__in=[ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value],
+                    then=Coalesce(F('http_config__method'), Value(MethodEnum.GET.value)),
+                ),
+                When(protocol_type=ApiProtocolTypeEnum.WEBSOCKET.value,
+                     then=Value(MethodEnum.WEBSOCKET_CONNECT.value)),
+                When(protocol_type=ApiProtocolTypeEnum.MCP.value, then=Value(MethodEnum.MCP_CALL.value)),
+                When(protocol_type=ApiProtocolTypeEnum.GRPC.value, then=Value(MethodEnum.GRPC_CALL.value)),
+                default=Value(MethodEnum.GET.value),
+                output_field=IntegerField(),
             ),
         )
-        queryset = ProductModuleService.with_full_paths(queryset, 'module').select_related(
-            'project_product',
-            'project_product__project',
-            'update_user',
-            'http_config',
-            'websocket_config',
-            'mcp_protocol_config',
-            'grpc_protocol_config',
-            'grpc_protocol_config__grpc_service',
-            'grpc_protocol_config__grpc_service__descriptor_file',
-            'grpc_protocol_config__grpc_method')
-        return queryset
 
 
 class ApiInfoBoundCaseSerializers(serializers.ModelSerializer):

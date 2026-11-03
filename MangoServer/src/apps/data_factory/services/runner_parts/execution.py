@@ -55,66 +55,67 @@ class DataFactoryRunnerExecutionMixin:
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         cls.require_template_entities_available(template, test_object_id)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
-        main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
-        execution = DataFactoryExecution.objects.create(
-            execution_no=cls.build_execution_no(),
-            source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
-            source_id=template.id,
-            template=template,
-            project_product=template.project_product,
-            module=template.module or template.entity.module,
-            stage=DataFactoryExecutionStageEnum.DEBUG.value,
-            status=DataFactoryExecutionStatusEnum.PROCEED.value,
-            context=context or {},
-        )
+        with DataFactoryRuntimeCache.bind_context(test_data, context):
+            main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
+            execution = DataFactoryExecution.objects.create(
+                execution_no=cls.build_execution_no(),
+                source_type=DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value,
+                source_id=template.id,
+                template=template,
+                project_product=template.project_product,
+                module=template.module or template.entity.module,
+                stage=DataFactoryExecutionStageEnum.DEBUG.value,
+                status=DataFactoryExecutionStatusEnum.PROCEED.value,
+                context=context or {},
+            )
 
-        try:
-            runtime_context = context or {}
-            data = cls.create_by_template(
-                template,
-                execution,
-                main_overrides,
-                runtime_context,
-                test_object_id,
-                test_data=test_data,
-            )
-            items = cls.create_template_items(
-                template,
-                execution,
-                item_overrides,
-                runtime_context,
-                test_object_id,
-                test_data,
-            )
-            post_insert_updates = cls.execute_post_insert_updates(
-                template,
-                execution,
-                runtime_context,
-                main_overrides,
-                item_overrides,
-            )
-            output = cls.build_output(template.output_config, data)
-            execution.context = runtime_context
-            execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
-            execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
-            execution.save()
-            cls.sync_execution_cleanup_todo(execution)
-            return {
-                "execution_id": execution.id,
-                "execution_no": execution.execution_no,
-                "context": execution.context,
-                "data": data,
-                "output": output,
-                "items": items,
-                "post_insert_updates": post_insert_updates,
-                "items_output": {item["name"]: item.get("output") or item.get("data") for item in items},
-            }
-        except Exception as error:
-            execution.status = DataFactoryExecutionStatusEnum.FAIL.value
-            execution.error_message = str(error)
-            execution.save()
-            cls.cleanup_failed_execution(execution, error)
-            raise
+            try:
+                runtime_context = context or {}
+                data = cls.create_by_template(
+                    template,
+                    execution,
+                    main_overrides,
+                    runtime_context,
+                    test_object_id,
+                    test_data=test_data,
+                )
+                items = cls.create_template_items(
+                    template,
+                    execution,
+                    item_overrides,
+                    runtime_context,
+                    test_object_id,
+                    test_data,
+                )
+                post_insert_updates = cls.execute_post_insert_updates(
+                    template,
+                    execution,
+                    runtime_context,
+                    main_overrides,
+                    item_overrides,
+                )
+                output = cls.build_output(template.output_config, data)
+                execution.context = runtime_context
+                execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
+                execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
+                execution.save()
+                cls.sync_execution_cleanup_todo(execution)
+                return {
+                    "execution_id": execution.id,
+                    "execution_no": execution.execution_no,
+                    "context": execution.context,
+                    "data": data,
+                    "output": output,
+                    "items": items,
+                    "post_insert_updates": post_insert_updates,
+                    "items_output": {item["name"]: item.get("output") or item.get("data") for item in items},
+                }
+            except Exception as error:
+                execution.status = DataFactoryExecutionStatusEnum.FAIL.value
+                execution.error_message = str(error)
+                execution.save()
+                cls.cleanup_failed_execution(execution, error)
+                raise
 
     @classmethod
     def run_template(
@@ -136,70 +137,71 @@ class DataFactoryRunnerExecutionMixin:
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         cls.require_template_entities_available(template, test_object_id)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
-        main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
-        execution = DataFactoryExecution.objects.create(
-            execution_no=cls.build_execution_no(),
-            source_type=source_type,
-            source_id=source_id,
-            template=template,
-            project_product=template.project_product,
-            module=template.module or template.entity.module,
-            stage=stage,
-            status=DataFactoryExecutionStatusEnum.PROCEED.value,
-            context=context or {},
-        )
+        with DataFactoryRuntimeCache.bind_context(test_data, context):
+            main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
+            execution = DataFactoryExecution.objects.create(
+                execution_no=cls.build_execution_no(),
+                source_type=source_type,
+                source_id=source_id,
+                template=template,
+                project_product=template.project_product,
+                module=template.module or template.entity.module,
+                stage=stage,
+                status=DataFactoryExecutionStatusEnum.PROCEED.value,
+                context=context or {},
+            )
 
-        try:
-            runtime_context = context or {}
-            data = cls.create_by_template(
-                template,
-                execution,
-                main_overrides,
-                runtime_context,
-                test_object_id,
-                alias_override=alias_override,
-                cleanup_strategy_override=cleanup_strategy_override,
-                test_data=test_data,
-            )
-            items = cls.create_template_items(
-                template,
-                execution,
-                item_overrides,
-                runtime_context,
-                test_object_id,
-                test_data,
-                root_alias=alias_override,
-            )
-            post_insert_updates = cls.execute_post_insert_updates(
-                template,
-                execution,
-                runtime_context,
-                main_overrides,
-                item_overrides,
-                root_alias=alias_override,
-            )
-            output = cls.build_output(template.output_config, data)
-            execution.context = runtime_context
-            execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
-            execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
-            execution.save()
-            cls.sync_execution_cleanup_todo(execution)
-            return {
-                "execution_id": execution.id,
-                "execution_no": execution.execution_no,
-                "context": execution.context,
-                "data": data,
-                "output": output,
-                "items": items,
-                "post_insert_updates": post_insert_updates,
-                "items_output": {item["name"]: item.get("output") or item.get("data") for item in items},
-            }
-        except Exception as error:
-            execution.status = DataFactoryExecutionStatusEnum.FAIL.value
-            execution.error_message = str(error)
-            execution.save()
-            cls.cleanup_failed_execution(execution, error)
-            raise
+            try:
+                runtime_context = context or {}
+                data = cls.create_by_template(
+                    template,
+                    execution,
+                    main_overrides,
+                    runtime_context,
+                    test_object_id,
+                    alias_override=alias_override,
+                    cleanup_strategy_override=cleanup_strategy_override,
+                    test_data=test_data,
+                )
+                items = cls.create_template_items(
+                    template,
+                    execution,
+                    item_overrides,
+                    runtime_context,
+                    test_object_id,
+                    test_data,
+                    root_alias=alias_override,
+                )
+                post_insert_updates = cls.execute_post_insert_updates(
+                    template,
+                    execution,
+                    runtime_context,
+                    main_overrides,
+                    item_overrides,
+                    root_alias=alias_override,
+                )
+                output = cls.build_output(template.output_config, data)
+                execution.context = runtime_context
+                execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
+                execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
+                execution.save()
+                cls.sync_execution_cleanup_todo(execution)
+                return {
+                    "execution_id": execution.id,
+                    "execution_no": execution.execution_no,
+                    "context": execution.context,
+                    "data": data,
+                    "output": output,
+                    "items": items,
+                    "post_insert_updates": post_insert_updates,
+                    "items_output": {item["name"]: item.get("output") or item.get("data") for item in items},
+                }
+            except Exception as error:
+                execution.status = DataFactoryExecutionStatusEnum.FAIL.value
+                execution.error_message = str(error)
+                execution.save()
+                cls.cleanup_failed_execution(execution, error)
+                raise
 
     @classmethod
     def create_template_items(

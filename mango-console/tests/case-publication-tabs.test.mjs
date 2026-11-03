@@ -7,6 +7,16 @@ import { parse } from '@vue/compiler-sfc'
 const root = new URL('../', import.meta.url)
 const read = (path) => fs.readFileSync(new URL(path, root), 'utf8')
 
+test('API prepublication can be returned by non-owners while approval remains owner-only', () => {
+  const panel = read('src/views/apitest/case/details/components/ApiCaseVersionPanel.vue')
+  const buttons = panel.match(/<a-button\b[\s\S]*?<\/a-button>/g)
+  const revert = buttons.find(button => button.includes('@click="revertPrepublication"'))
+  const approve = buttons.find(button => button.includes('@click="approvePrepublication"'))
+  assert.match(revert, /v-if="selectedRevision\?\.is_prepublished"/)
+  assert.doesNotMatch(revert, /is_product_owner/)
+  assert.match(approve, /selectedRevision.is_product_owner/)
+})
+
 for (const domain of ['apitest', 'uitest']) {
   test(`${domain} has exactly four publication tabs and no status search dropdown`, () => {
     const config = read(`src/views/${domain}/case/config.ts`)

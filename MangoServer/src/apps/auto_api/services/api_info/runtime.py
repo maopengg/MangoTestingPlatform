@@ -69,18 +69,19 @@ class ApiInfoRuntimeService:
         return str(local_path)
 
     @classmethod
-    def current_payload(cls, api_info: ApiInfo) -> dict[str, Any]:
+    def current_payload(cls, api_info: ApiInfo, *, materialize_descriptors: bool = True) -> dict[str, Any]:
         payload = {}
         for field_name in API_INFO_CONFIG_FIELDS:
             if field_name == 'mcp_binding':
                 value = cls.capture_mcp_binding(api_info)
             elif field_name == 'grpc_binding':
-                value = cls.capture_grpc_binding(api_info)
+                value = cls.capture_grpc_binding(api_info, materialize_descriptor=materialize_descriptors)
             else:
                 value = getattr(api_info, field_name, API_INFO_CONFIG_DEFAULTS.get(field_name))
             payload[field_name] = deepcopy(value)
-        payload.update(cls.capture_protocol_flat_payload(api_info))
-        payload['protocol_config'] = cls.capture_protocol_config(api_info)
+        flat_payload = cls.capture_protocol_flat_payload(api_info)
+        payload.update(flat_payload)
+        payload['protocol_config'] = cls.capture_protocol_config(api_info, payload=payload, flat_payload=flat_payload)
         return cls.normalize_payload(payload)
 
     @classmethod
@@ -203,15 +204,20 @@ class ApiInfoRuntimeService:
                 payload[field] = cls.capture_grpc_binding(api_info)
             else:
                 payload[field] = deepcopy(getattr(api_info, field, default))
-        payload.update(cls.capture_protocol_flat_payload(api_info))
-        payload['protocol_config'] = cls.capture_protocol_config(api_info)
+        flat_payload = cls.capture_protocol_flat_payload(api_info)
+        payload.update(flat_payload)
+        payload['protocol_config'] = cls.capture_protocol_config(api_info, payload=payload, flat_payload=flat_payload)
         return cls.normalize_payload(payload)
 
     @classmethod
     def capture_protocol_flat_payload(cls, api_info: ApiInfo) -> dict[str, Any]:
         protocol_type = api_info.protocol_type or ApiProtocolTypeEnum.HTTP.value
+        cached = getattr(getattr(api_info, '_state', None), 'fields_cache', {})
         if protocol_type in (ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value):
-            config = ApiInfoHttpConfig.objects.filter(api_info_id=api_info.id).first()
+            config = (
+                cached['http_config'] if 'http_config' in cached
+                else ApiInfoHttpConfig.objects.filter(api_info_id=api_info.id).first()
+            )
             if config is None:
                 return {}
             return {
@@ -225,7 +231,10 @@ class ApiInfoRuntimeService:
                 'sse_config': deepcopy(config.sse_config),
             }
         if protocol_type == ApiProtocolTypeEnum.WEBSOCKET.value:
-            config = ApiInfoWebSocketConfig.objects.filter(api_info_id=api_info.id).first()
+            config = (
+                cached['websocket_config'] if 'websocket_config' in cached
+                else ApiInfoWebSocketConfig.objects.filter(api_info_id=api_info.id).first()
+            )
             if config is None:
                 return {}
             return {
@@ -241,11 +250,13 @@ class ApiInfoRuntimeService:
         return {}
 
     @classmethod
-    def capture_protocol_config(cls, api_info: ApiInfo) -> dict[str, Any]:
+    def capture_protocol_config(
+            cls, api_info: ApiInfo, *, payload: dict | None = None, flat_payload: dict | None = None,
+    ) -> dict[str, Any]:
         protocol_type = api_info.protocol_type or ApiProtocolTypeEnum.HTTP.value
         config: dict[str, Any] = {'type': protocol_type, 'config': {}}
         if protocol_type in (ApiProtocolTypeEnum.HTTP.value, ApiProtocolTypeEnum.SSE.value):
-            flat = cls.capture_protocol_flat_payload(api_info)
+            flat = flat_payload if flat_payload is not None else cls.capture_protocol_flat_payload(api_info)
             config['config'] = flat or {
                 'method': MethodEnum.GET.value,
                 'url': api_info.url,
@@ -257,7 +268,7 @@ class ApiInfoRuntimeService:
                 'sse_config': None,
             }
         elif protocol_type == ApiProtocolTypeEnum.WEBSOCKET.value:
-            flat = cls.capture_protocol_flat_payload(api_info)
+            flat = flat_payload if flat_payload is not None else cls.capture_protocol_flat_payload(api_info)
             config['config'] = flat or {
                 'method': MethodEnum.WEBSOCKET_CONNECT.value,
                 'url': api_info.url,
@@ -269,7 +280,7 @@ class ApiInfoRuntimeService:
                 'sse_config': None,
             }
         elif protocol_type == ApiProtocolTypeEnum.MCP.value:
-            mcp_binding = cls.capture_mcp_binding(api_info)
+            mcp_binding = payload.get('mcp_binding') if payload is not None else cls.capture_mcp_binding(api_info)
             mcp_config = deepcopy((mcp_binding or {}).get('mcp_config')) or {}
             config['config'] = {
                 'method': MethodEnum.MCP_CALL.value,
@@ -279,7 +290,7 @@ class ApiInfoRuntimeService:
                 'mcp_binding': mcp_binding,
             }
         elif protocol_type == ApiProtocolTypeEnum.GRPC.value:
-            grpc_binding = cls.capture_grpc_binding(api_info)
+            grpc_binding = payload.get('grpc_binding') if payload is not None else cls.capture_grpc_binding(api_info)
             grpc_config = deepcopy((grpc_binding or {}).get('grpc_config')) or {}
             config['config'] = {
                 'method': MethodEnum.GRPC_CALL.value,
@@ -329,6 +340,10 @@ class ApiInfoRuntimeService:
 
     @classmethod
     def sync_protocol_config(cls, api_info: ApiInfo):
+        # 配置写入后不再使用 select_related 留下的旧编辑态或空关系缓存。
+        cached = getattr(getattr(api_info, '_state', None), 'fields_cache', {})
+        for relation in ('http_config', 'websocket_config', 'mcp_protocol_config', 'grpc_protocol_config'):
+            cached.pop(relation, None)
         protocol_type = api_info.protocol_type or ApiProtocolTypeEnum.HTTP.value
         if protocol_type != ApiProtocolTypeEnum.MCP.value:
             ApiInfoMcpConfig.objects.filter(api_info=api_info).delete()
@@ -368,7 +383,11 @@ class ApiInfoRuntimeService:
     def capture_mcp_binding(cls, api_info):
         if api_info.protocol_type != ApiProtocolTypeEnum.MCP.value:
             return None
-        config = ApiInfoMcpConfig.objects.filter(api_info_id=api_info.id).first()
+        cached = getattr(getattr(api_info, '_state', None), 'fields_cache', {})
+        config = (
+            cached['mcp_protocol_config'] if 'mcp_protocol_config' in cached
+            else ApiInfoMcpConfig.objects.filter(api_info_id=api_info.id).first()
+        )
         if not config or not config.binding_snapshot:
             return None
         snapshot = deepcopy(config.binding_snapshot)
@@ -421,10 +440,11 @@ class ApiInfoRuntimeService:
             "schema_hash": snapshot.get("schema_hash") or cls.mcp_schema_hash(snapshot.get("input_schema"), snapshot.get("output_schema"))})
 
     @classmethod
-    def capture_grpc_binding(cls, api_info: ApiInfo) -> dict[str, Any] | None:
+    def capture_grpc_binding(cls, api_info: ApiInfo, *, materialize_descriptor: bool = True) -> dict[str, Any] | None:
         if api_info.protocol_type != ApiProtocolTypeEnum.GRPC.value:
             return None
-        config = (
+        cached = getattr(getattr(api_info, '_state', None), 'fields_cache', {})
+        config = cached['grpc_protocol_config'] if 'grpc_protocol_config' in cached else (
             ApiInfoGrpcConfig.objects
             .filter(api_info_id=api_info.id)
             .select_related(
@@ -439,7 +459,7 @@ class ApiInfoRuntimeService:
         service = config.grpc_service
         method = config.grpc_method
         descriptor_path = None
-        if service.descriptor_file and service.descriptor_file.test_file:
+        if materialize_descriptor and service.descriptor_file and service.descriptor_file.test_file:
             descriptor_path = cls._materialize_descriptor_file(service.descriptor_file)
         return {
             'service_id': service.id,

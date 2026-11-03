@@ -217,6 +217,7 @@
               :multiple="item.multiple"
               :max-tag-count="item.multiple ? 1 : undefined"
               :options="data.apiInfoList"
+              :loading="apiInfoLoading"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -357,7 +358,7 @@
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import ApiResourceSearchFilters from '@/components/business/ApiResourceSearchFilters.vue'
-  import { getApiInfo } from '@/api/apitest/info'
+  import { getApiInfoOptions } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
   import { getSystemNoticeName } from '@/api/system/notice_group'
   import { getUserName } from '@/api/user/user'
@@ -419,6 +420,8 @@
   let publicVariableRequest = 0
   const targetOptions = ref<Array<{ label: string; value: string }>>([])
   const targetsLoading = ref(false)
+  const apiInfoLoading = ref(false)
+  let apiInfoRequest = 0
   let targetRequest = 0
 
   async function loadTargetOptions() {
@@ -891,19 +894,26 @@
     })
   }
 
-  function getApiInfoList(projectProductId?: any) {
+  async function getApiInfoList(projectProductId?: any) {
+    const request = ++apiInfoRequest
+    data.apiInfoList = []
+    apiInfoLoading.value = false
     if (!projectProductId) {
-      data.apiInfoList = []
       return
     }
-    getApiInfo({ project_product: projectProductId, page: 1, pageSize: 10000 })
-      .then((res) => {
-        data.apiInfoList = (res.data || []).map((item: any) => ({
+    apiInfoLoading.value = true
+    try {
+      const items = await getApiInfoOptions(projectProductId, () => request === apiInfoRequest)
+      if (request !== apiInfoRequest) return
+      data.apiInfoList = items.map((item: any) => ({
           label: `${item.id} - ${item.name}`,
           value: item.id,
-        }))
-      })
-      .catch(console.log)
+      }))
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if (request === apiInfoRequest) apiInfoLoading.value = false
+    }
   }
 
   function getTiming() {

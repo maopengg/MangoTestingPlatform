@@ -10,6 +10,25 @@ def format_project_product(instance):
     return ProjectProductSerializersC(instance=instance).data if instance is not None else None
 
 
+def format_project_product_summary(instance):
+    if instance is None:
+        return None
+    project = instance.project
+    return {
+        'id': instance.id,
+        'name': instance.name,
+        'api_client_type': instance.api_client_type,
+        'ui_client_type': instance.ui_client_type,
+        'project': {'id': project.id, 'name': project.name} if project else None,
+    }
+
+
+def format_product_module_summary(instance):
+    if instance is None:
+        return None
+    return {'id': instance.id, 'name': instance.name, 'full_path': instance.get_full_path()}
+
+
 def format_product_module(instance):
     from src.apps.test_center.api.serializers.product_module_mutation import ProductModuleSerializers
 

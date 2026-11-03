@@ -367,7 +367,7 @@ def register_schema_tools(mcp):
                         "API Info 配置确认后：create_api_info_revision_from_current -> 按需 publish_api_info_revision；调试成功不是生成修订的前置条件。",
                         "API Case：只能绑定已发布 API Info；创建后保持编辑态，配置步骤、场景、前后置和断言。",
                         "API Case：run_api_case 执行当前编辑态；失败则继续修改，不生成修订。",
-                        "API Case 当前配置确认后：先完成数据清理闭环复核，再执行 create_api_case_revision_from_current -> update_api_case_publication_status(target_status='prepublished', revision_id=修订ID)；产品负责人再调用同一工具并传 target_status='published' 正式发布，或传 target_status='unpublished' 退回。场景未配置断言也允许生成和提交预发布，但写数据场景缺少清理闭环时不得提交。",
+                        "API Case 当前配置确认后：先完成数据清理闭环复核，再执行 create_api_case_revision_from_current -> update_api_case_publication_status(target_status='prepublished', revision_id=修订ID)；产品负责人调用同一工具传 target_status='published' 正式发布；具备用例修改权限且在产品范围内的用户均可传 target_status='unpublished' 退回。场景未配置断言也允许生成和提交预发布，但写数据场景缺少清理闭环时不得提交。",
                         "任何创建、导入、编辑、排序和场景保存操作都不会自动生成修订或发布。",
                     ],
                     "api_info_version_rule": "Case 步骤只能绑定已发布的接口版本。add_api_case_step 推荐传 api_info_release_id；只传 api_info_id 时会自动绑定当前已发布版本，接口未发布会拒绝添加。",
@@ -556,7 +556,7 @@ def register_schema_tools(mcp):
                         "checkout_api_case_revision_to_editing 只在场景有变化、需要基于历史修订继续调整，或需要先备份/恢复当前编辑态数据时使用；普通调试不要迁出修订。",
                         "run_api_case 默认执行当前编辑态，适合 MCP 创建、修改、调试和临时验证；只有需要验证不可变历史修订或正式发布版本时，才显式传 revision_id/release_id。",
                         "确认当前编辑态和断言配置完成后即可调用 create_api_case_revision_from_current；它只生成候选修订，不会发布，执行成功不是前置条件。",
-                        "update_api_case_publication_status(target_status='prepublished', revision_id=修订ID) 仅用于确认完成后提交产品负责人处理，不是调试执行的前置条件；调用前必须复核数据清理闭环。只有项目产品负责人才能通过同一工具传 target_status='published' 生成正式版本，或传 target_status='unpublished' 退回。",
+                        "update_api_case_publication_status(target_status='prepublished', revision_id=修订ID) 仅用于确认完成后提交产品负责人处理，不是调试执行的前置条件；调用前必须复核数据清理闭环。只有项目产品负责人才能传 target_status='published' 生成正式版本；具备用例修改权限且在产品范围内的用户均可传 target_status='unpublished' 退回。",
                     ],
                     "result_query": [
                         "get_api_case_run_result(case_id) 返回完整最近一次执行结果，适合排查小结果。",

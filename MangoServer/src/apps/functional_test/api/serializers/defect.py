@@ -8,6 +8,7 @@ from src.apps.test_center.formatters.related import format_product_module_compac
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.test_center.services.product_module import ProductModuleService
 from src.apps.user.formatters import format_user, format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -55,7 +56,7 @@ class FunctionalTestDefectSerializer(ProductModuleBindingSerializerMixin, serial
 
 
 class FunctionalTestDefectListSerializer(FunctionalTestDefectSerializer):
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     module = RelatedObjectField(formatter=format_product_module_compact, read_only=True)
     reporter = RelatedObjectField(formatter=format_user, read_only=True)
     assignee = RelatedObjectField(formatter=format_user_simple, read_only=True)
@@ -74,11 +75,11 @@ class FunctionalTestDefectListSerializer(FunctionalTestDefectSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return ProductModuleService.with_full_paths(queryset, "module").annotate(
+        return TestCenterQuerySelector.with_project_product_display(ProductModuleService.with_full_paths(queryset, "module").annotate(
             relation_count=Count("case_relations", distinct=True),
         ).select_related(
             "project_product", "project_product__project", "module", "reporter", "assignee", "update_user",
         ).prefetch_related(
             "case_relations__case", "case_relations__plan_case__case", "case_relations__plan_case__plan",
             "case_relations__plan_case__executor",
-        )
+        ))

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Iterable
 
 from django.db import transaction
@@ -172,17 +174,21 @@ class PermissionMenuService:
             RoleMenuPermission.objects.filter(role_id=user.role_id)
             .values_list('permission_key', flat=True)
         )
-        keys &= cls.all_permission_keys()
         keys.add(HOME_PERMISSION_KEY)
         keys.add(f'{HOME_PERMISSION_KEY}:read')
         return keys
 
     @classmethod
     def all_permission_keys(cls) -> set[str]:
+        return set(cls._static_permission_keys(os.getenv('DJANGO_ENV'), ad_routes))
+
+    @classmethod
+    @lru_cache(maxsize=8)
+    def _static_permission_keys(cls, environment, routes_factory) -> frozenset[str]:
         keys = set()
-        for item in cls.permission_tree():
+        for item in cls._static_permission_tree(environment, routes_factory):
             cls._collect_permission_keys(item, keys)
-        return keys
+        return frozenset(keys)
 
     @classmethod
     def guest_permission_keys(cls) -> set[str]:
@@ -201,7 +207,6 @@ class PermissionMenuService:
             RoleMenuPermission.objects.filter(role_id=role_id)
             .values_list('permission_key', flat=True)
         )
-        keys &= cls.all_permission_keys()
         keys.add(HOME_PERMISSION_KEY)
         keys.add(f'{HOME_PERMISSION_KEY}:read')
         return keys
@@ -245,7 +250,13 @@ class PermissionMenuService:
 
     @classmethod
     def permission_tree(cls) -> list[dict]:
-        routes = deepcopy(ad_routes())
+        return deepcopy(cls._static_permission_tree(os.getenv('DJANGO_ENV'), ad_routes))
+
+    @classmethod
+    @lru_cache(maxsize=8)
+    def _static_permission_tree(cls, environment, routes_factory) -> list[dict]:
+        # 仅缓存代码定义的目录；角色授权仍逐次读取，环境切换使用独立快照。
+        routes = deepcopy(routes_factory())
         for item in routes:
             cls._decorate_menu_item(item)
         return routes

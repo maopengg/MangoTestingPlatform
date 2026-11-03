@@ -78,20 +78,20 @@ API_VERSION_CASE_MODULE_TASK_BINDING_INVALID = ErrorDefinition(code=1160,
 API_VERSION_CASE_VERSION_INVALID = ErrorDefinition(code=1161, message='当前用例没有可取消的已发布版本')
 API_VERSION_VERSION_INVALID = ErrorDefinition(code=1162, message='所选版本已不是当前发布版本，请刷新后重试')
 API_CASE_PREPUBLICATION_ALREADY_EXISTS = ErrorDefinition(code=31205,
-                                                         message='当前用例已有预发布修订，请由产品负责人通过或退回后再提交')
+                                                         message='当前用例已有预发布修订，请等待产品负责人审批发布，或退回旧候选后再提交')
 API_CASE_PREPUBLICATION_NOT_FOUND = ErrorDefinition(code=31206, message='当前用例没有待处理的预发布修订')
 API_CASE_PREPUBLICATION_OWNER_REQUIRED = ErrorDefinition(code=31207,
                                                          message='当前项目产品尚未配置负责人，无法提交预发布')
 API_CASE_PREPUBLICATION_APPROVAL_FORBIDDEN = ErrorDefinition(code=31208,
-                                                             message='只有当前用例所属项目产品的负责人可以通过或退回预发布')
+                                                             message='只有当前用例所属项目产品的负责人可以审批并正式发布预发布修订')
 API_CASE_PREPUBLICATION_REVISION_DELETE_NOT_ALLOWED = ErrorDefinition(code=31209,
-                                                                      message='该修订正在预发布，需先由产品负责人退回后才能删除')
+                                                                      message='该修订正在预发布，需先退回后才能删除')
 API_CASE_PREPUBLICATION_PRODUCT_CHANGE_NOT_ALLOWED = ErrorDefinition(code=31210,
                                                                      message='当前用例存在预发布修订，需先由产品负责人处理后才能修改项目产品')
 API_CASE_PREPUBLICATION_CURRENT_REVISION_NOT_ALLOWED = ErrorDefinition(code=31211,
                                                                        message='该修订已经是当前正式版本，无需重复提交预发布')
 API_CASE_PREPUBLICATION_REVISION_FROZEN = ErrorDefinition(code=31212,
-                                                          message='当前用例已有预发布修订，需由产品负责人通过或退回后再生成修订')
+                                                          message='当前用例已有待审核的预发布修订，暂不能生成新修订。可等待产品负责人审批发布；如需提交当前编辑内容，具备用例修改权限的用户可在用例版本页面或通过 MCP 退回旧候选，再复核并生成新修订、提交预发布。当前编辑态的执行结果不会更新旧候选。')
 API_CASE_REVISION_NOT_ACTIVE_CANDIDATE = ErrorDefinition(code=31213, message='只有当前未发布候选修订可以提交预发布')
 API_CASE_PUBLICATION_REQUIRES_PASSED = ErrorDefinition(code=31214,
                                                        message='用例尚未处于执行通过状态，请执行通过后再提交预发布或正式发布')

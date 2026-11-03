@@ -35,6 +35,7 @@ class NoticeGroupSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project',
+            'project__update_user',
             'update_user',
         )
         return queryset

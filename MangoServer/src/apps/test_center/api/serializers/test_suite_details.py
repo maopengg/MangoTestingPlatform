@@ -6,6 +6,8 @@
 
 from rest_framework import serializers
 
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
+
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers
 from src.apps.test_center.models import TestSuiteDetails
@@ -38,4 +40,4 @@ class TestSuiteDetailsSerializersC(serializers.ModelSerializer):
             'project_product__project',
             'test_suite',
         ).prefetch_related('project_product__owners')
-        return queryset
+        return TestCenterQuerySelector.with_project_product_display(queryset)

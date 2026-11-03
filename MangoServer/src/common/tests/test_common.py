@@ -31,21 +31,20 @@ class UserLogsSensitiveDataTests(SimpleTestCase):
         response = HttpResponse('ok')
         middleware = UserLogsMiddleWare(lambda _: response)
 
-        with patch('src.apps.user.middleware.user_logs.threading.Thread') as thread:
+        with patch('src.apps.user.middleware.user_logs.UserLogService.submit') as submit:
             self.assertIs(middleware.process_response(request, response), response)
 
-        thread.assert_not_called()
+        submit.assert_not_called()
 
     def test_mock_config_management_still_uses_general_operation_log(self):
         request = RequestFactory().get('/api/api/mock/config/detail?id=1')
         response = HttpResponse('ok')
         middleware = UserLogsMiddleWare(lambda _: response)
 
-        with patch('src.apps.user.middleware.user_logs.threading.Thread') as thread:
+        with patch('src.apps.user.middleware.user_logs.UserLogService.submit') as submit:
             middleware.process_response(request, response)
 
-        thread.assert_called_once()
-        thread.return_value.start.assert_called_once()
+        submit.assert_called_once()
 
     def test_redacts_nested_sensitive_fields(self):
         data = {

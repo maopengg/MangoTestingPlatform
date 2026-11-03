@@ -24,6 +24,7 @@ from src.apps.test_center.formatters.related import format_product_module_compac
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.test_center.services.product_module import ProductModuleService
 from src.apps.user.formatters import format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -207,7 +208,7 @@ class DataFactoryTemplateSerializer(ProductModuleBindingSerializerMixin, seriali
 class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     module = RelatedObjectField(formatter=format_product_module_compact, read_only=True)
     entity = DataFactoryEntitySerializerC(read_only=True)
     items = DataFactoryTemplateItemSerializerC(many=True, read_only=True)
@@ -219,7 +220,7 @@ class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return ProductModuleService.with_full_paths(
+        return TestCenterQuerySelector.with_project_product_display(ProductModuleService.with_full_paths(
             queryset,
             'module',
             'entity__module',
@@ -232,4 +233,4 @@ class DataFactoryTemplateSerializerC(serializers.ModelSerializer):
             'entity__datasource_alias',
             'entity__datasource_alias__project_product',
             'update_user',
-        ).prefetch_related('items', 'items__child_template', 'items__child_template__entity')
+        ).prefetch_related('items', 'items__child_template', 'items__child_template__entity'))

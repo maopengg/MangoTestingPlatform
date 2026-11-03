@@ -319,7 +319,6 @@ class ApiCaseRevisionRecordingMixin:
         api_case = ApiCase.objects.select_for_update().filter(id=case_id).first()
         if api_case is None:
             raise AutoApiError(API_VERSION_CASE_NOT_FOUND, value=(case_id,))
-        cls._verify_product_owner(api_case, operator_id)
         prepublication = ApiCaseRelease.objects.select_for_update().select_related('revision').filter(
             api_case_id=case_id,
             status=ApiCaseReleaseStatusEnum.PREPUBLISHED.value,

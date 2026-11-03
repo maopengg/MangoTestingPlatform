@@ -112,7 +112,7 @@
         通过并发布 {{ nextReleaseLabel }}
       </a-button>
       <a-button
-        v-if="selectedRevision?.is_prepublished && selectedRevision.is_product_owner"
+        v-if="selectedRevision?.is_prepublished"
         long
         size="small"
         :loading="revertingPrepublication"
@@ -123,7 +123,7 @@
       <span
         v-if="selectedRevision?.is_prepublished && !selectedRevision.is_product_owner"
         class="prepublication-waiting"
-        >等待产品负责人处理</span
+        >待产品负责人审批发布，也可退回修改</span
       >
       <a-button
         v-if="selectedRevision"

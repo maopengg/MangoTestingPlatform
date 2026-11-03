@@ -7,6 +7,7 @@ from src.apps.functional_test.models import (
 from src.apps.functional_test.services.iteration import FunctionalTestIterationService
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user, format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -26,7 +27,7 @@ class FunctionalTestIterationSerializer(serializers.ModelSerializer):
 
 
 class FunctionalTestIterationListSerializer(FunctionalTestIterationSerializer):
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     owner = RelatedObjectField(formatter=format_user, read_only=True)
     update_user = RelatedObjectField(formatter=format_user_simple, read_only=True)
     requirement_count = serializers.IntegerField(read_only=True, default=0)
@@ -60,6 +61,6 @@ class FunctionalTestIterationListSerializer(FunctionalTestIterationSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return FunctionalTestIterationService.list_with_stats(queryset).select_related(
+        return TestCenterQuerySelector.with_project_product_display(FunctionalTestIterationService.list_with_stats(queryset).select_related(
             "project_product", "project_product__project", "owner", "update_user",
-        )
+        ))

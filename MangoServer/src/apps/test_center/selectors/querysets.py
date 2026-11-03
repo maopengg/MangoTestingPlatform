@@ -13,6 +13,15 @@ from src.apps.test_center.models import (
 
 class TestCenterQuerySelector:
     @staticmethod
+    def with_project_product_display(queryset, relation='project_product'):
+        prefix = f'{relation}__' if relation else ''
+        return queryset.select_related(
+            f'{prefix}project',
+            f'{prefix}project__update_user',
+            f'{prefix}update_user',
+        ).prefetch_related(f'{prefix}owners')
+
+    @staticmethod
     def execution_environment_priority():
         environments = list(reversed(EnvironmentEnum.default_obj()))
         return Case(

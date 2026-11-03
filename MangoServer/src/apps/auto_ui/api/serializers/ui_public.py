@@ -14,6 +14,7 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple
 from src.common.utils.environment_scope import sync_test_env_attrs, test_envs_titles
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -54,7 +55,7 @@ class UiPublicSerializers(serializers.ModelSerializer):
 class UiPublicSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     datasource_alias = RelatedObjectField(formatter=format_datasource_alias, read_only=True)
     update_user = RelatedObjectField(formatter=format_user_simple, read_only=True)
 
@@ -74,4 +75,4 @@ class UiPublicSerializersC(serializers.ModelSerializer):
             'project_product__project',
             'datasource_alias',
             'update_user')
-        return queryset
+        return TestCenterQuerySelector.with_project_product_display(queryset)

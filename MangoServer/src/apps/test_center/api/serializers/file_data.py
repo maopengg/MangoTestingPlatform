@@ -6,6 +6,8 @@
 
 from rest_framework import serializers
 
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
+
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.formatters.file_data import format_file_size
 from src.apps.test_center.models import FileData
@@ -29,12 +31,12 @@ class FileDataSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related(
+        return TestCenterQuerySelector.with_project_product_display(queryset.select_related(
             'project_product',
             'project_product__project',
             'user',
             'update_user',
-        ).prefetch_related('project_product__owners').order_by('-id')
+        ).prefetch_related('project_product__owners').order_by('-id'))
 
     @staticmethod
     def get_file_size_display(obj):

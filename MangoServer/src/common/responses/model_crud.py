@@ -49,6 +49,9 @@ class ModelCRUD(GenericAPIView):
     project_model = None
     serializer = None
     page_permission_key = None
+    default_page_size = None
+    max_page_size = None
+    eager_loading_after_paging = False
     not_matching_str = [
         'pageSize', 'page',
         'type', 'status',
@@ -308,10 +311,10 @@ class ModelCRUD(GenericAPIView):
             if test_envs_filter is not None:
                 books = books.filter(test_envs_filter)
             books = self.filter_queryset_by_data_scope(request, books)
-            if paging:
+            if paging or self.default_page_size is not None:
                 data_list, count = self.paging_list(
-                    request.query_params.get("pageSize"),
-                    request.query_params.get("page"),
+                    request.query_params.get("pageSize") or self.default_page_size,
+                    request.query_params.get("page") or 1,
                     books,
                     self.get_serializer_class()
                 )
@@ -464,24 +467,30 @@ class ModelCRUD(GenericAPIView):
             serializer
     ) -> tuple[list, int]:
 
-        size = int(size)
-        current = int(current)
+        size = max(1, int(size))
+        current = max(1, int(current))
+        if cls.max_page_size is not None:
+            size = min(size, cls.max_page_size)
 
-        try:
-            queryset = serializer.setup_eager_loading(books)
-        except (AttributeError, FieldError):
-            queryset = books
-
-        paginator = Paginator(queryset, size)
-
-        # 防止页码越界
+        if not cls.eager_loading_after_paging:
+            try:
+                books = serializer.setup_eager_loading(books)
+            except (AttributeError, FieldError):
+                pass
+        paginator = Paginator(books, size)
         if current > paginator.num_pages and paginator.num_pages > 0:
             current = paginator.num_pages
-
         page_obj = paginator.page(current)
 
+        queryset = page_obj.object_list
+        if cls.eager_loading_after_paging:
+            try:
+                queryset = serializer.setup_eager_loading(queryset)
+            except (AttributeError, FieldError):
+                pass
+
         data = serializer(
-            instance=page_obj.object_list,
+            instance=queryset,
             many=True
         ).data
 

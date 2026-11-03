@@ -11,6 +11,7 @@ from src.apps.test_center.enums.data_source import (
 )
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -37,7 +38,7 @@ class DataFactoryDatasourceAliasSerializer(serializers.ModelSerializer):
 class DataFactoryDatasourceAliasSerializerC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     update_user = RelatedObjectField(formatter=format_user_simple, read_only=True)
 
     class Meta:
@@ -46,4 +47,4 @@ class DataFactoryDatasourceAliasSerializerC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.select_related('project_product', 'project_product__project', 'update_user')
+        return TestCenterQuerySelector.with_project_product_display(queryset.select_related('project_product', 'project_product__project', 'update_user'))

@@ -155,6 +155,8 @@ def register_case_config_tools(mcp):
         preview_mode=configuration 仅使用平台字段规则生成示例，不访问业务库、不需要环境。
         自增字段显示“插入后获取”，依赖和测试数据函数显示“执行时获取”，不能据此判定环境可执行。
         默认 environment 才进行原有环境预览，检查依赖和真实数据，需要指定环境及查询权限。
+        environment 模式下，context 中的普通键可供本次 ${{变量}} 表达式读取，嵌套对象支持点号路径；
+        同名值覆盖普通公共变量，仅本次调用有效，不会保存成全局变量或模板固定值。
 
         表结构修复后，用受影响绑定的 field_overrides 进行预览，确认
         can_debug_run=True、missing_fields 为空、依赖无错误后，才可视为用例级配置修复完成。

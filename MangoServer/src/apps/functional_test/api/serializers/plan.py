@@ -14,11 +14,12 @@ from src.apps.functional_test.models import (
 from src.apps.functional_test.services.suite import ManualTestSuiteService
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user, format_user_simple
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
 class FunctionalTestPlanListSerializer(FunctionalTestPlanSerializer):
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     requirement_version = ManualTestSuiteSerializerC(read_only=True)
     iteration = FunctionalTestIterationListSerializer(read_only=True)
     owner = RelatedObjectField(formatter=format_user, read_only=True)
@@ -45,7 +46,7 @@ class FunctionalTestPlanListSerializer(FunctionalTestPlanSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return queryset.annotate(
+        return TestCenterQuerySelector.with_project_product_display(queryset.annotate(
             case_count=Count("plan_cases", distinct=True),
             executed_count=Count("plan_cases", filter=~Q(plan_cases__result=FunctionalTestResultEnum.UNEXECUTED.value),
                                  distinct=True),
@@ -77,7 +78,7 @@ class FunctionalTestPlanListSerializer(FunctionalTestPlanSerializer):
         ).select_related(
             "project_product", "project_product__project", "requirement", "requirement_version",
             "requirement_version__requirement", "iteration", "owner", "update_user",
-        )
+        ))
 
 
 class FunctionalTestPlanCaseSerializer(serializers.ModelSerializer):

@@ -1416,7 +1416,7 @@ class ApiCaseRevisionServiceTests(TestCase):
             1,
         )
 
-    def test_only_product_owner_can_approve_or_revert_prepublication(self):
+    def test_non_owner_can_revert_but_cannot_approve_prepublication(self):
         non_owner = User.objects.create(
             name='普通发布人员',
             username='case_version_publisher',
@@ -1433,12 +1433,13 @@ class ApiCaseRevisionServiceTests(TestCase):
             )
         self.assertEqual(approve_context.exception.code, 31208)
 
-        with self.assertRaises(AutoApiError) as revert_context:
-            ApiCaseRevisionService.revert_prepublication(
-                self.case.id,
-                operator_id=non_owner.id,
-            )
-        self.assertEqual(revert_context.exception.code, 31208)
+        returned = ApiCaseRevisionService.revert_prepublication(
+            self.case.id,
+            operator_id=non_owner.id,
+        )
+        self.assertEqual(returned.id, revision.id)
+        self.assertTrue(ApiCaseRevision.objects.filter(id=revision.id).exists())
+        self.assertFalse(ApiCaseRelease.objects.filter(revision=revision).exists())
 
     def test_owner_can_revert_prepublication_without_deleting_revision(self):
         revision = ApiCaseRevisionService.record_current(self.case.id, source='test')

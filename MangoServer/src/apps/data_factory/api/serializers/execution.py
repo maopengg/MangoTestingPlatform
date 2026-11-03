@@ -8,6 +8,7 @@ from src.apps.data_factory.selectors.execution import format_execution_source_in
 from src.apps.test_center.formatters.related import format_product_module_compact
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 
 
@@ -37,7 +38,7 @@ class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
     cleanup_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     source_display = serializers.SerializerMethodField(read_only=True)
     source_info = serializers.SerializerMethodField(read_only=True)
-    project_product = RelatedObjectField(formatter=format_project_product, read_only=True)
+    project_product = RelatedObjectField(formatter=format_project_product, cache_representation=True, read_only=True)
     module = RelatedObjectField(formatter=format_product_module_compact, read_only=True)
     template = DataFactoryTemplateSerializerC(read_only=True)
 
@@ -55,7 +56,7 @@ class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        return ProductModuleService.with_full_paths(
+        return TestCenterQuerySelector.with_project_product_display(ProductModuleService.with_full_paths(
             queryset,
             'module',
             'template__module',
@@ -72,7 +73,7 @@ class DataFactoryExecutionSerializerC(serializers.ModelSerializer):
             'template__entity__project_product__project',
             'template__entity__datasource_alias',
             'template__entity__datasource_alias__project_product',
-        )
+        ))
 
 
 class DataFactoryExecutionBatchCleanupSerializer(serializers.Serializer):

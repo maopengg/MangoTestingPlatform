@@ -328,7 +328,7 @@
             }]
         : []),
     { label: '绑定Case', onClick: () => onBoundCases(record) },
-    { label: '编辑', onClick: () => onUpdate(record) },
+    { label: '编辑', loading: editingId === String(record.id), onClick: () => onUpdate(record) },
     { label: '删除', danger: true, onClick: () => onDelete(record) },
 ]"
                     />
@@ -680,6 +680,8 @@
   const table = useTable()
   const { beginRequest, isLatestRequest } = useLatestRequest()
   const rowKey = useRowKey('id')
+  const editingId = ref('')
+  let editRequest = 0
   const formModel = ref({})
 
   const data: any = reactive({
@@ -1030,6 +1032,7 @@
     clearEmptyFilter(value, 'project_product')
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    value['summary'] = true
     if (data.activeProtocol && data.activeProtocol !== 'all') {
       value['protocol_type'] = data.activeProtocol
     }
@@ -1092,6 +1095,8 @@
   }
 
   function onAdd(type: number) {
+    editRequest += 1
+    editingId.value = ''
     mcpToolName.value = ''
     mcpBindingSnapshot.value = {}
     data.addType = type
@@ -1130,28 +1135,42 @@
     void prefillNavigationFormItems(navigationCreateRef.value, data.formItem, () => data.isAdd)
   }
 
-  function onUpdate(item: any) {
-    mcpBindingSnapshot.value = item.mcp_binding || {}
-    mcpToolName.value = item.mcp_binding?.tool_name || ''
-    data.actionTitle = '编辑'
-    data.addType = 0
-    data.isAdd = false
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      setFormProtocolOptions(apiProtocolOptions)
-      formItems.forEach((it) => {
-        const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
+  async function onUpdate(record: any) {
+    if (editingId.value) return
+    const request = ++editRequest
+    editingId.value = String(record.id)
+    try {
+      const response = await getApiInfo({ id: record.id })
+      if (request !== editRequest) return
+      const item = response.data?.[0]
+      if (!item) return
+      mcpBindingSnapshot.value = item.mcp_binding || {}
+      mcpToolName.value = item.mcp_binding?.tool_name || ''
+      data.actionTitle = '编辑'
+      data.addType = 0
+      data.isAdd = false
+      data.updateId = item.id
+      modalDialogRef.value?.toggle()
+      nextTick(() => {
+        if (request !== editRequest) return
+        setFormProtocolOptions(apiProtocolOptions)
+        formItems.forEach((it) => {
+          const propName = item[it.key]
+          if (typeof propName === 'object' && propName !== null) {
+            it.value = propName.id
+          } else {
+            it.value = propName
+          }
+        })
+        syncMethodWithProtocol(getFormItemValue('protocol_type'))
+        syncBodyTypeWithProtocol(getFormItemValue('protocol_type'))
       })
-      syncMethodWithProtocol(getFormItemValue('protocol_type'))
-      syncBodyTypeWithProtocol(getFormItemValue('protocol_type'))
-    })
-    data.formItem = formItems
+      data.formItem = formItems
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if (request === editRequest) editingId.value = ''
+    }
   }
 
   function onDownload() {
@@ -1492,6 +1511,7 @@
     })
   })
   onUnmounted(() => {
+    editRequest += 1
     clearPollingTimer()
   })
 </script>

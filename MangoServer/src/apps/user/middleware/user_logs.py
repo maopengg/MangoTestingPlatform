@@ -5,15 +5,15 @@
 # @Author : 毛鹏
 
 import json
-import threading
+import logging
 
 from django.core.handlers.asgi import ASGIRequest
-from django.db import close_old_connections
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework.response import Response
 
-from src.apps.user.models import User
 from src.apps.user.services.user_logs import UserLogService
+
+logger = logging.getLogger(__name__)
 
 
 class UserLogsMiddleWare(MiddlewareMixin):
@@ -47,56 +47,33 @@ class UserLogsMiddleWare(MiddlewareMixin):
     def process_response(self, request: ASGIRequest, response: Response):
         if request.path in self.SKIP_LOG_PATHS or request.path.startswith(self.SKIP_LOG_PREFIXES):
             return response
-        thread = threading.Thread(
-            target=self._process_logs_async,
-            args=(request, response,)
-        )
-        thread.daemon = True
-        thread.start()
+        try:
+            entry, username = self._build_log_entry(request, response)
+            UserLogService.submit(entry, username=username)
+        except Exception as error:
+            logger.error('操作日志快照创建失败，异常类型：%s', type(error).__name__)
         return response
 
-    def _process_logs_async(self, request: ASGIRequest, response: Response) -> None:
-        """异步处理所有日志逻辑"""
+    def _build_log_entry(self, request: ASGIRequest, response: Response) -> tuple[dict, str | None]:
+        request_data = self._capture_request_data(request, response)
+        user_id = request.user.get('id') if isinstance(getattr(request, 'user', None), dict) else None
+        username = request_data.get('username') if user_id is None else None
+        if isinstance(username, list):
+            username = username[0] if username else None
         try:
-            source_type = int(request.headers.get('Source-Type', 1))
-            request_data = self._capture_request_data(request, response)
-            response_content = self._capture_response_data(response)
-
-            user_id = None
-            if hasattr(request, 'user') and request.user and isinstance(request.user, dict):
-                user_id = request.user.get('id')
-            if user_id is None and request_data.get('username'):
-                try:
-                    user_name = request_data.get('username')
-                    if isinstance(user_name, list):
-                        user_name = user_name[0]
-                    # 确保在数据库操作前后关闭连接
-                    close_old_connections()
-                    user_id = User._default_manager.get(username=user_name).id
-                    close_old_connections()
-                except User.DoesNotExist:
-                    close_old_connections()
-                    pass
-            try:
-                request_data = json.dumps(request_data, ensure_ascii=False)
-            except TypeError:
-                request_data = str(request_data)
-            log_entry = {
-                "user": user_id,
-                "source_type": source_type,
-                "ip": self._get_client_ip(request),
-                "url": request.path,
-                "method": request.method,
-                "status_code": response.status_code,
-                "request_data": request_data,
-                "response_data": response_content
-            }
-            self._save_user_logs_async(log_entry)
-        except Exception:
-            pass
-        finally:
-            # 确保在异步处理完成后关闭所有数据库连接
-            close_old_connections()
+            serialized_request = json.dumps(request_data, ensure_ascii=False)
+        except TypeError:
+            serialized_request = str(request_data)
+        return {
+            'user': user_id,
+            'source_type': int(request.headers.get('Source-Type', 1)),
+            'ip': self._get_client_ip(request),
+            'url': request.path,
+            'method': request.method,
+            'status_code': response.status_code,
+            'request_data': serialized_request,
+            'response_data': self._capture_response_data(response),
+        }, username
 
     def _capture_request_data(self, request: ASGIRequest, response: Response) -> dict:
         if request.method == 'POST' or request.method == 'PUT':
@@ -122,17 +99,15 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 response_data = json.loads(response.content.decode('utf-8'))
             else:
                 response_data = str(response)
-            response_data = self._redact_sensitive(response_data)
-
             if isinstance(response_data, dict) and \
                     'code' in response_data and \
                     'msg' in response_data and \
                     'data' in response_data:
                 filtered_data = response_data.copy()
                 del filtered_data['data']
-                return json.dumps(filtered_data, ensure_ascii=False)
+                return json.dumps(self._redact_sensitive(filtered_data), ensure_ascii=False)
             else:
-                return json.dumps(response_data, ensure_ascii=False)[:2000]
+                return json.dumps(self._redact_sensitive(response_data), ensure_ascii=False)[:2000]
         except Exception:
             return str(response)[:2000]
 
@@ -161,17 +136,3 @@ class UserLogsMiddleWare(MiddlewareMixin):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
-
-    def _save_user_logs_async(self, log_entry: dict) -> None:
-        """异步保存用户日志到数据库"""
-        try:
-            # 确保在数据库操作前后关闭连接
-            close_old_connections()
-            user_id = log_entry.get("user")
-            if user_id and not User.objects.filter(id=user_id).exists():
-                log_entry["user"] = None
-            UserLogService.record(log_entry)
-            close_old_connections()
-        except Exception as e:
-            close_old_connections()
-            pass

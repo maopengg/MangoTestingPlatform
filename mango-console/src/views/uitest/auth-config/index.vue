@@ -180,6 +180,7 @@
           <a-select
             v-model="form.api_info"
             :options="apiInfoOptions"
+            :loading="apiInfoLoading"
             allow-clear
             allow-search
             placeholder="请选择接口转入的登录接口" data-testid="qa-views-uitest-auth-config-select-请选择接口转入的登录接口"
@@ -260,7 +261,7 @@
   import { conditionItems, tableColumns, tableScrollX } from './config'
   import { getFormItems } from '@/utils/datacleaning'
   import { getUiSteps } from '@/api/uitest/page-steps'
-  import { getApiInfo } from '@/api/apitest/info'
+  import { getApiInfoOptions } from '@/api/apitest/info'
   import { getSystemTimingList } from '@/api/system/time'
   import { getSystemNoticeName } from '@/api/system/notice_group'
   import { getUserName } from '@/api/user/user'
@@ -309,6 +310,8 @@
   const apiConfigText = ref('{"api_info":null,"token_path":"$.response.json.data.token","cookie_mapping":{},"local_storage_mapping":[],"session_storage_mapping":[],"header_mapping":{}}')
   const pageStepOptions = ref<any[]>([])
   const apiInfoOptions = ref<any[]>([])
+  const apiInfoLoading = ref(false)
+  let apiInfoRequest = 0
   const timeTaskOptions = ref<any[]>([])
   const noticeOptions = ref<any[]>([])
   const userOptions = ref<any[]>([])
@@ -728,13 +731,21 @@
   }
 
   async function loadApiInfoList(projectProductId: any) {
+    const request = ++apiInfoRequest
     apiInfoOptions.value = []
+    apiInfoLoading.value = false
     if (!projectProductId) return
-    const res = await getApiInfo({ page: 1, pageSize: 500, project_product: projectProductId })
-    apiInfoOptions.value = (res.data || []).map((item: any) => ({
-      label: `${item.name}${item.url ? ` / ${item.url}` : ''}`,
-      value: item.id,
-    }))
+    apiInfoLoading.value = true
+    try {
+      const items = await getApiInfoOptions(projectProductId, () => request === apiInfoRequest)
+      if (request !== apiInfoRequest) return
+      apiInfoOptions.value = items.map((item: any) => ({
+        label: `${item.name}${item.url ? ` / ${item.url}` : ''}`,
+        value: item.id,
+      }))
+    } finally {
+      if (request === apiInfoRequest) apiInfoLoading.value = false
+    }
   }
 
   async function loadNoticeList(projectProductId: any) {
