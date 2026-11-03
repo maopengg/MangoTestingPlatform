@@ -1,35 +1,62 @@
-import { reactive } from 'vue'
-import { updateUserColumn } from '@/utils/update-user'
+export const moduleLevelLabels = ['一级模块', '二级模块', '三级模块']
+export const moduleLevelIconLines = [[12], [9, 15], [6, 12, 18]]
 
-export const columns = reactive([
-  { title: 'ID', dataIndex: 'id', align: 'center', width: 80 },
-  {
-    title: '三级模块名称',
-    dataIndex: 'level_3_name',
-    align: 'left',
-    width: 200,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '二级模块名称',
-    dataIndex: 'level_2_name',
-    align: 'left',
-    width: 200,
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: '一级模块名称',
-    dataIndex: 'level_1_name',
-    align: 'left',
-    width: 200,
-    ellipsis: true,
-    tooltip: true,
-  },
-  { title: '层级', dataIndex: 'level', align: 'center', width: 90 },
-  { title: '创建时间', dataIndex: 'create_time', align: 'center', width: 180 },
-  { title: '更新时间', dataIndex: 'update_time', align: 'center', width: 180 },
-  updateUserColumn(120),
-  { title: '操作', dataIndex: 'actions', align: 'center', fixed: 'right', width: 160 },
-])
+export interface ModuleTreeNode {
+  key: number
+  title: string
+  record: any
+  children: ModuleTreeNode[]
+  childCount: number
+}
+
+export function buildModuleTree(records: any[]): ModuleTreeNode[] {
+  const nodes = new Map<number, ModuleTreeNode>()
+  records.forEach((record) =>
+    nodes.set(Number(record.id), {
+      key: Number(record.id),
+      title: record.name,
+      record,
+      children: [],
+      childCount: 0,
+    })
+  )
+  const roots: ModuleTreeNode[] = []
+  records.forEach((record) => {
+    const node = nodes.get(Number(record.id))!
+    const parent = nodes.get(Number(record.parent?.id))
+    if (parent && parent !== node) parent.children.push(node)
+    else roots.push(node)
+  })
+  nodes.forEach((node) => {
+    node.childCount = node.children.length
+  })
+  return roots
+}
+
+export function filterModuleTree(nodes: ModuleTreeNode[], keyword: string): ModuleTreeNode[] {
+  const query = keyword.trim().toLocaleLowerCase()
+  if (!query) return nodes
+  return nodes.flatMap((node) => {
+    // 命中分类时保留整个分支，命中后代时保留祖先链。
+    if (node.title.toLocaleLowerCase().includes(query) || String(node.key) === query) return [node]
+    const children = filterModuleTree(node.children, query)
+    return children.length ? [{ ...node, children }] : []
+  })
+}
+
+export function moduleBranchKeys(nodes: ModuleTreeNode[], maxExpandedLevel = Infinity): number[] {
+  return nodes.flatMap((node) =>
+    node.children.length && Number(node.record.level) <= maxExpandedLevel
+      ? [node.key, ...moduleBranchKeys(node.children, maxExpandedLevel)]
+      : []
+  )
+}
+
+export function moduleCreateDraft(parent?: any) {
+  return {
+    name: '',
+    parent: parent?.id ?? null,
+    parentName: parent?.name || '',
+    level: Number(parent?.level || 0) + 1,
+  }
+}

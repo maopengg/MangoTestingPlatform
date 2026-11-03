@@ -2,7 +2,6 @@ from django.db import transaction
 from rest_framework import serializers
 
 from src.apps.test_center.exceptions import (
-    SYSTEM_MODULE_MODULE_PATH_CREATE_INVALID,
     SYSTEM_MODULE_PROJECT_PRODUCT_MODULE_NOT_ALLOWED,
     SYSTEM_MODULE_PROJECT_PRODUCT_MODULE_INVALID,
     TEST_CENTER_PRODUCT_MODULE_MODULE_NAME_DUPLICATED,
@@ -29,9 +28,7 @@ class ProductModuleSerializers(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = self.instance
-        if instance is None:
-            raise TestCenterError(SYSTEM_MODULE_MODULE_PATH_CREATE_INVALID)
-        if (
+        if instance and (
                 (
                         'project_product' in attrs
                         and getattr(attrs.get('project_product'), 'id', None) != instance.project_product_id
@@ -51,6 +48,8 @@ class ProductModuleSerializers(serializers.ModelSerializer):
             expected_level = (parent.level or 0) + 1
             if expected_level not in (2, 3):
                 raise TestCenterError(TEST_CENTER_PRODUCT_MODULE_MODULE_INVALID)
+            if instance is None and level is not None and level != expected_level:
+                raise TestCenterError(SYSTEM_MODULE_PROJECT_PRODUCT_MODULE_INVALID)
             if instance and expected_level != instance.level:
                 raise TestCenterError(SYSTEM_MODULE_PROJECT_PRODUCT_MODULE_INVALID)
             if expected_level == 3 and (

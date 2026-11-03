@@ -63,14 +63,28 @@ class ProductModuleHierarchyTests(TestCase):
             '订单创建/本地文件创建/订单编辑',
         )
 
-    def test_single_module_create_is_rejected(self):
+    def test_single_module_create_supports_one_level_at_a_time(self):
         serializer = ProductModuleSerializers(data={
             'project_product': self.product.id,
             'name': '单层模块',
         })
 
-        with self.assertRaises(TestCenterError):
-            serializer.is_valid()
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        root = serializer.save()
+        self.assertEqual(root.level, 1)
+        self.assertIsNone(root.parent_id)
+        for expected_level in (2, 3):
+            serializer = ProductModuleSerializers(data={
+                'project_product': self.product.id,
+                'parent': root.id,
+                'name': f'第{expected_level}级模块',
+            })
+            self.assertTrue(serializer.is_valid(), serializer.errors)
+            child = serializer.save()
+            self.assertEqual(child.parent_id, root.id)
+            self.assertEqual(child.level, expected_level)
+            root = child
+        self.assertEqual(ProductModule.objects.filter(project_product=self.product).count(), 3)
 
     def test_existing_module_cannot_change_to_wrong_level_parent(self):
         module = ProductModuleService.create_path(
