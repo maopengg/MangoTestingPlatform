@@ -166,6 +166,7 @@ export const tableColumns = useTableColumn([
     dataIndex: 'execution_summary',
     align: 'left',
     width: 300,
+    ellipsis: true,
   },
   {
     title: '通知结果',

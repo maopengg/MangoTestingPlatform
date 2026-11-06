@@ -11,7 +11,7 @@ from src.apps.user.services.permission import PermissionMenuService, ProjectProd
 class OfflineReportSelector:
     @classmethod
     def options(cls, user, source_kind, source_id, page=1, page_size=20):
-        cls.require_permission(user)
+        cls.require_permission(user, ('report:read', 'timing.tasks:read'))
         if source_kind == ReportSourceEnum.SUITE:
             queryset = TestSuite.objects.filter(tasks_id=source_id, report_retained=True)
             fields = ('id', 'execution_name', 'test_env', 'create_time', 'status')
@@ -41,7 +41,8 @@ class OfflineReportSelector:
 
     @staticmethod
     def require_permission(user, permission='report:read'):
-        if user is None or (not PermissionMenuService.is_effective_super_admin(user) and permission not in PermissionMenuService.permission_keys_for_user(user)):
+        required = {permission} if isinstance(permission, str) else set(permission)
+        if user is None or (not PermissionMenuService.is_effective_super_admin(user) and not required.intersection(PermissionMenuService.permission_keys_for_user(user))):
             raise TestCenterError(REPORT_ARTIFACT_INVALID)
 
     @classmethod

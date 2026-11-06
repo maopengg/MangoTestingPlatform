@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -25,11 +26,12 @@ from src.apps.auto_api.schemas.module_coverage import (  # noqa: E402
 from _common import SCHEMA_VERSION as SCANNER_SCHEMA_VERSION  # noqa: E402
 
 
-def json_example_after(source: str, marker: str) -> dict:
-    marker_index = source.index(marker)
-    fence_start = source.index("```json", marker_index) + len("```json")
-    fence_end = source.index("```", fence_start)
-    return json.loads(source[fence_start:fence_end])
+def json_example(source: str, payload_field: str) -> dict:
+    for block in re.findall(r"```json\s+(.*?)```", source, re.DOTALL):
+        item = json.loads(block)
+        if isinstance(item, dict) and payload_field in item.get("payload", {}):
+            return item
+    raise AssertionError(f"Missing JSON payload example for {payload_field}")
 
 
 class ModuleCoverageSkillContractTest(unittest.TestCase):
@@ -38,7 +40,7 @@ class ModuleCoverageSkillContractTest(unittest.TestCase):
         cls.skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
 
     def test_documented_interface_example_matches_platform_schema(self) -> None:
-        item = json_example_after(self.skill_text, "Use this canonical shape:")
+        item = json_example(self.skill_text, "mermaid")
         payload = ModuleCoverageInterfacePayload.model_validate(item["payload"])
 
         self.assertEqual(payload.method, "GET")
@@ -47,10 +49,7 @@ class ModuleCoverageSkillContractTest(unittest.TestCase):
             self.assertIn(f"{branch_id}@", payload.mermaid)
 
     def test_documented_case_example_matches_platform_schema(self) -> None:
-        item = json_example_after(
-            self.skill_text,
-            "Use this Case shape for an unbound Case that is ready for implementation:",
-        )
+        item = json_example(self.skill_text, "case_title")
         payload = ModuleCoverageCasePayload.model_validate(item["payload"])
 
         self.assertEqual(payload.current_status, "pending_create")
@@ -92,8 +91,8 @@ class ModuleCoverageSkillContractTest(unittest.TestCase):
 
         self.assertEqual(ast.literal_eval(default_by_name["schema_version"]), 3)
         self.assertEqual(SCANNER_SCHEMA_VERSION, "3.0")
-        self.assertIn("integer `schema_version=3`", self.skill_text)
-        self.assertIn('scanner artifact version string `"3.0"`', self.skill_text)
+        self.assertIn("`schema_version=3`", self.skill_text)
+        self.assertIn('`"3.0"`', self.skill_text)
         self.assertIn("`completed_with_gaps`", self.skill_text)
         self.assertIn("`valid_with_gaps=true`", self.skill_text)
 

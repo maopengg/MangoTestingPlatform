@@ -309,6 +309,7 @@ class DataFactoryRunnerSceneMixin:
         return results
 
     @classmethod
+    @DataFactorySqlExecutionService.source_for('post_insert_update')
     def update_created_record(
             cls,
             entity,

@@ -58,6 +58,20 @@ class UnifiedDeploymentTests(unittest.TestCase):
         self.assertIn('api-worker-3',[x['metadata']['name'] for x in k['workloads']])
         with self.assertRaises(ValueError):values(API_WORKER_COUNT='0')
 
+    def test_scheduler_shares_backend_image_and_has_cleanup_readiness(self):
+        for environment in ('dev', 'test', 'master'):
+            v=values(DJANGO_ENV=environment,SERVER_IMAGE='registry.example.com/mango-server:new')
+            d=b.render(self.root,v)
+            scheduler=d['services']['scheduler_service']
+            self.assertEqual(scheduler['image'],d['services']['mango_server']['image'])
+            self.assertIn('check_scheduler',scheduler['healthcheck']['test'])
+            self.assertEqual('--cleanup-only' in scheduler['command'],environment=='dev')
+            k=render_k8s(self.root,v)
+            resource=next(x for x in k['workloads'] if x['metadata']['name']=='scheduler-service')
+            container=resource['spec']['template']['spec']['containers'][0]
+            self.assertEqual(container['image'],v['SERVER_IMAGE'])
+            self.assertIn('check_scheduler',container['readinessProbe']['exec']['command'])
+
     def test_images_logging_optional_services_and_binlog_are_configurable(self):
         d=b.render(self.root,values(SERVER_IMAGE='registry.example.com/company/api:release',CONSOLE_IMAGE='registry.example.com/company/web:release'))
         self.assertEqual(d['services']['mango_server']['image'],'registry.example.com/company/api:release')

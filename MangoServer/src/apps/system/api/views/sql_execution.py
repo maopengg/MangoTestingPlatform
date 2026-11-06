@@ -2,16 +2,18 @@ from datetime import datetime, time
 
 from django.conf import settings
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.data_factory.models import SqlExecutionRecord
+from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
 from src.apps.system.api.serializers.sql_execution import SqlExecutionRecordSerializer
 from src.apps.test_center.enums.environment import EnvironmentEnum
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.enums.data_source import DataSourceTypeEnum
+from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0003
@@ -25,16 +27,7 @@ class SqlExecutionRecordViews(ViewSet):
 
     @classmethod
     def _visible_queryset(cls, request: Request):
-        queryset = SqlExecutionRecord.objects.select_related(
-            'project_product', 'datasource_alias', 'database',
-        )
-        user = cls._user(request)
-        if user is None or PermissionMenuService.is_effective_super_admin(user):
-            return queryset
-        if ProjectProductScopeService.can_view_all_project_data(user):
-            return queryset
-        allowed_ids = ProjectProductScopeService.project_product_ids_for_user(user)
-        return queryset.filter(project_product_id__in=allowed_ids)
+        return ExecutionAuditSelector.visible(cls._user(request))
 
     @staticmethod
     def _parse_datetime(value: str | None, *, end_of_day: bool = False):
@@ -64,10 +57,13 @@ class SqlExecutionRecordViews(ViewSet):
             if any(not value.isascii() or not value.isdigit() or int(value) <= 0 for value in id_values):
                 return None
             queryset = queryset.filter(id__in=[int(value) for value in id_values])
-        integer_filters = ('id', 'source_id', 'project_product_id', 'test_env', 'datasource_alias_id')
+        integer_filters = ('id', 'source_id', 'project_product_id', 'test_env', 'datasource_alias_id', 'datasource_type', 'database_id')
         for key in integer_filters:
             value = request.query_params.get(key)
             if value in (None, ''):
+                continue
+            if key == 'datasource_type' and value == 'unrecorded':
+                queryset = queryset.filter(datasource_type__isnull=True)
                 continue
             if not str(value).isdigit():
                 return None
@@ -77,6 +73,29 @@ class SqlExecutionRecordViews(ViewSet):
             value = str(request.query_params.get(key) or '').strip()
             if value:
                 queryset = queryset.filter(**{key: value})
+
+        for key in (*integer_filters[1:], 'source_type', 'source_stage', 'status', 'is_slow'):
+            if f'{key}__in' not in request.query_params:
+                continue
+            values = [item.strip() for raw in request.query_params.getlist(f'{key}__in')
+                      for item in str(raw).split(',') if item.strip()]
+            if not values:
+                return None
+            historical = key == 'datasource_type' and 'unrecorded' in values
+            if historical:
+                values = [value for value in values if value != 'unrecorded']
+            if key in integer_filters:
+                if any(not value.isascii() or not value.isdigit() for value in values):
+                    return None
+                values = [int(value) for value in values]
+            if key == 'is_slow':
+                if any(value.lower() not in {'true', 'false', '0', '1'} for value in values):
+                    return None
+                values = [value.lower() in {'true', '1'} for value in values]
+            if historical:
+                queryset = queryset.filter(Q(datasource_type__in=values) | Q(datasource_type__isnull=True))
+            else:
+                queryset = queryset.filter(**{f'{key}__in': values})
 
         is_slow = request.query_params.get('is_slow')
         if is_slow not in (None, ''):
@@ -148,23 +167,26 @@ class SqlExecutionRecordViews(ViewSet):
         )
         aliases = {
             row['datasource_alias_id']: row['datasource_alias__name']
-            for row in queryset.values('datasource_alias_id', 'datasource_alias__name').distinct()
+            for row in queryset.exclude(datasource_alias_id__isnull=True).values('datasource_alias_id', 'datasource_alias__name').distinct()
         }
         products = {
             row['project_product_id']: row['project_product__name']
-            for row in queryset.values('project_product_id', 'project_product__name').distinct()
+            for row in queryset.exclude(project_product_id__isnull=True).values('project_product_id', 'project_product__name').distinct()
         }
         return ResponseData.success(RESPONSE_MSG_0001, {
-            'source_type_options': [{'key': value, 'title': value} for value in source_types],
-            'source_stage_options': [{'key': value, 'title': value} for value in source_stages],
+            'datasource_type_options': [*({'key': key, 'title': title} for key, title in DataSourceTypeEnum.obj().items()),
+                                        {'key': 'unrecorded', 'title': '历史未记录'}],
+            'source_type_options': [{'key': value, 'title': DatasourceAuditSourceEnum.obj().get(value, value)} for value in source_types],
+            'source_stage_options': [{'key': value, 'title': DatasourceAuditStageEnum.obj().get(value, value)} for value in source_stages],
             'status_options': [
                 {'key': 'running', 'title': '执行中'},
                 {'key': 'success', 'title': '成功'},
                 {'key': 'fail', 'title': '失败'},
                 {'key': 'timeout', 'title': '超时'},
+                {'key': 'rolled_back', 'title': '已回滚'},
             ],
             'slow_options': [
-                {'key': True, 'title': '慢SQL'},
+                {'key': True, 'title': '慢执行'},
                 {'key': False, 'title': '正常'},
             ],
             'environment_options': [

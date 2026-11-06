@@ -16,6 +16,27 @@ def permission_for_view(view, action, method=None, data=None):
         return 'pytest.repository:change' if (data or {}).get('id') else 'pytest.repository:add'
     return required
 
+def _option_permissions(*pages):
+    """显式登记使用选项的业务菜单；查看、新建和编辑窗口均可加载选项。"""
+    return tuple(f'{page}:{operation}' for page in pages for operation in ('read', 'add', 'change'))
+
+
+PROJECT_MODULE_OPTION_PERMISSIONS = _option_permissions(
+    'config.project', 'config.product', 'config.test_object', 'config.test_files',
+    'api.info', 'api.case', 'api.public', 'api.headers', 'api.auth_config', 'api.mock', 'api.module_coverage',
+    'ui.page', 'ui.page_steps', 'ui.case', 'ui.public', 'ui.auth_config',
+    'pytest.product', 'pytest.case', 'timing.tasks',
+    'functional.suite', 'functional.case', 'functional.iteration', 'functional.plan', 'functional.defect',
+    'data_factory.entity', 'data_factory.template', 'evaluation.case', 'evaluation.dataset',
+    'perf.scenario', 'monitoring.task', 'gray.config_file', 'gray.feature',
+) + ('report:read', 'report:change', 'report.effectiveness:read', 'report.execution_efficiency:read',
+     'data_factory.execution:read')
+
+NOTICE_OPTION_PERMISSIONS = _option_permissions(
+    'config.project', 'timing.tasks', 'monitoring.task', 'api.auth_config', 'ui.auth_config',
+) + ('report:change',)
+
+
 HTTP_PERMISSION_RULES = {
     ('src.apps.auto_api.api.views.api_auth_config.ApiAuthConfigCRUD', 'delete', 'delete'): 'api.auth_config:remove',
     ('src.apps.auto_api.api.views.api_auth_config.ApiAuthConfigCRUD', 'get', 'get'): 'api.auth_config:read',
@@ -87,7 +108,7 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'api_info_batch_run', 'post'): 'api.info:read',
     ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'get_api_info_run', 'get'): ('api.info:read', 'api.info:read'),
     ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'get_api_info_run', 'post'): ('api.info:read', 'api.info:read'),
-    ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'get_api_name', 'get'): 'api.info:read',
+    ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'get_api_name', 'get'): _option_permissions('api.info', 'api.case'),
     ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'get_bound_cases', 'get'): 'api.info:read',
     ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'get_execution_parameters', 'get'): ('api.info:read', 'api.info:read'),
     ('src.apps.auto_api.api.views.api_info.ApiInfoViews', 'import_api', 'post'): 'api.info:add',
@@ -173,7 +194,7 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.auto_pytest.api.views.pytest_product.PytestProductCRUD', 'post', 'post'): 'pytest.product:add',
     ('src.apps.auto_pytest.api.views.pytest_product.PytestProductCRUD', 'put', 'put'): 'pytest.product:change',
     ('src.apps.auto_pytest.api.views.pytest_product.PytestProductViews', 'pytest_import', 'post'): 'pytest.product:add',
-    ('src.apps.auto_pytest.api.views.pytest_product.PytestProductViews', 'pytest_project_name', 'get'): 'pytest.product:read',
+    ('src.apps.auto_pytest.api.views.pytest_product.PytestProductViews', 'pytest_project_name', 'get'): _option_permissions('pytest.product', 'timing.tasks'),
     ('src.apps.auto_pytest.api.views.pytest_product.PytestProductViews', 'pytest_test_directories', 'get'): 'pytest.product:read',
     ('src.apps.auto_pytest.api.views.pytest_repository.PytestRepositoryViews', 'branches', 'get'): ('pytest.repository:read', 'pytest.product:add'),
     ('src.apps.auto_pytest.api.views.pytest_repository.PytestRepositoryViews', 'delete_repository', 'delete'): 'pytest.repository:remove',
@@ -248,7 +269,7 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.auto_ui.api.views.ui_page.PageCRUD', 'get', 'get'): 'ui.page:read',
     ('src.apps.auto_ui.api.views.ui_page.PageCRUD', 'post', 'post'): 'ui.page:add',
     ('src.apps.auto_ui.api.views.ui_page.PageCRUD', 'put', 'put'): 'ui.page:change',
-    ('src.apps.auto_ui.api.views.ui_page.PageViews', 'page_name', 'get'): 'ui.page:read',
+    ('src.apps.auto_ui.api.views.ui_page.PageViews', 'page_name', 'get'): _option_permissions('ui.page', 'ui.page_steps', 'ui.case'),
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsCRUD', 'delete', 'delete'): 'ui.page_steps:remove',
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsCRUD', 'get', 'get'): 'ui.page_steps:read',
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsCRUD', 'post', 'post'): 'ui.page_steps:add',
@@ -257,7 +278,7 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'asset_product_options', 'get'): 'ui.page_steps:read',
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'asset_step_options', 'get'): 'ui.page_steps:read',
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'copy_page_steps', 'post'): 'ui.page_steps:add',
-    ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'get_page_steps_name', 'get'): 'ui.page_steps:read',
+    ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'get_page_steps_name', 'get'): _option_permissions('ui.page_steps', 'ui.case'),
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'heal_apply', 'post'): 'ui.page_steps:change',
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'heal_record_detail', 'get'): 'ui.page_steps:read',
     ('src.apps.auto_ui.api.views.ui_page_steps.PageStepsViews', 'heal_records', 'get'): 'ui.page_steps:read',
@@ -651,30 +672,30 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.test_center.api.views.notice_group.NoticeGroupCRUD', 'get', 'get'): 'config.project:read',
     ('src.apps.test_center.api.views.notice_group.NoticeGroupCRUD', 'post', 'post'): 'config.project:add',
     ('src.apps.test_center.api.views.notice_group.NoticeGroupCRUD', 'put', 'put'): 'config.project:change',
-    ('src.apps.test_center.api.views.notice_group.NoticeGroupViews', 'get_name', 'get'): 'config.project:read',
+    ('src.apps.test_center.api.views.notice_group.NoticeGroupViews', 'get_name', 'get'): NOTICE_OPTION_PERMISSIONS,
     ('src.apps.test_center.api.views.notice_group.NoticeGroupViews', 'test', 'get'): 'config.project:change',
     ('src.apps.test_center.api.views.product_module.ProductModuleCRUD', 'delete', 'delete'): 'config.product:remove',
     ('src.apps.test_center.api.views.product_module.ProductModuleCRUD', 'get', 'get'): 'config.product:read',
     ('src.apps.test_center.api.views.product_module.ProductModuleCRUD', 'post', 'post'): 'config.product:add',
     ('src.apps.test_center.api.views.product_module.ProductModuleCRUD', 'put', 'put'): 'config.product:change',
     ('src.apps.test_center.api.views.product_module.ProductModuleViews', 'create_path', 'post'): 'config.product:add',
-    ('src.apps.test_center.api.views.product_module.ProductModuleViews', 'get_module_name', 'get'): ('config.product:read', 'api.info:read', 'api.case:read', 'ui.page:read', 'ui.page_steps:read', 'ui.case:read', 'timing.tasks:read', 'functional.suite:read'),
-    ('src.apps.test_center.api.views.product_module.ProductModuleViews', 'tree', 'get'): 'config.product:read',
+    ('src.apps.test_center.api.views.product_module.ProductModuleViews', 'get_module_name', 'get'): PROJECT_MODULE_OPTION_PERMISSIONS,
+    ('src.apps.test_center.api.views.product_module.ProductModuleViews', 'tree', 'get'): PROJECT_MODULE_OPTION_PERMISSIONS,
     ('src.apps.test_center.api.views.project.ProjectCRUD', 'delete', 'delete'): 'config.project:remove',
     ('src.apps.test_center.api.views.project.ProjectCRUD', 'get', 'get'): 'config.project:read',
     ('src.apps.test_center.api.views.project.ProjectCRUD', 'post', 'post'): 'config.project:add',
     ('src.apps.test_center.api.views.project.ProjectCRUD', 'put', 'put'): 'config.project:change',
-    ('src.apps.test_center.api.views.project.ProjectViews', 'get_all_items', 'get'): ('config.project:read', 'config.product:read', 'api.case:read', 'ui.case:read', 'timing.tasks:read', 'functional.suite:read'),
+    ('src.apps.test_center.api.views.project.ProjectViews', 'get_all_items', 'get'): PROJECT_MODULE_OPTION_PERMISSIONS,
     ('src.apps.test_center.api.views.project.ProjectViews', 'product_config_project_options', 'get'): 'config.product:read',
     ('src.apps.test_center.api.views.project.ProjectViews', 'project_environment_name', 'get'): ('config.product:read', 'api.case:read', 'ui.case:read', 'timing.tasks:read'),
-    ('src.apps.test_center.api.views.project.ProjectViews', 'project_product_name', 'get'): ('config.product:read', 'api.info:read', 'api.case:read', 'ui.page:read', 'ui.case:read', 'timing.tasks:read', 'functional.suite:read'),
+    ('src.apps.test_center.api.views.project.ProjectViews', 'project_product_name', 'get'): PROJECT_MODULE_OPTION_PERMISSIONS,
     ('src.apps.test_center.api.views.project.ProjectViews', 'project_pytest_name', 'get'): ('pytest.product:read', 'pytest.case:read', 'timing.tasks:read'),
     ('src.apps.test_center.api.views.project_product.ProjectProductCRUD', 'delete', 'delete'): 'config.product:remove',
     ('src.apps.test_center.api.views.project_product.ProjectProductCRUD', 'get', 'get'): 'config.product:read',
     ('src.apps.test_center.api.views.project_product.ProjectProductCRUD', 'post', 'post'): 'config.product:add',
     ('src.apps.test_center.api.views.project_product.ProjectProductCRUD', 'put', 'put'): 'config.product:change',
-    ('src.apps.test_center.api.views.project_product.ProjectProductViews', 'get_product_name', 'get'): ('config.product:read', 'api.info:read', 'api.case:read', 'ui.page:read', 'ui.case:read', 'timing.tasks:read', 'functional.suite:read'),
-    ('src.apps.test_center.api.views.project_product.ProjectProductViews', 'product_all_module_name', 'get'): ('config.product:read', 'api.case:read', 'ui.case:read', 'timing.tasks:read', 'functional.suite:read'),
+    ('src.apps.test_center.api.views.project_product.ProjectProductViews', 'get_product_name', 'get'): PROJECT_MODULE_OPTION_PERMISSIONS,
+    ('src.apps.test_center.api.views.project_product.ProjectProductViews', 'product_all_module_name', 'get'): PROJECT_MODULE_OPTION_PERMISSIONS,
     ('src.apps.test_center.api.views.test_object.TestObjectCRUD', 'delete', 'delete'): 'config.test_object:remove',
     ('src.apps.test_center.api.views.test_object.TestObjectCRUD', 'get', 'get'): 'config.test_object:read',
     ('src.apps.test_center.api.views.test_object.TestObjectCRUD', 'post', 'post'): 'config.test_object:add',
@@ -686,8 +707,10 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'effectiveness_ai_summary', 'post'): 'report.effectiveness:change',
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'effectiveness_clear_cache', 'post'): 'report.effectiveness:change',
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'effectiveness_overview', 'get'): 'report.effectiveness:read',
+    ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'execution_efficiency', 'get'): 'report.execution_efficiency:read',
+    ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'execution_efficiency_options', 'get'): 'report.execution_efficiency:read',
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'offline_export', 'post'): 'report:read',
-    ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'offline_options', 'get'): 'report:read',
+    ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'offline_options', 'get'): ('report:read', 'timing.tasks:read'),
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'offline_publish', 'post'): 'report:read',
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'send_notice', 'post'): 'report:change',
     ('src.apps.test_center.api.views.test_suite.TestSuiteViews', 'stop', 'post'): 'report:read',
@@ -719,7 +742,8 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.user.api.views.user.UserCRUD', 'put', 'put'): 'system.user:change',
     ('src.apps.user.api.views.user.UserViews', 'cli_authorize', 'post'): 'index.home:read',
     ('src.apps.user.api.views.user.UserViews', 'get_department_name', 'get'): 'system.user:read',
-    ('src.apps.user.api.views.user.UserViews', 'get_name', 'get'): 'system.user:read',
+    # 业务页面共用的负责人/更新人选项只返回 ID 与姓名，不是用户管理列表。
+    ('src.apps.user.api.views.user.UserViews', 'get_name', 'get'): 'index.home:read',
     ('src.apps.user.api.views.user.UserViews', 'register_user', 'post'): 'system.user:add',
     ('src.apps.user.api.views.user.UserViews', 'reset_password', 'put'): 'system.user:change',
     ('src.apps.user.api.views.user.UserViews', 'reset_user_api_key', 'put'): 'system.user:change',

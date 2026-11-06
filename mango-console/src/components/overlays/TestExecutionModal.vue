@@ -60,12 +60,17 @@
               >当前编辑态</a-option
             >
             <a-option
+              value="prepublished"
+              data-testid="qa-components-overlays-testexecutionmodal-option-预发布"
+              >预发布（待审核修订）</a-option
+            >
+            <a-option
               value="published"
               data-testid="qa-components-overlays-testexecutionmodal-option-当前已发布"
               >当前已发布</a-option
             >
           </a-select>
-          <template #extra> 编辑态生成执行快照；已发布仅执行当前发布版本 </template>
+          <template #extra> 编辑态执行当前配置；预发布固定待审核修订；已发布执行当前正式版本，不跨版本回退 </template>
         </a-form-item>
         <a-form-item class="mango-form-item__no_require" label="API并发">
           <a-input-number
@@ -102,7 +107,7 @@
     testEnv: number | null
     testEnvs?: number[]
     apiConcurrencyLimit: number | null
-    executionVersion?: 'editing' | 'published'
+    executionVersion?: 'editing' | 'prepublished' | 'published'
   }
 
   const props = withDefaults(

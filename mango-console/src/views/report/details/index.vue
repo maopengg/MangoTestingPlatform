@@ -508,6 +508,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
   import {
     computed,
     onActivated,
@@ -621,7 +622,22 @@
     taskId: '',
   })
   const isPolling = ref(false)
-  const pollingTimer = ref<ReturnType<typeof setInterval> | null>(null)
+  const pagePolling = usePagePolling(async context => {
+    if (!reportPageActive.value || !reportId.value) return
+    const id = reportId.value
+    await loadSummary(true, context)
+    if (!context.isCurrent() || reportId.value !== id) return
+    await refreshLoadedCases(true, context)
+    if (!context.isCurrent() || reportId.value !== id) return
+    if (!(summary.value.stay_begin_count || summary.value.proceed_count)) {
+      await loadFailureReasons(true, context)
+      if (context.isCurrent()) stopPolling()
+    }
+  }, () => {
+    if (summaryLoading.value || caseLoading.value) startPolling()
+    summaryLoading.value = false
+    caseLoading.value = false
+  })
   const reportPageActive = ref(true)
   const apiExportTimer = ref<ReturnType<typeof setTimeout> | null>(null)
   const traceDrawer = reactive({
@@ -1130,11 +1146,12 @@
     pageData.setRecord(reportInfo.value)
   }
 
-  async function loadSummary() {
+  async function loadSummary(silent = false, context?: PollingContext) {
     if (!reportId.value) return
-    summaryLoading.value = true
+    if (!silent) summaryLoading.value = true
     try {
       const res = await getSystemTestSuiteDetailsSummaryShare(reportId.value)
+      if (context && !context.isCurrent()) return
       summary.value = res.data || {}
       const [firstVisibleType] = visibleTypeTabs.value
       if (
@@ -1143,9 +1160,9 @@
       ) {
         activeType.value = firstVisibleType.key
       }
-      handlePolling()
+      if (!silent) handlePolling()
     } finally {
-      summaryLoading.value = false
+      if (!silent) summaryLoading.value = false
     }
   }
 
@@ -1153,20 +1170,22 @@
     await Promise.all([loadSummary(), loadReportInfo(), refreshLoadedCases()])
   }
 
-  async function loadFailureReasons() {
+  async function loadFailureReasons(silent = false, context?: PollingContext) {
     if (!reportId.value || failureReasonLoading.value) return
-    failureReasonLoading.value = true
+    if (!silent) failureReasonLoading.value = true
     try {
       const res = await getSystemTestSuiteDetailsFailureReasonsShare(reportId.value)
+      if (context && !context.isCurrent()) return
       failureReasonSummary.value = {
         items: res.data?.items || [],
         category_count: Number(res.data?.category_count || 0),
         failure_count: Number(res.data?.failure_count || 0),
       }
     } catch (error: any) {
-      Message.error(error?.msg || error?.message || '加载失败原因统计失败')
+      if (silent) throw error
+      if (!silent) Message.error(error?.msg || error?.message || '加载失败原因统计失败')
     } finally {
-      failureReasonLoading.value = false
+      if (!silent) failureReasonLoading.value = false
     }
   }
 
@@ -1232,13 +1251,14 @@
     reloadCases()
   }
 
-  async function refreshLoadedCases() {
+  async function refreshLoadedCases(silent = false, context?: PollingContext) {
     if (!reportId.value || caseLoading.value) return
     const currentPage = pagination.page
-    caseLoading.value = true
+    if (!silent) caseLoading.value = true
     try {
       const query = buildCaseQuery()
       const res = await getSystemTestSuiteDetailsShare(query)
+      if (context && !context.isCurrent()) return
       const list = Array.isArray(res.data) ? res.data : []
       cases.value = list
       pagination.total = getTotal(res)
@@ -1246,7 +1266,7 @@
       pagination.page = currentPage
       throw error
     } finally {
-      caseLoading.value = false
+      if (!silent) caseLoading.value = false
     }
   }
 
@@ -1265,31 +1285,13 @@
   }
 
   function startPolling() {
-    stopPolling()
     if (!reportPageActive.value || !reportId.value) return
-    const pollingReportId = reportId.value
     isPolling.value = true
-    pollingTimer.value = setInterval(async () => {
-      if (!reportPageActive.value || reportId.value !== pollingReportId) {
-        stopPolling()
-        return
-      }
-      await loadSummary()
-      if (!reportPageActive.value || reportId.value !== pollingReportId) return
-      await refreshLoadedCases()
-      const hasInProgress =
-        (summary.value.stay_begin_count || 0) > 0 || (summary.value.proceed_count || 0) > 0
-      if (!hasInProgress) {
-        await loadFailureReasons()
-      }
-    }, 5000)
+    pagePolling.start()
   }
 
   function stopPolling() {
-    if (pollingTimer.value) {
-      clearInterval(pollingTimer.value)
-      pollingTimer.value = null
-    }
+    pagePolling.stop()
     isPolling.value = false
   }
 
@@ -1395,7 +1397,6 @@
 
   onDeactivated(() => {
     reportPageActive.value = false
-    stopPolling()
   })
 
   onUnmounted(() => {

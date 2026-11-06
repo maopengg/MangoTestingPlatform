@@ -5,7 +5,7 @@ import { getMenuListByRoleId } from '@/api/url'
 import { post } from '@/api/http'
 import { findRootPathRoute, generatorRoutes, mapTwoLevelRouter } from '../help'
 import { constantRoutes } from '@/router/routes/constants'
-import { hasPermissionKeys, PermissionRequirement, HttpPermissionRule } from '@/utils/permission'
+import { hasPermissionKeys, PermissionRequirement } from '@/utils/permission'
 
 let removePermissionRoutes: Array<() => void> = []
 
@@ -15,7 +15,6 @@ const usePermissionStore = defineStore('permission-route', {
       permissionRoutes: [] as RouteRecordRaw[],
       homePath: '/index/home',
       permissionKeys: [] as string[],
-      httpPermissions: [] as HttpPermissionRule[],
       isSuperAdmin: false,
     }
   },
@@ -56,7 +55,6 @@ const usePermissionStore = defineStore('permission-route', {
         })
         const routeData = Array.isArray(res.data) ? res.data : res.data?.menus || []
         this.permissionKeys = Array.isArray(res.data?.permissions) ? res.data.permissions : []
-        this.httpPermissions = Array.isArray(res.data?.httpPermissions) ? res.data.httpPermissions : []
         this.isSuperAdmin = !!res.data?.is_super_admin
         return generatorRoutes(routeData)
       } catch (error) {
@@ -72,7 +70,6 @@ const usePermissionStore = defineStore('permission-route', {
       this.permissionRoutes = []
       this.homePath = '/index/home'
       this.permissionKeys = []
-      this.httpPermissions = []
       this.isSuperAdmin = false
     },
     async initPermissionRoute(force = false) {

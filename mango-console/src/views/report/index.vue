@@ -177,6 +177,7 @@
                   <span v-else>-</span>
                 </template>
                 <template v-else-if="item.key === 'execution_summary'" #cell="{ record }">
+                  <a-tooltip :content="reportResultSummaryText(record)">
                   <div class="mango-report-result-summary">
                     <span
                       v-for="summaryItem in reportResultSummaryItems"
@@ -196,6 +197,7 @@
                       <strong>{{ reportResultCount(record, summaryItem.key) }}</strong>
                     </span>
                   </div>
+                  </a-tooltip>
                 </template>
                 <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
                   <a-tag :color="enumStore.colors[record.is_notice]" size="small"
@@ -331,6 +333,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { usePagePolling, isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
   import { usePagination, useRowKey, useTable } from '@/hooks/table'
   import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
@@ -436,7 +439,17 @@
     project_product: '' as any,
     notice_group: '' as any,
   })
-  const pollingTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+  const activeReportIds = ref<Array<number | string>>([])
+  const pagePolling = usePagePolling(
+    context => activeReportIds.value.length
+      ? pollActiveReports(activeReportIds.value, tableRequestSequence, context)
+      : doRefresh(false),
+    () => {
+      if (table.tableLoading.value) pagePolling.start()
+      tableRequestSequence++
+      table.tableLoading.value = false
+    },
+  )
   let chartRequestSequence = 0
   let tableRequestSequence = 0
 
@@ -498,27 +511,24 @@
   }
 
   function clearPollingTimer() {
-    if (pollingTimer.value) {
-      clearTimeout(pollingTimer.value)
-      pollingTimer.value = null
-    }
+    pagePolling.stop()
   }
 
   function isActiveReport(record: any) {
-    return Number(record?.status) === 2 || Number(record?.status) === 3
+    return isPendingExecution(record)
   }
 
   function scheduleActiveReportPolling(reportIds: Array<number | string>, requestSequence: number) {
-    clearPollingTimer()
-    if (!reportIds.length || requestSequence !== tableRequestSequence) return
-    pollingTimer.value = setTimeout(() => {
-      pollActiveReports(reportIds, requestSequence)
-    }, 3000)
+    if (requestSequence !== tableRequestSequence) return
+    activeReportIds.value = reportIds
+    if (reportIds.length) pagePolling.start()
+    else pagePolling.stop()
   }
 
   async function pollActiveReports(
     reportIds: Array<number | string>,
     requestSequence: number,
+    context: PollingContext,
   ) {
     if (!reportIds.length || requestSequence !== tableRequestSequence) return
     try {
@@ -527,7 +537,7 @@
         page: 1,
         pageSize: reportIds.length,
       })
-      if (requestSequence !== tableRequestSequence) return
+      if (requestSequence !== tableRequestSequence || !context.isCurrent()) return
       const updatedRecords = Array.isArray(res.data) ? res.data : []
       const updatedById = new Map(
         updatedRecords.map((record: any) => [String(record.id), record]),
@@ -682,7 +692,7 @@
   }
 
   function doRefresh(refreshCharts: unknown = true) {
-    clearPollingTimer()
+    if (!pagePolling.isRunning()) clearPollingTimer()
     const requestSequence = ++tableRequestSequence
     const filters = buildFilterValue()
     if (refreshCharts !== false) loadReportOverview(filters)
@@ -691,7 +701,7 @@
       page: pagination.page,
       pageSize: pagination.pageSize,
     }
-    getSystemTestSuite(tableFilters)
+    return getSystemTestSuite(tableFilters)
       .then((res) => {
         if (requestSequence !== tableRequestSequence) return
         table.handleSuccess(res)
@@ -815,6 +825,10 @@
 
   function reportResultCount(record: any, key: string) {
     return Math.max(Number(record?.execution_summary?.[key] || 0), 0)
+  }
+
+  function reportResultSummaryText(record: any) {
+    return reportResultSummaryItems.map(item => `${item.label} ${reportResultCount(record, item.key)}`).join('；')
   }
 
   function openReportDiagnostic(record: any) {
@@ -1111,15 +1125,18 @@
   }
 
   .mango-report-result-summary {
-    display: inline-flex;
+    display: block;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
-    align-items: center;
-    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .mango-report-result-summary__item {
     display: inline-flex;
+    margin-right: 6px;
     min-width: 0;
     align-items: baseline;
     color: var(--m-muted);

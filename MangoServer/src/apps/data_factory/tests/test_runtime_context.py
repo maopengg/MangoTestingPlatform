@@ -161,6 +161,8 @@ class RuntimeContextTests(SimpleTestCase):
         stack, _ = self.runner_patches()
         execution = SimpleNamespace(id=1, execution_no='DF_TEST', save=Mock(), context={})
         stack.enter_context(patch.object(DataFactoryRunner, 'require_template_entities_available'))
+        stack.enter_context(patch('src.apps.data_factory.services.execution_capacity.'
+                                  'DatasourceExecutionCapacityService.wait_for_fixture'))
         stack.enter_context(patch('src.apps.data_factory.services.runner_parts.execution.'
                                   'DataFactoryExecution.objects.create', return_value=execution))
         def create(*args, test_data=None, **kwargs):
@@ -179,6 +181,8 @@ class RuntimeContextTests(SimpleTestCase):
         stack, _ = self.runner_patches()
         execution = SimpleNamespace(id=1, execution_no='DF_TEST', save=Mock(), context={})
         stack.enter_context(patch.object(DataFactoryRunner, 'require_template_entities_available'))
+        stack.enter_context(patch('src.apps.data_factory.services.execution_capacity.'
+                                  'DatasourceExecutionCapacityService.wait_for_fixture'))
         stack.enter_context(patch('src.apps.data_factory.services.runner_parts.execution.'
                                   'DataFactoryExecution.objects.create', return_value=execution))
         def create(*args, test_data=None, **kwargs):

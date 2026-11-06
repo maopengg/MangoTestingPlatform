@@ -75,7 +75,7 @@
   /* eslint-disable vue/no-mutating-props */
   import { ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import { putApiCaseDetailedParameter } from '@/api/apitest/case-detailed-parameter'
+  import { useApiCaseParameterSave } from '../composables/useApiCaseAutoSave'
   import TipMessage from '@/components/feedback/TipMessage.vue'
   import ApiRequestBodyEditor from '../../../components/ApiRequestBodyEditor.vue'
 
@@ -101,6 +101,7 @@
     (event: 'saving-change', saving: boolean): void
   }>()
   const headersSaving = ref(false)
+  const putApiCaseDetailedParameter = useApiCaseParameterSave()
   const paramsSaving = ref(false)
 
   function setSaving(target: typeof headersSaving, saving: boolean) {
@@ -122,7 +123,7 @@
       })
       props.item.headers = nextHeaders
       props.item.__persistedHeaders = [...nextHeaders]
-      Message.success(response.msg)
+      if (response) Message.success(response.msg)
     } catch (error: any) {
       props.item.headers = persistedHeaders
       Message.error(error?.msg || '场景请求头保存失败，已恢复上一次配置')
@@ -139,7 +140,7 @@
         id: props.item.id,
         params: props.item.params === '' ? null : props.item.params,
       })
-      Message.success(response.msg)
+      if (response) Message.success(response.msg)
     } catch (error: any) {
       Message.error(error?.msg || '查询参数保存失败')
     } finally {
@@ -161,7 +162,7 @@
         body_config: bodyConfig,
         sse_config: value.sse_config,
       })
-      Message.success(response.msg)
+      if (response) Message.success(response.msg)
     } catch (error: any) {
       Message.error(error?.msg || '请求体保存失败')
     }

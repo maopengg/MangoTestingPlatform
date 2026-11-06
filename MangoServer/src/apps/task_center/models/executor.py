@@ -100,6 +100,7 @@ class ExecutorTask(models.Model):
         db_table = "executor_task"
         ordering = ["id"]
         indexes = [
+            models.Index(fields=['task_type', 'status', 'available_at', 'id'], name='idx_exec_type_due'),
             models.Index(
                 fields=["status", "available_at", "schedule_deadline"],
                 name="idx_executor_task_pending",

@@ -8,6 +8,9 @@ export interface SqlExecutionQuery {
   project_product_id?: number | string
   test_env?: number | string
   datasource_alias_id?: number | string
+  datasource_type?: number | string
+  datasource_type__in?: string
+  database_id?: number | string
   status?: string
   is_slow?: boolean | string
   duration_min?: number | string

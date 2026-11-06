@@ -109,6 +109,10 @@ class DataFactoryExecutionItem(models.Model):
     cleanup_error = models.TextField(verbose_name="清理错误", null=True, blank=True)
     cleanup_sql = models.TextField(verbose_name="清理SQL", null=True, blank=True)
     cleanup_sql_params = models.JSONField(verbose_name="清理SQL参数", default=dict, blank=True)
+    cleanup_resources = models.JSONField(
+        verbose_name='关联资源清理快照与结果', default=dict, blank=True, editable=False,
+        help_text='CleanupResourceState：执行时ES目标及所有权快照、SQL完成标记、逐资源回查结果',
+    )
 
     class Meta:
         db_table = 'data_factory_execution_item'
@@ -119,7 +123,7 @@ class DataFactoryExecutionItem(models.Model):
 
 
 class SqlExecutionRecord(models.Model):
-    """测试业务数据源的一次物理 SQL 执行审计。"""
+    """测试数据源的一次执行审计（SQL、Redis、ES及连接操作）。"""
 
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, db_index=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
@@ -133,18 +137,19 @@ class SqlExecutionRecord(models.Model):
     )
 
     project_product = models.ForeignKey(
-        to=ProjectProduct, to_field="id", on_delete=models.PROTECT,
+        to=ProjectProduct, to_field="id", on_delete=models.PROTECT, null=True, blank=True,
     )
-    test_env = models.SmallIntegerField(verbose_name="测试环境", db_index=True)
+    test_env = models.SmallIntegerField(verbose_name="测试环境", db_index=True, null=True, blank=True)
+    datasource_type = models.SmallIntegerField(verbose_name="执行时数据源类型", null=True, blank=True)
     datasource_alias = models.ForeignKey(
-        to="DataFactoryDatasourceAlias", to_field="id", on_delete=models.PROTECT,
+        to="DataFactoryDatasourceAlias", to_field="id", on_delete=models.PROTECT, null=True, blank=True,
     )
     database = models.ForeignKey(
         to=Database, to_field="id", on_delete=models.PROTECT, null=True, blank=True,
     )
-    sql_text = models.TextField(verbose_name="脱敏SQL")
-    sql_parameters = models.JSONField(verbose_name="脱敏SQL参数", default=dict, blank=True)
-    sql_fingerprint = models.CharField(verbose_name="SQL指纹", max_length=64, db_index=True)
+    sql_text = models.TextField(verbose_name="脱敏执行内容")
+    sql_parameters = models.JSONField(verbose_name="脱敏执行参数", default=dict, blank=True)
+    sql_fingerprint = models.CharField(verbose_name="操作指纹", max_length=64, db_index=True)
 
     status = models.CharField(verbose_name="执行状态", max_length=16, default="running", db_index=True)
     duration_ms = models.DecimalField(
@@ -155,13 +160,14 @@ class SqlExecutionRecord(models.Model):
     result_preview = models.TextField(verbose_name="结果预览", blank=True)
     result_truncated = models.BooleanField(verbose_name="结果是否截断", default=False)
     error_message = models.TextField(verbose_name="脱敏错误", null=True, blank=True)
-    slow_threshold_ms = models.IntegerField(verbose_name="慢SQL阈值毫秒", default=20000)
-    is_slow = models.BooleanField(verbose_name="是否慢SQL", default=False, db_index=True)
+    slow_threshold_ms = models.IntegerField(verbose_name="慢执行阈值毫秒", default=20000)
+    is_slow = models.BooleanField(verbose_name="是否慢执行", default=False, db_index=True)
 
     class Meta:
         db_table = "sql_execution_record"
         ordering = ["-create_time", "-id"]
         indexes = [
+            models.Index(fields=["datasource_type", "create_time"], name="idx_sql_type_time"),
             models.Index(fields=["is_slow", "create_time"], name="idx_sql_slow_time"),
             models.Index(fields=["source_type", "source_id", "create_time"], name="idx_sql_source_time"),
             models.Index(fields=["sql_fingerprint", "create_time"], name="idx_sql_fingerprint_time"),

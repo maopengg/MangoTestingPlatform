@@ -52,6 +52,7 @@ class DataFactoryExecutionItemSerializer(serializers.ModelSerializer):
     def serialize_sql_execution(record):
         return {
             'id': record.id,
+            'datasource_type': record.datasource_type,
             'source_stage': record.source_stage,
             'source_detail': record.source_detail,
             'sql_text': record.sql_text,

@@ -61,17 +61,17 @@ class ConnectionQueryTests(SimpleTestCase):
         self.assertEqual(len(response['rows']), 200)
         connection.rollback.assert_called_once()
         create_engine.return_value.dispose.assert_called_once()
-        self.audit_start.assert_not_called()
-        self.assertNotIn('sql_execution_id', response)
+        self.audit_start.assert_called_once()
+        self.assertEqual(response['sql_execution_id'], self.audit_start.return_value.record.id)
 
     @patch('src.apps.data_factory.services.connection_query.DataFactoryDatasource.create_engine')
-    def test_invalid_sql_is_audited_without_opening_connection(self, create_engine):
+    def test_invalid_sql_is_rejected_before_physical_audit(self, create_engine):
         with self.assertRaises(TestCenterError):
             DataSourceConnectionQueryService.query_target(
                 MagicMock(), 'DROP TABLE orders', binding=MagicMock(), project_product_id=3, test_env=0)
         create_engine.assert_not_called()
-        self.audit_start.assert_called_once()
-        self.audit_finish_failure.assert_called_once()
+        self.audit_start.assert_not_called()
+        self.audit_finish_failure.assert_not_called()
 
     @patch('src.apps.data_factory.services.connection_query.DataFactoryDatasource.create_engine')
     def test_direct_rejected_query_does_not_fabricate_audit_scope(self, create_engine):

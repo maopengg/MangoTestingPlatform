@@ -7,6 +7,8 @@ from mangotools.enums import StatusEnum
 from mangotools.exceptions import MangoToolsError
 
 from src.apps.auto_api.exceptions import (
+    API_CASE_POSTERIOR_CLEANUP_FAILED,
+    API_CASE_POSTERIOR_SQL_CONFIG_INVALID,
     API_CASE_POSTERIOR_SQL_PROJECT_PRODUCT_SQL_DATABASE_CASE_EXECUTION_FAILED,
     AutoApiError,
 )
@@ -66,11 +68,23 @@ class CaseBase:
         self.__front_headers()
 
     def case_posterior_main(self, ):
+        errors = []
         try:
-            if self.api_case.posterior_sql:
-                self.__posterior_sql(self.api_case.posterior_sql)
+            try:
+                if self.api_case.posterior_sql:
+                    self.__posterior_sql(self.api_case.posterior_sql)
+            except Exception as error:
+                errors.append(error)
         finally:
-            self.case_data_factory.cleanup()
+            try:
+                self.case_data_factory.cleanup()
+            except Exception as error:
+                errors.append(error)
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise AutoApiError(API_CASE_POSTERIOR_CLEANUP_FAILED,
+                               value=('；'.join(getattr(error, 'msg', str(error)) for error in errors),)) from errors[0]
 
     def case_parametrize(self, parametrize: dict):
         if parametrize:
@@ -150,15 +164,16 @@ class CaseBase:
         log.api.debug(f'前置自定义->用例headers:{self.case_headers}')
 
     def __posterior_sql(self, posterior_sql):
+        errors = []
         for index, sql_item in enumerate(posterior_sql, start=1):
-            if not should_execute_sql(sql_item, self.test_env):
-                log.api.info(
-                    f'用例后置SQL跳过执行，当前环境：{self.test_env}，配置环境：{sql_item.get("test_envs")}'
-                )
-                continue
-            raw_key = sql_item.get('key') or '-'
-            datasource_alias = sql_item.get('datasource_alias') or '-'
+            raw_key = datasource_alias = '-'
             try:
+                if not isinstance(sql_item, dict):
+                    raise AutoApiError(API_CASE_POSTERIOR_SQL_CONFIG_INVALID, value=(index,))
+                raw_key = sql_item.get('key') or '-'
+                datasource_alias = sql_item.get('datasource_alias') or '-'
+                if not should_execute_sql(sql_item, self.test_env):
+                    continue
                 key = self.test_setup.test_data.replace(
                     self.test_setup.test_data.replace(sql_item.get('key'))
                 )
@@ -180,17 +195,15 @@ class CaseBase:
                         'operation_index': index,
                     },
                 )
-            except (MangoServerError, MangoToolsError) as error:
-                raise AutoApiError(API_CASE_POSTERIOR_SQL_PROJECT_PRODUCT_SQL_DATABASE_CASE_EXECUTION_FAILED,
-                                   value=(
-                                       index,
-                                       raw_key,
-                                       datasource_alias,
-                                       self.test_env,
-                                       self.api_case.project_product_id,
-                                       error.msg,
-                                   ),
-                                   ) from error
-            log.api.debug(f'用例后置数据库操作->key:{key}，执行结果：{result}')
-            if key:
-                cache_data_source_result(self.test_setup, key, result)
+                if key:
+                    cache_data_source_result(self.test_setup, key, result)
+            except Exception as error:
+                # 每一项只尝试一次；后续依赖值缺失仍失败，不放宽条件或重放未知写入。
+                errors.append(AutoApiError(
+                    API_CASE_POSTERIOR_SQL_PROJECT_PRODUCT_SQL_DATABASE_CASE_EXECUTION_FAILED,
+                    value=(index, raw_key, datasource_alias, self.test_env,
+                           self.api_case.project_product_id, getattr(error, 'msg', str(error))),
+                ))
+        if errors:
+            raise AutoApiError(API_CASE_POSTERIOR_CLEANUP_FAILED,
+                               value=('；'.join(error.msg for error in errors),)) from errors[0]

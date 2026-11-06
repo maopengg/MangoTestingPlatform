@@ -337,6 +337,7 @@ class ApiCaseExecutionResult(StrictSchema):
     main_status: int | None = None
     recovery_status: int | None = None
     recovery_errors: list[str] = Field(default_factory=list)
+    infrastructure_blocked: bool = False
     # 仅保留运行／投递摘要；最终回调断言明细归属于触发步骤的 ass。
     callback_results: list[dict[str, Any]] = Field(default_factory=list)
     name: str

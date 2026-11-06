@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.db.models import Count, F, Min, Q
 
 from src.apps.auto_api.enums.module_coverage import (
@@ -11,6 +13,7 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoveragePolicy,
     ModuleCoverageInterfaceCoverageStatus,
     ModuleCoverageSyncAction,
+    ModuleCoverageAnalysisStatus,
 )
 from src.apps.auto_api.models import (
     ModuleCoverageCase,
@@ -60,6 +63,7 @@ class ModuleCoverageQueryMixin:
             sync_actions: list[str] | None = None,
             coverage_reason: str | None = None,
             api_info_id: int | None = None,
+            analysis_statuses: list[str] | None = None,
     ) -> dict:
         page = max(1, int(page))
         page_size = min(100, max(1, int(page_size)))
@@ -68,6 +72,7 @@ class ModuleCoverageQueryMixin:
             (resolution_statuses, ModuleCoverageResolutionStatus, "resolution_status"),
             (coverage_statuses or [], ModuleCoverageInterfaceCoverageStatus, "coverage_status"),
             (sync_actions or [], ModuleCoverageSyncAction, "sync_action"),
+            (analysis_statuses or [], ModuleCoverageAnalysisStatus, "analysis_status"),
         ):
             for value in values:
                 cls.validate_choice(field, value, choices)
@@ -97,14 +102,15 @@ class ModuleCoverageQueryMixin:
         queryset = queryset.order_by(
             "project_product_id", "module_id", "method", "url", "id",
         )
-        if resolution_statuses or coverage_statuses:
+        queryset = queryset.select_related("scan", "module_interface__last_seen_scan")
+        if resolution_statuses or coverage_statuses or analysis_statuses:
             matched_interfaces = [
                 item for item in queryset
                 if not resolution_statuses or cls.interface_resolution(item.mermaid, item.node_ids)["status"]
                    in resolution_statuses
             ]
             count = len(matched_interfaces)
-            interfaces = matched_interfaces if coverage_statuses else matched_interfaces[(page - 1) * page_size:page * page_size]
+            interfaces = matched_interfaces if coverage_statuses or analysis_statuses else matched_interfaces[(page - 1) * page_size:page * page_size]
         else:
             count = queryset.count()
             interfaces = list(queryset[(page - 1) * page_size:page * page_size])
@@ -188,6 +194,10 @@ class ModuleCoverageQueryMixin:
                 "project_product_id", "module_id", "repository_key", "branch", "source_key_hash",
             ).annotate(first_scan_id=Min("scan_id"))
         }
+        analysis_cases = defaultdict(list)
+        for case in cls.active_cases(include_excluded=True).filter(case_scope).select_related(
+                "current_snapshot__scan", "current_snapshot__interface_snapshot"):
+            analysis_cases[tuple(getattr(case, field) for field in case_group_fields)].append(case)
         rows = []
         for item in interfaces:
             identity = (
@@ -249,6 +259,9 @@ class ModuleCoverageQueryMixin:
                 "sync_action": item.sync_action,
                 "update_time": item.create_time,
                 "resolution_status": resolution["status"],
+                "analysis_status": cls.interface_analysis_status(
+                    item, sum(cls.case_analysis_complete(case, item) for case in analysis_cases[identity]),
+                    len(analysis_cases[identity])),
                 "resolution_reason": resolution["reason"],
                 "gap_reason": item.gap_reason,
                 "next_action": item.next_action,
@@ -271,8 +284,10 @@ class ModuleCoverageQueryMixin:
             }
             row["coverage_status"] = cls.interface_coverage_status(item, target, effective_completed, row["deferred_case_count"])
             rows.append(row)
-        if coverage_statuses:
-            rows = [row for row in rows if row["coverage_status"] in coverage_statuses]
+        if coverage_statuses or analysis_statuses:
+            rows = [row for row in rows
+                    if (not coverage_statuses or row["coverage_status"] in coverage_statuses)
+                    and (not analysis_statuses or row["analysis_status"] in analysis_statuses)]
             count = len(rows)
             rows = rows[(page - 1) * page_size:page * page_size]
         return {

@@ -98,7 +98,8 @@
         if (!(target instanceof HTMLElement)) return
         const table = target.closest('.arco-table')
         if (!(table instanceof HTMLElement)) return
-        if (table.classList.contains('arco-table-scroll-y')) return
+        // Arco 的纵向滚动标记可能在内部 container 上，不能只检查表格根节点。
+        if (table.classList.contains('arco-table-scroll-y') || table.querySelector('.arco-table-scroll-y')) return
 
         const scrollParent = findScrollableParent(table.parentElement)
         if (!scrollParent) return

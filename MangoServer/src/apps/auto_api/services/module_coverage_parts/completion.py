@@ -37,6 +37,7 @@ class ModuleCoverageCompletionMixin:
         scan = cls.get_locked_uploading_scan(scan_id)
         ProjectProduct.objects.select_for_update().get(id=scan.project_product_id)
         inventory = cls.is_inventory_scan(scan)
+        cls.link_pending_case_snapshots(scan)
         validation = cls.validation(scan)
         if not validation["valid"]:
             raise AutoApiError(QUALITY_COVERAGE_MODULE_INVALID,
@@ -186,7 +187,10 @@ class ModuleCoverageCompletionMixin:
             if not inventory and interface_snapshot.sync_action == ModuleCoverageSyncAction.UPDATED:
                 changed_interfaces.append(interface_snapshot)
 
+        applied_interfaces = {interface.id: interface for interface in interface_snapshots}
         for snapshot in snapshots:
+            if snapshot.interface_snapshot_id in applied_interfaces:
+                snapshot.interface_snapshot = applied_interfaces[snapshot.interface_snapshot_id]
             if ((snapshot.interface_snapshot_id and cls.interface_analysis_blocked(snapshot.interface_snapshot))
                     or cls.interface_analysis_blocked(snapshot.coverage_case)):
                 continue
@@ -223,18 +227,13 @@ class ModuleCoverageCompletionMixin:
                         id=executed_revision_id,
                         api_case_id=snapshot.api_case_id,
                     ).first() or item.api_case_revision
-            if snapshot.interface_snapshot_id:
-                item.coverage_validity = ModuleCoverageValidity.VALID
-                item.coverage_validity_reason = ""
-            else:
-                item.coverage_validity = ModuleCoverageValidity.PENDING_REVIEW
-                item.coverage_validity_reason = (
-                    "Case尚未关联覆盖目标，不影响Case归属和接口调用"
-                )
             item.last_reviewed_scan = scan
             item.last_seen_scan = scan
             item.current_snapshot = snapshot
             item.removed_at = None
+            assessment = cls.case_coverage_assessment(item, snapshot.interface_snapshot)
+            item.coverage_validity = assessment["status"]
+            item.coverage_validity_reason = assessment["reason"]
             item.save(update_fields=[
                 "interface_source_key", "interface_source_key_hash", "name",
                 "interface_name", "method", "url", "test_ownership",

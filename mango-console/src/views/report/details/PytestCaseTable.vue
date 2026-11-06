@@ -69,6 +69,7 @@
   import ReportDisposition from './ReportDisposition.vue'
   import ReportDispositionStatus from './ReportDispositionStatus.vue'
   import { pytestColumns } from './config'
+  import { caseResultRows, reportRecords } from './report-rows'
 
   const props = defineProps<{
     cases: any[]
@@ -84,9 +85,8 @@
   }>()
 
   const flatRows = computed(() =>
-    (props.cases || []).flatMap((item) => {
-      const rows =
-        Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+    reportRecords(props.cases).flatMap((item) => {
+      const rows = caseResultRows(item)
       const warningRows = buildWarningRows(item)
       const displayRows = [...rows, ...warningRows]
       const rowSpan = displayRows.length
@@ -94,6 +94,7 @@
       const caseName = item?.case_name || item?.name || '未命名用例'
       return displayRows.map((row: any, index: number) => ({
         ...row,
+        children: undefined,
         error_message: row?.statusDetails?.message || row?.error_message,
         case_type: row?.case_type ?? 2,
         name: row?.name || item?.case_name || item?.name,
@@ -150,7 +151,7 @@
   }
 
   function buildWarningRows(item: any) {
-    const rows = Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+    const rows = caseResultRows(item)
     const writtenWarningCount = rows.filter((row: any) => Number(row?.status) === 4).length
     const warningCount = Math.max(Number(item?.warning || 0) - writtenWarningCount, 0)
     if (warningCount <= 0) return []

@@ -124,27 +124,35 @@ class DataFactoryCaseConfigRunner:
         for execution_id in self.auto_cleanup_execution_ids:
             try:
                 result = DataFactoryCleanup.cleanup_execution(
-                    execution_id,
-                    force_cleanup=True,
-                    allow_missing=True,
-                )
+                    execution_id, created_by=self.user_id, force_cleanup=True, allow_missing=True)
                 if result.get('fail'):
-                    failures.append({
-                        'execution_id': execution_id,
-                        'fail': result.get('fail'),
-                        'errors': result.get('errors') or [],
-                    })
-                    self.logger.error(
-                        f'用例数据工厂自动清理失败，execution_id:{execution_id}，结果:{result}'
-                    )
+                    reasons = [value['error'] for value in result.get('errors', [])
+                               if isinstance(value, dict) and isinstance(value.get('error'), str)]
+                    failures.append({'execution_id': execution_id, 'fail': result['fail'],
+                                     'error': '；'.join(reasons) or '清理返回失败但未提供具体原因，请管理员检查执行记录的清理明细'})
+                    self.logger.error(f'用例数据工厂自动清理未通过，execution_id:{execution_id}')
                 else:
-                    self.logger.info(f'用例数据工厂自动清理完成，execution_id:{execution_id}，结果:{result}')
+                    self.logger.info(f'用例数据工厂自动清理完成，execution_id:{execution_id}')
             except Exception as error:
-                failures.append({'execution_id': execution_id, 'error': str(error)})
+                from src.apps.auto_api.exceptions import TestSuiteStopped
+                if isinstance(error, TestSuiteStopped):
+                    raise
+                from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+                if isinstance(error, DataFactoryError):
+                    DatasourceInfrastructureService.annotate(error, execution_id=execution_id)
+                    DatasourceInfrastructureService.capture(error, result_unknown=True)
+                else:
+                    error = DatasourceInfrastructureService.internal_cleanup_error(error, 'case_factory_cleanup', execution_id=execution_id)
+                try:
+                    from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+                    DataFactoryCleanupScheduleService.record_wait_failure(execution_id)
+                except Exception:
+                    self.logger.error(f'记录自动清理等待失败异常，execution_id:{execution_id}')
+                failures.append({'execution_id': execution_id, 'error': error.msg})
                 self.logger.error(f'用例数据工厂自动清理失败，execution_id:{execution_id}，错误:{error}')
         if failures:
             summary = '; '.join(
-                f"execution_id={item['execution_id']}, fail={item.get('fail', 1)}"
+                f"工厂执行 {item['execution_id']}，未完成 {item.get('fail', 1)} 项：{item['error']}"
                 for item in failures
             )
             raise DataFactoryError(DATA_FACTORY_CASE_AUTO_CLEANUP_FAILED, value=(summary,))

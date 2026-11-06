@@ -36,6 +36,13 @@
           ['订单管理/订单详情', 'AI能力/智能问答', '系统设置/角色管理'][i % 3] + `/${i + 1}`,
         is_leaf: true,
         scan_completed: i > 3,
+        inventory_completed: i > 1,
+        inventory_scan_ids: i > 1 ? [100 + i] : [],
+        analyzed_interface_count: i < 4 ? 0 : 6,
+        pending_analysis_count: i < 4 ? 0 : 2,
+        analysis_gap_count: i < 4 ? 0 : 1,
+        deferred_analysis_count: i < 4 ? 0 : 1,
+        analysis_rate: i < 4 ? null : 60,
         applied_scan_id: i > 3 ? 100 + i : null,
         latest_scan_id: i ? 100 + i : null,
         latest_scan_status: i > 3 ? 'completed' : 'completed_with_gaps',
@@ -54,6 +61,7 @@
         automation_rate: i < 4 ? null : 50,
       }))
       const data = {
+        project_inventory_summary: { leaf_count: 38, inventoried_count: 36, uninventoried_count: 2, inventory_rate: 94.74 },
         modules,
         summary: {
           module_count: 38,
@@ -61,6 +69,11 @@
           scanned_count: 34,
           unscanned_count: 4,
           interface_count: 340,
+          analyzed_interface_count: 204,
+          pending_analysis_count: 68,
+          analysis_gap_count: 34,
+          deferred_analysis_count: 34,
+          analysis_rate: 60,
           bound_count: 272,
           target_count: 680,
           completed_count: 340,

@@ -4,8 +4,6 @@ import request from './axios.config'
 import { Message } from '@arco-design/web-vue'
 import { handleAuthExpired, isAuthExpiredResponse } from './auth-expired'
 import { ApiBusinessError } from './errors'
-import usePermissionStore from '@/store/modules/permission'
-import { requestPermission } from '@/utils/permission'
 import {
   containsLosslessJsonNumber,
   parseApiConfigLosslessJson,
@@ -64,13 +62,6 @@ export function http<T = any>({
   }
   method = method || 'GET'
   const params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
-  const permissions = usePermissionStore()
-  const required = requestPermission(permissions.httpPermissions || [], method, url, params)
-  if (required && !permissions.hasPermission(required)) {
-    if (!silentError) Message.error('当前角色没有此操作权限，请联系管理员授权')
-    afterRequest && afterRequest()
-    return Promise.reject(new ApiBusinessError('当前角色没有此操作权限，请联系管理员授权', 403))
-  }
   beforeRequest && beforeRequest()
   const requestData = containsLosslessJsonNumber(params) ? stringifyLosslessJson(params) : params
   const requestConfig = {

@@ -29,9 +29,15 @@ class DatasourceTargetService:
         name = binding.database_name
         if binding.database.db_type == DataSourceTypeEnum.POSTGRESQL.value and not name:
             name = 'postgres'
-        return cls.build(binding.database, database_name=name,
-                         schema_name=binding.schema_name if schema_name is None else schema_name,
-                         redis_db=binding.redis_db)
+        target = cls.build(binding.database, database_name=name,
+                           schema_name=binding.schema_name if schema_name is None else schema_name,
+                           redis_db=binding.redis_db)
+        audit_scope = {'datasource_alias_id': binding.datasource_alias_id,
+                       'project_product_id': binding.datasource_alias.project_product_id,
+                       'test_env': binding.environment}
+        return target.model_copy(update={**audit_scope, 'cache_key': salted_hmac(
+            'datasource-bound-target', target.cache_key + json.dumps(audit_scope, sort_keys=True),
+        ).hexdigest()})
 
     @classmethod
     def for_metadata(cls, binding, *, schema_name=None):

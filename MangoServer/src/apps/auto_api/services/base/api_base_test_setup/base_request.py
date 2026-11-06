@@ -54,28 +54,7 @@ class BaseRequest:
                 log.api.debug(f'开始执行接口：{request_data.model_dump()}')
             else:
                 log.api.debug(f'开始执行接口：{request_data.model_dump_json()}')
-            start_time = time.time()
-            if request_data.protocol_type == ApiProtocolTypeEnum.MCP.value:
-                response = McpProtocolClient(
-                    timeout=self.timeout,
-                    session_manager=getattr(self, 'mcp_session_manager', None),
-                ).request(request_data, prepared_body, start_time)
-            elif request_data.protocol_type == ApiProtocolTypeEnum.GRPC.value:
-                response = GrpcProtocolClient(
-                    timeout=self.timeout,
-                    channel_manager=getattr(self, 'grpc_channel_manager', None),
-                ).request(request_data, prepared_body, start_time)
-            elif request_data.protocol_type == ApiProtocolTypeEnum.WEBSOCKET.value:
-                response = WebSocketProtocolClient(
-                    test_data=self.test_data,
-                    timeout=self.timeout,
-                    trace_recorder=getattr(self, 'trace_recorder', None),
-                ).request(request_data, prepared_body, start_time)
-            else:
-                response = HttpSseProtocolClient(
-                    test_data=self.test_data,
-                    timeout=self.timeout,
-                ).request(request_data, prepared_body, start_time)
+            response = self.send_request(request_data, prepared_body)
         except httpx.HTTPError as error:
             raise_request_error(error, request_data)
         except OSError as error:
@@ -87,6 +66,31 @@ class BaseRequest:
         finally:
             prepared_body.close()
         log.api.debug(f'API响应数据：{response.model_dump_json()}')
+        return response
+
+    def send_request(self, request_data, prepared_body):
+        start_time = time.time()
+        if request_data.protocol_type == ApiProtocolTypeEnum.MCP.value:
+            response = McpProtocolClient(
+                timeout=self.timeout,
+                session_manager=getattr(self, 'mcp_session_manager', None),
+            ).request(request_data, prepared_body, start_time)
+        elif request_data.protocol_type == ApiProtocolTypeEnum.GRPC.value:
+            response = GrpcProtocolClient(
+                timeout=self.timeout,
+                channel_manager=getattr(self, 'grpc_channel_manager', None),
+            ).request(request_data, prepared_body, start_time)
+        elif request_data.protocol_type == ApiProtocolTypeEnum.WEBSOCKET.value:
+            response = WebSocketProtocolClient(
+                test_data=self.test_data,
+                timeout=self.timeout,
+                trace_recorder=getattr(self, 'trace_recorder', None),
+            ).request(request_data, prepared_body, start_time)
+        else:
+            response = HttpSseProtocolClient(
+                test_data=self.test_data,
+                timeout=self.timeout,
+            ).request(request_data, prepared_body, start_time)
         return response
 
     @classmethod

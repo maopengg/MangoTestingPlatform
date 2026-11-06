@@ -21,6 +21,9 @@ class CacheDataSerializersC(serializers.ModelSerializer):
         if instance.key == "EVALUATION_AI_PROFILES":
             from src.apps.system.services.ai.evaluation_profiles import EvaluationAiProfileService
             data["value"] = EvaluationAiProfileService.masked(instance.value)
+        if instance.key == 'DATASOURCE_PERFORMANCE_POLICY':
+            from src.apps.data_factory.services.datasource_performance import DatasourcePerformanceService
+            data.update(DatasourcePerformanceService.settings_snapshot())
         return data
 
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)

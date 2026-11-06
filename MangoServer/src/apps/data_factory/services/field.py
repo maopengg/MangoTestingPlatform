@@ -1,10 +1,13 @@
 from django.db import transaction
+from pydantic import ValidationError
 
 from src.apps.data_factory.enums import DataFactoryGeneratorTypeEnum
 from src.apps.data_factory.exceptions import DATA_FACTORY_CONFIG_INVALID
 from src.apps.data_factory.exceptions import (
     DATA_FACTORY_FIELDS_LIST_REQUIRED,
     DATA_FACTORY_FIELD_FIELD_REQUIRED,
+    DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED,
+    DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID,
     DataFactoryError,
 )
 from src.apps.data_factory.models import DataFactoryEntity, DataFactoryField
@@ -93,7 +96,6 @@ class DataFactoryFieldService:
         for raw_field_data in fields:
             field_data = dict(raw_field_data)
             try:
-                field_data["generator_config"] = field_data.get("generator_config") or {}
                 cls.normalize_field_data(field_data)
                 field = DataFactoryField(
                     name=field_data.get("name"),
@@ -150,7 +152,13 @@ class DataFactoryFieldService:
     @staticmethod
     def normalize_field_data(field_data: dict):
         generator_type = field_data.get("generator_type")
-        generator_config = field_data.get("generator_config") or {}
+        generator_config = field_data.get("generator_config")
+        if generator_config is None:
+            generator_config = {}
+        field_name = field_data.get('name') or field_data.get('label') or '未命名字段'
+        if not isinstance(generator_config, dict):
+            raise DataFactoryError(DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID,
+                                   value=(field_name, 'generator_config 必须是 JSON 对象'))
         enum_values = field_data.get("enum_values") or []
         config_keys = {
             DataFactoryGeneratorTypeEnum.RANDOM_STRING.value: ["prefix", "length"],
@@ -177,11 +185,20 @@ class DataFactoryFieldService:
         elif generator_type == DataFactoryGeneratorTypeEnum.FUNCTION.value:
             field_data["generator_config"] = {"value": generator_config.get("value") or ""}
         elif generator_type == DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value:
-            field_data["generator_config"] = validate_data_factory_generator_config(
-                DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
-                DataFactoryFieldService.normalize_dependency_config(generator_config),
-                allow_dependency_template=False,
-            )
+            try:
+                field_data["generator_config"] = validate_data_factory_generator_config(
+                    DataFactoryGeneratorTypeEnum.DEPENDENCY_FIELD.value,
+                    DataFactoryFieldService.normalize_dependency_config(generator_config),
+                    allow_dependency_template=False,
+                )
+            except ValidationError as error:
+                if any(item['loc'] == ('dependency_entity_id',) and item['type'] == 'missing'
+                       for item in error.errors(include_input=False, include_url=False)):
+                    raise DataFactoryError(DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED,
+                                           value=(field_name,)) from error
+                from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+                raise DataFactoryError(DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID,
+                    value=(field_name, DatasourceInfrastructureService.validation_reason(error))) from error
 
     @staticmethod
     def normalize_dependency_config(generator_config: dict) -> dict:

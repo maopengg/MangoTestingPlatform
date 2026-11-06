@@ -17,6 +17,8 @@ from src.apps.test_center.api.views.test_suite_details import (
 )
 
 urlpatterns = [
+    path('test/suite/execution-efficiency/options', TestSuiteViews.as_view({'get': 'execution_efficiency_options'})),
+    path('test/suite/execution-efficiency', TestSuiteViews.as_view({'get': 'execution_efficiency'})),
     path('test/suite/offline/links', TestSuiteViews.as_view({'post': 'offline_publish'})),
     path('test/suite/offline/options', TestSuiteViews.as_view({'get': 'offline_options'})),
     path('test/suite/offline', TestSuiteViews.as_view({'post': 'offline_export'})),

@@ -2,6 +2,7 @@ from src.common.enums.base import BaseEnum
 
 
 class RuntimeKVNamespaceEnum(BaseEnum):
+    DATASOURCE_GOVERNOR = ('datasource_governor', '数据源并发与连接配额')
     API_AUTH = ('api_auth', 'API 授权运行数据')
     PERF_SUBSCRIPTION = ('perf_subscription', '性能实时订阅')
     REQUEST_DEDUP = ('request_dedup', '请求去重')

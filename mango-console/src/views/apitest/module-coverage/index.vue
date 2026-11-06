@@ -305,6 +305,9 @@
                   }}</a-tag>
                 </a-tooltip>
               </template>
+              <template #analysis_status="{ record }">
+                <a-tag size="small" :color="tagColor(record.analysis_status)">{{ interfaceSearchSelects[0].options.find(item => item.value === record.analysis_status)?.label || '未核实' }}</a-tag>
+              </template>
               <template #lifecycle_status="{ record }">
                 <a-tag size="small" :color="tagColor(record.lifecycle_status)">{{
                   label(record.lifecycle_status)
@@ -616,6 +619,7 @@
     api_info_binding_status: undefined,
     coverage_policy: undefined,
     resolution_statuses: [],
+    analysis_statuses: [],
     coverage_statuses: [],
     sync_actions: [],
     methods: [],
@@ -693,7 +697,7 @@
         query.status = filters.interface_status
         query.api_info_binding_status = filters.api_info_binding_status
         query.coverage_policy = filters.coverage_policy
-        for (const [field, key] of Object.entries({ resolution_status__in: 'resolution_statuses', coverage_status__in: 'coverage_statuses', sync_action__in: 'sync_actions', method__in: 'methods' })) {
+        for (const [field, key] of Object.entries({ analysis_status__in: 'analysis_statuses', resolution_status__in: 'resolution_statuses', coverage_status__in: 'coverage_statuses', sync_action__in: 'sync_actions', method__in: 'methods' })) {
           if (filters[key].length) query[field] = filters[key].join(',')
         }
         query.coverage_reason = filters.coverage_reason || undefined
@@ -751,7 +755,7 @@
     }
   }
 
-  function drillOverview(row: CoverageModuleOverview, tab: string) {
+  function drillOverview(row: CoverageModuleOverview, tab: string, query: Record<string, string[]> = {}) {
     const descendants = new Set([row.id])
     const modules = overview.value?.modules || []
     let previousSize = 0
@@ -766,6 +770,8 @@
     moduleIds.value = [...descendants]
     activeTab.value = tab
     resetTabFilters()
+    if (query.analysis_statuses) filters.analysis_statuses = query.analysis_statuses
+    if (query.coverage_statuses) filters.coverage_statuses = query.coverage_statuses
     reloadAll()
   }
 
@@ -799,7 +805,7 @@
     resetRowScope()
     pagination.page = 1
     Object.assign(filters, {
-      resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
+      analysis_statuses: [], resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
       name: '',
       interface_name: '',
       status: undefined,
@@ -819,7 +825,7 @@
   }
   function resetFilters() {
     Object.assign(filters, {
-      resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
+      analysis_statuses: [], resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
       repository_key: '',
       branch: '',
       name: '',

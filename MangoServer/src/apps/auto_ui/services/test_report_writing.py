@@ -1,4 +1,6 @@
 from django.core.cache import cache
+from contextvars import ContextVar
+from contextlib import contextmanager
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
 # @Description:
@@ -13,8 +15,44 @@ from src.apps.data_factory.services.cleanup import DataFactoryCleanup
 from src.apps.test_center.services.execution_result import ExecutionResultService
 from src.common.logging import log
 
+_prepared_factory_cleanup = ContextVar('ui_prepared_factory_cleanup', default=frozenset())
+
 
 class TestReportWriting:
+    @staticmethod
+    @contextmanager
+    def prepared_cleanup_scope(execution_ids):
+        token = _prepared_factory_cleanup.set(frozenset(execution_ids))
+        try:
+            yield
+        finally:
+            _prepared_factory_cleanup.reset(token)
+
+    @classmethod
+    def prepare_factory_result(cls, result_data, expected_ids):
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        with DatasourceInfrastructureService.scope():
+            return cls.prepare_factory_result_scoped(result_data, expected_ids)
+
+    @classmethod
+    def prepare_factory_result_scoped(cls, result_data, expected_ids):
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        result = UiCaseExecutionResult.model_validate({**result_data,
+                                                      'data_factory_auto_cleanup_execution_ids': expected_ids})
+        failures = cls.cleanup_data_factory(result)
+        issues = DatasourceInfrastructureService.current()
+        if issues:
+            result.status = TaskEnum.PROCEED.value
+            result.error_message = DatasourceInfrastructureService.summary(issues)
+            owner = DataFactoryCleanupScheduleService.current_owner()
+            if owner:
+                from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+                TestSuiteInfrastructureService.block(owner['parent_case_detail_id'], owner['parent_attempt'], issues)
+        elif failures:
+            result.status = TaskEnum.FAIL.value
+            result.error_message = '; '.join(filter(None, [result.error_message, *failures]))[:2048]
+        return result.model_dump(mode='json'), failures
 
     @classmethod
     def update_page_step_status(cls, data: UiPageStepResult) -> None:
@@ -59,6 +97,10 @@ class TestReportWriting:
     def update_test_case(cls, data: UiCaseExecutionResult):
         log.ui.debug(f'开始写入用例测试结果，用例的测试状态是：{data.status}')
         case = UiCase.objects.get(id=data.id)
+        failures = cls.cleanup_data_factory(data)
+        if failures:
+            data.status = TaskEnum.FAIL.value
+            data.error_message = '; '.join(filter(None, [data.error_message, *failures]))[:2048]
         case.status = data.status
         case.save(update_fields=['status'])
         ExecutionResultService.save_result(
@@ -73,7 +115,6 @@ class TestReportWriting:
         )
         for i in data.steps:
             cls.update_step(i)
-        cls.cleanup_data_factory(data)
 
     @classmethod
     def update_case_step_progress(cls, step_data: UiPageStepResult):
@@ -182,16 +223,40 @@ class TestReportWriting:
 
     @classmethod
     def cleanup_data_factory(cls, data: UiCaseExecutionResult):
+        failures = []
         for execution_id in data.data_factory_auto_cleanup_execution_ids:
+            if execution_id in _prepared_factory_cleanup.get():
+                continue
             try:
+                from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
+                from src.apps.data_factory.enums.execution import DataFactoryExecutionSourceEnum
+                if not DataFactoryQuerySelector.data_factory_execution().filter(
+                        id=execution_id, source_type=DataFactoryExecutionSourceEnum.UI_CASE.value,
+                        source_id=data.id, project_product_id=data.project_product_id).exists():
+                    from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+                    failure = DatasourceInfrastructureService.cleanup_error('工厂执行不属于当前UI用例或产品，平台未执行本次清理。请管理员核对执行归属及回传的工厂执行ID', execution_id=execution_id, case_id=data.id)
+                    failures.append(failure.msg)
+                    continue
                 result = DataFactoryCleanup.cleanup_execution(
                     execution_id,
                     force_cleanup=True,
                     allow_missing=True,
                 )
                 if result.get('fail'):
+                    reasons = [value['error'] for value in result.get('errors', [])
+                               if isinstance(value, dict) and isinstance(value.get('error'), str)]
+                    failures.append(f'工厂执行 {execution_id} 未完成清理：' + ('；'.join(reasons) or
+                        '清理返回失败但未提供具体原因，请管理员检查工厂执行记录中的失败资源及验证明细'))
                     log.ui.error(f'UI用例数据工厂自动清理失败，execution_id:{execution_id}，结果:{result}')
                 else:
                     log.ui.info(f'UI用例数据工厂自动清理完成，execution_id:{execution_id}，结果:{result}')
             except Exception as error:
+                from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+                DatasourceInfrastructureService.capture(error, result_unknown=True)
+                from src.apps.data_factory.exceptions import DataFactoryError
+                if not isinstance(error, DataFactoryError) and not DatasourceInfrastructureService.current():
+                    error = DatasourceInfrastructureService.internal_cleanup_error(error, 'ui_factory_cleanup', execution_id=execution_id, case_id=data.id)
+                reason = error.msg if isinstance(error, DataFactoryError) else DatasourceInfrastructureService.summary()
+                failures.append(f'工厂执行 {execution_id} 清理未完成：{reason}')
                 log.ui.error(f'UI用例数据工厂自动清理失败，execution_id:{execution_id}，错误:{error}')
+        return failures

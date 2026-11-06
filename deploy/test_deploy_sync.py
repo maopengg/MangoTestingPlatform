@@ -61,6 +61,11 @@ class DeploymentSyncTests(DeploymentFixture):
  def test_remote_backend_update_is_pulled_and_rebuilt(self):
   self.update_remote('MangoServer/src/probe.py','value=2\n');r=self.run_deploy();self.assertEqual(r.returncode,0,r.stderr)
   self.assertEqual((self.root/'MangoServer/src/probe.py').read_text(),'value=2\n');self.assertEqual(self.builds(),['mango_server'])
+ def test_dependency_update_rebuilds_backend_shared_with_scheduler(self):
+  self.update_remote('MangoServer/requirements/base.txt','redis==6.4.0\ngreenlet>=3.1,<4\n');r=self.run_deploy();self.assertEqual(r.returncode,0,r.stderr)
+  self.assertEqual(self.builds(),['mango_server'])
+  services=json.loads((self.root/'deploy/generated/compose.json').read_text())['services']
+  self.assertEqual(services['mango_server']['image'],services['scheduler_service']['image'])
  def test_already_pulled_frontend_update_still_rebuilds(self):
   self.assertEqual(self.run_deploy().returncode,0);self.update_remote('mango-console/probe.js','export const value=2\n');self.git('pull','--ff-only',cwd=self.root)
   r=self.run_deploy();self.assertEqual(r.returncode,0,r.stderr);self.assertEqual(self.builds(),['mango-console'])

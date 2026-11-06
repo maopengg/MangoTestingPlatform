@@ -17,7 +17,7 @@ from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.module_coverage import ModuleCoverageService
 from src.apps.auto_api.services.module_coverage_diff import build_structured_diff
 from src.apps.test_center.services.product_module import ProductModuleService
-from src.interfaces.mcp.common import current_user, ok, paginate_queryset
+from src.interfaces.mcp.common import current_user, ok, paginate_list, paginate_queryset
 
 
 def register_module_coverage_tools(mcp):
@@ -241,6 +241,7 @@ def register_module_coverage_tools(mcp):
             coverage_policy: str | None = None,
             resolution_statuses: list[str] | None = None,
             coverage_statuses: list[str] | None = None,
+            analysis_statuses: list[str] | None = None,
             methods: list[str] | None = None,
             sync_actions: list[str] | None = None,
             coverage_reason: str | None = None,
@@ -248,7 +249,7 @@ def register_module_coverage_tools(mcp):
             page: int = 1,
             page_size: int = 20,
     ) -> dict:
-        """按稳定接口身份分页查询。支持多选链路解析、覆盖进度、变更和请求方法，以及处理原因、ApiInfo编号筛选；先筛选再分页。coverage_policy可选included/deferred/excluded。深扫前读取覆盖策略；暂不处理和排除项仅基础盘点，不生成图或Case。仅excluded不计入覆盖分母，自动化覆盖进度仍单独计算。"""
+        """按稳定接口身份分页查询，先筛选再分页。analysis_statuses多选completed/pending/gap/deferred/excluded，与接口分析图同口径；仅有图、没有完整场景不算已分析。支持链路、覆盖、方法、变更及ApiInfo筛选。coverage_policy为included/deferred/excluded；后两者仅盘点，不生成图或Case，仅excluded排除分母。"""
         queryset = ApiQuerySelector.module_coverage_interface_snapshot().filter(
             project_product_id=project_product_id,
         ).select_related(
@@ -276,6 +277,7 @@ def register_module_coverage_tools(mcp):
             coverage_policy,
             resolution_statuses=resolution_statuses,
             coverage_statuses=coverage_statuses,
+            analysis_statuses=analysis_statuses,
             methods=methods,
             sync_actions=sync_actions,
             coverage_reason=coverage_reason,
@@ -495,15 +497,47 @@ def register_module_coverage_tools(mcp):
 
     @mcp.tool()
     def get_module_coverage_metrics(
-            project_product_id: int,
+            project_product_id: int | None = None,
             module_id: int | None = None,
             repository_key: str | None = None,
             branch: str | None = None,
+            project_id: int | None = None,
+            page: int = 1,
+            page_size: int = 10,
     ) -> dict:
-        """按模块、仓库和分支汇总 URL、Case、自动化完成率、执行通过率和测试归属。"""
-        return ok(ModuleCoverageService.metrics(
-            project_product_id,
-            module_id,
-            repository_key,
-            branch,
-        ))
+        """分析一个项目或产品的自动化覆盖完成率、未完成模块和主要缺口。
+
+        当用户询问“这个项目/产品完成了多少、哪些模块还没完成、接口是否已录入、
+        Case 覆盖得怎么样”时使用。只读统计，不执行 Case，也不修改覆盖状态。
+
+        范围：project_id 是项目ID（汇总其下可见产品），project_product_id 是产品ID；
+        同传取交集，均不传查账号可见范围。module_id 限定模块及子模块的覆盖概览。
+        repository_key/branch 限定代码基线，不传则聚合；不能将聚合结果冒充单一分支结论。
+
+        AI 分析优先读取与页面同口径的 overview，而非顶层兼容旧指标：
+        - project_scan_summary：全部叶子模块的已完整扫描/未完整扫描数量、scan_completion_rate；
+          此项始终按项目/产品统计，不随 module_id 变化，纯接口盘点不算完整链路扫描。
+        - project_inventory_summary：①模块接口盘点进度，inventoried_count/leaf_count与inventory_rate；
+          完整模块清单生效即完成，包含inventory_only，不要求图或Case；modules.inventory_completed用于阶段一验收。
+        - summary.analysis_rate：②接口业务图和场景分析进度；analyzed_interface_count、pending_analysis_count、
+          analysis_gap_count、deferred_analysis_count分别为已分析/待分析/缺口/暂缓，排除项不进分母。
+        - summary.binding_rate：接口录入比例；bound_count/interface_count 为正确绑定 ApiInfo 数/接口数。
+        - summary.interface_coverage_rate：接口覆盖率；全部目标场景有效完成才算已覆盖；
+          同时返回已覆盖、部分覆盖、未覆盖、暂不处理及已排除数量。
+        - summary.automation_rate：目标 Case 场景完成率；completed_count/target_count；
+          incomplete_case_count 为未完成数，deferred_count 为暂不处理数。
+        - modules：分页模块进度（items/count/page/page_size，默认10条），用于定位落后模块；
+          需要完整排名或缺口清单须翻完各页。父模块包含后代，禁止累加父子行重复统计。
+
+        按①模块接口盘点、②接口分析、③场景自动化、④接口覆盖顺序报告；ApiInfo绑定另列，不合成未经定义的总完成率。
+        排除接口及其场景不参与覆盖统计；暂不处理单独列示。执行通过率不等于覆盖完成率，
+        执行失败不直接代表覆盖未完成。百分比为0–100，零分母返回null，不能视为100%完成。
+        汇总不受明细分页影响；definitions 提供口径，scope 标明范围，仅反映账号可见数据。
+        """
+        result = ModuleCoverageService.analysis_metrics(
+            user=current_user(), project_product_id=project_product_id, project_id=project_id,
+            module_id=module_id, repository_key=repository_key, branch=branch,
+        )
+        rows, count, page, page_size = paginate_list(result["overview"]["modules"], page, page_size)
+        result["overview"]["modules"] = {"items": rows, "count": count, "page": page, "page_size": page_size}
+        return ok(result)

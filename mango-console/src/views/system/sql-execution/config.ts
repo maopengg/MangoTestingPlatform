@@ -2,11 +2,14 @@ import { reactive, ref } from 'vue'
 import { FormItem } from '@/types/components'
 import { useTable, useTableColumn } from '@/hooks/table'
 import { createIdSearchValue } from '@/utils/id-search'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 
 const table = useTable()
 export const tableScrollX = 2450
 
 export const conditionItems: Array<FormItem> = reactive([
+  { key: 'datasource_type', label: '数据源类型', type: 'select', placeholder: '请选择类型', value: ref([]) },
+  { key: 'database_id', label: '连接ID', type: 'input', placeholder: '请输入连接ID', value: createIdSearchValue('', false) },
   {
     key: 'id',
     label: '记录ID',
@@ -86,9 +89,9 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'sql_keyword',
-    label: 'SQL关键字',
+    label: '执行内容',
     type: 'input',
-    placeholder: '请输入SQL关键字',
+    placeholder: '请输入执行内容关键字',
     value: ref(''),
   },
   {
@@ -99,9 +102,11 @@ export const conditionItems: Array<FormItem> = reactive([
     value: ref([]),
   },
 ])
+enableMultiSelectSearch(conditionItems)
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
+  { title: '数据源类型', key: 'datasource_type_name', dataIndex: 'datasource_type_name', width: 150, ellipsis: true, tooltip: true },
   { title: '执行时间', key: 'create_time', dataIndex: 'create_time', width: 170 },
   {
     title: '项目产品',
@@ -131,7 +136,7 @@ export const tableColumns = useTableColumn([
   { title: '返回行数', key: 'row_count', dataIndex: 'row_count', width: 100 },
   { title: '影响行数', key: 'affected_rows', dataIndex: 'affected_rows', width: 100 },
   {
-    title: 'SQL',
+    title: '执行内容',
     key: 'sql_text',
     dataIndex: 'sql_text',
     align: 'left',

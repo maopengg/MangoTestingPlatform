@@ -53,6 +53,8 @@ class TaskGroupNoticeResendTests(SimpleTestCase):
             'fires': patch('src.apps.task_center.services.scheduling.task_group_execution.ScheduleFire.objects'),
             'details': patch('src.apps.task_center.services.scheduling.task_group_execution.TestSuiteDetails.objects'),
             'notice': patch('src.apps.task_center.services.scheduling.task_group_execution.NoticeMain'),
+            'environments': patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+                                  return_value={}),
         }
         self.mocks = {}
         for name, item in patches.items():
@@ -62,6 +64,23 @@ class TaskGroupNoticeResendTests(SimpleTestCase):
             'executions'].select_for_update.return_value.select_related.return_value.filter.return_value.first.return_value = self.execution
         self.mocks['fires'].filter.return_value.select_related.return_value.order_by.return_value = self.fires
         self.mocks['details'].filter.return_value.exclude.return_value.exists.return_value = False
+        self.mocks['details'].filter.return_value.exists.return_value = False
+        # 事务装饰器在导入时已绑定；仅隔离 ORM 夹具，不打开环境数据库。
+        for method in ('_claim_resend', '_claim_notice'):
+            unwrapped = getattr(ScheduledTaskGroupExecutionService, method).__wrapped__
+            guard = patch.object(ScheduledTaskGroupExecutionService, method,
+                side_effect=lambda *args, _raw=unwrapped, **kwargs: _raw(ScheduledTaskGroupExecutionService, *args, **kwargs))
+            guard.start()
+            self.addCleanup(guard.stop)
+
+    def test_platform_blocked_detail_suppresses_automatic_and_manual_group_conclusions(self):
+        self.mocks['details'].filter.return_value.exists.return_value = True
+        self.execution.notice_status = TestSuiteNoticeEnum.NOT_SENT.value
+        with self.assertRaises(TaskCenterError):
+            ScheduledTaskGroupExecutionService.resend_notice(2, 68)
+        self.assertIsNone(ScheduledTaskGroupExecutionService._claim_notice(68))
+        self.assertEqual(self.execution.status, TaskEnum.PROCEED.value)
+        self.mocks['notice'].assert_not_called()
 
     def test_resend_recomputes_current_results_even_success_and_notice_disabled(self):
         self.fires[0].status = ScheduleFireStatusEnum.FAIL.value

@@ -8,6 +8,8 @@ from src.apps.task_center.exceptions import (
     SYSTEM_TASK_MODULE_CONFIG_PROJECT_PRODUCT_MODULE_TASK_CONFIG_REQUIRED,
     SYSTEM_TASK_MODULE_CONFIG_MODULE_CONFIG_INVALID,
     SYSTEM_TASK_MODULE_CONFIG_MODULE_TASK_DUPLICATED,
+    SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED,
+    SYSTEM_TASK_MODULE_CONFIG_TASK_DELETE_GENERATE_NOT_ALLOWED,
     TaskCenterError,
 )
 from src.apps.task_center.models import Tasks, TimeTasks
@@ -229,6 +231,8 @@ class ModuleFullTaskConfigService:
                                       value=('所选模块已由上级任务组覆盖',),
                                       )
         covered_ids = cls._covered_task_ids(existing, incoming_module_ids)
+        if any(task.task_group_id and task.id in covered_ids for task in existing):
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED)
         remaining_identities = {
             cls._identity(task) for task in existing if task.id not in covered_ids
         }
@@ -269,12 +273,16 @@ class ModuleFullTaskConfigService:
         ).first()
         if task is None:
             raise TaskCenterError(SYSTEM_TASK_MODULE_CONFIG_MODULE_CONFIG_INVALID)
+        if task.task_group_id:
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED)
         row = cls._normalize(product, payload)
         existing = list(Tasks.objects.select_for_update().filter(
             project_product_id=product.id,
             execution_scope=AutomationExecutionScopeEnum.MODULE.value,
         ).select_related('module', 'module__parent', 'module__parent__parent'))
         covered_ids = cls._covered_task_ids(existing, {row['module_id']}, exclude_ids={task.id})
+        if any(other.task_group_id and other.id in covered_ids for other in existing):
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED)
         ancestor_ids = cls._ancestor_ids(row['module'])
         if any(other.id != task.id and other.module_id in ancestor_ids for other in existing):
             raise TaskCenterError(SYSTEM_TASK_MODULE_CONFIG_MODULE_TASK_DUPLICATED,
@@ -307,6 +315,8 @@ class ModuleFullTaskConfigService:
         ).first()
         if task is None:
             raise TaskCenterError(SYSTEM_TASK_MODULE_CONFIG_MODULE_CONFIG_INVALID)
+        if task.task_group_id:
+            raise TaskCenterError(SYSTEM_TASK_MODULE_CONFIG_TASK_DELETE_GENERATE_NOT_ALLOWED)
         try:
             Tasks.objects.filter(id=task.id).delete()
         except ProtectedError as error:
@@ -330,6 +340,8 @@ class ModuleFullTaskConfigService:
             execution_scope=AutomationExecutionScopeEnum.MODULE.value,
         ).select_related('module', 'module__parent', 'module__parent__parent'))
         existing_by_identity = {cls._identity(task): task for task in existing}
+        if any(task.task_group_id for task in existing):
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED)
         existing_by_id = {task.id: task for task in existing}
         submitted_ids = set()
         create_count = update_count = 0

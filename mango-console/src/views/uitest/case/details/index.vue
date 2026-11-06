@@ -984,6 +984,7 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
+  import { usePagePolling, isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
   import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { Message, Modal, Notification } from '@arco-design/web-vue'
   import { IconDesktop } from '@arco-design/web-vue/es/icon'
@@ -1206,7 +1207,7 @@
       pageData.record.front_auth_config = filterOptionalOptionValues(value, data.authConfigOptions)
     },
   })
-  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+  const pagePolling = usePagePolling(context => doRefresh(false, context), () => { caseStepsRefreshRequestId++; stepTableLoading.value = false })
   const showCaseAddButton = computed(() => {
     if (data.uiType === '2') return true
     if (data.uiType === '1') return ['11', '12', '14'].includes(data.uiSonType)
@@ -1286,12 +1287,7 @@
     return hasRuntimeValue(value) ? value : {}
   }
 
-  function clearPollingTimer() {
-    if (pollingTimer.value) {
-      clearInterval(pollingTimer.value)
-      pollingTimer.value = null
-    }
-  }
+  function clearPollingTimer() { pagePolling.stop() }
 
   function switchType(key: any) {
     if (key === '1') {
@@ -2032,18 +2028,15 @@
     })
   }
 
-  function doRefresh(showLoading = true) {
+  function doRefresh(showLoading = true, context?: PollingContext) {
     if (!uiCaseId.value) return
     const requestId = ++caseStepsRefreshRequestId
-    clearPollingTimer()
     if (showLoading) {
       stepTableLoading.value = true
     }
-    refreshCaseRecord()
-
-    getUiCaseStepsDetailed(uiCaseId.value)
-      .then((res) => {
-        if (requestId !== caseStepsRefreshRequestId) return
+    return Promise.all([refreshCaseRecord(context), getUiCaseStepsDetailed(uiCaseId.value)])
+      .then(([, res]) => {
+        if (requestId !== caseStepsRefreshRequestId || (context && !context.isCurrent())) return
         const list = Array.isArray(res.data) ? res.data : []
         const displayList = caseExecutionActive.value ? mergeActiveCaseStepList(list) : list
         data.data = displayList
@@ -2054,14 +2047,11 @@
           : null
         data.selectData = selectedItem || displayList[0] || {}
 
-        const hasRunningItem = displayList.some((item: any) => item.status === 3)
+        const hasRunningItem = displayList.some(isPendingExecution)
 
-        if (hasRunningItem) {
-          // 5秒后再次刷新
-          pollingTimer.value = setInterval(() => {
-            doRefresh()
-          }, 5000)
-        } else if (latestUiCaseResultPending.value) {
+        if (hasRunningItem) pagePolling.start()
+        else pagePolling.stop()
+        if (!hasRunningItem && latestUiCaseResultPending.value) {
           loadLatestUiCaseExecutionResult().finally(() => {
             latestUiCaseResultPending.value = false
           })
@@ -2272,9 +2262,10 @@
     }
   }
 
-  function refreshCaseRecord() {
-    getUiCase({ id: uiCaseId.value, page: 1, pageSize: 1 })
+  function refreshCaseRecord(context?: PollingContext) {
+    return getUiCase({ id: uiCaseId.value, page: 1, pageSize: 1 })
       .then((res) => {
+        if (context && !context.isCurrent()) return
         const record = (res.data || [])[0]
         if (record) {
           pageData.setRecord(normalizeCaseRecord(record))

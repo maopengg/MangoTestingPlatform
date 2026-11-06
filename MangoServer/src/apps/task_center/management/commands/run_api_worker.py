@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+import signal
 
 from src.processes.api_worker.runner import ApiWorkerRunner
 
@@ -22,14 +23,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         thread_pool_size = options['concurrency'] or options['thread_pool_size']
+        previous = signal.getsignal(signal.SIGTERM)
         try:
-            ApiWorkerRunner(
+            runner = ApiWorkerRunner(
                 worker_name=options['worker_name'],
                 thread_pool_size=thread_pool_size,
                 lease_seconds=options['lease_seconds'],
                 poll_interval=options['poll_interval'],
                 db_idle_seconds=options['db_idle_seconds'],
                 config_refresh_interval=options['config_refresh_interval'],
-            ).run_forever()
+            )
+            signal.signal(signal.SIGTERM, lambda *_: runner.stop())
+            runner.run_forever()
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING('api-worker 已停止'))
+        finally:
+            signal.signal(signal.SIGTERM, previous)

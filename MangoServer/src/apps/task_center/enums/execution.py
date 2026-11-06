@@ -56,6 +56,7 @@ class AutomationExecutionScopeEnum(BaseEnum):
 
 
 class ExecutorTaskErrorCodeEnum(BaseEnum):
+    DATA_FACTORY_CLEANUP_FAILED = 'data_factory_cleanup_failed'
     CANCELLED = "cancelled"
     SCHEDULE_TIMEOUT = "schedule_timeout"
     EXECUTION_TIMEOUT = "execution_timeout"

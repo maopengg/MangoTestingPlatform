@@ -269,6 +269,7 @@
   </section>
 </template>
 <script setup lang="ts">
+  import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
   import WorkflowResult from './WorkflowResult.vue'
   import EvaluationDrawer from './EvaluationDrawer.vue'
   import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
@@ -425,8 +426,7 @@
   const itemVisible = ref(false),
     selectedItemId = ref<number>()
   const snapshotVisible = ref(false)
-  let timer: ReturnType<typeof setTimeout> | undefined,
-    generation = 0,
+  let generation = 0,
     itemRequest = 0,
     historyRequest = 0
   let retryKey: string | undefined
@@ -440,15 +440,22 @@
   })
   const percent = (value: number | null | undefined) =>
     value == null ? '-' : `${(value * 100).toFixed(1)}%`
+  const pagePolling = usePagePolling(context => {
+    if (props.history) { pagePolling.stop(); return }
+    return loadRecord(record.value?.id, true, context)
+  }, () => {
+    if (recordLoading.value && !props.history) pagePolling.start()
+    generation++; itemRequest++; gradingRequest++
+    recordLoading.value = false; itemsLoading.value = false; gradingLoading.value = false
+  })
   function cancelTimer() {
-    if (timer) clearTimeout(timer)
-    timer = undefined
+    pagePolling.stop()
   }
-  async function loadRecord(id?: number) {
+  async function loadRecord(id?: number, silent = false, context?: PollingContext) {
+    let loaded = false
     const request = ++generation,
       caseId = props.caseId
-    cancelTimer()
-    recordLoading.value = true
+    if (!silent) recordLoading.value = true
     try {
       const response: any = id
         ? await getCaseExecution(caseId, id)
@@ -456,25 +463,25 @@
             caseId,
             user.selected_environment ? Number(user.selected_environment) : undefined
           )
-      if (request !== generation) return
+      if (request !== generation || (context && !context.isCurrent())) return
       if (record.value?.id !== response.data?.id) {
         frozenGraders.value = {}
         gradingRequest++
         gradingLoading.value = false
       }
       record.value = response.data
-      await loadItems()
+      await loadItems(silent, context)
+      loaded = true
     } finally {
       if (request === generation) {
-        recordLoading.value = false
-        if (record.value && !isTerminal(record.value.status) && !props.history)
-          timer = setTimeout(() => {
-            loadRecord(record.value.id).catch(() => undefined)
-          }, 5000)
+        if (!silent) recordLoading.value = false
+        if (!props.history && ((!loaded && silent) || (record.value && !isTerminal(record.value.status))))
+          pagePolling.start()
+        else pagePolling.stop()
       }
     }
   }
-  async function loadItems() {
+  async function loadItems(silent = false, context?: PollingContext) {
     const request = ++itemRequest,
       id = record.value?.id
     if (!id) {
@@ -482,19 +489,19 @@
       itemsLoading.value = false
       return
     }
-    itemsLoading.value = true
+    if (!silent) itemsLoading.value = true
     try {
       const response: any = await getCaseExecutionItems(props.caseId, id, {
         page: itemPagination.page,
         pageSize: itemPagination.pageSize,
         verdict__in: verdictFilter.value.length ? verdictFilter.value.join(',') : undefined,
       })
-      if (request !== itemRequest || record.value?.id !== id) return
+      if (request !== itemRequest || record.value?.id !== id || (context && !context.isCurrent())) return
       itemRows.value = response.data?.items || []
       itemPagination.pageCount = response.data?.count || 0
-      if (showGrading.value) await loadFrozenGraders()
+      if (showGrading.value && !silent) await loadFrozenGraders()
     } finally {
-      if (request === itemRequest) itemsLoading.value = false
+      if (request === itemRequest && !silent) itemsLoading.value = false
     }
   }
   async function loadHistory() {

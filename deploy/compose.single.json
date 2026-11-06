@@ -169,6 +169,13 @@
         }
       },
       "command": "python manage.py run_scheduler --node-name=scheduler-1 --dispatch-batch-size=20",
+      "healthcheck": {
+        "test": ["CMD", "python", "manage.py", "check_scheduler"],
+        "interval": "15s",
+        "timeout": "10s",
+        "start_period": "40s",
+        "retries": 4
+      },
       "depends_on": {
         "mango_server": {
           "condition": "service_healthy"

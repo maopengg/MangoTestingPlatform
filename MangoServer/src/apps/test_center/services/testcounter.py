@@ -21,6 +21,9 @@ class TestCounter:
     @classmethod
     def res_main(cls, _id):
         model = TestSuiteDetails.objects.get(id=_id)
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(model.summary_data):
+            return
         if model.type == TestCaseTypeEnum.API.value:
             res = cls.res_api(model)
         elif model.type == TestCaseTypeEnum.UI.value:

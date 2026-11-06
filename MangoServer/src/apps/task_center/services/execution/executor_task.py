@@ -6,8 +6,9 @@ from datetime import timedelta
 from typing import Any
 
 import time
+import uuid
 from django.db import IntegrityError, OperationalError, transaction
-from django.db.models import Q
+from django.db.models import Q, F
 from django.utils import timezone
 from pydantic import BaseModel
 
@@ -88,6 +89,158 @@ class ExecutorTaskService:
     }
 
     @classmethod
+    @transaction.atomic
+    def create_cleanup_task(cls, execution_id, *, created_by=None, owner=None, controlled_retry=False,
+                            force_cleanup=True, allow_missing=True, mode=None):
+        from src.apps.data_factory.schemas.cleanup_resource import CleanupTaskPayload
+        payload = CleanupTaskPayload(execution_id=execution_id, force_cleanup=force_cleanup,
+                                     allow_missing=allow_missing, **({'mode': mode} if mode is not None else {}),
+                                     **(owner or {})).model_dump(mode='json', exclude_none=True)
+        previous = ExecutorTask.objects.select_for_update().filter(
+            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value, business_id=execution_id,
+        ).order_by('-id').first()
+        upgrade = (previous is not None and previous.status == ExecutorTaskStatusEnum.SUCCESS.value
+                   and force_cleanup and (previous.payload or {}).get('force_cleanup') is False)
+        if previous is not None and (previous.status not in ExecutorTaskStatusEnum.terminal_values()
+                                     or not (controlled_retry or upgrade)):
+            return previous
+        retry = int(previous.retry_count) + 1 if previous is not None else 0
+        task = cls.create(
+            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value, created_by=created_by,
+            executor_mode=ExecutorModeEnum.PUBLIC.value, business_type='data_factory_cleanup',
+            business_id=execution_id, payload=payload,
+            message_key=f'data-factory-cleanup:{execution_id}:{retry}', schedule_timeout_seconds=3600,
+            execution_timeout_seconds=3600,
+        )
+        if retry and task.retry_count != retry:
+            task.retry_count = retry
+            task.save(update_fields=['retry_count', 'update_time'])
+        return task
+
+    @classmethod
+    def claim_cleanup_task(cls):
+        from src.apps.task_center.schemas.server_task import ServerTaskLease
+        from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
+        now = timezone.now()
+        with transaction.atomic():
+            task = ExecutorTask.objects.select_for_update(skip_locked=True).filter(
+                task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
+            ).filter((Q(status=ExecutorTaskStatusEnum.PENDING.value, available_at__lte=now)
+                     | Q(status=ExecutorTaskStatusEnum.RUNNING.value, lease_expires_at__lte=now))
+                     & (Q(payload__mode__isnull=True) | ~Q(payload__mode=DataFactoryCleanupModeEnum.SYNCHRONOUS.value))).order_by(
+                F('progress_data__sql_done').desc(nulls_last=True), 'available_at', 'id').first()
+            if task is None:
+                return None
+            recovered = task.status == ExecutorTaskStatusEnum.RUNNING.value
+            progress = dict(task.progress_data) if isinstance(task.progress_data, dict) else {'invalid_snapshot': True}
+            previous_generation = progress.get('generation', 0)
+            if type(previous_generation) is not int or previous_generation < 0:
+                # 将损坏快照交给服务端任务校验转失败，不能在领取前反复异常造成永久积压。
+                progress = {'invalid_snapshot': True}
+                previous_generation = 0
+            generation = previous_generation + int(recovered)
+            token = uuid.uuid4().hex
+            task.progress_data = {**progress, 'generation': generation, 'claim_token': token}
+            task.status = ExecutorTaskStatusEnum.RUNNING.value
+            task.started_at = task.started_at or now
+            task.lease_expires_at = now + timedelta(seconds=60)
+            task.save(update_fields=['status', 'started_at', 'lease_expires_at', 'progress_data', 'update_time'])
+            return ServerTaskLease(task_id=task.id, token=token, generation=generation, recovered=recovered,
+                                   payload=task.payload, progress=progress)
+
+    @classmethod
+    @transaction.atomic
+    def begin_inline_cleanup(cls, execution_id, *, created_by=None, controlled_retry=False,
+                             force_cleanup=True, allow_missing=True):
+        from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
+        from src.apps.task_center.schemas.server_task import ServerTaskLease
+        task = cls.create_cleanup_task(execution_id, created_by=created_by, controlled_retry=controlled_retry,
+            force_cleanup=force_cleanup, allow_missing=allow_missing, mode=DataFactoryCleanupModeEnum.SYNCHRONOUS)
+        task = ExecutorTask.objects.select_for_update().get(id=task.id)
+        if task.status in ExecutorTaskStatusEnum.terminal_values():
+            return task, None
+        if (task.status != ExecutorTaskStatusEnum.PENDING.value
+                or task.payload.get('mode') != DataFactoryCleanupModeEnum.SYNCHRONOUS.value):
+            return task, None
+        token = uuid.uuid4().hex
+        task.status = ExecutorTaskStatusEnum.RUNNING.value
+        task.started_at = timezone.now()
+        task.lease_expires_at = task.started_at + timedelta(seconds=60)
+        task.progress_data = {'generation': 0, 'claim_token': token}
+        task.save(update_fields=['status', 'started_at', 'lease_expires_at', 'progress_data', 'update_time'])
+        return task, ServerTaskLease(task_id=task.id, token=token, generation=0, recovered=False,
+                                    payload=task.payload, progress={})
+
+    @classmethod
+    def finish_cleanup_step(cls, lease, progress, *, next_at=None, success=False, error=None, inline=False):
+        now = timezone.now()
+        with transaction.atomic():
+            task = ExecutorTask.objects.select_for_update().get(id=lease.task_id)
+            if (task.status != ExecutorTaskStatusEnum.RUNNING.value
+                    or (task.progress_data or {}).get('claim_token') != lease.token
+                    or not task.lease_expires_at or task.lease_expires_at <= now):
+                return False
+            task.progress_data = {**progress, 'generation': lease.generation, 'claim_token': lease.token}
+            task.lease_expires_at = None
+            if next_at is not None:
+                task.status, task.available_at = (ExecutorTaskStatusEnum.RUNNING.value if inline else
+                                                 ExecutorTaskStatusEnum.PENDING.value), next_at
+                if inline:
+                    task.lease_expires_at = now + timedelta(seconds=60)
+            else:
+                task.status = ExecutorTaskStatusEnum.SUCCESS.value if success else ExecutorTaskStatusEnum.FAILED.value
+                task.error_message = error
+                task.finished_at = now
+            task.save(update_fields=['progress_data', 'lease_expires_at', 'status', 'available_at',
+                                     'error_message', 'finished_at', 'update_time'])
+            return True
+
+    @classmethod
+    def with_cleanup_lease(cls, lease, callback):
+        with transaction.atomic():
+            task = ExecutorTask.objects.select_for_update().get(id=lease.task_id)
+            now = timezone.now()
+            if (task.status != ExecutorTaskStatusEnum.RUNNING.value
+                    or (task.progress_data or {}).get('claim_token') != lease.token
+                    or not task.lease_expires_at or task.lease_expires_at <= now):
+                return False, None
+            # 大场景的 SQL 阶段可能超过一次领取时长；仅当前有效持有者在安全检查点续租。
+            # 已过期或 token 改变仍拒绝，不能复活旧持有者或重放未知 SQL。
+            if task.lease_expires_at - now <= timedelta(seconds=30):
+                task.lease_expires_at = now + timedelta(seconds=60)
+                task.save(update_fields=['lease_expires_at', 'update_time'])
+            return True, callback()
+
+    @classmethod
+    @transaction.atomic
+    def expire_inline_cleanup_tasks(cls):
+        from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
+        now = timezone.now()
+        tasks = list(ExecutorTask.objects.select_for_update(skip_locked=True).filter(
+            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
+            payload__mode=DataFactoryCleanupModeEnum.SYNCHRONOUS.value,
+            status=ExecutorTaskStatusEnum.RUNNING.value, lease_expires_at__lte=now,
+        ).order_by('id')[:100])
+        for task in tasks:
+            from src.apps.data_factory.exceptions import DATA_FACTORY_CLEANUP_INTERRUPTED
+            from src.apps.data_factory.schemas.performance import DatasourceInfrastructureIssue
+            progress = dict(task.progress_data) if isinstance(task.progress_data, dict) else {}
+            message = (f'同步清理任务 {task.id} 未在租约到期时间 {task.lease_expires_at.isoformat()} 前续约，平台无法确认执行进程是否仍在运行。'
+                       f'请管理员核查工厂执行 {task.business_id} 的实际数据和清理明细；不会自动重放删除，未确认项仍须补清并验证')
+            progress['infrastructure_issues'] = [DatasourceInfrastructureIssue(
+                code=DATA_FACTORY_CLEANUP_INTERRUPTED.code,
+                message=message).model_dump(mode='json')]
+            task.progress_data = progress
+            task.status = ExecutorTaskStatusEnum.FAILED.value
+            task.error_code = ExecutorTaskErrorCodeEnum.DATA_FACTORY_CLEANUP_FAILED.value
+            task.error_message = message
+            task.finished_at = now
+            task.lease_expires_at = None
+            task.save(update_fields=['status', 'error_code', 'error_message', 'finished_at',
+                                     'lease_expires_at', 'progress_data', 'update_time'])
+        return [task.business_id for task in tasks]
+
+    @classmethod
     def policy(cls, task_type: str) -> ExecutorTaskPolicy:
         return cls.POLICIES.get(str(task_type), cls.DEFAULT_POLICY)
 
@@ -147,12 +300,12 @@ class ExecutorTaskService:
             SocketConnection.objects.filter(id=target_connection_id).first()
             if target_connection_id else None
         )
-        connection = cls._available_connection(
+        connection = None if task_type == ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value else cls._available_connection(
             executor_mode,
             assigned_user,
             target_connection,
         )
-        if connection is not None:
+        if connection is not None or task_type == ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value:
             status = ExecutorTaskStatusEnum.PENDING.value
             error_code = None
             error_message = None
@@ -293,6 +446,7 @@ class ExecutorTaskService:
             )
         queryset = (
             ExecutorTask.objects.select_for_update(skip_locked=True)
+            .exclude(task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value)
             .filter(
                 status__in=[
                     ExecutorTaskStatusEnum.PENDING.value,
@@ -407,8 +561,63 @@ class ExecutorTaskService:
         return task
 
     @classmethod
+    def complete(cls, *, task_id, connection_id, username, success, result_data=None,
+                 error_code=None, error_message=None, attempt=0):
+        values = dict(task_id=task_id, connection_id=connection_id, username=username, success=success,
+                      result_data=result_data, error_code=error_code, error_message=error_message, attempt=attempt)
+        task = ExecutorTask.objects.filter(id=task_id, executor_user__username=username,
+                                           retry_count=int(attempt)).first()
+        cleanup_error_code = ExecutorTaskErrorCodeEnum.DATA_FACTORY_CLEANUP_FAILED.value
+        if task is not None and task.status == ExecutorTaskStatusEnum.FAILED.value and task.error_code == cleanup_error_code:
+            return task
+        if (task is None or task.task_type not in (ExecutorTaskTypeEnum.UI_CASE.value, ExecutorTaskTypeEnum.UI_CASE_STEP.value)
+                or task.status not in (ExecutorTaskStatusEnum.RUNNING.value, ExecutorTaskStatusEnum.CLAIMED.value)):
+            return cls._complete(**values)
+        if connection_id and not ExecutorTask.objects.filter(
+                id=task.id, executor_connection__connection_id=connection_id).exists():
+            raise TaskCenterError(EXECUTOR_TASK_EXECUTOR_TASK_STATUS_EXECUTION_INVALID)
+        normalized = cls.normalize_json(result_data or {}, cls.MAX_RESULT_BYTES,
+                                         EXECUTOR_TASK_EXECUTOR_TASK_RESULT_EXECUTION_INVALID)
+        arguments = (task.payload or {}).get('func_args') or {}
+        expected_ids = arguments.get('data_factory_auto_cleanup_execution_ids') or []
+        expected_case_id = arguments.get('case_id') or arguments.get('id') or task.business_id
+        if not isinstance(normalized, dict) or normalized.get('id') != expected_case_id:
+            raise TaskCenterError(EXECUTOR_TASK_EXECUTOR_TASK_RESULT_EXECUTION_INVALID)
+        normalized['data_factory_auto_cleanup_execution_ids'] = expected_ids
+        values['result_data'] = normalized
+        if not expected_ids:
+            return cls._complete(**values)
+        from src.apps.auto_ui.services.test_report_writing import TestReportWriting
+        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        last_pulse = [0.0]
+
+        def pulse():
+            now = timezone.now()
+            if time.monotonic() - last_pulse[0] < 5:
+                return
+            updated = ExecutorTask.objects.filter(
+                id=task.id, retry_count=int(attempt), executor_user_id=task.executor_user_id,
+                status__in=[ExecutorTaskStatusEnum.CLAIMED.value, ExecutorTaskStatusEnum.RUNNING.value],
+                expired_at__gt=now, cancel_requested_at__isnull=True,
+            ).update(lease_expires_at=now + timedelta(seconds=cls.policy(task.task_type).lease_seconds), update_time=now)
+            if updated != 1:
+                raise TaskCenterError(EXECUTOR_TASK_EXECUTOR_TASK_STATUS_EXECUTION_INVALID)
+            last_pulse[0] = time.monotonic()
+
+        from src.apps.test_center.enums import TestCaseTypeEnum
+        with DataFactoryCleanupScheduleService.parent_wait(pulse), DataFactoryCleanupScheduleService.report_scope(
+                arguments.get('test_suite_details'), suite_id=arguments.get('test_suite_id'),
+                case_id=expected_case_id, case_type=TestCaseTypeEnum.UI.value):
+            normalized, failures = TestReportWriting.prepare_factory_result(normalized, expected_ids)
+        values['result_data'] = normalized
+        if failures:
+            values.update(success=False, error_code=cleanup_error_code, error_message=normalized.get('error_message'))
+        with TestReportWriting.prepared_cleanup_scope(expected_ids):
+            return cls._complete(**values)
+
+    @classmethod
     @transaction.atomic
-    def complete(
+    def _complete(
             cls,
             *,
             task_id: int,
@@ -492,16 +701,14 @@ class ExecutorTaskService:
         except Exception as error:
             # 任务事实与业务投影必须形成同一个可查询终态。投影异常不能让执行器
             # 永久重试一个实际已执行完成的任务，也不能留下 running 状态。
-            projection_error = str(error) or type(error).__name__
-            log.system.error(
-                f"执行器任务业务结果投影失败：task_id={task.id}，"
-                f"task_type={task.task_type}，error={projection_error}"
-            )
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            reference = DatasourceInfrastructureService.log_reference(error, 'executor_result_projection')
+            log.system.error('执行器任务业务结果投影失败 task_id=%s reference=%s', task.id, reference)
             return cls._finish(
                 task,
                 ExecutorTaskStatusEnum.FAILED.value,
                 "result_projection_failed",
-                f"执行结果已返回，但平台保存业务结果失败：{projection_error}",
+                f"执行任务 {task.id} 已返回结果，但平台保存报告失败。请管理员按关联编号 {reference} 检查业务结果投影日志，不要直接重复执行",
             )
         return cls._finish(
             task,
@@ -659,6 +866,8 @@ class ExecutorTaskService:
     @classmethod
     def cancel(cls, task_id: int, user_id: int) -> ExecutorTask:
         task = cls.get_for_user(task_id, user_id)
+        if task.task_type == ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value:
+            raise TaskCenterError(EXECUTOR_TASK_EXECUTOR_TASK_STATUS_EXECUTION_INVALID)
         if task.status in ExecutorTaskStatusEnum.terminal_values():
             return task
         now = timezone.now()
@@ -695,7 +904,7 @@ class ExecutorTaskService:
                     cancel_requested_at__isnull=False,
                 ).filter(
                     Q(lease_expires_at__lte=now) | Q(expired_at__lte=now)
-                ).order_by('id')[:batch_size]
+                ).exclude(task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value).order_by('id')[:batch_size]
             )
             cancelled_ids = [task.id for task in cancelled_tasks]
             cancelled = 0
@@ -723,7 +932,7 @@ class ExecutorTaskService:
                 ).filter(
                     Q(schedule_deadline__isnull=False, schedule_deadline__lte=now)
                     | Q(schedule_deadline__isnull=True, expired_at__lte=now)
-                ).order_by('id')[:batch_size]
+                ).exclude(task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value).order_by('id')[:batch_size]
             )
             waiting_timeout_ids = [task.id for task in waiting_timeout_tasks]
             waiting_timeout = 0
@@ -731,12 +940,12 @@ class ExecutorTaskService:
                 waiting_timeout = ExecutorTask.objects.filter(id__in=waiting_timeout_ids).update(
                     status=ExecutorTaskStatusEnum.TIMEOUT.value,
                     error_code=ExecutorTaskErrorCodeEnum.SCHEDULE_TIMEOUT.value,
-                    error_message="等待可用执行器超时",
+                    error_message="等待可用执行器超过调度截止时间，用例尚未开始。请检查执行器在线状态、版本匹配及任务占用",
                     finished_at=now,
                     update_time=now,
                 )
             terminal_failures.extend(
-                (task, "等待可用执行器超时")
+                (task, f"任务 {task.id} 等待可用执行器超过调度截止时间 {task.schedule_deadline or task.expired_at}，用例尚未开始。请检查执行器在线状态、版本匹配及任务占用")
                 for task in waiting_timeout_tasks
             )
 
@@ -749,7 +958,7 @@ class ExecutorTaskService:
                     ],
                     expired_at__lte=now,
                     cancel_requested_at__isnull=True,
-                ).order_by('id')[:batch_size]
+                ).exclude(task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value).order_by('id')[:batch_size]
             )
             execution_timeout_ids = [task.id for task in execution_timeout_tasks]
             execution_timeout = 0
@@ -757,7 +966,7 @@ class ExecutorTaskService:
                 execution_timeout = ExecutorTask.objects.filter(id__in=execution_timeout_ids).update(
                     status=ExecutorTaskStatusEnum.TIMEOUT.value,
                     error_code=ExecutorTaskErrorCodeEnum.EXECUTION_TIMEOUT.value,
-                    error_message="任务执行超过最大允许时间",
+                    error_message="任务执行超过配置截止时间，最终结果未确认。请检查执行器日志及请求和清理状态，勿直接重复写入",
                     finished_at=now,
                     lease_expires_at=None,
                     update_time=now,
@@ -768,7 +977,7 @@ class ExecutorTaskService:
                 if task.executor_mode == ExecutorModeEnum.PUBLIC.value
             )
             terminal_failures.extend(
-                (task, "任务执行超过最大允许时间")
+                (task, f"任务 {task.id} 执行超过配置截止时间 {task.expired_at}，最终结果未确认。请检查执行器日志及请求和清理状态，勿直接重复写入")
                 for task in execution_timeout_tasks
             )
 
@@ -781,7 +990,7 @@ class ExecutorTaskService:
                 lease_expires_at__lte=now,
                 expired_at__gt=now,
                 cancel_requested_at__isnull=True,
-            ).order_by('id')[:batch_size])
+            ).exclude(task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value).order_by('id')[:batch_size])
             for task in lease_tasks:
                 if task.executor_mode == ExecutorModeEnum.PUBLIC.value:
                     public_tasks.append(copy(task))
@@ -951,9 +1160,16 @@ class ExecutorTaskService:
 
     @classmethod
     def cleanup_history(cls, retention_days: int = 7, batch_size: int = 1000) -> int:
+        from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
+        from src.apps.data_factory.enums.cleanup import DataFactoryCleanupStatusEnum
+        completed = DataFactoryQuerySelector.data_factory_execution().filter(
+            Q(cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value)
+            | Q(cleanup_status=DataFactoryCleanupStatusEnum.SKIPPED.value,
+                datafactoryexecutionitem__isnull=True)).values('id')
         cutoff_time = timezone.now() - timedelta(days=retention_days)
         ids = list(
             ExecutorTask.objects.filter(
+                ~Q(task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value) | Q(business_id__in=completed),
                 finished_at__isnull=False,
                 finished_at__lt=cutoff_time,
             ).order_by("id").values_list("id", flat=True)[:batch_size]

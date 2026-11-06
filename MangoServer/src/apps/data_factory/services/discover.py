@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import re
+from functools import wraps
 from typing import Any
 
 from src.apps.data_factory.enums import DataFactoryGeneratorTypeEnum
@@ -21,10 +22,24 @@ from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from .datasource import DataFactoryDatasource
 
 
+def _metadata_operation(method):
+    @wraps(method)
+    def wrapped(cls, database, *args, **kwargs):
+        from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
+        with SqlExecutionAuditService.source({**SqlExecutionAuditService.current_source(),
+                                             'source_stage': DatasourceAuditStageEnum.STATEMENT.value}):
+            with DatasourceGovernorService.operation(database):
+                return method(cls, database, *args, **kwargs)
+    return wrapped
+
+
 class DataFactoryDiscover:
     """通过 SQLAlchemy inspector 发现外部业务库结构。"""
 
     @classmethod
+    @_metadata_operation
     def get_tables(cls, database: Database, *, timeout_seconds: int | None = None) -> list[dict[str, Any]]:
         engine = DataFactoryDatasource.create_engine(database, timeout_seconds=timeout_seconds)
         try:
@@ -69,6 +84,7 @@ class DataFactoryDiscover:
             engine.dispose()
 
     @classmethod
+    @_metadata_operation
     def get_table_schema(cls, database: Database, table_name: str, *, timeout_seconds: int | None = None) -> dict[
         str, Any]:
         if not table_name:
@@ -81,7 +97,16 @@ class DataFactoryDiscover:
             inspector = inspect(engine)
             schema_name = database.schema_name or (
                 inspector.default_schema_name if database.db_type == DataSourceTypeEnum.POSTGRESQL.value else None)
-            if table_name not in inspector.get_table_names(schema=schema_name):
+            if engine.dialect.name == 'mysql':
+                from sqlalchemy import text
+                with engine.connect() as connection:
+                    exists = connection.execute(text(
+                        "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = :database_name "
+                        "AND TABLE_NAME = :table_name AND TABLE_TYPE = 'BASE TABLE' LIMIT 1"
+                    ), {'database_name': database.database_name, 'table_name': table_name}).first() is not None
+            else:
+                exists = table_name in inspector.get_table_names(schema=schema_name)
+            if not exists:
                 raise DataFactoryError(DATA_FACTORY_DISCOVER_NOT_FOUND, value=(table_name,))
 
             pk = inspector.get_pk_constraint(table_name, schema=schema_name) or {}
@@ -289,6 +314,11 @@ class DataFactoryDiscover:
         """Read SQL generation attributes without conflating AUTO_RANDOM with AUTO_INCREMENT."""
         if connection.dialect.name != "mysql":
             return {}
+        create_sql = DataFactoryDiscover.get_mysql_table_definition(connection, table_name, schema_name)
+        return DataFactoryDiscover.mysql_generated_column_kinds(create_sql)
+
+    @staticmethod
+    def get_mysql_table_definition(connection, table_name, schema_name=None):
         from sqlalchemy import text
 
         quote = connection.dialect.identifier_preparer.quote
@@ -300,6 +330,10 @@ class DataFactoryDiscover:
         if not create_sql.strip() or not re.match(r"\s*CREATE\s+TABLE\b", create_sql, re.IGNORECASE):
             raise DataFactoryError(DATA_FACTORY_DISCOVER_SQL_READ_FAILED,
                                    value=("未返回有效的表结构 DDL，无法确认主键生成属性",))
+        return create_sql
+
+    @staticmethod
+    def mysql_generated_column_kinds(create_sql):
         generated_columns = {}
         for line in create_sql.splitlines():
             match = re.match(r"\s*`((?:[^`]|``)+)`\s+(.*)", line)

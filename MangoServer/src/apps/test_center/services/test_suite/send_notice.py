@@ -36,6 +36,9 @@ class SendNotice:
     def send_test_suite(self):
         log.system.info(f'开始发送通知：{self.test_suite.id}')
         with self._test_suite_lock:
+            from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+            if TestSuiteInfrastructureService.blocked_suites([self.test_suite.id]).exists():
+                return
             # 调度触发的任务组子任务只归集结果，不单独发送通知。
             from src.apps.task_center.services.scheduling.task_group_execution import (
                 ScheduledTaskGroupExecutionService,

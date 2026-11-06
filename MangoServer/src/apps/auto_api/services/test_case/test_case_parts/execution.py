@@ -30,6 +30,11 @@ from ..step_debug import ApiCaseStepDebugContextService
 
 class ApiTestCaseExecutionMixin:
     def test_case(self, case_sort: int | None = None, parametrize: dict | list | None = None) -> ApiCaseExecutionResult:
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        with DatasourceInfrastructureService.scope():
+            return self._test_case(case_sort, parametrize)
+
+    def _test_case(self, case_sort=None, parametrize=None):
         log.api.info(f'开始执行用例ID：{self.case_id}')
         res = None
         report_stopped = False
@@ -141,18 +146,22 @@ class ApiTestCaseExecutionMixin:
                 f'detail={self.test_suite_details}'
             )
         except (MangoToolsError, MangoServerError) as e:
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            DatasourceInfrastructureService.capture(e)
             self.trace_recorder.fail_trace(e.msg)
-            self.update_test_case(self.case_id, TaskEnum.FAIL.value)
+            if not DatasourceInfrastructureService.current():
+                self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
             self.api_case_result.error_message = e.msg
-            self.api_case.status = StatusEnum.FAIL.value
-            self.update_test_case_detailed_unfinished(self.case_id, case_sort, e.msg)
+            if not DatasourceInfrastructureService.current():
+                self.api_case.status = StatusEnum.FAIL.value
+                self.update_test_case_detailed_unfinished(self.case_id, case_sort, e.msg)
         except Exception as error:
-            self.trace_recorder.fail_trace(str(error))
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
-            traceback.print_exc()
-            log.api.error(f'API用例执行过程中发生异常：{error}')
-            self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            reference = DatasourceInfrastructureService.log_reference(error, 'api_case_execution')
+            self.api_case_result.error_message = f'用例 {self.case_id} 执行过程中发生平台内部异常，关联编号 {reference}。请管理员检查系统异常日志；后置清理仍须完成并验证'
+            self.trace_recorder.fail_trace(self.api_case_result.error_message)
             self.api_case.status = StatusEnum.FAIL.value
             self.update_test_case(self.case_id, StatusEnum.FAIL.value)
             self.update_test_case_detailed_unfinished(self.case_id, case_sort, self.api_case_result.error_message)
@@ -194,6 +203,24 @@ class ApiTestCaseExecutionMixin:
                     )
                 return self.api_case_result
             self.run_case_posterior()
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            issues = DatasourceInfrastructureService.current()
+            if issues:
+                self.api_case_result.infrastructure_blocked = True
+                self.api_case_result.status = TaskEnum.PROCEED.value
+                self.api_case_result.error_message = DatasourceInfrastructureService.summary(issues)
+                if self.test_suite_details:
+                    from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+                    from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+                    owner = DataFactoryCleanupScheduleService.current_owner()
+                    if owner:
+                        accepted = TestSuiteInfrastructureService.block(
+                            self.test_suite_details, owner['parent_attempt'], issues,
+                            snapshot=self.api_case_result.model_dump())
+                        if not accepted:
+                            return self.api_case_result
+                self.update_test_case(self.case_id, TaskEnum.PROCEED.value)
+                return self.api_case_result
             report_step = self.trace_recorder.start_step(
                 ApiCaseTraceStepType.REPORT_WRITE,
                 '回写用例结果',
@@ -262,6 +289,8 @@ class ApiTestCaseExecutionMixin:
             self.case_base.case_posterior_main()
             self.trace_recorder.finish_step(posterior_step)
         except Exception as error:
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            DatasourceInfrastructureService.capture(error)
             error_message = getattr(error, 'msg', str(error))
             if posterior_step:
                 self.trace_recorder.fail_step(posterior_step, error_message)

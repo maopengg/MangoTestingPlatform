@@ -66,22 +66,20 @@ class DataSourceConnectionQueryService:
 
     @classmethod
     def query_target(cls, target, sql, *, binding=None, project_product_id=None, test_env=None, operator_id=None):
-        # 直接连接没有逻辑库归属，由已启用的 HTTP 操作日志记录 SQL 入参与结果状态。
-        # 不为满足 SQL 审计表的必填外键伪造产品、环境或逻辑库。
-        if binding is None:
-            return cls.execute_target(target, cls.validate_sql(sql))
+        sql = cls.validate_sql(sql)
         started = perf_counter()
         audit = SqlExecutionAuditService.start(
-            binding=binding, project_product_id=project_product_id, test_env=test_env, sql=sql,
+            binding=binding, database=target, project_product_id=project_product_id, test_env=test_env, sql=sql,
             parameters=None, request_id=None, started_monotonic=started,
             source_context={'source_type': 'data_source_debug', 'source_stage': 'query',
-                            'source_id': binding.datasource_alias_id,
+                            'source_id': binding.datasource_alias_id if binding else target.id,
                             'operator_id': operator_id, 'database_name': target.database_name,
-                            'target_kind': 'logical_database'},
+                            'target_kind': 'logical_database' if binding else 'connection'},
         )
+        started = perf_counter()
         try:
-            sql = cls.validate_sql(sql)
-            result = cls.execute_target(target, sql)
+            with SqlExecutionAuditService.scope(audit):
+                result = cls.execute_target(target, sql)
         except Exception as error:
             SqlExecutionAuditService.finish_failure(audit, error, round((perf_counter() - started) * 1000, 2))
             raise

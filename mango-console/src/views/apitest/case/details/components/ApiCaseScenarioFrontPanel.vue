@@ -29,7 +29,6 @@
           :line-height="280"
           :code-style="{ width: '100%' }"
           placeholder="根据帮助文档，输入自定义前置函数"
-          @focus="codeSnapshot = item.front_func || ''"
           @blur="saveCode"
         />
       </div>
@@ -53,7 +52,7 @@
   /* eslint-disable vue/no-mutating-props */
   import { computed, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import { putApiCaseDetailedParameter } from '@/api/apitest/case-detailed-parameter'
+  import { useApiCaseParameterSave } from '../composables/useApiCaseAutoSave'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
   import DataSourceOperationList from '@/components/forms/DataSourceOperationList.vue'
@@ -79,7 +78,7 @@
     (event: 'count-change', id: number, count: number): void
   }>()
   const factoryPanel = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
-  const codeSnapshot = ref('')
+  const putApiCaseDetailedParameter = useApiCaseParameterSave()
   const canAdd = computed(() => ['10', '12'].includes(props.activeKey))
 
   async function save(field: 'front_sql' | 'front_func') {
@@ -89,7 +88,7 @@
         id: props.item.id,
         [field]: props.item[field],
       })
-      Message.success(response.msg)
+      if (response) Message.success(response.msg)
     } catch (error: any) {
       Message.error(error?.msg || '前置处理保存失败')
     }
@@ -114,6 +113,6 @@
     void save('front_sql')
   }
   function saveCode() {
-    if (codeSnapshot.value !== (props.item.front_func || '')) void save('front_func')
+    void save('front_func')
   }
 </script>

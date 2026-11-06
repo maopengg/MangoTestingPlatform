@@ -102,6 +102,10 @@ class CacheDataCRUD(ModelCRUD):
             )
             if validation_error:
                 return ResponseData.fail(RESPONSE_MSG_0287, value=(validation_error,))
+            if cache_data.key == 'DATASOURCE_PERFORMANCE_POLICY':
+                transition_error = SystemConfigService.validate_datasource_policy_transition(cache_data, i.get('value'))
+                if transition_error:
+                    return ResponseData.fail(RESPONSE_MSG_0287, value=(transition_error,))
             data = {
                 **self.serializer(instance=cache_data).data,
                 **i,

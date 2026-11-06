@@ -32,7 +32,8 @@ def module(identity, parent=None, product=1):
 def scan(identity, module_id, **kwargs):
     return SimpleNamespace(id=identity, module_id=module_id, project_product_id=1,
                            **{"include_descendants": False, "status": "completed", "scan_mode": "full",
-                              "scope_type": "module", "summary": {}, **kwargs})
+                              "scope_type": "module", "summary": {}, "repository_key": "backend",
+                              "branch": "main", "commit_sha": "a" * 40, **kwargs})
 
 
 def interface(identity, module_id, **kwargs):
@@ -40,16 +41,104 @@ def interface(identity, module_id, **kwargs):
                            branch="main", source_key_hash=f"source-{identity}", interface_name="查询订单",
                            method="GET", url="/api/contracts",
                            **{"mermaid": "flowchart TD\nrequest --> result", "node_ids": ["request", "result"],
-                              "api_info_id": None, "api_info_binding_status": "unbound", **kwargs})
+                              "api_info_id": None, "api_info_binding_status": "unbound",
+                              "scan": scan(1, module_id), "gap_reason": "", "module_interface": None, **kwargs})
 
 
 def case(identity, interface_id, module_id, **kwargs):
     return SimpleNamespace(id=identity, module_id=module_id, project_product_id=1,
                            repository_key="backend", branch="main", interface_source_key_hash=f"source-{interface_id}",
-                           **{"status": "completed", "api_case_id": 100, "coverage_validity": "valid", **kwargs})
+                           **{"status": "completed", "api_case_id": 100, "coverage_validity": "valid",
+                              "current_snapshot": SimpleNamespace(scan=scan(1, module_id), payload={
+                                  key: [] for key in ModuleCoverageService.REQUIRED_CURRENT_CASE_PAYLOAD_KEYS}), **kwargs})
 
 
 class ModuleCoverageOverviewTests(SimpleTestCase):
+    def test_inventory_completes_stage_one_without_graphs_or_cases(self):
+        result = self.overview([module(1)], interfaces=[interface(1, 1, mermaid="", node_ids=[],
+                              scan=scan(10, 1, summary={"inventory_only": True}))],
+                              scans=[scan(10, 1, summary={"inventory_only": True})])
+        self.assertTrue(result["modules"][0]["inventory_completed"])
+        self.assertFalse(result["modules"][0]["scan_completed"])
+        self.assertEqual(result["project_inventory_summary"]["inventory_rate"], 100)
+        self.assertEqual(result["summary"]["pending_analysis_count"], 1)
+        self.assertEqual(result["summary"]["analysis_rate"], 0)
+
+    def test_inventory_requires_all_known_repository_baselines(self):
+        for extra in (scan(2, 1, repository_key="shared", scope_type="interface"),
+                      scan(2, 1, repository_key="shared", status="uploading"),
+                      scan(2, 1, commit_sha="b" * 40, scope_type="interface")):
+            result = self.overview([module(1)], scans=[scan(1, 1), extra])
+            self.assertFalse(result["modules"][0]["inventory_completed"])
+        result = self.overview([module(1)], scans=[scan(1, 1), scan(2, 1, repository_key="shared")])
+        self.assertEqual(result["modules"][0]["inventory_scan_ids"], [2, 1])
+        self.assertTrue(result["modules"][0]["inventory_completed"])
+
+    def test_empty_module_can_be_inventoried_and_summary_ignores_module_selection(self):
+        modules = [module(1), module(2)]
+        result = self.overview(modules, scans=[scan(1, 1, summary={"inventory_only": True})], module_ids=[2])
+        self.assertEqual(result["project_inventory_summary"]["inventoried_count"], 1)
+        self.assertEqual(result["summary"]["inventoried_count"], 0)
+
+    def test_analysis_requires_current_graph_and_valid_scenarios_not_apiinfo_binding(self):
+        result = self.overview([module(1)], interfaces=[interface(i, 1) for i in (1, 2)],
+                               cases=[case(1, 1, 1, status="pending_create", api_case_id=None)])
+        self.assertEqual(result["summary"]["analyzed_interface_count"], 1)
+        self.assertEqual(result["summary"]["pending_analysis_count"], 1)
+        self.assertEqual(result["summary"]["bound_count"], 0)
+        self.assertEqual(result["summary"]["analysis_rate"], 50)
+
+    def test_analysis_partitions_gap_and_policy_without_expanding_exclusions(self):
+        result = self.overview([module(1)], interfaces=[
+            interface(1, 1, gap_reason="缺少业务处理器"),
+            interface(2, 1, module_interface=SimpleNamespace(coverage_policy="deferred")),
+            interface(3, 1, module_interface=SimpleNamespace(coverage_policy="excluded")),
+        ])
+        self.assertEqual(result["summary"]["analysis_gap_count"], 1)
+        self.assertEqual(result["summary"]["deferred_analysis_count"], 1)
+        self.assertEqual(result["summary"]["excluded_interface_count"], 1)
+        self.assertEqual(result["summary"]["interface_count"], 2)
+
+    def test_new_inventory_revision_does_not_revalidate_old_analysis(self):
+        relation = SimpleNamespace(coverage_policy="included", last_seen_scan=scan(2, 1, commit_sha="b" * 40))
+        target = interface(1, 1, module_interface=relation)
+        result = self.overview([module(1)], interfaces=[target], cases=[case(1, 1, 1)])
+        self.assertEqual(result["summary"]["analysis_gap_count"], 1)
+        self.assertEqual(result["summary"]["analyzed_interface_count"], 0)
+
+    def test_analysis_filters_use_overview_assessment_before_pagination(self):
+        targets = []
+        for identity in range(1, 6):
+            target = MagicMock()
+            for key, value in vars(interface(identity, 1)).items():
+                setattr(target, key, value)
+            target.module_interface_id = None
+            targets.append(target)
+        targets[0].mermaid = ""
+        targets[2].gap_reason = "缺少业务来源"
+        targets[3].module_interface = SimpleNamespace(coverage_policy="deferred")
+        cases = queryset([case(2, 2, 1), case(5, 5, 1)])
+        cases.values.return_value.annotate.return_value = []
+        with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
+                patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}), \
+                patch("src.apps.auto_api.services.module_coverage_parts.query.ModuleCoverageInterfaceSnapshot.objects") as snapshots:
+            snapshots.filter.return_value.values.return_value.annotate.return_value = []
+            result = ModuleCoverageService.interface_page(queryset(targets), page=2, page_size=1,
+                                                          analysis_statuses=["completed"])
+            self.assertEqual(result["count"], 2)
+            self.assertEqual([row["id"] for row in result["items"]], [5])
+            result = ModuleCoverageService.interface_page(queryset(targets), analysis_statuses=["pending", "gap"])
+            self.assertEqual([row["id"] for row in result["items"]], [1, 3])
+
+    def test_invalid_scene_keeps_analysis_in_gap(self):
+        with patch.object(ModuleCoverageService, "case_coverage_assessment",
+                          side_effect=[{"status": "valid"}, {"status": "invalid"},
+                                       {"status": "valid"}, {"status": "invalid"}]):
+            result = ModuleCoverageService.overview(modules=queryset([module(1)]), interfaces=queryset([interface(1, 1)]),
+                                                    cases=queryset([case(1, 1, 1), case(2, 1, 1)]), scans=queryset())
+        self.assertEqual(result["summary"]["analysis_gap_count"], 1)
+
+
     def test_interface_coverage_partitions_all_discovered_interfaces(self):
         result = self.overview([module(1)], interfaces=[interface(i, 1) for i in range(1, 6)], cases=[
             case(1, 1, 1), case(2, 1, 1, status="deferred"),
@@ -273,12 +362,15 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         target.branch_ids = ["authorized", "denied"]
         target.node_ids = ["request", "auth", "result", "denied"]
         target.source_key_hash = hashlib.sha256(b"post:/api/contracts/search").hexdigest()
+        target.method = valid_payload()["method"]
+        target.url = valid_payload()["url"]
+        target.interface_name = valid_payload()["interface_name"]
         item = case(1, 1, 1)
         item.interface_source_key_hash = target.source_key_hash
         item.module_interface_id = None
         for payload, expected in ((valid_payload(), 1), ({"test_scenario": "旧格式"}, 0)):
             with self.subTest(payload=payload):
-                item.current_snapshot = SimpleNamespace(payload=payload, interface_snapshot=None)
+                item.current_snapshot = SimpleNamespace(payload=payload, interface_snapshot=None, scan=scan(1, 1))
                 result = ModuleCoverageService.overview(modules=queryset([module(1)]), interfaces=queryset([target]),
                                                         cases=queryset([item]), scans=queryset())
                 self.assertEqual(result["summary"]["completed_count"], expected)

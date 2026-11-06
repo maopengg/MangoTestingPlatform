@@ -98,11 +98,16 @@ class TestSuiteExecutionResultService:
             )
 
         def persist():
+            TestSuite.objects.select_for_update().get(id=detail.test_suite_id)
+            current = TestSuiteDetails.objects.select_for_update().filter(id=detail.id).first()
+            if current is None or current.retry != detail.retry:
+                return None
             result = cls.create_latest_result(
                 detail, result_data, source_snapshot=source_snapshot,
                 prepared_result_payload=prepared,
             )
-            cls.save_detail_summary(detail, summary_data, summary_meta)
+            cls._save_locked_summary(current, summary_data, summary_meta)
+            detail.summary_data = current.summary_data
             return result
 
         return ExecutionResultService.run_write_transaction(persist)
@@ -284,7 +289,9 @@ class TestSuiteExecutionResultService:
                 normalized_result = cls.normalize_detail_result_data(item, raw_result_data)
                 result_data = cls.build_summary_data(item, normalized_result)
                 snapshot_meta = cls.extract_api_snapshot_meta(raw_result_data)
-                cls.save_detail_summary_by_id(item.get('id'), result_data, snapshot_meta)
+                cls.save_detail_summary_by_id(
+                    item.get('id'), result_data, snapshot_meta, expected_attempt=item.get('retry'),
+                )
             result_data = cls.ensure_api_warning_results(item, result_data, None, summary_only=True)
             item.pop('result_data', None)
             item.pop('summary_data', None)
@@ -301,8 +308,11 @@ class TestSuiteExecutionResultService:
         payload_map = payload_map if payload_map is not None else cls.result_map(detail_ids)
         for item in data_list:
             payload = payload_map.get(item.get('id'))
+            _, saved_meta = cls.unpack_summary_data(item.get('summary_data'))
             result_data = ExecutionResultService.load_result_data(payload) if payload else None
             snapshot_meta = cls.extract_api_snapshot_meta(result_data)
+            if isinstance(saved_meta, dict) and 'execution_control' in saved_meta:
+                snapshot_meta = {**(snapshot_meta or {}), 'execution_control': saved_meta['execution_control']}
             result_data = cls.normalize_detail_result_data(item, result_data)
             result_data = cls.ensure_api_warning_results(item, result_data, payload)
             item.pop('result_data', None)
@@ -482,15 +492,37 @@ class TestSuiteExecutionResultService:
 
     @classmethod
     def save_detail_summary(cls, detail: TestSuiteDetails, summary_data: Any, summary_meta: dict | None = None):
-        detail.summary_data = cls.pack_summary_data(summary_data, summary_meta)
+        def persist():
+            current = TestSuiteDetails.objects.select_for_update().filter(id=detail.id).first()
+            if current is None or current.retry != detail.retry:
+                return False
+            cls._save_locked_summary(current, summary_data, summary_meta)
+            detail.summary_data = current.summary_data
+            return True
+        return ExecutionResultService.run_write_transaction(persist)
+
+    @classmethod
+    def _save_locked_summary(cls, detail, summary_data, summary_meta):
+        # 只能信任锁内的最新元数据；进度写入方持有的旧对象可能早于阻塞/终止决定。
+        _, previous_meta = cls.unpack_summary_data(detail.summary_data)
+        meta = dict(summary_meta or {})
+        for key in ('execution_control', 'termination', 'worker_owner'):
+            if isinstance(previous_meta, dict) and key in previous_meta:
+                meta[key] = previous_meta[key]
+        detail.summary_data = cls.pack_summary_data(summary_data, meta)
         detail.save(update_fields=['summary_data', 'update_time'])
 
     @classmethod
-    def save_detail_summary_by_id(cls, detail_id: int, summary_data: Any, summary_meta: dict | None = None):
-        TestSuiteDetails.objects.filter(id=detail_id).update(
-            summary_data=cls.pack_summary_data(summary_data, summary_meta),
-            update_time=timezone.now(),
-        )
+    def save_detail_summary_by_id(
+            cls, detail_id: int, summary_data: Any, summary_meta: dict | None = None, *, expected_attempt: int | None,
+    ):
+        def persist():
+            detail = TestSuiteDetails.objects.select_for_update().filter(id=detail_id).first()
+            if detail is None or expected_attempt is None or detail.retry != expected_attempt:
+                return False
+            cls._save_locked_summary(detail, summary_data, summary_meta)
+            return True
+        return ExecutionResultService.run_write_transaction(persist)
 
     @classmethod
     def build_summary_data(cls, detail: TestSuiteDetails | dict, result_data: Any):
@@ -716,6 +748,7 @@ class TestSuiteExecutionResultService:
                     test_suite_detail_id,
                     summary_data,
                     cls.extract_api_snapshot_meta(fixed_result_data),
+                    expected_attempt=detail.get('retry'),
                 )
         else:
             summary_data = cls.build_summary_data(detail, fixed_result_data)
@@ -723,6 +756,7 @@ class TestSuiteExecutionResultService:
                 test_suite_detail_id,
                 summary_data,
                 cls.extract_api_snapshot_meta(fixed_result_data),
+                expected_attempt=detail.get('retry'),
             )
         return fixed_result_data
 

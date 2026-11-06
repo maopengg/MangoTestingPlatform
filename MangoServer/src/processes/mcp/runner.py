@@ -33,6 +33,7 @@ def run_mcp_service(host: str, port: int, workers: int = 1):
 
 
 def _heartbeat_loop(host: str, port: int, workers: int, stop_event: Event):
+    from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
     while not stop_event.is_set():
         ServiceHeartbeatService.beat(
             RuntimeServiceName.MCP,
@@ -40,6 +41,8 @@ def _heartbeat_loop(host: str, port: int, workers: int, stop_event: Event):
                 'host': host,
                 'port': port,
                 'workers': workers,
+                # 多 worker 父进程不能证明子进程连接池健康，明确返回未核实。
+                'datasource_maintenance_healthy': DatasourcePoolMaintenance.healthy() if workers == 1 else None,
             },
         )
         stop_event.wait(15)

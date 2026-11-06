@@ -1,6 +1,8 @@
 import logging
 import uuid
 from collections.abc import Callable
+from contextlib import ExitStack
+from time import perf_counter
 
 from src.apps.data_factory.exceptions import (
     DATA_FACTORY_CONFIG_INVALID,
@@ -12,9 +14,10 @@ from src.apps.data_factory.models import (
     DataFactoryExecution,
 )
 from ..datasource import DataFactoryDatasource, is_missing_value
-from ..discover import DataFactoryDiscover
 from ..factory_sql_execution import DataFactorySqlExecutionService
 from ..type_cast import DataFactoryTypeCast
+from ..execution_metadata import DataFactoryExecutionMetadata
+from ..datasource_wait import DatasourceWaitService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class DataFactoryRunnerPersistenceMixin:
     @classmethod
+    @DataFactorySqlExecutionService.source_for('create')
     def insert(
             cls,
             entity,
@@ -36,34 +40,47 @@ class DataFactoryRunnerPersistenceMixin:
             execution=None,
             template=None,
             alias: str | None = None,
+            prepare_payload: Callable[[], dict] | None = None,
     ) -> dict:
         try:
-            from sqlalchemy import MetaData, Table, insert, select
+            from sqlalchemy import insert, select
         except ImportError as error:
             raise DataFactoryError(DATA_FACTORY_RUNNER_PARTS_PERSISTENCE_SQL_INVALID) from error
 
+        preparation_started = perf_counter()
+        wait_started = DatasourceWaitService.elapsed()
         engine, managed_by_worker = DataFactoryDatasource.get_worker_engine(database)
         audit_handle = None
         try:
-            metadata = MetaData()
-            table = Table(entity.table_name, metadata, schema=database.schema_name or None, autoload_with=engine)
-            primary_columns = list(table.primary_key.columns)
-            actual_primary_keys = [column.name for column in primary_columns]
-            if len(actual_primary_keys) != 1 or entity.primary_key != actual_primary_keys[0]:
-                actual_text = "、".join(actual_primary_keys) or "未发现主键"
-                raise DataFactoryError(
-                    DATA_FACTORY_CONFIG_INVALID,
-                    value=(
+            from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+            with ExitStack() as transaction_scope:
+                # 小批预付；结构与额外身份校验按真实 SQL 计费，不拒绝合法事务。
+                transaction_scope.enter_context(Governor.transaction_budget(database, 2))
+                connection = transaction_scope.enter_context(engine.connect())
+                table, generated_column_kinds = DataFactoryExecutionMetadata.resolve(
+                    entity, database, engine, connection=connection)
+                primary_columns = list(table.primary_key.columns)
+                actual_primary_keys = [column.name for column in primary_columns]
+                if len(actual_primary_keys) != 1 or entity.primary_key != actual_primary_keys[0]:
+                    actual_text = "、".join(actual_primary_keys) or "未发现主键"
+                    raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(
                         getattr(entity, "name", entity.table_name),
                         f"配置清理主键 {entity.primary_key or '未配置'} 与真实主键 {actual_text} 不一致",
-                    ),
-                )
-            statement = insert(table).values(**payload)
-            insert_sql, insert_sql_params = cls.compile_insert_sql(statement, engine.dialect)
-            with engine.begin() as connection:
-                generated_column_kinds = DataFactoryDiscover.get_mysql_generated_column_kinds(
-                    connection, table.name, table.schema,
-                )
+                    ))
+                if prepare_payload is not None:
+                    payload = prepare_payload()
+                statement = insert(table).values(**payload)
+                insert_sql, insert_sql_params = cls.compile_insert_sql(statement, engine.dialect)
+                # 结构读取可能触发 SQLAlchemy autobegin；只读准备完成后结束它，
+                # 业务写入仍有独立事务，失败时不能提交任何业务行。
+                if connection.in_transaction():
+                    connection.rollback()
+                transaction_scope.enter_context(connection.begin())
+                from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+                transaction_scope.enter_context(SqlExecutionAuditService.source({
+                    'factory_preparation_ms': round((perf_counter() - preparation_started) * 1000, 2),
+                    'factory_preparation_wait_ms': round(max(0, DatasourceWaitService.elapsed() - wait_started) * 1000, 2),
+                }))
 
                 def execute_insert():
                     result = connection.execute(statement)

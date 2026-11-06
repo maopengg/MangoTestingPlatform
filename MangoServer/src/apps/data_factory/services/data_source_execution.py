@@ -86,62 +86,44 @@ class DataSourceExecutionService:
             is_write = cls.is_write_operation(db_type, operation_config)
             DataFactoryDatasourceResolver.require_binding_permission(binding, write=is_write)
             started_at = perf_counter()
-            audit_handle = None
-            if db_type in cls.EXECUTABLE_RELATIONAL_TYPES:
-                from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
-                sql = cls.normalize_text_operation(operation_config, 'SQL语句')
-                audit_handle = SqlExecutionAuditService.start(
-                    binding=binding,
-                    project_product_id=project_product_id,
-                    test_env=test_env,
-                    sql=sql,
-                    parameters=parameters,
-                    source_context=source_context or {
-                        'source_type': 'data_source_runtime',
-                        'source_stage': 'unclassified',
-                        'source_id': datasource_alias_id,
-                    },
-                    request_id=request_id,
-                    started_monotonic=started_at,
+            from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+            audit_handle = SqlExecutionAuditService.start(
+                binding=binding,
+                database=DatasourceTargetService.resolve(binding),
+                project_product_id=project_product_id,
+                test_env=test_env,
+                sql=operation_config,
+                parameters=parameters,
+                source_context=source_context or {
+                    'source_type': 'data_source_runtime',
+                    'source_stage': 'execute',
+                    'source_id': datasource_alias_id,
+                },
+                request_id=request_id,
+                started_monotonic=started_at,
+            )
+            if audit_handle.existing:
+                return SqlExecutionAuditService.replay_result(audit_handle)
+            started_at = perf_counter()
+            try:
+                with SqlExecutionAuditService.scope(audit_handle):
+                    result = cls.execute_backend(binding, operation_config, is_write, parameters)
+            except Exception as error:
+                SqlExecutionAuditService.finish_failure(
+                    audit_handle, error, round((perf_counter() - started_at) * 1000, 2),
                 )
-                if audit_handle.existing:
-                    return SqlExecutionAuditService.replay_result(audit_handle)
-                try:
-                    result = cls.execute_sql(
-                        DatasourceTargetService.resolve(binding),
-                        operation_config,
-                        is_write=is_write,
-                        parameters=parameters,
-                    )
-                except Exception as error:
-                    if audit_handle:
-                        SqlExecutionAuditService.finish_failure(
-                            audit_handle, error, round((perf_counter() - started_at) * 1000, 2),
-                        )
-                    raise
-            elif db_type == DataSourceTypeEnum.REDIS.value:
-                result = DataFactoryDatasourceQuery.execute_redis(
-                    DatasourceTargetService.resolve(binding),
-                    operation_config,
-                    allow_query=True,
-                    allow_write=True,
-                )
-            elif db_type == DataSourceTypeEnum.ELASTICSEARCH.value:
-                result = cls.execute_elasticsearch(DatasourceTargetService.resolve(binding), operation_config)
-            else:
-                type_name = DataSourceTypeEnum.obj().get(db_type, db_type)
-                raise DataFactoryError(DATA_SOURCE_OPERATION_DATA_SOURCE_TYPE_EXECUTION_UNSUPPORTED, value=(type_name,))
+                raise
             duration_ms = round((perf_counter() - started_at) * 1000, 2)
-            if audit_handle:
-                SqlExecutionAuditService.finish_success(audit_handle, result, duration_ms)
+            SqlExecutionAuditService.finish_success(audit_handle, result, duration_ms)
+            duration_ms = audit_handle.record.duration_ms
             return {
                 **result,
                 'datasource_alias_id': binding.datasource_alias_id,
                 'datasource_type': db_type,
                 'test_env': test_env,
                 'duration_ms': duration_ms,
-                'sql_execution_id': audit_handle.record.id if audit_handle else None,
-                'is_slow': audit_handle.record.is_slow if audit_handle else False,
+                'sql_execution_id': audit_handle.record.id,
+                'is_slow': audit_handle.record.is_slow,
             }
         except (MangoServerError, MangoToolsError):
             raise
@@ -151,6 +133,26 @@ class DataSourceExecutionService:
                 error,
             ) if 'binding' in locals() else str(error)
             raise DataFactoryError(DATA_SOURCE_OPERATION_DATABASE_EXECUTION_FAILED, value=(safe_message,)) from error
+
+    @classmethod
+    def execute_backend(cls, binding, operation_config, is_write, parameters):
+        db_type = binding.database.db_type
+        if db_type in cls.EXECUTABLE_RELATIONAL_TYPES:
+            result = cls.execute_sql(
+                DatasourceTargetService.resolve(binding), operation_config,
+                is_write=is_write, parameters=parameters,
+            )
+        elif db_type == DataSourceTypeEnum.REDIS.value:
+            result = DataFactoryDatasourceQuery.execute_redis(
+                DatasourceTargetService.resolve(binding), operation_config,
+                allow_query=True, allow_write=True,
+            )
+        elif db_type == DataSourceTypeEnum.ELASTICSEARCH.value:
+            result = cls.execute_elasticsearch(DatasourceTargetService.resolve(binding), operation_config)
+        else:
+            type_name = DataSourceTypeEnum.obj().get(db_type, db_type)
+            raise DataFactoryError(DATA_SOURCE_OPERATION_DATA_SOURCE_TYPE_EXECUTION_UNSUPPORTED, value=(type_name,))
+        return result
 
     @staticmethod
     def normalize_id(value, name: str) -> int:
@@ -186,6 +188,8 @@ class DataSourceExecutionService:
             parameters: dict | None = None,
     ) -> dict:
         sql = cls.normalize_text_operation(operation_config, 'SQL语句')
+        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+        DatasourceCostService.sql(sql)
         try:
             from sqlalchemy import text
         except ImportError as error:
@@ -196,6 +200,8 @@ class DataSourceExecutionService:
             engine = DataFactoryDatasource.create_engine(database)
             context = engine.begin() if is_write else engine.connect()
             with context as connection:
+                if not is_write:
+                    connection = connection.execution_options(stream_results=True)
                 result = (
                     connection.execute(text(sql), parameters)
                     if parameters
@@ -205,15 +211,19 @@ class DataSourceExecutionService:
                 rows = []
                 truncated = False
                 if result.returns_rows:
+                    max_rows = cls.max_rows()
                     rows = [
                         DatabaseConnection.convert_datetime_to_string(dict(row._mapping))
-                        for row in result.fetchmany(cls.max_rows() + 1)
+                        for row in result.fetchmany(max_rows + 1)
                     ]
-                    truncated = len(rows) > cls.max_rows()
-                    rows = rows[:cls.max_rows()]
+                    truncated = len(rows) > max_rows
+                    if truncated:
+                        DatasourceCostService.abort_result(connection, result, limit=max_rows,
+                                                          observed_rows=len(rows), is_write=is_write)
+                # MySQL 流式查询的 rowcount 可能是 UINT64_MAX（未知），不是影响行数。
                 affected_rows = (
                     result.rowcount
-                    if result.rowcount is not None and result.rowcount >= 0
+                    if not result.returns_rows and result.rowcount is not None and result.rowcount >= 0
                     else 0
                 )
             return {

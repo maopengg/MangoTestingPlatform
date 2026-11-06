@@ -1,5 +1,8 @@
 from mangotools.enums import StatusEnum
+from django.db import transaction
 
+from src.apps.task_center.constants import TASK_FINE_TUNING_FIELDS
+from src.apps.task_center.models import Tasks
 from src.apps.task_center.enums.execution import AutomationExecutionScopeEnum
 from src.apps.task_center.exceptions import (
     TASK_SCHEDULE_CASE_REQUIRED,
@@ -12,6 +15,7 @@ from src.apps.task_center.exceptions import (
     SYSTEM_TASK_CATEGORY_MINIMUM_REQUIRED,
     SYSTEM_TASK_CATEGORY_MODULE_TASK_EXECUTION_CREATE_NOT_ALLOWED,
     TaskCenterError,
+    SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED,
 )
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.task_center.services.selection.case_binding import TaskCaseBindingService
@@ -31,6 +35,27 @@ class ScheduledTaskSaveValidationService:
             TaskCenterError,
         )
         return normalized
+
+    @staticmethod
+    def validate_group_input(data):
+        if set(data) - TASK_FINE_TUNING_FIELDS - {'id', 'update_user'}:
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED)
+
+    @classmethod
+    def validate_group_update(cls, attrs, instance):
+        cls.validate_group_input(attrs)
+        return attrs
+
+    @classmethod
+    @transaction.atomic
+    def update_group_task(cls, instance, attrs):
+        current = Tasks.objects.select_for_update().get(pk=instance.pk)
+        attrs = cls.validate_group_update(dict(attrs), current)
+        for field, value in attrs.items():
+            setattr(current, field, value)
+        # 与任务组同步并发时只写精细化字段，不能用旧实例回写环境、调度、通知等公共配置。
+        current.save(update_fields=[*attrs, 'update_time'])
+        return current
 
     @classmethod
     def validate(cls, attrs: dict, instance=None) -> dict:

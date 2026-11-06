@@ -95,6 +95,9 @@ def render_k8s(root,v):
             vols=[runtime];mounts=[{'name':'runtime','mountPath':'/app/runtime'}]
             if svc.get('command'):c['command']=shlex.split(svc['command']) if isinstance(svc['command'],str) else svc['command']
             else:c['command']=['uvicorn','src.asgi:application','--host','0.0.0.0','--port','8000','--workers',v['UVICORN_WORKERS'],'--no-access-log']
+            if key=='scheduler_service':
+                probe={'exec':{'command':['python','manage.py','check_scheduler']},'periodSeconds':15,'timeoutSeconds':10}
+                c['readinessProbe']=probe;c['startupProbe']={**probe,'failureThreshold':12}
             if key in {'mango_server','realtime_service','mcp_service'}:
                 port=8000 if key=='mango_server' else 8011 if key=='realtime_service' else 8010
                 c['ports']=[{'containerPort':port}];foundation.append(service(name,port))

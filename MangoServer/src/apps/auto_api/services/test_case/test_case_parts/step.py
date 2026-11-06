@@ -154,6 +154,12 @@ class ApiTestCaseStepMixin:
             case_detailed.status = TaskEnum.PROCEED.value
             self.save_case_detailed_runtime_state(case_detailed)
             res: tuple[int, str] | None = self.detailed_parameter(case_detailed, inherited_gray_configs)
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            if DatasourceInfrastructureService.current():
+                case_detailed.status = TaskEnum.PROCEED.value
+                case_detailed.error_message = DatasourceInfrastructureService.summary()
+                self.save_case_detailed_runtime_state(case_detailed)
+                return TaskEnum.PROCEED.value, case_detailed.error_message
             if res:
                 case_detailed.status = res[0]
                 case_detailed.error_message = res[1] if len(res) > 1 else None

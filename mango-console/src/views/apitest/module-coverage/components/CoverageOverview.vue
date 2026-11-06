@@ -20,7 +20,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>模块扫描进度</h2><p>查看项目/产品下全部叶子模块的完整扫描进度，不随左侧模块选择变化</p></div
+                    ><h2>① 模块接口扫描进度</h2><p>完整接口清单上传生效即完成；项目/产品级，不随左侧模块变化</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -30,7 +30,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>接口录入状态</h2><p>查看扫描发现的接口中，已正确录入并绑定接口管理的比例</p></div
+                    ><h2>② 接口分析进度</h2><p>业务全景图和场景分析；排除接口不计入，暂缓单列</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -49,26 +49,7 @@
               <section class="mango-section-card mango-coverage-overview__panel">
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
-                    ><h2>接口覆盖率</h2><p>查看接口的 Case 覆盖情况，全部目标场景有效完成才算覆盖；排除覆盖的接口不参与统计</p><p v-if="data?.summary.excluded_interface_count">已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入覆盖率分母</p></div
-                  ></header
-                >
-                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
-                <div
-                  v-if="loading || data?.summary.interface_count"
-                  ref="coverageChart"
-                  class="mango-coverage-overview__chart"
-                  role="img"
-                  :aria-label="coverageDescription"
-                ></div>
-                <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
-                  >暂无已发现接口</div
-                >
-                </MangoPanelSpin>
-              </section>
-              <section class="mango-section-card mango-coverage-overview__panel">
-                <header class="mango-section-title"
-                  ><div class="mango-section-title__main"
-                    ><h2>用例自动化进度</h2><p>查看扫描产出 Case 的自动化覆盖状态：已完成、未完成、暂不处理；执行失败不影响覆盖完成状态</p></div
+                    ><h2>③ 用例自动化进度</h2><p>有效自动化场景完成情况；暂不处理单列</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -84,13 +65,32 @@
                 >
                 </MangoPanelSpin>
               </section>
+              <section class="mango-section-card mango-coverage-overview__panel">
+                <header class="mango-section-title"
+                  ><div class="mango-section-title__main"
+                    ><h2>④ 接口覆盖率</h2><p>全部目标场景有效完成才算覆盖；暂不处理单列</p><p v-if="data?.summary.excluded_interface_count">已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入分母</p></div
+                  ></header
+                >
+                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
+                <div
+                  v-if="loading || data?.summary.interface_count"
+                  ref="coverageChart"
+                  class="mango-coverage-overview__chart"
+                  role="img"
+                  :aria-label="coverageDescription"
+                ></div>
+                <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
+                  >暂无已发现接口</div
+                >
+                </MangoPanelSpin>
+              </section>
             </div>
             </div>
             <section class="mango-section-card mango-coverage-overview__panel">
               <header class="mango-section-title mango-coverage-overview__toolbar">
                 <div class="mango-section-title__main"
                   ><h2>模块进度</h2
-                  ><p>{{ loading && !data ? '正在加载模块进度…' : `当前 ${filtered.length} 个模块，点击录入或自动化进度查看明细` }}</p></div
+                  ><p>{{ loading && !data ? '正在加载模块进度…' : `当前 ${filtered.length} 个模块，点击分析或自动化进度查看明细` }}</p></div
                 >
                 <div class="mango-section-actions mango-coverage-overview__filters">
                   <a-input
@@ -100,17 +100,10 @@
                     allow-clear
                     size="small"
                   />
-                  <a-radio-group v-model="gapFilter" type="button" size="small">
-                    <a-radio
-                      v-for="option in overviewFilters"
-                      :key="option.value"
-                      :value="option.value"
-                      >{{ option.label }}</a-radio
-                    >
-                  </a-radio-group>
+                  <a-select v-model="gapFilter" :options="overviewFilters" class="mango-coverage-overview__filter" size="small" aria-label="模块进度筛选" />
                 </div>
               </header>
-              <div class="mango-coverage-overview__table">
+              <div ref="moduleTableRegion" class="mango-coverage-overview__table" @wheel="handleModuleTableWheel">
                 <StickyHorizontalTable :scroll-x="overviewModuleScrollX">
                   <a-table
                     class="mango-native-scroll-table"
@@ -125,9 +118,9 @@
                   >
                     <template #scan="{ record }">{{ scanLabel(record) }}</template>
                     <template #entry="{ record }">
-                      <button class="mango-coverage-overview__progress" :aria-label="`查看${record.name}的接口录入明细`" @click="drill(record, 'interfaces')">
-                        <span><b>{{ rate(record.binding_rate) }}</b><small>{{ record.bound_count }} / {{ record.interface_count }}</small></span>
-                        <a-progress :percent="(record.binding_rate || 0) / 100" color="var(--m-chart-1)" :show-text="false" size="small" />
+                      <button class="mango-coverage-overview__progress" :aria-label="`查看${record.name}的接口分析明细`" @click="drill(record, 'interfaces')">
+                        <span><b>{{ rate(record.analysis_rate) }}</b><small>{{ record.analyzed_interface_count }} / {{ record.interface_count }}</small></span>
+                        <a-progress :percent="(record.analysis_rate || 0) / 100" color="var(--m-chart-1)" :show-text="false" size="small" />
                       </button>
                     </template>
                     <template #automation="{ record }">
@@ -211,7 +204,7 @@
   import { usePagination } from '@/hooks/table'
   import type { CoverageOverview, CoverageModuleOverview } from '@/api/apitest/module-coverage'
   import {
-    getAutomationStatusData, getInterfaceCoverageData, overviewFilters,
+    getAutomationStatusData, getInterfaceCoverageData, getInterfaceAnalysisData, overviewFilters,
     overviewModuleColumns, overviewModuleScrollX, overviewModuleScrollY,
   } from '../config'
 
@@ -220,11 +213,22 @@
   const props = defineProps<{ data?: CoverageOverview; loading: boolean; error: boolean }>()
   const emit = defineEmits<{
     (event: 'retry'): void
-    (event: 'drill', row: CoverageModuleOverview, tab: string): void
+    (event: 'drill', row: CoverageModuleOverview, tab: string, query?: Record<string, string[]>): void
     (event: 'interface', id: number): void
   }>()
   const keyword = ref('')
   const gapFilter = ref('all')
+  const moduleTableRegion = ref<HTMLElement>()
+  function handleModuleTableWheel(event: WheelEvent) {
+    if (event.ctrlKey || !event.cancelable || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+    const body = moduleTableRegion.value?.querySelector<HTMLElement>('.arco-table-body')
+    if (!body || body.scrollHeight <= body.clientHeight) return
+    // 表头等区域不在表体滚动链中，纵向滚轮仍交给同一表体；表体内部保持原生滚动。
+    if (event.target instanceof Node && body.contains(event.target)) return
+    const unit = event.deltaMode === 2 ? body.clientHeight : event.deltaMode === 1 ? scaleDensityPixels(20) : 1
+    event.preventDefault()
+    body.scrollTop += event.deltaY * unit
+  }
   const pagination = usePagination(() => {})
   const scanChart = ref<HTMLElement>()
   const entryChart = ref<HTMLElement>()
@@ -235,17 +239,11 @@
     `以纳入覆盖接口总数为分母，已排除接口不计入，暂不处理不算已覆盖。${coverageData.value
       .map((item) => `${item.name} ${item.value} 个接口`).join('，')}`
   )
-  const entryData = computed(() => {
-    const summary = props.data?.summary
-    return [
-      { name: '已正确录入', value: summary?.bound_count || 0 },
-      { name: '待录入/绑定异常', value: Math.max(0, (summary?.interface_count || 0) - (summary?.bound_count || 0)) },
-    ]
-  })
+  const entryData = computed(() => props.data ? getInterfaceAnalysisData(props.data.summary) : [])
   const entryDescription = computed(() =>
     entryData.value.map((item) => `${item.name} ${item.value} 个接口`).join('，')
   )
-  const projectScanSummary = computed(() => props.data?.project_scan_summary || props.data?.summary)
+  const projectScanSummary = computed(() => props.data?.project_inventory_summary)
   const statusData = computed(() => (props.data ? getAutomationStatusData(props.data.summary) : []))
   const statusTotal = computed(() => statusData.value.reduce((sum, item) => sum + item.value, 0))
   const statusPercent = (value: number) =>
@@ -264,8 +262,15 @@
           .includes(keyword.value.toLowerCase())
       )
         return false
-      if (gapFilter.value === 'scan') return !row.scan_completed && row.is_leaf
-      if (gapFilter.value === 'entry') return row.bound_count < row.interface_count
+      if (gapFilter.value === 'scan') return !row.inventory_completed && row.is_leaf
+      if (gapFilter.value === 'entry') return row.pending_analysis_count > 0
+      if (gapFilter.value === 'analysis_completed') return row.analyzed_interface_count > 0
+      if (gapFilter.value === 'analysis_gap') return row.analysis_gap_count > 0
+      if (gapFilter.value === 'analysis_deferred') return row.deferred_analysis_count > 0
+      if (gapFilter.value === 'covered') return row.covered_interface_count > 0
+      if (gapFilter.value === 'partial') return row.partial_interface_count > 0
+      if (gapFilter.value === 'uncovered') return row.uncovered_interface_count > 0
+      if (gapFilter.value === 'deferred') return row.deferred_interface_count > 0
       if (gapFilter.value === 'case') return row.incomplete_interface_count > 0
       return true
     })
@@ -278,11 +283,16 @@
   )
   watch(filtered, (rows) => pagination.setTotalSize(rows.length), { immediate: true })
   function scanLabel(row: CoverageModuleOverview) {
-    if (row.scan_completed) return `完整扫描已生效 #${row.applied_scan_id}`
-    return row.latest_scan_id ? `尚无完整扫描基线 · 最近 #${row.latest_scan_id}` : '未扫描'
+    if (row.inventory_completed) return `接口清单已生效 #${row.inventory_scan_ids.join('、#')}`
+    return row.latest_scan_id ? `接口盘点未完成 · 最近 #${row.latest_scan_id}` : '未盘点'
   }
   function drill(row: CoverageModuleOverview, tab: string) {
-    emit('drill', row, tab)
+    const analysis = entryData.value.find(item => item.filter === gapFilter.value)
+    const query: Record<string, string[]> = {}
+    if (tab === 'interfaces' && analysis) query.analysis_statuses = [analysis.status]
+    if (tab === 'interfaces' && ['covered', 'partial', 'uncovered', 'deferred'].includes(gapFilter.value))
+      query.coverage_statuses = [gapFilter.value]
+    emit('drill', row, tab, query)
   }
   const token = (name: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -366,8 +376,8 @@
     if (scanChart.value) {
       const chart = useEcharts(scanChart.value)
       const rows = [
-        { name: '已完整扫描', value: projectScanSummary.value?.scanned_count || 0 },
-        { name: '未完整扫描', value: projectScanSummary.value?.unscanned_count || 0 },
+        { name: '已盘点', value: projectScanSummary.value?.inventoried_count || 0 },
+        { name: '未盘点', value: projectScanSummary.value?.uninventoried_count || 0 },
       ]
       chart.setOption(
         {
@@ -380,8 +390,8 @@
             {
               ...donutSeries(scanChart.value, rows),
               data: [
-                { name: '已完整扫描', value: projectScanSummary.value?.scanned_count || 0 },
-                { name: '未完整扫描', value: projectScanSummary.value?.unscanned_count || 0 },
+                { name: '已盘点', value: projectScanSummary.value?.inventoried_count || 0 },
+                { name: '未盘点', value: projectScanSummary.value?.uninventoried_count || 0 },
               ],
             },
           ],
@@ -396,20 +406,21 @@
     if (entryChart.value) {
       const chart = useEcharts(entryChart.value)
       chart.setOption({
-        ...donutStyle(entryChart.value, entryData.value, '接口总数'),
+        ...donutStyle(entryChart.value, entryData.value, '分析完成率', rate(props.data.summary.analysis_rate)),
         animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         animationDuration: 280,
-        color: [token('--m-success'), token('--m-warning')],
+        color: [token('--m-success'), token('--m-warning'), token('--m-danger'), token('--m-chart-5')],
         tooltip,
         series: [{ ...donutSeries(entryChart.value, entryData.value), data: entryData.value }],
       }, true)
       chart.off('click')
       chart.on('click', (event: any) => {
-        gapFilter.value = event.dataIndex === 1 ? 'entry' : 'all'
+        gapFilter.value = entryData.value[event.dataIndex]?.filter || 'all'
       })
     }
     if (coverageChart.value) {
-      useEcharts(coverageChart.value).setOption({
+      const chart = useEcharts(coverageChart.value)
+      chart.setOption({
         ...donutStyle(coverageChart.value, coverageData.value, '接口覆盖率',
           rate(props.data.summary.interface_coverage_rate)),
         animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -418,6 +429,10 @@
         tooltip,
         series: [{ ...donutSeries(coverageChart.value, coverageData.value), data: coverageData.value }],
       }, true)
+      chart.off('click')
+      chart.on('click', (event: any) => {
+        gapFilter.value = ['covered', 'partial', 'uncovered', 'deferred'][event.dataIndex] || 'all'
+      })
     }
     if (statusChart.value) {
       useEcharts(statusChart.value).setOption(
@@ -552,6 +567,9 @@
     width: auto;
     min-width: 0;
   }
+  .mango-coverage-overview__filter {
+    width: 180px;
+  }
   .mango-coverage-overview__table {
     display: flex;
     flex-direction: column;
@@ -560,7 +578,8 @@
     min-height: 0;
   }
   .mango-coverage-overview__table :deep(.arco-table-body) {
-    overscroll-behavior: contain;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: contain;
   }
   .mango-coverage-overview__progress small,
   .mango-coverage-overview__gap small {

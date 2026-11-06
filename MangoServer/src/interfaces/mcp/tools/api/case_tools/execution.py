@@ -149,14 +149,15 @@ def register_case_execution_tools(mcp):
             case_ids: list[int],
             execution_name: str,
             test_env_id: int,
-            execution_version: Literal["editing", "published"],
+            execution_version: Literal["editing", "prepublished", "published"],
             api_concurrency_limit: int | None = None,
     ) -> dict:
         """批量执行 API case 并生成测试报告。
 
         test_env_id 必须显式传入，不使用用户默认环境。execution_name 是本次执行名称，
-        写入测试报告。execution_version 必须选择 editing 或 published：
+        写入测试报告。execution_version 必须选择 editing、prepublished 或 published：
         editing 会统一冻结并执行所有 Case 的当前编辑态，不改变发布状态；
+        prepublished 固定执行待审核修订；存在没有预发布候选的 Case 时整体拒绝，不回退编辑态；
         published 会统一执行当前发布版本，只要存在尚未发布的 Case 就整体拒绝创建报告。
         api_concurrency_limit 可不传，
         不传时使用当前平台 API 最大执行容量，传入时必须为 1 到平台最大容量之间的整数。

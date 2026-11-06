@@ -160,7 +160,8 @@ class DataFactoryDatasourceAliasViews(ViewSet):
             test_env=operation['test_env'],
             operation_config=request.data.get('operation_config'),
             confirm_write=request.data.get('confirm_write', False),
-            source_context=request.data.get('source_context'),
+            source_context={**(request.data.get('source_context') or {}),
+                            'operator_id': getattr(self._user(request), 'id', None)},
             request_id=request.data.get('request_id'),
         )
         return ResponseData.success(RESPONSE_MSG_0256, result)

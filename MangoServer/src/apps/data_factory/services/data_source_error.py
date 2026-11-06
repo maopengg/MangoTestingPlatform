@@ -23,6 +23,7 @@ from src.apps.data_factory.exceptions import (
     DATA_SOURCE_REQUEST_SERVICE_INVALID,
     DATA_SOURCE_JSON_PARSE_INVALID,
     DATA_SOURCE_ELASTICSEARCH_NETWORK_FAILED,
+    DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT,
     DATA_SOURCE_REQUEST_FAILED,
     DataFactoryError,
 )
@@ -142,7 +143,16 @@ class DataSourceErrorService:
         raise DataFactoryError(message, value=values) from error
 
     @classmethod
-    def raise_elasticsearch_transport_error(cls, database, error: Exception) -> None:
+    def raise_elasticsearch_transport_error(cls, database, error: Exception, *, timeout=None) -> None:
+        from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+
+        if SqlExecutionAuditService.is_timeout(error):
+            from src.apps.test_center.services.data_source import DataSourceConnectionService
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            failure = DataFactoryError(DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT)
+            seconds = DataSourceConnectionService.timeout_seconds() if timeout is None else timeout
+            failure.msg += f'。当前请求超时配置为 {seconds} 秒'
+            raise DatasourceInfrastructureService.annotate(failure, database_id=getattr(database, 'id', None)) from error
         detail = cls.safe_detail(database, error)
         if isinstance(error, json.JSONDecodeError):
             message = DATA_SOURCE_JSON_PARSE_INVALID

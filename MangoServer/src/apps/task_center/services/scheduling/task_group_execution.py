@@ -174,6 +174,8 @@ class ScheduledTaskGroupExecutionService:
         if fire is None:
             return False
         suite_status = TestSuite.objects.filter(id=test_suite_id).values_list('status', flat=True).first()
+        if suite_status not in cls.TERMINAL_SUITE_STATUSES:
+            return True
         now = timezone.now()
         TestSuite.objects.filter(id=test_suite_id).update(
             is_notice=TestSuiteNoticeEnum.EXPIRED.value,
@@ -265,6 +267,10 @@ class ScheduledTaskGroupExecutionService:
         fires = list(ScheduleFire.objects.filter(group_execution=execution)
                      .select_related('test_suite', 'task').order_by('id'))
         suite_ids = [fire.test_suite_id for fire in fires if fire.test_suite_id]
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.blocked_suites(suite_ids).exists():
+            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_INVALID,
+                                  value=('报告中仍有平台原因导致的未完成场景，暂不能发送完整回归结论。请查看报告的未完成场景及具体原因，处理后再执行验证',))
         # 触发记录可能已结束，但原报告中的失败项正在重试；以当前明细为准。
         if (
                 len(fires) < execution.expected_count
@@ -312,6 +318,12 @@ class ScheduledTaskGroupExecutionService:
             .select_related('test_suite', 'task')
             .order_by('id')
         )
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.blocked_suites([fire.test_suite_id for fire in fires
+                                                         if fire.test_suite_id]).exists():
+            execution.status = TaskEnum.PROCEED.value
+            execution.save(update_fields=['status', 'update_time'])
+            return None
         completed = sum(1 for fire in fires if cls._fire_completed(fire))
         execution.completed_count = completed
         if not fires:

@@ -167,7 +167,7 @@ def register_system_variable_tools(mcp):
         if not normalized:
             return fail("请输入需要测试的方法", "TEST_DATA_EXPRESSION_EMPTY")
         if not re.search(r"\((.*?)\)", normalized):
-            return fail("变量表达式必须包含方法调用，例如 ${{random_string(8)}}", "INVALID_TEST_DATA_EXPRESSION")
+            return fail("变量表达式必须包含方法调用，例如 ${{str_random_string(8)}}", "INVALID_TEST_DATA_EXPRESSION")
         try:
             value = ObtainTestData().regular(normalized)
         except MangoServerError as error:

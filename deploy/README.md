@@ -19,6 +19,41 @@ sh deploy.sh --build
 已有数据库必须沿用原数据库密码；修改 MYSQL_PASSWORD 不会修改 MySQL 中的密码。
 不要删除配置后重新生成密码或删除数据库卷来解决连接错误。
 
+## 数据源性能治理版本的部署检查
+
+部署入口和操作步骤不变：Compose 仍运行 `sh deploy.sh`，K8s 仍使用既有 `.env` 和部署入口，GitLab 仍走原镜像构建、配置仓库更新和 Argo 同步流程。本次只增加自动校验，不自动生成迁移、不清理历史业务数据。
+
+- 后端 Dockerfile 从 `requirements/master.txt → base.txt` 安装依赖，并安装本地 wheel；构建额外验证 `greenlet`、`httpx` 和 Redis RESP 解析器可导入。依赖文件变化会触发后端镜像重建，不需要单独更新 scheduler 依赖。
+- API、scheduler、Worker、MCP、realtime 使用同一个 `SERVER_IMAGE`。Compose 增加 scheduler healthcheck；本仓库 K8s 生成器增加同等 startup/readiness 探针，探针为 `python manage.py check_scheduler`。
+- 探针只读检查当前容器的新鲜心跳、清理线程最近正常轮询及 RuntimeKV 表可读性，不执行真实清理。线程连续异常或卡住不再仅凭“进程还在”判就绪；使用 readiness 而非 liveness，不因探针失败直接杀掉在途清理。
+- 本地 `start_dev_services.sh` 在 dev/dev1 也启动 scheduler，但加 `--cleanup-only`，不触发定时业务任务、系统定时维护或旧定时任务分发；test/master 保持完整调度。本地脚本会先检查新依赖，缺失时明确失败，需要按原方式安装虚拟环境依赖，不会静默带缺失依赖启动。
+
+每个 scheduler 的清理消费线程默认 2 个，可在“系统运维 → 配置管理 → 数据源性能保护”的“连接与调度”修改（1～16）。保存后下一轮调度自动应用，不修改部署参数、不重启服务；缩容等待当前阶段结束，实例总限流不变。多个 scheduler 进程各自应用同一配置。
+
+只有正式测试报告的清理进入后台队列；无报告的单次执行、调试及手动补清直接同步执行，同样保留执行控制和审计记录，不依赖 scheduler 在线。平台部署仍需启动 scheduler，以支持正式报告、定时任务及异常责任核查。同步不是跳过清理观察和最终验证。
+
+**GitLab 引用的外部配置仓库不由本仓库 K8s 生成器管理。** 首次发布此版本前，需确认该仓库的 scheduler 容器与 API 使用本次同一后端镜像，并添加以下容器就绪探针；本地修改不能自动证明外部仓库已具备这些配置：
+
+```yaml
+readinessProbe:
+  exec:
+    command: [python, manage.py, check_scheduler]
+  periodSeconds: 15
+  timeoutSeconds: 10
+startupProbe:
+  exec:
+    command: [python, manage.py, check_scheduler]
+  periodSeconds: 15
+  timeoutSeconds: 10
+  failureThreshold: 12
+```
+
+探针继承 scheduler 容器的环境；若设置 `MANGO_SERVICE_INSTANCE`，必须与 `run_scheduler --node-name` 一致。每个调度副本应使用独立实例名，避免共享心跳行。CI 工具镜像须有 `python3`，已有 Argo 登录身份须能读取应用及工作负载详情。
+
+流水线两个发布成功分支都会运行 `deploy/verify_runtime.py`，只读核对实际工作负载的镜像、更新代次/副本、scheduler 和探针；缺项、旧镜像或无读取权限均终止“成功”判定，不能只检查 API HTTP 健康。不会自动修改集群或外部配置仓库。只读核验使用 [Argo CD get-resource](https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd_app_get-resource/) 的 JSON 输出。
+
+仍需由用户生成并提交新增任务索引的迁移；部署脚本只应用仓库已有迁移，不能替代这一步。未生成索引迁移不代表新增字段缺失，但会影响队列查询性能。RuntimeKV 既有表必须已就绪，否则健康检查拒绝通过。
+
 ## MySQL 三种模式如何选择
 
 `MYSQL_MODE` 控制数据库的部署方式和连接配置来源，`DJANGO_ENV` 才负责选择 dev/test/master 运行环境。

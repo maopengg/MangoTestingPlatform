@@ -9,6 +9,9 @@ from rest_framework.viewsets import ViewSet
 from src.apps.system.enums import TestSuiteNoticeEnum
 from src.apps.task_center.models import ScheduleFire
 from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers, TestSuiteSerializersC, TestSuiteOfflineExportSerializer, TestSuiteOfflineOptionsSerializer
+from src.apps.test_center.api.serializers.execution_efficiency import ExecutionEfficiencyOptionsSerializer, ExecutionEfficiencyQuerySerializer
+from src.apps.test_center.schemas.execution_efficiency import ExecutionEfficiencyQuery
+from src.apps.test_center.services.execution_efficiency import ExecutionEfficiencyService
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
 from src.apps.test_center.services.offline_report import OfflineReportService
@@ -118,9 +121,30 @@ class TestSuiteViews(ViewSet):
     serializer_class = TestSuiteSerializers
 
     @error_response('system')
+    def execution_efficiency_options(self, request: Request):
+        serializer = ExecutionEfficiencyOptionsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        response = ResponseData.success(RESPONSE_MSG_0001, ExecutionEfficiencyService.options(
+            request.user.user_obj, **serializer.validated_data,
+        ))
+        response['Cache-Control'] = 'no-store'
+        return response
+
+    @error_response('system')
+    def execution_efficiency(self, request: Request):
+        serializer = ExecutionEfficiencyQuerySerializer.from_params(request.query_params)
+        serializer.is_valid(raise_exception=True)
+        user = request.user.user_obj
+        response = ResponseData.success(RESPONSE_MSG_0001, ExecutionEfficiencyService.query(
+            user, ExecutionEfficiencyQuery(**serializer.validated_data),
+        ))
+        response['Cache-Control'] = 'no-store'
+        return response
+
+    @error_response('system')
     def offline_options(self, request: Request):
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
-        OfflineReportSelector.require_permission(user)
+        OfflineReportSelector.require_permission(user, ('report:read', 'timing.tasks:read'))
         serializer = TestSuiteOfflineOptionsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)

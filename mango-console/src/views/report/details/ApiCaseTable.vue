@@ -29,7 +29,8 @@
           <span>{{ record.name }}</span>
         </template>
         <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
-          <a-tag :color="statusColor(record.status)" size="small">{{
+          <a-tag v-if="record.__sourceRecord?.execution_control?.phase === 'infrastructure_blocked'" color="orange" size="small">{{ infrastructureLabel(record) }}</a-tag>
+          <a-tag v-else :color="statusColor(record.status)" size="small">{{
             statusText(record.status)
           }}</a-tag>
         </template>
@@ -78,6 +79,7 @@
   import ReportDisposition from './ReportDisposition.vue'
   import ReportDispositionStatus from './ReportDispositionStatus.vue'
   import { apiColumns } from './config'
+  import { caseResultRows, reportRecords } from './report-rows'
 
   const props = defineProps<{
     cases: any[]
@@ -94,10 +96,14 @@
     (event: 'disposition-saved'): void
   }>()
 
+  function infrastructureLabel(record: any) {
+    if (record.__sourceRecord?.failure_reason === 'environment') return '环境受阻'
+    return props.enumStore?.report_execution_phase?.find((item: any) => item.key === record.__sourceRecord?.execution_control?.phase)?.title || '平台受阻'
+  }
+
   const flatRows = computed(() =>
-    (props.cases || []).flatMap((item) => {
-      const rows =
-        Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+    reportRecords(props.cases).flatMap((item) => {
+      const rows = caseResultRows(item)
       const warningRows = buildWarningRows(item)
       const displayRows = [...rows, ...warningRows]
       const rowSpan = displayRows.length
@@ -109,6 +115,8 @@
       const snapshotParameterId = snapshotCurrentStep?.parameter_id
       return displayRows.map((row: any, index: number) => ({
         ...row,
+        // 已平铺为场景行；原始 children 只留在详情中，不能被表格再次当作树节点。
+        children: undefined,
         status: isSnapshotRow(item, row, index, displayRows.length) ? 3 : row?.status,
         error_message: isSnapshotRow(item, row, index, displayRows.length)
           ? snapshotMessage(item, row)
@@ -203,7 +211,7 @@
   }
 
   function buildWarningRows(item: any) {
-    const rows = Array.isArray(item?.children) && item.children.length > 0 ? item.children : [item]
+    const rows = caseResultRows(item)
     const writtenWarningCount = rows.filter((row: any) => Number(row?.status) === 4).length
     const warningCount = Math.max(Number(item?.warning || 0) - writtenWarningCount, 0)
     if (warningCount <= 0) return []

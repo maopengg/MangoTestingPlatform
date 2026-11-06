@@ -88,10 +88,11 @@ def register_execution_tools(mcp):
                     "cleanup_strategy": item.get("cleanup_strategy"),
                     "cleanup_order": item.get("cleanup_order"),
                     "cleanup_status": item.get("cleanup_status"),
+                    "cleanup_resources": item.get("cleanup_resources") or {},
                 }
                 for item in pending_items
             ],
-            "risk": "清理会按执行明细记录的实际数据库、表和主键删除本次 execution 创建的全部测试数据。",
+            "risk": "清理按执行快照处理数据库记录；如保存了关联ES规则，verify会等待回查，delete_and_verify会按精确文档ID、租户及版本条件删除并回查。ES未闭环则整体清理失败并进入待办。",
             "force_cleanup": force_cleanup,
         }
         execution_no = detail["execution"].get("execution_no")
@@ -121,6 +122,7 @@ def register_execution_tools(mcp):
             execution_id,
             force_cleanup=force_cleanup,
             allow_missing=True,
+            controlled_retry=True,
         )
         if result.get("fail"):
             return fail(

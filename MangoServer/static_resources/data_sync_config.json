@@ -1,6 +1,5 @@
 {
   "excluded_models": [
-    "auto_ai.aimcptool",
     "auto_api.apicaseexecutionstep",
     "auto_api.apicaseexecutiontrace",
     "auto_data_factory.datafactoryexecutionitem",

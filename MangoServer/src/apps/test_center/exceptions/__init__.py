@@ -8,6 +8,9 @@ class TestCenterError(MangoServerError):
     pass
 
 
+EXECUTION_EFFICIENCY_RANGE_INVALID = ErrorDefinition(code=40105, message='执行效能查询时间范围须为正且不超过31天')
+EXECUTION_EFFICIENCY_TOO_LARGE = ErrorDefinition(code=40106, message='执行效能数据量超过查询上限，请缩小时间或项目、任务范围')
+
 TEST_ARTIFACT_SAVE_FAILED = ErrorDefinition(code=1004, message='执行产物保存失败：{}')
 TEST_NOTICE_EMAIL_CACHE_KEY_EMPTY = ErrorDefinition(code=1031,
                                                     message='缓存的key未填写，请先到系统管理->系统设置中填写邮箱配置')
@@ -18,6 +21,9 @@ TEST_DATABASE_TYPE_REQUIRED = ErrorDefinition(code=1065,
 TEST_ENVIRONMENT_INVALID = ErrorDefinition(code=1113, message='测试环境参数无效，请重新选择')
 TEST_REPORT_NOT_FOUND = ErrorDefinition(code=1114, message='测试报告不存在，请刷新页面后重试')
 TEST_REPORT_RETRY_RUNNING = ErrorDefinition(code=40100, message='报告仍有待执行或执行中的用例，请完成后再重试失败项')
+TEST_REPORT_INFRASTRUCTURE_REVIEW_REQUIRED = ErrorDefinition(code=40107, message='本次平台受阻执行尚未完成有效复核，暂不能重试。请核查原请求结果、完成数据清理，并在该用例的排查记录中选择“测试平台问题”或“环境／依赖问题”，填写核查说明并保存；复核通过后再重试。已停止的报告无需再次停止')
+TEST_REPORT_INFRASTRUCTURE_REVIEW_STALE = ErrorDefinition(code=40108, message='复核记录对应的执行轮次与当前轮次不一致，暂不能重试。请核查当前轮次的请求结果和清理状态，重新保存该用例的排查记录后再重试')
+TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY = ErrorDefinition(code=40109, message='本次执行的数据清理或数据源配额核查未通过，暂不能重试。请检查关联数据工厂执行记录是否已完成清理，并由管理员核查数据源是否仍有结果未确认或已过期的配额占用；处理后再重试，不要直接清空配额')
 TEST_REPORT_EVALUATION_OPERATION_UNSUPPORTED = ErrorDefinition(code=40104, message='效果测试报告保留本次执行快照，请前往效果测试用例执行或停止')
 TEST_REPORT_DISPOSITION_INVALID = ErrorDefinition(code=40101, message='报告排查参数不正确')
 TEST_REPORT_DISPOSITION_ACTIVE = ErrorDefinition(code=40102, message='报告仍在执行，不能修改排除状态或排查结论')

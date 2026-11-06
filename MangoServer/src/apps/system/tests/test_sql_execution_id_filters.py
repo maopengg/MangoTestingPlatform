@@ -21,3 +21,15 @@ class SqlExecutionIdFilterTests(SimpleTestCase):
             queryset = Mock()
             self.assertIsNone(SqlExecutionRecordViews._apply_filters(request, queryset))
             queryset.filter.assert_not_called()
+
+    def test_type_multiselect_preserves_mysql_zero_and_redis_es(self):
+        request = Request(APIRequestFactory().get('/', {'datasource_type__in': '0,10,20'}))
+        queryset = Mock()
+        SqlExecutionRecordViews._apply_filters(request, queryset)
+        queryset.filter.assert_called_once_with(datasource_type__in=[0, 10, 20])
+
+    def test_invalid_type_collection_is_rejected(self):
+        request = Request(APIRequestFactory().get('/', {'datasource_type__in': '0,invalid'}))
+        queryset = Mock()
+        self.assertIsNone(SqlExecutionRecordViews._apply_filters(request, queryset))
+        queryset.filter.assert_not_called()

@@ -1,25 +1,26 @@
 import { ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
+import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
 
-export function useApiCaseExecution(refresh: () => void | Promise<unknown>) {
+export function useApiCaseExecution(refresh: (context?: PollingContext) => void | Promise<unknown>) {
   const caseRunning = ref(false)
   const caseRequestPending = ref(false)
   const debugRunningStepId = ref<number | string | null>(null)
   const debugRequestPending = ref(false)
   const lastTraceId = ref('')
-  const caseRunRefreshTimer = ref<ReturnType<typeof window.setInterval> | null>(null)
+  const caseRunRefreshActive = ref(false)
+  const polling = usePagePolling(context => refresh(context))
   const caseRunLoadingTimer = ref<ReturnType<typeof window.setTimeout> | null>(null)
   const debugRunLoadingTimer = ref<ReturnType<typeof window.setTimeout> | null>(null)
 
   function startCaseRunRefresh() {
-    if (caseRunRefreshTimer.value) return
-    caseRunRefreshTimer.value = window.setInterval(() => refresh(), 5000)
+    caseRunRefreshActive.value = true
+    polling.start()
   }
 
   function stopCaseRunRefresh() {
-    if (!caseRunRefreshTimer.value) return
-    window.clearInterval(caseRunRefreshTimer.value)
-    caseRunRefreshTimer.value = null
+    caseRunRefreshActive.value = false
+    polling.stop()
   }
 
   function startCaseRunLoadingLimit() {
@@ -66,7 +67,7 @@ export function useApiCaseExecution(refresh: () => void | Promise<unknown>) {
     debugRunningStepId,
     debugRequestPending,
     lastTraceId,
-    caseRunRefreshTimer,
+    caseRunRefreshActive,
     startCaseRunRefresh,
     stopCaseRunRefresh,
     startCaseRunLoadingLimit,

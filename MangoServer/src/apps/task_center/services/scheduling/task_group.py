@@ -251,7 +251,6 @@ class ScheduledTaskGroupService:
             'execution_scenes': list(group.execution_scenes or []),
             'execution_scope': AutomationExecutionScopeEnum.MODULE.value,
             'name': cls._task_name(group, member.module),
-            'case_people_id': group.case_people_id,
             'status': int(bool(group.status) and bool(member.child_enabled)),
             'is_notice': group.is_notice,
             'notice_group_id': group.notice_group_id,
@@ -307,10 +306,13 @@ class ScheduledTaskGroupService:
                 task = member.task
                 for field, value in values.items():
                     setattr(task, field, value)
-                task.save()
+                task.save(update_fields=[*values, 'update_time'])
                 updated += 1
             else:
-                task = Tasks.objects.create(**values, report_retention_policy=new_task_report_retention_policy)
+                task = Tasks.objects.create(
+                    **values, case_people_id=group.case_people_id,
+                    report_retention_policy=new_task_report_retention_policy,
+                )
                 member.task = task
                 created += 1
             task.timing_strategies.set(group.timing_strategies.all())

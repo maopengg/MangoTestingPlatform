@@ -232,6 +232,7 @@ MCP_PERMISSION_RULES = {
     'list_test_environments': {'permission_key': 'config.product:read', 'project_scoped': False, 'public': False, 'additional_permission_keys': ()},
     'list_test_report_cases': {'permission_key': 'report:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'list_test_reports': {'permission_key': 'report:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
+    'list_execution_efficiency': {'permission_key': 'report.execution_efficiency:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'list_ui_auth_configs': {'permission_key': 'ui.auth_config:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'list_ui_auth_time_tasks': {'permission_key': 'ui.auth_config:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'list_ui_case_steps': {'permission_key': 'ui.case:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},

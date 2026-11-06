@@ -612,6 +612,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { usePagePolling, isPendingExecution } from '@/hooks/use-page-polling'
   import ApiInfoRuntimeParametersModal from '@/components/business/ApiInfoRuntimeParametersModal.vue'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { useLatestRequest } from '@/hooks/use-latest-request'
@@ -701,7 +702,11 @@
   const sidebarModuleIds = ref<Array<string | number>>([])
   const sidebarResetKey = ref(0)
   const downloadLoading = ref(false)
-  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+  const pagePolling = usePagePolling(() => doRefresh(null, false, false), () => {
+    if (table.tableLoading.value) pagePolling.start()
+    beginRequest()
+    table.tableLoading.value = false
+  })
   const httpMethodValues = new Set([0, 1, 2, 3, 4, 5, 6])
   const mcpMethodValue = 7
   const mcpToolName = ref('')
@@ -713,12 +718,7 @@
   )
   const isHttpProtocol = computed(() => normalizeProtocolType(data.activeProtocol) === 'http')
 
-  function clearPollingTimer() {
-    if (pollingTimer.value) {
-      clearInterval(pollingTimer.value)
-      pollingTimer.value = null
-    }
-  }
+  function clearPollingTimer() { pagePolling.stop() }
 
   const visible = ref(false)
   const batchImportVisible = ref(false)
@@ -1017,7 +1017,6 @@
   }
 
   function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
-    clearPollingTimer()
     const requestId = beginRequest()
     const protocolKey = currentProtocolKey()
     if (showLoading) {
@@ -1044,20 +1043,16 @@
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
     }
-    getApiInfo(value)
+    return getApiInfo(value)
       .then((res) => {
         if (!isLatestRefresh(requestId, protocolKey)) return
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
         const hasRunningItem =
-          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+          res.data && Array.isArray(res.data) && res.data.some(isPendingExecution)
 
-        if (hasRunningItem) {
-          // 5秒后再次刷新
-          pollingTimer.value = setInterval(() => {
-            doRefresh()
-          }, 5000)
-        }
+        if (hasRunningItem) pagePolling.start()
+        else pagePolling.stop()
       })
       .catch((error) => {
         if (isLatestRefresh(requestId, protocolKey)) {

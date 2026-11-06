@@ -36,17 +36,32 @@ class DevStartupScriptTests(unittest.TestCase):
             )
             return command_log.read_text(encoding="utf-8"), result.stdout
 
-    def test_dev_skips_scheduler_and_keeps_manual_api_server(self):
+    def test_dev_starts_cleanup_only_scheduler_and_keeps_manual_api_server(self):
         for environment in ("dev", "dev1"):
             with self.subTest(environment=environment):
                 commands, output = self.start_commands(environment)
-                self.assertNotIn("run_scheduler", commands)
+                scheduler = next(line for line in commands.splitlines() if 'run_scheduler' in line)
+                self.assertIn('--cleanup-only', scheduler)
                 self.assertIn("runserver", commands)
                 self.assertIn("init_system_data", commands)
-                self.assertIn("跳过 scheduler-service", output)
+                self.assertIn("仅执行清理", output)
 
     def test_other_environments_keep_scheduler(self):
         for environment in ("test", "master"):
             with self.subTest(environment=environment):
                 commands, _ = self.start_commands(environment)
                 self.assertIn(f"run_scheduler --env={environment}", commands)
+                self.assertNotIn('--cleanup-only', commands)
+
+    def test_missing_dependencies_stop_before_initialization_and_service_start(self):
+        with tempfile.TemporaryDirectory(prefix='mango-startup-dependency-') as directory:
+            root = Path(directory)
+            executable = root / 'python-stub'
+            executable.write_text('#!/bin/sh\nexit 1\n')
+            executable.chmod(0o700)
+            result = subprocess.run(['bash', str(self.script)], env={**os.environ,
+                'PYTHON_BIN': str(executable), 'LOG_DIR': str(root / 'logs')},
+                capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('后端依赖不完整', result.stderr)
+            self.assertNotIn('Initializing system data', result.stdout)

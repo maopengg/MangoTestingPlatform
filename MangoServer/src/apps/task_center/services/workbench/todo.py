@@ -37,6 +37,7 @@ from src.apps.task_center.enums import (
 )
 from src.apps.task_center.models import WorkbenchTodo
 from src.apps.test_center.enums.environment import EnvironmentEnum
+from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.test_center.services.test_suite.base_notice import NoticeMain
 from src.apps.user.services.credential import UserCredentialService
 from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
@@ -57,19 +58,31 @@ class WorkbenchTodoService:
 
     @classmethod
     def record_slow_sql(cls, record):
-        """按来源和 SQL 指纹聚订单一慢 SQL，避免每次执行生成一条待办。"""
+        """按来源和操作指纹聚合；无产品连接记录保留运维告警，不伪造产品待办。"""
+        if record.project_product_id is None:
+            log.system.warning(f'全局连接慢执行，请在数据源执行记录排查：record_id={record.id}')
+            return None
         occurred_at = record.update_time or timezone.now()
         source_detail = dict(record.source_detail or {})
+        target_key = hashlib.sha256(json.dumps([
+            record.datasource_type, record.database_id, source_detail.get('database_name'),
+            source_detail.get('redis_db'), source_detail.get('index'),
+        ], default=str, ensure_ascii=False).encode()).hexdigest()[:20]
         event_key = (
             f'slow-sql:{record.project_product_id}:{record.test_env}:'
             f'{record.datasource_alias_id}:{record.source_type}:{record.source_id or 0}:'
-            f'{record.source_stage}:{record.sql_fingerprint}'
+            f'{record.source_stage}:{record.sql_fingerprint}:{target_key}'
         )
+        event_key = 'slow-datasource:' + hashlib.sha256(event_key.encode()).hexdigest()
         existing = WorkbenchTodo.objects.filter(event_key=event_key).only('details').first()
         previous = dict(existing.details or {}) if existing else {}
-        occurrence_count = int(previous.get('occurrence_count') or 0) + 1
+        occurrence_count = int(previous.get('occurrence_count') or 0) + (previous.get('sql_execution_id') != record.id)
         duration_ms = float(record.duration_ms or 0)
         max_duration_ms = max(float(previous.get('max_duration_ms') or 0), duration_ms)
+        operation_name = {
+            DataSourceTypeEnum.REDIS.value: 'Redis操作',
+            DataSourceTypeEnum.ELASTICSEARCH.value: 'ES操作',
+        }.get(record.datasource_type, 'SQL')
         return cls._upsert(event_key, {
             'source_type': WorkbenchTodoSourceTypeEnum.SQL_EXECUTION.value,
             'event_type': WorkbenchTodoEventTypeEnum.SLOW_SQL.value,
@@ -77,16 +90,18 @@ class WorkbenchTodoService:
             'project_product_id': record.project_product_id,
             'module_id': source_detail.get('module_id'),
             'severity': WorkbenchTodoSeverityEnum.WARNING.value,
-            'title': f'慢SQL：{record.source_type} / {record.source_stage}',
+            'title': f'慢{operation_name}：{record.source_type} / {record.source_stage}',
             'summary': (
-                f'SQL执行耗时 {duration_ms / 1000:.3f} 秒，超过阈值 '
+                f'{operation_name}执行耗时 {duration_ms / 1000:.3f} 秒，超过阈值 '
                 f'{record.slow_threshold_ms / 1000:.0f} 秒。'
             ),
             'due_at': occurred_at,
             'occurred_at': occurred_at,
             'details': {
                 **previous,
-                'source_name': 'SQL执行记录',
+                'source_name': '数据源执行记录',
+                'datasource_type': record.datasource_type,
+                'database_id': record.database_id,
                 'sql_execution_id': record.id,
                 'source_type': record.source_type,
                 'source_id': record.source_id,

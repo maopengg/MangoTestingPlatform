@@ -312,8 +312,8 @@
                           : `${Number(sqlRecord.duration_ms || 0).toFixed(2)}ms`
                       }}
                     </span>
-                    <a-tag v-if="sqlRecord.is_slow" size="small" color="orangered">慢SQL</a-tag>
-                    <a-tooltip content="复制SQL" position="top" mini>
+                    <a-tag v-if="sqlRecord.is_slow" size="small" color="orangered">慢执行</a-tag>
+                    <a-tooltip content="复制执行内容" position="top" mini>
                       <a-button
                         class="execution-detail-copy-button"
                         type="text"
@@ -354,7 +354,7 @@
       </a-tab-pane>
       <a-tab-pane
         key="sql"
-        title="SQL记录"
+        title="数据源执行记录"
         data-testid="qa-views-data-factory-execution-tab-pane-SQL记录"
       >
         <a-table
@@ -376,7 +376,7 @@
                 </a-tag>
               </template>
             </a-table-column>
-            <a-table-column title="SQL" :width="420">
+            <a-table-column title="执行内容" :width="420">
               <template #cell="{ record }">
                 <div class="execution-detail-cell-line">
                   <a-tooltip :content="record.sql_text" position="top" mini>
@@ -426,6 +426,16 @@
         }}</a-alert>
         <div v-else class="mango-empty-state execution-empty">暂无错误</div>
       </a-tab-pane>
+      <a-tab-pane key="resources" title="关联资源清理">
+        <a-table
+          :columns="cleanupResourceColumns"
+          row-key="key"
+          :data="cleanupResourceRows"
+          :loading="detailLoading"
+          :pagination="false"
+          :scroll="{ x: 1340 }"
+        />
+      </a-tab-pane>
     </a-tabs>
   </a-drawer>
 </template>
@@ -449,7 +459,7 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
-  import { executionConditionItems, executionItemColumns, executionTableColumns } from './config'
+  import { executionConditionItems, executionItemColumns, executionTableColumns, cleanupResourceColumns } from './config'
 
   const table = useTable()
   const sidebarResetKey = ref(0)
@@ -464,6 +474,22 @@
   const enumFieldNames = { value: 'key', label: 'title' }
   const detailVisible = ref(false)
   const detail = ref<any>({})
+  const cleanupResourceRows = computed(() => (detail.value.items || []).flatMap((item: any) => {
+    const state = item.cleanup_resources || {}
+    return (state.snapshots || []).map((snapshot: any, snapshotIndex: number) => {
+      const result = (state.results || []).find((entry: any) => entry.snapshot_index != null ? entry.snapshot_index === snapshotIndex : entry.index === snapshot.index && entry.document_id === snapshot.document_id)
+      return {
+        key: `${item.id}:${snapshot.rule.datasource_alias_id}:${snapshot.index}:${snapshot.document_id}`,
+        alias: item.alias,
+        index: snapshot.index,
+        document_id: snapshot.document_id,
+        sql_status: state.sql_cleaned ? '已清理' : '未清理',
+        status: !result ? '待检查' : result.success ? '已确认消失' : '失败',
+        checked_at: result?.checked_at || '-',
+        error: result?.error || (!result ? '数据库清理后将回查ES' : '-'),
+      }
+    })
+  }))
   const detailLoading = ref(false)
   const actionLoading = ref('')
   const batchCleanupLoading = ref(false)
@@ -576,7 +602,7 @@
   }
 
   function sqlExecutionStageName(stage: string) {
-    return sqlExecutionStageNames[stage] || stage || '-'
+    return sqlExecutionStageNames[stage] || enumTitle(enumStore.datasource_audit_stage, stage) || stage || '-'
   }
 
   function sqlExecutionStatusColor(status: string) {
@@ -701,8 +727,14 @@
         actionLoading.value = `cleanup-${record.id}`
         return postDataFactoryExecutionCleanup({ execution_id: record.id })
           .then((res) => {
-            Message.success(res.msg)
+            if (res.data?.fail > 0) {
+              Message.error(res.data.message || '清理失败，请检查执行明细')
+              doRefresh()
+              return false
+            }
+            Message.success(res.data?.message || res.msg)
             doRefresh()
+            return true
           })
           .finally(() => {
             actionLoading.value = ''

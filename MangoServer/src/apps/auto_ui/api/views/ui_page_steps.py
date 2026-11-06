@@ -136,7 +136,8 @@ class PageStepsViews(ViewSet):
         """
         根据项目获取页面id和名称
         """
-        res = self.model.objects.filter(page=request.query_params.get('page_id')).values_list('id', 'name')
+        queryset = self.model.objects.filter(page=request.query_params.get('page_id'))
+        res = PageStepsCRUD().filter_queryset_by_data_scope(request, queryset).values_list('id', 'name')
         return ResponseData.success(RESPONSE_MSG_0087, [{'key': _id, 'title': name} for _id, name in res])
 
     @action(methods=['GET'], detail=False)

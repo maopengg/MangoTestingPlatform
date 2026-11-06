@@ -448,8 +448,11 @@
   }
 
   .mango-data-source-operation-content :deep(textarea) {
-    color: var(--m-code-text);
     line-height: 1.6;
+  }
+
+  .mango-data-source-operation-content :deep(textarea:not(:disabled)) {
+    color: var(--m-text);
   }
 
   .mango-data-source-operation-empty {

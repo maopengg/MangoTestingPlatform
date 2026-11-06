@@ -321,6 +321,11 @@ class DataFactoryTemplateMutationService:
         if duplicated.exists():
             raise DataFactoryError(DATA_FACTORY_ENTITY_NAME_TEMPLATE_DUPLICATED, value=(name,))
         try:
+            if 'cleanup_resources' in data:
+                from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+                data['cleanup_resources'] = DataFactoryCleanupResourceService.normalize(
+                    data['cleanup_resources'], entity=entity, project_product_id=project_product_id,
+                )
             if "field_overrides" in data:
                 data["field_overrides"] = DataFactoryFieldOverrideRules.model_validate(
                     data.get("field_overrides") or {},

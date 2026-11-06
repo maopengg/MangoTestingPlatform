@@ -109,6 +109,7 @@ class PageViews(ViewSet):
             queryset = Page.objects.all()
         if project_product_id:
             queryset = queryset.filter(project_product_id=project_product_id)
+        queryset = PageCRUD().filter_queryset_by_data_scope(request, queryset)
         res = queryset.values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         if data:

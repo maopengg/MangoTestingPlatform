@@ -25,6 +25,9 @@ class FakeMcp:
 class McpDatasourceExecutionTests(SimpleTestCase):
 
     def setUp(self):
+        actor = patch('src.interfaces.mcp.tools.data_factory.datasource.mcp_current_user_id', return_value=4)
+        actor.start()
+        self.addCleanup(actor.stop)
         self.mcp = FakeMcp()
         register_datasource_tools(self.mcp)
 
@@ -50,6 +53,8 @@ class McpDatasourceExecutionTests(SimpleTestCase):
             operation_config='GET user:1',
             confirm_write=False,
             expected_db_type=DataSourceTypeEnum.REDIS.value,
+            source_context={'source_type': 'mcp', 'source_stage': 'query', 'source_id': 9,
+                            'mcp_tool_name': 'query_data_factory_datasource_redis', 'operator_id': 4},
         )
 
     def test_other_query_tools_cannot_be_used_as_sql_entry_points(self):

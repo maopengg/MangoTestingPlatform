@@ -18,6 +18,33 @@ from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware, perm
 
 
 class CrudPermissionCatalogTests(SimpleTestCase):
+    def test_user_name_options_are_shared_read_without_user_management_access(self):
+        path = '/api/user/info/name'
+        match = resolve(path)
+        view = match.func.cls()
+        view.action = match.func.actions['get']
+        self.assertEqual(permission_for_view(view, view.action, 'get'), 'index.home:read')
+        metadata = next(row for row in http_permission_catalog()
+                        if row['method'] == 'GET' and re.fullmatch(row['pattern'], '/user/info/name'))
+        self.assertEqual(metadata['permissions'], ['index.home:read'])
+        users = resolve('/api/user/info').func.cls()
+        for grants, allowed in (({'index.home:read', 'ui.page:read'}, True),
+                                (PermissionMenuService.guest_permission_keys(), True),
+                                (set(), False)):
+            with self.subTest(grants=grants), \
+                    patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
+                    patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=grants):
+                request = SimpleNamespace(method='GET', path=path, data={}, query_params=QueryDict(),
+                                          user=SimpleNamespace(user_obj=SimpleNamespace(id=7)))
+                self.assertEqual(MenuActionPermission().has_permission(request, view), allowed)
+                request.path = '/api/user/info'
+                self.assertFalse(MenuActionPermission().has_permission(request, users))
+                for method in ('POST', 'PUT', 'DELETE'):
+                    request.method = method
+                    self.assertFalse(MenuActionPermission().has_permission(request, users))
+        anonymous = SimpleNamespace(method='GET', path=path, data={}, query_params=QueryDict(), user=None)
+        self.assertFalse(MenuActionPermission().has_permission(anonymous, view))
+
     def test_legacy_schema_views_remain_disabled_with_optional_coreapi(self):
         from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
 

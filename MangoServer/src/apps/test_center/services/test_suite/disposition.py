@@ -5,6 +5,8 @@ from src.apps.test_center.enums import ReportFailureReasonEnum
 from src.apps.test_center.exceptions import (
     TestCenterError, TEST_REPORT_NOT_FOUND, TEST_REPORT_DISPOSITION_INVALID,
     TEST_REPORT_DISPOSITION_ACTIVE, TEST_REPORT_EXCLUSION_NOT_FAILED,
+    TEST_REPORT_INFRASTRUCTURE_REVIEW_REQUIRED,
+    TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY,
 )
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
@@ -43,7 +45,13 @@ class TestSuiteDispositionService:
             if not ProjectProductScopeService.has_project_product(user, detail.project_product_id):
                 raise MangoServerError(RESOURCE_ACCESS_DENIED)
         active = (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)
-        if suite.status in active or TestSuiteDetails.objects.filter(test_suite_id=suite.id, status__in=active).exists():
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        blocked = TestSuiteInfrastructureService.is_blocked(detail.summary_data)
+        if blocked:
+            # 阻塞报告仍保留 PROCEED 以避免伪造结论，但这不应锁死恢复核查。
+            if TestSuiteInfrastructureService.has_live_details(suite.id):
+                raise TestCenterError(TEST_REPORT_DISPOSITION_ACTIVE)
+        elif suite.status in active or TestSuiteDetails.objects.filter(test_suite_id=suite.id, status__in=active).exists():
             raise TestCenterError(TEST_REPORT_DISPOSITION_ACTIVE)
         allowed = {'is_excluded', 'failure_reason', 'failure_description'}
         if not values or set(values) - allowed:
@@ -60,8 +68,21 @@ class TestSuiteDispositionService:
             if not isinstance(text, str) or len(text) > 1000:
                 raise TestCenterError(TEST_REPORT_DISPOSITION_INVALID)
             values['failure_description'] = text.strip()
+        reviewed = False
+        if blocked:
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            if (user is None or values.get('failure_reason') not in (
+                    ReportFailureReasonEnum.PLATFORM.value, ReportFailureReasonEnum.ENVIRONMENT.value)
+                    or not values.get('failure_description') or values.get('is_excluded')):
+                raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_REVIEW_REQUIRED)
+            if not DatasourceInfrastructureService.review_ready(detail):
+                raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY)
+            from django.utils import timezone
+            control = detail.summary_data['meta']['execution_control']
+            control.update(requires_review=False, reviewed_by=user.id, reviewed_at=timezone.now().isoformat())
+            reviewed = True
         for key, value in values.items():
             setattr(detail, key, value)
         # 人工排查不能改执行耗时，保留原结果与执行时间。
-        detail.save(update_fields=list(values))
+        detail.save(update_fields=[*values, *(['summary_data'] if reviewed else [])])
         return {key: getattr(detail, key) for key in allowed}

@@ -5,6 +5,16 @@ import { enableMultiSelectSearch } from '@/utils/search-condition'
 
 const table = useTable()
 
+export const cleanupResourceColumns = [
+  { title: '执行明细', dataIndex: 'alias', width: 160, ellipsis: true, tooltip: true },
+  { title: 'ES索引', dataIndex: 'index', width: 240, ellipsis: true, tooltip: true },
+  { title: '文档ID', dataIndex: 'document_id', width: 190, ellipsis: true, tooltip: true },
+  { title: '数据库清理', dataIndex: 'sql_status', width: 120 },
+  { title: 'ES回查', dataIndex: 'status', width: 120 },
+  { title: '检查时间', dataIndex: 'checked_at', width: 200, ellipsis: true, tooltip: true },
+  { title: '说明', dataIndex: 'error', width: 310, ellipsis: true, tooltip: true },
+]
+
 export const executionConditionItems: Array<FormItem> = reactive([
   {
     key: 'execution_no',
@@ -168,7 +178,7 @@ export const executionItemColumns = useTableColumn([
     width: 120,
   },
   {
-    title: 'SQL执行记录',
+    title: '数据源执行记录',
     key: 'sql_executions',
     dataIndex: 'sql_executions',
     width: 420,

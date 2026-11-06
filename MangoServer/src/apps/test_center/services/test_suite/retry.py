@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 from mangotools.enums import TaskEnum
+from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 
 from src.apps.task_center.services.selection.api_case_binding import ApiCaseTaskBindingService
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
@@ -11,6 +12,9 @@ from src.apps.test_center.exceptions import (
     TEST_REPORT_NOT_FOUND,
     TEST_REPORT_RETRY_RUNNING,
     TEST_REPORT_EVALUATION_OPERATION_UNSUPPORTED,
+    TEST_REPORT_INFRASTRUCTURE_REVIEW_REQUIRED,
+    TEST_REPORT_INFRASTRUCTURE_REVIEW_STALE,
+    TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY,
     TestCenterError,
 )
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
@@ -18,6 +22,20 @@ from src.apps.test_center.services.test_suite.detail_result import TestSuiteExec
 
 
 class TestSuiteRetryService:
+    @staticmethod
+    def ensure_infrastructure_reviewed(detail):
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(detail.summary_data):
+            control = detail.summary_data['meta']['execution_control']
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            # 人工核查不是永久通行证；重试前名额、清理状态变化仍须拒绝重放。
+            if control.get('requires_review', True):
+                raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_REVIEW_REQUIRED)
+            if control.get('attempt') != detail.retry:
+                raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_REVIEW_STALE)
+            if not DatasourceInfrastructureService.review_ready(detail):
+                raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY)
+
     @staticmethod
     def ensure_retry_supported(details):
         if any(getattr(detail, 'type', None) == TestCaseTypeEnum.EVALUATION.value for detail in details):
@@ -51,6 +69,13 @@ class TestSuiteRetryService:
         if detail.type != TestCaseTypeEnum.API.value:
             return
         if not detail.api_case_release_id and not detail.test_suite.tasks_id:
+            selection = ApiCaseRevisionService.resolve_manual_revision_retry(
+                detail.case_id, detail.api_case_revision_id,
+            )
+            if selection is not None:
+                detail.api_case_revision_id = selection.case_revision_id
+                detail.config_checksum = selection.checksum
+                return
             # 手动批量执行选择编辑态时，重试继续执行当前编辑态。
             # 同时兼容清理旧版批量执行曾绑定的未发布执行快照。
             detail.api_case_revision_id = None
@@ -116,6 +141,7 @@ class TestSuiteRetryService:
                 ).values_list('api_case_id', 'version_policy')
             )
         for detail in details:
+            cls.ensure_infrastructure_reviewed(detail)
             cls.refresh_current_api_release(
                 detail,
                 version_policy_by_case.get(
@@ -172,6 +198,7 @@ class TestSuiteRetryService:
     @transaction.atomic
     def retry_detail(cls, test_suite_detail_id: int) -> None:
         detail = TestSuiteDetails.objects.select_for_update().get(id=test_suite_detail_id)
+        cls.ensure_infrastructure_reviewed(detail)
         cls.ensure_retry_supported([detail])
         cls.refresh_current_api_release(detail)
         detail.retry = 0

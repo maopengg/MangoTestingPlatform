@@ -288,7 +288,7 @@ class GeneratedKeyRecoveryTests(SimpleTestCase):
                     'UPDATE factory_record SET amount=ROUND(NEW.amount,2) WHERE id=NEW.id; END'
                 ))
             result = DataFactoryRunner.insert(
-                entity, SimpleNamespace(schema_name=''), {'amount': Decimal('1.239')}, before_commit,
+                entity, SimpleNamespace(schema_name='', db_type=2), {'amount': Decimal('1.239')}, before_commit,
             )
             before_commit.assert_called_once()
             self.assertEqual(before_commit.call_args.args[0]['created']['id'], result['created']['id'])
@@ -397,7 +397,7 @@ class GeneratedKeyRecoveryTests(SimpleTestCase):
         try:
             with patch.object(DataFactoryRunner, 'merge_generated_values', return_value=None):
                 with self.assertRaises(DataFactoryError):
-                    DataFactoryRunner.insert(entity, SimpleNamespace(schema_name=''), {'title': 'AUTO_ROLLBACK'},
+                    DataFactoryRunner.insert(entity, SimpleNamespace(schema_name='', db_type=2), {'title': 'AUTO_ROLLBACK'},
                                              before_commit)
             with engine.connect() as connection:
                 self.assertEqual(connection.execute(select(table)).all(), [])

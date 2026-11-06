@@ -10,6 +10,7 @@ from mangotools.enums import TaskEnum
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.services.execution_result import ExecutionResultService
 from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
 from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
 
 
@@ -133,7 +134,7 @@ class ResultWriteTransactionTests(SimpleTestCase):
         detail = SimpleNamespace(
             id=3, test_suite_id=2, case_id=1, type=case_type.value, test_env=0,
             api_case_revision_id=None, api_case_release_id=None, status=TaskEnum.PROCEED.value,
-            error_message=None, case_name='case', summary_data=None,
+            error_message=None, case_name='case', summary_data=None, retry=1,
         )
 
         def save(**_kwargs):
@@ -152,6 +153,7 @@ class ResultWriteTransactionTests(SimpleTestCase):
         ))
         details.get.return_value = detail
         details.select_for_update.return_value.get.return_value = detail
+        details.select_for_update.return_value.filter.return_value.first.return_value = detail
         details.filter.return_value.exists.return_value = True
         self.enter_patch(patch(
             'src.apps.test_center.services.test_suite.update_test_suite.TestSuiteTimeoutRecoveryService.'
@@ -252,7 +254,7 @@ class ResultWriteTransactionTests(SimpleTestCase):
         detail = SimpleNamespace(
             id=3, test_suite_id=2, case_id=1, type=TestCaseTypeEnum.API.value, test_env=0,
             api_case_revision_id=None, api_case_release_id=None, status=TaskEnum.PROCEED.value, error_message=None,
-            save=Mock(),
+            save=Mock(), retry=1,
         )
         snapshot = {'result_mode': 'snapshot', 'status': 'running', 'steps': [{'id': 1, 'status': 1}]}
         with patch.object(ExecutionResultService, '_save_result_record', return_value=SimpleNamespace(id=7)) as write:

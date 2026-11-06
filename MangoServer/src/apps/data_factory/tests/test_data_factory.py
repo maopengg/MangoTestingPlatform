@@ -43,6 +43,7 @@ from src.apps.data_factory.services.schema_monitor import DataFactorySchemaMonit
 from src.apps.data_factory.services.template import DataFactoryTemplateService
 from src.apps.data_factory.services.type_cast import DataFactoryTypeCast
 from src.common.exceptions import ErrorDefinition
+from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 
 
 # -*- coding: utf-8 -*-
@@ -158,6 +159,7 @@ class DataFactoryCleanupAvailabilityTests(SimpleTestCase):
             1,
             force_cleanup=True,
             allow_missing=True,
+            controlled_retry=True,
         )
         self.assertEqual(result["success"], 1)
         self.assertEqual(result["fail"], 1)
@@ -559,7 +561,7 @@ class DataFactoryCleanupTests(SimpleTestCase):
         ordered_items = item_objects.select_related.return_value.filter.return_value.order_by
         ordered_items.return_value = []
 
-        DataFactoryCleanup.cleanup_execution.__wrapped__(DataFactoryCleanup, 12)
+        DataFactoryCleanup.cleanup_execution(12, defer_resources=True)
 
         ordered_items.assert_called_once_with("cleanup_order", "-id")
         on_commit.assert_called_once()
@@ -836,7 +838,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
 
         result = DataFactoryRunner.insert(
             entity,
-            SimpleNamespace(schema_name=""),
+            SimpleNamespace(schema_name="", db_type=DataSourceTypeEnum.SQLITE.value),
             {"name": "AUTO主键映射验证"},
         )
 
@@ -866,7 +868,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
         )
 
         with self.assertRaises(DataFactoryError):
-            DataFactoryRunner.insert(entity, SimpleNamespace(schema_name=""), {"name": "不应写入"})
+            DataFactoryRunner.insert(entity, SimpleNamespace(schema_name="", db_type=DataSourceTypeEnum.SQLITE.value), {"name": "不应写入"})
 
         with engine.connect() as connection:
             self.assertEqual(connection.execute(select(table.c.actual_id)).all(), [])
@@ -890,7 +892,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
         with self.assertRaises(DataFactoryError):
             DataFactoryRunner.insert(
                 entity,
-                SimpleNamespace(schema_name=""),
+                SimpleNamespace(schema_name="", db_type=DataSourceTypeEnum.SQLITE.value),
                 {"name": "AUTO回滚验证"},
                 before_commit=MagicMock(side_effect=RuntimeError("执行明细保存失败")),
             )
@@ -899,6 +901,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
             self.assertEqual(connection.execute(select(table.c.id)).all(), [])
         engine.dispose()
 
+    @patch('src.apps.data_factory.services.factory_sql_execution.DatasourceTargetService.resolve')
     @patch(
         "src.apps.data_factory.services.factory_sql_execution."
         "SqlExecutionAuditService.finish_success"
@@ -911,6 +914,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
             self,
             audit_start,
             audit_finish,
+            resolve_target,
     ):
         from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, insert
 
@@ -1074,28 +1078,19 @@ class DataFactoryExecutionRecoveryTests(SimpleTestCase):
 
 
 class DataFactoryCaseConfigRunnerTests(SimpleTestCase):
-    @patch("src.apps.data_factory.services.case_config_runner.DataFactoryCleanup.cleanup_execution")
-    def test_auto_cleanup_failure_is_propagated(self, cleanup_execution):
-        cleanup_execution.return_value = {
-            "execution_id": 2968,
-            "success": 0,
-            "fail": 2,
-            "skipped": 0,
-            "errors": [{"item_ids": [13045, 13046], "error": "清理失败"}],
-        }
+    @patch("src.apps.data_factory.services.case_config_runner.DataFactoryCleanup.cleanup_execution",
+           return_value={'fail': 1})
+    def test_auto_cleanup_failure_is_propagated(self, cleanup):
         runner = DataFactoryCaseConfigRunner.__new__(DataFactoryCaseConfigRunner)
         runner.auto_cleanup_execution_ids = [2968]
         runner.logger = MagicMock()
+        runner.user_id = 4
 
         with self.assertRaises(Exception) as error:
             runner.cleanup()
 
         self.assertIn("execution_id=2968", str(error.exception))
-        cleanup_execution.assert_called_once_with(
-            2968,
-            force_cleanup=True,
-            allow_missing=True,
-        )
+        cleanup.assert_called_once_with(2968, created_by=4, force_cleanup=True, allow_missing=True)
         runner.logger.error.assert_called_once()
 
 
@@ -1551,7 +1546,7 @@ class DataFactoryTemplateSerializerTests(SimpleTestCase):
         ):
             affected_rows = DataFactoryRunner.update_created_record(
                 entity,
-                SimpleNamespace(),
+                SimpleNamespace(schema_name=''),
                 "score_id",
                 2001,
                 1001,

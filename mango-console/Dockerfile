@@ -22,5 +22,6 @@ RUN npm run build:${VUE_ENV}
 FROM ${NGINX_IMAGE} AS production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY mango-console/nginx/default.conf /etc/nginx/conf.d/default.conf
+RUN nginx -t
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -7,6 +7,7 @@ from mangotools.enums import TaskEnum
 
 from src.apps.auto_api.enums import ApiCaseReleaseStatusEnum
 from src.apps.auto_api.exceptions import (
+    API_CASE_REVISION_SUMMARY_INVALID,
     API_CASE_PREPUBLICATION_ALREADY_EXISTS,
     API_CASE_PREPUBLICATION_APPROVAL_FORBIDDEN,
     API_CASE_PREPUBLICATION_CURRENT_REVISION_NOT_ALLOWED,
@@ -81,6 +82,9 @@ class ApiCaseRevisionRecordingMixin:
             summary: str | None = None,
             change_group_id: str | None = None,
     ) -> ApiCaseRevision:
+        summary_limit = ApiCaseRevision._meta.get_field('summary').max_length
+        if summary is not None and (not isinstance(summary, str) or len(summary) > summary_limit):
+            raise AutoApiError(API_CASE_REVISION_SUMMARY_INVALID, value=(summary_limit,))
         api_case = ApiCase.objects.select_for_update().filter(id=case_id).first()
         if api_case is None:
             raise AutoApiError(API_VERSION_CASE_NOT_FOUND, value=(case_id,))

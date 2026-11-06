@@ -495,6 +495,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { usePagePolling, isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
   import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
   import { usePagination, useTable } from '@/hooks/table'
   import { useLatestRequest } from '@/hooks/use-latest-request'
@@ -740,7 +741,10 @@
         payload: node,
       }))
   )
-  const pollingTimer = ref<ReturnType<typeof window.setInterval> | null>(null)
+  const pagePolling = usePagePolling(context => {
+    const id = pollingCaseId.value
+    if (id) return pollSelectedCaseState(id, context)
+  })
   const pollingCaseId = ref<number | null>(null)
   let pollingRequestPending = false
 
@@ -767,18 +771,16 @@
   }
 
   function clearPollingTimer() {
-    if (pollingTimer.value) {
-      window.clearInterval(pollingTimer.value)
-      pollingTimer.value = null
-    }
+    pagePolling.stop()
     pollingCaseId.value = null
   }
 
-  async function refreshSelectedCaseState(caseId: number) {
+  async function refreshSelectedCaseState(caseId: number, context?: PollingContext) {
     if (pollingRequestPending) return undefined
     pollingRequestPending = true
     try {
       const res = await getPytestCase({ id: caseId, page: 1, pageSize: 1 })
+      if (context && !context.isCurrent()) return undefined
       const record = res.data?.[0] || null
       if (record && Number(selectedExplorerRecord.value?.id) === Number(caseId)) {
         selectedExplorerRecord.value = {
@@ -792,11 +794,11 @@
     }
   }
 
-  async function pollSelectedCaseState(caseId: number) {
+  async function pollSelectedCaseState(caseId: number, context?: PollingContext) {
     try {
-      const record = await refreshSelectedCaseState(caseId)
+      const record = await refreshSelectedCaseState(caseId, context)
       if (record === undefined || pollingCaseId.value !== caseId) return
-      if (!record || Number(record.status) !== 3) clearPollingTimer()
+      if (!isPendingExecution(record)) clearPollingTimer()
     } catch {
       // 短暂请求失败时保留轮询，下一个周期继续同步执行状态。
     }
@@ -805,10 +807,7 @@
   function startPollingCaseState(caseId: number) {
     clearPollingTimer()
     pollingCaseId.value = caseId
-    void pollSelectedCaseState(caseId)
-    pollingTimer.value = window.setInterval(() => {
-      if (pollingCaseId.value === caseId) void pollSelectedCaseState(caseId)
-    }, 5000)
+    pagePolling.start()
   }
 
   function onDelete(record: any) {
@@ -1190,7 +1189,7 @@
         name: node.title,
         file_path: node.path,
       }
-      if (Number(selectedExplorerRecord.value?.status) === 3) {
+      if (isPendingExecution(selectedExplorerRecord.value)) {
         startPollingCaseState(Number(node.case_id))
       }
     } catch {

@@ -16,6 +16,10 @@
             配置插入后回写
             <a-badge :count="templateForm.post_insert_updates?.length || 0" :max-count="99" />
           </a-button>
+          <a-button size="small" :disabled="!templateForm.id" @click="openCleanupResources">
+            关联ES清理
+            <a-badge :count="templateForm.cleanup_resources?.length || 0" />
+          </a-button>
           <a-button
             size="small"
             :disabled="!templateForm.entity"
@@ -376,6 +380,15 @@
       <a-button size="small" :loading="previewLoading" @click="loadPreview">检查全部规则</a-button>
     </a-space>
   </a-modal>
+  <MangoJsonEditDrawer
+    v-model:visible="cleanupResourceVisible"
+    v-model="cleanupResourceJson"
+    title="关联ES清理规则"
+    :description="cleanupResourceDescription"
+    :placeholder="cleanupResourceExample"
+    :saving="cleanupResourceSaving"
+    @save="saveCleanupResources"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -383,6 +396,7 @@
   import DataFactoryFieldTag from '@/components/display/DataFactoryFieldTag.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
+  import MangoJsonEditDrawer from '@/components/editors/MangoJsonEditDrawer.vue'
   import {
     getDataFactoryField,
     getDataFactoryEntity,
@@ -399,7 +413,7 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-  import { entityRuleColumns, entityRuleTableScrollWidth } from './config'
+  import { entityRuleColumns, entityRuleTableScrollWidth, cleanupResourceDescription, cleanupResourceExample } from './config'
   import { getGeneratorDisplay } from './generatorDisplay'
 
   const route = useRoute()
@@ -425,6 +439,9 @@
   const entityRuleLoading = ref(false)
   const entityRuleVisible = ref(false)
   const postUpdateVisible = ref(false)
+  const cleanupResourceVisible = ref(false)
+  const cleanupResourceJson = ref('[]')
+  const cleanupResourceSaving = ref(false)
   const entityRuleRecord = ref<any>(null)
   const entityRuleRows = ref<any[]>([])
   const sceneAutoSaving = ref(false)
@@ -451,6 +468,7 @@
     field_overrides: {},
     output_config: [],
     post_insert_updates: [],
+    cleanup_resources: [],
     items: [],
   })
   const pageRecord = computed<any>(() => pageData.record || {})
@@ -567,6 +585,7 @@
       field_overrides: previewContext.value.overrides || record?.field_overrides || {},
       output_config: previewContext.value.output_config || record?.output_config || [],
       post_insert_updates: record?.post_insert_updates || [],
+      cleanup_resources: record?.cleanup_resources || [],
       items: normalizeLoadedItems(record?.items || []),
     })
     snapshotSceneItemOverrides(record?.items || [])
@@ -701,6 +720,33 @@
       .finally(() => {
         saving.value = false
       })
+  }
+
+  function openCleanupResources() {
+    cleanupResourceJson.value = JSON.stringify(templateForm.cleanup_resources || [], null, 2)
+    cleanupResourceVisible.value = true
+  }
+
+  async function saveCleanupResources(value: string) {
+    let rules: unknown
+    try {
+      rules = JSON.parse(value)
+      if (!Array.isArray(rules)) throw new Error()
+    } catch {
+      Message.error('请填写 JSON 数组，清空规则请使用 []')
+      return
+    }
+    cleanupResourceSaving.value = true
+    try {
+      const response = await putDataFactoryTemplate({ id: templateForm.id, cleanup_resources: rules })
+      templateForm.cleanup_resources = response.data?.cleanup_resources || rules
+      cleanupResourceVisible.value = false
+      Message.success('关联ES清理规则已保存，仅对后续执行生效')
+    } catch {
+      // 公共请求层展示后端校验原因；保留抽屉内容供用户修正。
+    } finally {
+      cleanupResourceSaving.value = false
+    }
   }
 
   function syncTemplateFields() {

@@ -486,7 +486,11 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
         self.assertIn("ApiCaseBatchExecutionService.execute", source)
         self.assertNotIn("resolve_release", source)
 
-    def test_api_case_batch_only_accepts_editing_or_published(self):
+    def test_api_case_batch_accepts_editing_prepublished_or_published(self):
+        self.assertEqual(
+            ApiCaseRevisionService.normalize_batch_execution_version("prepublished"),
+            "prepublished",
+        )
         self.assertEqual(
             ApiCaseRevisionService.normalize_batch_execution_version("editing"),
             "editing",

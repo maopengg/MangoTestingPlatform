@@ -4,6 +4,42 @@ from src.apps.task_center.models import ExecutorTask, Tasks, TasksDetails, TimeT
 
 class TaskCenterQuerySelector:
     @staticmethod
+    def cleanup_for_execution(execution_id):
+        from src.apps.system.enums.executor import ExecutorTaskTypeEnum
+        return ExecutorTask.objects.filter(
+            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
+            business_id=execution_id,
+        ).order_by()
+
+    @staticmethod
+    def ui_cleanup_failed(case_id, execution_id, cleanup_ids):
+        from src.apps.system.enums.executor import ExecutorTaskTypeEnum, ExecutorTaskStatusEnum
+        from src.apps.task_center.enums.execution import ExecutorTaskErrorCodeEnum
+        if cleanup_ids and ExecutorTask.objects.filter(
+                task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value, business_id__in=cleanup_ids,
+                status=ExecutorTaskStatusEnum.FAILED.value).exists():
+            return True
+        query = ExecutorTask.objects.filter(
+            business_id=case_id,
+            task_type__in=[ExecutorTaskTypeEnum.UI_CASE.value, ExecutorTaskTypeEnum.UI_CASE_STEP.value],
+            status=ExecutorTaskStatusEnum.FAILED.value,
+            error_code=ExecutorTaskErrorCodeEnum.DATA_FACTORY_CLEANUP_FAILED.value,
+        )
+        if execution_id:
+            return query.filter(result_data__execution_id=execution_id).exists()
+        if cleanup_ids:
+            return query.filter(result_data__data_factory_auto_cleanup_execution_ids=cleanup_ids).exists()
+        return False
+
+    @staticmethod
+    def cleanup_for_case_attempt(detail_id, attempt):
+        from src.apps.system.enums.executor import ExecutorTaskTypeEnum
+        return ExecutorTask.objects.filter(
+            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
+            payload__parent_case_detail_id=detail_id, payload__parent_attempt=attempt,
+        )
+
+    @staticmethod
     def tasks():
         return Tasks.objects.all()
 

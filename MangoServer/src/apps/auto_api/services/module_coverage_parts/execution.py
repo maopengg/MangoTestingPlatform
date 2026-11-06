@@ -14,8 +14,9 @@ from src.apps.auto_api.exceptions import (
 from src.apps.auto_api.models import ApiCase, ApiCaseRevision
 from src.apps.auto_api.models import (
     ModuleCoverageCase,
+    ModuleCoverageCaseSnapshot,
 )
-from src.apps.test_center.models import ExecutionResult
+from src.apps.test_center.models import ExecutionResult, ProjectProduct
 
 
 class ModuleCoverageExecutionMixin:
@@ -61,9 +62,63 @@ class ModuleCoverageExecutionMixin:
         ).update(**updates)
 
     @classmethod
+    def repair_case_target(cls, item: ModuleCoverageCase):
+        if not item.current_snapshot_id:
+            return
+        snapshot = item.current_snapshot
+        if snapshot.interface_snapshot_id is None:
+            cls.link_pending_case_snapshots(snapshot.scan, coverage_case_id=item.id)
+        snapshot = ModuleCoverageCaseSnapshot.objects.select_related(
+            "interface_snapshot__module_interface__current_snapshot__module_interface",
+        ).get(id=snapshot.id)
+        interface = snapshot.interface_snapshot
+        if interface is None or interface.module_interface_id is None:
+            return
+        if (item.project_product_id, item.module_id, item.repository_key, item.branch,
+                item.interface_source_key_hash, item.interface_source_key) != (
+                interface.project_product_id, interface.module_id, interface.repository_key, interface.branch,
+                interface.source_key_hash, interface.source_key):
+            return
+        if item.module_interface_id not in (None, interface.module_interface_id):
+            return
+        item.current_snapshot = snapshot
+        item.module_interface = interface.module_interface
+        assessment = cls.case_coverage_assessment(item, interface.module_interface.current_snapshot)
+        item.coverage_validity = assessment["status"]
+        item.coverage_validity_reason = assessment["reason"]
+        item.save(update_fields=["module_interface", "coverage_validity", "coverage_validity_reason", "update_time"])
+
+    @classmethod
+    @transaction.atomic
+    def backfill_missing_case_targets(cls, *, project_product_id=None, module_id=None) -> dict:
+        from django.db.models import Q
+
+        cases = ModuleCoverageCase.objects.filter(
+            removed_at__isnull=True, current_snapshot__isnull=False,
+        ).exclude(status=ModuleCoverageCaseStatus.REMOVED).filter(
+            Q(module_interface__isnull=True) | Q(current_snapshot__interface_snapshot__isnull=True),
+        )
+        if project_product_id is not None:
+            cases = cases.filter(project_product_id=project_product_id)
+        if module_id is not None:
+            cases = cases.filter(module_id=module_id)
+        result = {"scanned": 0, "linked": 0, "unresolved": 0}
+        for item in cases.select_related("current_snapshot__scan").order_by("project_product_id", "id").iterator(chunk_size=200):
+            ProjectProduct.objects.select_for_update().get(id=item.project_product_id)
+            item = ModuleCoverageCase.objects.select_for_update().get(id=item.id)
+            cls.repair_case_target(item)
+            result["scanned"] += 1
+            complete = bool(item.module_interface_id and item.current_snapshot.interface_snapshot_id)
+            result["linked" if complete else "unresolved"] += 1
+        return result
+
+    @classmethod
     @transaction.atomic
     def bind_api_case(cls, coverage_case_id: int, api_case_id: int) -> ModuleCoverageCase:
         item = ModuleCoverageCase.objects.get(id=coverage_case_id, removed_at__isnull=True)
+        ProjectProduct.objects.select_for_update().get(id=item.project_product_id)
+        item = ModuleCoverageCase.objects.select_for_update().get(id=coverage_case_id, removed_at__isnull=True)
+        cls.repair_case_target(item)
         if cls.interface_analysis_blocked(item):
             raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
         api_case = ApiCase.objects.filter(

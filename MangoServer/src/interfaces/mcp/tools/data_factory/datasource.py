@@ -14,6 +14,7 @@ from src.apps.data_factory.services.discover import DataFactoryDiscover
 from src.apps.test_center.exceptions import TEST_ENVIRONMENT_REQUIRED, TestCenterError
 from src.apps.test_center.services.data_source import DataSourceConnectionService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
+from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import paginate_list, paginate_queryset
 from .helpers import _selected_test_env
@@ -274,7 +275,10 @@ def register_datasource_tools(mcp):
             project_product_id: int,
             test_env: int,
     ) -> dict:
-        """通过逻辑数据库执行 Redis 只读命令；写命令和高风险命令会被拒绝。"""
+        """通过逻辑数据库执行 Redis 只读命令；写命令和高风险命令会被拒绝。
+
+        成功与失败均进入系统运维的数据源执行记录，记录耗时和脱敏结果摘要（最多1000字符）。
+        """
         if is_missing_value(test_env):
             raise TestCenterError(TEST_ENVIRONMENT_REQUIRED)
         result = DataSourceExecutionRequestService.execute_operation(
@@ -284,6 +288,9 @@ def register_datasource_tools(mcp):
             operation_config=command,
             confirm_write=False,
             expected_db_type=DataSourceTypeEnum.REDIS.value,
+            source_context={'source_type': DatasourceAuditSourceEnum.MCP.value,
+                            'source_stage': DatasourceAuditStageEnum.QUERY.value, 'source_id': datasource_alias_id,
+                            'mcp_tool_name': 'query_data_factory_datasource_redis', 'operator_id': mcp_current_user_id()},
         )
         return ok(result, "Redis查询成功")
 
@@ -295,7 +302,10 @@ def register_datasource_tools(mcp):
             project_product_id: int,
             test_env: int,
     ) -> dict:
-        """通过逻辑数据库执行 Elasticsearch 索引 _search 查询，最多返回 100 条。"""
+        """通过逻辑数据库执行 Elasticsearch 索引 _search 查询，最多返回 100 条。
+
+        成功与失败均进入系统运维的数据源执行记录，记录耗时和脱敏结果摘要（最多1000字符）。
+        """
         if is_missing_value(test_env):
             raise TestCenterError(TEST_ENVIRONMENT_REQUIRED)
         result = DataSourceExecutionRequestService.execute_operation(
@@ -305,5 +315,8 @@ def register_datasource_tools(mcp):
             operation_config={"index": index, "query": query},
             confirm_write=False,
             expected_db_type=DataSourceTypeEnum.ELASTICSEARCH.value,
+            source_context={'source_type': DatasourceAuditSourceEnum.MCP.value,
+                            'source_stage': DatasourceAuditStageEnum.QUERY.value, 'source_id': datasource_alias_id,
+                            'mcp_tool_name': 'query_data_factory_datasource_elasticsearch', 'operator_id': mcp_current_user_id()},
         )
         return ok(result, "Elasticsearch查询成功")

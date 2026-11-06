@@ -6,7 +6,8 @@ COPY MangoServer/requirements ./requirements
 COPY MangoServer/local_packages ./local_packages
 ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
 RUN pip install --no-cache-dir -r requirements/master.txt -r requirements/local.txt -i ${PIP_INDEX_URL} \
-    && pip check
+    && pip check \
+    && python -c "import greenlet, httpx; from redis._parsers.resp2 import _RESP2Parser"
 COPY MangoServer/ .
 COPY skill/ ./skill/
 

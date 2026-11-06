@@ -139,7 +139,7 @@ export function postApiCaseBatchRun(
   test_env: number | string,
   executionName: string,
   apiConcurrencyLimit?: number | null,
-  executionVersion: 'editing' | 'published' = 'editing'
+  executionVersion: 'editing' | 'prepublished' | 'published' = 'editing'
 ) {
   return post({
     url: '/api/case/batch',

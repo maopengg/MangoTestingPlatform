@@ -182,6 +182,7 @@
                       class="mango-system-settings__item"
                     >
                       <ReportDeliveryEditor v-if="item.key === 'REPORT_DELIVERY_CONFIG'" v-model="item.value" :loading="itemSaving(item)" @save="saveItem(group, item)" />
+                      <DatasourcePerformanceEditor v-else-if="item.key === 'DATASOURCE_PERFORMANCE_POLICY'" v-model="item.value" :management-level="item.management_level" :runtime-status="item.runtime_status" :notice="item.performance_notice" :loading="itemSaving(item)" @save="saveItem(group, item)" />
                       <div v-else class="mango-system-settings__row">
                         <div class="mango-system-settings__label-wrap">
                           <span class="mango-system-settings__label">{{ itemLabel(item) }}</span>
@@ -441,6 +442,7 @@
   import EnvironmentNameOverrides from './components/EnvironmentNameOverrides.vue'
   import EvaluationAiProfilesEditor from './components/EvaluationAiProfilesEditor.vue'
   import ReportDeliveryEditor from './components/ReportDeliveryEditor.vue'
+  import DatasourcePerformanceEditor from './components/DatasourcePerformanceEditor.vue'
   import {
     getSystemCacheDataGrouped,
     getSystemCacheDataKeyValue,
@@ -542,6 +544,8 @@
     management_level: number
     has_value: boolean
     placeholder?: string
+    runtime_status?: any[]
+    performance_notice?: string
   }
 
   interface ConfigGroup {
@@ -560,32 +564,6 @@
   }
 
   const navigationDefinitions = [
-    { key: 'report-delivery', title: '报告生成与交付', description: '离线 HTML、对象存储与通知交付', groupKeys: ['report_delivery'] },
-    {
-      key: SYSTEM_SERVICES_GROUP_KEY,
-      title: '系统服务',
-      description: '基础服务与邮件',
-      groupKeys: ['system', 'email'],
-      includeBackendService: true,
-    },
-    {
-      key: 'access',
-      title: '用户与访问',
-      description: '自助注册、访问提示与登录页展示',
-      groupKeys: ['access'],
-    },
-    {
-      key: 'retention',
-      title: '数据保留',
-      description: '历史数据与运行产物自动清理周期',
-      groupKeys: ['retention'],
-    },
-    {
-      key: 'cache-performance',
-      title: '缓存与性能',
-      description: '页面统计缓存和数据访问边界',
-      groupKeys: ['cache_performance', 'data_source'],
-    },
     {
       key: 'api',
       title: 'API 自动化',
@@ -610,25 +588,52 @@
       description: '执行超时、恢复与重试',
       groupKeys: ['execution'],
     },
-    {
-      key: 'runtime-capacity',
-      title: '运行与容量',
-      description: 'Worker、执行器与实时工作区容量',
-      groupKeys: ['runtime'],
-    },
+    { key: 'report-delivery', title: '报告生成与交付', description: '离线 HTML、对象存储与通知交付', groupKeys: ['report_delivery'] },
     {
       key: DATA_CAPABILITIES_GROUP_KEY,
       title: '数据工厂',
       description: '数据校验与数据工厂参数',
       groupKeys: ['data_factory'],
     },
+    { key: 'evaluation_ai', title: '效果测评 AI', description: '独立维护评分与总结 AI 列表', groupKeys: ['evaluation_ai'] },
     {
       key: AI_CAPABILITIES_GROUP_KEY,
       title: '智能能力',
       description: '模型服务与智能定位参数',
       groupKeys: ['ai', AI_VISION_GROUP_KEY],
     },
-    { key: 'evaluation_ai', title: '效果测评 AI', description: '独立维护评分与总结 AI 列表', groupKeys: ['evaluation_ai'] },
+    {
+      key: 'retention',
+      title: '数据保留',
+      description: '历史数据与运行产物自动清理周期',
+      groupKeys: ['retention'],
+    },
+    {
+      key: 'access',
+      title: '用户与访问',
+      description: '自助注册、访问提示与登录页展示',
+      groupKeys: ['access'],
+    },
+    {
+      key: SYSTEM_SERVICES_GROUP_KEY,
+      title: '系统服务',
+      description: '基础服务与邮件',
+      groupKeys: ['system', 'email'],
+      includeBackendService: true,
+    },
+    {
+      key: 'cache-performance',
+      title: '缓存与性能',
+      description: '页面统计缓存和数据访问边界',
+      groupKeys: ['cache_performance', 'data_source'],
+    },
+    {
+      key: 'runtime-capacity',
+      title: '运行与容量',
+      description: 'Worker、执行器与实时工作区容量',
+      groupKeys: ['runtime'],
+    },
+    { key: 'datasource-performance', title: '数据源性能保护', description: '实例限流、连接预算与清理容量', groupKeys: ['datasource_performance'] },
   ]
 
   const settingsGroups = ref<ConfigGroup[]>([])
@@ -916,7 +921,7 @@
   const normalizeEditValue = (item: ConfigItem) => {
     if (item.key === API_DEFAULT_ASSERTION_CHECKS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
-    if (item.key === 'REPORT_DELIVERY_CONFIG') {
+    if (['REPORT_DELIVERY_CONFIG', 'DATASOURCE_PERFORMANCE_POLICY'].includes(item.key)) {
       if (typeof item.value !== 'string') return { ...(item.value || {}) }
       try { return JSON.parse(item.value) } catch { return {} }
     }
@@ -1637,12 +1642,14 @@
   }
 
   .mango-system-settings__item + .mango-system-settings__item,
-  :deep(.mango-report-delivery .mango-system-settings__row + .mango-system-settings__row) {
+  :deep(.mango-report-delivery .mango-system-settings__row + .mango-system-settings__row),
+  :deep(.mango-datasource-performance .mango-system-settings__row + .mango-system-settings__row) {
     margin-top: var(--m-space-md);
   }
 
   .mango-system-settings__row,
-  :deep(.mango-report-delivery .mango-system-settings__row) {
+  :deep(.mango-report-delivery .mango-system-settings__row),
+  :deep(.mango-datasource-performance .mango-system-settings__row) {
     display: grid;
     grid-template-columns: 200px 90px minmax(240px, 420px) minmax(0, 1fr);
     align-items: center;
@@ -1650,7 +1657,8 @@
   }
 
   .mango-system-settings__label,
-  :deep(.mango-report-delivery .mango-system-settings__label) {
+  :deep(.mango-report-delivery .mango-system-settings__label),
+  :deep(.mango-datasource-performance .mango-system-settings__label) {
     min-width: 0;
     font-size: 14px;
     line-height: 20px;
@@ -1658,7 +1666,8 @@
   }
 
   .mango-system-settings__label-wrap,
-  :deep(.mango-report-delivery .mango-system-settings__label-wrap) {
+  :deep(.mango-report-delivery .mango-system-settings__label-wrap),
+  :deep(.mango-datasource-performance .mango-system-settings__label-wrap) {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -1667,13 +1676,15 @@
   }
 
   .mango-system-settings__control,
-  :deep(.mango-report-delivery .mango-system-settings__control) {
+  :deep(.mango-report-delivery .mango-system-settings__control),
+  :deep(.mango-datasource-performance .mango-system-settings__control) {
     grid-column: 3;
     min-width: 0;
   }
 
   .mango-system-settings__type,
-  :deep(.mango-report-delivery .mango-system-settings__type) {
+  :deep(.mango-report-delivery .mango-system-settings__type),
+  :deep(.mango-datasource-performance .mango-system-settings__type) {
     min-width: 0;
     white-space: nowrap;
   }
@@ -1682,25 +1693,29 @@
     grid-column: 3;
   }
 
-  .mango-system-settings__aside {
+  .mango-system-settings__aside,
+  :deep(.mango-datasource-performance .mango-system-settings__aside) {
     min-width: 0;
     max-width: 520px;
     overflow-wrap: anywhere;
   }
 
-  .mango-system-settings__aside > .mango-system-settings__help {
+  .mango-system-settings__aside > .mango-system-settings__help,
+  :deep(.mango-datasource-performance .mango-system-settings__aside > .mango-system-settings__help) {
     margin-top: 0;
   }
 
   @container (max-width: 1000px) {
     .mango-system-settings__row,
     :deep(.mango-report-delivery .mango-system-settings__row),
+    :deep(.mango-datasource-performance .mango-system-settings__row),
     .mango-system-settings__switch-row,
     .mango-system-settings__cache-item {
       grid-template-columns: 200px 90px minmax(0, 1fr);
     }
 
-    .mango-system-settings__aside {
+    .mango-system-settings__aside,
+    :deep(.mango-datasource-performance .mango-system-settings__aside) {
       grid-column: 3;
     }
   }
@@ -1708,6 +1723,7 @@
   @container (max-width: 540px) {
     .mango-system-settings__row,
     :deep(.mango-report-delivery .mango-system-settings__row),
+    :deep(.mango-datasource-performance .mango-system-settings__row),
     .mango-system-settings__cache-item {
       grid-template-columns: minmax(0, 1fr) auto;
     }
@@ -1716,12 +1732,14 @@
       grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .mango-system-settings__aside {
+    .mango-system-settings__aside,
+    :deep(.mango-datasource-performance .mango-system-settings__aside) {
       grid-column: 1 / -1;
     }
 
     .mango-system-settings__control,
     :deep(.mango-report-delivery .mango-system-settings__control),
+    :deep(.mango-datasource-performance .mango-system-settings__control),
     .mango-system-settings__cache-actions {
       grid-column: 1 / -1;
     }
@@ -1731,7 +1749,8 @@
     }
   }
 
-  .mango-system-settings__help {
+  .mango-system-settings__help,
+  :deep(.mango-datasource-performance .mango-system-settings__help) {
     display: block;
     margin-top: 4px;
     color: var(--m-muted);
@@ -1744,12 +1763,14 @@
   }
 
   .mango-system-settings__input,
-  :deep(.mango-report-delivery .mango-system-settings__input) {
+  :deep(.mango-report-delivery .mango-system-settings__input),
+  :deep(.mango-datasource-performance .mango-system-settings__input) {
     width: 100%;
   }
 
   .mango-system-settings__input--number,
-  :deep(.mango-report-delivery .mango-system-settings__input--number) {
+  :deep(.mango-report-delivery .mango-system-settings__input--number),
+  :deep(.mango-datasource-performance .mango-system-settings__input--number) {
     max-width: 200px;
   }
 

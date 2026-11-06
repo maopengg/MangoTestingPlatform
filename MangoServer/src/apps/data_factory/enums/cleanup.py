@@ -1,6 +1,11 @@
 from src.common.enums.base import BaseEnum
 
 
+class DataFactoryCleanupModeEnum(BaseEnum):
+    SYNCHRONOUS = 'synchronous'
+    SCHEDULED = 'scheduled'
+
+
 class DataFactoryCleanupStrategyEnum(BaseEnum):
     """清理策略"""
     EXECUTION_END = 1

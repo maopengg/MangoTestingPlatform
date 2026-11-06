@@ -46,6 +46,25 @@ class UIConsumer:
     @async_task_db_connection()
     def u_test_suite_details(cls, data: dict):
         result = TestSuiteDetailResultSchema.from_contract(TestSuiteDetailResultContract.model_validate(data))
+        if isinstance(result.result_data, UiCaseExecutionResult):
+            from mangotools.enums import TaskEnum
+            from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
+            from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+            from src.apps.test_center.enums import TestCaseTypeEnum
+            failures = []
+            if result.result_data.data_factory_auto_cleanup_execution_ids:
+                with DataFactoryCleanupScheduleService.report_scope(
+                        result.id, suite_id=result.test_suite, case_id=result.result_data.id,
+                        case_type=TestCaseTypeEnum.UI.value):
+                    failures = TestReportWriting.cleanup_data_factory(result.result_data)
+            if (result.result_data.data_factory_auto_cleanup_execution_ids and TaskCenterQuerySelector.ui_cleanup_failed(
+                    result.result_data.id, result.result_data.execution_id,
+                    result.result_data.data_factory_auto_cleanup_execution_ids)):
+                failures.append('原执行的数据工厂清理失败；后续补清不能替代原执行通过')
+            if failures:
+                result.status = result.result_data.status = TaskEnum.FAIL.value
+                result.error_message = result.result_data.error_message = '; '.join(
+                    filter(None, [result.error_message, *failures]))[:2048]
         UpdateTestSuite.update_test_suite_details(result)
         cls._finish_executor_slot(getattr(result, "result_data", None))
         GrayCaseExecutionRunner.restore_by_config_ids(

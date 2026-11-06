@@ -1,4 +1,5 @@
 from django.db import transaction
+from src.apps.auto_api.enums.case import ApiCaseReleaseStatusEnum
 
 from src.apps.auto_api.exceptions import (
     API_VERSION_CASE_NOT_FOUND,
@@ -6,6 +7,7 @@ from src.apps.auto_api.exceptions import (
     API_VERSION_CASE_VERSION_EXECUTION_INVALID,
     API_VERSION_CASE_VERSION_EXECUTION_INVALID_CODE_CASE_VERSION_EXECUTION_INVALID,
     API_VERSION_SELECTED_CASES_UNPUBLISHED,
+    API_VERSION_SELECTED_CASES_NOT_PREPUBLISHED,
     API_VERSION_VERSION_EXECUTION_INVALID,
     AutoApiError,
 )
@@ -49,6 +51,7 @@ class ApiCaseRevisionSelectionMixin:
         if normalized not in (
                 cls.BATCH_EXECUTION_EDITING,
                 cls.BATCH_EXECUTION_PUBLISHED,
+                ApiCaseReleaseStatusEnum.PREPUBLISHED.value,
         ):
             raise AutoApiError(API_VERSION_VERSION_EXECUTION_INVALID, value=(execution_version,))
         return normalized
@@ -62,7 +65,7 @@ class ApiCaseRevisionSelectionMixin:
             execution_version: str | None,
             operator_id: int | None = None,
     ) -> dict[int, ApiCaseExecutionSelection]:
-        """按用户选择执行当前编辑态，或固定当前发布版本。"""
+        """按选择执行编辑态，或固定预发布/已发布修订；不跨版本回退。"""
         normalized_ids = list(dict.fromkeys(int(case_id) for case_id in case_ids))
         version = cls.normalize_batch_execution_version(execution_version)
         cases = {
@@ -72,6 +75,33 @@ class ApiCaseRevisionSelectionMixin:
         missing_case_ids = [case_id for case_id in normalized_ids if case_id not in cases]
         if missing_case_ids:
             raise AutoApiError(API_VERSION_CASE_NOT_FOUND, value=(', '.join(map(str, missing_case_ids)),))
+
+        if version == ApiCaseReleaseStatusEnum.PREPUBLISHED.value:
+            candidates = {
+                release.api_case_id: release
+                for release in ApiCaseRelease.objects.filter(
+                    api_case_id__in=normalized_ids,
+                    status=ApiCaseReleaseStatusEnum.PREPUBLISHED.value,
+                ).select_related('revision')
+            }
+            missing = [f'{case_id}-{cases[case_id].name}' for case_id in normalized_ids
+                       if case_id not in candidates]
+            if missing:
+                raise AutoApiError(API_VERSION_SELECTED_CASES_NOT_PREPUBLISHED, value=('、'.join(missing),))
+            selections = {}
+            for case_id in normalized_ids:
+                revision = candidates[case_id].revision
+                if revision.api_case_id != case_id:
+                    raise AutoApiError(API_VERSION_CASE_REVISION_NOT_FOUND)
+                cls.verify_execution_revision(revision)
+                # 只绑定不可变修订：候选退回会删除 Release，但不能改变已排队任务。
+                selections[case_id] = ApiCaseExecutionSelection(
+                    case_id=case_id, case_revision_id=revision.id,
+                    case_revision_no=revision.revision_no, case_release_id=None,
+                    version_label=f'预发布 r{revision.revision_no}', checksum=revision.checksum,
+                    execution_source=ApiCaseReleaseStatusEnum.PREPUBLISHED.value,
+                )
+            return selections
 
         if version == cls.BATCH_EXECUTION_PUBLISHED:
             published_case_ids = set(
@@ -118,6 +148,8 @@ class ApiCaseRevisionSelectionMixin:
         api_case = ApiCase.objects.select_for_update().filter(id=case_id).only('id').first()
         if api_case is None:
             raise AutoApiError(API_VERSION_CASE_NOT_FOUND, value=(case_id,))
+        if version == ApiCaseReleaseStatusEnum.PREPUBLISHED.value:
+            return cls.resolve_batch_executions([case_id], execution_version=version)[case_id]
         if version == cls.BATCH_EXECUTION_PUBLISHED:
             return cls.resolve_current_published(case_id)
         return ApiCaseExecutionSelection(
@@ -128,6 +160,24 @@ class ApiCaseRevisionSelectionMixin:
             version_label='当前编辑态',
             checksum=None,
             execution_source='editing',
+        )
+
+    @classmethod
+    def resolve_manual_revision_retry(cls, case_id: int, revision_id: int | None):
+        """保留手工执行的固定候选；旧编辑态临时快照仍按原规则转回编辑态。"""
+        if revision_id is None:
+            return None
+        revision = ApiCaseRevision.objects.filter(id=revision_id, api_case_id=case_id).first()
+        if revision is None:
+            raise AutoApiError(API_VERSION_CASE_REVISION_NOT_FOUND)
+        if revision.source == 'batch_execution_snapshot':
+            return None
+        cls.verify_execution_revision(revision)
+        return ApiCaseExecutionSelection(
+            case_id=case_id, case_revision_id=revision.id,
+            case_revision_no=revision.revision_no, case_release_id=None,
+            version_label=f'修订 r{revision.revision_no}', checksum=revision.checksum,
+            execution_source=ApiCaseReleaseStatusEnum.PREPUBLISHED.value,
         )
 
     @classmethod

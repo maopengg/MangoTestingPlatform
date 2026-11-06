@@ -13,7 +13,9 @@ from src.apps.auto_api.enums.callback import (
 )
 from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
 from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
-from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus, ModuleCoveragePolicy
+from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
+from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
+from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus, ModuleCoveragePolicy, ModuleCoverageAnalysisStatus
 
 from src.apps.auto_api.enums import (
     ApiCaseConfigurationFilterEnum,
@@ -97,6 +99,7 @@ from src.apps.test_center.enums import CaseLevelEnum, TestCaseTypeEnum, ReportFa
 from src.apps.test_center.enums.data_source import DataSourceCategoryEnum, DataSourceTypeEnum
 from src.apps.test_center.enums.environment import AutoTypeEnum, EnvironmentEnum
 from src.apps.test_center.enums.product import ProductTypeEnum
+from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 
 
 class EnumCatalogService:
@@ -105,6 +108,9 @@ class EnumCatalogService:
         enum_data = {
             'module_coverage_policy': [
                 {'key': value, 'title': title} for value, title in ModuleCoveragePolicy.choices
+            ],
+            'module_coverage_analysis_status': [
+                {'key': item.value, 'title': item.label} for item in ModuleCoverageAnalysisStatus
             ],
             'module_coverage_interface_coverage_status': [
                 {'key': value, 'title': title} for value, title in ModuleCoverageInterfaceCoverageStatus.choices
@@ -158,6 +164,9 @@ class EnumCatalogService:
             'data_factory_template_config_status': DataFactoryTemplateConfigStatusEnum.get_option(),
             'data_factory_template_usage_scope': DataFactoryTemplateUsageScopeEnum.get_option(),
             'data_factory_execution_source': DataFactoryExecutionSourceEnum.get_option(),
+            'datasource_audit_source': DatasourceAuditSourceEnum.get_option(),
+            'datasource_audit_stage': DatasourceAuditStageEnum.get_option(),
+            'data_factory_es_cleanup_mode': EsCleanupModeEnum.get_option(),
             'data_factory_execution_stage': DataFactoryExecutionStageEnum.get_option(),
             'data_factory_execution_status': DataFactoryExecutionStatusEnum.get_option(),
             'data_factory_cleanup_status': DataFactoryCleanupStatusEnum.get_option(),
@@ -187,6 +196,7 @@ class EnumCatalogService:
             'report_retention_policy': ReportRetentionPolicyEnum.get_option(),
             'test_case_type': TestCaseTypeEnum.get_option(),
             'report_failure_reason': ReportFailureReasonEnum.get_option(),
+            'report_execution_phase': ReportExecutionPhaseEnum.get_option(),
             'report_source': ReportSourceEnum.get_option(),
             'file_status': FileStatusEnum.get_option(),
             'pytest_source_status': PytestSourceStatusEnum.get_option(),

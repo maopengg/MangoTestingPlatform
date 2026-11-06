@@ -148,6 +148,7 @@ def _template_summary(item: DataFactoryTemplate, name: str | None = None) -> dic
         "field_overrides": item.field_overrides,
         "output_config": item.output_config,
         "post_insert_updates": item.post_insert_updates,
+        "cleanup_resources": item.cleanup_resources,
         "cleanup_strategy": item.cleanup_strategy,
         "is_default": item.is_default,
         "usage_scope": item.usage_scope,
@@ -246,6 +247,7 @@ def _execution_detail(execution_id: int) -> dict:
         item_id = (sql_record.source_detail or {}).get('execution_item_id')
         record_payload = {
             'id': sql_record.id,
+            'datasource_type': sql_record.datasource_type,
             'execution_item_id': item_id,
             'stage': sql_record.source_stage,
             'sql': sql_record.sql_text,
@@ -288,6 +290,7 @@ def _execution_detail(execution_id: int) -> dict:
                 "cleanup_status": item.cleanup_status,
                 "cleanup_error": item.cleanup_error,
                 "sql_executions": sql_records_by_item.get(item.id, []),
+                "cleanup_resources": item.cleanup_resources,
             }
         )
     cache_keys = []

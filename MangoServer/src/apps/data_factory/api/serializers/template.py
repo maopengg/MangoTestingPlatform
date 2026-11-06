@@ -92,6 +92,7 @@ class DataFactoryTemplateItemSerializerC(serializers.ModelSerializer):
             "field_overrides": template.field_overrides,
             "output_config": template.output_config,
             "cleanup_strategy": template.cleanup_strategy,
+            "cleanup_resources": template.cleanup_resources,
             "usage_scope": template.usage_scope,
             "status": template.status,
         }
@@ -133,6 +134,11 @@ class DataFactoryTemplateSerializer(ProductModuleBindingSerializerMixin, seriali
         except ValidationError as error:
             raise DataFactoryError(DATA_FACTORY_FIELD_INVALID, value=(error,)) from error
         output_config = attrs.get('output_config', self.instance.output_config if self.instance else [])
+        if 'cleanup_resources' in attrs:
+            from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+            attrs['cleanup_resources'] = DataFactoryCleanupResourceService.normalize(
+                attrs['cleanup_resources'], entity=entity, project_product_id=project_product.id,
+            )
         try:
             attrs['output_config'] = DataFactoryOutputConfig.model_validate(output_config or []).model_dump()
         except ValidationError as error:

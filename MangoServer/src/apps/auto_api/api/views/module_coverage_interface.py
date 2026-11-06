@@ -63,6 +63,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
             resolution_status,
             request.query_params.get("coverage_policy"),
             resolution_statuses=request.query_params.get("resolution_status__in", "").split(",") if request.query_params.get("resolution_status__in") else None,
+            analysis_statuses=request.query_params.get("analysis_status__in", "").split(",") if request.query_params.get("analysis_status__in") else None,
             coverage_statuses=request.query_params.get("coverage_status__in", "").split(",") if request.query_params.get("coverage_status__in") else None,
             methods=request.query_params.get("method__in", "").split(",") if request.query_params.get("method__in") else None,
             sync_actions=request.query_params.get("sync_action__in", "").split(",") if request.query_params.get("sync_action__in") else None,

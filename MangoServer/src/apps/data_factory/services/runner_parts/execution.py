@@ -26,6 +26,9 @@ from src.apps.data_factory.models import (
     DataFactoryTemplate,
 )
 from src.apps.data_factory.services.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+from src.apps.data_factory.services.execution_capacity import DatasourceExecutionCapacityService
+from src.apps.data_factory.services.execution_metadata import DataFactoryExecutionMetadata
 from ..datasource import DataFactoryDatasourceResolver, is_missing_value
 from ..entity import DataFactoryEntityService
 from ..execution_snapshot import DATA_FACTORY_INSERT_SNAPSHOT_KEY, build_insert_snapshot
@@ -41,6 +44,7 @@ from ..type_cast import DataFactoryTypeCast
 
 class DataFactoryRunnerExecutionMixin:
     @classmethod
+    @DataFactoryExecutionMetadata.scope()
     def debug_run_template(
             cls,
             template_id: int,
@@ -54,6 +58,7 @@ class DataFactoryRunnerExecutionMixin:
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         cls.require_template_entities_available(template, test_object_id)
+        DatasourceExecutionCapacityService.wait_for_fixture(template, test_object_id)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
         with DataFactoryRuntimeCache.bind_context(test_data, context):
             main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
@@ -66,7 +71,7 @@ class DataFactoryRunnerExecutionMixin:
                 module=template.module or template.entity.module,
                 stage=DataFactoryExecutionStageEnum.DEBUG.value,
                 status=DataFactoryExecutionStatusEnum.PROCEED.value,
-                context=context or {},
+                context=DataFactoryCleanupScheduleService.execution_context(context),
             )
 
             try:
@@ -95,7 +100,7 @@ class DataFactoryRunnerExecutionMixin:
                     item_overrides,
                 )
                 output = cls.build_output(template.output_config, data)
-                execution.context = runtime_context
+                execution.context = DataFactoryCleanupScheduleService.execution_context(runtime_context)
                 execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
                 execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
                 execution.save()
@@ -118,6 +123,7 @@ class DataFactoryRunnerExecutionMixin:
                 raise
 
     @classmethod
+    @DataFactoryExecutionMetadata.scope()
     def run_template(
             cls,
             template_id: int,
@@ -136,6 +142,7 @@ class DataFactoryRunnerExecutionMixin:
         if not test_object_id and not is_missing_value(test_env):
             test_object_id = DataFactoryDatasourceResolver.resolve_test_object_id(template.project_product_id, test_env)
         cls.require_template_entities_available(template, test_object_id)
+        DatasourceExecutionCapacityService.wait_for_fixture(template, test_object_id)
         test_data = test_data or DataFactoryRuntimeCache.build_test_data(template.project_product_id, test_env)
         with DataFactoryRuntimeCache.bind_context(test_data, context):
             main_overrides, item_overrides = cls.split_scene_overrides(overrides or {})
@@ -148,7 +155,7 @@ class DataFactoryRunnerExecutionMixin:
                 module=template.module or template.entity.module,
                 stage=stage,
                 status=DataFactoryExecutionStatusEnum.PROCEED.value,
-                context=context or {},
+                context=DataFactoryCleanupScheduleService.execution_context(context),
             )
 
             try:
@@ -181,7 +188,7 @@ class DataFactoryRunnerExecutionMixin:
                     root_alias=alias_override,
                 )
                 output = cls.build_output(template.output_config, data)
-                execution.context = runtime_context
+                execution.context = DataFactoryCleanupScheduleService.execution_context(runtime_context)
                 execution.status = DataFactoryExecutionStatusEnum.SUCCESS.value
                 execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
                 execution.save()
@@ -335,11 +342,20 @@ class DataFactoryRunnerExecutionMixin:
         merged_overrides = {**(template.field_overrides or {}), **overrides}
         fields = cls.build_effective_fields(fields, merged_overrides)
         cls.resolve_dependencies(fields, execution, context, test_object_id, visiting, test_data)
-        payload = DataFactoryValueGenerator.build_payload(fields, None, context, test_data)
+        payload = {}
         alias = alias_override or template.name
+
+        def prepare_payload():
+            # 表结构、预算与连接等待结束后再生成一次；不重算已传出的依赖 ID。
+            payload.update(DataFactoryValueGenerator.build_payload(fields, None, context, test_data))
+            from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+            DataFactoryCleanupResourceService.preflight(template, payload, binding, execution=execution)
+            return payload
 
         def record_execution_item(insert_result: dict):
             created = insert_result["created"]
+            from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+            cleanup_resources = DataFactoryCleanupResourceService.capture(template, entity, created, binding)
             cleanup_strategy = (
                 cleanup_strategy_override
                 if cleanup_strategy_override is not None
@@ -368,6 +384,7 @@ class DataFactoryRunnerExecutionMixin:
                     DATA_FACTORY_INSERT_SNAPSHOT_KEY: build_insert_snapshot(entity, binding),
                 },
                 cleanup_strategy=cleanup_strategy,
+                cleanup_resources=cleanup_resources,
                 cleanup_order=entity.cleanup_order,
                 cleanup_status=cls.cleanup_status_for_strategy(cleanup_strategy),
             )
@@ -381,6 +398,7 @@ class DataFactoryRunnerExecutionMixin:
             execution=execution,
             template=template,
             alias=alias,
+            prepare_payload=prepare_payload,
         )
         created = insert_result["created"]
         jsonable_payload = DataFactoryTypeCast.to_jsonable({**payload, **created})

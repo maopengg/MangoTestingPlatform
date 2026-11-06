@@ -14,6 +14,16 @@ from src.apps.test_center.services.test_suite.timeout_recovery import TestSuiteT
 
 
 class TestSuiteTimeoutRecoveryServiceTests(SimpleTestCase):
+    def setUp(self):
+        guard = patch('src.apps.test_center.models.TestSuite.objects')
+        guard.start()
+        self.addCleanup(guard.stop)
+        for guard in [patch.object(TestSuiteTimeoutRecoveryService, 'project_business_status'),
+                      patch('src.apps.task_center.selectors.querysets.TaskCenterQuerySelector.cleanup_for_case_attempt',
+                            return_value=Mock(exists=Mock(return_value=False)))]:
+            guard.start()
+            self.addCleanup(guard.stop)
+
     def build_detail(self, case_type=TestCaseTypeEnum.API.value, retry=1):
         return SimpleNamespace(
             id=1,
@@ -61,7 +71,7 @@ class TestSuiteTimeoutRecoveryServiceTests(SimpleTestCase):
         self.assertIn('第3/4次执行', message)
 
     def test_reset_for_retry_sets_visible_system_timeout_message(self):
-        detail = self.build_detail(retry=2)
+        detail = self.build_detail(TestCaseTypeEnum.UI.value, retry=2)
         locked_queryset = Mock()
         locked_queryset.get.return_value = detail
         with patch.object(TestSuiteDetails.objects, 'select_for_update', return_value=locked_queryset):

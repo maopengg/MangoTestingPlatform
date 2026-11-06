@@ -15,6 +15,8 @@ from src.apps.data_factory.schemas.datasource_target import DatasourceTarget
 from src.apps.data_factory.services.data_source_error import DataSourceErrorService
 from src.apps.data_factory.services.datasource_target import DatasourceTargetService
 from src.apps.data_factory.services.elasticsearch_http import open_elasticsearch_request
+from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
 from src.apps.test_center.enums.data_source import (
     DataSourceCategoryEnum,
     DataSourceTypeEnum,
@@ -94,6 +96,7 @@ class DataSourceConnectionService:
         return {**result, 'connected': True, 'checks': checks, 'error': None}
 
     @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.NETWORK_PROBE.value)
     def _diagnose_network(cls, data_source: Database) -> dict:
         if data_source.db_type == DataSourceTypeEnum.SQLITE.value:
             return cls._diagnostic_check('network', '域名解析与端口访问', 'passed', 'SQLite为本地文件，无需网络连接')
@@ -167,6 +170,7 @@ class DataSourceConnectionService:
         return '连接可正常执行SELECT 1；业务库权限以环境绑定诊断为准'
 
     @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.TEST_CONNECTION.value)
     def test_connection(cls, data_source: Database) -> dict:
         if not isinstance(data_source, DatasourceTarget):
             data_source = DatasourceTargetService.maintenance(data_source)
@@ -336,7 +340,7 @@ class DataSourceConnectionService:
             context = ssl._create_unverified_context()
         try:
             req = urllib_request.Request(url, headers=headers, method="GET")
-            with open_elasticsearch_request(req, timeout=cls.timeout_seconds(), context=context) as response:
+            with open_elasticsearch_request(req, timeout=cls.timeout_seconds(), target=data_source, context=context) as response:
                 body = json.loads(response.read().decode("utf-8"))
             return {
                 "protocol": scheme,

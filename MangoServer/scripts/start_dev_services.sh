@@ -55,6 +55,10 @@ echo "realtime:    ws://$REALTIME_HOST:$REALTIME_PORT/"
 echo "mcp-service: http://$MCP_HOST:$MCP_PORT/  START_MCP=$START_MCP MCP_WORKERS=$MCP_WORKERS"
 echo
 
+if ! "$PYTHON_BIN" -c 'import greenlet, httpx; from redis._parsers.resp2 import _RESP2Parser'; then
+  echo '后端依赖不完整，请先使用当前虚拟环境安装 requirements/dev.txt 和 requirements/local.txt；未启动服务。' >&2
+  exit 1
+fi
 echo "Initializing system data..."
 "$PYTHON_BIN" manage.py init_system_data "--env=$ENV_NAME"
 
@@ -66,13 +70,14 @@ start_service realtime-service \
   env MANGO_SERVICE_NAME=realtime-service MANGO_SERVICE_INSTANCE=realtime-1 \
   "$PYTHON_BIN" manage.py run_realtime_service "--env=$ENV_NAME" --host "$REALTIME_HOST" --port "$REALTIME_PORT" --workers 1
 
+scheduler_args=(--node-name "$SCHEDULER_NODE" --dispatch-batch-size "$SCHEDULER_DISPATCH_BATCH_SIZE")
 if [[ "$ENV_NAME" == "dev" || "$ENV_NAME" == "dev1" ]]; then
-  echo "跳过 scheduler-service：dev 环境不自动执行定时任务"
-else
-  start_service scheduler-service \
-    env MANGO_SERVICE_NAME=scheduler-service MANGO_SERVICE_INSTANCE="$SCHEDULER_NODE" \
-    "$PYTHON_BIN" manage.py run_scheduler "--env=$ENV_NAME" --node-name "$SCHEDULER_NODE" --dispatch-batch-size "$SCHEDULER_DISPATCH_BATCH_SIZE"
+  echo "scheduler-service 仅执行清理：dev 环境不自动执行定时业务任务"
+  scheduler_args+=(--cleanup-only)
 fi
+start_service scheduler-service \
+  env MANGO_SERVICE_NAME=scheduler-service MANGO_SERVICE_INSTANCE="$SCHEDULER_NODE" \
+  "$PYTHON_BIN" manage.py run_scheduler "--env=$ENV_NAME" "${scheduler_args[@]}"
 
 start_service monitoring-service \
   env MANGO_SERVICE_NAME=monitoring-service MANGO_SERVICE_INSTANCE=monitoring-1 \

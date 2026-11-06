@@ -2,6 +2,7 @@
 from datetime import timedelta
 
 from django.db.models import Q
+from django.db import transaction
 from django.utils import timezone
 
 from src.apps.data_factory.enums import (
@@ -11,6 +12,11 @@ from src.apps.data_factory.enums import (
 )
 from src.apps.data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
 from src.apps.data_factory.services.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+from src.apps.system.enums.executor import ExecutorTaskStatusEnum
+from src.apps.task_center.services.execution.executor_task import ExecutorTaskService
+from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY
+from src.apps.data_factory.schemas.cleanup_resource import CleanupReportOwner
 from src.common.logging import log
 
 
@@ -22,7 +28,17 @@ class DataFactoryExecutionRecovery:
     LEGACY_OVERDUE_ERROR = '执行数据超过 24 小时仍未清理，请核对后执行清理'
 
     @classmethod
+    @transaction.atomic
+    def recover_inline_cleanup(cls):
+        interrupted = ExecutorTaskService.expire_inline_cleanup_tasks()
+        for execution in DataFactoryExecution.objects.filter(id__in=interrupted):
+            DataFactoryCleanup.mark_execution_failed(
+                execution, '同步清理进程失联或阶段超时，结果需核查；请在执行记录核对后补清')
+        return len(interrupted)
+
+    @classmethod
     def recover(cls) -> dict:
+        interrupted_count = cls.recover_inline_cleanup()
         now = timezone.now()
         stale_running_before = now - timedelta(minutes=cls.RUNNING_TIMEOUT_MINUTES)
         automatic_cleanup_before = now - timedelta(minutes=cls.RUNNING_TIMEOUT_MINUTES)
@@ -49,22 +65,34 @@ class DataFactoryExecutionRecovery:
         ).distinct().order_by('id')[:cls.BATCH_SIZE]
 
         recovered = 0
-        failed = 0
+        failed = interrupted_count
+        queued = 0
         for execution in automatic_candidates:
             if execution.status == DataFactoryExecutionStatusEnum.PROCEED.value:
                 execution.status = DataFactoryExecutionStatusEnum.FAIL.value
                 execution.error_message = '执行进程中断或超时，平台已触发数据清理补偿'
                 execution.save(update_fields=['status', 'error_message', 'update_time'])
             try:
-                result = DataFactoryCleanup.cleanup_execution(
-                    execution.id,
-                    force_cleanup=True,
-                    allow_missing=True,
-                )
-                if result.get('fail'):
+                saved_owner = (execution.context or {}).get(CLEANUP_REPORT_CONTEXT_KEY)
+                if not saved_owner:
+                    DataFactoryCleanup.mark_execution_failed(
+                        execution, '执行已中断或自动清理未完成，请核对执行记录后补清；无正式报告不会转入调度队列')
                     failed += 1
-                else:
+                    continue
+                owner = CleanupReportOwner.model_validate(saved_owner, strict=True).model_dump()
+                DataFactoryCleanupScheduleService.validate_report_owner(owner, execution)
+                token = DataFactoryCleanupScheduleService.set_owner(
+                    owner['parent_case_detail_id'], owner['parent_attempt'])
+                try:
+                    task = DataFactoryCleanupScheduleService.enqueue(execution.id)
+                finally:
+                    DataFactoryCleanupScheduleService.reset_owner(token)
+                if task.status == ExecutorTaskStatusEnum.FAILED.value:
+                    failed += 1
+                elif task.status == ExecutorTaskStatusEnum.SUCCESS.value:
                     recovered += 1
+                else:
+                    queued += 1
             except Exception as error:
                 failed += 1
                 error_message = f'数据工厂清理补偿异常：{error}'
@@ -77,6 +105,7 @@ class DataFactoryExecutionRecovery:
         return {
             'data_factory_recovery_count': recovered,
             'data_factory_recovery_failed_count': failed,
+            'data_factory_recovery_queued_count': queued,
             'data_factory_residual_todo_count': manual_cleanup['pending'],
             'data_factory_residual_resolved_count': manual_cleanup['resolved'],
         }

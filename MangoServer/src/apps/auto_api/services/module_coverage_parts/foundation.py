@@ -232,6 +232,8 @@ class ModuleCoverageFoundationMixin:
                 interface_snapshot.source_key_hash
         ):
             return {"status": ModuleCoverageValidity.INVALID, "reason": "Case与当前接口身份不一致"}
+        if (payload.method.upper(), payload.url) != (interface_snapshot.method, interface_snapshot.url):
+            return {"status": ModuleCoverageValidity.INVALID, "reason": "Case与当前接口定义不一致"}
         missing_nodes = sorted(
             set(payload.covered_node_ids) - set(interface_snapshot.node_ids or []),
         )

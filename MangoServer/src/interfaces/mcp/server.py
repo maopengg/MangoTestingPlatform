@@ -953,6 +953,8 @@ def mcp_router_asgi_app():
     """Expose one complete server and focused standard MCP domain servers."""
     try:
         from starlette.applications import Starlette
+        from starlette.middleware import Middleware
+        from starlette.middleware.gzip import GZipMiddleware
         from starlette.routing import Mount
     except ModuleNotFoundError:
         return _missing_dependency_app
@@ -969,7 +971,12 @@ def mcp_router_asgi_app():
 
     routes = [Mount(f"/{domain}", app=endpoint_apps[domain]) for domain in MCP_DOMAIN_PATHS]
     routes.append(Mount("/", app=endpoint_apps[None]))
-    app = Starlette(routes=routes, lifespan=lifespan)
+    # 所有 MCP 领域入口统一压缩；GZipMiddleware 保留 SSE 和已编码响应原样传输。
+    app = Starlette(
+        routes=routes,
+        lifespan=lifespan,
+        middleware=[Middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)],
+    )
     wrapped_app = McpDomainPathApp(app)
     wrapped_app.fastmcp_server = endpoint_apps[None].fastmcp_server
     wrapped_app.domain_servers = {

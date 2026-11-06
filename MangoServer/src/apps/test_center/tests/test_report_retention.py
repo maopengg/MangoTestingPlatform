@@ -50,14 +50,15 @@ class ReportRetentionTests(SimpleTestCase):
 
     def test_new_group_child_receives_initial_policy_without_group_field(self):
         member = SimpleNamespace(module_id=1, task_id=None, save=Mock())
-        group = SimpleNamespace(id=2, revision=3, timing_strategies=Mock())
+        group = SimpleNamespace(id=2, revision=3, timing_strategies=Mock(), case_types=[1], case_people_id=1)
         with patch('src.apps.task_center.services.scheduling.task_group.ScheduledTaskGroupModule') as members, \
              patch('src.apps.task_center.services.scheduling.task_group.Tasks') as tasks, \
              patch.object(ScheduledTaskGroupService, '_task_values', return_value={'name': '新子任务'}):
             members.objects.select_for_update.return_value.filter.return_value.select_related.return_value = [member]
             ScheduledTaskGroupService._sync_members(group, [SimpleNamespace(id=1)], 1,
                 new_task_report_retention_policy='abnormal_only')
-            tasks.objects.create.assert_called_once_with(name='新子任务', report_retention_policy='abnormal_only')
+            tasks.objects.create.assert_called_once_with(name='新子任务', case_people_id=1,
+                                                        report_retention_policy='abnormal_only')
 
     def suite(self, **overrides):
         return SimpleNamespace(**{

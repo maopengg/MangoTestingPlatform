@@ -2,6 +2,9 @@
 
 from src.common.exceptions.definitions import ErrorDefinition
 
+API_CASE_POSTERIOR_CLEANUP_FAILED = ErrorDefinition(code=31223, message='用例后置清理未全部完成：{}')
+API_CASE_POSTERIOR_SQL_CONFIG_INVALID = ErrorDefinition(code=31224, message='用例后置数据库操作配置无效：第{}项必须是对象')
+
 API_AUTH_CONFIG_AUTH_CONFIG_DELETE_NOT_FOUND = ErrorDefinition(code=31000,
                                                                message='API授权配置不存在或已删除，请使用存在的授权配置ID查询')
 API_CASE_POSTERIOR_SQL_PROJECT_PRODUCT_SQL_DATABASE_CASE_EXECUTION_FAILED = ErrorDefinition(code=31001,
@@ -66,11 +69,13 @@ API_VERSION_API_INFO_REVISION_DELETE_NOT_ALLOWED = ErrorDefinition(code=1154,
 API_VERSION_SELECTED_CASES_UNPUBLISHED = ErrorDefinition(code=1155,
                                                          message='选择已发布版本执行时，以下API用例尚未发布：{}')
 API_VERSION_VERSION_EXECUTION_INVALID = ErrorDefinition(code=1156,
-                                                        message='执行版本只能是 editing 或 published，当前值：{}')
+                                                        message='执行版本只能是 editing、prepublished 或 published，当前值：{}')
+API_VERSION_SELECTED_CASES_NOT_PREPUBLISHED = ErrorDefinition(code=1163,
+    message='选择预发布版本执行时，以下API用例没有待审核的预发布修订：{}')
 API_VERSION_CASE_EXECUTION_INVALID = ErrorDefinition(code=1157,
                                                      message='所选用例来自多个项目：{}。一次批量执行只能选择同一项目下的用例')
 API_VERSION_EXECUTION_UNSUPPORTED = ErrorDefinition(code=1158,
-                                                    message='批量执行不支持指定 case_release_id，请使用 execution_version 选择 editing 或 published')
+                                                    message='批量执行不支持指定 case_release_id，请使用 execution_version 选择 editing、prepublished 或 published')
 API_VERSION_JSON_SCENARIO_RESPONSE_ASSERTION_GENERATE_INVALID = ErrorDefinition(code=1159,
                                                                                 message='该场景没有最近一次响应 JSON，无法生成 Schema 断言')
 API_VERSION_CASE_MODULE_TASK_BINDING_INVALID = ErrorDefinition(code=1160,
@@ -463,3 +468,4 @@ API_AUTH_TARGET_INVALID = ErrorDefinition(code=31219, message='授权适用目�
 API_CALLBACK_CONFIG_INVALID = ErrorDefinition(code=31220, message='回调验证配置无效：{}')
 API_CALLBACK_EXECUTION_FAILED = ErrorDefinition(code=31221, message='回调验证未通过：{}')
 API_EXTRACTION_CONFIG_INVALID = ErrorDefinition(code=31222, message='{}配置错误（第{}项）：{}')
+API_CASE_REVISION_SUMMARY_INVALID = ErrorDefinition(code=31225, message='修订摘要必须是字符串，且最多{}个字符，请精简后重试')

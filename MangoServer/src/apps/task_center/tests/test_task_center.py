@@ -9,6 +9,7 @@ from django.utils import timezone
 from mangotools.enums import TaskEnum
 
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
+from src.apps.auto_api.services.api_case.snapshot import ApiCaseExecutionSelection
 from src.apps.auto_pytest.models import PytestCase, PytestProduct
 from src.apps.auto_ui.services.test_case.case_flow import UiCaseFlow
 from src.apps.task_center.api.serializers.tasks import TasksSerializers
@@ -231,9 +232,12 @@ class ApiTaskClaimServiceTests(TestCase):
                 with patch.object(
                         ApiCaseRevisionService,
                         'resolve_revision',
-                        return_value=SimpleNamespace(
+                        return_value=ApiCaseExecutionSelection(
+                            case_id=detail.case_id,
                             case_revision_id=777,
-                            case_release_id=None,
+                            case_revision_no=3,
+                            case_release_id=555,
+                            version_label='V3',
                             checksum='editing-checksum',
                         ),
                 ) as resolve_revision:

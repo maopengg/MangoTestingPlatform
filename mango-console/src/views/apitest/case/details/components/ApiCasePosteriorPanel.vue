@@ -92,7 +92,6 @@
           :line-height="280"
           :code-style="{ width: '100%' }"
           placeholder="根据帮助文档，输入自定义后置函数"
-          @focus="codeSnapshot = item.posterior_func"
           @blur="saveCode"
         />
       </div>
@@ -102,12 +101,12 @@
 
 <script setup lang="ts">
   /* eslint-disable vue/no-mutating-props */
-  import { computed, ref } from 'vue'
+  import { computed } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import {
     postCaseDetailedParameterTestExtractResponseAfter,
-    putApiCaseDetailedParameter,
   } from '@/api/apitest/case-detailed-parameter'
+  import { useApiCaseParameterSave } from '../composables/useApiCaseAutoSave'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import DataSourceOperationList from '@/components/forms/DataSourceOperationList.vue'
   import KeyValueList from '@/components/forms/KeyValueList.vue'
@@ -131,7 +130,7 @@
     }
   )
   const emit = defineEmits<{ (event: 'change', value: string): void }>()
-  const codeSnapshot = ref<any>()
+  const putApiCaseDetailedParameter = useApiCaseParameterSave()
   const jsonFields = [
     { field: 'value', label: 'JSONPath语法', placeholder: '请输入JSONPath语法' },
     { field: 'key', label: 'Key', placeholder: '请输入缓存Key' },
@@ -171,14 +170,18 @@
   }
   async function saveField(field: PosteriorField) {
     if (props.editLocked) return
+    if (
+      (field === 'posterior_response' || field === 'posterior_response_text') &&
+      props.item[field].some((item) => !item.key?.trim() || !item.value?.trim())
+    ) return
     try {
       const response = await putApiCaseDetailedParameter({
         id: props.item.id,
         [field]: props.item[field],
       })
-      Message.success(response.msg)
-    } catch (error: any) {
-      Message.error(error?.msg || '后置处理保存失败')
+      if (response) Message.success(response.msg)
+    } catch {
+      // 请求层已展示具体错误；保留草稿，允许下次失焦重试。
     }
   }
   function removeItem(field: PosteriorListField, index: number) {
@@ -192,7 +195,7 @@
     void saveField(field)
   }
   function saveCode() {
-    if (codeSnapshot.value !== props.item.posterior_func) void saveField('posterior_func')
+    void saveField('posterior_func')
   }
   async function testExtract(type: 'jsonpath' | 're', index: number) {
     const response = props.item.result_data?.response
@@ -214,8 +217,8 @@
         source
       )
       Message.success(`测试成功，Key：【${result.data.key}】，Value：【${result.data.value}】`)
-    } catch (error: any) {
-      Message.error(error?.msg || '提取测试失败')
+    } catch {
+      // 请求层统一展示提取接口的错误。
     }
   }
 </script>

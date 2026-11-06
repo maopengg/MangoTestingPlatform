@@ -319,6 +319,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { usePagePolling, isPendingExecution } from '@/hooks/use-page-polling'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { useLatestRequest } from '@/hooks/use-latest-request'
   import { ModalDialogType } from '@/types/components'
@@ -379,7 +380,11 @@
     pageName: [],
   })
   const caseRunning = ref(false)
-  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+  const pagePolling = usePagePolling(() => doRefresh(null, false, false), () => {
+    if (table.tableLoading.value) pagePolling.start()
+    beginRequest()
+    table.tableLoading.value = false
+  })
   const caseReferencePanel = reactive({
     visible: false,
     loading: false,
@@ -424,12 +429,7 @@
     caseDetailPanel.projectProductId = ''
   }
 
-  function clearPollingTimer() {
-    if (pollingTimer.value) {
-      clearInterval(pollingTimer.value)
-      pollingTimer.value = null
-    }
-  }
+  function clearPollingTimer() { pagePolling.stop() }
 
   function getConditionValue(key: string) {
     return getItemValue(conditionItems, key)
@@ -473,7 +473,6 @@
   }
 
   function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
-    clearPollingTimer()
     const requestId = beginRequest()
     if (showLoading) {
       table.tableLoading.value = true
@@ -487,20 +486,16 @@
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
     }
-    getUiSteps(value)
+    return getUiSteps(value)
       .then((res) => {
         if (!isLatestRequest(requestId)) return
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
         const hasRunningItem =
-          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+          res.data && Array.isArray(res.data) && res.data.some(isPendingExecution)
 
-        if (hasRunningItem) {
-          // 5秒后再次刷新
-          pollingTimer.value = setInterval(() => {
-            doRefresh(projectProductId, bool_, false)
-          }, 5000)
-        }
+        if (hasRunningItem) pagePolling.start()
+        else pagePolling.stop()
       })
       .catch((error) => {
         if (isLatestRequest(requestId)) console.log(error)

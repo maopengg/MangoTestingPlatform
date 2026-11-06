@@ -68,6 +68,14 @@ class ModuleCoverageResolutionStatus(models.TextChoices):
     GAP = "gap", "未解析Gap"
 
 
+class ModuleCoverageAnalysisStatus(models.TextChoices):
+    COMPLETED = "completed", "已分析"
+    PENDING = "pending", "待分析"
+    GAP = "gap", "分析缺口"
+    DEFERRED = "deferred", "暂缓分析"
+    EXCLUDED = "excluded", "排除分析"
+
+
 class ModuleCoverageApiInfoBindingStatus(models.TextChoices):
     BOUND = "bound", "已绑定"
     UNBOUND = "unbound", "未绑定"

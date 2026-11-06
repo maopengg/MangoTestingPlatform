@@ -28,17 +28,20 @@ class DataFactorySqlQuery:
             allow_query=allow_query,
             allow_write=False,
         )
+        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+        DatasourceCostService.sql(sql)
 
         try:
             from sqlalchemy import text
         except ImportError as error:
             raise DataFactoryError(DATA_SOURCE_SQLALCHEMY_REQUIRED) from error
 
-        max_rows = max(1, min(int(limit or 100), 100))
+        max_rows = max(1, int(limit or 100))
         engine = None
         try:
             engine = DataFactoryDatasource.create_engine(database)
             with engine.connect() as connection:
+                connection = connection.execution_options(stream_results=True)
                 result = connection.execute(text(sql))
                 if not result.returns_rows:
                     return {
@@ -52,7 +55,8 @@ class DataFactorySqlQuery:
                     for row in result.fetchmany(max_rows + 1)
                 ]
                 truncated = len(rows) > max_rows
-                rows = rows[:max_rows]
+                if truncated:
+                    DatasourceCostService.abort_result(connection, result, limit=max_rows, observed_rows=len(rows))
                 return {
                     "columns": list(result.keys()),
                     "rows": rows,

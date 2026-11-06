@@ -226,7 +226,7 @@
           <header class="mango-task-group-editor__section-header">
             <div>
               <strong>公共执行规则</strong>
-              <span>以下配置统一同步到组内全部模块任务</span>
+              <span>调度、环境、场景、用例类型和通知统一同步；负责人仅作为新子任务默认值</span>
             </div>
           </header>
           <div class="mango-task-group-editor__grid">
@@ -272,7 +272,7 @@
                 placeholder="请选择执行场景"
               />
             </a-form-item>
-            <a-form-item label="负责人" required>
+            <a-form-item label="默认负责人" required>
               <a-select
                 v-model="form.case_people"
                 allow-search

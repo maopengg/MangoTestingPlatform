@@ -74,6 +74,9 @@ class UpdateTestSuite:
             test_suite_detail = TestSuiteDetails.objects.select_for_update().get(
                 id=data.id, test_suite_id=data.test_suite,
             )
+            from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+            if TestSuiteInfrastructureService.is_blocked(test_suite_detail.summary_data):
+                return None
             if TestSuiteTimeoutRecoveryService.is_timeout_terminated(test_suite_detail):
                 log.system.info(
                     f'忽略系统超时终止后的晚到结果：test_suite={data.test_suite}, detail={data.id}'

@@ -18,6 +18,7 @@ from src.apps.system.services.enum_catalog import EnumCatalogService
 class ReportDispositionTests(SimpleTestCase):
     def setUp(self):
         self.detail = SimpleNamespace(id=2, test_suite_id=1, status=0, fail=2, is_excluded=False,
+                                      summary_data=None,
                                       project_product_id=3,
                                       failure_reason='', failure_description='')
         self.saved = []
@@ -146,8 +147,8 @@ class ReportDispositionTests(SimpleTestCase):
 
     def test_exclude_permission_is_registered_and_not_given_to_guests(self):
         from src.apps.user.services.permission import PermissionMenuService
-        self.assertIn('exclude', PermissionMenuService.MENU_ACTIONS['report'])
-        self.assertNotIn('exclude', __import__('src.apps.user.services.permission', fromlist=['GUEST_ALLOWED_ACTIONS']).GUEST_ALLOWED_ACTIONS)
+        self.assertIn('change', PermissionMenuService.MENU_ACTIONS['report'])
+        self.assertNotIn('change', __import__('src.apps.user.services.permission', fromlist=['GUEST_ALLOWED_ACTIONS']).GUEST_ALLOWED_ACTIONS)
         self.assertIn({'key': 'product_pending', 'title': '产品缺陷待修复'}, EnumCatalogService.catalog()['report_failure_reason'])
 
     def test_endpoint_rejects_product_scope_before_mutating(self):

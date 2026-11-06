@@ -27,3 +27,6 @@ class DatasourceTarget(FrozenSchema):
     schema_name: str = ''
     redis_db: int | None = None
     cache_key: str
+    datasource_alias_id: int | None = None
+    project_product_id: int | None = None
+    test_env: int | None = None

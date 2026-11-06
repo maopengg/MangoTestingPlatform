@@ -407,6 +407,7 @@ class ApiInfoViews(ViewSet):
             published_revision_id=Subquery(current_release.values('revision_id')[:1]),
             published_version_label=Subquery(current_release.values('version_label')[:1]),
         ).order_by('-id')
+        queryset = ApiInfoCRUD().filter_queryset_by_data_scope(request, queryset)
         data = []
         for item in queryset:
             is_published = bool(item.published_release_id)

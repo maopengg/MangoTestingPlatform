@@ -63,6 +63,7 @@ class ModuleCoverageInterfaceSerializer(serializers.Serializer):
     coverage_policy = serializers.CharField()
     coverage_reason = serializers.CharField(allow_blank=True)
     resolution_status = serializers.CharField()
+    analysis_status = serializers.CharField()
     resolution_reason = serializers.CharField(allow_blank=True)
     gap_reason = serializers.CharField(allow_blank=True)
     next_action = serializers.CharField(allow_blank=True)

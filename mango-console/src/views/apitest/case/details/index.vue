@@ -717,6 +717,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
+  import { useApiCaseAutoSave } from './composables/useApiCaseAutoSave'
   import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
@@ -736,7 +738,6 @@
     getApiCase,
     getApiCaseRunRaw,
     postApiCaseStepDebugRaw,
-    putApiCase,
   } from '@/api/apitest/case'
   import {
     deleteApiCaseDetailed,
@@ -999,13 +1000,18 @@
     authConfigOptions: [],
   })
 
+  const { saveCase, saveParameter } = useApiCaseAutoSave(
+    () => pageData.record,
+    () => data.selectDataObj
+  )
+
   const {
     caseRunning,
     caseRequestPending,
     debugRunningStepId,
     debugRequestPending,
     lastTraceId,
-    caseRunRefreshTimer,
+    caseRunRefreshActive,
     startCaseRunRefresh,
     stopCaseRunRefresh,
     startCaseRunLoadingLimit,
@@ -1013,7 +1019,7 @@
     startDebugRunLoadingLimit,
     stopDebugRunLoadingLimit,
     disposeExecutionTimers,
-  } = useApiCaseExecution(() => refreshCaseRunStatusByStep())
+  } = useApiCaseExecution(context => refreshCaseRunStatusByStep(context))
   const stepTableLoading = ref(false)
   const caseGlobalSaving = ref(false)
   const callbackSavePending = ref(false)
@@ -1024,7 +1030,8 @@
     const version = selectedCaseVersionDetail.value
     callbackSavePending.value = true
     try {
-      const response = await putApiCase({ id: caseId, callback_checks: rules })
+      const response = await saveCase({ id: caseId, callback_checks: rules })
+      if (!response) return true
       if (!Array.isArray(response.data?.callback_checks)) {
         Message.error('服务端尚未支持回调配置，请确认后端版本及数据库迁移')
         return false
@@ -1112,7 +1119,7 @@
       caseRequestPending.value ||
       debugRequestPending.value ||
       scenarioHeaderSavingCount.value > 0 ||
-      caseRunRefreshTimer.value !== null ||
+      caseRunRefreshActive.value ||
       hasRunningCaseStep(data.data)
   )
   const dataFactoryConfigCache = reactive(new Map<string, number>())
@@ -2047,8 +2054,9 @@
       id: pageData.record.id,
       front_headers: selectedValues,
     }
-    putApiCase(value)
+    saveCase(value)
       .then((res) => {
+        if (!res) return
         Message.success(res.msg)
         doRefresh()
       })
@@ -2067,12 +2075,12 @@
     pageData.record.front_public = frontPublic
     pageData.record.front_auth_config = frontAuthConfig
     try {
-      const res = await putApiCase({
+      const res = await saveCase({
         id: pageData.record.id,
         front_public: frontPublic,
         front_auth_config: frontAuthConfig,
       })
-      Message.success(res.msg)
+      if (res) Message.success(res.msg)
     } catch (error) {
       console.log(error)
     } finally {
@@ -2132,7 +2140,7 @@
 
   function upDataCase(options: { refreshScenario?: boolean } = {}) {
     if (!ensureCaseEditable()) return
-    putApiCase({
+    saveCase({
       id: pageData.record.id,
       name: pageData.record.name,
       posterior_sql: pageData.record.posterior_sql,
@@ -2143,6 +2151,7 @@
       front_auth_config: pageData.record.front_auth_config,
     })
       .then((res) => {
+        if (!res) return
         Message.success(res.msg)
         if (options.refreshScenario !== false) {
           doRefresh()
@@ -2207,9 +2216,9 @@
       payload[key] = item
     }
 
-    return putApiCaseDetailedParameter(payload)
+    return saveParameter(payload)
       .then((res) => {
-        Message.success(res.msg)
+        if (res) Message.success(res.msg)
       })
       .catch(console.log)
   }
@@ -2513,8 +2522,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  async function refreshSelectedRuntimeResult() {
+  async function refreshSelectedRuntimeResult(silent = false, context?: PollingContext) {
     const loadToken = nextExecutionResultLoadToken()
+    if (!silent) {
     latestExecutionResultData = null
     selectedExecutionResultSummary.value = null
     data.data.forEach((row: any) => {
@@ -2525,9 +2535,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       parameter.error_message = null
       parameter.runtime_result_outdated = false
     })
+    }
     try {
       const latest = await getLatestCaseExecutionResult()
-      if (!isCurrentExecutionResultLoad(loadToken)) return
+      if (!isCurrentExecutionResultLoad(loadToken) || (context && !context.isCurrent())) return
       if (!latest?.resultData) return
       selectedExecutionResultSummary.value = latest.summary
       latestExecutionResultData = latest.resultData
@@ -2590,7 +2601,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function hasRunningCaseStep(rows: any[]) {
-    return rows.some((item: any) => Number(item?.status) === 3)
+    return rows.some(isPendingExecution)
   }
 
   function syncCaseRunRefreshByRows(rows: any[]) {
@@ -2612,15 +2623,17 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     if (latestSelected) data.tabelJson = latestSelected
   }
 
-  function refreshCaseRunStatusByStep() {
+  function refreshCaseRunStatusByStep(context?: PollingContext) {
     if (!apiCaseId.value) return Promise.resolve(false)
     return getApiCaseDetailed(apiCaseId.value)
       .then(async (res) => {
+        if (context && !context.isCurrent()) return false
         const rows = Array.isArray(res.data) ? res.data : []
         mergeCaseStepRows(rows)
         if (isRuntimeResultTab()) {
-          await refreshSelectedRuntimeResult()
+          await refreshSelectedRuntimeResult(true, context)
         }
+        if (context && !context.isCurrent()) return false
         const running = hasRunningCaseStep(rows)
         if (running || caseRequestPending.value || debugRequestPending.value) {
           startCaseRunRefresh()
@@ -3323,7 +3336,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       caseRunning.value = false
       stopCaseRunLoadingLimit()
       await refreshCaseDetailAfterRun()
-      stopCaseRunRefresh()
+      syncCaseRunRefreshByRows(data.data)
     }
   }
 

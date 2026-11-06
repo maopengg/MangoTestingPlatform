@@ -21,6 +21,10 @@ class Command(BaseCommand):
     help = "审计或回填模块覆盖历史快照关系、链路状态、Case有效性和当前ApiInfo绑定"
 
     def add_arguments(self, parser):
+        parser.add_argument("--only-missing-case-targets", action="store_true",
+                            help="只补遗漏的Case覆盖目标，不改接口快照、ApiInfo绑定或资产修订")
+        parser.add_argument("--project-product-id", type=int, help="限制遗漏目标修复的项目产品")
+        parser.add_argument("--module-id", type=int, help="限制遗漏目标修复的模块")
         parser.add_argument(
             "--execute",
             action="store_true",
@@ -42,6 +46,21 @@ class Command(BaseCommand):
         execute = options["execute"]
         repair_duplicate_current = options["repair_duplicate_current"]
         only_duplicate_current = options["only_duplicate_current"]
+        if options["only_missing_case_targets"]:
+            if repair_duplicate_current or only_duplicate_current:
+                raise CommandError("遗漏目标修复不能与重复快照修复同时使用")
+            result = ModuleCoverageService.backfill_missing_case_targets(
+                project_product_id=options["project_product_id"], module_id=options["module_id"],
+            )
+            self.stdout.write(self.style.SUCCESS(
+                f"遗漏目标检查{result['scanned']}条，关联{result['linked']}条，"
+                f"未明确匹配{result['unresolved']}条；模式={'执行' if execute else '预览回滚'}"
+            ))
+            if not execute:
+                transaction.set_rollback(True)
+            return
+        if options["project_product_id"] is not None or options["module_id"] is not None:
+            raise CommandError("范围筛选仅用于 --only-missing-case-targets")
         if only_duplicate_current and not repair_duplicate_current:
             raise CommandError("--only-duplicate-current 必须与 --repair-duplicate-current 一起使用")
         linked = 0
@@ -121,9 +140,11 @@ class Command(BaseCommand):
             candidates = ModuleCoverageInterfaceSnapshot.objects.filter(
                 scan_id=case_snapshot.scan_id,
                 project_product_id=case_snapshot.coverage_case.project_product_id,
+                module_id=case_snapshot.coverage_case.module_id,
                 repository_key=case_snapshot.coverage_case.repository_key,
                 branch=case_snapshot.coverage_case.branch,
                 source_key_hash=source_hash,
+                source_key=source_key,
             )
             candidate_count = candidates.count()
             if candidate_count == 0 and case_snapshot.scan.expected_interface_count == 0:

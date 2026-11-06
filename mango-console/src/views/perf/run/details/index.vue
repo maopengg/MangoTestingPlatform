@@ -291,6 +291,7 @@
 </template>
 
 <script setup lang="ts">
+  import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
   import { Message, Modal } from '@arco-design/web-vue'
   import * as echarts from 'echarts'
   import { makeChartDensityAware } from '@/utils/chartDensity'
@@ -336,7 +337,12 @@
   let loadChart: echarts.ECharts | null = null
   let resourceChart: echarts.ECharts | null = null
   let chartResizeObserver: ResizeObserver | undefined
-  let timer: number | undefined
+  let finalRefreshPending = false
+  const pagePolling = usePagePolling(async context => {
+    if (activeRunStatuses.has(overview.status)) await loadMetrics(true, context)
+    else if (finalRefreshPending) await refreshFinal(true, context)
+    if (context.isCurrent() && !activeRunStatuses.has(overview.status) && !finalRefreshPending) pagePolling.stop()
+  })
   let subscriptionTimer: number | undefined
   let cursor = ''
   let websocketTimer: number | undefined
@@ -732,8 +738,9 @@
   function formatGoalExpected(item: any) {
     return formatGoalValue(item.metric, item.threshold_value)
   }
-  async function loadOverview() {
+  async function loadOverview(context?: PollingContext) {
     const response: any = await getPerfRunOverview(id)
+    if (context && !context.isCurrent()) return
     Object.assign(overview, response.data || {})
   }
   function mergeMetricPoints(incoming: any[]) {
@@ -812,12 +819,13 @@
     )
     if (points.value.length > 600) points.value.splice(0, points.value.length - 600)
   }
-  async function loadMetrics() {
+  async function loadMetrics(silent = false, context?: PollingContext) {
     const response: any = await getPerfRunMetrics(id, {
       cursor,
       max_points: 1000,
       scope_type: 'global',
     })
+    if (context && !context.isCurrent()) return
     const data = response.data || {}
     cursor = data.cursor || cursor
     if (data.points?.length) {
@@ -827,11 +835,14 @@
     if (data.run_status && data.run_status !== overview.status) {
       overview.status = data.run_status
       overview.verdict = data.verdict
-      if (!activeRunStatuses.has(data.run_status)) await refreshFinal()
+      if (!activeRunStatuses.has(data.run_status)) {
+        finalRefreshPending = true
+        await refreshFinal(silent, context)
+      }
     }
   }
-  async function refreshFinal() {
-    detailLoading.value = true
+  async function refreshFinal(silent = false, context?: PollingContext) {
+    if (!silent) detailLoading.value = true
     try {
       const [
         requestResult,
@@ -850,6 +861,7 @@
         getPerfRunErrors(id),
         getPerfRunComparison(id),
       ])
+      if (context && !context.isCurrent()) return
       requests.value = requestResult.data || []
       stages.value = stageResult.data || []
       nodes.value = nodeResult.data || []
@@ -857,9 +869,10 @@
       thresholds.value = thresholdResult.data || []
       errors.value = errorResult.data || []
       Object.assign(comparison, comparisonResult.data || { available: false, metrics: [] })
-      await loadOverview()
+      await loadOverview(context)
+      if (!context || context.isCurrent()) finalRefreshPending = false
     } finally {
-      detailLoading.value = false
+      if (!silent) detailLoading.value = false
     }
   }
   async function refreshAll() {
@@ -1077,7 +1090,10 @@
     )
       return
     if (websocketTimer) clearTimeout(websocketTimer)
-    websocketTimer = window.setTimeout(() => loadMetrics(), 150)
+    if (!pagePolling.isAvailable()) return
+    websocketTimer = window.setTimeout(() => {
+      if (pagePolling.isAvailable()) void loadMetrics(true).catch(() => undefined)
+    }, 150)
   }
   function resizeChart() {
     chart?.resize()
@@ -1088,9 +1104,7 @@
     loading.value = true
     try {
       await Promise.all([loadOverview(), loadMetrics(), refreshFinal(), subscribePerfRun(id)])
-      timer = window.setInterval(() => {
-        if (activeRunStatuses.has(overview.status)) loadMetrics()
-      }, 2000)
+      if (activeRunStatuses.has(overview.status)) pagePolling.start()
       subscriptionTimer = window.setInterval(() => subscribePerfRun(id), 30000)
       window.addEventListener('mango:websocket-message', handleWebsocket)
       window.addEventListener('resize', resizeChart)
@@ -1099,7 +1113,7 @@
     }
   })
   onBeforeUnmount(() => {
-    if (timer) clearInterval(timer)
+    pagePolling.stop()
     if (subscriptionTimer) clearInterval(subscriptionTimer)
     if (websocketTimer) clearTimeout(websocketTimer)
     unsubscribePerfRun(id).catch(() => undefined)

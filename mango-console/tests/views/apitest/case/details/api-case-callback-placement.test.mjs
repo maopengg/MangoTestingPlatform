@@ -169,7 +169,7 @@ test('Case-level saving serializes submissions and survives switching the active
   const save = loadFunction('saveCallbackRules', {
     callbackSavePending: pending, ensureCaseEditable: () => true, apiCaseId: { value: 1 },
     selectedCaseVersionDetail: { value: null }, caseEditLocked: { value: false }, pageData,
-    putApiCase: () => { requests++; return new Promise(resolve => { complete = resolve }) },
+    saveCase: () => { requests++; return new Promise(resolve => { complete = resolve }) },
   }, pageAst)
   const first = save([{ key: 'first' }])
   assert.equal(await save([{ key: 'second' }]), false)
@@ -188,7 +188,7 @@ test('late saves do not overwrite another version snapshot', async () => {
   const save = loadFunction('saveCallbackRules', {
     callbackSavePending: pending, ensureCaseEditable: () => true, apiCaseId: { value: 1 },
     selectedCaseVersionDetail: version, caseEditLocked: { value: false }, pageData,
-    putApiCase: () => new Promise(resolve => { complete = resolve }),
+    saveCase: () => new Promise(resolve => { complete = resolve }),
   }, pageAst)
   const request = save([])
   version.value = { id: 2 }

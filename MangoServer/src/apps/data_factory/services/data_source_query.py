@@ -24,6 +24,8 @@ from src.apps.data_factory.models import Database
 from src.apps.data_factory.services.data_source_error import DataSourceErrorService
 from src.apps.data_factory.services.elasticsearch_http import open_elasticsearch_request
 from src.apps.data_factory.services.sql_query import DataFactorySqlQuery
+from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
 from src.apps.test_center.enums.data_source import (
     DataSourceCategoryEnum,
     DataSourceTypeEnum,
@@ -122,38 +124,57 @@ class DataFactoryDatasourceQuery:
         command_name = parts[0].upper()
         if command_name in cls.REDIS_BLOCKED_COMMANDS:
             raise DataFactoryError(DATA_SOURCE_EXECUTION_NOT_ALLOWED, value=(command_name,))
+        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+        DatasourceCostService.redis(parts)
         is_query = command_name in cls.REDIS_READ_COMMANDS
         if is_query and not allow_query:
             raise DataFactoryError(DATA_SOURCE_DATABASE_PERMISSION_READ_BINDING_INVALID)
         if not is_query and not allow_write:
             raise DataFactoryError(DATA_SOURCE_DATA_SOURCE_PERMISSION_WRITE_BINDING_INVALID)
 
-        raw_socket = None
-        connection = None
-        try:
-            raw_socket = socket.create_connection(
-                (database.host, int(database.port)),
-                timeout=DataSourceConnectionService.timeout_seconds(),
+        return cls._execute_redis(database, command, parts, is_query)
+
+    @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.REDIS_COMMAND.value)
+    def _execute_redis(cls, database, command, parts, is_query):
+        import redis
+        from src.apps.data_factory.services.protocol_pool import ProtocolPoolRegistry
+        from src.apps.data_factory.services.redis_protocol import BoundedRedisParser
+
+        command_name = parts[0].upper()
+        options = database.extra_config or {}
+
+        def factory(size):
+            pool_class = redis.SSLConnection if options.get('ssl') else redis.Connection
+            pool = redis.BlockingConnectionPool(
+                connection_class=pool_class, max_connections=size, timeout=DataSourceConnectionService.timeout_seconds(),
+                host=database.host, port=int(database.port), username=database.user or None,
+                password=database.password or None, db=database.redis_db or 0, decode_responses=True,
+                encoding_errors='replace',
+                socket_timeout=DataSourceConnectionService.timeout_seconds(),
+                socket_connect_timeout=DataSourceConnectionService.timeout_seconds(),
+                retry_on_timeout=False,
+                parser_class=BoundedRedisParser,
             )
-            raw_socket.settimeout(DataSourceConnectionService.timeout_seconds())
-            options = database.extra_config or {}
-            if options.get('ssl'):
-                context = ssl.create_default_context()
-                raw_socket = context.wrap_socket(raw_socket, server_hostname=database.host)
-            connection = raw_socket.makefile('rwb')
-            if database.password:
-                auth_parts = ['AUTH']
-                if database.user:
-                    auth_parts.append(database.user)
-                auth_parts.append(database.password)
-                DataSourceConnectionService._redis_command(connection, *auth_parts)
-            database_index = database.redis_db
-            if database_index:
-                DataSourceConnectionService._redis_command(connection, 'SELECT', str(database_index))
-            result = DataSourceConnectionService._redis_command(connection, *parts)
+            return redis.Redis.from_pool(pool)
+
+        try:
+            with ProtocolPoolRegistry.borrow(database, 'redis', factory) as client:
+                # 使用维护中的客户端传输，但保留原 RESP 结果形状，不能把 SET 的 OK
+                # 静默改成 True、或将 HSCAN 的数组改成字典而改变 Case 断言。
+                pool = client.connection_pool
+                connection = pool.get_connection()
+                try:
+                    connection.send_command(*parts)
+                    result = connection.read_response()
+                except BaseException:
+                    connection.disconnect()
+                    raise
+                finally:
+                    pool.release(connection)
             return {
                 'type': 'redis',
-                'database': database_index,
+                'database': database.redis_db or 0,
                 'command': command_name,
                 'execution_type': 'query' if is_query else 'write',
                 'result': result,
@@ -162,11 +183,6 @@ class DataFactoryDatasourceQuery:
             if isinstance(error, DataFactoryError):
                 raise
             DataSourceErrorService.raise_redis_error(database, error)
-        finally:
-            if connection:
-                connection.close()
-            if raw_socket:
-                raw_socket.close()
 
     @classmethod
     def query_elasticsearch(cls, database: Database, index: str, query) -> dict:
@@ -181,15 +197,29 @@ class DataFactoryDatasourceQuery:
         if not isinstance(query, dict):
             raise DataFactoryError(DATA_SOURCE_JSON_INVALID)
 
+        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+        DatasourceCostService.elasticsearch(index, query)
+
+        return cls._query_elasticsearch(database, index, query)
+
+    @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.ES_SEARCH.value)
+    def _query_elasticsearch(cls, database, index, query):
+        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
         body = dict(query)
         try:
             requested_size = int(body.get('size', 20))
         except (TypeError, ValueError):
-            requested_size = 20
-        body['size'] = max(0, min(requested_size, cls.max_rows()))
+            from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+            DatasourceCostService.reject('ES分页参数 size 必须为整数。请修改用例查询配置', not_sent=True)
+        maximum = cls.max_rows()
+        if requested_size > maximum:
+            from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+            DatasourceCostService.reject(f'ES查询条数超过返回上限：当前配置最多 {maximum} 条，查询size为 {requested_size}。请修改用例的size或查询范围；本次未发送查询', not_sent=True)
+        body['size'] = requested_size
         encoded_body = json.dumps(body, ensure_ascii=False).encode('utf-8')
         if len(encoded_body) > cls.MAX_INPUT_LENGTH:
-            raise DataFactoryError(DATA_SOURCE_FAILED_CODE_FAILED, value=('查询条件内容过长',))
+            DatasourceCostService.reject(f'ES查询请求过大：最多允许 {cls.MAX_INPUT_LENGTH} 字节，当前为 {len(encoded_body)} 字节。请检查用例是否拼接了过多查询条件；本次未发送查询', not_sent=True)
 
         options = database.extra_config or {}
         scheme = options.get('scheme', 'http')
@@ -208,14 +238,27 @@ class DataFactoryDatasourceQuery:
         context = None
         if scheme == 'https' and options.get('verify_certs', True) is False:
             context = ssl._create_unverified_context()
+        request_timeout = DataSourceConnectionService.timeout_seconds()
         try:
             request = urllib_request.Request(url, data=encoded_body, headers=headers, method='POST')
             with open_elasticsearch_request(
                     request,
-                    timeout=DataSourceConnectionService.timeout_seconds(),
+                    timeout=request_timeout,
+                    target=database,
                     context=context,
             ) as response:
-                result = json.loads(response.read().decode('utf-8'))
+                body = response.read(1_048_577)
+                if len(body) > 1_048_576:
+                    DatasourceCostService.reject(f'ES返回结果超过大小上限：最多允许 1048576 字节，已读取至少 {len(body)} 字节。请减少查询字段或缩小查询范围；本次不返回截断结果')
+                result = json.loads(body.decode('utf-8'))
+                if isinstance(result, dict) and (result.get('timed_out') or (result.get('_shards') or {}).get('failed', 0)):
+                    reasons = []
+                    if result.get('timed_out'):
+                        reasons.append('ES返回timed_out=true')
+                    if (result.get('_shards') or {}).get('failed', 0):
+                        reasons.append(f"失败分片数为 {(result.get('_shards') or {})['failed']}")
+                    raise DataFactoryError(DATA_SOURCE_FAILED_CODE_FAILED, value=(
+                        'ES查询结果不完整：' + '，'.join(reasons) + '。不能据此判断数据不存在，请检查ES查询耗时和分片状态',))
             return {
                 'type': 'elasticsearch',
                 'index': index,
@@ -224,4 +267,4 @@ class DataFactoryDatasourceQuery:
         except urllib_error.HTTPError as error:
             DataSourceErrorService.raise_elasticsearch_http_error(database, error)
         except (urllib_error.URLError, TimeoutError, ValueError, OSError) as error:
-            DataSourceErrorService.raise_elasticsearch_transport_error(database, error)
+            DataSourceErrorService.raise_elasticsearch_transport_error(database, error, timeout=request_timeout)

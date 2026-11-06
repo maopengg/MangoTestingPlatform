@@ -1,5 +1,6 @@
 import io
 import json
+from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
 from urllib import error as urllib_error
 
@@ -45,6 +46,17 @@ class _RedisConnection:
 
 
 class DataFactoryDatasourceQueryTests(SimpleTestCase):
+    def setUp(self):
+        governor = patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.operation',
+                         side_effect=lambda target, **kwargs: nullcontext())
+        governor.start()
+        self.addCleanup(governor.stop)
+        # 协议测试隔离审计持久化；审计接入、脱敏与失败闭环由独立测试覆盖。
+        for method in ('start', 'finish_success', 'finish_failure'):
+            patcher = patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.' + method)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def test_query_permission_is_required_for_every_source_type(self):
         data_source = query_target(
             source_category=DataSourceCategoryEnum.CACHE.value,
@@ -89,48 +101,84 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
 
         self.assertIn('只读查询命令', str(error.exception))
 
+    def test_redis_factory_uses_real_supported_constructor_and_owns_its_pool(self):
+        import redis
+
+        constructed = []
+        client = MagicMock()
+        client.connection_pool.get_connection.return_value.read_response.return_value = 'OK'
+
+        def borrow(target, protocol, factory):
+            actual = factory(2)
+            constructed.append(actual)
+            self.addCleanup(actual.close)
+            return nullcontext(client)
+
+        target = query_target(source_category=DataSourceCategoryEnum.CACHE.value,
+                              db_type=DataSourceTypeEnum.REDIS.value,
+                              host='redis.example.com', port=6379)
+        with patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow', side_effect=borrow):
+            result = DataFactoryDatasourceQuery.execute_redis(
+                target, 'SET AUTO_example value NX EX 60', allow_query=True, allow_write=True)
+        self.assertEqual(result['result'], 'OK')
+        self.assertIsInstance(constructed[0], redis.Redis)
+        self.assertTrue(constructed[0].auto_close_connection_pool)
+        self.assertEqual(constructed[0].connection_pool.max_connections, 2)
+
     def test_redis_read_query_supports_array_response(self):
-        connection = _RedisConnection(
-            b'*4\r\n$4\r\nname\r\n$5\r\nMango\r\n$3\r\nage\r\n:3\r\n'
-        )
-        raw_socket = MagicMock()
-        raw_socket.makefile.return_value = connection
+        connection = MagicMock()
+        connection.read_response.return_value = ['Mango', '3']
+        client = MagicMock()
+        client.connection_pool.get_connection.return_value = connection
         data_source = query_target(
             source_category=DataSourceCategoryEnum.CACHE.value,
             db_type=DataSourceTypeEnum.REDIS.value,
-            host='redis.internal',
+            host='redis.example.com',
             port=6379,
             extra_config={'database': 0, 'ssl': False},
         )
 
         with patch(
-                'src.apps.data_factory.services.data_source_query.socket.create_connection',
-                return_value=raw_socket,
+                'src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow',
+                return_value=nullcontext(client),
         ):
-            result = DataFactoryDatasourceQuery.query_redis(data_source, 'HGETALL user:1')
+            result = DataFactoryDatasourceQuery.query_redis(data_source, 'HMGET user:1 name age')
 
-        self.assertEqual(result['result'], ['name', 'Mango', 'age', 3])
-        self.assertIn(b'HGETALL', connection.writes.getvalue())
+        self.assertEqual(result['result'], ['Mango', '3'])
+        connection.send_command.assert_called_once_with('HMGET', 'user:1', 'name', 'age')
+
+    def test_small_hash_complete_result_reaches_case_without_command_name_rejection(self):
+        connection = MagicMock()
+        connection.read_response.return_value = ['name', 'AUTO_example', 'state', 'ready']
+        client = MagicMock()
+        client.connection_pool.get_connection.return_value = connection
+        target = query_target(source_category=DataSourceCategoryEnum.CACHE.value,
+                              db_type=DataSourceTypeEnum.REDIS.value, host='redis.example.com', port=6379,
+                              extra_config={'database': 0})
+        with patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow', return_value=nullcontext(client)):
+            result = DataFactoryDatasourceQuery.query_redis(target, 'HGETALL AUTO_hash')
+        self.assertEqual(result['result'], ['name', 'AUTO_example', 'state', 'ready'])
+        connection.send_command.assert_called_once_with('HGETALL', 'AUTO_hash')
 
     def test_redis_server_wrong_type_error_is_preserved(self):
-        connection = _RedisConnection(
-            b'-WRONGTYPE Operation against a key holding the wrong kind of value\r\n'
-        )
-        raw_socket = MagicMock()
-        raw_socket.makefile.return_value = connection
+        from redis.exceptions import ResponseError
+        connection = MagicMock()
+        connection.read_response.side_effect = ResponseError('WRONGTYPE Operation against a key holding the wrong kind of value')
+        client = MagicMock()
+        client.connection_pool.get_connection.return_value = connection
         data_source = query_target(
             source_category=DataSourceCategoryEnum.CACHE.value,
             db_type=DataSourceTypeEnum.REDIS.value,
-            host='redis.internal',
+            host='redis.example.com',
             port=6379,
             extra_config={'database': 0, 'ssl': False},
         )
 
         with patch(
-                'src.apps.data_factory.services.data_source_query.socket.create_connection',
-                return_value=raw_socket,
+                'src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow',
+                return_value=nullcontext(client),
         ), self.assertRaises(Exception) as error:
-            DataFactoryDatasourceQuery.query_redis(data_source, 'HGETALL user:1')
+            DataFactoryDatasourceQuery.query_redis(data_source, 'HGET user:1 name')
 
         self.assertIn('Redis数据类型不匹配', str(error.exception))
         self.assertIn('WRONGTYPE', str(error.exception))
@@ -142,7 +190,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         data_source = query_target(
             source_category=DataSourceCategoryEnum.SEARCH.value,
             db_type=DataSourceTypeEnum.ELASTICSEARCH.value,
-            host='es.internal',
+            host='es.example.com',
             port=9200,
             user='reader',
             password='secret',
@@ -155,13 +203,13 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         ) as urlopen:
             result = DataFactoryDatasourceQuery.query_elasticsearch(
                 data_source,
-                'orders-*',
-                {'query': {'match_all': {}}, 'size': 500},
+                'orders',
+                {'query': {'match_all': {}}, 'size': 50},
             )
 
         request = urlopen.call_args.args[0]
-        self.assertEqual(request.full_url, 'https://es.internal:9200/search/orders-*/_search')
-        self.assertEqual(json.loads(request.data.decode('utf-8'))['size'], 100)
+        self.assertEqual(request.full_url, 'https://es.example.com:9200/search/orders/_search')
+        self.assertEqual(json.loads(request.data.decode('utf-8'))['size'], 50)
         self.assertEqual(result['result']['hits']['hits'][0]['_source']['name'], 'Mango')
 
     def test_elasticsearch_index_cannot_escape_search_path(self):
@@ -188,7 +236,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
             'status': 400,
         }).encode('utf-8')
         http_error = urllib_error.HTTPError(
-            'http://es.internal:9200/orders/_search',
+            'http://es.example.com:9200/orders/_search',
             400,
             'Bad Request',
             {},
@@ -197,7 +245,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         data_source = query_target(
             source_category=DataSourceCategoryEnum.SEARCH.value,
             db_type=DataSourceTypeEnum.ELASTICSEARCH.value,
-            host='es.internal',
+            host='es.example.com',
             port=9200,
         )
 

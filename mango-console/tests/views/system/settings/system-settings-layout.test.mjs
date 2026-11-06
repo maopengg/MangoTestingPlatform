@@ -14,6 +14,94 @@ const runtimeCenterFilename = new URL(
 )
 const runtimeCenterSource = fs.readFileSync(runtimeCenterFilename, 'utf8')
 
+test('datasource performance fields default to cautious management and inherit the registered level', () => {
+  const editor = fs.readFileSync(new URL('../../../../src/views/system/settings/components/DatasourcePerformanceEditor.vue', import.meta.url), 'utf8')
+  assert.match(editor, /managementLevel: 2/)
+  assert.doesNotMatch(editor, /managementLevel: 3/)
+  assert.equal((editor.match(/managementLevel === 2 \? '谨慎修改' : '普通配置'/g) || []).length, 2)
+  assert.match(source, /:management-level="item.management_level"/)
+})
+
+test('every datasource performance field has an explanation without implying a business API limit', () => {
+  const editor = fs.readFileSync(new URL('../../../../src/views/system/settings/components/DatasourcePerformanceEditor.vue', import.meta.url), 'utf8')
+  const { descriptor: component, errors } = parse(editor)
+  assert.deepEqual(errors, [])
+  const script = compileScript(component, { id: 'datasource-performance' })
+  assert.deepEqual(compileTemplate({ source: component.template.content, filename: 'DatasourcePerformanceEditor.vue',
+    id: 'datasource-performance', compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
+  const ast = ts.createSourceFile('editor.ts', component.scriptSetup.content, ts.ScriptTarget.Latest, true)
+  const initializers = new Map(ast.statements.filter(ts.isVariableStatement)
+    .flatMap(node => [...node.declarationList.declarations]).filter(node => node.initializer)
+    .map(node => [node.name.getText(ast), node.initializer.getText(ast)]))
+  const budget = new Function(`return ${initializers.get('budgetFields')}`)()
+  for (const name of ['budgetFields', 'sharedFields']) {
+    const fields = new Function('budgetFields', `return ${initializers.get(name)}`)(budget)
+    for (const field of fields) assert.ok(field.hint?.trim().length >= 10, `${name}.${field.key} needs a useful explanation`)
+  }
+  assert.match(budget.find(field => field.key === 'concurrency').hint, /不限制Case业务API并发/)
+  const shared = new Function(`return ${initializers.get('sharedFields')}`)()
+  assert.match(shared.find(field => field.key === 'queue_timeout_seconds').hint, /不是Case最长排队时间/)
+  assert.match(shared.find(field => field.key === 'cleanup_completion_seconds').hint, /不含资源排队等待/)
+  assert.equal((component.template.content.match(/\{\{ field.hint \}\}/g) || []).length, 2)
+  assert.doesNotMatch(component.template.content, /更严格的子配额|实例组合并与覆盖|新增子配额|新增实例组/)
+  assert.doesNotMatch(component.scriptSetup.content, /scopeFields|instanceFields|function addScope|function addInstance/)
+})
+
+test('saving uniform datasource settings never resubmits retired overrides or subquotas', () => {
+  const editor = fs.readFileSync(new URL('../../../../src/views/system/settings/components/DatasourcePerformanceEditor.vue', import.meta.url), 'utf8')
+  const script = parse(editor).descriptor.scriptSetup.content
+  const ast = ts.createSourceFile('editor.ts', script, ts.ScriptTarget.Latest, true)
+  const declarations = ast.statements.filter(ts.isVariableStatement).flatMap(node => [...node.declarationList.declarations])
+  const get = name => new Function(`return ${declarations.find(node => node.name.getText(ast) === name).initializer.getText(ast)}`)()
+  const raw = { mysql: { concurrency: 4 }, instances: [{ group: 'old', connection_ids: [1] }], scopes: [{ name: 'old' }] }
+  const before = structuredClone(raw)
+  const events = []
+  const code = ts.transpileModule(script.slice(script.indexOf('  const draft =')), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 }
+  }).outputText
+  const run = new Function('props', 'reactive', 'ref', 'watch', 'baseBudget', 'kinds', 'emit', `${code}; return { draft, save };`)(
+    { modelValue: raw, loading: false }, value => value, value => ({ value }), (_, callback) => callback(raw),
+    get('baseBudget'), get('kinds'), (...args) => events.push(args)
+  )
+  run.save()
+  const payload = events.find(([name]) => name === 'update:modelValue')[1]
+  assert.equal('instances' in payload, false)
+  assert.equal('scopes' in payload, false)
+  assert.equal(payload.mysql.concurrency, 4)
+  assert.deepEqual(raw, before)
+})
+
+test('relaxed datasource defaults match backend values and retain explicitly saved limits', () => {
+  const editor = fs.readFileSync(new URL('../../../../src/views/system/settings/components/DatasourcePerformanceEditor.vue', import.meta.url), 'utf8')
+  const script = parse(editor).descriptor.scriptSetup.content
+  const ast = ts.createSourceFile('editor.ts', script, ts.ScriptTarget.Latest, true)
+  const declarations = ast.statements.filter(ts.isVariableStatement).flatMap(node => [...node.declarationList.declarations])
+  const get = name => new Function(`return ${declarations.find(node => node.name.getText(ast) === name).initializer.getText(ast)}`)()
+  const code = ts.transpileModule(script.slice(script.indexOf('  const draft =')), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  const initialize = raw => new Function('props', 'reactive', 'ref', 'watch', 'baseBudget', 'kinds', 'emit', `${code}; return draft;`)(
+    { modelValue: raw, loading: false }, value => value, value => ({ value }), (_, callback) => callback(raw), get('baseBudget'), get('kinds'), () => {}
+  )
+  const defaults = initialize({})
+  for (const [kind, expected] of Object.entries({ mysql: [6, 30, 12], redis: [12, 75, 16], elasticsearch: [6, 15, 12] })) {
+    const value = defaults[kind]
+    assert.deepEqual([value.concurrency, value.requests_per_second, value.connections], expected)
+    assert.equal(value.cleanup_reserved, 2)
+    assert.equal(value.cleanup_rate_percent, 25)
+    assert.equal(value.cleanup_backlog_limit, 100)
+  }
+  assert.equal(defaults.pool_size, 3)
+  assert.equal(defaults.max_waiters, 256)
+  assert.equal(defaults.cleanup_consumer_threads, 2)
+  const saved = initialize({ mysql: { concurrency: 4, requests_per_second: 20, connections: 8, cleanup_reserved: 1 }, pool_size: 2, max_waiters: 100 })
+  assert.equal(saved.mysql.concurrency, 4)
+  assert.equal(saved.mysql.cleanup_reserved, 1)
+  assert.equal(saved.pool_size, 2)
+  assert.equal(saved.max_waiters, 100)
+  const low = initialize({ mysql: { concurrency: 2, connections: 3 } })
+  assert.equal(low.mysql.cleanup_reserved, 1)
+  assert.equal(low.pool_size, 2)
+})
+
 test('callback enablement uses the existing integer switch and retains numeric payloads', () => {
   const script = descriptor.scriptSetup.content
   const keys = JSON.parse(script.match(/const integerSwitchKeys: string\[\] = (\[[^\]]*\])/)[1].replaceAll("'", '"'))

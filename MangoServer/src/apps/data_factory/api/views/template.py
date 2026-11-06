@@ -136,6 +136,7 @@ class DataFactoryTemplateViews(ViewSet):
             field_overrides=source.field_overrides,
             output_config=source.output_config,
             post_insert_updates=deepcopy(source.post_insert_updates or []),
+            cleanup_resources=deepcopy(source.cleanup_resources or []),
             cleanup_strategy=source.cleanup_strategy,
             is_default=False,
             usage_scope=source.usage_scope,
@@ -226,5 +227,6 @@ class DataFactoryTemplateViews(ViewSet):
             request.data.get('execution_id'),
             force_cleanup=True,
             allow_missing=True,
+            controlled_retry=True,
         )
         return ResponseData.success(RESPONSE_MSG_0005, result)

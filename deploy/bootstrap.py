@@ -368,6 +368,8 @@ def render(root,v):
         if 'build' in service:service['build']['context']=str(root)
     services['mango_server']['environment']['UVICORN_WORKERS']=v['UVICORN_WORKERS']
     services['mango_server']['build']['args'].update(DJANGO_ENV=v['DJANGO_ENV'],PYTHON_IMAGE=v['PYTHON_IMAGE'])
+    if v['DJANGO_ENV']=='dev':
+        services['scheduler_service']['command'] += ' --cleanup-only'
     services['api_worker_1']['command']='python manage.py run_api_worker --worker-name=api-worker-1 --thread-pool-size='+v['API_THREAD_POOL_SIZE']+' --db-idle-seconds=1800'
     for index in range(2,int(v['API_WORKER_COUNT'])+1):
         worker=copy.deepcopy(services['api_worker_1'])

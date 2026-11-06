@@ -21,6 +21,7 @@ class DatasourceTargetTests(SimpleTestCase):
 
     def binding(self, name='', schema='', redis_db=None):
         return SimpleNamespace(id=8, database=self.connection, database_id=7,
+                               datasource_alias_id=6, datasource_alias=SimpleNamespace(project_product_id=3),
                                database_name=name, schema_name=schema, redis_db=redis_db, environment=1)
 
     def test_connection_no_longer_stores_target_and_binding_does(self):
@@ -107,7 +108,9 @@ class DatasourceTargetTests(SimpleTestCase):
         first_engine, second_engine, new_engine = MagicMock(), MagicMock(), MagicMock()
         first = DatasourceTargetService.resolve(self.binding('first'))
         second = DatasourceTargetService.resolve(self.binding('second'))
-        with patch.object(DataFactoryDatasource, 'create_engine',
+        from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
+        with patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy',
+                   return_value=DatasourcePerformancePolicy()), patch.object(DataFactoryDatasource, 'create_engine',
                           side_effect=[first_engine, second_engine, new_engine]) as factory:
             self.assertIs(first_engine, context.get_data_factory_engine(first))
             self.assertIs(first_engine, context.get_data_factory_engine(first))

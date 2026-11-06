@@ -27,8 +27,21 @@ class TestSuiteTimeoutRecoveryService:
     @classmethod
     @transaction.atomic
     def reset_for_retry(cls, detail: TestSuiteDetails, timeout_minutes: int, max_attempts: int):
+        from src.apps.test_center.models import TestSuite
+        TestSuite.objects.select_for_update().get(id=detail.test_suite_id)
         detail = TestSuiteDetails.objects.select_for_update().get(id=detail.id)
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(detail.summary_data):
+            return False
+        if (detail.type == TestCaseTypeEnum.API.value and detail.status == TaskEnum.PROCEED.value
+                and detail.push_time and timezone.now() - detail.push_time > timedelta(minutes=timeout_minutes)):
+            TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [])
+            return False
         if not cls.can_reset(detail, timeout_minutes, max_attempts):
+            return False
+        from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
+        if TaskCenterQuerySelector.cleanup_for_case_attempt(detail.id, int(detail.retry or 0)).exists():
+            cls.fail_cleanup_interrupted(detail)
             return False
         current_attempt = max(1, int(detail.retry or 0))
         next_attempt = min(current_attempt + 1, max_attempts)
@@ -46,8 +59,36 @@ class TestSuiteTimeoutRecoveryService:
 
     @classmethod
     @transaction.atomic
-    def fail_after_retries(cls, detail: TestSuiteDetails, timeout_minutes: int, max_attempts: int):
+    def fail_cleanup_interrupted(cls, detail):
         detail = TestSuiteDetails.objects.select_for_update().get(id=detail.id)
+        if detail.status != TaskEnum.PROCEED.value:
+            return False
+        now = timezone.now()
+        message = '原执行在数据工厂清理阶段失联或超时；清理任务继续保留，不自动重放已执行的业务步骤，请检查后重新发起完整测试'
+        termination = {'type': 'data_factory_cleanup_interrupted', 'attempt': int(detail.retry or 0),
+                       'terminated_at': now.isoformat(), 'message': message, 'has_test_result': False}
+        trace_id = cls.close_api_traces(detail, message, termination, now)
+        detail.status, detail.error_message = TaskEnum.FAIL.value, message
+        detail.success = detail.fail = detail.warning = 0
+        detail.summary_data = {'children': None, 'meta': {'termination': termination}}
+        detail.save(update_fields=['status', 'error_message', 'success', 'fail', 'warning', 'summary_data', 'update_time'])
+        cls.save_empty_execution_record(detail, message, trace_id)
+        cls.project_business_status(detail, TaskEnum.FAIL.value)
+        return True
+
+    @classmethod
+    @transaction.atomic
+    def fail_after_retries(cls, detail: TestSuiteDetails, timeout_minutes: int, max_attempts: int):
+        from src.apps.test_center.models import TestSuite
+        TestSuite.objects.select_for_update().get(id=detail.test_suite_id)
+        detail = TestSuiteDetails.objects.select_for_update().get(id=detail.id)
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(detail.summary_data):
+            return False
+        if (detail.type == TestCaseTypeEnum.API.value and detail.status == TaskEnum.PROCEED.value
+                and detail.push_time and timezone.now() - detail.push_time > timedelta(minutes=timeout_minutes)):
+            TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [])
+            return False
         if not cls.can_terminate(detail, timeout_minutes, max_attempts):
             return False
         now = timezone.now()

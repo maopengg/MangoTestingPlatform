@@ -31,6 +31,7 @@ class ExecutorModeEnum(BaseEnum):
 
 
 class ExecutorTaskTypeEnum(BaseEnum):
+    DATA_FACTORY_CLEANUP = 'data_factory_cleanup'
     EXECUTOR_COMMAND = "executor_command"
     LIVE_CONTROL = "live_control"
     CONFIG_COMMAND = "config_command"

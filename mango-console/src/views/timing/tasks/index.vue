@@ -423,6 +423,9 @@
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
+  <TaskFineTuningModal ref="fineTuningRef"
+    :user-options="data.userList" :retention-options="enumStore.report_retention_policy || []"
+    :platform-limit="data.apiPlatformLimit" @saved="doRefresh" />
   <ModalDialog
     ref="modalDialogRef"
     :title="data.actionTitle"
@@ -657,6 +660,7 @@
   import TestExecutionModal from '@/components/overlays/TestExecutionModal.vue'
   import DiagnosticMarkdownDrawer from '@/components/reports/DiagnosticMarkdownDrawer.vue'
   import TaskGroupManager from './components/TaskGroupManager.vue'
+  import TaskFineTuningModal from './components/TaskFineTuningModal.vue'
   import OfflineReportExportDialog from '@/components/reports/OfflineReportExportDialog.vue'
   import TaskRecentResults from './components/TaskRecentResults.vue'
   import type { TaskRecentResult } from '@/api/system/tasks'
@@ -674,6 +678,7 @@
 
   const activeTab = ref<'tasks' | 'groups'>('tasks')
   const taskGroupRef = ref<InstanceType<typeof TaskGroupManager> | null>(null)
+  const fineTuningRef = ref<InstanceType<typeof TaskFineTuningModal> | null>(null)
   const offlineExport = reactive({ visible: false, sourceId: 0 })
   const navigationProjectProductId = ref<number | null>(null)
   const taskGroupFilters = reactive({
@@ -731,20 +736,13 @@
     activeTab.value = 'groups'
   }
 
-  function onEdit(record: any) {
+  async function onEdit(record: any) {
     if (!record.task_group) {
       void onUpdate(record)
       return
     }
-    Modal.confirm({
-      title: '模块全量任务需统一编辑',
-      content: `该任务由“${
-        record.task_group_name || '任务组'
-      }”统一管理。请前往任务组修改公共配置。`,
-      okText: '前往任务组',
-      cancelText: '取消',
-      onOk: () => openRecordModuleConfig(record),
-    })
+    if (!(await loadExecutionOptions())) return
+    fineTuningRef.value?.open(record)
   }
   const productionScenes = [
     'stability_monitoring',

@@ -1,4 +1,5 @@
 import threading
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -60,14 +61,16 @@ class WorkerDbContext:
 
     def get_data_factory_engine(self, database: Any):
         self.invalidate_changed_connection(database)
-        cached = self.data_factory_engines.get(database.cache_key)
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        key = f'{database.cache_key}:{DatasourceGovernorService.policy().pool_size}'
+        cached = self.data_factory_engines.get(key)
         if cached:
             cached.last_used_at = timezone.now()
             return cached.value
 
         from src.apps.data_factory.services.datasource import DataFactoryDatasource
         engine = DataFactoryDatasource.create_engine(database)
-        self.data_factory_engines[database.cache_key] = _CachedResource(engine, timezone.now(), database.id,
+        self.data_factory_engines[key] = _CachedResource(engine, timezone.now(), database.id,
                                                                         database.update_time)
         return engine
 
@@ -108,18 +111,24 @@ class WorkerDbContext:
 class WorkerDbContextRegistry:
     def __init__(self, idle_seconds: int = 1800):
         self.idle_seconds = idle_seconds
-        self._local = threading.local()
+        self._local = ContextVar('api_worker_resource_registry', default=None)
         self._contexts: set[WorkerDbContext] = set()
         self._lock = threading.Lock()
 
     def current(self) -> WorkerDbContext:
-        context = getattr(self._local, 'worker_db_context', None)
+        context = self._local.get()
         if context is None:
             context = WorkerDbContext(idle_seconds=self.idle_seconds)
-            self._local.worker_db_context = context
+            self._local.set(context)
             with self._lock:
                 self._contexts.add(context)
         return context
+
+    def release(self, context):
+        context.close_all()
+        with self._lock:
+            self._contexts.discard(context)
+        self._local.set(None)
 
     def close_all(self):
         with self._lock:
@@ -129,12 +138,12 @@ class WorkerDbContextRegistry:
             context.close_all()
 
 
-_current_context = threading.local()
+_current_context = ContextVar('api_worker_database_context', default=None)
 
 
 def set_current_worker_db_context(context: WorkerDbContext | None):
-    _current_context.value = context
+    _current_context.set(context)
 
 
 def get_current_worker_db_context() -> WorkerDbContext | None:
-    return getattr(_current_context, 'value', None)
+    return _current_context.get()

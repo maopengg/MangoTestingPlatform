@@ -47,6 +47,8 @@ from src.apps.test_center.enums.data_source import (
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import TestObject
 from src.common.database import ModelMutationValidationError, model_payload, save_model
+from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
 
 
 def is_missing_value(value) -> bool:
@@ -156,6 +158,17 @@ class DataFactoryDatasource:
 
     @classmethod
     def create_engine(cls, database: Database, *, timeout_seconds: int | None = None):
+        if database.db_type == DataSourceTypeEnum.SQLITE.value:
+            return cls._create_engine(database, timeout_seconds=timeout_seconds)
+        from src.apps.data_factory.services.datasource_pool import DatasourcePoolRegistry
+        from src.apps.test_center.services.data_source import DataSourceConnectionService
+        timeout_seconds = timeout_seconds or DataSourceConnectionService.timeout_seconds()
+        return DatasourcePoolRegistry.get_engine(
+            database, timeout_seconds, lambda policy: cls._create_engine(
+                database, timeout_seconds=timeout_seconds, pool_size=policy.pool_size))
+
+    @classmethod
+    def _create_engine(cls, database: Database, *, timeout_seconds=None, pool_size=2):
         try:
             from sqlalchemy import create_engine
         except ImportError as error:
@@ -176,15 +189,20 @@ class DataFactoryDatasource:
             engine_options.update({
                 "pool_pre_ping": True,
                 "pool_recycle": 1800,
-                "pool_size": 5,
+                "pool_size": pool_size,
                 "max_overflow": 0,
+                "pool_timeout": 0,
             })
+            from src.apps.data_factory.services.datasource_pool import DatasourceQueuePool
+            engine_options['poolclass'] = DatasourceQueuePool
         if database.db_type == DataSourceTypeEnum.SQLITE.value:
             from sqlalchemy.engine import URL
             url = URL.create('sqlite', database=database.file_path)
         else:
             url = cls.build_url(database)
         engine = create_engine(url, **engine_options)
+        from src.apps.data_factory.services.sql_driver_audit import SqlDriverAuditService
+        SqlDriverAuditService.attach(engine, database)
         if database.db_type == DataSourceTypeEnum.POSTGRESQL.value and database.schema_name:
             from sqlalchemy import event
             schema = engine.dialect.identifier_preparer.quote(database.schema_name)
@@ -201,6 +219,7 @@ class DataFactoryDatasource:
         return engine
 
     @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.NETWORK_PROBE.value)
     def test_network(cls, database: Database) -> dict:
         from src.apps.test_center.services.data_source import DataSourceConnectionService
 
@@ -248,6 +267,7 @@ class DataFactoryDatasource:
         return db_context.get_data_factory_engine(database), True
 
     @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.TEST_CONNECTION.value)
     def test_connection(cls, database: Database) -> dict:
         from src.apps.test_center.services.data_source import DataSourceConnectionService
         DataSourceConnectionService.require_sql(database)

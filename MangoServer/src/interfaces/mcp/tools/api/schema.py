@@ -22,7 +22,7 @@ def register_schema_tools(mcp):
         key_value_schema = {
             "type": "list[object]",
             "format": [{"key": "缓存key或名称", "value": "值、SQL、JSONPath、正则或表达式"}],
-            "variable_support": "value 通常支持 ${{变量}}、${{随机方法()}}、${{数据工厂.字段}} 等表达式，执行前由测试数据引擎替换。",
+            "variable_support": "value 通常支持 ${{变量}}、${{随机方法()}}、${{数据工厂.字段}} 等表达式，执行前由测试数据引擎替换。使用随机方法前先通过 list_test_data_methods 查询真实方法名，再通过 evaluate_test_data_expression 试算；需要复用的随机值只生成一次并缓存，清理时读取同一缓存。",
         }
         sql_key_value_schema = {
             "type": "list[object]",
@@ -354,7 +354,7 @@ def register_schema_tools(mcp):
                         "default": [],
                         "description": "用例参数化。每组执行前把 parametrize 数组中的 key/value 写入缓存。",
                         "example": [
-                            {"name": "正常数据", "parametrize": [{"key": "name", "value": "AUTO_${{random_str(6)}}"}]}],
+                            {"name": "正常数据", "parametrize": [{"key": "name", "value": "AUTO_${{str_random_string(6)}}"}]}],
                     },
                 },
                 "api_case_step_workflow": {
@@ -614,7 +614,7 @@ def register_schema_tools(mcp):
                         "data": None,
                         "body_type": "json",
                         "body_config": {"source_type": "template",
-                                        "body_text": "{\"categoryId\": ${{category.id}}, \"categoryName\": \"AUTO_${{random_str(8)}}\"}"},
+                                        "body_text": "{\"categoryId\": ${{category.id}}, \"categoryName\": \"AUTO_${{str_random_string(8)}}\"}"},
                         "ass_jsonpath": [
                             {"group_name": "", "group_logic": "AND", "assertion_type": "jsonpath", "actual": "$.code",
                              "method": "p_is_equal_to", "expect": "0"},

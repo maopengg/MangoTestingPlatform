@@ -11,6 +11,12 @@ DATA_FACTORY_MODULE_ENTITY_INVALID = ErrorDefinition(code=34003, message='实体
 DATA_FACTORY_ENTITY_NAME_TEMPLATE_DUPLICATED = ErrorDefinition(code=34004, message='当前实体下已存在模板名称：{}')
 DATA_FACTORY_FIELD_INVALID = ErrorDefinition(code=34005, message='字段覆盖规则格式错误：{}')
 DATA_FACTORY_CONFIG_INVALID = ErrorDefinition(code=34006, message='输出配置格式错误：{}')
+DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED = ErrorDefinition(
+    code=34195, message='字段“{}”的依赖配置不完整：缺少依赖实体 ID（dependency_entity_id），请选择依赖实体后保存',
+)
+DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID = ErrorDefinition(
+    code=34196, message='字段“{}”的生成配置无效：{}。请修改该字段的生成规则后重试',
+)
 DATA_FACTORY_SCENARIO_TEMPLATE_NOT_ALLOWED = ErrorDefinition(code=34007, message='数据工厂场景模板“{}”不能启用：{}')
 DATA_FACTORY_DATABASE_DATA_SOURCE_ENTITY_RECORD_EXECUTION_INVALID = ErrorDefinition(code=34008,
                                                                                     message='执行明细 {} 未记录数据库绑定，且实体未绑定逻辑数据源，无法安全清理')
@@ -234,10 +240,32 @@ DATA_FACTORY_RUNNER_PARTS_SCENE_WRITEBACK_INVALID_CODE_WRITEBACK_INVALID = Error
                                                                                            message='插入后回写影响行数应为 1，实际为 {}')
 DATA_FACTORY_TEMPLATE_STATUS_REQUIRED = ErrorDefinition(code=34159, message='状态不能为空')
 DATA_FACTORY_TYPE_CAST_FIELD_TYPE_CONVERT_FAILED = ErrorDefinition(code=34160, message='字段值类型转换失败：{} -> {}')
-SQL_AUDIT_SOURCE_TYPE_REQUIRED = ErrorDefinition(code=34162, message='SQL执行来源 source_type 不能为空')
-SQL_AUDIT_SOURCE_STAGE_REQUIRED = ErrorDefinition(code=34163, message='SQL执行来源 source_stage 不能为空')
-SQL_AUDIT_REQUEST_RUNNING = ErrorDefinition(code=34164, message='SQL请求 {} 正在执行，请勿重复提交')
-SQL_AUDIT_REPLAY_FAILED = ErrorDefinition(code=34165, message='SQL请求上次执行失败：{}')
+SQL_AUDIT_SOURCE_TYPE_REQUIRED = ErrorDefinition(code=34162, message='平台未提供数据源执行来源 source_type，本次未执行。请管理员检查调用入口的来源登记')
+SQL_AUDIT_SOURCE_STAGE_REQUIRED = ErrorDefinition(code=34163, message='平台未提供数据源执行阶段 source_stage，本次未执行。请管理员检查调用入口的来源登记')
+SQL_AUDIT_REQUEST_RUNNING = ErrorDefinition(code=34164, message='数据源请求 {} 正在执行，请在系统运维－SQL执行记录中查看状态，勿重复提交')
+SQL_AUDIT_REPLAY_FAILED = ErrorDefinition(code=34165, message='该数据源请求已有失败记录：{}。请查看原执行明细并核对实际数据后再决定是否重新执行')
+DATASOURCE_AUDIT_UNAVAILABLE = ErrorDefinition(code=34173, message='平台无法创建数据源执行记录，本次操作尚未发送。请管理员排查执行记录存储')
+DATASOURCE_AUDIT_COMPLETION_FAILED = ErrorDefinition(code=34174, message='平台保存数据源执行结果失败，最终状态无法确认。请管理员核对执行记录和实际数据；写入操作勿直接重试，避免重复数据')
+DATASOURCE_AUDIT_REQUEST_CONFLICT = ErrorDefinition(code=34175, message='当前请求编号已被另一项数据源操作使用，本次请求被拒绝。请管理员检查请求编号生成逻辑')
+DATASOURCE_AUDIT_RESULT_UNAVAILABLE = ErrorDefinition(code=34176, message='该请求已执行，但平台没有可再次返回的完整结果。请查看原执行记录，不要直接重复写入')
+DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID = ErrorDefinition(code=34177, message='ES清理规则配置错误：{}。请修改场景模板的关联资源清理配置')
+DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID = ErrorDefinition(code=34178, message='无法确认ES文档属于本次工厂执行，平台未删除该文档。请核对执行记录中的归属快照、租户和文档ID映射')
+DATA_FACTORY_ES_CLEANUP_BASELINE_EXISTS = ErrorDefinition(code=34179, message='对应ES文档在本次造数提交前已存在，不能作为本次新建资源清理。请检查文档ID是否重复或映射错误')
+DATA_FACTORY_ES_CLEANUP_TIMEOUT = ErrorDefinition(code=34180, message='数据库记录已清理，但ES清理观察窗口结束后仍未取得连续缺失验证。请查看文档回查明细，检查删除同步或清理操作后重试')
+DATA_FACTORY_ES_CLEANUP_TARGET_CHANGED = ErrorDefinition(code=34181, message='当前ES连接或环境绑定与造数时不一致，平台未使用新配置删除历史数据。请管理员核对执行记录中的原连接和当前绑定')
+DATA_FACTORY_ES_CLEANUP_VERIFICATION_FAILED = ErrorDefinition(code=34182, message='ES清理结果未确认：{}。请在数据工厂执行记录中处理并完成清理验证')
+DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT = ErrorDefinition(code=34183, message='ES操作等待响应超时，最终结果尚未确认。请回查执行记录对应资源，勿仅凭超时认定操作失败并重复写入')
+DATASOURCE_POLICY_INVALID = ErrorDefinition(code=34184, message='数据源性能配置校验未通过。请管理员在系统运维－配置管理中检查数据源性能保护配置')
+DATASOURCE_GOVERNOR_UNAVAILABLE = ErrorDefinition(code=34185, message='平台无法访问数据源执行配额服务，本次未取得执行许可。请管理员检查平台控制数据库和配额服务')
+DATASOURCE_ADMISSION_TIMEOUT = ErrorDefinition(code=34186, message='当前未取得数据源执行名额，本次操作尚未发送。请管理员检查当前执行占用和等待队列')
+DATASOURCE_RECONCILIATION_REQUIRED = ErrorDefinition(code=34191, message='数据源存在结果未确认的历史占用，当前无法取得执行名额，本次操作尚未发送。请管理员核查历史执行结果和配额记录，勿直接清空占用或调大配额')
+DATASOURCE_SETTLEMENT_FAILED = ErrorDefinition(code=34192, message='平台未完成数据源配额结算。请管理员核查执行记录及配额占用；不要通过重复执行来释放名额')
+DATASOURCE_OPERATION_COST_EXCEEDED = ErrorDefinition(code=34187, message='{}')
+DATA_FACTORY_CLEANUP_IN_PROGRESS = ErrorDefinition(code=34188, message='已有清理任务占用本次执行。请查看执行记录中的任务状态，勿重复提交清理')
+DATA_FACTORY_CLEANUP_INTERRUPTED = ErrorDefinition(code=34189, message='数据工厂清理过程已中断，最终结果未确认。请在执行记录中核对实际数据和未完成项，再补清；不能视为已清理')
+DATA_FACTORY_CLEANUP_TIMEOUT = ErrorDefinition(code=34190, message='数据工厂实际清理处理时间超过配置上限，仍有资源未确认清理完成。请查看执行记录中的未完成项并核查后重试')
+DATA_FACTORY_CLEANUP_COORDINATION_FAILED = ErrorDefinition(code=34193, message='{}')
+DATA_SOURCE_QUERY_RESULT_LIMIT_EXCEEDED = ErrorDefinition(code=34194, message='数据库查询结果超过返回行数上限：当前配置为 {} 行，已读取至少 {} 行。请检查用例 SQL 是否未限制查询条数或查询范围过大，并及时修改用例')
 DATA_FACTORY_RUNNER_PARTS_EXECUTION_PRIMARY_KEY_REQUIRED = ErrorDefinition(
     code=34166,
     message='实体 {} 创建数据后未获得清理主键 {}，已回滚本次创建；请检查实体主键配置与真实表结构',

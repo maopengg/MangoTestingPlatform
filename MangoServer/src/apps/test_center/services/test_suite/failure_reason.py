@@ -44,6 +44,9 @@ class TestSuiteFailureReasonService:
 
     @classmethod
     def detail_failure_reasons(cls, detail: TestSuiteDetails) -> Iterable[str]:
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(detail.summary_data):
+            return
         children, _ = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
         child_reasons = [
             cls.failure_message(item)

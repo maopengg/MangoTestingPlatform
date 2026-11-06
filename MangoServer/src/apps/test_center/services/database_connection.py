@@ -15,6 +15,8 @@ from src.apps.test_center.exceptions import (
 )
 from src.apps.test_center.models import TestObject
 from src.settings import MYSQL_IP
+from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 
 DatabaseConnection = SharedDatabaseConnection
 
@@ -37,13 +39,19 @@ class DatabaseConnectionAdapter(DatabaseConnection):
 
     def condition_execute(self, sql: str):
         try:
-            return self.connection.condition_execute(sql)
+            return SqlExecutionAuditService.call(
+                self.target, sql, lambda: self.connection.condition_execute(sql),
+                source_type=DatasourceAuditSourceEnum.RUNTIME.value, stage=DatasourceAuditStageEnum.CONDITION_EXECUTE.value,
+            )
         except MangoToolsError as error:
             self._raise_backend_error(error)
 
     def execute(self, sql: str):
         try:
-            return self.connection.execute(sql)
+            return SqlExecutionAuditService.call(
+                self.target, sql, lambda: self.connection.execute(sql),
+                source_type=DatasourceAuditSourceEnum.RUNTIME.value, stage=DatasourceAuditStageEnum.EXECUTE.value,
+            )
         except MangoToolsError as error:
             self._raise_backend_error(error)
 
@@ -93,6 +101,17 @@ class ObtainDatabase:
         }:
             db_type_name = DataSourceTypeEnum.obj().get(database.db_type, database.db_type)
             raise TestCenterError(TEST_CENTER_DATABASE_CONNECTION_DATABASE_TYPE_UNSUPPORTED, value=(db_type_name,))
+        return SqlExecutionAuditService.call(
+            database, 'CONNECT', lambda: cls._connect(database, allow_query, allow_write),
+            stage=DatasourceAuditStageEnum.CONNECT.value, result_summary=lambda _: {'connected': True},
+        )
+
+    @classmethod
+    def _connect(cls, database, allow_query, allow_write):
+        if database.db_type == DataSourceTypeEnum.MYSQL.value:
+            from src.apps.test_center.services.managed_sql_connection import ManagedSqlConnection
+            return DatabaseConnectionAdapter(ManagedSqlConnection(
+                database, allow_query=bool(allow_query), allow_write=bool(allow_write)), database)
         try:
             connection = SharedDatabaseConnectionFactory.create(
                 database.db_type,

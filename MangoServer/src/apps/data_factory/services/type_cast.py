@@ -1,6 +1,7 @@
 import json
 from datetime import date, datetime
 from decimal import Decimal
+from uuid import UUID
 
 from src.apps.data_factory.exceptions import (
     DATA_FACTORY_TYPE_CAST_FIELD_TYPE_CONVERT_FAILED,
@@ -56,12 +57,14 @@ class DataFactoryTypeCast:
             return float(value)
         if isinstance(value, (datetime, date)):
             return value.isoformat()
+        if isinstance(value, UUID):
+            return str(value)
         if isinstance(value, int) and not isinstance(value, bool):
             if abs(value) > cls.JS_MAX_SAFE_INTEGER:
                 return str(value)
             return value
         if isinstance(value, dict):
             return {key: cls.to_jsonable(item) for key, item in value.items()}
-        if isinstance(value, list):
+        if isinstance(value, (list, tuple)):
             return [cls.to_jsonable(item) for item in value]
         return value

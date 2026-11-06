@@ -17,6 +17,15 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
 class EnumCatalogTests(SimpleTestCase):
+    def test_datasource_audit_enums_are_explicitly_registered(self):
+        from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
+        from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
+        catalog = EnumCatalogService.catalog()
+        self.assertEqual(catalog['datasource_audit_source'], DatasourceAuditSourceEnum.get_option())
+        self.assertEqual(catalog['datasource_audit_stage'], DatasourceAuditStageEnum.get_option())
+        self.assertEqual(catalog['data_factory_es_cleanup_mode'], EsCleanupModeEnum.get_option())
+        self.assertNotIn('datasource_scope_dimension', catalog)
+
     def test_defect_automation_sources_are_available_to_forms_and_catalog(self):
         from src.apps.functional_test.api.serializers.defect import FunctionalTestDefectSerializer
         from src.apps.functional_test.enums.defect import FunctionalTestDefectSourceEnum

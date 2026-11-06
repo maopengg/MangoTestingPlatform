@@ -1,4 +1,5 @@
 import threading
+from dataclasses import replace
 from contextlib import contextmanager
 from datetime import timedelta
 from hashlib import sha256
@@ -11,10 +12,11 @@ from mangotools.enums import TaskEnum
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.system.enums import ExecutorTaskTypeEnum
 from src.apps.system.services.system_config import SystemConfigService
-from src.apps.task_center.schemas.execution import ExecutionCaseCommand
+from src.apps.task_center.schemas.execution import ApiWorkerClaimOwner, ExecutionCaseCommand
 from src.apps.task_center.services.selection.api_case_binding import ApiCaseTaskBindingService
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.test_center.enums import TestCaseTypeEnum
+from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.apps.test_center.services.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
@@ -26,6 +28,17 @@ _NON_MYSQL_PLATFORM_CLAIM_LOCK = threading.Lock()
 class ApiTaskClaimService:
     PLATFORM_LOCK_PREFIX = 'mango:api:claim'
     PLATFORM_LOCK_TIMEOUT_SECONDS = 1
+
+    @staticmethod
+    def renew_wait(case_model, lease_seconds):
+        now = timezone.now()
+        # 只续约仍有效的同一轮领取，不能在排队时复活超时/重试/已停止的 Case。
+        return TestSuiteDetails.objects.filter(
+            id=case_model.test_suite_details, retry=case_model.attempt,
+            status=TaskEnum.PROCEED.value,
+            push_time__gte=now - timedelta(seconds=lease_seconds),
+        ).filter(ApiTaskClaimService.not_blocked_condition()).exclude(
+            test_suite__status=TaskEnum.STOPPED.value).update(push_time=now) == 1
 
     @classmethod
     def platform_lock_name(cls) -> str:
@@ -54,13 +67,19 @@ class ApiTaskClaimService:
                 _NON_MYSQL_PLATFORM_CLAIM_LOCK.release()
 
     @staticmethod
+    def not_blocked_condition():
+        key = 'summary_data__meta__execution_control__phase'
+        return Q(summary_data__isnull=True) | Q(**{f'{key}__isnull': True}) | ~Q(**{
+            key: ReportExecutionPhaseEnum.INFRASTRUCTURE_BLOCKED.value})
+
+    @staticmethod
     def eligible_condition(timeout_at):
         return (
                 Q(status=TaskEnum.STAY_BEGIN.value)
                 | Q(
             Q(push_time__lt=timeout_at) | Q(push_time__isnull=True),
             status=TaskEnum.PROCEED.value,
-        )
+        ) & ApiTaskClaimService.not_blocked_condition()
         )
 
     @classmethod
@@ -69,7 +88,7 @@ class ApiTaskClaimService:
             type=TestCaseTypeEnum.API.value,
             status=TaskEnum.PROCEED.value,
             push_time__gte=timeout_at,
-        )
+        ).filter(cls.not_blocked_condition())
 
     @classmethod
     def candidate_suite_ids(cls, timeout_at, max_attempts: int | None = None):
@@ -81,7 +100,7 @@ class ApiTaskClaimService:
         candidate_details = TestSuiteDetails.objects.filter(
             retry__lt=max_attempts,
             type=TestCaseTypeEnum.API.value,
-        )
+        ).filter(cls.not_blocked_condition())
         pending_suites = (
             candidate_details.filter(status=TaskEnum.STAY_BEGIN.value)
             .order_by()
@@ -117,7 +136,9 @@ class ApiTaskClaimService:
         return sorted(suite_priorities, key=suite_priorities.__getitem__)
 
     @classmethod
-    def claim(cls, lease_seconds: int | None = None) -> ExecutionCaseCommand | None:
+    def claim(cls, lease_seconds: int | None = None, *, worker_owner=None) -> ExecutionCaseCommand | None:
+        if worker_owner is not None:
+            worker_owner = ApiWorkerClaimOwner.model_validate(worker_owner).model_dump()
         if lease_seconds is None:
             lease_seconds = SystemConfigService.get_executor_execution_timeout_seconds(
                 ExecutorTaskTypeEnum.API_EXECUTION.value,
@@ -135,6 +156,7 @@ class ApiTaskClaimService:
                 timeout_at,
                 platform_limit,
                 max_attempts=max_attempts,
+                worker_owner=worker_owner,
             )
 
     @classmethod
@@ -145,6 +167,7 @@ class ApiTaskClaimService:
             platform_limit: int,
             *,
             max_attempts: int,
+            worker_owner=None,
     ) -> ExecutionCaseCommand | None:
         if cls.valid_running_queryset(timeout_at).count() >= platform_limit:
             return None
@@ -176,6 +199,10 @@ class ApiTaskClaimService:
                 )
                 if not detail:
                     continue
+                if detail.status == TaskEnum.PROCEED.value:
+                    from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+                    TestSuiteInfrastructureService.block(detail.id, int(detail.retry or 0), [])
+                    continue
                 detail.test_suite = test_suite
                 claim_error_message = detail.error_message
                 if detail.status == TaskEnum.PROCEED.value:
@@ -193,6 +220,8 @@ class ApiTaskClaimService:
                         detail.api_case_revision_id,
                         release_id=detail.api_case_release_id,
                     )
+                    if detail.api_case_release_id is None:
+                        selection = replace(selection, case_release_id=None)
                 elif not test_suite.tasks_id:
                     # 手动批量执行的编辑态不绑定修订，领取时直接读取当前编辑态。
                     selection = None
@@ -202,6 +231,12 @@ class ApiTaskClaimService:
                         detail.case_id,
                         version_policy,
                     )
+                summary_updates = {}
+                if worker_owner is not None:
+                    from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+                    children, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
+                    summary_updates['summary_data'] = TestSuiteExecutionResultService.pack_summary_data(
+                        children, {**(meta or {}), 'worker_owner': dict(worker_owner)})
                 updated = TestSuiteDetails.objects.filter(
                     cls.eligible_condition(timeout_at),
                     id=detail.id,
@@ -216,6 +251,7 @@ class ApiTaskClaimService:
                     api_case_release_id=selection.case_release_id if selection else None,
                     config_checksum=selection.checksum if selection else None,
                     update_time=now,
+                    **summary_updates,
                 )
                 if updated != 1:
                     continue
@@ -224,6 +260,7 @@ class ApiTaskClaimService:
                     update_time=now,
                 )
                 return ExecutionCaseCommand(
+                    attempt=int(detail.retry or 0) + 1,
                     test_suite_details=detail.id,
                     test_suite=detail.test_suite_id,
                     case_id=detail.case_id,

@@ -10,8 +10,7 @@ const index = fs.readFileSync(new URL('index.vue', base), 'utf8')
 const config = fs.readFileSync(new URL('config.ts', base), 'utf8')
 
 test('overview shows scan, interface entry, interface coverage and Case automation charts', () => {
-  assert.match(source, /模块扫描进度/)
-  assert.match(source, /接口录入状态/)
+  assert.match(source, /① 模块接口扫描进度[\s\S]*② 接口分析进度[\s\S]*③ 用例自动化进度[\s\S]*④ 接口覆盖率/)
   assert.match(source, /用例自动化进度/)
   assert.match(source, /接口覆盖率/)
   assert.doesNotMatch(source, /自动化场景状态/)
@@ -24,22 +23,24 @@ test('overview shows scan, interface entry, interface coverage and Case automati
 })
 
 test('module scan pie uses project-level scan summary', () => {
-  assert.match(source, /props.data\?\.project_scan_summary/)
-  assert.match(source, /value: projectScanSummary.value\?\.scanned_count/)
-  assert.match(source, /不随左侧模块选择变化/)
+  assert.match(source, /props.data\?\.project_inventory_summary/)
+  assert.match(source, /value: projectScanSummary.value\?\.inventoried_count/)
+  assert.match(source, /不随左侧模块变化/)
   assert.doesNotMatch(source, /value: props.data.summary.scanned_count/)
 })
 
-test('interface entry pie partitions discovered interfaces and supports module filtering', () => {
-  const code = source.slice(source.indexOf('const entryData ='), source.indexOf('const entryDescription ='))
-  const calculate = new Function('props', 'computed', `${code}; return entryData`)
-  const compute = (fn) => fn()
-  assert.deepEqual(calculate({ data: { summary: { interface_count: 560, bound_count: 547 } } }, compute), [
-    { name: '已正确录入', value: 547 },
-    { name: '待录入/绑定异常', value: 13 },
-  ])
-  assert.ok(calculate({}, compute).every((item) => item.value === 0))
-  assert.match(source, /event\.dataIndex === 1 \? 'entry' : 'all'/)
+test('interface analysis pie partitions analysis states independently of ApiInfo and supports exact drill filters', () => {
+  const code = config.slice(config.indexOf('export function getInterfaceAnalysisData'), config.indexOf('export function getInterfaceCoverageData'))
+  const { outputText } = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS } })
+  const exports = {}
+  new Function('exports', outputText)(exports)
+  const rows = exports.getInterfaceAnalysisData({ analyzed_interface_count: 7, pending_analysis_count: 2, analysis_gap_count: 1, deferred_analysis_count: 3, bound_count: 100 })
+  assert.deepEqual(rows.map(row => row.value), [7, 2, 1, 3])
+  assert.deepEqual(rows.map(row => row.status), ['completed', 'pending', 'gap', 'deferred'])
+  assert.equal(rows.reduce((sum, row) => sum + row.value, 0), 13)
+  assert.match(source, /query.analysis_statuses = \[analysis.status\]/)
+  assert.match(index, /filters.analysis_statuses = query.analysis_statuses/)
+  assert.match(index, /analysis_status__in: 'analysis_statuses'/)
   assert.match(source, /scanChart\.value, entryChart\.value, coverageChart\.value, statusChart\.value/)
 })
 
@@ -133,7 +134,7 @@ test('overview component and integration compile with the Vue compiler', () => {
 test('overview starts with charts instead of duplicate metrics and explanations', () => {
   assert.match(index, /activeTab = ref\('overview'\)/)
   assert.doesNotMatch(source, /__summary|__metrics|__metric|__note|const cards|完整模块扫描已校验并生效/)
-  assert.match(source, /模块扫描进度/)
+  assert.match(source, /模块接口扫描进度/)
   assert.match(source, /value == null \? '—'/)
   assert.match(source, /尚无自动化场景/)
 })
@@ -155,7 +156,7 @@ test('module progress uses a bounded native-scroll table and global actions', ()
   assert.match(source, /class="mango-native-scroll-table"/)
   assert.match(source, /:scroll="\{ x: overviewModuleScrollX, y: overviewModuleScrollY \}"/)
   assert.match(config, /overviewModuleScrollY = 400/)
-  assert.match(source, /\.mango-coverage-overview__table :deep\(\.arco-table-body\)\s*\{\s*overscroll-behavior: contain/)
+  assert.match(source, /\.mango-coverage-overview__table :deep\(\.arco-table-body\)\s*\{\s*overscroll-behavior-x: contain;\s*overscroll-behavior-y: contain/)
   assert.match(source, /<StickyHorizontalTable/)
   assert.match(source, /__table\s*\{[^}]*height: 440px/)
   assert.match(source, /<MangoTableActions/)
@@ -238,6 +239,52 @@ test('same-scope refresh retains results, changed scopes clear them, and stale r
   await changed
   assert.equal(state.overview.value, next)
   assert.equal(state.overviewLoading.value, false)
+})
+
+test('global layout leaves nested Arco vertical tables to their own scroll container', () => {
+  const layout = fs.readFileSync(new URL('../../../src/layouts/MainLayout.vue', import.meta.url), 'utf8')
+  const start = layout.indexOf('      function handleTableWheel(')
+  const end = layout.indexOf('      return {', start)
+  const js = ts.transpileModule(layout.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  class Element {
+    constructor(root, nested) { this.root = root; this.nested = nested }
+    closest() { return this }
+    classList = { contains: () => this.root }
+    querySelector() { return this.nested ? {} : null }
+  }
+  const outer = { scrollTop: 100, clientHeight: 400, scrollHeight: 1200 }
+  const handle = new Function('HTMLElement', 'findScrollableParent', `${js}; return handleTableWheel`)(Element, () => outer)
+  for (const [root, nested] of [[true, false], [false, true], [false, false]]) {
+    outer.scrollTop = 100
+    let prevented = false
+    handle({ defaultPrevented: false, deltaY: 50, deltaX: 0, target: new Element(root, nested), preventDefault: () => { prevented = true } })
+    assert.equal(outer.scrollTop, root || nested ? 100 : 150)
+    assert.equal(prevented, !(root || nested))
+  }
+})
+
+test('header wheel scrolls the table while horizontal and zoom gestures stay native', () => {
+  const start = source.indexOf('  function handleModuleTableWheel(')
+  const end = source.indexOf('  const pagination =', start)
+  const js = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  const body = { scrollTop: 0, scrollHeight: 1000, clientHeight: 400, contains: () => false }
+  const handler = new Function('moduleTableRegion', 'Node', 'scaleDensityPixels', `${js}; return handleModuleTableWheel`)(
+    { value: { querySelector: () => body } }, class {}, value => value
+  )
+  let prevented = false
+  const event = overrides => ({ deltaX: 0, deltaY: 50, deltaMode: 0, cancelable: true, ctrlKey: false, preventDefault: () => { prevented = true }, ...overrides })
+  handler(event())
+  assert.equal(body.scrollTop, 50)
+  assert.equal(prevented, true)
+  for (const overrides of [{ ctrlKey: true }, { deltaX: 100 }, { cancelable: false }]) {
+    prevented = false
+    handler(event(overrides))
+    assert.equal(body.scrollTop, 50)
+    assert.equal(prevented, false)
+  }
+  body.scrollHeight = body.clientHeight
+  handler(event())
+  assert.equal(prevented, false)
 })
 
 test('overview is read-only, actions remain visible and stale results are ignored', () => {

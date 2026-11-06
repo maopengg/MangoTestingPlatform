@@ -16,6 +16,8 @@ class MenuBetaConfigTests(SimpleTestCase):
 
         self.assertTrue(items_by_url['/functional-test']['isBeta'])
         self.assertTrue(items_by_url['/perf']['isBeta'])
+        self.assertTrue(items_by_url['/report/execution-efficiency/index']['isBeta'])
+        self.assertFalse(items_by_url['/report']['isBeta'])
         self.assertNotIn('/ai', items_by_url)
         self.assertFalse(items_by_url['/help']['isBeta'])
         self.assertTrue(all('badge' not in item for item in items))

@@ -90,6 +90,7 @@ class PermissionMenuService:
         'gray.execution_log': ('read', 'change', 'remove'),
         'report': ('read', 'change'),
         'report.effectiveness': ('read', 'change'),
+        'report.execution_efficiency': ('read',),
         'timing.tasks': ('read', 'add', 'change', 'remove'),
         'timing.strategy': ('read', 'add', 'change', 'remove'),
         'timing.fire_record': ('read',),

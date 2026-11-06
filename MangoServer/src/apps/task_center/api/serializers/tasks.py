@@ -7,10 +7,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from src.apps.task_center.api.serializers.time_tasks import TimeTasksSerializers
-from src.apps.task_center.exceptions import (
-    SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED,
-    TaskCenterError,
-)
 from src.apps.task_center.models import Tasks
 from src.apps.task_center.services.selection.save_validation import ScheduledTaskSaveValidationService
 from src.apps.test_center.formatters.related import format_notice_group
@@ -32,17 +28,22 @@ class TasksSerializers(serializers.ModelSerializer):
         read_only_fields = ('diagnostic_file_path', 'task_group', 'task_group_revision')
 
     def to_internal_value(self, data):
+        if self.instance is not None and self.instance.task_group_id:
+            ScheduledTaskSaveValidationService.validate_group_input(data)
         return super().to_internal_value(ScheduledTaskSaveValidationService.normalize_input(data))
 
     def validate(self, attrs):
         if self.instance is not None and self.instance.task_group_id:
-            if 'report_retention_policy' in attrs and set(attrs) <= {'report_retention_policy', 'update_user'}:
-                return attrs
-            raise TaskCenterError(SYSTEM_TASK_GROUP_TASK_CONFIG_GENERATE_NOT_ALLOWED)
+            return ScheduledTaskSaveValidationService.validate_group_update(super().validate(attrs), self.instance)
         return ScheduledTaskSaveValidationService.validate(
             super().validate(attrs),
             instance=self.instance,
         )
+
+    def update(self, instance, validated_data):
+        if instance.task_group_id:
+            return ScheduledTaskSaveValidationService.update_group_task(instance, validated_data)
+        return super().update(instance, validated_data)
 
 
 class TasksSerializersC(serializers.ModelSerializer):

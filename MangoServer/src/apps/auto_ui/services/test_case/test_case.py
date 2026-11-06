@@ -248,7 +248,7 @@ class TestCase:
             self.test_env,
             case.front_auth_config,
         ).filter(auth_type=UiAuthTypeEnum.PAGE_STEP.value, page_step_id__isnull=False).first()
-        self.__run_case_data_factory(case, parametrize)
+        self.__run_case_data_factory(case, parametrize, test_suite=test_suite, test_suite_details=test_suite_details)
         steps = [
             self.case_steps_model(
                 i.page_step.id,
@@ -346,7 +346,8 @@ class TestCase:
     def ui_auth_cache(self, project_product_id: int, front_auth_config_ids=None) -> UiAuthCache | None:
         return self.__ui_auth_cache(project_product_id, front_auth_config_ids)
 
-    def __run_case_data_factory(self, case: UiCase, parametrize: list[dict] | list | None = None):
+    def __run_case_data_factory(self, case: UiCase, parametrize: list[dict] | list | None = None,
+                                *, test_suite=None, test_suite_details=None):
         self.test_data = None
         self.case_data_factory = None
         if not isinstance(case, UiCase):
@@ -370,7 +371,11 @@ class TestCase:
             self.test_data.set_cache(custom.get('key'), self.test_data.replace(custom.get('value')))
         self.__set_parametrize_cache(parametrize)
         self.case_data_factory = UiCaseDataFactory(test_object.id, self.test_data, case, user_id=self.user_id)
-        self.case_data_factory.run_front()
+        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        from src.apps.test_center.enums import TestCaseTypeEnum
+        with DataFactoryCleanupScheduleService.report_scope(
+                test_suite_details, suite_id=test_suite, case_id=case.id, case_type=TestCaseTypeEnum.UI.value):
+            self.case_data_factory.run_front()
 
     def __set_parametrize_cache(self, parametrize: list[dict] | list | None):
         if not self.test_data or not parametrize:

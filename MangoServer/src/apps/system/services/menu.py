@@ -68,6 +68,7 @@ def _two_level_routes(routes):
         [
             leaf("/report/index", "/report"),
             leaf("/report/effectiveness/index", "/report"),
+            leaf("/report/execution-efficiency/index", "/report"),
         ],
         icon="icon-calendar-clock",
     )
@@ -611,6 +612,14 @@ def ad_routes():
                     "permissionKey": "report.effectiveness",
                     "cacheable": True,
                 },
+                {
+                    "parentPath": "/report",
+                    "menuUrl": "/report/execution-efficiency/index",
+                    "menuName": "执行效能",
+                    "permissionKey": "report.execution_efficiency",
+                    "isBeta": True,
+                    "cacheable": True,
+                },
             ]
         },
 
@@ -765,7 +774,7 @@ def ad_routes():
                 {
                     "parentPath": "/system",
                     "menuUrl": "/system/sql-execution/index",
-                    "menuName": "SQL执行记录",
+                    "menuName": "数据源执行记录",
                     "permissionKey": "system.sql_execution",
                 },
                 {

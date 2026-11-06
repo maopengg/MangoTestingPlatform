@@ -59,6 +59,10 @@ class DataSourceConnectionServiceTests(SimpleTestCase):
 
     def setUp(self):
         super().setUp()
+        for method in ('start', 'finish_success', 'finish_failure'):
+            patcher = patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.' + method)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         # 连接诊断测试不访问配置库；重复校验由配置服务专项测试覆盖。
         validator = patch(
             'src.apps.test_center.api.serializers.data_source.DataSourceConfigurationService.validate_unique')

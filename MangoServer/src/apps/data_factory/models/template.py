@@ -63,6 +63,10 @@ class DataFactoryTemplate(models.Model):
         choices=DataFactoryCleanupStrategyEnum.choices(),
         default=DataFactoryCleanupStrategyEnum.EXECUTION_END.value,
     )
+    cleanup_resources = models.JSONField(
+        verbose_name='关联ES清理规则', default=list, blank=True,
+        help_text='EsCleanupRule列表；仅按本次真实主键和租户验证或精确删除关联ES文档',
+    )
     is_default = models.BooleanField(verbose_name="是否默认模板", default=False, db_index=True)
     usage_scope = models.SmallIntegerField(
         verbose_name="场景用途",

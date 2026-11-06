@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="SQL执行记录"
+        title="数据源执行记录"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
@@ -21,6 +21,8 @@
                 v-model="item.value"
                 :field-names="fieldNames"
                 :options="selectOptions(String(item.key))"
+                :multiple="item.multiple"
+                :max-tag-count="1"
                 :placeholder="item.placeholder"
                 allow-clear
                 allow-search
@@ -65,6 +67,9 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
+            <template v-else-if="item.key === 'project_product_name' || item.key === 'datasource_alias_name'" #cell="{ record }">
+              {{ record[item.key] || '不适用' }}
+            </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
               <a-tag :color="optionTagColor('test_env', record.test_env)" size="small">
                 {{ record.test_env_name || '-' }}
@@ -85,7 +90,7 @@
             </template>
             <template v-else-if="item.key === 'is_slow'" #cell="{ record }">
               <a-tag :color="record.is_slow ? 'orange' : 'green'" size="small">
-                {{ record.is_slow ? '慢SQL' : '正常' }}
+                {{ record.is_slow ? '慢执行' : '正常' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'operations'" #cell="{ record }">
@@ -108,20 +113,21 @@
     </template>
   </TableBody>
 
-  <BaseSidePanel v-model:visible="detail.visible" title="SQL执行详情" width="720px">
+  <BaseSidePanel v-model:visible="detail.visible" title="数据源执行详情" width="720px">
     <a-descriptions v-if="detail.record" :column="2" bordered size="small">
       <a-descriptions-item label="记录ID">{{ detail.record.id }}</a-descriptions-item>
       <a-descriptions-item label="请求ID">{{ detail.record.request_id }}</a-descriptions-item>
+      <a-descriptions-item label="数据源类型">{{ detail.record.datasource_type_name }}</a-descriptions-item>
       <a-descriptions-item label="来源">
         {{ detail.record.source_type }} #{{ detail.record.source_id || '-' }}
       </a-descriptions-item>
       <a-descriptions-item label="阶段">{{ detail.record.source_stage }}</a-descriptions-item>
       <a-descriptions-item label="项目产品">
-        {{ detail.record.project_product_name }}
+        {{ detail.record.project_product_name || '不适用' }}
       </a-descriptions-item>
       <a-descriptions-item label="被测环境">{{ detail.record.test_env_name }}</a-descriptions-item>
       <a-descriptions-item label="逻辑数据源">
-        {{ detail.record.datasource_alias_name }}
+        {{ detail.record.datasource_alias_name || '不适用' }}
       </a-descriptions-item>
       <a-descriptions-item label="实际数据库">
         {{ detail.record.database_name || '-' }}
@@ -138,11 +144,11 @@
         <JsonDisplay :data="detail.record.source_detail || {}" :default-expanded="true" />
       </section>
       <section>
-        <h4>执行 SQL</h4>
+        <h4>执行内容</h4>
         <pre class="mango-code-panel">{{ detail.record.sql_text || '-' }}</pre>
       </section>
       <section>
-        <h4>SQL 参数</h4>
+        <h4>执行参数</h4>
         <JsonDisplay :data="detail.record.sql_parameters || {}" :default-expanded="true" />
       </section>
       <section>
@@ -182,6 +188,7 @@
 
   function selectOptions(key: string) {
     const optionKeys: Record<string, string> = {
+      datasource_type: 'datasource_type_options',
       project_product_id: 'project_product_options',
       source_type: 'source_type_options',
       source_stage: 'source_stage_options',
@@ -238,7 +245,7 @@
 
   function onResetSearch() {
     conditionItems.forEach((item) => {
-      item.value = item.type === 'range' ? [] : ''
+      item.value = item.type === 'range' || item.multiple ? [] : ''
     })
     doRefresh()
   }
@@ -250,12 +257,12 @@
 
   function statusText(status: string) {
     return (
-      { running: '执行中', success: '成功', fail: '失败', timeout: '超时' }[status] || status || '-'
+      { running: '执行中', success: '成功', fail: '失败', timeout: '超时', rolled_back: '已回滚' }[status] || status || '-'
     )
   }
 
   function statusColor(status: string) {
-    return { running: 'blue', success: 'green', fail: 'red', timeout: 'orange' }[status] || 'gray'
+    return { running: 'blue', success: 'green', fail: 'red', timeout: 'orange', rolled_back: 'gray' }[status] || 'gray'
   }
 
   function formatDuration(value: unknown) {

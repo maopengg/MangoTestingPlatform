@@ -592,6 +592,40 @@ class ModuleCoverageScanMixin:
         }
 
     @classmethod
+    def link_pending_case_snapshots(cls, scan: ModuleCoverageScan, *, coverage_case_id=None) -> int:
+        """只补同次扫描内缺失的证据关系，不将新接口冒充历史审核基线。"""
+        candidates = {}
+        for interface in scan.interface_snapshots.exclude(
+                sync_action=ModuleCoverageSyncAction.REMOVED,
+        ).select_related("module_interface"):
+            if (interface.project_product_id, interface.repository_key, interface.branch) != (
+                    scan.project_product_id, scan.repository_key, scan.branch):
+                continue
+            identity = (interface.module_id, interface.source_key_hash, interface.source_key)
+            candidates.setdefault(identity, []).append(interface)
+        snapshots = scan.case_snapshots.filter(interface_snapshot__isnull=True)
+        if coverage_case_id is not None:
+            snapshots = snapshots.filter(coverage_case_id=coverage_case_id)
+        linked = 0
+        for snapshot in snapshots.select_related("coverage_case"):
+            case = snapshot.coverage_case
+            source = (snapshot.payload or {}).get("interface_source_key") or case.interface_source_key
+            if not isinstance(source, str) or not source or (case.project_product_id, case.repository_key, case.branch) != (
+                    scan.project_product_id, scan.repository_key, scan.branch):
+                continue
+            identity = (case.module_id, hashlib.sha256(source.encode("utf-8")).hexdigest(), source)
+            matches = candidates.get(identity, [])
+            if len(matches) != 1:
+                continue
+            interface = matches[0]
+            if case.module_interface_id not in (None, interface.module_interface_id):
+                continue
+            linked += ModuleCoverageCaseSnapshot.objects.filter(
+                id=snapshot.id, interface_snapshot__isnull=True,
+            ).update(interface_snapshot=interface)
+        return linked
+
+    @classmethod
     @transaction.atomic
     def upload_interfaces(cls, scan_id: int, items: list[dict]) -> dict:
         scan = cls.get_locked_uploading_scan(scan_id)
@@ -704,6 +738,7 @@ class ModuleCoverageScanMixin:
                 sync_action=action,
             )
             result[action] += 1
+        cls.link_pending_case_snapshots(scan)
         return {
             "accepted": sum(result.values()),
             "created": result[ModuleCoverageSyncAction.CREATED],
@@ -939,6 +974,9 @@ class ModuleCoverageScanMixin:
             payload = snapshot.payload or {}
             if interface_snapshot is not None and (
                     interface_snapshot.id not in interface_snapshot_ids
+                    or payload.get("method", "").upper() != interface_snapshot.method
+                    or payload.get("url") != interface_snapshot.url
+                    or payload.get("interface_name") != interface_snapshot.interface_name
                     or (
                             snapshot.coverage_case.module_interface_id is not None
                             and snapshot.coverage_case.module_interface_id

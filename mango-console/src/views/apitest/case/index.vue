@@ -679,6 +679,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { usePagePolling, isPendingExecution } from '@/hooks/use-page-polling'
   import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
   import ApiCaseConfigurationDrawer from './components/ApiCaseConfigurationDrawer.vue'
   import CaseExecutionConfigurationTags from '@/components/display/CaseExecutionConfigurationTags.vue'
@@ -811,7 +812,11 @@
   const sidebarResetKey = ref(0)
   const apiPlatformLimit = ref(1)
   const pendingBatchRunCaseIds = ref<number[]>([])
-  const pollingTimer = ref<NodeJS.Timeout | null>(null)
+  const pagePolling = usePagePolling(() => doRefresh(null, false, false), () => {
+    if (table.tableLoading.value) pagePolling.start()
+    beginRequest()
+    table.tableLoading.value = false
+  })
   const boundTaskVisible = ref(false)
   const boundTaskLoading = ref(false)
   const boundTaskTitle = ref('关联任务')
@@ -844,12 +849,7 @@
       : `添加用例 - ${taskCasePanel.taskName}`
   )
 
-  function clearPollingTimer() {
-    if (pollingTimer.value) {
-      clearInterval(pollingTimer.value)
-      pollingTimer.value = null
-    }
-  }
+  function clearPollingTimer() { pagePolling.stop() }
 
   function getItemValue(items: any[], key: string) {
     return items.find((item: any) => item.key === key)?.value ?? ''
@@ -888,8 +888,7 @@
   }
 
   function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
-    clearPollingTimer()
-    resetConfigurationSummaries(true)
+    if (!pagePolling.isRunning()) resetConfigurationSummaries(true)
     const requestId = beginRequest()
     if (showLoading) {
       table.tableLoading.value = true
@@ -907,25 +906,21 @@
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
     }
-    getApiCase(value)
+    return getApiCase(value)
       .then((res) => {
         if (!isLatestRequest(requestId)) return
         table.handleSuccess(res)
-        void loadConfigurationSummaries((res.data || []).map((row: any) => Number(row.id)))
+        if (!pagePolling.isRunning()) void loadConfigurationSummaries((res.data || []).map((row: any) => Number(row.id)))
         pagination.setTotalSize((res as any).totalSize)
         const hasRunningItem =
-          res.data && Array.isArray(res.data) && res.data.some((item: any) => item.status === 3)
+          res.data && Array.isArray(res.data) && res.data.some(isPendingExecution)
 
-        if (hasRunningItem) {
-          // 5秒后再次刷新
-          pollingTimer.value = setInterval(() => {
-            doRefresh()
-          }, 5000)
-        }
+        if (hasRunningItem) pagePolling.start()
+        else pagePolling.stop()
       })
       .catch((error) => {
         if (isLatestRequest(requestId)) {
-          resetConfigurationSummaries()
+          if (!pagePolling.isRunning()) resetConfigurationSummaries()
           console.log(error)
         }
       })
@@ -1361,7 +1356,7 @@
     executionName: string
     testEnv: number
     apiConcurrencyLimit: number | null
-    executionVersion?: 'editing' | 'published'
+    executionVersion?: 'editing' | 'prepublished' | 'published'
   }) {
     if (pendingBatchRunCaseIds.value.length === 0) {
       Message.error('没有可执行的用例，请重新选择')
@@ -1369,6 +1364,17 @@
       return
     }
     const executionVersion = config.executionVersion || 'editing'
+    if (executionVersion === 'prepublished') {
+      const selectedIds = new Set(pendingBatchRunCaseIds.value.map(String))
+      const missingRows = (table.dataList as ApiCaseVersionListRow[]).filter(
+        (row) => selectedIds.has(String(row.id)) && !row.prepublished_revision_id
+      )
+      if (missingRows.length) {
+        Message.warning(`以下用例没有预发布修订：${missingRows.slice(0, 5).map((row) => `${row.id}-${row.name}`).join('、')}`)
+        batchRunModalRef.value?.setConfirmLoading(false)
+        return
+      }
+    }
     if (executionVersion === 'published') {
       const selectedIds = new Set(pendingBatchRunCaseIds.value.map(String))
       const unpublishedRows = (table.dataList as ApiCaseVersionListRow[]).filter(

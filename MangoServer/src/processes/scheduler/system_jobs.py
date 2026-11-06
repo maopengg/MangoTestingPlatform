@@ -228,8 +228,10 @@ class SchedulerSystemJobService:
     def reconcile_workbench_todos(cls):
         try:
             from src.apps.data_factory.services.execution_recovery import DataFactoryExecutionRecovery
+            from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
             from src.apps.task_center.services.workbench.todo import WorkbenchTodoService
             return {
+                **SqlExecutionAuditService.recover_stale(),
                 **DataFactoryExecutionRecovery.recover(),
                 **WorkbenchTodoService.reconcile_non_auth_todos(),
             }

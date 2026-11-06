@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
+
+from pydantic import Field
 
 from src.apps.auto_api.models import (
     ApiCaseRelease,
@@ -61,12 +63,16 @@ def register_case_revision_tools(mcp):
         return ok({'case_id': case_id, 'revision_id': revision_id, 'status': 'editing'})
 
     @mcp.tool()
-    def create_api_case_revision_from_current(case_id: int, summary: str | None = None) -> dict:
+    def create_api_case_revision_from_current(
+            case_id: int,
+            summary: Annotated[str | None, Field(max_length=256)] = None,
+    ) -> dict:
         """把 Case 当前编辑态保存为不可变聚合 Revision。
 
         不要求 run_api_case 成功，也不要求场景必须配置断言；确认当前配置后即可调用。
         创建 Case、编辑步骤/场景、排序和失败调试都不会自动生成修订。生成修订不等于发布，
         也不会影响当前发布版本。
+        summary 为可选修订摘要，最多256个字符。
         """
         revision = ApiCaseRevisionService.record_current(
             case_id, operator_id=current_user().id, summary=summary, source='mcp',

@@ -11,6 +11,7 @@ from mangotools.enums import TaskEnum
 from minio.error import S3Error
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory, force_authenticate
+from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 
 from src.apps.system.api.views.cache_data import CacheDataCRUD, CacheDataViews, SECRET_VALUE_MASK
 from src.apps.system.exceptions import SystemError
@@ -686,7 +687,7 @@ class TestSuiteRetryServiceTests(TestCase):
             test_suite=SimpleNamespace(tasks_id=None),
         )
 
-        with patch.object(
+        with patch.object(ApiCaseRevisionService, 'resolve_manual_revision_retry', return_value=None), patch.object(
                 ApiCaseTaskBindingService,
                 'resolve_execution_selection',
         ) as resolve_selection:

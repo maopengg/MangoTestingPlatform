@@ -26,12 +26,15 @@ from src.apps.data_factory.models import (
     DataFactoryExecutionItem,
 )
 from src.common.logging import log
+from src.common.exceptions.base import MangoServerError
 from .datasource import DataFactoryDatasource, is_missing_value
 from .datasource import DataFactoryDatasourceResolver
 from .datasource_target import DatasourceTargetService
 from .execution_snapshot import DATA_FACTORY_INSERT_SNAPSHOT_KEY, get_insert_snapshot
 from .factory_sql_execution import DataFactorySqlExecutionService
 from .type_cast import DataFactoryTypeCast
+from .cleanup_persistence import CleanupPersistenceService
+from .infrastructure import DatasourceInfrastructureService
 
 
 # -*- coding: utf-8 -*-
@@ -76,6 +79,7 @@ class DataFactoryCleanup:
             execution.id,
             force_cleanup=True,
             allow_missing=True,
+            controlled_retry=True,
         )
         result["cleanup_required"] = True
         return result
@@ -115,6 +119,7 @@ class DataFactoryCleanup:
                     execution_id,
                     force_cleanup=True,
                     allow_missing=True,
+                    controlled_retry=True,
                 )
             except DataFactoryError as error:
                 failed += 1
@@ -187,7 +192,7 @@ class DataFactoryCleanup:
     ) -> None:
         cleanup_time = timezone.now()
         if mark_pending_items:
-            DataFactoryExecutionItem.objects.filter(
+            CleanupPersistenceService.write(lambda: DataFactoryExecutionItem.objects.filter(
                 execution=execution,
                 cleanup_status__in=[
                     DataFactoryCleanupStatusEnum.NOT_CLEANED.value,
@@ -199,33 +204,56 @@ class DataFactoryCleanup:
                 cleanup_time=cleanup_time,
                 cleanup_error=error,
                 update_time=cleanup_time,
-            )
+            ))
         execution.cleanup_status = DataFactoryCleanupStatusEnum.FAIL.value
         execution.cleanup_time = cleanup_time
         execution.error_message = error
-        execution.save(update_fields=['cleanup_status', 'cleanup_time', 'error_message', 'update_time'])
+        CleanupPersistenceService.save(execution, ['cleanup_status', 'cleanup_time', 'error_message', 'update_time'])
         transaction.on_commit(lambda: cls.sync_workbench_todo(execution))
 
     @classmethod
-    @transaction.atomic
     def cleanup_execution(
             cls,
             execution_id: int,
             force_cleanup: bool = False,
             allow_missing: bool = False,
+            defer_resources: bool = False,
+            controlled_retry: bool = False,
+            created_by: int | None = None,
     ) -> dict:
         execution = DataFactoryExecution.objects.get(id=execution_id)
         if execution.cleanup_status == DataFactoryCleanupStatusEnum.SUCCESS.value and not force_cleanup:
             return {
-                "execution_id": execution.id,
-                "success": 0,
-                "fail": 0,
-                "skipped": 0,
-                "errors": [],
-                "already_cleaned": True,
-                "message": "当前执行记录已清理，无需重复清理",
+                'execution_id': execution.id, 'success': 0, 'fail': 0, 'skipped': 0, 'errors': [],
+                'already_cleaned': True, 'message': '当前执行记录已清理，无需重复清理',
             }
-
+        if not defer_resources:
+            from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+            failure = None
+            task_id = None
+            try:
+                task_id = DataFactoryCleanupScheduleService.execute(
+                    execution, created_by=created_by, controlled_retry=controlled_retry,
+                    force_cleanup=force_cleanup, allow_missing=allow_missing)
+            except MangoServerError as error:
+                DatasourceInfrastructureService.capture_cleanup(error)
+                from src.apps.data_factory.exceptions import DATA_FACTORY_CLEANUP_IN_PROGRESS
+                if not (isinstance(error, DataFactoryError) and error.code == DATA_FACTORY_CLEANUP_IN_PROGRESS.code):
+                    DataFactoryCleanupScheduleService.record_wait_failure(execution_id)
+                failure = error.msg
+            statuses = list(DataFactoryExecutionItem.objects.filter(execution_id=execution_id).values_list(
+                'cleanup_status', flat=True))
+            return {
+                'execution_id': execution_id, 'cleanup_task_id': task_id,
+                'success': statuses.count(DataFactoryCleanupStatusEnum.SUCCESS.value),
+                'fail': max(int(failure is not None), statuses.count(DataFactoryCleanupStatusEnum.FAIL.value)),
+                'skipped': sum(value in (DataFactoryCleanupStatusEnum.SKIPPED.value,
+                                        DataFactoryCleanupStatusEnum.PENDING_MANUAL.value) for value in statuses),
+                'errors': [{'error': failure}] if failure else [], 'force_cleanup': force_cleanup,
+                'message': (f'工厂执行 {execution_id} 未完成清理：{failure}' if failure else
+                            '已按策略清理；保留的数据未删除' if any(value != DataFactoryCleanupStatusEnum.SUCCESS.value
+                                                               for value in statuses) else '清理完成'),
+            }
         all_items = list(
             DataFactoryExecutionItem.objects
             .select_related('execution', 'template__entity', 'database', 'datasource_binding')
@@ -246,7 +274,7 @@ class DataFactoryCleanup:
                 if all_items
                 else DataFactoryCleanupStatusEnum.SKIPPED.value
             )
-            execution.save(update_fields=['cleanup_time', 'cleanup_status', 'update_time'])
+            CleanupPersistenceService.save(execution, ['cleanup_time', 'cleanup_status', 'update_time'])
             transaction.on_commit(lambda: cls.sync_workbench_todo(execution))
             return {
                 "execution_id": execution.id,
@@ -259,6 +287,7 @@ class DataFactoryCleanup:
             }
 
         cleanup_items = []
+        resource_only_items = []
         skipped_items = []
         errors = []
         fail = 0
@@ -270,12 +299,18 @@ class DataFactoryCleanup:
                 skipped_items.append(item)
                 continue
             try:
+                from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+                resource_state = DataFactoryCleanupResourceService.validate_snapshot(item)
+                if resource_state.sql_cleaned:
+                    resource_only_items.append(item)
+                    continue
                 cls.validate_cleanup_item(
                     item,
                     recover_missing_primary=force_cleanup,
                 )
             except Exception as error:
                 error_message = str(error)
+                DatasourceInfrastructureService.capture_cleanup(error)
                 errors.append({"item_ids": [item.id], "error": error_message})
                 fail += 1
                 cls.mark_failed(item, error_message)
@@ -283,6 +318,7 @@ class DataFactoryCleanup:
             cleanup_items.append(item)
 
         success = 0
+        pending = 0
         if cleanup_items:
             effective_allow_missing = force_cleanup or allow_missing
             items_by_database: dict[int, list[DataFactoryExecutionItem]] = {}
@@ -303,14 +339,39 @@ class DataFactoryCleanup:
                     )
                 except Exception as error:
                     error_message = str(error)
+                    DatasourceInfrastructureService.capture_cleanup(error)
                     errors.append({"item_ids": [item.id for item in database_items], "error": error_message})
                     fail += len(database_items)
                     for item in database_items:
                         cls.mark_failed(item, error_message)
                 else:
                     for item in database_items:
-                        cls.mark_success(item)
-                    success += len(database_items)
+                        try:
+                            finished = cls.finish_resource_cleanup(item, defer_resources=defer_resources)
+                        except Exception as error:
+                            DatasourceInfrastructureService.capture_cleanup(error)
+                            fail += 1
+                            errors.append({'item_ids': [item.id], 'error': str(error)})
+                            cls.mark_failed(item, str(error))
+                        else:
+                            if finished is False:
+                                pending += 1
+                            else:
+                                success += 1
+
+        for item in resource_only_items:
+            try:
+                finished = cls.finish_resource_cleanup(item, defer_resources=defer_resources)
+            except Exception as error:
+                fail += 1
+                DatasourceInfrastructureService.capture_cleanup(error)
+                errors.append({'item_ids': [item.id], 'error': str(error)})
+                cls.mark_failed(item, str(error))
+            else:
+                if finished is False:
+                    pending += 1
+                else:
+                    success += 1
 
         skipped = 0
         for item in skipped_items:
@@ -320,16 +381,20 @@ class DataFactoryCleanup:
         execution.cleanup_time = timezone.now()
         if fail:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.FAIL.value
+        elif pending:
+            execution.cleanup_status = DataFactoryCleanupStatusEnum.NOT_CLEANED.value
+            execution.cleanup_time = None
         elif skipped:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.SKIPPED.value
         else:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
-        execution.save()
+        CleanupPersistenceService.save(execution)
         transaction.on_commit(lambda: cls.sync_workbench_todo(execution))
 
         return {
             "execution_id": execution.id,
             "success": success,
+            "pending": pending,
             "fail": fail,
             "skipped": skipped,
             "errors": errors,
@@ -362,7 +427,7 @@ class DataFactoryCleanup:
         if recovered:
             item.datasource_binding = binding
             item.datasource_binding_id = binding.id
-            item.save(update_fields=['datasource_binding', 'update_time'])
+            CleanupPersistenceService.save(item, ['datasource_binding', 'update_time'])
 
         snapshot = get_insert_snapshot(item)
         table_name = snapshot.get('table_name') or entity.table_name
@@ -423,7 +488,7 @@ class DataFactoryCleanup:
         if recovered:
             item.datasource_binding = binding
             item.datasource_binding_id = binding.id
-            item.save(update_fields=['datasource_binding', 'update_time'])
+            CleanupPersistenceService.save(item, ['datasource_binding', 'update_time'])
         if not (snapshot.get('table_name') or entity.table_name):
             raise DataFactoryError(DATA_FACTORY_CLEANUP_ENTITY_CONFIG_REQUIRED, value=(entity.name,))
         if not item.primary_value and recover_missing_primary:
@@ -493,7 +558,7 @@ class DataFactoryCleanup:
             repaired_snapshot['primary_key'] = primary_column.name
             params[DATA_FACTORY_INSERT_SNAPSHOT_KEY] = repaired_snapshot
             item.insert_sql_params = params
-            item.save(update_fields=[
+            CleanupPersistenceService.save(item, [
                 'primary_value',
                 'data',
                 'insert_sql_params',
@@ -503,6 +568,16 @@ class DataFactoryCleanup:
         finally:
             if not managed_by_worker:
                 engine.dispose()
+
+    @classmethod
+    def finish_resource_cleanup(cls, item, *, defer_resources=False):
+        from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+        DataFactoryCleanupResourceService.mark_sql_cleaned(item)
+        if defer_resources and DataFactoryCleanupResourceService.state(item).snapshots:
+            return False
+        DataFactoryCleanupResourceService.verify(item)
+        cls.mark_success(item)
+        return True
 
     @staticmethod
     def resolve_cleanup_binding(item: DataFactoryExecutionItem, entity):
@@ -524,30 +599,62 @@ class DataFactoryCleanup:
         engine, managed_by_worker = DataFactoryDatasource.get_worker_engine(database)
         try:
             from sqlalchemy import MetaData
-
-            metadata = MetaData()
-            audit_handles = []
-            with engine.begin() as connection:
-                for item in items:
-                    cls.delete_by_primary_key(
-                        item,
-                        allow_missing=allow_missing,
-                        engine=engine,
-                        connection=connection,
-                        metadata=metadata,
-                        audit_handles=audit_handles,
-                    )
+            from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+            from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+            from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+            context = DataFactorySqlExecutionService.build_source_context(
+                execution=items[0].execution, item=items[0], stage='cleanup')
+            with SqlExecutionAuditService.source(context):
+                capacity = Governor.transaction_capacity(database)
+                batch_size = (max(1, min(capacity, Governor.policy().transaction_statement_budget) // 2)
+                              if capacity else len(items))
+                for offset in range(0, len(items), batch_size):
+                    batch = items[offset:offset + batch_size]
+                    metadata = MetaData()
+                    for item in batch:
+                        cls.reflect_cleanup_table(item, metadata, engine, database)
+                    audit_handles = []
+                    committed = False
+                    try:
+                        with Governor.transaction_budget(database, 2 * len(batch)):
+                            with engine.begin() as connection:
+                                for item in batch:
+                                    cls.delete_by_primary_key(
+                                        item, allow_missing=allow_missing, engine=engine, connection=connection,
+                                        metadata=metadata, audit_handles=audit_handles,
+                                    )
+                            committed = True
+                            for item in batch:
+                                DataFactoryCleanupResourceService.mark_sql_cleaned(item)
+                    except Exception as error:
+                        if not committed:
+                            DataFactorySqlExecutionService.mark_rolled_back(audit_handles, error)
+                        raise
         except ImportError as error:
             raise DataFactoryError(DATA_FACTORY_CLEANUP_SQL_INVALID) from error
-        except Exception as error:
-            if 'audit_handles' in locals():
-                DataFactorySqlExecutionService.mark_rolled_back(audit_handles, error)
-            raise
         finally:
             if not managed_by_worker:
                 engine.dispose()
 
     @classmethod
+    @DataFactorySqlExecutionService.source_for('cleanup_metadata')
+    def reflect_cleanup_table(cls, item, metadata, engine, database):
+        from sqlalchemy import Table
+        snapshot = get_insert_snapshot(item)
+        schema = snapshot['schema_name'] or None
+        name = snapshot['table_name']
+        key = f'{schema}.{name}' if schema else name
+        if key in metadata.tables:
+            return metadata.tables[key]
+        # 只读反射没有持有业务行锁，按驱动实际语句计费，不为一条结构读取预付整批。
+        table = Table(name, metadata, schema=schema, autoload_with=engine)
+        primary = list(table.primary_key.columns)
+        if len(primary) != 1 or primary[0].name != snapshot['primary_key']:
+            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=('真实表主键与执行快照不一致，禁止清理',))
+        return table
+
+    @classmethod
+    @DataFactorySqlExecutionService.source_for('cleanup')
     def delete_by_primary_key(
             cls,
             item: DataFactoryExecutionItem,
@@ -578,8 +685,12 @@ class DataFactoryCleanup:
             snapshot = get_insert_snapshot(item)
             table_name = snapshot.get('table_name') or entity.table_name
             primary_key = snapshot.get('primary_key') or entity.primary_key
-            table = Table(table_name, metadata, schema=snapshot['schema_name'] or None, autoload_with=engine,
-                          extend_existing=True)
+            schema = snapshot['schema_name'] or None
+            key = f'{schema}.{table_name}' if schema else table_name
+            table = metadata.tables.get(key)
+            if table is None:
+                table = Table(table_name, metadata, schema=schema,
+                              autoload_with=connection if connection is not None else engine)
             primary_column = table.c[primary_key]
             primary_value = item.data.get(primary_key) or item.primary_value
             statement = delete(table).where(primary_column == primary_value)
@@ -680,6 +791,8 @@ class DataFactoryCleanup:
             allow_missing: bool = False,
     ):
         rowcount = getattr(result, "rowcount", None)
+        if isinstance(rowcount, int) and rowcount > 1:
+            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=('主键清理影响多条记录，事务必须回滚',))
         if rowcount == 0 and not allow_missing:
             raise DataFactoryError(DATA_FACTORY_CLEANUP_SQL_RECORD_EXECUTION_CLEANUP_INVALID,
                                    value=(item.id, table_name, primary_key, primary_value))
@@ -733,7 +846,7 @@ class DataFactoryCleanup:
         cleanup_sql, cleanup_sql_params = DataFactoryCleanup.compile_cleanup_sql(statement, engine.dialect)
         item.cleanup_sql = cleanup_sql
         item.cleanup_sql_params = cleanup_sql_params
-        item.save(update_fields=['cleanup_sql', 'cleanup_sql_params', 'update_time'])
+        CleanupPersistenceService.save(item, ['cleanup_sql', 'cleanup_sql_params', 'update_time'])
 
     @staticmethod
     def compile_cleanup_sql(statement, dialect):
@@ -752,7 +865,7 @@ class DataFactoryCleanup:
         item.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
         item.cleanup_time = timezone.now()
         item.cleanup_error = None
-        item.save(update_fields=[
+        CleanupPersistenceService.save(item, [
             'cleanup_status',
             'cleanup_time',
             'cleanup_error',
@@ -766,18 +879,18 @@ class DataFactoryCleanup:
         item.cleanup_status = DataFactoryCleanupStatusEnum.FAIL.value
         item.cleanup_error = error
         item.cleanup_time = timezone.now()
-        item.save(update_fields=['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
+        CleanupPersistenceService.save(item, ['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
 
     @staticmethod
     def mark_pending_manual(item: DataFactoryExecutionItem):
         item.cleanup_status = DataFactoryCleanupStatusEnum.PENDING_MANUAL.value
         item.cleanup_error = None
         item.cleanup_time = None
-        item.save(update_fields=['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
+        CleanupPersistenceService.save(item, ['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
 
     @staticmethod
     def mark_skipped(item: DataFactoryExecutionItem):
         item.cleanup_status = DataFactoryCleanupStatusEnum.SKIPPED.value
         item.cleanup_error = None
         item.cleanup_time = timezone.now()
-        item.save(update_fields=['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
+        CleanupPersistenceService.save(item, ['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])

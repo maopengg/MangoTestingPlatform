@@ -35,6 +35,7 @@ CONFIG_GROUP_TITLES = {
     "cache_performance": "缓存与性能配置",
     "access": "用户与访问配置",
     "data_source": "数据源配置",
+    "datasource_performance": "数据源性能保护",
     "mock": "Mock运行配置",
     "internal": "系统内部配置",
 }
@@ -155,6 +156,11 @@ class SystemConfigDefinition:
 
 
 SYSTEM_CONFIG_REGISTRY = [
+    SystemConfigDefinition(
+        key='DATASOURCE_PERFORMANCE_POLICY', describe='数据源限流、连接与清理调度策略',
+        group='datasource_performance', value_type=CacheValueTypeEnum.DICT.value,
+        default_value={}, sort=10, management_level=SystemConfigManagementLevelEnum.CAUTION.value,
+    ),
     SystemConfigDefinition(
         key="REPORT_DELIVERY_CONFIG", describe="离线报告交付配置", group="report_delivery",
         value_type=CacheValueTypeEnum.DICT.value, default_value={}, sort=10,
@@ -311,7 +317,7 @@ SYSTEM_CONFIG_REGISTRY = [
     ),
     SystemConfigDefinition(
         key=SQL_SLOW_QUERY_THRESHOLD_SECONDS_KEY,
-        describe="慢SQL阈值（秒）",
+        describe="数据源慢执行阈值（秒）",
         group="data_factory",
         value_type=CacheValueTypeEnum.INT.value,
         default_value=SQL_SLOW_QUERY_THRESHOLD_SECONDS_DEFAULT,
@@ -1044,10 +1050,52 @@ class SystemConfigService:
         return None if 1 <= normalized <= 3600 else '慢SQL阈值必须是 1～3600 秒的整数'
 
     @classmethod
+    def validate_datasource_policy_transition(cls, previous, value):
+        """保存方已锁定配置行；退役旧覆盖或改变池大小前必须排空旧占用。"""
+        from pydantic import ValidationError
+        from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        from src.apps.system.enums.runtime_kv import RuntimeKVNamespaceEnum
+        from src.apps.system.selectors.runtime_kv import RuntimeKVSelector
+        from src.apps.system.services.runtime_kv import RuntimeKV
+
+        old = cls.cast_value(previous.value, previous.value_type, {})
+        new = json.loads(value) if isinstance(value, str) else value
+        try:
+            same = DatasourceGovernorService.parse_saved_policy(old).pool_size == DatasourcePerformancePolicy.model_validate(new).pool_size
+        except ValidationError:
+            same = False
+        if same:
+            return None
+        rows = RuntimeKVSelector.active(RuntimeKVNamespaceEnum.DATASOURCE_GOVERNOR.value).filter(
+            key__startswith='group:', key__endswith=':control').select_for_update().only('value')
+        now = RuntimeKV.namespace(RuntimeKVNamespaceEnum.DATASOURCE_GOVERNOR).server_time().timestamp()
+        for row in rows:
+            try:
+                state = DatasourceGovernorService.read_state(row.value['data'])
+            except (KeyError, TypeError, ValidationError):
+                return '数据源运行状态无法确认，暂不能切换统一配置或改变连接池大小。请管理员核查运行状态，勿清空未知占用'
+            if state.permits or any(waiter.expires_at > now for waiter in state.waiters.values()):
+                return '切换统一配置或改变连接池大小前，请停止新执行并等待现有清理完成、连接池回收；结果未知的占用须先核查，不能直接重置'
+        return None
+
+    @classmethod
     def validate_editable_config(cls, key: str, value) -> str | None:
         """统一校验配置管理页可编辑的单个配置项。"""
         if key not in cls.editable_config_keys():
             return '该配置已停用或不属于可编辑的系统配置'
+        if key == 'DATASOURCE_PERFORMANCE_POLICY':
+            from pydantic import ValidationError
+            from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
+            try:
+                DatasourcePerformancePolicy.model_validate(json.loads(value) if isinstance(value, str) else value,
+                                                           strict=True)
+            except ValidationError as error:
+                from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+                return '数据源统一性能配置无效：' + DatasourceInfrastructureService.validation_reason(error)
+            except (json.JSONDecodeError, TypeError):
+                return '数据源性能配置必须是有效JSON对象，请检查MySQL、Redis、ES统一限额及清理保留容量'
+            return None
         if key == API_DEFAULT_ASSERTION_CHECKS_KEY:
             try:
                 values = json.loads(value) if isinstance(value, str) else value

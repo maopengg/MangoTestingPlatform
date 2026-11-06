@@ -15,6 +15,8 @@ from src.apps.data_factory.services.datasource import DataFactoryDatasource
 from src.apps.data_factory.services.datasource_target import DatasourceTargetService
 from src.apps.data_factory.services.discover import DataFactoryDiscover
 from src.apps.data_factory.services.elasticsearch_http import open_elasticsearch_request
+from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
 from src.apps.system.services.ai.client import AiService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.test_center.exceptions import (
@@ -71,8 +73,9 @@ class DataSourceDiscoveryService:
             cache.set(key, result, 30 * 60)
         return result
 
-    @staticmethod
-    def indices(database):
+    @classmethod
+    @SqlExecutionAuditService.audited(DatasourceAuditStageEnum.DISCOVER_INDICES.value)
+    def indices(cls, database):
         options = database.extra_config or {}
         scheme = options.get('scheme', 'http')
         prefix = str(options.get('path_prefix', '')).strip('/')
@@ -89,7 +92,7 @@ class DataSourceDiscoveryService:
         request = urllib_request.Request(url, headers=headers, method='GET')
         try:
             with open_elasticsearch_request(
-                    request, timeout=DataSourceConnectionService.timeout_seconds(), context=context,
+                    request, timeout=DataSourceConnectionService.timeout_seconds(), target=database, context=context,
             ) as response:
                 body = response.read(1_048_577)
             if len(body) > 1_048_576:

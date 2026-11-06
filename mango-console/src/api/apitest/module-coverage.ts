@@ -10,6 +10,11 @@ export interface PageResult<T = any> {
 const base = '/api/module-coverage'
 
 export interface CoverageOverviewCounts {
+  analyzed_interface_count: number
+  pending_analysis_count: number
+  analysis_gap_count: number
+  deferred_analysis_count: number
+  analysis_rate: number | null
   excluded_interface_count?: number
   interface_count: number
   bound_count: number
@@ -36,12 +41,15 @@ export interface CoverageModuleOverview extends CoverageOverviewCounts {
   full_path: string
   is_leaf: boolean
   scan_completed: boolean
+  inventory_completed: boolean
+  inventory_scan_ids: number[]
   latest_scan_id: number | null
   applied_scan_id: number | null
   latest_scan_status: string | null
 }
 
 export interface CoverageOverview {
+  project_inventory_summary: { leaf_count: number; inventoried_count: number; uninventoried_count: number; inventory_rate: number | null }
   project_scan_summary?: { leaf_count: number; scanned_count: number; unscanned_count: number }
   summary: CoverageOverviewCounts & {
     module_count: number

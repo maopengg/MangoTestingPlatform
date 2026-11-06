@@ -6,6 +6,7 @@ from django.forms import model_to_dict
 from mangotools.enums import StatusEnum
 
 from src.apps.data_factory.enums import DataFactoryCleanupStrategyEnum
+from src.apps.data_factory.schemas.cleanup_resource import EsCleanupRule
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.data_factory.services.configuration_preview import DataFactoryConfigurationPreviewService
 from src.apps.data_factory.services.runner import DataFactoryRunner
@@ -35,6 +36,12 @@ from .helpers import (
     _template_cache_prefix,
     _template_summary,
 )
+
+
+def _cleanup_resource_payload(rules):
+    if rules is None:
+        return None
+    return [rule.model_dump(mode='json') if isinstance(rule, EsCleanupRule) else rule for rule in rules]
 
 
 def register_template_tools(mcp):
@@ -113,6 +120,7 @@ def register_template_tools(mcp):
             field_overrides: dict | None = None,
             output_config: list | None = None,
             post_insert_updates: list[dict] | None = None,
+            cleanup_resources: list[EsCleanupRule] | None = None,
             items: list[dict] | None = None,
             cleanup_strategy: Literal[1, 2, 3] = DataFactoryCleanupStrategyEnum.EXECUTION_END.value,
             is_default: bool = False,
@@ -124,6 +132,10 @@ def register_template_tools(mcp):
 
         cleanup_strategy：1=执行结束自动清理（默认），2=手动清理，3=不清理。
         用户未明确要求保留数据时，必须优先选择 1，避免测试数据残留；2/3 仅在用户明确要求时使用。
+        cleanup_resources 可配置同产品ES的关联清理：datasource_alias_id、index_template（example_template_{tenant}）、
+        tenant_field/tenant_path（默认tenant_id）、mode（verify默认仅回查，delete_and_verify精确删除后回查）、
+        timeout_seconds（2至60，默认15）、poll_seconds（1至5，默认1）。document_id_field 可指定本次落库记录的业务ID字段；
+        不传/null才使用SQL主键，显式指定字段缺值时失败，禁止回退及存量接管。
 
         is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
         usage_scope 场景用途，默认 1：
@@ -156,6 +168,7 @@ def register_template_tools(mcp):
                     "field_overrides": field_overrides or {},
                     "output_config": _normalize_output_config(output_config),
                     "post_insert_updates": post_insert_updates or [],
+                    "cleanup_resources": _cleanup_resource_payload(cleanup_resources) or [],
                     "items": items or [],
                     "cleanup_strategy": cleanup_strategy,
                     "is_default": is_default,
@@ -188,6 +201,7 @@ def register_template_tools(mcp):
             field_overrides: dict | None = None,
             output_config: list | None = None,
             post_insert_updates: list[dict] | None = None,
+            cleanup_resources: list[EsCleanupRule] | None = None,
             items: list[dict] | None = None,
             cleanup_strategy: Literal[1, 2, 3] | None = None,
             is_default: bool | None = None,
@@ -220,6 +234,14 @@ def register_template_tools(mcp):
         generator_config={"source_node":"root|item:<关联项ID/名称>","source_field":"id"}
         引用同一 execution 中已落库节点的自增主键或其他字段；不能引用当前项自身或后续关联项。
         post_insert_updates 不传则不修改；传入时整体覆盖。它只支持节点字段映射，不接受 SQL、表名或 WHERE 条件。
+        cleanup_resources 为关联ES清理规则列表，不传不修改、[]清空。每项包含同产品的ES datasource_alias_id、
+        index_template（如example_template_{tenant}）、tenant_field（实体租户字段）、tenant_path（ES租户路径）、
+        mode=verify（仅验证，默认）或delete_and_verify（精确删除并回查）、timeout_seconds（2至60）、poll_seconds（1至5）。
+        document_id_field 可指定ES文档ID的实体字段，如SQL主键为_id而ES使用业务id时设置document_id_field="id"。
+        不传/null才使用SQL主键；指定字段必须存在于实体和本次落库记录，缺值不回退。
+        SQL行主键与ES文档ID分别冻结，不能把业务id覆盖到SQL清理主键。SQL提交前确认ES不存在，拒绝接管存量文档。
+        清理先完成SQL，再验证ES；仅delete_and_verify且环境允许写入时可精确删除本次文档，禁止生产环境写入。
+        缺失索引、归属不符、权限不足、版本冲突、超时都会清理失败并进入执行记录及待办；重试不会重建数据。
         """
         payload: dict[str, Any] = {"id": template_id}
         for key, value in {
@@ -231,6 +253,7 @@ def register_template_tools(mcp):
             "field_overrides": field_overrides,
             "output_config": _normalize_output_config(output_config) if output_config is not None else None,
             "post_insert_updates": post_insert_updates,
+            "cleanup_resources": _cleanup_resource_payload(cleanup_resources),
             "items": items,
             "cleanup_strategy": cleanup_strategy,
             "is_default": is_default,

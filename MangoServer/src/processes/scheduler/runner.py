@@ -29,11 +29,13 @@ class ScheduleRunner:
             poll_interval: int = 30,
             lookback_minutes: int = 1,
             dispatch_batch_size: int = 50,
+            cleanup_only: bool = False,
     ):
         self.node_name = node_name or socket.gethostname()
         self.poll_interval = poll_interval
         self.lookback_minutes = lookback_minutes
         self.dispatch_batch_size = dispatch_batch_size
+        self.cleanup_only = cleanup_only
         self.running = True
         self.stop_event = threading.Event()
         self.dispatch_wakeup_event = threading.Event()
@@ -43,6 +45,10 @@ class ScheduleRunner:
             self.dispatch_wakeup_event,
         )
         self.dispatch_consumer_thread = None
+        self.cleanup_threads = []
+        self.cleanup_activity = []
+        self.cleanup_retire_events = []
+        self.cleanup_thread_limit = 0
 
     @system_error_guard(
         source=SystemErrorEventSource.SCHEDULER,
@@ -50,11 +56,17 @@ class ScheduleRunner:
         service_name=RuntimeServiceName.SCHEDULER,
     )
     def run_forever(self):
-        log.system.info(f'scheduler-service 启动：node={self.node_name}，已合并定时触发和任务分发')
-        self.start_dispatch_consumer()
+        mode = '仅消费数据工厂清理任务' if self.cleanup_only else '定时触发、任务分发及数据工厂清理'
+        log.system.info(f'scheduler-service 启动：node={self.node_name}，模式={mode}')
+        if not self.cleanup_only:
+            self.start_dispatch_consumer()
+        self.start_cleanup_consumers()
         try:
             while self.running and not self.stop_event.is_set():
-                self.ensure_dispatch_consumer()
+                if not self.cleanup_only:
+                    self.ensure_dispatch_consumer()
+                self.start_cleanup_consumers()
+                self.recover_inline_cleanup()
                 ServiceHeartbeatService.beat_if_due(
                     self,
                     RuntimeServiceName.SCHEDULER,
@@ -64,10 +76,16 @@ class ScheduleRunner:
                         'poll_interval': self.poll_interval,
                         'lookback_minutes': self.lookback_minutes,
                         'dispatch_consumer_alive': self.is_dispatch_consumer_alive(),
+                        'cleanup_consumers_alive': self.is_cleanup_consumers_alive(),
+                        'cleanup_consumer_threads': self.cleanup_thread_limit,
+                        'cleanup_live_threads': sum(thread.is_alive() for thread in self.cleanup_threads),
+                        'cleanup_only': self.cleanup_only,
+                        'datasource_maintenance_healthy': self.datasource_maintenance_healthy(),
                     },
                 )
-                self.tick()
-                self.stop_event.wait(self.poll_interval)
+                if not self.cleanup_only:
+                    self.tick()
+                self.stop_event.wait(min(self.poll_interval, 10) if self.cleanup_only else self.poll_interval)
         finally:
             self.stop()
 
@@ -81,6 +99,71 @@ class ScheduleRunner:
         )
         self.dispatch_consumer_thread.start()
 
+    @staticmethod
+    def recover_inline_cleanup():
+        from src.apps.data_factory.services.execution_recovery import DataFactoryExecutionRecovery
+        try:
+            # 仅核查失联同步执行并记录失败责任，不执行删除，也不触发定时业务任务。
+            DataFactoryExecutionRecovery.recover_inline_cleanup()
+        except Exception:
+            log.system.exception('同步清理失联责任核查失败，执行控制记录仍保留')
+
+    def start_cleanup_consumers(self):
+        from django.db import close_old_connections
+        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+
+        def consume(index, retire):
+            from time import monotonic
+            while not self.stop_event.is_set() and not retire.is_set():
+                try:
+                    close_old_connections()
+                    worked = DataFactoryCleanupScheduleService.run_next()
+                    self.cleanup_activity[index] = monotonic()
+                    self.stop_event.wait(0.1 if worked else 1)
+                except Exception:
+                    log.system.exception('数据工厂持久清理调度失败')
+                    self.stop_event.wait(2)
+                finally:
+                    close_old_connections()
+
+        if self.stop_event.is_set():
+            return
+        desired = DatasourceGovernorService.policy().cleanup_consumer_threads
+        self.cleanup_thread_limit = desired
+        # 只让多余线程在当前阶段完成后退出，不撤销租约、不打断删除或观察证据写入。
+        for retire in self.cleanup_retire_events[desired:]:
+            retire.set()
+        for index in range(desired):
+            if index < len(self.cleanup_threads) and self.cleanup_threads[index].is_alive():
+                continue
+            retire = threading.Event()
+            thread = threading.Thread(target=consume, args=(index, retire), name=f'mango-cleanup-{index}', daemon=True)
+            if index < len(self.cleanup_threads):
+                self.cleanup_activity[index] = 0.0
+                self.cleanup_retire_events[index] = retire
+                self.cleanup_threads[index] = thread
+            else:
+                self.cleanup_activity.append(0.0)
+                self.cleanup_retire_events.append(retire)
+                self.cleanup_threads.append(thread)
+            thread.start()
+
+    @staticmethod
+    def datasource_maintenance_healthy():
+        from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
+        return DatasourcePoolMaintenance.healthy()
+
+    def is_cleanup_consumers_alive(self):
+        from time import monotonic
+        now = monotonic()
+        required = self.cleanup_thread_limit
+        return (required > 0 and len(self.cleanup_threads) >= required
+                and len(self.cleanup_retire_events) >= required and len(self.cleanup_activity) >= required
+                and all(thread.is_alive() for thread in self.cleanup_threads[:required])
+                and all(not retire.is_set() for retire in self.cleanup_retire_events[:required])
+                and all(value > 0 and now - value < 90 for value in self.cleanup_activity[:required]))
+
     def ensure_dispatch_consumer(self):
         if not self.is_dispatch_consumer_alive():
             log.system.warning(
@@ -91,16 +174,27 @@ class ScheduleRunner:
     def is_dispatch_consumer_alive(self) -> bool:
         return bool(self.dispatch_consumer_thread and self.dispatch_consumer_thread.is_alive())
 
-    def stop(self):
+    def request_stop(self):
         self.running = False
         self.stop_event.set()
         self.dispatch_wakeup_event.set()
+
+    def stop(self):
+        self.request_stop()
+        for thread in self.cleanup_threads:
+            if thread.is_alive() and thread is not threading.current_thread():
+                # 当前物理删除、观察或快照写入完成后才退出，不能两秒后静默丢弃 daemon。
+                thread.join()
         if (
                 self.dispatch_consumer_thread
                 and self.dispatch_consumer_thread.is_alive()
                 and self.dispatch_consumer_thread is not threading.current_thread()
         ):
-            self.dispatch_consumer_thread.join(timeout=10)
+            self.dispatch_consumer_thread.join()
+        from src.apps.data_factory.services.datasource_pool import DatasourcePoolRegistry
+        from src.apps.data_factory.services.protocol_pool import ProtocolPoolRegistry
+        DatasourcePoolRegistry.close_all()
+        ProtocolPoolRegistry.close_all()
 
     @async_task_db_connection(max_retries=1, retry_delay=1)
     def tick(self):
