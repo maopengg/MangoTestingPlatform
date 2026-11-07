@@ -323,6 +323,7 @@ def _object_resolvers(component_name: str):
         ManualTestSuite,
     )
     from src.apps.task_center.models import Tasks
+    from src.apps.monitoring.models import MonitoringTask
     from src.apps.test_center.models import ProductModule, TestObject, TestSuite, TestSuiteDetails
 
     def field(model, lookup="project_product_id"):
@@ -330,6 +331,7 @@ def _object_resolvers(component_name: str):
                                                                                                      flat=True).first()
 
     common = [
+        ("monitoring_task_id", field(MonitoringTask)),
         ("api_info_id", field(ApiInfo)), ("header_id", field(ApiHeaders)),
         ("public_id", field(ApiPublic)), ("module_id", field(ProductModule)),
         ("test_object_id", field(TestObject)),

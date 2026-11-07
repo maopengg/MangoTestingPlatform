@@ -1,0 +1,4 @@
+interface:
+  display_name: "监控脚本编写与修复"
+  short_description: "通过平台 MCP 编写监控脚本、核实执行节点依赖并安全排查启动失败"
+  default_prompt: "使用 $mango-monitoring-script-builder 编写或修复指定监控脚本，先核实执行节点依赖，不安装新包，不自动启动或重启。"

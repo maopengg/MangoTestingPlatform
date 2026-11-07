@@ -20,6 +20,7 @@ LOCAL_ALLOWED_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
 LOCAL_ALLOWED_ORIGINS = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
 
 MCP_DOMAIN_PATHS = {
+    "monitoring": "/mcp/monitoring",
     "evaluation": "/mcp/evaluation",
     "api": "/mcp/api",
     "ui": "/mcp/ui",
@@ -188,6 +189,8 @@ class McpDomainPathApp:
 
 
 def _tool_operation(name: str) -> str:
+    if name == "control_monitoring_task":
+        return "execute"
     if name == "stop_evaluation_case_execution":
         return "execute"
     if name.startswith("agent_ui_"):

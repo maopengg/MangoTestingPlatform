@@ -263,6 +263,10 @@ def validate_dangerous_action_confirmation(
 
 
 def _redact_sensitive(value: Any) -> Any:
+    from pydantic import BaseModel
+
+    if isinstance(value, BaseModel):
+        value = value.model_dump()
     sensitive_keys = {
         "authorization",
         "api_key",
@@ -273,6 +277,7 @@ def _redact_sensitive(value: Any) -> Any:
         "cache_data",
         "content_base64",
         "custom_code",
+        "script_content",
         "preview_token",
     }
     if isinstance(value, dict):

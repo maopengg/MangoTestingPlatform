@@ -7,6 +7,8 @@ from django.utils import timezone
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.selectors.querysets import MonitoringQuerySelector
 from src.apps.monitoring.services.runner import MonitoringTaskRunner
+from src.apps.monitoring.services.task_diagnostic import MonitoringTaskDiagnosticService
+from src.apps.monitoring.services.script_capabilities import MonitoringScriptCapabilitiesService
 from src.apps.system.enums import RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.system.services.runtime_center.system_error_event import SystemErrorEventSource
@@ -41,6 +43,7 @@ class MonitoringRuntimeService:
                     metadata={
                         'active_tasks': len(runner.active_task_ids()),
                         'poll_interval': self.poll_interval,
+                        'monitoring_script_capabilities': MonitoringScriptCapabilitiesService.inspect_local(),
                     },
                 )
                 time.sleep(self.poll_interval)
@@ -68,13 +71,17 @@ class MonitoringRuntimeService:
                 try:
                     self.start_task(task)
                 except Exception as error:
-                    log.monitoring.error(f'监控任务启动失败：task={task_id}, error={error}')
+                    log.monitoring.error(f'监控任务启动失败：task={task_id}, type={type(error).__name__}')
                     task.status = MonitoringTaskStatusEnum.FAILED.value
                     task.pid = None
                     task.exit_code = -1
                     task.stopped_at = timezone.now()
                     task.save(update_fields=['status', 'pid', 'exit_code', 'stopped_at'])
-                    runner.append_task_log(task, f'监控任务启动失败：{error}')
+                    MonitoringTaskDiagnosticService.record(task, f'监控任务启动失败：{type(error).__name__}: {error}')
+                    try:
+                        runner.append_task_log(task, f'监控任务启动失败：{type(error).__name__}')
+                    except Exception:
+                        log.monitoring.warning(f'任务文件日志不可写，失败原因已尝试保存至监控报告：task={task_id}')
         for task_id in active_ids - set(desired_running):
             task = MonitoringQuerySelector.monitoring_task().filter(id=task_id).first()
             if task is not None:

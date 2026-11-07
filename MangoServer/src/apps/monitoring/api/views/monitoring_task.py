@@ -18,6 +18,8 @@ from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.models import MonitoringTask
 from src.apps.monitoring.services.runner import MonitoringTaskRunner
 from src.apps.monitoring.services.task_control import MonitoringTaskControlService
+from src.apps.monitoring.services.task_log import MonitoringTaskLogService
+from src.apps.monitoring.selectors.task import MonitoringTaskSelector
 from src.common.decorators.error_response import error_response
 from src.common.decorators.system_error import report_system_error
 from src.common.enums.system_error import SystemErrorEventSource
@@ -76,10 +78,9 @@ class MonitoringTaskViews(ViewSet):
     def logs(self, request: Request):
         task_id = request.query_params.get('id')
         limit = int(request.query_params.get('limit', 200))
-        task = MonitoringTask.objects.filter(id=task_id).first()
-        if not task:
-            return ResponseData.fail(RESPONSE_MSG_0142)
-        lines = MonitoringTaskRunner().tail_log(task, limit=limit)
+        task = MonitoringTaskSelector.get(request.user.user_obj, task_id)
+        result = MonitoringTaskLogService.read_task(task, limit=limit)
+        lines = [line + '\n' for line in result['lines']]
         return ResponseData.success(RESPONSE_MSG_0150, lines)
 
     @error_response('system')

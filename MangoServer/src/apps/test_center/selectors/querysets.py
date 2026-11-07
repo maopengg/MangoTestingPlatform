@@ -3,6 +3,7 @@ from django.db.models import Case, IntegerField, Value, When
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import (
     FileData,
+    NoticeGroup,
     ProductModule,
     ProjectProduct,
     TestObject,
@@ -12,6 +13,10 @@ from src.apps.test_center.models import (
 
 
 class TestCenterQuerySelector:
+    @staticmethod
+    def notice_group():
+        return NoticeGroup.objects.all()
+
     @staticmethod
     def with_project_product_display(queryset, relation='project_product'):
         prefix = f'{relation}__' if relation else ''

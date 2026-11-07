@@ -1,6 +1,13 @@
 """MCP 操作显式登记；未登记的工具、资源和提示词不开放。"""
 
 MCP_PERMISSION_RULES = {
+    'get_monitoring_script_context': {'permission_key': 'index.home:read', 'project_scoped': False, 'public': False, 'additional_permission_keys': ()},
+    'list_monitoring_tasks': {'permission_key': 'monitoring.task:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
+    'get_monitoring_task': {'permission_key': 'monitoring.task:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},
+    'get_monitoring_task_logs': {'permission_key': 'monitoring.task:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},
+    'create_monitoring_task': {'permission_key': 'monitoring.task:add', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},
+    'update_monitoring_task': {'permission_key': 'monitoring.task:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},
+    'control_monitoring_task': {'permission_key': 'monitoring.task:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},
     'get_mcp_skill_catalog_resource': {'permission_key': None, 'project_scoped': False, 'public': False, 'additional_permission_keys': ()},
     'add_api_case_step': {'permission_key': 'api.case:add', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'add_functional_test_plan_cases': {'permission_key': 'functional.plan:change', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},

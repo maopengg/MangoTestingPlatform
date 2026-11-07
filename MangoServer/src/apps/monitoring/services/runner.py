@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Description: 预警监控脚本运行器
 import os
+from collections import deque
 import re
 import subprocess
 import threading
@@ -195,7 +196,7 @@ class MonitoringTaskRunner:
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         self._append_log(
             log_path,
-            f'\n[{timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")}] '
+            f'\n[{self._log_timestamp()}] '
             f'[INFO] ===== 开始新的执行：task={task.id} =====\n',
         )
 
@@ -239,6 +240,8 @@ class MonitoringTaskRunner:
         task.save(update_fields=['status', 'pid', 'exit_code', 'started_at', 'stopped_at'])
 
         self.running_processes[task.id] = proc
+        output_tail = deque(maxlen=100)
+        output_lock = threading.Lock()
 
         @system_error_guard(
             source=SystemErrorEventSource.MONITORING,
@@ -251,7 +254,13 @@ class MonitoringTaskRunner:
                 if not proc.stdout:
                     return
                 for line in proc.stdout:
-                    self._append_log(log_path, line)
+                    with output_lock:
+                        output_tail.append(line[:4096])
+                    try:
+                        self._append_log(log_path, line)
+                    except OSError:
+                        # 继续排空子进程输出，避免磁盘异常阻塞脚本，并保留内存错误尾部。
+                        pass
             finally:
                 close_old_connections()
 
@@ -264,6 +273,7 @@ class MonitoringTaskRunner:
             close_old_connections()
             try:
                 code = proc.wait()
+                t_log.join(timeout=5.0)
                 task.refresh_from_db()
                 if task.id in self.preserve_running_on_exit:
                     next_status = MonitoringTaskStatusEnum.RUNNING.value
@@ -278,6 +288,13 @@ class MonitoringTaskRunner:
                 task.pid = None
                 task.stopped_at = timezone.now()
                 task.save(update_fields=['status', 'pid', 'exit_code', 'stopped_at'])
+                if next_status == MonitoringTaskStatusEnum.FAILED.value:
+                    from src.apps.monitoring.services.task_diagnostic import MonitoringTaskDiagnosticService
+                    with output_lock:
+                        error_output = ''.join(output_tail)
+                    MonitoringTaskDiagnosticService.record(
+                        task, f'监控脚本执行失败，退出码：{code}\n' + error_output,
+                    )
             finally:
                 self.preserve_running_on_exit.discard(task.id)
                 self.running_processes.pop(task.id, None)
@@ -579,8 +596,15 @@ class MonitoringTaskRunner:
         except Exception:
             return []
 
+    @staticmethod
+    def _log_timestamp():
+        value = timezone.now()
+        if timezone.is_aware(value):
+            value = timezone.localtime(value)
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+
     def append_task_log(self, task: MonitoringTask, text: str) -> None:
         if not task.log_path:
             return
-        timestamp = timezone.localtime().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = self._log_timestamp()
         self._append_log(task.log_path, f'[{timestamp}] [ERROR] {text}\n')

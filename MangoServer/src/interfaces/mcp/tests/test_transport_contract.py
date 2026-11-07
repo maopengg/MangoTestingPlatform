@@ -156,6 +156,9 @@ class FastMcpMigrationTests(SimpleTestCase):
         prompts = async_to_sync(server._list_prompts)()
 
         added_tools = {
+            "get_monitoring_script_context",
+            "list_monitoring_tasks", "get_monitoring_task", "get_monitoring_task_logs",
+            "create_monitoring_task", "update_monitoring_task", "control_monitoring_task",
             "get_mcp_server_info",
             "list_mcp_skills",
             "get_mcp_skill",
@@ -254,6 +257,9 @@ class FastMcpMigrationTests(SimpleTestCase):
         new_by_name = {tool.name: tool for tool in new_tools}
 
         additional_names = {
+            "get_monitoring_script_context",
+            "list_monitoring_tasks", "get_monitoring_task", "get_monitoring_task_logs",
+            "create_monitoring_task", "update_monitoring_task", "control_monitoring_task",
             "get_mcp_server_info",
             "list_mcp_skills",
             "get_mcp_skill",

@@ -1,4 +1,10 @@
 {
+  "mango-monitoring-script-builder": {
+    "title": "监控脚本编写与修复",
+    "category": "监控中心",
+    "description": "通过 MCP 创建、编辑和排查预警监控脚本。先读取编写上下文核实执行节点依赖，使用现有包或标准库处理缺包；覆盖脚本入口、日志、通知、环境配置与授权启停，不安装依赖，不自动启动或重启业务脚本。",
+    "mcp_enabled": true
+  },
   "mango-api-case-builder": {
     "title": "API 自动化用例创建与修复",
     "category": "API 自动化",

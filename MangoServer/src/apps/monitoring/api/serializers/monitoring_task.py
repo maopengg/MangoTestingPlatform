@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import os
-import uuid
 
 from rest_framework import serializers
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.models import MonitoringTask
+from src.apps.monitoring.services.task_mutation import MonitoringTaskMutationService
 from src.apps.test_center.formatters.related import format_notice_group
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple
@@ -49,15 +48,8 @@ class MonitoringTaskSerializers(serializers.ModelSerializer):
             raise serializers.ValidationError('script_content 或 script_file 必须提供一个')
 
         # 生成日志路径（相对路径，文件路径在执行时生成）
-        file_id = uuid.uuid4().hex
-        log_path = os.path.join('monitoring', 'logs', f'{file_id}.log').replace('\\', '/')  # 统一使用 / 作为路径分隔符
-
-        validated_data.update({
-            'script_content': content,  # 保存代码内容到数据库
-            'log_path': log_path,  # 存储相对路径
-            'status': MonitoringTaskStatusEnum.QUEUED.value,
-        })
-        return super().create(validated_data)
+        validated_data['script_content'] = content
+        return MonitoringTaskMutationService.create_validated(validated_data)
 
     def update(self, instance, validated_data):
         """

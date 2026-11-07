@@ -2,6 +2,7 @@
 
 
 def domain_registrars(domain: str | None):
+    from src.interfaces.mcp.tools.monitoring import register_monitoring_tools
     from src.interfaces.mcp.tools.api import register_api_tools
     from src.interfaces.mcp.tools.data_factory import register_data_factory_tools
     from src.interfaces.mcp.tools.functional_test import register_functional_test_tools
@@ -16,6 +17,7 @@ def domain_registrars(domain: str | None):
     from src.interfaces.mcp.tools.evaluation import register_evaluation_tools
 
     registrars = {
+        "monitoring": register_monitoring_tools,
         "evaluation": register_evaluation_tools,
         "api": register_api_tools,
         "ui": register_ui_tools,
@@ -30,6 +32,7 @@ def domain_registrars(domain: str | None):
     if domain is not None:
         return [("project", register_project_tools), (domain, registrars[domain])]
     return [
+        ("monitoring", register_monitoring_tools),
         ("project", register_project_tools),
         ("evaluation", register_evaluation_tools),
         ("api", register_api_tools),

@@ -1,5 +1,9 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
+import io
+import tempfile
+
+from django.test import override_settings
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.services.runner import MonitoringTaskRunner
@@ -18,6 +22,38 @@ class FakeQuerySet:
 
 
 class MonitoringRuntimeServiceTest(TestCase):
+    def test_log_timestamps_support_both_timezone_modes(self):
+        for enabled in (False, True):
+            with self.subTest(use_tz=enabled), override_settings(USE_TZ=enabled):
+                self.assertRegex(MonitoringTaskRunner._log_timestamp(), r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+                with mock.patch.object(MonitoringTaskRunner, '_append_log') as write:
+                    MonitoringTaskRunner().append_task_log(SimpleNamespace(log_path='monitoring/logs/example.log'), '示例原因')
+                self.assertIn('示例原因', write.call_args.args[1])
+    def test_script_failure_keeps_output_when_file_logging_is_unwritable(self):
+        task = SimpleNamespace(id=9, name='示例脚本', status=MonitoringTaskStatusEnum.STARTING.value,
+                               pid=None, script_content='pass', log_path='monitoring/logs/example.log',
+                               save=mock.Mock(), refresh_from_db=mock.Mock())
+        process = mock.Mock(pid=123, stdout=io.StringIO("ModuleNotFoundError: No module named 'example_missing_package'\n"))
+        process.wait.return_value = 1
+        worker = MonitoringTaskRunner()
+
+        def thread(target, **kwargs):
+            result = mock.Mock()
+            result.start.side_effect = target
+            return result
+
+        with tempfile.TemporaryDirectory() as directory, \
+                override_settings(BASE_DIR=directory, MONITORING_SCRIPT_DIR=directory + '/scripts', MONITORING_LOG_DIR=directory + '/logs'), \
+                mock.patch('src.apps.monitoring.services.runner.subprocess.Popen', return_value=process), \
+                mock.patch('src.apps.monitoring.services.runner.threading.Thread', side_effect=thread), \
+                mock.patch.object(worker, '_append_log', side_effect=[None, PermissionError('example')]), \
+                mock.patch('src.apps.monitoring.services.task_diagnostic.MonitoringTaskDiagnosticService.record') as diagnostic:
+            worker.start_task(task)
+        self.assertEqual(task.status, MonitoringTaskStatusEnum.FAILED.value)
+        self.assertEqual(task.exit_code, 1)
+        diagnostic.assert_called_once()
+        self.assertIn('example_missing_package', diagnostic.call_args.args[1])
+
     def test_stop_task_clears_runtime_fields(self):
         process = mock.Mock()
         process.poll.return_value = 0
@@ -111,8 +147,11 @@ class MonitoringRuntimeServiceTest(TestCase):
         monitoring_task_mock.return_value.filter.return_value = FakeQuerySet([task])
         service = MonitoringRuntimeService(instance_name='monitoring-test', poll_interval=1)
 
-        service.reconcile()
-
+        append_log_mock.side_effect = PermissionError('example log permission')
+        with mock.patch('src.processes.monitoring.runner.MonitoringTaskDiagnosticService.record') as diagnostic:
+            service.reconcile()
+        diagnostic.assert_called_once()
+        self.assertIn('RuntimeError', diagnostic.call_args.args[1])
         self.assertEqual(task.status, MonitoringTaskStatusEnum.FAILED.value)
         self.assertEqual(task.exit_code, -1)
         task.save.assert_called_once()
