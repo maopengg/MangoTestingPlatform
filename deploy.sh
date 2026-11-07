@@ -2,7 +2,7 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$ROOT"
-ENV_FILE="$ROOT/.env"
+ENV_FILE="$ROOT/.env.example"
 PREPARE_ONLY=0
 REBUILD=0
 TARGET=''
@@ -19,20 +19,27 @@ parse_arguments() {
     done
 }
 parse_arguments "$@"
+command -v python3 >/dev/null || { echo '请先安装 python3' >&2; exit 1; }
 if [ "$PREPARE_ONLY" = 0 ] && [ "${_MANGO_DEPLOY_SYNC_ROOT:-}" != "$ROOT" ]; then
     command -v git >/dev/null || { echo '请先安装 Git。' >&2; exit 1; }
     git rev-parse --is-inside-work-tree >/dev/null
     git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1 || {
         echo '当前分支没有远程跟踪分支，请先配置 upstream。' >&2; exit 1;
     }
+    python3 deploy/config_sync.py prepare
     echo '拉取当前分支的最新代码...'
-    git pull --ff-only
+    if git pull --ff-only; then
+        python3 deploy/config_sync.py restore
+    else
+        python3 deploy/config_sync.py restore --failed
+        echo '代码更新失败，已恢复本地部署配置；未继续构建或停止服务。请检查网络、本地源码修改或分支分歧。' >&2
+        exit 1
+    fi
     # Reload the fetched script once, so this deployment uses the updated implementation.
     export _MANGO_DEPLOY_SYNC_ROOT="$ROOT"
     exec sh "$ROOT/deploy.sh" "$@"
 fi
 unset _MANGO_DEPLOY_SYNC_ROOT
-command -v python3 >/dev/null || { echo '请先安装 python3' >&2; exit 1; }
 python3 deploy/bootstrap.py init "$ENV_FILE"
 [ -n "$TARGET" ] || TARGET=$(python3 deploy/bootstrap.py get "$ENV_FILE" DEPLOY_TARGET)
 case "$TARGET" in
@@ -41,11 +48,11 @@ case "$TARGET" in
     *) echo 'DEPLOY_TARGET 只支持 compose / k8s' >&2; exit 1 ;;
 esac
 if [ "$PREPARE_ONLY" = 1 ]; then
-    echo "已验证 .env 并生成 $TARGET 部署配置；已有配置和密码保留。"
+    echo "已验证 .env.example 并生成 $TARGET 部署配置；已有配置和密码保留。"
     exit 0
 fi
 if [ "$TARGET" = k8s ]; then
-    if [ "$REBUILD" = 1 ]; then echo 'K8s 使用预先构建并发布的镜像，请先构建/推送 .env 中的 SERVER_IMAGE 和 CONSOLE_IMAGE。' >&2; exit 1; fi
+    if [ "$REBUILD" = 1 ]; then echo 'K8s 使用预先构建并发布的镜像，请先构建/推送 .env.example 中的 SERVER_IMAGE 和 CONSOLE_IMAGE。' >&2; exit 1; fi
     exec sh deploy/k8s.sh
 fi
 docker info >/dev/null
@@ -62,8 +69,25 @@ if [ "$REBUILD" = 0 ]; then
     BUILD_BACKEND=$(python3 deploy/source_state.py needs-build "$ROOT" backend "$SERVER_IMAGE")
     BUILD_FRONTEND=$(python3 deploy/source_state.py needs-build "$ROOT" frontend "$CONSOLE_IMAGE")
 fi
+if [ "$BUILD_FRONTEND" = 1 ]; then
+    FRONTEND_HEAP=$(python3 deploy/build_resources.py "$(python3 deploy/bootstrap.py get "$ENV_FILE" NODE_HEAP_MB)")
+fi
 if [ "$BUILD_BACKEND" = 1 ]; then compose build mango_server; fi
-if [ "$BUILD_FRONTEND" = 1 ]; then compose build mango-console; fi
+if [ "$BUILD_FRONTEND" = 1 ]; then
+    umask 077
+    BUILD_LOG="$ROOT/deploy/generated/frontend-build.log"
+    if compose build --build-arg NODE_HEAP_MB="$FRONTEND_HEAP" mango-console > "$BUILD_LOG" 2>&1; then
+        cat "$BUILD_LOG"
+    else
+        cat "$BUILD_LOG" >&2
+        if grep -Eiq 'heap out of memory|Reached heap limit|exit code: 134' "$BUILD_LOG"; then
+            echo '前端构建超过 Node 堆上限：请在 .env.example 增大 NODE_HEAP_MB，并确保主机和 Docker 有足够内存；未执行迁移或停止现有服务。' >&2
+        else
+            echo '前端镜像构建失败，详情保存在 deploy/generated/frontend-build.log；未执行迁移或停止现有服务。' >&2
+        fi
+        exit 1
+    fi
+fi
 if [ "$(python3 deploy/bootstrap.py get "$ENV_FILE" MYSQL_MODE)" = internal ]; then
     compose up -d --wait --wait-timeout 180 db
 fi

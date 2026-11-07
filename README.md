@@ -69,12 +69,12 @@ cd MangoTestingPlatform
 # 首次生成配置，不拉取更新，也不启动服务
 sh deploy.sh --prepare-only
 
-# 编辑生成的 .env，设置实际访问地址和需要的数据库、存储配置
+# 编辑 .env.example，设置实际访问地址和需要的数据库、存储配置
 # 确认后部署
 sh deploy.sh
 ```
 
-**统一配置入口为根目录 `.env`**，参数说明见 [`.env.example`](.env.example)。通常不需要修改 Compose、Nginx 或后端配置文件。
+**统一用户配置入口为根目录 `.env.example`**，参数说明见 [`.env.example`](.env.example)。通常不需要修改 Compose、Nginx 或后端配置文件。
 
 | 配置 | 支持方式 |
 | --- | --- |
@@ -97,9 +97,9 @@ sh deploy.sh
 sh deploy.sh --build
 ```
 
-脚本默认执行 `git pull --ff-only`；请保留分支的远程跟踪关系，先处理本地源码修改或分支分歧。已有 `.env` 配置会保留；切换数据库或对象存储并不等于自动迁移历史数据。
+脚本默认执行 `git pull --ff-only`；请保留分支的远程跟踪关系，先处理本地源码修改或分支分歧。已有配置与私有 `.env` 中的密钥会保留；后续只需修改 `.env.example`；切换数据库或对象存储并不等于自动迁移历史数据。
 
-Compose 与 Kubernetes 读取同一份 `.env`。Kubernetes 需要提前准备集群、镜像及持久化资源，详细步骤见[统一部署说明](deploy/README.md)。源码构建前端需要足够的主机内存，低配服务器可先在其他环境构建镜像。
+Compose 与 Kubernetes 读取同一份 `.env.example`。Kubernetes 需要提前准备集群、镜像及持久化资源，详细步骤见[统一部署说明](deploy/README.md)。源码构建前端需要足够的主机内存，低配服务器可先在其他环境构建镜像。
 
 > **历史用户升级前务必备份。** 近期数据模型和功能结构变化较多，请先备份 `.env`、数据库、附件及重要运行数据，核对新旧版本并自行完成必要的数据迁移。部署脚本执行已有迁移，不代表任意旧版本都能直接兼容升级。
 

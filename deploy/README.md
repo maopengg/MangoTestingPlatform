@@ -1,27 +1,36 @@
 # 统一部署配置
 
-两种平台使用同一套部署逻辑，只编辑仓库根目录 `.env`，不需要修改 Compose、Nginx 或 Python。
-仓库提供 `.env.example` 作为带注释的公开模板，真实 `.env` 和生成配置包含凭据，必须备份且不能提交。
+Compose 与 Kubernetes 使用同一套部署逻辑。用户只编辑根目录 `.env.example`，然后运行：
 
 ```sh
-# 首次只生成本地配置和随机密钥，不拉代码、不启动容器
+sh deploy.sh
+# 只检查并生成配置，不拉代码、不启动服务
 sh deploy.sh --prepare-only
-# 编辑 .env，再部署；默认先 git pull --ff-only
-sh deploy.sh
-# 远程源码未变化、仅修改 .env：复用镜像，刷新运行配置
-sh deploy.sh
-# 强制重新构建镜像（默认已自动检测相关源码变化）
+# 强制重建镜像
 sh deploy.sh --build
 ```
 
-首次运行默认使用内置 MySQL 和本地文件存储。已有 `.env` 的值不会被覆盖；缺失选项会补齐。
-原 `.env.deploy` 在没有 `.env` 时自动迁移；两者都有时以 `.env` 为准，缺失的应用签名密钥继承旧文件。
-已有数据库必须沿用原数据库密码；修改 MYSQL_PASSWORD 不会修改 MySQL 中的密码。
-不要删除配置后重新生成密码或删除数据库卷来解决连接错误。
+- `.env.example` 是唯一用户配置入口；填入真实凭据后不要提交到仓库。自动拉代码会保护本地配置，并补充上游新增选项，不覆盖自定义值。
+- `.env` 是自动生成的私有状态，保存生效配置和随机密钥，无需编辑。必须备份；不要删除、提交或重新生成已有数据库的密钥。
+- 首次升级会沿用已有 `.env` / `.env.deploy` 配置，模板中显式修改的选项优先；未修改的旧默认构建堆上限 2560MB 自动升级为 auto。后续只改 `.env.example`。
+- 密码项留空时沿用已保存的密码；首次内置数据库部署才生成随机密码。修改配置中的密码不会修改数据库中的账号密码。
+- 外部 MySQL 填写 `MYSQL_MODE=external`；沿用 dev/test/master.py 则填写 `MYSQL_MODE=settings`，不会改写这些底层文件。
+
+## 前端构建内存
+
+`NODE_HEAP_MB=auto` 默认使用 6144MB Node 堆；需要时只在 `.env.example` 改为整数 MB。构建前检查主机可用内存与 Swap、Docker 总内存及可读取的 cgroup 限制，并为堆外内存预留至少 1536MB。检查不通过时提前退出，不停止现有服务。
+
+6GB 是已验证的构建上限配置，不保证所有源码与机器均能构建成功。资源有限时应在构建机器生成镜像；堆耗尽时保留日志并明确提示增大配置，不能靠无限重试解决。普通配置变更仍复用现有镜像。
+
+## Git 更新与兼容
+
+源码检查通过 Python `cwd` 指定工作目录，不使用旧版 Git 不支持的全局 `-C`。Git 检查失败时报告子命令、退出码和脱敏错误，并停止部署。
+
+默认仅 `git pull --ff-only`，不会重置本地代码或改写历史。`.env.example` 的本地修改会临时备份在 Git 私有目录，更新失败则恢复原内容；若过程被中断，按提示运行 `python3 deploy/config_sync.py restore --failed` 恢复。其他源码冲突和历史分叉必须自行确认处理，脚本不会自动覆盖。
 
 ## 数据源性能治理版本的部署检查
 
-部署入口和操作步骤不变：Compose 仍运行 `sh deploy.sh`，K8s 仍使用既有 `.env` 和部署入口，GitLab 仍走原镜像构建、配置仓库更新和 Argo 同步流程。本次只增加自动校验，不自动生成迁移、不清理历史业务数据。
+部署入口和操作步骤不变：Compose 仍运行 `sh deploy.sh`，K8s 仍使用既有 `.env.example` 和部署入口，GitLab 仍走原镜像构建、配置仓库更新和 Argo 同步流程。本次只增加自动校验，不自动生成迁移、不清理历史业务数据。
 
 - 后端 Dockerfile 从 `requirements/master.txt → base.txt` 安装依赖，并安装本地 wheel；构建额外验证 `greenlet`、`httpx` 和 Redis RESP 解析器可导入。依赖文件变化会触发后端镜像重建，不需要单独更新 scheduler 依赖。
 - API、scheduler、Worker、MCP、realtime 使用同一个 `SERVER_IMAGE`。Compose 增加 scheduler healthcheck；本仓库 K8s 生成器增加同等 startup/readiness 探针，探针为 `python manage.py check_scheduler`。
@@ -61,8 +70,8 @@ startupProbe:
 
 | MYSQL_MODE | 是否随平台启动 MySQL | 连接参数来源 | 适用场景 |
 | --- | --- | --- | --- |
-| `internal`（默认） | 是：Compose 容器或 K8s StatefulSet | `.env` 的库名、业务账号/密码和 root 密码；内部地址固定 `db:3306` | 新部署，没有现成数据库 |
-| `external` | 否 | `.env` 的 `MYSQL_HOST/PORT/DATABASE/USER/PASSWORD` | 已有 MySQL、云数据库或独立数据库服务 |
+| `internal`（默认） | 是：Compose 容器或 K8s StatefulSet | `.env.example` 的库名、业务账号/密码和 root 密码；内部地址固定 `db:3306` | 新部署，没有现成数据库 |
+| `external` | 否 | `.env.example` 的 `MYSQL_HOST/PORT/DATABASE/USER/PASSWORD` | 已有 MySQL、云数据库或独立数据库服务 |
 | `settings` | 否 | `DJANGO_ENV` 所选 `MangoServer/src/settings/dev.py`、`test.py` 或 `master.py` | 沿用公司或用户已有 Python 数据库配置 |
 
 **internal 示例：**
@@ -109,7 +118,7 @@ DJANGO_ENV=dev
 
 ## 外部 MySQL
 
-在 `.env` 填写：
+在 `.env.example` 填写：
 
 ```dotenv
 MYSQL_MODE=external
@@ -174,7 +183,7 @@ HTTPS 前端必须配 HTTPS API / WSS；证书由外部反向代理终止，并�
 内部 BACKEND_UPSTREAM 可以使用 HTTP，与浏览器访问的 HTTPS 地址分开。
 
 修改地址后 `sh deploy.sh` 即可，前端从 runtime-config.js 读取公开配置并禁用缓存，不需要重新构建。
-Vite 本地开发仍沿用 mango-console/.env.dev 等文件，Docker 部署由根目录 .env 的运行时配置覆盖。
+Vite 本地开发仍沿用 mango-console/.env.dev 等文件，Docker 部署由根目录 .env.example 生成的运行时配置覆盖。
 
 ## 运维
 
@@ -196,21 +205,21 @@ docker compose --env-file /dev/null -f deploy/generated/compose.json logs --tail
 
 ## Compose 与 Kubernetes 共用配置
 
-两个仓库的部署脚本、配置模板、生成器与 Dockerfile 保持一致。环境差异只放在各部署的 `.env`，
+两个仓库的部署脚本、配置模板、生成器与 Dockerfile 保持一致。环境差异只放在各部署的 `.env.example`，
 不使用“公司专用 YAML”或“开源专用脚本”。Compose 与 Kubernetes 都消费同一份校验后的配置；
 资源清单各自生成，不能直接把 Compose 文件交给 Kubernetes。
 
-配置分层只有三层：`.env.example` 定义默认值和说明；私有 `.env` 定义环境差异；
+配置分层：`deploy/defaults.env` 保存程序默认值；`.env.example` 是用户配置；私有 `.env` 保存生效输入和自动密钥；
 `deploy/generated/` 为可重新生成的结果。不要手工修改生成文件，也不要提交真实 `.env`。
 
 ### Kubernetes
 
 ```sh
-# 修改 .env：DEPLOY_TARGET=k8s；填写集群可拉取的镜像地址、存储与入口配置
+# 修改 .env.example：DEPLOY_TARGET=k8s；填写集群可拉取的镜像地址、存储与入口配置
 sh deploy.sh --prepare-only
 # 确认 kubectl 当前上下文和 K8S_NAMESPACE 后执行
 sh deploy.sh
-# 也可临时选择目标，不修改 .env
+# 也可临时选择目标，不修改 .env.example
 sh deploy.sh --target k8s
 ```
 
@@ -247,13 +256,15 @@ Kubernetes 容器日志轮转由节点 kubelet 管理，LOG_MAX_SIZE/LOG_MAX_FIL
 - EXTRA_HTTP_ROUTES='{"/attendance/":"http://attendance-workbench:80"}' 可保留附加服务入口；
   上游需在相同 Docker 网络或集群中可解析，此项不会增加登录验证。
 - MONITORING_ENABLED=false 默认不启动独立监控进程。
+  启用时只需将根目录 `.env.example` 中该值改为 `true`，再运行 `sh deploy.sh`；
+  不需要编辑 `.env` 或手工启动容器。部署输出会提示 `monitoring-service：已纳入部署`。
 
 ### 检查与升级
 
 ```sh
 python3 -m unittest discover -s deploy -p 'test*.py'
 node --test deploy/test_frontend_runtime.mjs
-# 只修改 .env 后部署会复用已有镜像，重新生成网关/前端运行时配置。
+# 只修改 .env.example 后部署会复用已有镜像，重新生成网关/前端运行时配置。
 sh deploy.sh
 # 更新源码后重新构建：需要足够内存，低配置服务器建议先构建镜像再填写镜像标签。
 sh deploy.sh --update
@@ -265,7 +276,7 @@ Kubernetes 集群验收。不要把结构校验等同于真实集群部署成功
 
 ## 沿用已有 Python 数据库配置
 
-已有公司环境或曾修改底层配置的用户，在根目录 `.env` 中设置：
+已有环境或曾修改底层配置的用户，在根目录 `.env.example` 中设置：
 
 ```dotenv
 MYSQL_MODE=settings
@@ -276,11 +287,11 @@ PUBLIC_URL=https://platform-dev.example.com
 
 `settings` 模式读取所选 `MangoServer/src/settings/dev.py`、`test.py` 或 `master.py` 的数据库值，
 不启动内置 MySQL，也不改写这些文件；dev.py 中已有的可选 database.json 覆盖规则仍然生效。
-`.env` 中 MYSQL_HOST/PORT/DATABASE/USER/PASSWORD 在此模式下不覆盖 Python 配置，也不会把数据库密码
+`.env.example` 中 MYSQL_HOST/PORT/DATABASE/USER/PASSWORD 在此模式下不覆盖 Python 配置，也不会把数据库密码
 复制回 `.env`。生成的私有部署文件会统一给后端、Worker、备份和迁移任务传递读取到的实际参数。
 修改 Python 配置后再次运行 `sh deploy.sh` 刷新连接参数；脚本会检测源码变化并按需重建镜像，不会改写配置文件。
 
-明确选择 `MYSQL_MODE=external` 时才采用 `.env` 中的外部数据库值；选择 internal 时才启动内置数据库。
+明确选择 `MYSQL_MODE=external` 时才采用 `.env.example` 中的外部数据库值；选择 internal 时才启动内置数据库。
 部署脚本不生成、不覆盖 dev.py/test.py/master.py，也不修改用户的 database.json。
 `git pull` 仍遵循 Git 自身的冲突规则，不使用 reset、checkout 或强制覆盖配置的命令。
 
@@ -306,6 +317,6 @@ Compose 模式比较实际源码和镜像状态，仅重建有变化的后端/�
 
 `--build` 强制构建前后端，`--update` 保留为同义兼容参数；两者都会先拉取代码。
 `--prepare-only` 只校验、生成本地配置，不进行拉取、构建、备份或服务启停。
-K8s 模式也会先同步代码，镜像仍由 CI/镜像仓库准备，按 `.env` 的镜像标签发布。
+K8s 模式也会先同步代码，镜像仍由 CI/镜像仓库准备，按 `.env.example` 的镜像标签发布。
 
 前端源码变化且需要本地构建镜像时，主机仍需足够内存；此改造不会消除前端编译的资源要求。

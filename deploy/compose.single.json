@@ -358,7 +358,7 @@
         "dockerfile": "mango-console/Dockerfile",
         "args": {
           "VUE_ENV": "master",
-          "NODE_HEAP_MB": "${NODE_HEAP_MB:-2560}",
+          "NODE_HEAP_MB": "${NODE_HEAP_MB:-6144}",
           "NPM_REGISTRY": "${NPM_REGISTRY:-https://registry.npmmirror.com}"
         }
       }

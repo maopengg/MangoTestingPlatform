@@ -3,8 +3,8 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 command -v kubectl >/dev/null || { echo '请先安装 kubectl 并选择目标集群上下文。' >&2; exit 1; }
-NAMESPACE=$(python3 deploy/bootstrap.py get .env K8S_NAMESPACE)
-TIMEOUT=$(python3 deploy/bootstrap.py get .env K8S_WAIT_TIMEOUT)
+NAMESPACE=$(python3 deploy/bootstrap.py get .env.example K8S_NAMESPACE)
+TIMEOUT=$(python3 deploy/bootstrap.py get .env.example K8S_WAIT_TIMEOUT)
 k() { kubectl -n "$NAMESPACE" "$@"; }
 kubectl apply -f deploy/generated/k8s/foundation.json >/dev/null
 for name in db minio; do
@@ -43,4 +43,4 @@ import json
 print(' '.join(x['metadata']['name'] for x in json.load(open('deploy/generated/k8s/workloads.json'))['items'] if x['kind']=='Deployment'))
 PY
 ); do k rollout status "deployment/$name" --timeout="$TIMEOUT"; done
-echo 'K8s 部署完成，数据库、存储及初始化已通过；请按 .env 的 Service/Ingress 配置验证公网入口。'
+echo 'K8s 部署完成，数据库、存储及初始化已通过；请按 .env.example 的 Service/Ingress 配置验证公网入口。'

@@ -15,7 +15,7 @@ ARG VUE_ENV
 ENV VUE_ENV=${VUE_ENV}
 # 给 Docker Runtime 与 Rollup 原生缓冲区预留内存，避免容器在构建末段被 OOM
 # killer 直接终止（exit 137）。Vite 配置已同步减少 chunk 渲染峰值。
-ARG NODE_HEAP_MB=2560
+ARG NODE_HEAP_MB=6144
 ENV NODE_OPTIONS=--max-old-space-size=${NODE_HEAP_MB}
 RUN npm run build:${VUE_ENV}
 

@@ -1,4 +1,4 @@
-"""Validate one deployment .env and render private Compose/browser configuration."""
+"""Read user configuration and render private Compose/browser configuration."""
 import argparse
 import copy
 import contextlib
@@ -13,25 +13,33 @@ from urllib.parse import urlsplit
 
 SECRET_NAMES = ('MYSQL_ROOT_PASSWORD', 'MYSQL_PASSWORD', 'DJANGO_SECRET_KEY',
                 'LIVE_STREAM_SIGNING_KEY', 'MANGO_INITIAL_ADMIN_PASSWORD', 'MANGO_INITIAL_GUEST_PASSWORD')
+PRIVATE_INPUT_NAMES = set(SECRET_NAMES) | {
+    'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'ACTUATOR_PASSWORD',
+    'MINIO_ROOT_PASSWORD', 'MINIO_STORAGE_ACCESS_KEY', 'MINIO_STORAGE_SECRET_KEY',
+}
 
 
 
 def read_env(path):
     """Read literal dotenv values, including quoted #/$/quotes; never execute shell code."""
+    return parse_env(path.read_text(), path.name)
+
+
+def parse_env(text, label='配置文件'):
     result = {}
-    for number, line in enumerate(path.read_text().splitlines(), 1):
+    for number, line in enumerate(text.splitlines(), 1):
         line = line.strip()
         if not line or line.startswith('#'):
             continue
         match = re.fullmatch(r'(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)', line)
         if not match or match[1] in result:
-            raise ValueError(f'.env 第 {number} 行格式错误或变量重复')
+            raise ValueError(f'{label} 第 {number} 行格式错误或变量重复')
         key, raw = match.groups()
         if raw[:1] in {"'", '"'}:
             quote = raw[0]
             end = raw.rfind(quote)
             if end == 0 or (raw[end+1:].strip() and not raw[end+1:].lstrip().startswith('#')):
-                raise ValueError(f'.env 第 {number} 行引号未闭合')
+                raise ValueError(f'{label} 第 {number} 行引号未闭合')
             value = raw[1:end]
         else:
             value = re.split(r'\s+#', raw, maxsplit=1)[0].rstrip()
@@ -39,8 +47,8 @@ def read_env(path):
     return result
 
 
-# The commented public template is the single source of deployment defaults.
-DEFAULTS = read_env(Path(__file__).resolve().parent.parent / '.env.example')
+# Keep defaults independent of the user's editable, Git-tracked configuration.
+DEFAULTS = read_env(Path(__file__).resolve().parent / 'defaults.env')
 BACKEND_SERVICES = ('mango_server', 'scheduler_service', 'api_worker_1', 'mcp_service', 'realtime_service', 'monitoring_service')
 
 
@@ -59,6 +67,9 @@ def url(value, key, schemes=('http', 'https')):
 
 
 def validate(v):
+    heap = v.get('NODE_HEAP_MB', 'auto')
+    if heap != 'auto' and (not heap.isdigit() or not 512 <= int(heap) <= 65536):
+        raise ValueError('NODE_HEAP_MB 使用 auto 或 512～65536 的整数')
     for key, modes in [('MYSQL_MODE', {'internal','external','settings'}),('MINIO_MODE', {'internal','external'})]:
         if v[key] not in modes:
             raise ValueError(key+' 的模式不合法')
@@ -118,7 +129,7 @@ def validate(v):
             boolean(v, key)
     missing = [key for key in required if not v.get(key)]
     if missing:
-        raise ValueError('请在 .env 补齐：' + ', '.join(missing))
+        raise ValueError('请在 .env.example 补齐：' + ', '.join(missing))
     for key in ('PUBLIC_URL', 'BACKEND_UPSTREAM'):
         p = url(v[key], key)
         if p.path not in {'', '/'} or p.query or p.fragment:
@@ -216,7 +227,7 @@ def private_write(path, text):
         if temporary.exists():temporary.unlink()
 
 
-def initialize(path):
+def initialize(path, overrides=None):
     existed = path.exists()
     raw = read_env(path) if existed else {}
     original = dict(raw)
@@ -229,8 +240,18 @@ def initialize(path):
         for key in SECRET_NAMES[2:]:
             if not raw.get(key) and previous.get(key):
                 raw[key] = previous[key]
+    if overrides is not None:
+        raw.update({key: value for key, value in overrides.items()
+                    if value or key not in PRIVATE_INPUT_NAMES or not raw.get(key)})
+        for canonical, aliases in {
+            'S3_SECRET_KEY': ('MINIO_ROOT_PASSWORD', 'MINIO_STORAGE_SECRET_KEY'),
+            'S3_ACCESS_KEY': ('MINIO_ROOT_USER', 'MINIO_STORAGE_ACCESS_KEY'),
+        }.items():
+            if overrides.get(canonical):
+                for alias in aliases:
+                    raw.pop(alias, None)
     if raw.get('MYSQL_MODE', 'external' if raw.get('MYSQL_HOST') not in {None, '', 'db'} else 'internal') == 'external' and not raw.get('MYSQL_PASSWORD'):
-        raise ValueError('外部数据库必须填写 MYSQL_PASSWORD，不自动生成外部数据库密码')
+        raise ValueError('请在 .env.example 填写外部数据库 MYSQL_PASSWORD，不自动生成外部数据库密码')
     generated = {}
     for name in SECRET_NAMES:
         if raw.get('MYSQL_MODE')=='settings' and name in {'MYSQL_PASSWORD','MYSQL_ROOT_PASSWORD'}:continue
@@ -240,7 +261,7 @@ def initialize(path):
         generated['S3_SECRET_KEY'] = secrets.token_hex(24)
     # Never invent a new password for an existing database configuration.
     if raw.get('MYSQL_MODE','internal')=='internal' and existed and not raw.get('MYSQL_PASSWORD') and raw.get('MYSQL_DATABASE') and any((Path(raw.get('MANGO_DATA_DIR') or DEFAULTS['MANGO_DATA_DIR'])/'mysql').glob('*')):
-        raise ValueError('已有 .env 缺少 MYSQL_PASSWORD，请填写原密码')
+        raise ValueError('已有数据库缺少 MYSQL_PASSWORD，请在 .env.example 填写原密码')
     v = resolve({**raw, **generated},path.parent)
     inputs = {**DEFAULTS, **raw, **generated}
     # Persist user inputs, not derived URLs; blank automatic values must stay automatic.
@@ -250,6 +271,9 @@ def initialize(path):
                     'S3_USE_HTTPS':'MINIO_STORAGE_USE_HTTPS','S3_PRESIGNED':'MINIO_STORAGE_MEDIA_USE_PRESIGNED'}.items():
         if key not in raw and old in raw:inputs[key]=v[key]
     if 'MYSQL_MODE' not in raw and raw.get('MYSQL_HOST') not in {None,'','db'}:inputs['MYSQL_MODE']='external'
+    if overrides is not None:
+        private_write(path, '\n'.join(key + "='" + value + "'" for key, value in inputs.items()) + '\n')
+        return v
     if not existed:
         template = path.with_name('.env.example')
         text = template.read_text() if template.exists() else ''
@@ -284,6 +308,45 @@ def initialize(path):
                 stream.write('\n'.join(k + '=' + "'" + val + "'" for k, val in missing.items()) + '\n')
         path.chmod(0o600)
     return v
+
+
+def configuration_text(text, values):
+    """Replace literal assignments while retaining the maintained comments."""
+    seen = set()
+    lines = []
+    for line in text.splitlines():
+        match = re.match(r'^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=', line)
+        if match and match[1] in values:
+            key = match[1]
+            seen.add(key)
+            line = key + "='" + values[key] + "'"
+        lines.append(line)
+    lines.extend(key + "='" + value + "'" for key, value in values.items() if key not in seen)
+    return '\n'.join(lines) + '\n'
+
+
+def initialize_example(path):
+    root = path.parent
+    editable = read_env(path)
+    marker = root / 'deploy/generated/example-input.json'
+    private = path.with_name('.env')
+    legacy = private if private.exists() else path.with_name('.env.deploy')
+    adopted = False
+    if not marker.exists() and legacy.exists():
+        # First upgrade: carry forward previous settings where the template is untouched.
+        previous = read_env(legacy)
+        if editable.get('NODE_HEAP_MB') == 'auto' and previous.get('NODE_HEAP_MB') == '2560':
+            previous['NODE_HEAP_MB'] = 'auto'
+        explicit = {key: value for key, value in editable.items() if value != DEFAULTS.get(key)}
+        editable = {**previous, **explicit}
+        adopted = True
+    values = initialize(private, overrides=editable)
+    if adopted:
+        public = {key: value for key, value in editable.items() if key not in PRIVATE_INPUT_NAMES}
+        private_write(path, configuration_text(path.read_text(), public))
+    path.chmod(0o600)
+    private_write(marker, json.dumps({'configuration_entry': '.env.example'}) + '\n')
+    return values
 
 
 def escape_compose(obj):
@@ -395,6 +458,7 @@ def render(root,v):
         services['mango_server'].setdefault('depends_on',{})['minio']={'condition':'service_started'}
     services['mango-console']['image']=v['CONSOLE_IMAGE']
     services['mango-console']['build']['args'].update(VUE_ENV=v['VUE_ENV'],NODE_IMAGE=v['NODE_IMAGE'],NGINX_IMAGE=v['NGINX_IMAGE'])
+    services['mango-console']['build']['args']['NODE_HEAP_MB'] = '6144' if v['NODE_HEAP_MB'] == 'auto' else v['NODE_HEAP_MB']
     services['mango-console']['volumes']=[str(generated/'runtime-config.js')+':/usr/share/nginx/html/runtime-config.js:ro']
     gateway=services['mango_gateway'];gateway['image']=v['NGINX_IMAGE']
     gateway['networks']={'default':{'aliases':['mango-gateway']}}
@@ -421,13 +485,19 @@ def main():
     parser.add_argument('key',nargs='?')
     a=parser.parse_args()
     try:
-        v=initialize(a.path) if a.action in {'init','render','render-k8s'} else resolve(read_env(a.path),a.path.parent)
+        if a.path.name == '.env.example':
+            v = initialize_example(a.path)
+        else:
+            v=initialize(a.path) if a.action in {'init','render','render-k8s'} else resolve(read_env(a.path),a.path.parent)
         if a.action=='render': render(Path(__file__).resolve().parent.parent, v)
         if a.action=='render-k8s':
             from k8s import render_k8s
             render_k8s(Path(__file__).resolve().parent.parent,v)
+        if a.action in {'render', 'render-k8s'} and a.path.name == '.env.example':
+            monitoring = '已纳入部署' if boolean(v, 'MONITORING_ENABLED') else '未启用'
+            print(f'配置入口：.env.example；monitoring-service：{monitoring}')
         if a.action=='get':
-            if a.key not in {'MANGO_DATA_DIR','PUBLIC_URL','WEB_PORT','MYSQL_MODE','FILE_STORAGE_BACKEND','MINIO_MODE','DEPLOY_TARGET','SERVER_IMAGE','CONSOLE_IMAGE','ACTUATOR_ENABLED','COMPOSE_PROJECT_NAME','K8S_NAMESPACE','K8S_WAIT_TIMEOUT'}:
+            if a.key not in {'MANGO_DATA_DIR','PUBLIC_URL','WEB_PORT','MYSQL_MODE','FILE_STORAGE_BACKEND','MINIO_MODE','DEPLOY_TARGET','SERVER_IMAGE','CONSOLE_IMAGE','ACTUATOR_ENABLED','COMPOSE_PROJECT_NAME','K8S_NAMESPACE','K8S_WAIT_TIMEOUT','NODE_HEAP_MB'}:
                 raise ValueError('只允许显示非敏感部署参数')
             print(v[a.key])
     except (ValueError,OSError,KeyError):

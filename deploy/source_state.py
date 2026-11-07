@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import re
 
 from bootstrap import private_write
 
@@ -14,8 +15,19 @@ PATHS = {
 }
 
 
+class GitCommandError(ValueError):
+    pass
+
+
 def git(root, *args):
-    return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.DEVNULL)
+    result = subprocess.run(['git', *args], cwd=str(root), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode:
+        detail = result.stderr.decode('utf-8', errors='replace')
+        detail = re.sub(r'https?://\S+', '[URL hidden]', detail)
+        detail = re.sub(r'(?i)(password|token|authorization|secret|cookie)(\s*[:=]\s*|\s+)[^\s,;]+', r'\1=[redacted]', detail)
+        detail = re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', detail).strip()[:1200]
+        raise GitCommandError(f'Git {args[0]} 失败（退出码 {result.returncode}）：{detail or "未提供错误详情"}')
+    return result.stdout
 
 
 def fingerprint(root, component):
@@ -55,14 +67,13 @@ def needs_build(root, component, name):
     # Previously published images can be reused if their relevant source is unchanged.
     revision = image.get('revision')
     if revision and len(revision) == 40 and all(x in '0123456789abcdef' for x in revision):
-        try:
-            git(root, 'cat-file', '-e', revision + '^{commit}')
+        exists = subprocess.run(['git', 'cat-file', '-e', revision + '^{commit}'], cwd=str(root),
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        if exists:
             changed = git(root, 'diff', '--name-only', revision, '--', *PATHS[component])
             untracked = git(root, 'ls-files', '--others', '--exclude-standard', '--', *PATHS[component])
             if not changed.strip() and not untracked.strip():
                 return False
-        except subprocess.CalledProcessError:
-            pass
     return True
 
 
@@ -88,6 +99,8 @@ def main():
             record(args.root, args.first, args.second)
         else:
             print(int(needs_build(args.root, args.first, args.second)))
+    except GitCommandError as error:
+        parser.exit(1, str(error) + '\n源码检查未通过，未继续部署。\n')
     except (ValueError, OSError, subprocess.SubprocessError):
         parser.exit(1, '无法验证源码与镜像状态，已停止部署；请检查 Git、Docker 和目录权限。\n')
 
