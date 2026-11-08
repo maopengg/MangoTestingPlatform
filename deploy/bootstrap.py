@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import ipaddress
 from urllib.parse import urlsplit
 
 SECRET_NAMES = ('MYSQL_ROOT_PASSWORD', 'MYSQL_PASSWORD', 'DJANGO_SECRET_KEY',
@@ -60,10 +61,53 @@ def boolean(values, key, default=False):
 
 
 def url(value, key, schemes=('http', 'https')):
-    parsed = urlsplit(value)
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except ValueError:
+        raise ValueError(f'{key} 地址格式不正确，请修改 .env.example') from None
     if parsed.scheme not in schemes or not parsed.hostname or parsed.username or parsed.password or re.search(r'[\s;{}$\\"\x00-\x1f]', value):
         raise ValueError(f'{key} 必须是合法地址，不能包含凭据或配置指令')
+    if port is not None and not 1 <= port <= 65535:
+        raise ValueError(f'{key} 地址端口必须在 1 到 65535 之间')
     return parsed
+
+
+def placeholder(value):
+    return bool(re.search(r'change[_-]?me|replace[_-]?me|your[_-](?:server|host|ip|domain|database|password|access|secret)|请填写|待填写|填写', str(value), re.I))
+
+
+def validate_user_inputs(values):
+    """Reject missing deployment inputs without exposing their values or writing state."""
+    required = ['PUBLIC_URL', 'MYSQL_DATABASE', 'MYSQL_USER']
+    if values.get('MYSQL_MODE') == 'external':
+        required += ['MYSQL_HOST', 'MYSQL_PASSWORD']
+    elif values.get('MYSQL_MODE') == 'settings':
+        required = ['PUBLIC_URL']  # Database values are checked after reading the selected settings.
+    if values.get('FILE_STORAGE_BACKEND') in {'minio', 'tos'}:
+        required += ['S3_BUCKET']
+        if values.get('FILE_STORAGE_BACKEND') == 'tos' or values.get('MINIO_MODE') == 'external':
+            required += ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_PUBLIC_BASE_URL']
+        if values.get('FILE_STORAGE_BACKEND') == 'tos':
+            required += ['S3_REGION']
+    if boolean(values, 'ACTUATOR_ENABLED'):
+        required += ['ACTUATOR_HOST', 'ACTUATOR_USERNAME', 'ACTUATOR_PASSWORD']
+    invalid = [key for key in required if not str(values.get(key, '')).strip() or placeholder(values.get(key, ''))]
+    public = values.get('PUBLIC_URL', '')
+    if public and not placeholder(public):
+        host = url(public, 'PUBLIC_URL').hostname.rstrip('.')
+        try:
+            address = ipaddress.ip_address(host)
+            local_only = address.is_loopback or address.is_unspecified or address.is_multicast
+            if getattr(address, 'ipv4_mapped', None):
+                local_only = local_only or address.ipv4_mapped.is_loopback or address.ipv4_mapped.is_unspecified
+        except ValueError:
+            local_only = host == 'localhost' or host.endswith('.localhost') or '*' in host
+        if local_only:
+            invalid.append('PUBLIC_URL')
+    if invalid:
+        hint = '；PUBLIC_URL 必须为客户端实际访问的 IP 或域名，不能使用占位符、localhost 或监听地址' if 'PUBLIC_URL' in invalid else ''
+        raise ValueError('请在 .env.example 填写真实有效的必填配置：' + ', '.join(dict.fromkeys(invalid)) + hint)
 
 
 def validate(v):
@@ -107,7 +151,7 @@ def validate(v):
     if boolean(v,'ACTUATOR_ENABLED'):
         url(v['ACTUATOR_HOST'],'ACTUATOR_HOST')
         if not v.get('ACTUATOR_PASSWORD'):raise ValueError('启用执行器必须填写 ACTUATOR_PASSWORD')
-    required = ['MYSQL_DATABASE' , 'MYSQL_USER', 'MYSQL_PASSWORD', 'DJANGO_SECRET_KEY',
+    required = ['PUBLIC_URL', 'BACKEND_UPSTREAM', 'MANGO_DATA_DIR', 'MYSQL_DATABASE' , 'MYSQL_USER', 'MYSQL_PASSWORD', 'DJANGO_SECRET_KEY',
                 'LIVE_STREAM_SIGNING_KEY', 'MANGO_INITIAL_ADMIN_PASSWORD', 'MANGO_INITIAL_GUEST_PASSWORD']
     required += ['MYSQL_ROOT_PASSWORD'] if v['MYSQL_MODE'] == 'internal' else ['MYSQL_HOST']
     if v['MYSQL_MODE'] == 'internal' and v['MYSQL_USER'] == 'root':
@@ -130,6 +174,12 @@ def validate(v):
     missing = [key for key in required if not v.get(key)]
     if missing:
         raise ValueError('请在 .env.example 补齐：' + ', '.join(missing))
+    active = required + ['API_PUBLIC_URL', 'FRONTEND_API_BASE', 'FRONTEND_SOCKET_URL', 'CORS_ALLOWED_ORIGINS']
+    if boolean(v, 'ACTUATOR_ENABLED'):
+        active += ['ACTUATOR_HOST', 'ACTUATOR_USERNAME', 'ACTUATOR_PASSWORD']
+    unresolved = [key for key in active if v.get(key) and placeholder(v[key])]
+    if unresolved:
+        raise ValueError('请在 .env.example 替换以下占位配置：' + ', '.join(dict.fromkeys(unresolved)))
     for key in ('PUBLIC_URL', 'BACKEND_UPSTREAM'):
         p = url(v[key], key)
         if p.path not in {'', '/'} or p.query or p.fragment:
@@ -227,7 +277,7 @@ def private_write(path, text):
         if temporary.exists():temporary.unlink()
 
 
-def initialize(path, overrides=None):
+def initialize(path, overrides=None, dry_run=False):
     existed = path.exists()
     raw = read_env(path) if existed else {}
     original = dict(raw)
@@ -263,6 +313,8 @@ def initialize(path, overrides=None):
     if raw.get('MYSQL_MODE','internal')=='internal' and existed and not raw.get('MYSQL_PASSWORD') and raw.get('MYSQL_DATABASE') and any((Path(raw.get('MANGO_DATA_DIR') or DEFAULTS['MANGO_DATA_DIR'])/'mysql').glob('*')):
         raise ValueError('已有数据库缺少 MYSQL_PASSWORD，请在 .env.example 填写原密码')
     v = resolve({**raw, **generated},path.parent)
+    if dry_run:
+        return v
     inputs = {**DEFAULTS, **raw, **generated}
     # Persist user inputs, not derived URLs; blank automatic values must stay automatic.
     for key,old in {'S3_ENDPOINT':'MINIO_STORAGE_ENDPOINT','S3_BUCKET':'MINIO_STORAGE_MEDIA_BUCKET_NAME',
@@ -325,7 +377,7 @@ def configuration_text(text, values):
     return '\n'.join(lines) + '\n'
 
 
-def initialize_example(path):
+def initialize_example(path, dry_run=False):
     root = path.parent
     editable = read_env(path)
     marker = root / 'deploy/generated/example-input.json'
@@ -340,7 +392,14 @@ def initialize_example(path):
         explicit = {key: value for key, value in editable.items() if value != DEFAULTS.get(key)}
         editable = {**previous, **explicit}
         adopted = True
-    values = initialize(private, overrides=editable)
+    prior = read_env(legacy) if legacy.exists() else {}
+    effective = {**DEFAULTS, **prior}
+    effective.update({key: value for key, value in editable.items()
+                      if value or key not in PRIVATE_INPUT_NAMES or not effective.get(key)})
+    validate_user_inputs(effective)
+    values = initialize(private, overrides=editable, dry_run=dry_run)
+    if dry_run:
+        return values
     if adopted:
         public = {key: value for key, value in editable.items() if key not in PRIVATE_INPUT_NAMES}
         private_write(path, configuration_text(path.read_text(), public))
@@ -480,15 +539,15 @@ def render(root,v):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['init','get','render','render-k8s'])
+    parser.add_argument('action', choices=['check-inputs','init','get','render','render-k8s'])
     parser.add_argument('path',type=Path)
     parser.add_argument('key',nargs='?')
     a=parser.parse_args()
     try:
         if a.path.name == '.env.example':
-            v = initialize_example(a.path)
+            v = initialize_example(a.path, dry_run=a.action == 'check-inputs')
         else:
-            v=initialize(a.path) if a.action in {'init','render','render-k8s'} else resolve(read_env(a.path),a.path.parent)
+            v=initialize(a.path, dry_run=a.action == 'check-inputs') if a.action in {'check-inputs','init','render','render-k8s'} else resolve(read_env(a.path),a.path.parent)
         if a.action=='render': render(Path(__file__).resolve().parent.parent, v)
         if a.action=='render-k8s':
             from k8s import render_k8s

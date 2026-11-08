@@ -158,7 +158,7 @@ class UnifiedDeploymentTests(unittest.TestCase):
 
     def test_k8s_prepare_never_invokes_docker_or_kubectl(self):
         shutil.copy2(ROOT/'deploy.sh',self.root/'deploy.sh')
-        v=values(DEPLOY_TARGET='k8s')
+        v=values(DEPLOY_TARGET='k8s',PUBLIC_URL='https://platform.example.com')
         (self.root/'.env').write_text('\n'.join(k+'='+repr(value) for k,value in v.items())+'\n')
         result=subprocess.run(['sh','deploy.sh','--prepare-only'],cwd=self.root,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)

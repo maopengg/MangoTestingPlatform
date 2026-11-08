@@ -32,11 +32,11 @@ class ExampleConfigurationTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         self.example = self.root / '.env.example'
-        self.example.write_text('MANGO_DATA_DIR=' + str(self.root / 'data') + '\n')
+        self.example.write_text('PUBLIC_URL=https://platform.example.com\nMANGO_DATA_DIR=' + str(self.root / 'data') + '\n')
 
     def test_only_example_changes_apply_on_every_run_and_blank_keys_keep_secrets(self):
         first = b.initialize_example(self.example)
-        self.example.write_text(self.example.read_text() + 'PUBLIC_URL=https://web.example.com\nMYSQL_PASSWORD=\n')
+        self.example.write_text(b.configuration_text(self.example.read_text(), {'PUBLIC_URL': 'https://web.example.com', 'MYSQL_PASSWORD': ''}))
         second = b.initialize_example(self.example)
         self.assertEqual(second['PUBLIC_URL'], 'https://web.example.com')
         self.assertEqual(second['MYSQL_PASSWORD'], first['MYSQL_PASSWORD'])
@@ -66,7 +66,7 @@ class ExampleConfigurationTests(unittest.TestCase):
         self.assertFalse((self.root / '.env').exists())
 
     def test_invalid_heap_is_rejected_without_shell_expansion(self):
-        self.example.write_text('NODE_HEAP_MB=$(touch /tmp/not-executed)\n')
+        self.example.write_text('PUBLIC_URL=https://platform.example.com\nNODE_HEAP_MB=$(touch /tmp/not-executed)\n')
         with self.assertRaisesRegex(ValueError, 'NODE_HEAP_MB'):
             b.initialize_example(self.example)
 
@@ -129,6 +129,47 @@ class BuildResourceTests(unittest.TestCase):
             self.assertEqual(resources.cgroup_budget(root), 6144)
 
 
+class RequiredInputTests(unittest.TestCase):
+    def test_public_address_must_be_real_and_invalid_inputs_do_not_write_state(self):
+        for address in ('', 'http://CHANGE_ME_SERVER_IP:8000', 'http://localhost:8000',
+                        'http://127.0.0.2:8000', 'http://0.0.0.0:8000', 'http://[::]:8000',
+                        'http://[::ffff:127.0.0.1]:8000', 'http://example.com:bad', 'http://example.com:0'):
+            with self.subTest(address=address), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                example = root / '.env.example'
+                example.write_text("PUBLIC_URL='" + address + "'\n")
+                before = example.read_bytes()
+                with self.assertRaisesRegex(ValueError, 'PUBLIC_URL'):
+                    b.initialize_example(example, dry_run=True)
+                self.assertFalse((root / '.env').exists())
+                self.assertFalse((root / 'deploy/generated').exists())
+                self.assertEqual(example.read_bytes(), before)
+
+    def test_internal_ipv4_ipv6_and_domains_are_accepted(self):
+        for address in ('http://172.16.100.47:8000', 'https://platform.example.com', 'http://[2001:db8::1]:8000'):
+            with self.subTest(address=address), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                example = root / '.env.example'
+                example.write_text('PUBLIC_URL=' + address + '\n')
+                self.assertEqual(b.initialize_example(example, dry_run=True)['PUBLIC_URL'], address)
+                self.assertFalse((root / '.env').exists())
+
+    def test_active_mysql_and_storage_placeholders_are_reported_without_secret_values(self):
+        values = {**b.DEFAULTS, 'PUBLIC_URL': 'https://platform.example.com',
+                  'MYSQL_MODE': 'external', 'MYSQL_HOST': '', 'MYSQL_PASSWORD': 'CHANGE_ME_PASSWORD',
+                  'FILE_STORAGE_BACKEND': 'tos', 'S3_ENDPOINT': 'YOUR_HOST', 'S3_ACCESS_KEY': '',
+                  'S3_SECRET_KEY': '', 'S3_PUBLIC_BASE_URL': '', 'S3_REGION': ''}
+        with self.assertRaises(ValueError) as caught:
+            b.validate_user_inputs(values)
+        for key in ('MYSQL_HOST', 'MYSQL_PASSWORD', 'S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_REGION'):
+            self.assertIn(key, str(caught.exception))
+        self.assertNotIn('CHANGE_ME_PASSWORD', str(caught.exception))
+        self.assertNotIn('YOUR_HOST', str(caught.exception))
+
+    def test_unused_storage_and_executor_options_may_remain_empty(self):
+        b.validate_user_inputs({**b.DEFAULTS, 'PUBLIC_URL': 'https://platform.example.com'})
+
+
 class GitCompatibilityTests(unittest.TestCase):
     def test_uses_cwd_and_reports_failed_subcommand_with_secrets_redacted(self):
         failure = subprocess.CompletedProcess([], 129, b'', b'unknown option\npassword=private-value https://user:pass@example.com/repo')
@@ -144,6 +185,20 @@ class GitCompatibilityTests(unittest.TestCase):
 
 
 class ConfigurationUpdateTests(DeploymentFixture):
+    def test_invalid_required_address_stops_before_git_docker_and_private_writes(self):
+        example = self.root / '.env.example'
+        example.write_text(b.configuration_text(example.read_text(), {'PUBLIC_URL': 'http://CHANGE_ME_SERVER_IP:8000'}))
+        original = (self.root / '.env').read_bytes()
+        result = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('.env.example', result.stderr)
+        self.assertIn('PUBLIC_URL', result.stderr)
+        self.assertNotIn('CHANGE_ME_SERVER_IP', result.stderr)
+        self.assertEqual(self.commands(), [])
+        self.assertFalse((self.root / 'git.log').exists())
+        self.assertFalse((self.root / 'deploy/generated').exists())
+        self.assertEqual((self.root / '.env').read_bytes(), original)
+
     def test_editing_only_example_enables_monitoring_during_normal_deploy(self):
         self.assertEqual(self.run_deploy().returncode, 0)
         path = self.root / '.env.example'

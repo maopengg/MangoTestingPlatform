@@ -20,6 +20,8 @@ parse_arguments() {
 }
 parse_arguments "$@"
 command -v python3 >/dev/null || { echo '请先安装 python3' >&2; exit 1; }
+echo '校验 .env.example 必填配置...'
+python3 deploy/bootstrap.py check-inputs "$ENV_FILE"
 if [ "$PREPARE_ONLY" = 0 ] && [ "${_MANGO_DEPLOY_SYNC_ROOT:-}" != "$ROOT" ]; then
     command -v git >/dev/null || { echo '请先安装 Git。' >&2; exit 1; }
     git rev-parse --is-inside-work-tree >/dev/null

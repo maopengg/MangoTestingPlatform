@@ -66,10 +66,10 @@ API 任务由服务端 Worker 执行；UI、Pytest 等任务需要在线且能�
 git clone -b master https://gitee.com/mao-peng/MangoTestingPlatform.git
 cd MangoTestingPlatform
 
-# 首次生成配置，不拉取更新，也不启动服务
+# 编辑 .env.example，设置实际访问地址和需要的数据库、存储配置
+# 必须先填写 PUBLIC_URL；可选：只校验并生成配置，不拉代码、不启动服务
 sh deploy.sh --prepare-only
 
-# 编辑 .env.example，设置实际访问地址和需要的数据库、存储配置
 # 确认后部署
 sh deploy.sh
 ```

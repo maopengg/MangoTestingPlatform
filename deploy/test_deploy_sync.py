@@ -23,7 +23,7 @@ class DeploymentFixture(unittest.TestCase):
   self.git('clone','--branch','master',str(self.remote),str(self.peer),cwd=base);self.identity(self.peer)
   revision=self.git('rev-parse','HEAD',cwd=self.root)
   (self.root/'image.json').write_text(json.dumps({'Id':'sha256:fixture','Config':{'Labels':{'org.opencontainers.image.revision':revision}}}))
-  v=b.resolve({**{k:'sample-only-'+k for k in b.SECRET_NAMES},'MYSQL_MODE':'external','MYSQL_HOST':'db.example.com','MANGO_DATA_DIR':str(self.root/'data')})
+  v=b.resolve({**{k:'sample-only-'+k for k in b.SECRET_NAMES},'PUBLIC_URL':'https://platform.example.com','MYSQL_MODE':'external','MYSQL_HOST':'db.example.com','MANGO_DATA_DIR':str(self.root/'data')})
   (self.root/'.env').write_text('\n'.join(k+"='"+x+"'" for k,x in v.items())+'\n')
   bin_dir=self.root/'bin';bin_dir.mkdir()
   scripts={'docker':'''import json,os,sys
