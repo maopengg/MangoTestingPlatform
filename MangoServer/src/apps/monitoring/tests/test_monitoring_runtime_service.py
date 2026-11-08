@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest import TestCase, mock
 import io
 import tempfile
+from pathlib import Path
 
 from django.test import override_settings
 
@@ -22,6 +23,50 @@ class FakeQuerySet:
 
 
 class MonitoringRuntimeServiceTest(TestCase):
+    def test_start_persists_missing_log_path_before_process_and_keeps_existing_path(self):
+        for original in (None, '', '  ', 'monitoring/logs/existing.log'):
+            with self.subTest(log_path=original), tempfile.TemporaryDirectory() as directory:
+                persisted = {'log_path': original}
+                task = SimpleNamespace(id=9, name='示例脚本', status=MonitoringTaskStatusEnum.STARTING.value,
+                                       pid=None, script_content='print("ok")', log_path=original,
+                                       refresh_from_db=mock.Mock())
+
+                def save(*, update_fields):
+                    if 'log_path' in update_fields:
+                        persisted['log_path'] = task.log_path
+                task.save = mock.Mock(side_effect=save)
+                process = mock.Mock(pid=123, stdout=io.StringIO(''))
+                process.poll.return_value = None
+
+                def spawn(*args, **kwargs):
+                    self.assertEqual(persisted['log_path'], task.log_path)
+                    self.assertTrue(Path(MonitoringTaskRunner._get_absolute_path(task.log_path)).is_file())
+                    return process
+
+                worker = MonitoringTaskRunner()
+                with override_settings(BASE_DIR=directory, MONITORING_SCRIPT_DIR=directory + '/scripts',
+                                       MONITORING_LOG_DIR=directory + '/logs'), \
+                        mock.patch('src.apps.monitoring.services.runner.subprocess.Popen', side_effect=spawn), \
+                        mock.patch('src.apps.monitoring.services.runner.threading.Thread'):
+                    worker.start_task(task)
+                    self.assertEqual(task.status, MonitoringTaskStatusEnum.RUNNING.value)
+                    self.assertEqual(task.pid, 123)
+                    self.assertIsNotNone(task.started_at)
+                    if original and original.strip():
+                        self.assertEqual(task.log_path, original)
+                    else:
+                        self.assertRegex(task.log_path, r'^monitoring/logs/[0-9a-f]{32}\.log$')
+                    chosen_path = task.log_path
+                    worker.running_processes.clear()
+                    task.status = MonitoringTaskStatusEnum.STARTING.value
+                    task.pid = None
+                    worker.start_task(task)
+                    self.assertEqual(task.log_path, chosen_path)
+                    content = Path(worker._get_absolute_path(task.log_path)).read_text()
+                    self.assertEqual(content.count('开始新的执行'), 2)
+                writes = [call for call in task.save.call_args_list if call.kwargs['update_fields'] == ['log_path']]
+                self.assertEqual(len(writes), 0 if original and original.strip() else 1)
+
     def test_log_timestamps_support_both_timezone_modes(self):
         for enabled in (False, True):
             with self.subTest(use_tz=enabled), override_settings(USE_TZ=enabled):

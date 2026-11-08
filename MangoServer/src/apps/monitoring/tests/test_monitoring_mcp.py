@@ -20,6 +20,37 @@ from src.apps.user.services.permission import PermissionMenuService, ProjectProd
 
 
 class MonitoringMcpServiceTests(SimpleTestCase):
+    def test_log_path_repair_is_scoped_idempotent_and_does_not_change_runtime_state(self):
+        from src.apps.monitoring.services.log_path import MonitoringLogPathService
+        from django.core.management import call_command
+        import io
+
+        tasks = [self.create() for _ in range(4)]
+        originals = [None, '', '  ', 'monitoring/logs/existing.log']
+        for task, path in zip(tasks, originals):
+            MonitoringTask.objects.filter(id=task.id).update(log_path=path, status=MonitoringTaskStatusEnum.FAILED.value,
+                                                           exit_code=-1, pid=None)
+        before = list(MonitoringTask.objects.order_by('id').values())
+        output = io.StringIO()
+        call_command('repair_monitoring_log_paths', task_ids=[tasks[0].id, tasks[1].id], stdout=output)
+        self.assertIn('仅预览', output.getvalue())
+        self.assertEqual(list(MonitoringTask.objects.order_by('id').values()), before)
+        selected = [tasks[0].id, tasks[1].id, tasks[3].id]
+        result = MonitoringLogPathService.repair_missing(selected, apply=True)
+        self.assertEqual(result, {'missing': 2, 'repaired': 2})
+        after = list(MonitoringTask.objects.order_by('id').values())
+        for old, new in zip(before, after):
+            if old['id'] in selected and old['log_path'] in (None, ''):
+                self.assertRegex(new['log_path'], r'^monitoring/logs/[0-9a-f]{32}\.log$')
+            else:
+                self.assertEqual(new['log_path'], old['log_path'])
+            self.assertEqual({key: value for key, value in old.items() if key != 'log_path'},
+                             {key: value for key, value in new.items() if key != 'log_path'})
+        self.assertEqual(MonitoringLogPathService.repair_missing(selected, apply=True)['repaired'], 0)
+        output = io.StringIO()
+        call_command('repair_monitoring_log_paths', apply=True, stdout=output)
+        self.assertIn('已补齐 1 个', output.getvalue())
+
     def setUp(self):
         self.alias = 'monitoring_mcp'
         self.db = DatabaseWrapper({

@@ -1,5 +1,3 @@
-import uuid
-
 from django.db import transaction
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
@@ -10,6 +8,7 @@ from src.apps.monitoring.exceptions import (
 from src.apps.monitoring.models import MonitoringTask
 from src.apps.monitoring.selectors.task import MonitoringTaskSelector
 from src.apps.monitoring.services.task_control import MonitoringTaskControlService
+from src.apps.monitoring.services.log_path import MonitoringLogPathService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.apps.user.services.permission import ProjectProductScopeService
 
@@ -30,7 +29,7 @@ class MonitoringTaskMutationService:
         values = dict(values)
         if not values.get('script_content'):
             raise MonitoringError(MONITORING_SCRIPT_CONTENT_REQUIRED)
-        values.update(log_path=f'monitoring/logs/{uuid.uuid4().hex}.log', status=MonitoringTaskStatusEnum.QUEUED.value)
+        values.update(log_path=MonitoringLogPathService.new_path(), status=MonitoringTaskStatusEnum.QUEUED.value)
         return MonitoringTask.objects.create(**values)
 
     @classmethod

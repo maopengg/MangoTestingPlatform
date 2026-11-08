@@ -3,9 +3,17 @@ from src.apps.monitoring.models import MonitoringTask
 from src.apps.monitoring.models import MonitoringReport
 from src.apps.monitoring.constants import TASK_DIAGNOSTIC_MESSAGE
 from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from django.db.models import Q
+from django.db.models.functions import Trim
 
 
 class MonitoringTaskSelector:
+    @staticmethod
+    def missing_log_path():
+        return MonitoringTask.objects.annotate(_trimmed_log_path=Trim('log_path')).filter(
+            Q(log_path__isnull=True) | Q(_trimmed_log_path=''),
+        ).order_by('id')
+
     @staticmethod
     def failure_reason(task):
         if task.stopped_at is None:

@@ -21,6 +21,7 @@ from src.apps.monitoring.exceptions import (
     MonitoringError,
 )
 from src.apps.monitoring.models import MonitoringTask
+from src.apps.monitoring.services.log_path import MonitoringLogPathService
 from src.apps.system.enums import RuntimeServiceName
 from src.common.decorators.system_error import report_system_error, system_error_guard
 from src.common.enums.system_error import SystemErrorEventSource
@@ -184,6 +185,8 @@ class MonitoringTaskRunner:
         # 从数据库读取代码内容
         if not task.script_content:
             raise MonitoringError(MONITORING_SCRIPT_CONTENT_REQUIRED)
+
+        MonitoringLogPathService.ensure(task)
 
         # 每次启动都生成新的临时文件路径（不保存到数据库）
         file_id = uuid.uuid4().hex
