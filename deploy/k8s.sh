@@ -3,8 +3,8 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 command -v kubectl >/dev/null || { echo '请先安装 kubectl 并选择目标集群上下文。' >&2; exit 1; }
-NAMESPACE=$(python3 deploy/bootstrap.py get .env.example K8S_NAMESPACE)
-TIMEOUT=$(python3 deploy/bootstrap.py get .env.example K8S_WAIT_TIMEOUT)
+NAMESPACE=$(python3 deploy/bootstrap.py get .env.example K8S_NAMESPACE --target k8s)
+TIMEOUT=$(python3 deploy/bootstrap.py get .env.example K8S_WAIT_TIMEOUT --target k8s)
 k() { kubectl -n "$NAMESPACE" "$@"; }
 kubectl apply -f deploy/generated/k8s/foundation.json >/dev/null
 for name in db minio; do

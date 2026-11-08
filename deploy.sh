@@ -20,8 +20,12 @@ parse_arguments() {
 }
 parse_arguments "$@"
 command -v python3 >/dev/null || { echo '请先安装 python3' >&2; exit 1; }
+configuration() {
+    if [ -n "$TARGET" ]; then python3 deploy/bootstrap.py "$@" --target "$TARGET";
+    else python3 deploy/bootstrap.py "$@"; fi
+}
 echo '校验 .env.example 必填配置...'
-python3 deploy/bootstrap.py check-inputs "$ENV_FILE"
+configuration check-inputs "$ENV_FILE"
 if [ "$PREPARE_ONLY" = 0 ] && [ "${_MANGO_DEPLOY_SYNC_ROOT:-}" != "$ROOT" ]; then
     command -v git >/dev/null || { echo '请先安装 Git。' >&2; exit 1; }
     git rev-parse --is-inside-work-tree >/dev/null
@@ -42,11 +46,11 @@ if [ "$PREPARE_ONLY" = 0 ] && [ "${_MANGO_DEPLOY_SYNC_ROOT:-}" != "$ROOT" ]; the
     exec sh "$ROOT/deploy.sh" "$@"
 fi
 unset _MANGO_DEPLOY_SYNC_ROOT
-python3 deploy/bootstrap.py init "$ENV_FILE"
-[ -n "$TARGET" ] || TARGET=$(python3 deploy/bootstrap.py get "$ENV_FILE" DEPLOY_TARGET)
+configuration init "$ENV_FILE"
+[ -n "$TARGET" ] || TARGET=$(configuration get "$ENV_FILE" DEPLOY_TARGET)
 case "$TARGET" in
-    compose) python3 deploy/bootstrap.py render "$ENV_FILE" ;;
-    k8s) python3 deploy/bootstrap.py render-k8s "$ENV_FILE" ;;
+    compose) configuration render "$ENV_FILE" ;;
+    k8s) configuration render-k8s "$ENV_FILE" ;;
     *) echo 'DEPLOY_TARGET 只支持 compose / k8s' >&2; exit 1 ;;
 esac
 if [ "$PREPARE_ONLY" = 1 ]; then
@@ -61,9 +65,9 @@ docker info >/dev/null
 docker compose version >/dev/null
 compose() { docker compose --env-file /dev/null -f "$ROOT/deploy/generated/compose.json" "$@"; }
 compose config --quiet
-DATA_DIR=$(python3 deploy/bootstrap.py get "$ENV_FILE" MANGO_DATA_DIR)
-SERVER_IMAGE=$(python3 deploy/bootstrap.py get "$ENV_FILE" SERVER_IMAGE)
-CONSOLE_IMAGE=$(python3 deploy/bootstrap.py get "$ENV_FILE" CONSOLE_IMAGE)
+DATA_DIR=$(configuration get "$ENV_FILE" MANGO_DATA_DIR)
+SERVER_IMAGE=$(configuration get "$ENV_FILE" SERVER_IMAGE)
+CONSOLE_IMAGE=$(configuration get "$ENV_FILE" CONSOLE_IMAGE)
 mkdir -p "$DATA_DIR/server_runtime/media" "$DATA_DIR/backups"
 BUILD_BACKEND=$REBUILD
 BUILD_FRONTEND=$REBUILD
@@ -72,7 +76,7 @@ if [ "$REBUILD" = 0 ]; then
     BUILD_FRONTEND=$(python3 deploy/source_state.py needs-build "$ROOT" frontend "$CONSOLE_IMAGE")
 fi
 if [ "$BUILD_FRONTEND" = 1 ]; then
-    FRONTEND_HEAP=$(python3 deploy/build_resources.py "$(python3 deploy/bootstrap.py get "$ENV_FILE" NODE_HEAP_MB)")
+    FRONTEND_HEAP=$(python3 deploy/build_resources.py "$(configuration get "$ENV_FILE" NODE_HEAP_MB)")
 fi
 if [ "$BUILD_BACKEND" = 1 ]; then compose build mango_server; fi
 if [ "$BUILD_FRONTEND" = 1 ]; then
@@ -90,10 +94,10 @@ if [ "$BUILD_FRONTEND" = 1 ]; then
         exit 1
     fi
 fi
-if [ "$(python3 deploy/bootstrap.py get "$ENV_FILE" MYSQL_MODE)" = internal ]; then
+if [ "$(configuration get "$ENV_FILE" MYSQL_MODE)" = internal ]; then
     compose up -d --wait --wait-timeout 180 db
 fi
-if [ "$(python3 deploy/bootstrap.py get "$ENV_FILE" FILE_STORAGE_BACKEND)" = minio ] && [ "$(python3 deploy/bootstrap.py get "$ENV_FILE" MINIO_MODE)" = internal ]; then
+if [ "$(configuration get "$ENV_FILE" FILE_STORAGE_BACKEND)" = minio ] && [ "$(configuration get "$ENV_FILE" MINIO_MODE)" = internal ]; then
     compose up -d minio
 fi
 echo '验证数据库及存储配置（不修改数据）...'
@@ -106,7 +110,7 @@ print(' '.join(x for x in s if x.startswith('api_worker_') or x in {'scheduler_s
 PY
 )
 compose stop $STOP_SERVICES
-PROJECT=$(python3 deploy/bootstrap.py get "$ENV_FILE" COMPOSE_PROJECT_NAME)
+PROJECT=$(configuration get "$ENV_FILE" COMPOSE_PROJECT_NAME)
 # Stop only retired application services owned by this project; retain data services.
 for id in $(docker ps -q --filter "label=com.docker.compose.project=$PROJECT"); do
     SERVICE=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$id")
@@ -133,5 +137,5 @@ compose up -d --wait --wait-timeout 180
 compose exec -T mango_gateway wget -q --spider http://127.0.0.1/healthz
 python3 deploy/source_state.py record "$ROOT" "$SERVER_IMAGE" "$CONSOLE_IMAGE"
 compose ps
-echo "平台入口：$(python3 deploy/bootstrap.py get "$ENV_FILE" PUBLIC_URL)"
+echo "平台入口：$(configuration get "$ENV_FILE" PUBLIC_URL)"
 echo '初始管理员密码保存在 .env；已有用户密码不会被重置。'

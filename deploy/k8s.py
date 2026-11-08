@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 import shlex
-from bootstrap import BACKEND_SERVICES, boolean, private_write, render
+from bootstrap import BACKEND_SERVICES, boolean, private_write, render, validate_k8s
 
 SECRETS={'MYSQL_PASSWORD','MYSQL_ROOT_PASSWORD','DJANGO_SECRET_KEY','LIVE_STREAM_SIGNING_KEY',
          'MANGO_INITIAL_ADMIN_PASSWORD','MANGO_INITIAL_GUEST_PASSWORD','MINIO_STORAGE_ACCESS_KEY',
@@ -12,20 +12,8 @@ SECRETS={'MYSQL_PASSWORD','MYSQL_ROOT_PASSWORD','DJANGO_SECRET_KEY','LIVE_STREAM
 
 
 def render_k8s(root,v):
+    validate_k8s(v)
     namespace=v['K8S_NAMESPACE']
-    if not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?',namespace):raise ValueError('K8S_NAMESPACE 格式不合法')
-    if v['K8S_SERVICE_TYPE'] not in {'ClusterIP','NodePort','LoadBalancer'}:raise ValueError('K8S_SERVICE_TYPE 不合法')
-    if v['K8S_IMAGE_PULL_POLICY'] not in {'Always','IfNotPresent','Never'}:raise ValueError('K8S_IMAGE_PULL_POLICY 不合法')
-    if v['K8S_RUNTIME_ACCESS_MODE'] not in {'ReadWriteOnce','ReadWriteMany'}:raise ValueError('K8S_RUNTIME_ACCESS_MODE 不合法')
-    for key in ['K8S_RUNTIME_STORAGE_SIZE','K8S_MYSQL_STORAGE_SIZE','K8S_MINIO_STORAGE_SIZE']:
-        if not re.fullmatch(r'[1-9][0-9]*(?:Mi|Gi|Ti)',v[key]):raise ValueError(key+' 使用 10Gi 等存储大小')
-    for key in ['K8S_IMAGE_PULL_SECRET','K8S_STORAGE_CLASS','K8S_INGRESS_CLASS','K8S_TLS_SECRET']:
-        if v[key] and not re.fullmatch(r'[a-z0-9][a-z0-9.-]*',v[key]):raise ValueError(key+' 格式不合法')
-    if v['K8S_INGRESS_HOST'] and not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.-]*',v['K8S_INGRESS_HOST']):raise ValueError('K8S_INGRESS_HOST 只填写主机名')
-    if v['K8S_TLS_SECRET'] and not v['K8S_INGRESS_HOST']:raise ValueError('配置 K8S_TLS_SECRET 时必须填写 K8S_INGRESS_HOST')
-    if v['K8S_SERVICE_TYPE']=='NodePort' and (not v['K8S_NODE_PORT'].isdigit() or not 30000<=int(v['K8S_NODE_PORT'])<=32767):raise ValueError('K8S_NODE_PORT 必须在 30000 到 32767 之间')
-    if not re.fullmatch(r'[a-zA-Z0-9.:-]+',v['K8S_DNS_RESOLVER']):raise ValueError('K8S_DNS_RESOLVER 格式不合法')
-    if not re.fullmatch(r'[1-9][0-9]*s',v['K8S_WAIT_TIMEOUT']):raise ValueError('K8S_WAIT_TIMEOUT 使用 300s 等格式')
     compose=render(root,v);services=compose['services'];generated=root/'deploy/generated/k8s'
     common_labels={'app.kubernetes.io/part-of':'mango','app.kubernetes.io/managed-by':'mango-deploy'}
     def meta(name):return {'name':name,'namespace':namespace,'labels':common_labels.copy()}

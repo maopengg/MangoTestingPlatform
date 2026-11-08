@@ -61,6 +61,8 @@ def boolean(values, key, default=False):
 
 
 def url(value, key, schemes=('http', 'https')):
+    if placeholder(value):
+        raise ValueError(f'{key} 包含占位地址，请修改 .env.example')
     try:
         parsed = urlsplit(value)
         port = parsed.port
@@ -74,24 +76,63 @@ def url(value, key, schemes=('http', 'https')):
 
 
 def placeholder(value):
-    return bool(re.search(r'change[_-]?me|replace[_-]?me|your[_-](?:server|host|ip|domain|database|password|access|secret)|请填写|待填写|填写', str(value), re.I))
+    return bool(re.search(r'change[_-]?me|replace[_-]?me|your[_-](?:server|host|ip|domain|database|password|access|secret|image|user|bucket|region|key|path|port|url)|请填写|待填写|填写', str(value), re.I))
+
+
+def required_input_keys(values):
+    """Required non-generated inputs, including dependencies of enabled features."""
+    required = [
+        'DEPLOY_TARGET', 'MYSQL_MODE', 'FILE_STORAGE_BACKEND', 'DJANGO_ENV', 'VUE_ENV',
+        'PUBLIC_URL', 'BACKEND_UPSTREAM', 'FRONTEND_API_BASE', 'MANGO_DATA_DIR',
+        'SERVER_IMAGE', 'CONSOLE_IMAGE', 'MYSQL_IMAGE', 'NGINX_IMAGE', 'COMPOSE_PROJECT_NAME',
+        'API_WORKER_COUNT', 'API_THREAD_POOL_SIZE', 'UVICORN_WORKERS',
+        'LOG_MAX_SIZE', 'LOG_MAX_FILE', 'MONITORING_ENABLED', 'ACTUATOR_ENABLED',
+    ]
+    if values.get('DEPLOY_TARGET') == 'compose':
+        required += ['WEB_BIND', 'WEB_PORT', 'NODE_HEAP_MB', 'PYTHON_IMAGE', 'NODE_IMAGE', 'PIP_INDEX_URL', 'NPM_REGISTRY']
+    if values.get('MYSQL_MODE') != 'settings':
+        required += ['MYSQL_DATABASE', 'MYSQL_USER']
+    if values.get('MYSQL_MODE') == 'external':
+        required += ['MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_PASSWORD']
+    elif values.get('MYSQL_MODE') == 'internal':
+        required += ['MYSQL_BINLOG', 'MYSQL_BUFFER_POOL_SIZE', 'MYSQL_MAX_CONNECTIONS']
+        if values.get('MYSQL_EXPOSE_PORT'):
+            required += ['MYSQL_EXPOSE_BIND']
+    if values.get('FILE_STORAGE_BACKEND') in {'minio', 'tos'}:
+        required += ['S3_BUCKET', 'S3_PRESIGNED']
+        if values.get('FILE_STORAGE_BACKEND') == 'minio':
+            required += ['MINIO_MODE']
+            if values.get('MINIO_MODE') == 'internal':
+                required += ['MINIO_IMAGE']
+                if values.get('MINIO_CONSOLE_PORT'):
+                    required += ['MINIO_CONSOLE_BIND']
+        if values.get('FILE_STORAGE_BACKEND') == 'tos' or values.get('MINIO_MODE') == 'external':
+            required += ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_PUBLIC_BASE_URL']
+            if '://' not in values.get('S3_ENDPOINT', ''):
+                required += ['S3_USE_HTTPS']
+        if values.get('FILE_STORAGE_BACKEND') == 'tos':
+            required += ['S3_REGION']
+    if str(values.get('ACTUATOR_ENABLED', '')).lower() in {'true', '1', 'yes', 'on'}:
+        required += ['ACTUATOR_IMAGE', 'ACTUATOR_HOST', 'ACTUATOR_USERNAME', 'ACTUATOR_PASSWORD',
+                     'ACTUATOR_PROFILE', 'ACTUATOR_CAPABILITIES', 'ACTUATOR_WEB_PARALLEL',
+                     'ACTUATOR_PYTEST_PARALLEL', 'ACTUATOR_QUEUE_SIZE']
+    if values.get('DEPLOY_TARGET') == 'k8s':
+        required += ['K8S_NAMESPACE', 'K8S_IMAGE_PULL_POLICY', 'K8S_RUNTIME_STORAGE_SIZE',
+                     'K8S_RUNTIME_ACCESS_MODE', 'K8S_SERVICE_TYPE', 'K8S_DNS_RESOLVER', 'K8S_WAIT_TIMEOUT']
+        if values.get('MYSQL_MODE') == 'internal':
+            required += ['K8S_MYSQL_STORAGE_SIZE']
+        if values.get('FILE_STORAGE_BACKEND') == 'minio' and values.get('MINIO_MODE') == 'internal':
+            required += ['K8S_MINIO_STORAGE_SIZE']
+        if values.get('K8S_SERVICE_TYPE') == 'NodePort':
+            required += ['K8S_NODE_PORT']
+        if values.get('K8S_TLS_SECRET'):
+            required += ['K8S_INGRESS_HOST']
+    return list(dict.fromkeys(required))
 
 
 def validate_user_inputs(values):
     """Reject missing deployment inputs without exposing their values or writing state."""
-    required = ['PUBLIC_URL', 'MYSQL_DATABASE', 'MYSQL_USER']
-    if values.get('MYSQL_MODE') == 'external':
-        required += ['MYSQL_HOST', 'MYSQL_PASSWORD']
-    elif values.get('MYSQL_MODE') == 'settings':
-        required = ['PUBLIC_URL']  # Database values are checked after reading the selected settings.
-    if values.get('FILE_STORAGE_BACKEND') in {'minio', 'tos'}:
-        required += ['S3_BUCKET']
-        if values.get('FILE_STORAGE_BACKEND') == 'tos' or values.get('MINIO_MODE') == 'external':
-            required += ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_PUBLIC_BASE_URL']
-        if values.get('FILE_STORAGE_BACKEND') == 'tos':
-            required += ['S3_REGION']
-    if boolean(values, 'ACTUATOR_ENABLED'):
-        required += ['ACTUATOR_HOST', 'ACTUATOR_USERNAME', 'ACTUATOR_PASSWORD']
+    required = required_input_keys(values)
     invalid = [key for key in required if not str(values.get(key, '')).strip() or placeholder(values.get(key, ''))]
     public = values.get('PUBLIC_URL', '')
     if public and not placeholder(public):
@@ -111,15 +152,36 @@ def validate_user_inputs(values):
 
 
 def validate(v):
+    missing = [key for key in required_input_keys(v) if not str(v.get(key, '')).strip() or placeholder(v.get(key, ''))]
+    if missing:
+        raise ValueError('请在 .env.example 填写真实有效的必填配置：' + ', '.join(missing))
     heap = v.get('NODE_HEAP_MB', 'auto')
-    if heap != 'auto' and (not heap.isdigit() or not 512 <= int(heap) <= 65536):
+    if v.get('DEPLOY_TARGET') == 'compose' and heap != 'auto' and (not heap.isdigit() or not 512 <= int(heap) <= 65536):
         raise ValueError('NODE_HEAP_MB 使用 auto 或 512～65536 的整数')
     for key, modes in [('MYSQL_MODE', {'internal','external','settings'}),('MINIO_MODE', {'internal','external'})]:
+        if key == 'MINIO_MODE' and v['FILE_STORAGE_BACKEND'] != 'minio':
+            continue
         if v[key] not in modes:
             raise ValueError(key+' 的模式不合法')
     if v['FILE_STORAGE_BACKEND'] not in {'local', 'minio', 'tos'}:
         raise ValueError('FILE_STORAGE_BACKEND 只支持 local / minio / tos')
-    for key in ('WEB_PORT', 'MYSQL_PORT', 'API_PORT', 'MYSQL_EXPOSE_PORT', 'MINIO_CONSOLE_PORT'):
+    if v['DJANGO_ENV'] not in {'dev', 'test', 'master', 'prod'}:
+        raise ValueError('DJANGO_ENV 只支持 dev / test / master / prod')
+    if v['VUE_ENV'] not in {'dev', 'test', 'master'}:
+        raise ValueError('VUE_ENV 只支持 dev / test / master')
+    if v['MYSQL_MODE'] == 'internal':
+        if not v['MYSQL_MAX_CONNECTIONS'].isdigit() or int(v['MYSQL_MAX_CONNECTIONS']) < 1:
+            raise ValueError('MYSQL_MAX_CONNECTIONS 必须为正整数')
+        if not re.fullmatch(r'[1-9][0-9]*[KMG]?', v['MYSQL_BUFFER_POOL_SIZE'], re.I):
+            raise ValueError('MYSQL_BUFFER_POOL_SIZE 使用 256M 等正整数大小')
+    ports = ['MYSQL_PORT']
+    if v['DEPLOY_TARGET'] == 'compose':
+        ports += ['WEB_PORT', 'API_PORT']
+        if v['MYSQL_MODE'] == 'internal':
+            ports += ['MYSQL_EXPOSE_PORT']
+        if v['FILE_STORAGE_BACKEND'] == 'minio' and v['MINIO_MODE'] == 'internal':
+            ports += ['MINIO_CONSOLE_PORT']
+    for key in ports:
         if key not in {'WEB_PORT','MYSQL_PORT'} and not v.get(key):
             continue
         try:
@@ -128,14 +190,17 @@ def validate(v):
             valid = False
         if not valid:
             raise ValueError(f'{key} 必须在 1 到 65535 之间')
-    if v.get('API_PORT') == v['WEB_PORT']:
+    if v['DEPLOY_TARGET'] == 'compose' and v.get('API_PORT') and v.get('API_PORT') == v['WEB_PORT']:
         raise ValueError('API_PORT 与 WEB_PORT 不可相同；同源部署请留空 API_PORT')
     if v['DEPLOY_TARGET'] not in {'compose','k8s'}:
         raise ValueError('DEPLOY_TARGET 只支持 compose / k8s')
-    for key in ('MONITORING_ENABLED','MYSQL_BINLOG','ACTUATOR_ENABLED'):
+    for key in ['MONITORING_ENABLED','ACTUATOR_ENABLED'] + (['MYSQL_BINLOG'] if v['MYSQL_MODE'] == 'internal' else []):
         boolean(v,key)
     if not v['API_WORKER_COUNT'].isdigit() or not 1<=int(v['API_WORKER_COUNT'])<=8:raise ValueError('API_WORKER_COUNT 必须在 1 到 8 之间')
-    for key in ('LOG_MAX_FILE','API_THREAD_POOL_SIZE','UVICORN_WORKERS','ACTUATOR_WEB_PARALLEL','ACTUATOR_PYTEST_PARALLEL','ACTUATOR_QUEUE_SIZE'):
+    numbers = ['LOG_MAX_FILE','API_THREAD_POOL_SIZE','UVICORN_WORKERS']
+    if boolean(v, 'ACTUATOR_ENABLED'):
+        numbers += ['ACTUATOR_WEB_PARALLEL','ACTUATOR_PYTEST_PARALLEL','ACTUATOR_QUEUE_SIZE']
+    for key in numbers:
         if not str(v[key]).isdigit() or int(v[key])<1:raise ValueError(key+' 必须为正整数')
     if not re.fullmatch(r'[1-9][0-9]*[kmg]',v['LOG_MAX_SIZE']):raise ValueError('LOG_MAX_SIZE 使用 10m 等正整数大小')
     if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*',v['COMPOSE_PROJECT_NAME']):raise ValueError('COMPOSE_PROJECT_NAME 格式不合法')
@@ -201,6 +266,33 @@ def validate(v):
         p = url(origin, 'CORS_ALLOWED_ORIGINS')
         if p.path not in {'', '/'} or p.query or p.fragment:
             raise ValueError('跨域来源只能填写协议、域名和端口')
+    if v['DEPLOY_TARGET'] == 'k8s':
+        validate_k8s(v)
+
+
+def validate_k8s(v):
+    for key in ['K8S_IMAGE_PULL_SECRET', 'K8S_STORAGE_CLASS', 'K8S_INGRESS_CLASS', 'K8S_TLS_SECRET', 'K8S_INGRESS_HOST']:
+        if v.get(key) and placeholder(v[key]):
+            raise ValueError(key + ' 仍为占位值，请修改 .env.example')
+    namespace=v['K8S_NAMESPACE']
+    if not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?',namespace):raise ValueError('K8S_NAMESPACE 格式不合法')
+    if v['K8S_SERVICE_TYPE'] not in {'ClusterIP','NodePort','LoadBalancer'}:raise ValueError('K8S_SERVICE_TYPE 不合法')
+    if v['K8S_IMAGE_PULL_POLICY'] not in {'Always','IfNotPresent','Never'}:raise ValueError('K8S_IMAGE_PULL_POLICY 不合法')
+    if v['K8S_RUNTIME_ACCESS_MODE'] not in {'ReadWriteOnce','ReadWriteMany'}:raise ValueError('K8S_RUNTIME_ACCESS_MODE 不合法')
+    storage_sizes = ['K8S_RUNTIME_STORAGE_SIZE']
+    if v['MYSQL_MODE'] == 'internal':
+        storage_sizes += ['K8S_MYSQL_STORAGE_SIZE']
+    if v['FILE_STORAGE_BACKEND'] == 'minio' and v['MINIO_MODE'] == 'internal':
+        storage_sizes += ['K8S_MINIO_STORAGE_SIZE']
+    for key in storage_sizes:
+        if not re.fullmatch(r'[1-9][0-9]*(?:Mi|Gi|Ti)',v[key]):raise ValueError(key+' 使用 10Gi 等存储大小')
+    for key in ['K8S_IMAGE_PULL_SECRET','K8S_STORAGE_CLASS','K8S_INGRESS_CLASS','K8S_TLS_SECRET']:
+        if v[key] and not re.fullmatch(r'[a-z0-9][a-z0-9.-]*',v[key]):raise ValueError(key+' 格式不合法')
+    if v['K8S_INGRESS_HOST'] and not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.-]*',v['K8S_INGRESS_HOST']):raise ValueError('K8S_INGRESS_HOST 只填写主机名')
+    if v['K8S_TLS_SECRET'] and not v['K8S_INGRESS_HOST']:raise ValueError('配置 K8S_TLS_SECRET 时必须填写 K8S_INGRESS_HOST')
+    if v['K8S_SERVICE_TYPE']=='NodePort' and (not v['K8S_NODE_PORT'].isdigit() or not 30000<=int(v['K8S_NODE_PORT'])<=32767):raise ValueError('K8S_NODE_PORT 必须在 30000 到 32767 之间')
+    if not re.fullmatch(r'[a-zA-Z0-9.:-]+',v['K8S_DNS_RESOLVER']):raise ValueError('K8S_DNS_RESOLVER 格式不合法')
+    if not re.fullmatch(r'[1-9][0-9]*s',v['K8S_WAIT_TIMEOUT']):raise ValueError('K8S_WAIT_TIMEOUT 使用 300s 等格式')
 
 
 def database_from_settings(root, environment):
@@ -377,7 +469,7 @@ def configuration_text(text, values):
     return '\n'.join(lines) + '\n'
 
 
-def initialize_example(path, dry_run=False):
+def initialize_example(path, dry_run=False, target=None):
     root = path.parent
     editable = read_env(path)
     marker = root / 'deploy/generated/example-input.json'
@@ -392,6 +484,8 @@ def initialize_example(path, dry_run=False):
         explicit = {key: value for key, value in editable.items() if value != DEFAULTS.get(key)}
         editable = {**previous, **explicit}
         adopted = True
+    if target is not None:
+        editable['DEPLOY_TARGET'] = target
     prior = read_env(legacy) if legacy.exists() else {}
     effective = {**DEFAULTS, **prior}
     effective.update({key: value for key, value in editable.items()
@@ -401,7 +495,8 @@ def initialize_example(path, dry_run=False):
     if dry_run:
         return values
     if adopted:
-        public = {key: value for key, value in editable.items() if key not in PRIVATE_INPUT_NAMES}
+        public = {key: value for key, value in editable.items() if key not in PRIVATE_INPUT_NAMES
+                  and not (target is not None and key == 'DEPLOY_TARGET')}
         private_write(path, configuration_text(path.read_text(), public))
     path.chmod(0o600)
     private_write(marker, json.dumps({'configuration_entry': '.env.example'}) + '\n')
@@ -542,10 +637,12 @@ def main():
     parser.add_argument('action', choices=['check-inputs','init','get','render','render-k8s'])
     parser.add_argument('path',type=Path)
     parser.add_argument('key',nargs='?')
+    parser.add_argument('--target', choices=['compose', 'k8s'])
     a=parser.parse_args()
     try:
         if a.path.name == '.env.example':
-            v = initialize_example(a.path, dry_run=a.action == 'check-inputs')
+            v = initialize_example(a.path, dry_run=a.action == 'check-inputs',
+                                   target=a.target or ('k8s' if a.action == 'render-k8s' else None))
         else:
             v=initialize(a.path, dry_run=a.action == 'check-inputs') if a.action in {'check-inputs','init','render','render-k8s'} else resolve(read_env(a.path),a.path.parent)
         if a.action=='render': render(Path(__file__).resolve().parent.parent, v)
@@ -563,7 +660,8 @@ def main():
         # Validation messages identify keys only; never include values or parser input.
         import sys
         error=sys.exc_info()[1]
-        parser.exit(1, (str(error) if isinstance(error,ValueError) else '无法读取或生成部署配置，请检查文件权限和配置完整性')+'\n')
+        message = str(error) if isinstance(error,ValueError) else '无法读取或生成部署配置，请检查文件权限和配置完整性'
+        parser.exit(1, '配置检查失败，发布已中断：\n' + message + '\n请修改 .env.example 后重新执行 sh deploy.sh。\n')
 
 
 if __name__=='__main__': main()

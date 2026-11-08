@@ -130,6 +130,73 @@ class BuildResourceTests(unittest.TestCase):
 
 
 class RequiredInputTests(unittest.TestCase):
+    def test_all_common_missing_fields_are_reported_together_without_writing_state(self):
+        fields = ['SERVER_IMAGE', 'CONSOLE_IMAGE', 'MYSQL_IMAGE', 'NGINX_IMAGE',
+                  'BACKEND_UPSTREAM', 'FRONTEND_API_BASE', 'MANGO_DATA_DIR', 'WEB_PORT',
+                  'WEB_BIND', 'DJANGO_ENV', 'VUE_ENV', 'NODE_IMAGE', 'PYTHON_IMAGE',
+                  'MYSQL_DATABASE', 'MYSQL_USER', 'LOG_MAX_FILE', 'API_THREAD_POOL_SIZE']
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            example = root / '.env.example'
+            example.write_text('PUBLIC_URL=https://platform.example.com\n' + '\n'.join(key + '=' for key in fields))
+            with self.assertRaises(ValueError) as caught:
+                b.initialize_example(example, dry_run=True)
+            for field in fields:
+                self.assertIn(field, str(caught.exception))
+            self.assertIn('.env.example', str(caught.exception))
+            self.assertFalse((root / '.env').exists())
+            self.assertFalse((root / 'deploy/generated').exists())
+
+    def test_enabled_executor_requires_image_and_account_and_runtime_options(self):
+        fields = ['ACTUATOR_IMAGE', 'ACTUATOR_HOST', 'ACTUATOR_USERNAME', 'ACTUATOR_PASSWORD',
+                  'ACTUATOR_PROFILE', 'ACTUATOR_CAPABILITIES', 'ACTUATOR_QUEUE_SIZE']
+        with tempfile.TemporaryDirectory() as directory:
+            example = Path(directory) / '.env.example'
+            example.write_text('PUBLIC_URL=https://platform.example.com\nACTUATOR_ENABLED=true\n' +
+                               '\n'.join(key + '=' for key in fields))
+            with self.assertRaises(ValueError) as caught:
+                b.initialize_example(example, dry_run=True)
+            for field in fields:
+                self.assertIn(field, str(caught.exception))
+
+    def test_k8s_requires_namespace_storage_dns_timeout_and_conditional_fields(self):
+        fields = ['K8S_NAMESPACE', 'K8S_RUNTIME_STORAGE_SIZE', 'K8S_DNS_RESOLVER',
+                  'K8S_WAIT_TIMEOUT', 'K8S_NODE_PORT', 'K8S_INGRESS_HOST', 'K8S_MYSQL_STORAGE_SIZE']
+        with tempfile.TemporaryDirectory() as directory:
+            example = Path(directory) / '.env.example'
+            example.write_text('PUBLIC_URL=https://platform.example.com\nDEPLOY_TARGET=k8s\n'
+                               'K8S_SERVICE_TYPE=NodePort\nK8S_TLS_SECRET=platform-tls\n' +
+                               '\n'.join(key + '=' for key in fields))
+            with self.assertRaises(ValueError) as caught:
+                b.initialize_example(example, dry_run=True)
+            for field in fields:
+                self.assertIn(field, str(caught.exception))
+            self.assertFalse((example.parent / '.env').exists())
+
+    def test_inactive_k8s_storage_and_executor_fields_may_be_empty(self):
+        with tempfile.TemporaryDirectory() as directory:
+            example = Path(directory) / '.env.example'
+            example.write_text('PUBLIC_URL=https://platform.example.com\nMINIO_MODE=\nS3_ENDPOINT=\n'
+                               'ACTUATOR_IMAGE=\nACTUATOR_PASSWORD=\nACTUATOR_QUEUE_SIZE=\nK8S_NAMESPACE=\n')
+            b.initialize_example(example, dry_run=True)
+
+    def test_k8s_format_errors_and_configured_optional_placeholders_fail_without_state_writes(self):
+        cases = [
+            {'DEPLOY_TARGET': 'k8s', 'K8S_WAIT_TIMEOUT': 'bad'},
+            {'DEPLOY_TARGET': 'k8s', 'K8S_RUNTIME_STORAGE_SIZE': '0Gi'},
+            {'DEPLOY_TARGET': 'k8s', 'K8S_TLS_SECRET': 'your-secret', 'K8S_INGRESS_HOST': 'platform.example.com'},
+            {'EXTRA_HTTP_ROUTES': '{"/help/":"http://CHANGE_ME_HOST"}'},
+        ]
+        for case in cases:
+            with self.subTest(keys=list(case)), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                example = root / '.env.example'
+                example.write_text(b.configuration_text('PUBLIC_URL=https://platform.example.com\n', case))
+                with self.assertRaises(ValueError):
+                    b.initialize_example(example, dry_run=True)
+                self.assertFalse((root / '.env').exists())
+                self.assertFalse((root / 'deploy/generated').exists())
+
     def test_public_address_must_be_real_and_invalid_inputs_do_not_write_state(self):
         for address in ('', 'http://CHANGE_ME_SERVER_IP:8000', 'http://localhost:8000',
                         'http://127.0.0.2:8000', 'http://0.0.0.0:8000', 'http://[::]:8000',
@@ -185,6 +252,18 @@ class GitCompatibilityTests(unittest.TestCase):
 
 
 class ConfigurationUpdateTests(DeploymentFixture):
+    def test_explicit_k8s_target_checks_required_fields_before_git_or_state_writes(self):
+        path = self.root / '.env.example'
+        path.write_text(b.configuration_text(path.read_text(), {'K8S_NAMESPACE': ''}))
+        before = (self.root / '.env').read_bytes()
+        result = self.run_deploy('--target', 'k8s')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('K8S_NAMESPACE', result.stderr)
+        self.assertEqual(self.commands(), [])
+        self.assertFalse((self.root / 'git.log').exists())
+        self.assertFalse((self.root / 'deploy/generated').exists())
+        self.assertEqual((self.root / '.env').read_bytes(), before)
+
     def test_invalid_required_address_stops_before_git_docker_and_private_writes(self):
         example = self.root / '.env.example'
         example.write_text(b.configuration_text(example.read_text(), {'PUBLIC_URL': 'http://CHANGE_ME_SERVER_IP:8000'}))
