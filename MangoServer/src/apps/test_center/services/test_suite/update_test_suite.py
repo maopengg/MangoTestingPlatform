@@ -37,7 +37,10 @@ class UpdateTestSuite:
                 id=test_suite_details_id
             )
             test_suite = TestSuite.objects.select_for_update().get(id=test_suite_detail.test_suite_id)
-            if test_suite.status == TaskEnum.STOPPED.value:
+            from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+            test_suite_detail.refresh_from_db()
+            if (test_suite.status == TaskEnum.STOPPED.value
+                    or TestSuiteInfrastructureService.is_blocked(test_suite_detail.summary_data)):
                 return False
             test_suite_detail.status = status
             test_suite_detail.error_message = msg

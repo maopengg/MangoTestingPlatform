@@ -209,6 +209,9 @@ class TestSuiteExecutionResultService:
     @classmethod
     def count_normalized_api_result(cls, detail: TestSuiteDetails):
         counter = {'success': 0, 'fail': 0, 'warning': 0}
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(getattr(detail, 'summary_data', None)):
+            return counter
         if detail.status in [
             TaskEnum.STAY_BEGIN.value,
             TaskEnum.PROCEED.value,

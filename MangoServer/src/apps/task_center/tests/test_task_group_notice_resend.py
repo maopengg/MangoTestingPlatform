@@ -52,6 +52,7 @@ class TaskGroupNoticeResendTests(SimpleTestCase):
                 'src.apps.task_center.services.scheduling.task_group_execution.ScheduledTaskGroupExecution.objects'),
             'fires': patch('src.apps.task_center.services.scheduling.task_group_execution.ScheduleFire.objects'),
             'details': patch('src.apps.task_center.services.scheduling.task_group_execution.TestSuiteDetails.objects'),
+            'suites': patch('src.apps.task_center.services.scheduling.task_group_execution.TestSuite.objects'),
             'notice': patch('src.apps.task_center.services.scheduling.task_group_execution.NoticeMain'),
             'environments': patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
                                   return_value={}),
@@ -73,14 +74,22 @@ class TaskGroupNoticeResendTests(SimpleTestCase):
             guard.start()
             self.addCleanup(guard.stop)
 
-    def test_platform_blocked_detail_suppresses_automatic_and_manual_group_conclusions(self):
+    def test_terminal_platform_interruption_allows_automatic_and_manual_group_notice(self):
         self.mocks['details'].filter.return_value.exists.return_value = True
+        self.fires[0].test_suite.status = TaskEnum.FAIL.value
         self.execution.notice_status = TestSuiteNoticeEnum.NOT_SENT.value
-        with self.assertRaises(TaskCenterError):
+        self.execution.is_notice = 1
+        summary = dict(case_sum=1, success=0, fail=1, warning=0, excluded_count=0)
+        with patch('src.apps.task_center.services.scheduling.task_group_execution.TestSuiteSummaryService.counter_data', return_value=summary):
+            payload = ScheduledTaskGroupExecutionService._claim_notice(68)
+            self.assertIsNotNone(payload)
+            self.assertEqual(self.execution.status, TaskEnum.FAIL.value)
+            self.assertIsNotNone(self.execution.finished_at)
+            self.execution.notice_status = TestSuiteNoticeEnum.SENT.value
             ScheduledTaskGroupExecutionService.resend_notice(2, 68)
-        self.assertIsNone(ScheduledTaskGroupExecutionService._claim_notice(68))
-        self.assertEqual(self.execution.status, TaskEnum.PROCEED.value)
-        self.mocks['notice'].assert_not_called()
+        self.mocks['notice'].return_value.notice_task_group.assert_called_once()
+        report = self.mocks['notice'].return_value.notice_task_group.call_args.args[0]
+        self.assertEqual(report.fail, 1)
 
     def test_resend_recomputes_current_results_even_success_and_notice_disabled(self):
         self.fires[0].status = ScheduleFireStatusEnum.FAIL.value

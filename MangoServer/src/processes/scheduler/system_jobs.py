@@ -121,6 +121,8 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def repair_test_suite_status(cls):
         try:
+            from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+            interrupted_count = TestSuiteInfrastructureService.repair_legacy_blocks()
             reset_time = SystemConfigService.get_test_suite_stuck_reset_minutes()
             max_attempts = SystemConfigService.get_test_suite_timeout_max_attempts()
             updated_suite_count = 0
@@ -176,6 +178,7 @@ class SchedulerSystemJobService:
                 updated_suite_count += 1
 
             return {
+                'interrupted_count': interrupted_count,
                 'updated_suite_count': updated_suite_count,
                 'reset_count': reset_count,
                 'fail_count': fail_count,

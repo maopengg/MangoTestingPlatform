@@ -33,12 +33,12 @@
           class="mango-assertion-grid__row mango-assertion-grid__item"
           :class="item.status === 1 ? 'mango-assertion-grid__item--pass' : 'mango-assertion-grid__item--fail'"
         >
-          <div class="mango-assertion-grid__cell mango-assertion-grid__group" :data-group-tone="groupTones.get(item.group_name?.trim() || '')">
+          <div class="mango-assertion-grid__cell mango-assertion-grid__group" :data-group-tone="groupTones.get(item.group_name?.trim() || '')" :style="groupStyle(item)">
             <a-tooltip :content="getGroupNameText(item)" mini>
               <span class="mango-assertion-grid__ellipsis">{{ getGroupNameText(item) }}</span>
             </a-tooltip>
           </div>
-          <div class="mango-assertion-grid__cell mango-assertion-grid__group" :data-group-tone="groupTones.get(item.group_name?.trim() || '')">{{ getGroupLogicText(item) }}</div>
+          <div class="mango-assertion-grid__cell mango-assertion-grid__group" :data-group-tone="groupTones.get(item.group_name?.trim() || '')" :style="groupStyle(item)">{{ getGroupLogicText(item) }}</div>
           <div class="mango-assertion-grid__cell mango-assertion-grid__source">
             <span class="mango-assertion-grid__primary">{{ getSourceTypeText(item.source_type) }}</span>
             <a-tooltip v-if="hasActualSource(item)" :content="formatTooltipValue(item.actual_source)" mini>
@@ -107,10 +107,19 @@
     const tones = new Map<string, number>()
     for (const item of assertionData.value) {
       const name = item.group_name?.trim()
-      if (name && !tones.has(name)) tones.set(name, tones.size % 6)
+      if (name && !tones.has(name)) tones.set(name, tones.size)
     }
     return tones
   })
+  function groupStyle(item: AssertionItem) {
+    const index = groupTones.value.get(item.group_name?.trim() || '')
+    if (index === undefined) return undefined
+    // 黄金角分散相邻组，色相由当前主题主色旋转生成，不再循环固定色板。
+    return {
+      '--m-assertion-group-hue': `${(index * 137.507764) % 360}deg`,
+      '--m-assertion-group-strength': index % 2 === 0 ? '24%' : '40%',
+    }
+  }
   const onlyFailed = ref(false)
   const failedCount = computed(() => assertionData.value.filter(item => Number(item.status) === 0).length)
   const visibleAssertions = computed(() => {
@@ -281,12 +290,9 @@
     background: var(--m-surface-soft);
     color: var(--m-text-2);
   }
-  .mango-assertion-grid__group[data-group-tone='0'] { background: color-mix(in srgb, var(--m-primary) 12%, var(--m-surface)); }
-  .mango-assertion-grid__group[data-group-tone='1'] { background: color-mix(in srgb, var(--m-warning) 12%, var(--m-surface)); }
-  .mango-assertion-grid__group[data-group-tone='2'] { background: color-mix(in srgb, var(--m-chart-5) 16%, var(--m-surface)); }
-  .mango-assertion-grid__group[data-group-tone='3'] { background: color-mix(in srgb, var(--m-primary) 22%, var(--m-surface)); }
-  .mango-assertion-grid__group[data-group-tone='4'] { background: color-mix(in srgb, var(--m-warning) 22%, var(--m-surface)); }
-  .mango-assertion-grid__group[data-group-tone='5'] { background: color-mix(in srgb, var(--m-chart-5) 28%, var(--m-surface)); }
+  .mango-assertion-grid__group[data-group-tone] {
+    background: color-mix(in srgb, oklch(from var(--m-primary) l c calc(h + var(--m-assertion-group-hue))) var(--m-assertion-group-strength), var(--m-surface));
+  }
   .mango-assertion-grid__primary, .mango-assertion-grid__secondary, .mango-assertion-grid__ellipsis { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mango-assertion-grid__primary { color: var(--m-text); font-weight: 500; }
   .mango-assertion-grid__secondary { margin-top: 2px; color: var(--m-muted); font-size: 11px; }

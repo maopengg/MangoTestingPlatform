@@ -54,11 +54,61 @@ class TestSuiteInfrastructureService:
         detail.failure_reason = (ReportFailureReasonEnum.PLATFORM.value if not issues or any(
             issue.origin == ReportFailureReasonEnum.PLATFORM for issue in issues) else ReportFailureReasonEnum.ENVIRONMENT.value)
         detail.failure_description = '；'.join(reasons) or detail.error_message
-        detail.save(update_fields=['summary_data', 'error_message', 'success', 'fail', 'warning',
+        detail.status = TaskEnum.FAIL.value
+        detail.save(update_fields=['status', 'summary_data', 'error_message', 'success', 'fail', 'warning',
                                    'failure_reason', 'failure_description', 'update_time'])
-        TestSuite.objects.filter(id=detail.test_suite_id).exclude(status=TaskEnum.STOPPED.value).update(
-            status=TaskEnum.PROCEED.value, update_time=timezone.now())
+        cls.close_interrupted_trace(detail)
+        cls._finish_suite(suite)
         from src.common.logging import log
         log.system.warning('event=report_infrastructure_blocked detail_id=%s attempt=%s issue_codes=%s',
                            detail.id, attempt, [issue.code for issue in issues])
+        return True
+
+    @staticmethod
+    def close_interrupted_trace(detail):
+        from src.apps.test_center.enums import TestCaseTypeEnum
+        if detail.type == TestCaseTypeEnum.API.value:
+            from src.apps.auto_api.services.execution_trace.recorder import ApiCaseExecutionTraceRecorder
+            ApiCaseExecutionTraceRecorder.interrupt_report_attempt(
+                detail.id, detail.push_time, detail.error_message,
+                detail.summary_data['meta']['execution_control'],
+            )
+
+    @staticmethod
+    def _finish_suite(suite):
+        # 运行状态与恢复许可分离：FAIL 表示执行未完成，不代表业务断言失败。
+        if suite.status == TaskEnum.STOPPED.value or suite.retained_summary is not None:
+            return
+        statuses = set(TestSuiteDetails.objects.filter(test_suite_id=suite.id).values_list('status', flat=True))
+        if statuses.intersection((TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)):
+            return
+        suite.status = TaskEnum.FAIL.value
+        suite.save(update_fields=['status', 'update_time'])
+
+    @classmethod
+    def repair_legacy_blocks(cls, limit=200):
+        ids = list(TestSuiteDetails.objects.filter(
+            status__in=[TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value],
+            summary_data__meta__execution_control__phase=ReportExecutionPhaseEnum.INFRASTRUCTURE_BLOCKED.value,
+            test_suite__retained_summary__isnull=True,
+        ).exclude(test_suite__status=TaskEnum.STOPPED.value).order_by('id').values_list('id', flat=True)[:limit])
+        return sum(cls.finish_legacy_block(detail_id) for detail_id in ids)
+
+    @classmethod
+    @transaction.atomic
+    def finish_legacy_block(cls, detail_id):
+        suite_id = TestSuiteDetails.objects.filter(id=detail_id).values_list('test_suite_id', flat=True).first()
+        if suite_id is None:
+            return False
+        suite = TestSuite.objects.select_for_update().get(id=suite_id)
+        detail = TestSuiteDetails.objects.select_for_update().filter(id=detail_id, test_suite_id=suite_id).first()
+        if (detail is None or suite.status == TaskEnum.STOPPED.value or suite.retained_summary is not None
+                or detail.status not in (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)
+                or not cls.is_blocked(detail.summary_data)):
+            return False
+        # 不改执行次数、快照、复核许可或清理责任；更不重新领取原请求。
+        detail.status = TaskEnum.FAIL.value
+        detail.save(update_fields=['status'])
+        cls.close_interrupted_trace(detail)
+        cls._finish_suite(suite)
         return True

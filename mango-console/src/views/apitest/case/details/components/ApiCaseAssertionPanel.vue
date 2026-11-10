@@ -40,14 +40,23 @@
       <div class="m-2"
         ><TipMessage
           margin-bottom="8px"
-          message="仅断言已配置的JSON字段，未填写的字段不参与校验" /><a-textarea
-          v-model="draft.ass_json_all"
-          :disabled="editLocked"
-          :auto-size="fixedRows"
-          allow-clear
+          message="仅断言已配置的JSON字段，未填写的字段不参与校验" />
+        <JsonDisplay
+          :data="draft.ass_json_all ?? ''"
+          show-edit-button
+          :show-drawer-button="false"
+          :edit-disabled="editLocked"
+          @edit="openJsonAssertion"
+        />
+        <MangoJsonEditDrawer
+          v-model:visible="jsonEditVisible"
+          :model-value="jsonEditText"
+          title="编辑 JSON 一致断言"
+          description="仅断言已配置的 JSON 字段；留空可清除该断言。"
           placeholder="请输入期望的响应JSON"
-          @blur="save('ass_json_all')"
-      /></div>
+          @save="saveJsonAssertion"
+        />
+      </div>
     </a-tab-pane>
     <a-tab-pane key="33" title="文本一致">
       <div class="m-2"
@@ -262,7 +271,7 @@
       ></div>
     </a-tab-pane>
     <a-tab-pane key="34" title="结构化">
-      <div class="m-2"
+      <div class="m-2 mango-assertion-schema"
         ><a-space
           ><TipMessage message="场景配置会覆盖接口管理中开启的结构化断言" /><a-button
             size="mini"
@@ -304,7 +313,11 @@
 <script setup lang="ts">
   import { useApiCaseScenarioDraft } from '../composables/useApiCaseScenarioDraft'
   import type { ApiCaseScenario } from '../types'
-  import { computed } from 'vue'
+  import { computed, ref, watch } from 'vue'
+  import { Message } from '@arco-design/web-vue'
+  import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import MangoJsonEditDrawer from '@/components/editors/MangoJsonEditDrawer.vue'
+  import { parseLosslessJson, stringifyLosslessJson } from '@/utils/lossless-json'
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import GeneralAssertionEditor from '@/components/forms/GeneralAssertionEditor.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue'
@@ -356,6 +369,28 @@
   )
 
   const fixedRows = { minRows: 9, maxRows: 9 }
+  const jsonEditVisible = ref(false)
+  const jsonEditText = ref('')
+  watch(() => [props.item.id, props.editLocked], () => { jsonEditVisible.value = false })
+  function openJsonAssertion() {
+    if (props.editLocked) return
+    const value = draft.value.ass_json_all
+    jsonEditText.value = typeof value === 'string' ? value : value == null ? '' : stringifyLosslessJson(value, 2)
+    jsonEditVisible.value = true
+  }
+  function saveJsonAssertion(value: string) {
+    if (props.editLocked) return
+    if (value.trim()) {
+      try { parseLosslessJson(value) } catch {
+        Message.error('JSON一致断言格式不正确，请修正后保存')
+        return
+      }
+    }
+    jsonEditVisible.value = false
+    if (value === jsonEditText.value) return
+    draft.value.ass_json_all = value
+    save('ass_json_all')
+  }
   const relationOptions = [
     { label: '且', value: 'AND' },
     { label: '或', value: 'OR' },
@@ -692,6 +727,11 @@
 </script>
 
 <style scoped>
+  .mango-assertion-schema {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m-page-gap);
+  }
   .mango-api-case-assertion-tabs
     :deep(.arco-tabs-nav-type-line.arco-tabs-nav-horizontal .arco-tabs-tab) {
     margin-inline: 6px;

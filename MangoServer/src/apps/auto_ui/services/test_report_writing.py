@@ -43,7 +43,7 @@ class TestReportWriting:
         failures = cls.cleanup_data_factory(result)
         issues = DatasourceInfrastructureService.current()
         if issues:
-            result.status = TaskEnum.PROCEED.value
+            result.status = TaskEnum.FAIL.value
             result.error_message = DatasourceInfrastructureService.summary(issues)
             owner = DataFactoryCleanupScheduleService.current_owner()
             if owner:

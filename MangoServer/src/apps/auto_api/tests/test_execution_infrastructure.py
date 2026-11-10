@@ -18,8 +18,8 @@ class ApiInfrastructureTests(SimpleTestCase):
         runtime.case_base.case_front_main.side_effect = DataFactoryError(DATASOURCE_GOVERNOR_UNAVAILABLE)
         result = runtime.test_case()
         self.assertTrue(result.infrastructure_blocked)
-        self.assertEqual(result.status, TaskEnum.PROCEED.value)
-        self.assertNotIn(0, [call.args[1] for call in runtime.update_test_case.call_args_list])
+        self.assertEqual(result.status, TaskEnum.FAIL.value)
+        runtime.update_test_case.assert_called_with(runtime.case_id, TaskEnum.FAIL.value)
         runtime.update_test_case_detailed_unfinished.assert_not_called()
         runtime.case_base.case_posterior_main.assert_called_once()
         runtime.test_setup.close_db_connections.assert_called_once()
@@ -50,7 +50,7 @@ class ApiInfrastructureTests(SimpleTestCase):
         runtime.case_base.case_posterior_main.side_effect = DataFactoryError(DATASOURCE_SETTLEMENT_FAILED)
         result = runtime.test_case()
         self.assertEqual(result.main_status, TaskEnum.SUCCESS.value)
-        self.assertEqual(result.status, TaskEnum.PROCEED.value)
+        self.assertEqual(result.status, TaskEnum.FAIL.value)
         self.assertTrue(result.infrastructure_blocked)
         runtime.case_base.case_posterior_main.assert_called_once()
 
@@ -71,7 +71,7 @@ class ApiInfrastructureTests(SimpleTestCase):
                     definition, **({'value': values} if values else {}))
                 result = runtime.test_case()
                 self.assertEqual(result.main_status, TaskEnum.SUCCESS.value)
-                self.assertEqual(result.status, TaskEnum.PROCEED.value)
+                self.assertEqual(result.status, TaskEnum.FAIL.value)
                 self.assertTrue(result.infrastructure_blocked)
                 runtime.case_base.case_posterior_main.assert_called_once()
 

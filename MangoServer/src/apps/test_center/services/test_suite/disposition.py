@@ -48,7 +48,7 @@ class TestSuiteDispositionService:
         from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
         blocked = TestSuiteInfrastructureService.is_blocked(detail.summary_data)
         if blocked:
-            # 阻塞报告仍保留 PROCEED 以避免伪造结论，但这不应锁死恢复核查。
+            # 中断项虽已结束，仍须等其他真实运行项结束后才能复核。
             if TestSuiteInfrastructureService.has_live_details(suite.id):
                 raise TestCenterError(TEST_REPORT_DISPOSITION_ACTIVE)
         elif suite.status in active or TestSuiteDetails.objects.filter(test_suite_id=suite.id, status__in=active).exists():

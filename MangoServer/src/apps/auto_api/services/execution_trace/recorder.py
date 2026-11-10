@@ -16,6 +16,29 @@ class ApiCaseExecutionTraceRecorder:
 
     SUMMARY_TEXT_LIMIT = 1000
 
+    @staticmethod
+    def interrupt_report_attempt(detail_id, pushed_at, message, control):
+        now = timezone.now()
+        traces = ApiCaseExecutionTrace.objects.filter(
+            test_suite_detail_id=detail_id, status=ApiCaseTraceStatus.PROCEED,
+        )
+        if pushed_at is not None:
+            traces = traces.filter(started_at__gte=pushed_at)
+        for trace in traces:
+            for step in ApiCaseExecutionStep.objects.filter(trace=trace, status=ApiCaseTraceStatus.PROCEED):
+                step.status = ApiCaseTraceStatus.FAIL
+                step.finished_at = now
+                step.duration_ms = max(0, int((now - (step.started_at or now)).total_seconds() * 1000))
+                step.error_message = message
+                step.save(update_fields=['status', 'finished_at', 'duration_ms', 'error_message', 'update_time'])
+            trace.status = ApiCaseTraceStatus.FAIL
+            trace.finished_at = now
+            trace.duration_ms = max(0, int((now - (trace.started_at or now)).total_seconds() * 1000))
+            trace.error_message = message
+            trace.summary = {**(trace.summary if isinstance(trace.summary, dict) else {}),
+                             'execution_control': control}
+            trace.save(update_fields=['status', 'finished_at', 'duration_ms', 'error_message', 'summary', 'update_time'])
+
     def __init__(self):
         self.trace: ApiCaseExecutionTrace | None = None
         self._sort = 0

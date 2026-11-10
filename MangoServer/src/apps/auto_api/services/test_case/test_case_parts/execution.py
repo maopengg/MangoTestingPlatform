@@ -209,7 +209,7 @@ class ApiTestCaseExecutionMixin:
             issues = DatasourceInfrastructureService.current()
             if issues:
                 self.api_case_result.infrastructure_blocked = True
-                self.api_case_result.status = TaskEnum.PROCEED.value
+                self.api_case_result.status = TaskEnum.FAIL.value
                 self.api_case_result.error_message = DatasourceInfrastructureService.summary(issues)
                 self.trace_recorder.fail_trace(self.api_case_result.error_message,
                                                summary={'infrastructure_blocked': True})
@@ -223,7 +223,7 @@ class ApiTestCaseExecutionMixin:
                             snapshot=self.api_case_result.model_dump())
                         if not accepted:
                             return self.api_case_result
-                self.update_test_case(self.case_id, TaskEnum.PROCEED.value)
+                self.update_test_case(self.case_id, TaskEnum.FAIL.value)
                 return self.api_case_result
             report_step = self.trace_recorder.start_step(
                 ApiCaseTraceStepType.REPORT_WRITE,

@@ -46,3 +46,17 @@ test('assertion result component compiles', () => {
   const script = compileScript(descriptor, {id: 'assertion-summary'})
   assert.deepEqual(compileTemplate({source: descriptor.template.content, filename, id: 'assertion-summary', compilerOptions: {bindingMetadata: script.bindings}}).errors, [])
 })
+test('at least 50 groups receive unique theme-derived hues without cycling', () => {
+  const code = source.slice(source.indexOf('  const assertionData ='), source.indexOf('  watch(failedCount'))
+  const data = Array.from({length: 50}, (_, index) => ({source_type: 'jsonpath', group_name: `group-${index}`, status: index % 2}))
+  const state = new Function('props', 'computed', 'ref', ts.transpileModule(code, {}).outputText + '; return {groupStyle, onlyFailed}')({data}, computed, ref)
+  const hues = data.map(item => state.groupStyle(item)['--m-assertion-group-hue'])
+  assert.equal(new Set(hues).size, 50)
+  assert.equal(state.groupStyle(data[0])['--m-assertion-group-strength'], '24%')
+  assert.equal(state.groupStyle(data[1])['--m-assertion-group-strength'], '40%')
+  state.onlyFailed.value = true
+  assert.deepEqual(data.map(item => state.groupStyle(item)['--m-assertion-group-hue']), hues)
+  assert.deepEqual(state.groupStyle({...data[4], status: 0}), state.groupStyle(data[4]))
+  assert.equal(state.groupStyle({}), undefined)
+  assert.match(source, /oklch\(from var\(--m-primary\)/)
+})

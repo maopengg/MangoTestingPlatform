@@ -43,6 +43,12 @@ class ReportNoticeDetailsService:
     def detail_rows(cls, detail, data, task_name=''):
         if detail.type not in (TestCaseTypeEnum.API.value, TestCaseTypeEnum.UI.value, TestCaseTypeEnum.PYTEST.value):
             return []
+        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        if TestSuiteInfrastructureService.is_blocked(detail.summary_data):
+            return [ReportFailureModel(case_type=detail.type, task_name=cls.text(task_name),
+                case_name=cls.text(detail.case_name or f'Case #{detail.case_id}'),
+                target_name='执行中断（非业务断言失败）',
+                message=cls.text(f'{detail.error_message or "平台未收到完整结果"}；须复核原请求及清理状态后才能重试。'))]
         data = TestSuiteExecutionResultService.normalize_detail_result_data(detail, data)
         items = data if isinstance(data, list) else [data] if isinstance(data, dict) else []
         items = [item for item in items if isinstance(item, dict)]

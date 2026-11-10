@@ -112,7 +112,7 @@ class UiCleanupResultTests(SimpleTestCase):
                 result, failures = TestReportWriting.prepare_factory_result(ui_result(), [7])
             finally:
                 Schedule.reset_owner(token)
-        self.assertEqual(result['status'], 3)
+        self.assertEqual(result['status'], 0)
         self.assertTrue(failures)
         self.assertEqual(blocked.call_args.args[:2], (17, 2))
         self.assertEqual(blocked.call_args.args[2][0].code, 34190)

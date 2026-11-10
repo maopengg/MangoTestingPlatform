@@ -159,7 +159,7 @@ class WorkerReplacementRecoveryTests(TestCase):
         self.assertEqual(Recovery.recover(), 1)
         self.detail.refresh_from_db()
         self.assertTrue(Infrastructure.is_blocked(self.detail.summary_data))
-        self.assertEqual((self.detail.status, self.detail.success, self.detail.fail), (3, 0, 0))
+        self.assertEqual((self.detail.status, self.detail.success, self.detail.fail), (TaskEnum.FAIL.value, 0, 0))
         with patch.object(ApiTaskClaimService, 'platform_claim_lock') as lock, \
                 patch('src.apps.task_center.services.execution.claim.ApiConcurrencyService.platform_limit', return_value=10):
             lock.return_value.__enter__.return_value = True

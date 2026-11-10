@@ -9,6 +9,16 @@ from src.apps.test_center.services.test_suite.detail_result import TestSuiteExec
 
 
 class NoticeDetailTests(SimpleTestCase):
+    def test_interruption_notice_preserves_platform_reason_instead_of_partial_assertions(self):
+        detail = self.detail(TestCaseTypeEnum.API)
+        detail.summary_data = {'children': [], 'meta': {'execution_control': {
+            'phase': 'infrastructure_blocked', 'requires_review': True}}}
+        rows = ReportNoticeDetailsService.detail_rows(detail, [{'status': 0, 'error_message': 'partial failure'}])
+        self.assertEqual(len(rows), 1)
+        self.assertIn('非业务断言失败', rows[0].target_name)
+        self.assertIn('复核原请求及清理状态', rows[0].message)
+        self.assertNotIn('partial failure', rows[0].message)
+
     def test_two_failed_cases_with_thirty_unexecuted_steps_produce_two_rows(self):
         import json
         from src.apps.system.services.notice import ReportFailureRenderer
